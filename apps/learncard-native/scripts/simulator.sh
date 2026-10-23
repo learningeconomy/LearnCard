@@ -19,16 +19,19 @@ runtimes = [r for r in json.load(sys.stdin)["runtimes"]
 if not runtimes: sys.exit("Install an iOS simulator runtime in Xcode Settings > Components.")
 print(max(runtimes, key=lambda r: tuple(map(int, r["version"].split("."))))["identifier"])
 ')"
-            lc_device_type="$(xcrun simctl list devicetypes -j | python3 -c '
+            lc_device_type="$(xcrun simctl list runtimes -j | python3 -c '
 import json, sys
-types = json.load(sys.stdin)["devicetypes"]
-for name in ("iPhone 17 Pro", "iPhone 16 Pro", "iPhone 15 Pro"):
+runtime = next(r for r in json.load(sys.stdin)["runtimes"] if r["identifier"] == sys.argv[1])
+types = [d for d in runtime.get("supportedDeviceTypes", []) if d["name"].startswith("iPhone")]
+for name in ("iPhone 17 Pro", "iPhone 16 Pro", "iPhone 15 Pro", "iPhone Duo"):
     match = next((d for d in types if d["name"] == name), None)
     if match:
         print(match["identifier"])
         break
-else: sys.exit("Install an iPhone simulator device type in Xcode.")
-')"
+else:
+    if not types: sys.exit("Install an iPhone device type compatible with the selected iOS runtime.")
+    print(types[0]["identifier"])
+' "$lc_runtime")"
             lc_native_device="$(xcrun simctl create "$lc_native_name" "$lc_device_type" "$lc_runtime")"
         fi
     fi

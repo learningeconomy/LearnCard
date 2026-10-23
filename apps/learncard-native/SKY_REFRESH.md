@@ -18,7 +18,7 @@ These are illustrative time periods, not a weather or astronomical-sunset claim.
 
 ## Drawing and motion
 
-The strip fills its actual native refresh-control bounds. It adds no permanent page space, horizontal inset, extra gesture recognizer or manually imposed scroll inset. Native scrolling controls its reveal and collapse. Scene drawing clips to those bounds; visitors scale to the available height.
+The drawing retains its actual native refresh-control size, but its visible aperture is clipped to the scroll viewport above the content anchor. This October 23 correction prevents the heading overlapping the sky during native release/collapse; exposed-height opacity softens the reveal. See [loading feedback](LOADING_FEEDBACK.md). It adds no permanent page space, horizontal inset, extra gesture recognizer or manually imposed scroll inset. Native scrolling controls its reveal and collapse. Scene drawing clips to those bounds; visitors scale to the available height.
 
 Simple flat shapes provide layered pill clouds, a bird, a colored balloon, a plane and a small UFO. Morning/afternoon add a couple of small distant bird silhouettes; afternoon has a small sun partly behind its distant cloud. A shared 3.6-second sine wave rolls through clouds, sun/moon and visitors, with staggered phases and small offsets. The dusk horizon gently follows it. All main visitors, including the second cow, travel left to right through the same 26-second loop, twice the original speed; wrap points remain outside the viewport. The bird has a small wing motion. Each visitor starts in a complete visible pose.
 

@@ -16,11 +16,10 @@ struct CareerView: View {
                 PageHeading(title: NativeText.text("career.heading"), identifier: "careers", accent: Palette.flairTeal)
                 Text(NativeText.text("career.intro")).foregroundStyle(Palette.secondary)
                 if !appStore.isLive { Text(NativeText.text("career.demo")).font(.footnote).foregroundStyle(Palette.secondary) }
-                if careers.checking { ProgressView(NativeText.text("career.checking")) }
+                if careers.checking, careers.access?.enabled != true { ProgressView(NativeText.text("career.checking")).frame(maxWidth: .infinity, alignment: .leading) }
                 if careers.access?.enabled == true {
                     searchBox
                     if let error = careers.error { CareerFeedback(error: error) { search(careers.attemptedQuery) } }
-                    if careers.loading { ProgressView(NativeText.text("career.searching")).accessibilityIdentifier("career-loading") }
                     if let result = careers.result {
                         Text(NativeText.format("career.resultsFor", careers.query)).font(.headline).accessibilityIdentifier("career-results-heading")
                         ForEach(result.occupations) { occupation in
@@ -67,7 +66,7 @@ struct CareerView: View {
                         .accessibilityLabel(NativeText.text("people.clear")).accessibilityIdentifier("career-clear")
                 }
             }.foregroundStyle(Palette.secondary).padding(14).background(Palette.surface, in: RoundedRectangle(cornerRadius: 20))
-            PrimaryButton(title: NativeText.text(careers.loading ? "career.searching" : "career.search"), loading: careers.loading, disabled: !valid || careers.checking, fill: Palette.selection) { search(input) }
+            PrimaryButton(title: NativeText.text(careers.checking ? "career.checking" : careers.loading ? "career.searching" : "career.search"), loading: careers.loading || careers.checking, disabled: !valid && !careers.checking, fill: Palette.selection) { search(input) }
                 .accessibilityIdentifier("career-search")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {

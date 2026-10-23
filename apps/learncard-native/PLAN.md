@@ -1,5 +1,15 @@
 # LearnCard native client plan
 
+## Refresh reveal and shared inline feedback — October 23
+
+- [x] Clip the sky to the actual visible gap above scroll content and fade with exposed height; retain native gesture/insets/lifetime and existing sky scenes.
+- [x] Share a compact three-tile wave across indeterminate SwiftUI loaders, with horizontal contextual labels, compact image/button variants and still accessibility feedback. Keep real fractional progress as a linear bar.
+- [x] Put career availability rechecks in the existing action slot and remove duplicate search loading feedback.
+- [x] Select a simulator type supported by the chosen runtime after the Xcode update, including the Duo-only iOS 27.1 runtime.
+- [ ] Continue bespoke loader placement adjustments as manual testing identifies concrete examples; this shared treatment is not a complete per-screen spacing audit.
+
+See [loading feedback](LOADING_FEEDBACK.md), [sky behavior](SKY_REFRESH.md) and [exact local checks](TESTING.md). The learner skills/Journeys queue remains unchanged by this visual pass.
+
 ## Credential details and individual sharing — October 17
 
 - [x] Preserve the rendered credential hero and separate a compact scoped signature panel, About, metadata and supplied optional details.

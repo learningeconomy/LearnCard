@@ -76,7 +76,9 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
         var configuration: RefreshArtworkAttachment
         private weak var scroll: UIScrollView?
         private weak var control: UIRefreshControl?
+        private weak var anchor: UIView?
         private var offsetObservation: NSKeyValueObservation?
+        private var clippingView: UIView?
         private var host: (UIView & UIContentView)?
         private var originalTint: UIColor?
         private var began = Date.now
@@ -97,6 +99,7 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
                             MainActor.assumeIsolated { self?.render() }
                         }
                     }
+                    self.anchor = anchor
                     render()
                     return
                 }
@@ -114,9 +117,11 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
                 let host = contentConfiguration(moving: false).makeContentView()
                 host.backgroundColor = .clear
                 host.isUserInteractionEnabled = false
-                host.frame = next.bounds
-                host.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-                next.addSubview(host)
+                let clipping = UIView()
+                clipping.backgroundColor = .clear; clipping.clipsToBounds = true
+                clipping.isUserInteractionEnabled = false
+                clipping.addSubview(host); next.addSubview(clipping)
+                clippingView = clipping
                 self.host = host
             }
             next.tintColor = .clear
@@ -132,12 +137,18 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
             if busy && !wasRefreshing { began = .now; pausedElapsed = 0 }
             if !busy && wasRefreshing { pausedElapsed = max(0, Date.now.timeIntervalSince(began)) }
             wasRefreshing = busy
-            let shown = configuration.active && cycle.scene != nil && (busy || pull > 0.5)
+            let reveal = RefreshReveal(control: next.bounds,
+                viewport: scroll.convert(scroll.bounds, to: next),
+                contentTop: Double(anchor?.convert(CGPoint.zero, to: next).y ?? next.bounds.minY))
+            let shown = configuration.active && cycle.scene != nil && reveal.opacity > 0 && (busy || pull > 0.5)
             let updateArtwork = shown || host?.isHidden == false
             host?.isHidden = !shown
-            // Bounds come from the actual public refresh control. Only its child
-            // artwork stretches; content insets/gesture lifetime stay native.
-            host?.frame = next.bounds
+            // The native control may extend under the content during release.
+            // Clip to the actual exposed gap without moving content or changing
+            // UIKit's insets. Keep the drawing's full size as the aperture opens.
+            clippingView?.frame = reveal.frame
+            clippingView?.alpha = reveal.opacity
+            host?.frame = next.bounds.offsetBy(dx: -reveal.frame.minX, dy: -reveal.frame.minY)
             if updateArtwork { host?.configuration = contentConfiguration(moving: shown && busy && !configuration.reduced) }
             if !busy && !scroll.isDragging && pull <= 0.5 { cycle.end() }
         }
@@ -151,12 +162,12 @@ private struct RefreshArtworkAttachment: UIViewRepresentable {
         }
         private func removeArtwork() {
             control?.tintColor = originalTint
-            host?.removeFromSuperview()
-            host = nil; control = nil; originalTint = nil
+            clippingView?.removeFromSuperview()
+            clippingView = nil; host = nil; control = nil; originalTint = nil
         }
         func detach() {
             offsetObservation?.invalidate(); offsetObservation = nil
-            removeArtwork(); scroll = nil; wasRefreshing = false; cycle.end()
+            removeArtwork(); scroll = nil; anchor = nil; wasRefreshing = false; cycle.end()
         }
     }
 }

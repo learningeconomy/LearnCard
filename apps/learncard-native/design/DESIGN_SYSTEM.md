@@ -92,6 +92,8 @@ Use an 8-point minor spacing rhythm (4/8/12/16/24); 20-point outer insets and 14
 
 The assembled painted mark and shared 32-point bold LearnCard wordmark are the main brand lockup. Below them, the greeting or operation title uses system title3 medium in secondary ink, followed by body-sized status copy. Do not place a large bold Welcome back headline beneath an equally bold brand name. The running view scales with Dynamic Type and remains scrollable; static launch retains the same brand lockup. No launch timing or motion change is implied by typography.
 
+Indeterminate in-app feedback uses the shared three-tile wave and horizontal contextual labels. It is separate from the logo and full-width refresh sky. Keep mini/image targets compact, preserve real fractional progress as a linear bar, and use still feedback for Reduce Motion/VoiceOver. Rechecks with cached content should use an existing action/status slot rather than inserting a new row that shifts the form. See [loading behavior](../LOADING_FEEDBACK.md).
+
 ### Language previews
 
 Review English and Arabic at the same explicit standard Dynamic Type size first. `--standard-type` selects the normal `.large` baseline in DEBUG review fixtures; ordinary app launches still follow the user's system setting. Keep `--large-type` (`accessibility3`) captures separately labeled as accessibility stress tests. Do not present an enlarged Arabic capture as the default language design or shrink Arabic alone to compensate for a mismatched review setting. The default sign-in controls should have matching target heights and readable, unclipped labels in both languages; keep the larger accessibility check as a separate case.

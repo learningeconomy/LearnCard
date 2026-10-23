@@ -56,6 +56,7 @@ struct LearnCardNativeApp: App {
             Group {
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("--keychain-probe") { KeychainProbeView() }
+                else if ProcessInfo.processInfo.arguments.contains("--demo"), ProcessInfo.processInfo.arguments.contains("--loading-gallery") { LoadingReviewView() }
                 else if ProcessInfo.processInfo.arguments.contains("--demo"), ProcessInfo.processInfo.arguments.contains("--sky-gallery") { SkyRefreshReviewView() }
                 else if let index = ProcessInfo.processInfo.arguments.firstIndex(of: "--motion-review"), ProcessInfo.processInfo.arguments.indices.contains(index + 1),
                         let mode = AccountMotionMode(rawValue: ProcessInfo.processInfo.arguments[index + 1]) { AccountMotionReviewView(mode: mode) }
@@ -68,6 +69,7 @@ struct LearnCardNativeApp: App {
                 .modifier(NativeReviewPreferences())
                 #endif
                 .tint(Palette.selection)
+                .progressViewStyle(BrandProgressStyle())
                 .environment(\.locale, (NativeLanguage(rawValue: language) ?? .system).locale)
                 .environment(\.layoutDirection, (NativeLanguage(rawValue: language) ?? .system).isRightToLeft ? .rightToLeft : .leftToRight)
                 .preferredColorScheme(ProcessInfo.processInfo.arguments.contains("--preview-dark") ? .dark : nil)

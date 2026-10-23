@@ -1,4 +1,10 @@
-# Native experiment handoff — 2026-10-20
+# Native experiment handoff — 2026-10-23
+
+**Loading feedback refined:** the sky now fades into the actual exposed gap above scroll content, keeping the Home/Passport heading clear during reveal and collapse. A shared small three-color wave replaces indeterminate spinners, with contextual labels beside it; actual fractional progress stays a linear bar. Career rechecks reuse the search action slot and duplicate search feedback is removed. [Behavior and actual native clip/captures](LOADING_FEEDBACK.md).
+
+Validation: **239 Swift** cases pass; **nine distinct focused UI cases** pass across the scoped runs. The final latest-runtime repeat is **6/6** on iOS 27.1 Duo; compact iOS 18.1 has five distinct passing cases, including its corrected **3/3** refresh repeat. The test helper now accepts visible, settled headings at compact positions instead of assuming `y > 100`. Normal Debug installs **48/48**, private configuration/build **3** preserved. The prior Lab simulator is absent after the Xcode update; the new Lab is fresh and needs sign-in. Both owned checks devices are shut down. [Exact evidence, intermediate failures and limits](TESTING.md#loading-feedback--october-23-2026). No fresh runtime/full UI/Release/hosted CI or live-account review is claimed.
+
+The learner skills/Journeys queue remains as below. Bespoke loader placement can be refined as manual testing supplies concrete examples.
 
 **Career exploration implemented:** Apps → Keep learning → Explore careers now offers explicit search, occupation details/skills/work activities, on-demand U.S. training programs, supplied school websites and editable Add to my goals review. Existing drawn artwork, flat panels and heading rays remain. Existing account age/privacy choices are checked before each provider request; only search words or a returned occupation title are sent. [Behavior and provider limits](CAREER_EXPLORATION.md); [actual native fixture captures](design/LEARNER_SKILLS_BRIEF.md#implemented-career-exploration--october-20-2026).
 

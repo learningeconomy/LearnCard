@@ -26,7 +26,7 @@ import XCTest
             let y = title.frame.minY
             stable = abs(y - previous) < 0.5 ? stable + 1 : 0
             previous = y
-            return stable >= 2 && y > 100
+            return stable >= 2 && title.exists && title.isHittable && title.frame.height > 0
         }, object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 5), .completed)
         return title.frame.minY
