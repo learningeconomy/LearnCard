@@ -53,6 +53,31 @@ flowchart LR
 4. User reviews the credential details
 5. User accepts and saves to their wallet
 
+### Email Claims Requiring Guardian Approval
+
+An email claim can show **Waiting for guardian approval** when a parent or guardian
+must approve a credential. After approval, choose **Check Again** using the same
+claim link. The app starts a fresh check; you do not need another issuance.
+
+If a batch includes credentials ready to accept, save those first. The waiting
+summary remains available for the others. A declined credential shows a separate
+message; an expired or unavailable claim keeps its existing error state.
+
+Account approval is separate from credential approval. If your account also needs
+approval, **Request Account Approval** opens the existing consent form. Sending
+that request does not approve the account or any credential.
+
+```mermaid
+flowchart LR
+    A[Open email claim link] --> B{Guardian decision}
+    B -->|Waiting| C[Waiting for guardian approval]
+    C --> D[Guardian approves]
+    D --> E[Check Again with same link]
+    E --> F[Accept and save]
+    B -->|Approved or not required| F
+    B -->|Declined| G[Declined message]
+```
+
 ### Receiving Credentials from a Website
 
 For a browser credential offer, choose LearnCard in the website’s account chooser. The **Add to Passport** page lists every offered credential; expand **Details** to inspect one before choosing **Save to Passport** or **Cancel**. Saving disables the action buttons until it finishes. If part of a batch fails, **Try Again** continues without adding completed items again. Exact retries reuse the saved signed credential; a different revision is saved separately even if the issuer keeps the same credential ID. An unsupported offer or a failed exchange shows a visible error instead of leaving **Accepting…** on screen. Cancel remains available while the website’s request is loading. If you switch accounts, return to the issuing website and start a new request. If the credentials are saved but the website cannot be notified, the page tells you; retrying that notification is not offered. A failed cancellation also tells you to return to the website, without offering a retry on the used request. Cancelling after a partial save keeps the credentials already saved and shows their count. Start a new offer on the issuing website if the request has expired.
