@@ -335,7 +335,9 @@ const prepareEncryptedRevision = async (
             ...(hasCredentialCategories
                 ? { lcCredentialCategories: options.credentialCategories }
                 : {}),
-        } as UnsignedVP,
+        } satisfies UnsignedVP & {
+            lcCredentialCategories?: readonly (string | null)[];
+        },
         { proofPurpose: 'authentication' }
     );
     const payload = buildShareManifest({

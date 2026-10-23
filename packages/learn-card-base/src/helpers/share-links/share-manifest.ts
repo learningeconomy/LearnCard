@@ -11,6 +11,9 @@ import {
     type ShareSelectionEntry,
     type ShareSharer,
 } from '@learncard/types';
+import { BoostCategoryOptionsEnum } from '../../types/boostCategories';
+
+const SHARE_CREDENTIAL_CATEGORY_VALUES: readonly string[] = Object.values(BoostCategoryOptionsEnum);
 
 /**
  * Recipient-manifest construction and structural validation.
@@ -33,7 +36,7 @@ export const SHARE_CREDENTIAL_CATEGORIES_CONTEXT = {
 
 /**
  * Read optional category hints without making legacy or malformed shares
- * unreadable. Entries align with the VP's credential array; null requests inference.
+ * unreadable. Entries align with the VP's credential array; null or unknown categories request inference.
  */
 export const getShareCredentialCategories = (
     presentation: ShareManifestPresentation
@@ -60,7 +63,9 @@ export const getShareCredentialCategories = (
     ) {
         return undefined;
     }
-    return metadata as (string | null)[];
+    return metadata.map(value =>
+        typeof value === 'string' && SHARE_CREDENTIAL_CATEGORY_VALUES.includes(value) ? value : null
+    );
 };
 
 export interface BuildShareManifestInput {

@@ -324,6 +324,7 @@ export const ShareLinkCreate = ({
         try {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
+            // Preserve missing snapshots as null so recipients can infer categories for legacy credentials.
             const credentialCategories = selected.map(
                 uri => choices.find(choice => choice.uri === uri)?.category || null
             );

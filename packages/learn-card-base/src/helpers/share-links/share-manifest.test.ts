@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { encodeBase64Url } from '@learncard/types';
+import { encodeBase64Url, type VC } from '@learncard/types';
 
 import {
     SHARE_CREDENTIAL_CATEGORIES_CONTEXT,
@@ -39,7 +39,7 @@ const endorsementVc = (id: string, targetId: string) => ({
     credentialSubject: { id: targetId },
 });
 
-const presentation = (credentials: unknown[]) => ({
+const presentation = (credentials: VC[]) => ({
     '@context': ['https://www.w3.org/2018/credentials/v1'],
     type: 'VerifiablePresentation',
     holder: 'did:web:holder.example',
@@ -243,6 +243,25 @@ describe('recipient manifest construction and validation', () => {
             input.presentation.verifiableCredential
         );
     });
+
+    it.each(['Unknown category', 'Verified by University', 'constructor', 'toString', '__proto__'])(
+        'falls back to inference for unrecognized category %s without losing valid hints',
+        category => {
+            const input = baseInput();
+            const metadata = deepFreeze(['Achievement', category, null]);
+            const manifest = buildShareManifest({
+                ...input,
+                presentation: { ...input.presentation, lcCredentialCategories: metadata },
+            });
+
+            expect(getShareCredentialCategories(manifest.presentation)).toEqual([
+                'Achievement',
+                null,
+                null,
+            ]);
+            expect(manifest.presentation.lcCredentialCategories).toEqual(metadata);
+        }
+    );
 
     it('ignores malformed optional categories without rejecting legacy or readable shares', () => {
         const legacy = buildShareManifest(baseInput());
