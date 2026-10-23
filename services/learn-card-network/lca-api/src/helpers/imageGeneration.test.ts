@@ -301,6 +301,25 @@ describe('image adapter', () => {
         });
         expect(send).toHaveBeenCalledOnce();
     });
+    it('gives the upload only the time left in the request budget', async () => {
+        vi.useFakeTimers();
+        try {
+            send.mockImplementation(
+                () => new Promise(resolve => setTimeout(() => resolve({ body: payload() }), 20_000))
+            );
+            const pending = generateStoredImage('badge', 'did', budget, undefined, storage);
+            await vi.advanceTimersByTimeAsync(20_000);
+            await expect(pending).resolves.toEqual({ url: 'https://stored/image' });
+            // 20 s of the 25 s budget went to Bedrock, so storage gets the remaining 5 s.
+            expect(storage.upload).toHaveBeenCalledWith(
+                png,
+                { timeout: 5_000 },
+                { filename: 'generated-image.png' }
+            );
+        } finally {
+            vi.useRealTimers();
+        }
+    });
     it('retries throttling with jitter inside the deadline, then succeeds', async () => {
         vi.spyOn(Math, 'random').mockReturnValue(0);
         send.mockRejectedValueOnce(awsError('ThrottlingException', 429))

@@ -351,9 +351,12 @@ export const generateStoredImage = async (
                 const bytes = decodeBedrockImage(response.body, diagnostics);
                 if (controller.signal.aborted) throw failure();
                 diagnostics.stage = 'storage';
+                // The upload isn't tied to the abort signal, so cap it at the remaining budget
+                // rather than a fresh IMAGE_TIMEOUT_MS that would outlive the request.
+                const uploadTimeoutMs = Math.max(1000, deadline - Date.now());
                 stored = await storage.upload(
                     bytes,
-                    { timeout: config.IMAGE_TIMEOUT_MS },
+                    { timeout: uploadTimeoutMs },
                     { filename: 'generated-image.png' }
                 );
             } finally {
