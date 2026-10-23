@@ -445,6 +445,42 @@ export type RecordProvisioningTransactionalDeclaration = z.infer<
     typeof RecordProvisioningTransactionalDeclarationValidator
 >;
 
+/**
+ * Built-in Open Badges 3.0 achievement. Template slots map onto declared record fields, so
+ * the template never reads undeclared data. Further template kinds join the union below.
+ */
+export const Obv3AchievementTemplateValidator = z
+    .object({
+        kind: z.literal('obv3-achievement'),
+        achievementType: z.string().min(1).max(100).optional(),
+        criteria: z.string().min(1).max(2000),
+        fieldMap: z
+            .object({
+                achievementId: RecordFieldNameValidator,
+                name: RecordFieldNameValidator,
+                completedAt: RecordFieldNameValidator.optional(),
+            })
+            .strict(),
+    })
+    .strict();
+
+/** Pluggable credential templates for Platform Issuance; one member per template kind. */
+export const PlatformCredentialTemplateValidator = z.discriminatedUnion('kind', [
+    Obv3AchievementTemplateValidator,
+]);
+export type PlatformCredentialTemplate = z.infer<typeof PlatformCredentialTemplateValidator>;
+
+/** Platform Issuance for a record lane: the pinned issuer (ADR-001 identity Group) and template. */
+export const RecordIssuanceDeclarationValidator = z
+    .object({
+        issuerGroupId: z.string().min(1).max(200),
+        /** Pins the Group's identity at approval; a replaced identity cannot issue under it. */
+        issuerIdentityProfileId: z.string().min(1).max(200),
+        template: PlatformCredentialTemplateValidator,
+    })
+    .strict();
+export type RecordIssuanceDeclaration = z.infer<typeof RecordIssuanceDeclarationValidator>;
+
 /** ADR-013 §3.1 capabilityMetadata for `record-provisioning`. ETL declarations are not yet defined. */
 export const RecordProvisioningBindingMetadataValidator = z
     .object({
@@ -458,9 +494,23 @@ export const RecordProvisioningBindingMetadataValidator = z
             'attested-match-confirmed',
         ]),
         transactional: RecordProvisioningTransactionalDeclarationValidator.optional(),
+        issuance: RecordIssuanceDeclarationValidator.optional(),
     })
     .strict()
     .superRefine((metadata, ctx) => {
+        const mapped = metadata.issuance ? Object.values(metadata.issuance.template.fieldMap) : [];
+        // Templates read declared fields only, so issuance needs a field declaration.
+        if (
+            metadata.issuance &&
+            (!metadata.transactional ||
+                mapped.some(field => !metadata.transactional?.fields.includes(field)))
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['issuance', 'template', 'fieldMap'],
+                message: 'Template slots must map to declared fields.',
+            });
+        }
         // ADR-012 §3.2: the per-mode declaration is required, and only for its own mode.
         if ((metadata.mode === 'TRANSACTIONAL') !== Boolean(metadata.transactional)) {
             ctx.addIssue({

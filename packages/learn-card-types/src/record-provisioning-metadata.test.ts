@@ -44,4 +44,53 @@ describe('RecordProvisioningBindingMetadataValidator', () => {
             );
         }
     });
+
+    it('rejects template slots mapped to undeclared fields', () => {
+        const issuance = {
+            issuerGroupId: 'group-1',
+            issuerIdentityProfileId: 'issuer-1',
+            template: {
+                kind: 'obv3-achievement' as const,
+                criteria: 'Completed the course.',
+                fieldMap: { achievementId: 'courseId', name: 'courseTitle' },
+            },
+        };
+        expect(
+            RecordProvisioningBindingMetadataValidator.safeParse({
+                ...base,
+                mode: 'TRANSACTIONAL',
+                transactional,
+                issuance,
+            }).success
+        ).toBe(false);
+        expect(
+            RecordProvisioningBindingMetadataValidator.safeParse({
+                ...base,
+                mode: 'TRANSACTIONAL',
+                transactional: {
+                    ...transactional,
+                    fields: [...transactional.fields, 'courseTitle'],
+                },
+                issuance,
+            }).success
+        ).toBe(true);
+    });
+
+    it('rejects issuance without a field declaration', () => {
+        expect(
+            RecordProvisioningBindingMetadataValidator.safeParse({
+                ...base,
+                mode: 'ETL',
+                issuance: {
+                    issuerGroupId: 'group-1',
+                    issuerIdentityProfileId: 'issuer-1',
+                    template: {
+                        kind: 'obv3-achievement',
+                        criteria: 'Completed.',
+                        fieldMap: { achievementId: 'courseId', name: 'courseTitle' },
+                    },
+                },
+            }).success
+        ).toBe(false);
+    });
 });
