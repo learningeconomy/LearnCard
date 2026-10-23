@@ -79,9 +79,9 @@ and confirm the result refreshes after the write.
 
 The [staging comparison](https://github.com/learningeconomy/LearnCard/pull/1633#issuecomment-6369088089)
 contains the live observations, retry timings and limitations. Raw HARs contain
-private account/request data and are not committed. The earlier audit is in
-[`LC-2233.md`](LC-2233.md); its October 21 full-suite/build evidence belongs to
-the older head named there, not automatically to a later commit.
+private account/request data and are not committed. The [earlier audit](https://github.com/learningeconomy/LearnCard/pull/1633#issuecomment-6321742858)
+records October 21 full-suite/build evidence for the older head named there,
+not automatically for a later commit.
 
 ## Registry trust boundary
 
