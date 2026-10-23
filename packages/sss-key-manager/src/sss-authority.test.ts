@@ -586,6 +586,35 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
         expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
     });
+    it('treats a successful recovered clear-PIN enrollment as satisfying the repair', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!(f.params);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
+        const intents = f.intents.length;
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, clearPin: true },
+            })
+        ).resolves.toMatchObject({ enrolled: true, changed: false });
+        expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
+        expect(f.intents).toHaveLength(intents);
+    });
     it('binds recovery contact into the enrollment intent after identity recovery', async () => {
         const f = await setup();
         const hold = await f.strategy.startEscrowRecovery!({

@@ -1498,6 +1498,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 current.shareVersion === status.shareVersion &&
                 current.envelope?.keyId === verifiedKey.keyId;
             if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
+            // A verified, current, PIN-free enrollment already satisfies a clear request
+            // (e.g. post-recovery repair after direct enrollment succeeded).
+            if (
+                currentlyEnrolled &&
+                !forceRotate &&
+                pin === undefined &&
+                !current.hasPin &&
+                !status.escrowStale
+            )
+                clearPinForEnrollment = false;
         }
         // A confirmed enrollment whose sealed blob no longer matches the active
         // enclave (P6 mode migration/rollback, or a rotated enclave key) still
