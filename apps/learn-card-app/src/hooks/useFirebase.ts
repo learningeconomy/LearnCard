@@ -87,6 +87,11 @@ const getAuthErrorDetails = (error: unknown): AuthErrorDetails => {
     };
 };
 
+const getClassifiableAuthError = (error: unknown): string | undefined => {
+    const { code, message } = getAuthErrorDetails(error);
+    return [code, message].filter(Boolean).join(' ') || undefined;
+};
+
 const getSocialLoginCancellationReason = (
     error: unknown,
     authSurface: SocialLoginAuthSurface,
@@ -527,7 +532,7 @@ export const useFirebase = () => {
                 const errorCode = getErrorCode(error);
 
                 emitAuthError('auth:login_error', `SMS send failed: ${errorCode}`, error);
-                errorCallback(errorCode ?? getAuthErrorDetails(error).message);
+                errorCallback(getClassifiableAuthError(error));
 
                 log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
             });
@@ -546,6 +551,7 @@ export const useFirebase = () => {
         } catch (error) {
             log.info('googleLogin::verifySmsAuthCodeOnNative::web::error', error);
             errorCallback(getAuthErrorDetails(error).message);
+            return;
         }
 
         if (!user) {
@@ -585,7 +591,7 @@ export const useFirebase = () => {
         } catch (error) {
             const errorCode = getErrorCode(error);
 
-            errorCallback(errorCode ?? getAuthErrorDetails(error).message);
+            errorCallback(getClassifiableAuthError(error));
 
             log.error(`firebase auth failed (${errorCode ?? 'unknown'})`, error);
 

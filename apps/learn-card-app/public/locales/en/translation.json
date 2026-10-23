@@ -1128,7 +1128,8 @@
                 "error": "Unable to verify code. Please try again."
             },
             "error": {
-                "invalidEmail": "Missing or Invalid Email"
+                "invalidEmail": "Missing or Invalid Email",
+                "sendFailed": "Unable to send code. Please try again."
             },
             "label": "Email"
         },
@@ -1168,7 +1169,14 @@
             "button": "Sign in with SMS",
             "smsSent": "A verification code has been sent",
             "error": {
-                "invalidPhone": "Phone is required!"
+                "invalidPhone": "Phone is required!",
+                "invalidPhoneNumber": "Please enter a valid phone number.",
+                "invalidCode": "Invalid or expired code.",
+                "tooManyAttempts": "Too many attempts. Please resend code.",
+                "tooManyRequests": "Too many attempts from this phone number. For your security, please wait 10–15 minutes before trying again, or sign in with email instead.",
+                "quotaExceeded": "We can't send a text message right now. Please try again later or sign in with email.",
+                "network": "Connection issue. Please check your internet and try again.",
+                "generic": "Something went wrong. Please try again."
             }
         },
         "qrApproved": {

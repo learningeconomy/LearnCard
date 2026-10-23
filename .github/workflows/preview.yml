@@ -62,13 +62,14 @@ jobs:
                       const event = context.eventName;
 
                       if (event === 'workflow_dispatch') {
-                          // Manual trigger
-                          prNumber = String(context.payload.inputs.pr_number);
+                          // Manual trigger. Use the fetched PR's number from here
+                          // on so downstream jobs see the canonical value, not the raw input.
                           const { data: pr } = await github.rest.pulls.get({
                               owner: context.repo.owner,
                               repo: context.repo.repo,
-                              pull_number: parseInt(prNumber),
+                              pull_number: parseInt(String(context.payload.inputs.pr_number), 10),
                           });
+                          prNumber = String(pr.number);
                           branch = pr.head.ref;
                           headSha = pr.head.sha;
                           headRepo = pr.head.repo?.full_name;
@@ -234,6 +235,7 @@ jobs:
               env:
                   PR_NUMBER: ${{ needs.should-deploy.outputs.pr_number }}
                   BRANCH: ${{ needs.should-deploy.outputs.branch }}
+                  HEAD_SHA: ${{ needs.should-deploy.outputs.head_sha }}
                   BASE_DOMAIN: ${{ env.PREVIEW_BASE_DOMAIN }}
                   DOZZLE_USERNAME: ${{ secrets.DOZZLE_USERNAME }}
                   DOZZLE_PASSWORD: ${{ secrets.DOZZLE_PASSWORD }}
@@ -247,7 +249,7 @@ jobs:
                   key: ${{ secrets.PREVIEW_EC2_SSH_KEY }}
                   script_stop: true
                   command_timeout: 25m
-                  envs: PR_NUMBER,BRANCH,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,API_SEED
+                  envs: PR_NUMBER,BRANCH,HEAD_SHA,BASE_DOMAIN,DOZZLE_USERNAME,DOZZLE_PASSWORD,BRAIN_SEED,CLOUD_SEED,API_SEED
                   script: |
                       cd ~/preview-workspace/LearnCard
 
@@ -260,16 +262,18 @@ jobs:
                           echo "::error::Invalid branch name: $BRANCH"
                           exit 1
                       fi
+                      if ! echo "$HEAD_SHA" | grep -qE '^[0-9a-f]{40}$'; then
+                          echo "::error::Invalid head SHA: $HEAD_SHA"
+                          exit 1
+                      fi
 
-                      # Update repo to PR branch BEFORE running the deploy script.
-                      # This ensures bash loads the current version of the script,
-                      # avoiding stale code from the previous deploy's checkout.
-                      # Reset first to clear any dirty working tree (e.g. from manual SSH fixes)
-                      # that would cause git pull to silently fail.
-                      git fetch origin "$BRANCH"
+                      # Check out the exact commit the gate looked up BEFORE running the
+                      # deploy script, so bash loads that commit's version of the script
+                      # and a push that lands mid-run doesn't change what gets deployed.
+                      # Reset first to clear any dirty working tree (e.g. from manual SSH fixes).
+                      git fetch origin "$HEAD_SHA"
                       git reset --hard HEAD
-                      git checkout "$BRANCH" 2>/dev/null || git checkout "origin/$BRANCH" --detach
-                      git reset --hard "origin/$BRANCH"
+                      git checkout --detach "$HEAD_SHA"
 
                       chmod +x preview/scripts/*.sh
 
@@ -277,7 +281,8 @@ jobs:
                       preview/scripts/deploy-preview.sh \
                           "$PR_NUMBER" \
                           "$BRANCH" \
-                          "$BASE_DOMAIN"
+                          "$BASE_DOMAIN" \
+                          "$HEAD_SHA"
 
             - name: Read preview URL
               id: preview-url
