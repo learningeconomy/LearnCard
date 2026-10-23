@@ -103,3 +103,23 @@ describe('credential refresh configuration', () => {
         }
     );
 });
+
+describe('integration health probe configuration', () => {
+    it('refuses plain localhost probes in production', () => {
+        expect(() =>
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'production',
+                DOMAIN_NAME: 'network.example.com',
+                INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: 'true',
+            })
+        ).toThrow(/INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP/);
+        expect(
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'development',
+                INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: 'true',
+            }).INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP
+        ).toBe(true);
+    });
+});

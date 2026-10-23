@@ -71,6 +71,11 @@ export const integrationConfigValid = (
     }
 };
 
+/** Plain-HTTP localhost probes: always in tests; in development only behind an explicit flag. */
+const localhostHttpProbesAllowed = (): boolean =>
+    environment.NODE_ENV === 'test' ||
+    (environment.NODE_ENV === 'development' && environment.INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP);
+
 export const integrationHealthUrlAllowed = (value: string): boolean => {
     try {
         const url = new URL(value);
@@ -85,7 +90,7 @@ export const integrationHealthUrlAllowed = (value: string): boolean => {
             !url.password &&
             !url.hash &&
             (url.protocol === 'https:' ||
-                (environment.NODE_ENV === 'test' &&
+                (localhostHttpProbesAllowed() &&
                     url.protocol === 'http:' &&
                     url.hostname === 'localhost'))
         );

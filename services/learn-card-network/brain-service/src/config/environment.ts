@@ -32,6 +32,8 @@ export const brainServiceEnvironmentShape = {
     WORKLOAD_CURATOR_DIDS: optionalEnvironmentString,
     WORKLOAD_AGENT_TOKEN: optionalEnvironmentString,
     WORKLOAD_LOCAL_COMPOSE_ENABLED: optionalEnvironmentBoolean.default(false),
+    /** Dev-only: lets integration health probes reach plain http://localhost. Refused in production. */
+    INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: optionalEnvironmentBoolean.default(false),
     SKILL_FRAMEWORK_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID: optionalEnvironmentString,
     TRUSTED_BRAIN_SERVICES: optionalEnvironmentString,
@@ -127,6 +129,16 @@ export const brainServiceEnvironmentSchema = z
         CLIENT_APP_PORT: environment.CLIENT_APP_PORT ?? 3000,
     }))
     .superRefine((environment, context) => {
+        if (
+            environment.NODE_ENV === 'production' &&
+            environment.INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP
+        ) {
+            context.addIssue({
+                code: 'custom',
+                path: ['INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP'],
+                message: 'Must not be enabled in production',
+            });
+        }
         if (environment.WORKLOAD_LOCAL_COMPOSE_ENABLED && !environment.WORKLOAD_AGENT_TOKEN) {
             context.addIssue({
                 code: 'custom',

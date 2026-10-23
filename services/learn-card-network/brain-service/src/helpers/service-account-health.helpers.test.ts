@@ -10,6 +10,7 @@ import {
     probeIntegrationHealth,
 } from './service-account-health.helpers';
 import { signServiceAccountProbe, verifyServiceAccountToken } from './service-account-auth.helpers';
+import { environment } from '../config/environment';
 const account = {
     id: 'sa',
     installId: 'install',
@@ -51,6 +52,29 @@ describe('authenticated health helper', () => {
             expect(integrationHealthUrlAllowed(value)).toBe(false);
         expect(integrationHealthUrlAllowed('https://example.com/health')).toBe(true);
         expect(integrationHealthUrlAllowed('http://localhost:1234')).toBe(true);
+    });
+    it('allows plain localhost probes outside tests only behind the development flag', () => {
+        const original = {
+            NODE_ENV: environment.NODE_ENV,
+            flag: environment.INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP,
+        };
+        try {
+            Object.assign(environment, {
+                NODE_ENV: 'development',
+                INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: false,
+            });
+            expect(integrationHealthUrlAllowed('http://localhost:4321/health')).toBe(false);
+            Object.assign(environment, { INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: true });
+            expect(integrationHealthUrlAllowed('http://localhost:4321/health')).toBe(true);
+            expect(integrationHealthUrlAllowed('http://example.com/health')).toBe(false);
+            Object.assign(environment, { NODE_ENV: 'production' });
+            expect(integrationHealthUrlAllowed('http://localhost:4321/health')).toBe(false);
+        } finally {
+            Object.assign(environment, {
+                NODE_ENV: original.NODE_ENV,
+                INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP: original.flag,
+            });
+        }
     });
     it('requires challenge response, refuses redirects and bounds time', async () => {
         const fetchMock = vi
