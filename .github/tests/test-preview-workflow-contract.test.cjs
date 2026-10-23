@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
@@ -117,6 +118,17 @@ const commentEvent = {
         assert.equal(refused.outputs.deploy, undefined);
     }
 
+    // Dispatch uses the fetched PR's number downstream, not the raw input.
+    const dispatch = await runTrigger({
+        eventName: 'workflow_dispatch',
+        payload: { inputs: { pr_number: '042' } },
+        pr: { number: 42, head: head('learningeconomy/LearnCard') },
+    });
+    assert.deepEqual(dispatch.failures, []);
+    assert.equal(dispatch.outputs.deploy, 'true');
+    assert.equal(dispatch.outputs.pr_number, '42');
+    assert.equal(dispatch.outputs.head_sha, 'a'.repeat(40));
+
     const dispatchFork = await runTrigger({
         eventName: 'workflow_dispatch',
         payload: { inputs: { pr_number: '42' } },
@@ -161,6 +173,22 @@ const commentEvent = {
     // E2E checks out the exact head the gate looked up.
     const checkout = e2e.steps.find(s => s.uses?.startsWith('actions/checkout'));
     assert.equal(checkout.with.ref, '${{ needs.should-deploy.outputs.head_sha }}');
+
+    // The EC2 deploy is pinned to the commit the gate looked up.
+    const ec2 = deploy.steps.find(s => s.name === 'Deploy preview on EC2');
+    assert.equal(ec2.env.HEAD_SHA, '${{ needs.should-deploy.outputs.head_sha }}');
+    assert.ok(ec2.with.envs.split(',').includes('HEAD_SHA'), 'HEAD_SHA must be forwarded over SSH');
+    assert.match(ec2.with.script, /\^\[0-9a-f\]\{40\}\$/, 'HEAD_SHA must be validated');
+    assert.match(ec2.with.script, /git checkout --detach "\$HEAD_SHA"/);
+    assert.doesNotMatch(ec2.with.script, /origin\/\$BRANCH/, 'EC2 step must not deploy the branch tip');
+    assert.match(ec2.with.script, /deploy-preview\.sh[\s\\]+"\$PR_NUMBER"[\s\\]+"\$BRANCH"[\s\\]+"\$BASE_DOMAIN"[\s\\]+"\$HEAD_SHA"/);
+
+    // deploy-preview.sh checks out the SHA it's given instead of the branch tip.
+    const deployScript = fs.readFileSync(path.join(root, 'preview/scripts/deploy-preview.sh'), 'utf8');
+    assert.match(deployScript, /HEAD_SHA="\$\{4:-/);
+    assert.match(deployScript, /\^\[0-9a-f\]\{40\}\$/);
+    assert.match(deployScript, /git fetch origin "\$HEAD_SHA"/);
+    assert.match(deployScript, /git checkout --detach "\$HEAD_SHA"/);
 
     console.log('preview workflow contract passed');
 })().catch(error => {
