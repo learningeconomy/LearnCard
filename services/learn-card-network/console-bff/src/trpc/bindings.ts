@@ -13,7 +13,10 @@ import { authorizedCall, type BrainServiceTransport } from '../brain';
 import type { KeyManagementService, ManagedKeyRef } from '@kms';
 import { router, protectedProcedure, type ConsoleContext } from './trpc';
 import { toWorkloadDeploymentTarget, type EcosystemInstallTarget } from './workload-target';
-import { BindingConsentPreflightValidator } from '@learncard/types';
+import {
+    BindingCapabilityMetadataValidator,
+    BindingConsentPreflightValidator,
+} from '@learncard/types';
 
 type AuthedContext = Omit<ConsoleContext, 'session'> & {
     session: NonNullable<ConsoleContext['session']>;
@@ -130,6 +133,8 @@ export const bindingsRouter = router({
                 capability: z.string().min(1),
                 provider: EndpointInput,
                 consumer: EndpointInput,
+                // ADR-013 §3.1: record lanes carry their declaration; brain validates it.
+                capabilityMetadata: BindingCapabilityMetadataValidator.optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
