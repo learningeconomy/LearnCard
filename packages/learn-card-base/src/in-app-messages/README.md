@@ -23,6 +23,17 @@ The host is already mounted in both apps (`FullApp.tsx`), so **you don't write a
 just author the flag value in LaunchDarkly. Create a client-readable JSON flag named **`inAppMessagesV2`** and paste
 a value like:
 
+Keep `inAppMessages` compatible with older released clients: platform, role, and version targeting
+only, with no triggers or credential predicates. Publish credential-targeted and triggered messages
+under `inAppMessagesV2`. A numeric payload version does not protect old clients: they do not skip
+unknown versions. Move any such development campaigns to V2 before rollout.
+
+New clients use only V2 when it is present. Copy any legacy campaigns needed by new clients to V2,
+preserving their IDs. If V2 is absent, new clients fall back to legacy-compatible messages from
+`inAppMessages`; an explicitly empty, disabled, or malformed V2 value does not reactivate that feed.
+New rules placed in the legacy feed are rejected with a debug diagnostic. This client change does
+not edit live LaunchDarkly configuration.
+
 ```json
 {
     "version": 1,
@@ -265,7 +276,8 @@ Certified Boost wrappers are unwrapped before matching. Age uses `validFrom`, fa
 ### Triggers and blocking fatigue
 
 Messages may add `trigger: { event, where?, windowMinutes? }`, where `event` is
-`credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored;
+`credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored
+and any consent-flow acceptance succeeds;
 `where` evaluates against that claimed credential's local summary. Events remain in memory for 30
 minutes (at most 50 events) and are never persisted. The trigger window defaults to 10 minutes.
 Facts are saved before emitting the claim event, but this bookkeeping runs in the background so
@@ -280,6 +292,8 @@ The flag may add `settings: { maxBlockingPerSession, blockingCooldownHours }` (d
 Limits are recorded only when a real message presents, never while waiting for the gate or during
 a forced preview. The visible message stays mounted after consuming its own impression/cap.
 Resetting seen state also resets fatigue. Session counts and persisted cooldowns are account-scoped.
+Invalid settings fall back to those defaults and appear as a
+`settings` error in the debug report; valid messages still render.
 
 ### Credential-facts privacy and lifecycle
 
@@ -732,3 +746,7 @@ even after a successful ready handshake. Errors expose Close immediately. The em
 invoke this escape through bridge close/dismiss events. If another feature removes a campaign's
 modal stack, dismissible campaigns release the host after exit cleanup without a user-dismissal
 analytics event; required campaigns restore the same content and in-flight action state.
+
+Staged consent-flow index entries are excluded from credential-fact backfill until acceptance is
+final. Failed, revoked, or suspended acceptance cannot emit a claim event or count a provisional
+credential as owned. Successful acceptance updates facts before emitting the claim event.

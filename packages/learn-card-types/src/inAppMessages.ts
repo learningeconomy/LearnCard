@@ -450,7 +450,7 @@ const inAppMessagesFlagEnvelopeValidator = z
     .object({
         version: z.number().default(1),
         messages: z.array(z.unknown()).default([]),
-        settings: inAppMessageSettingsValidator,
+        settings: z.unknown().optional(),
     })
     .passthrough();
 
@@ -466,6 +466,12 @@ export const parseInAppMessagesFlagWithErrors = (raw: unknown): ParsedInAppMessa
 
     const messages: InAppMessage[] = [];
     const invalid: InvalidInAppMessage[] = [];
+    const settings = inAppMessageSettingsValidator.safeParse(envelope.data.settings);
+    if (!settings.success) {
+        invalid.push({
+            error: `settings: ${settings.error.issues[0]?.message ?? 'Invalid settings'}`,
+        });
+    }
 
     envelope.data.messages.forEach(rawMessage => {
         const result = inAppMessageValidator.safeParse(rawMessage);
@@ -494,6 +500,7 @@ export const parseInAppMessagesFlagWithErrors = (raw: unknown): ParsedInAppMessa
     return {
         flag: {
             ...envelope.data,
+            settings: settings.success ? settings.data : EMPTY_IN_APP_MESSAGES_FLAG.settings,
             messages,
         },
         invalid,
