@@ -13,7 +13,7 @@ const slash = value => value.replaceAll('\\', '/');
 const within = file => !isAbsolute(file) && file !== '..' && !file.startsWith('../');
 const normalizeMessage = (message, root) => slash(message).replaceAll(slash(root), '<repo>');
 
-export const parseDiagnostic = (text, root) => {
+export const parseDiagnostic = (text, root, cwd = root) => {
     const located = /^(.*?)\((\d+),(\d+)\): error (TS\d+): (.*)$/.exec(text);
     const plain = /^error (TS\d+): (.*)$/.exec(text);
     if (!located && !plain)
@@ -25,7 +25,7 @@ export const parseDiagnostic = (text, root) => {
             message: normalizeMessage(text, root),
         };
     return {
-        file: located ? slash(relative(root, resolve(root, located[1]))) : null,
+        file: located ? slash(relative(root, resolve(cwd, located[1]))) : null,
         line: located ? Number(located[2]) : null,
         column: located ? Number(located[3]) : null,
         code: located?.[4] ?? plain[1],
@@ -45,8 +45,8 @@ export const createDiagnosticReport = (results, baseline, root) => {
             ...result,
             allowance: baseline[result.name] ?? 0,
             raised: !result.incomplete && result.count > (baseline[result.name] ?? 0),
-            diagnostics: result.errors.map(error => {
-                const diagnostic = parseDiagnostic(error, root);
+            diagnostics: result.errors.map((error, index) => {
+                const diagnostic = parseDiagnostic(error, root, result.errorCwds?.[index] ?? root);
                 if (diagnostic.file && within(diagnostic.file)) {
                     if (!files.has(diagnostic.file)) {
                         try {

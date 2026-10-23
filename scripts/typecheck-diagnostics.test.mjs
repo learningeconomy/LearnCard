@@ -15,10 +15,11 @@ import test from 'node:test';
 import {
     addedDiagnostics,
     compareReports,
+    createDiagnosticReport,
     formatComparison,
     parseDiagnostic,
 } from './typecheck-diagnostics.mjs';
-import { verdict } from './typecheck-ratchet.mjs';
+import { checkProject, verdict } from './typecheck-ratchet.mjs';
 
 const diagnostic = (line, message = 'Old problem', sourceLine) => ({
     file: 'src/a.ts',
@@ -253,4 +254,131 @@ test('an incomplete head is explained even though it has no valid count to compa
     assert.match(formatted.markdown, /Head typecheck did not finish/);
     assert.match(formatted.markdown, /not completed/);
     assert.deepEqual(formatted.annotations, []);
+});
+
+test('project-local commands resolve diagnostics against their check cwd, preserving repository source annotations', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'typecheck-project-cwd-'));
+    try {
+        const project = join(root, 'services/example');
+        mkdirSync(join(project, 'src'), { recursive: true });
+        const statement = 'const added: boolean = 42;';
+        writeFileSync(join(project, 'src/a.ts'), statement);
+        writeFileSync(
+            join(project, 'tsconfig.json'),
+            JSON.stringify({
+                compilerOptions: { strict: true, types: [], skipLibCheck: true },
+                include: ['src'],
+            })
+        );
+        const compiler = resolve('node_modules/typescript/bin/tsc');
+        const local = await checkProject({
+            name: 'example',
+            checks: [
+                {
+                    cmd: process.execPath,
+                    args: [compiler, '--noEmit', '-p', '.', '--pretty', 'false'],
+                    cwd: project,
+                },
+            ],
+        });
+        const repository = await checkProject({
+            name: 'example',
+            checks: [
+                {
+                    cmd: process.execPath,
+                    args: [compiler, '--noEmit', '-p', 'services/example', '--pretty', 'false'],
+                    cwd: root,
+                },
+            ],
+        });
+        assert.equal(local.count, 1);
+        assert.match(local.errors[0], /^src\/a.ts/);
+        assert.equal(local.errorCwds[0], project);
+        const localReport = createDiagnosticReport([local], {}, root);
+        const repositoryReport = createDiagnosticReport([repository], {}, root);
+        const d = localReport.results[0].diagnostics[0];
+        assert.equal(d.file, 'services/example/src/a.ts');
+        assert.equal(d.sourceLine, statement);
+        assert.deepEqual(
+            addedDiagnostics(
+                localReport.results[0].diagnostics,
+                repositoryReport.results[0].diagnostics
+            ),
+            []
+        );
+        const formatted = formatComparison(compareReports(localReport, report(result([]))));
+        assert.match(formatted.annotations[0], /file=services\/example\/src\/a.ts,line=1/);
+    } finally {
+        rmSync(root, { recursive: true, force: true });
+    }
+});
+
+test('a base worktree outside the head cannot inherit head-only ambient types, unlike a nested checkout', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'typecheck-worktree-isolation-'));
+    const head = join(directory, 'head');
+    try {
+        mkdirSync(join(head, 'src'), { recursive: true });
+        mkdirSync(join(head, 'node_modules/@types/head-only'), { recursive: true });
+        writeFileSync(
+            join(head, 'node_modules/@types/head-only/index.d.ts'),
+            'declare const TYPECHECK_HEAD_ONLY_GLOBAL: number;'
+        );
+        writeFileSync(
+            join(head, 'tsconfig.json'),
+            JSON.stringify({
+                compilerOptions: { strict: true, skipLibCheck: true },
+                include: ['src'],
+            })
+        );
+        writeFileSync(join(head, 'src/a.ts'), 'const value: number = TYPECHECK_HEAD_ONLY_GLOBAL;');
+        const git = args => {
+            const ran = spawnSync('git', ['-c', 'core.hooksPath=/dev/null', '-C', head, ...args], {
+                encoding: 'utf8',
+            });
+            assert.equal(ran.status, 0, ran.stderr);
+        };
+        git(['init', '--quiet']);
+        git(['add', 'src', 'tsconfig.json']);
+        git([
+            '-c',
+            'user.name=Typecheck Test',
+            '-c',
+            'user.email=typecheck@example.invalid',
+            'commit',
+            '--quiet',
+            '-m',
+            'fixture',
+        ]);
+        const nested = join(head, '.typecheck-comparison-base');
+        const isolated = join(directory, 'runner-temp-base');
+        git(['worktree', 'add', '--detach', nested, 'HEAD']);
+        git(['worktree', 'add', '--detach', isolated, 'HEAD']);
+        const check = cwd =>
+            checkProject({
+                name: 'example',
+                checks: [
+                    {
+                        cmd: process.execPath,
+                        args: [
+                            resolve('node_modules/typescript/bin/tsc'),
+                            '--noEmit',
+                            '-p',
+                            '.',
+                            '--pretty',
+                            'false',
+                        ],
+                        cwd,
+                    },
+                ],
+            });
+        const leaked = await check(nested);
+        const independent = await check(isolated);
+        assert.equal(leaked.incomplete, null);
+        assert.equal(leaked.count, 0, 'a nested base incorrectly sees the head-only global');
+        assert.equal(independent.incomplete, null);
+        assert.equal(independent.count, 1);
+        assert.match(independent.errors[0], /TS2304.*TYPECHECK_HEAD_ONLY_GLOBAL/);
+    } finally {
+        rmSync(directory, { recursive: true, force: true });
+    }
 });

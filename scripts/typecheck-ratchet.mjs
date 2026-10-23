@@ -11,7 +11,7 @@
 // (`nx run-many -t build` over lib projects), compile Paraglide messages, then this script.
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, cpus } from 'node:os';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
@@ -20,7 +20,7 @@ import { createDiagnosticReport } from './typecheck-diagnostics.mjs';
 // Data shapes:
 //   Project = { name, root, checks: Check[], incomplete?: string }   Check = { cmd, args, cwd }
 //   Result  = { name, count, errors: string[], incomplete: string | null, tail: string[],
-//               configErrors: number }
+//               configErrors: number, errorCwds?: string[] }
 
 const readJson = path => (existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {});
 
@@ -177,6 +177,8 @@ export const checkProject = async project => {
         };
     }
     const errors = new Set();
+    // Keep the existing raw-text count; record where each unique diagnostic was emitted.
+    const errorCwds = new Map();
     for (const check of project.checks) {
         const ran = await run(check);
         const lines = ran.output.split('\n');
@@ -187,17 +189,22 @@ export const checkProject = async project => {
                 name: project.name,
                 count: null,
                 errors: found,
+                errorCwds: found.map(() => resolve(check.cwd)),
                 incomplete,
                 tail: lines.slice(-20),
                 configErrors: 0,
             };
         }
-        for (const line of found) errors.add(line);
+        for (const line of found) {
+            errors.add(line);
+            if (!errorCwds.has(line)) errorCwds.set(line, resolve(check.cwd));
+        }
     }
     return {
         name: project.name,
         count: errors.size,
         errors: [...errors],
+        errorCwds: [...errors].map(error => errorCwds.get(error)),
         incomplete: null,
         tail: [],
         configErrors: [...errors].filter(isConfigError).length,

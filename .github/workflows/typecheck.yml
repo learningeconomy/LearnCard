@@ -58,17 +58,19 @@ jobs:
               if: ${{ steps.ratchet.outcome == 'failure' && github.event_name == 'pull_request' }}
               run: node scripts/typecheck-diagnostics.mjs select "$RUNNER_TEMP/typecheck-head.json"
 
-            - name: Checkout PR base
+            # Keep the base outside the head workspace: TypeScript searches ancestor
+            # node_modules/@types directories even when the base has its own install.
+            - name: Checkout PR base outside the workspace
               if: ${{ steps.comparison.outputs.needed == 'true' }}
-              uses: actions/checkout@v7
-              with:
-                  ref: ${{ github.event.pull_request.base.sha }}
-                  path: .typecheck-comparison-base
-                  persist-credentials: false
+              env:
+                  TYPECHECK_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+              run: |
+                  git fetch --no-tags --depth=1 origin "$TYPECHECK_BASE_SHA"
+                  git worktree add --detach "$RUNNER_TEMP/typecheck-base" FETCH_HEAD
 
             - name: Prepare base dependencies and libraries
               if: ${{ steps.comparison.outputs.needed == 'true' }}
-              working-directory: .typecheck-comparison-base
+              working-directory: ${{ runner.temp }}/typecheck-base
               run: |
                   bun install --frozen-lockfile
                   bunx nx run-many -t build --projects="$(bunx nx show projects --type lib --with-target build | paste -sd, -)"
@@ -77,7 +79,7 @@ jobs:
 
             - name: Check affected projects at base
               if: ${{ steps.comparison.outputs.needed == 'true' }}
-              run: node scripts/typecheck-diagnostics.mjs base "$RUNNER_TEMP/typecheck-head.json" "$GITHUB_WORKSPACE/.typecheck-comparison-base" "$RUNNER_TEMP/typecheck-base.json"
+              run: node scripts/typecheck-diagnostics.mjs base "$RUNNER_TEMP/typecheck-head.json" "$RUNNER_TEMP/typecheck-base" "$RUNNER_TEMP/typecheck-base.json"
 
             - name: Explain ratchet failure
               if: ${{ always() && steps.ratchet.outcome == 'failure' }}
