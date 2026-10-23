@@ -1634,7 +1634,10 @@
             "switchAccount": "Cambiar de cuenta",
             "buildMyLearnCard": "Construye mi {{brand}}",
             "completeProfile": "Completar Perfil",
-            "settings": "Configuración de la Cuenta"
+            "settings": "Configuración de la Cuenta",
+            "joinDeveloperProgram": "Únete al Programa de desarrolladores",
+            "joiningDeveloperProgram": "Uniéndote al Programa de desarrolladores...",
+            "developerProgramError": "No pudimos unirte al Programa de desarrolladores. Inténtalo de nuevo."
         },
         "saved": "Perfil guardado",
         "saveFail": "No se pudo guardar tu perfil. Inténtalo de nuevo.",

@@ -1634,7 +1634,10 @@
             "switchAccount": "تبديل الحساب",
             "buildMyLearnCard": "ابنِ {{brand}} الخاص بي",
             "completeProfile": "إكمال الملف الشخصي",
-            "settings": "إعدادات الحساب"
+            "settings": "إعدادات الحساب",
+            "joinDeveloperProgram": "انضم إلى برنامج المطورين",
+            "joiningDeveloperProgram": "جارٍ الانضمام إلى برنامج المطورين...",
+            "developerProgramError": "تعذر انضمامك إلى برنامج المطورين. يرجى المحاولة مرة أخرى."
         },
         "saved": "تم حفظ الملف الشخصي",
         "saveFail": "تعذر حفظ ملفك الشخصي. يرجى المحاولة مرة أخرى.",

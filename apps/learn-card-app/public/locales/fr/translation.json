@@ -1634,7 +1634,10 @@
             "switchAccount": "Changer de compte",
             "buildMyLearnCard": "Construire mon {{brand}}",
             "completeProfile": "Compléter le profil",
-            "settings": "Paramètres du compte"
+            "settings": "Paramètres du compte",
+            "joinDeveloperProgram": "Rejoindre le programme développeur",
+            "joiningDeveloperProgram": "Inscription au programme développeur...",
+            "developerProgramError": "Nous n'avons pas pu vous inscrire au programme développeur. Veuillez réessayer."
         },
         "saved": "Profil enregistré",
         "saveFail": "Impossible d'enregistrer votre profil. Veuillez réessayer.",

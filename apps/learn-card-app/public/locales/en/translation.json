@@ -1604,7 +1604,10 @@
             "switchAccount": "Switch Account",
             "buildMyLearnCard": "Build My {{brand}}",
             "completeProfile": "Complete Profile",
-            "settings": "Account Settings"
+            "settings": "Account Settings",
+            "joinDeveloperProgram": "Join the Developer Program",
+            "joiningDeveloperProgram": "Joining the Developer Program...",
+            "developerProgramError": "We couldn't join the Developer Program. Please try again."
         },
         "needParentGuardian": "You'll need a parent or guardian to set up a Family Account before you can join.",
         "notifications": "Notifications",
