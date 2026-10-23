@@ -52,10 +52,47 @@ export const versionPredicateValidator = z
     })
     .strict();
 
+const credentialMatchShape = {
+    issuers: z.array(z.string()).nonempty().optional(),
+    nestedIssuers: z.array(z.string()).nonempty().optional(),
+    vcTypes: z.array(z.string()).nonempty().optional(),
+    categories: z.array(z.string()).nonempty().optional(),
+    achievementTypes: z.array(z.string()).nonempty().optional(),
+    issuedWithinDays: z.number().positive().optional(),
+};
+
+/** All configured fields must match one credential; values within a field are OR'd. */
+export const credentialMatchValidator = z
+    .object(credentialMatchShape)
+    .strict()
+    .refine(value => Object.values(value).some(field => field !== undefined), {
+        message: 'At least one credential match field is required',
+    });
+export type CredentialMatch = z.infer<typeof credentialMatchValidator>;
+
+export const credentialPredicateValidator = z
+    .object({
+        credential: z
+            .object({
+                ...credentialMatchShape,
+                minCount: z.number().int().positive().default(1),
+            })
+            .strict()
+            .refine(
+                value =>
+                    Object.entries(value).some(
+                        ([key, field]) => key !== 'minCount' && field !== undefined
+                    ),
+                { message: 'At least one credential match field is required' }
+            ),
+    })
+    .strict();
+
 export type InAppMessagePredicate =
     | z.infer<typeof platformPredicateValidator>
     | z.infer<typeof rolePredicateValidator>
     | z.infer<typeof versionPredicateValidator>
+    | z.infer<typeof credentialPredicateValidator>
     | { all: InAppMessagePredicate[] }
     | { any: InAppMessagePredicate[] }
     | { not: InAppMessagePredicate };
@@ -65,6 +102,7 @@ export const inAppMessagePredicateValidator: z.ZodType<InAppMessagePredicate> = 
         platformPredicateValidator,
         rolePredicateValidator,
         versionPredicateValidator,
+        credentialPredicateValidator,
         z.object({ all: z.array(inAppMessagePredicateValidator) }).strict(),
         z.object({ any: z.array(inAppMessagePredicateValidator) }).strict(),
         z.object({ not: inAppMessagePredicateValidator }).strict(),
@@ -169,6 +207,24 @@ export const inAppMessagePresentationValidator = z
     .default('modal');
 export type InAppMessagePresentation = z.infer<typeof inAppMessagePresentationValidator>;
 
+export const inAppMessageTriggerValidator = z
+    .object({
+        event: z.enum(['credential.claimed', 'app.opened']),
+        where: credentialMatchValidator.optional(),
+        windowMinutes: z.number().positive().default(10),
+    })
+    .strict();
+export type InAppMessageTrigger = z.infer<typeof inAppMessageTriggerValidator>;
+
+export const inAppMessageSettingsValidator = z
+    .object({
+        maxBlockingPerSession: z.number().int().nonnegative().default(1),
+        blockingCooldownHours: z.number().nonnegative().default(48),
+    })
+    .passthrough()
+    .default({ maxBlockingPerSession: 1, blockingCooldownHours: 48 });
+export type InAppMessageSettings = z.infer<typeof inAppMessageSettingsValidator>;
+
 export const inAppMessageValidator = z
     .object({
         /** Stable identifier — used to persist dismissal / frequency state. */
@@ -189,6 +245,8 @@ export const inAppMessageValidator = z
         targeting: inAppMessagePredicateValidator.optional(),
         /** Allow disabling a message without removing it from the flag. */
         enabled: z.boolean().default(true),
+        trigger: inAppMessageTriggerValidator.optional(),
+        bypassFatigue: z.boolean().default(false),
     })
     .passthrough();
 export type InAppMessage = z.infer<typeof inAppMessageValidator>;
@@ -197,12 +255,88 @@ export const inAppMessagesFlagValidator = z
     .object({
         version: z.number().default(1),
         messages: z.array(inAppMessageValidator).default([]),
+        settings: inAppMessageSettingsValidator,
     })
     .passthrough();
 export type InAppMessagesFlag = z.infer<typeof inAppMessagesFlagValidator>;
 
 /** Empty, safe default used when the flag is absent or malformed. */
-export const EMPTY_IN_APP_MESSAGES_FLAG: InAppMessagesFlag = { version: 1, messages: [] };
+export const EMPTY_IN_APP_MESSAGES_FLAG: InAppMessagesFlag = {
+    version: 1,
+    messages: [],
+    settings: { maxBlockingPerSession: 1, blockingCooldownHours: 48 },
+};
+
+export interface InvalidInAppMessage {
+    id?: string;
+    error: string;
+}
+
+export interface ParsedInAppMessagesFlag {
+    flag: InAppMessagesFlag;
+    invalid: InvalidInAppMessage[];
+}
+
+const inAppMessagesFlagEnvelopeValidator = z
+    .object({
+        version: z.number().default(1),
+        messages: z.array(z.unknown()).default([]),
+        settings: z.unknown().optional(),
+    })
+    .passthrough();
+
+export const parseInAppMessagesFlagWithErrors = (raw: unknown): ParsedInAppMessagesFlag => {
+    const envelope = inAppMessagesFlagEnvelopeValidator.safeParse(raw);
+
+    if (!envelope.success) {
+        return {
+            flag: EMPTY_IN_APP_MESSAGES_FLAG,
+            invalid: [{ error: envelope.error.issues[0]?.message ?? 'Invalid flag' }],
+        };
+    }
+
+    const messages: InAppMessage[] = [];
+    const invalid: InvalidInAppMessage[] = [];
+    const settings = inAppMessageSettingsValidator.safeParse(envelope.data.settings);
+    if (!settings.success) {
+        invalid.push({
+            error: `settings: ${settings.error.issues[0]?.message ?? 'Invalid settings'}`,
+        });
+    }
+
+    envelope.data.messages.forEach(rawMessage => {
+        const result = inAppMessageValidator.safeParse(rawMessage);
+
+        if (result.success) {
+            messages.push(result.data);
+            return;
+        }
+
+        const id =
+            typeof rawMessage === 'object' &&
+            rawMessage !== null &&
+            'id' in rawMessage &&
+            typeof rawMessage.id === 'string'
+                ? rawMessage.id
+                : undefined;
+        const issue = result.error.issues[0];
+        const path = issue?.path.join('.');
+
+        invalid.push({
+            ...(id ? { id } : {}),
+            error: `${path ? `${path}: ` : ''}${issue?.message ?? 'Invalid message'}`,
+        });
+    });
+
+    return {
+        flag: {
+            ...envelope.data,
+            settings: settings.success ? settings.data : EMPTY_IN_APP_MESSAGES_FLAG.settings,
+            messages,
+        },
+        invalid,
+    };
+};
 
 /**
  * Parse an unknown flag value into a validated `InAppMessagesFlag`.
@@ -210,7 +344,5 @@ export const EMPTY_IN_APP_MESSAGES_FLAG: InAppMessagesFlag = { version: 1, messa
  * the host app.
  */
 export const parseInAppMessagesFlag = (raw: unknown): InAppMessagesFlag => {
-    const result = inAppMessagesFlagValidator.safeParse(raw);
-
-    return result.success ? result.data : EMPTY_IN_APP_MESSAGES_FLAG;
+    return parseInAppMessagesFlagWithErrors(raw).flag;
 };

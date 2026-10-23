@@ -1,25 +1,38 @@
 # In-App Messages
 
 A LaunchDarkly-driven system for **conditional, targeted user prompts** across LearnCard apps
-(`learn-card-app` + `scouts`). One JSON flag (`inAppMessages`) delivers a prioritized list of
+(`learn-card-app` + `scouts`). The JSON flag (`inAppMessagesV2`) delivers a prioritized list of
 messages; each message carries its own **targeting predicate tree** that is evaluated _on device_
 so it can see things LaunchDarkly's own rules cannot — the Capacitor platform, the native binary
 version, and the live Capgo/OTA bundle version.
 
--   **Show a message** with title, body, and media (YouTube / image / GIF)
--   **Call-to-action buttons** — open an in-app feature, an external link, the app store, or run a Capgo update
--   **Dismissable or required** (blocking)
--   **Native-aware app-store links** — iOS → App Store, Android → Google Play, web → configured URL
--   **Capgo update with live progress** — check, download (with %), and reload onto the latest bundle
--   **Targeting** by platform, semver version (native / web / capgo), and profile role
+- **Show a message** with title, body, and media (YouTube / image / GIF)
+- **Call-to-action buttons** — open an in-app feature, an external link, the app store, or run a Capgo update
+- **Dismissable or required** (blocking)
+- **Native-aware app-store links** — iOS → App Store, Android → Google Play, web → configured URL
+- **Capgo update with live progress** — check, download (with %), and reload onto the latest bundle
+- **Targeting** by platform, semver version (native / web / capgo), and profile role
+- **On-device credential targeting** without sending decrypted credential data to the server
+- **Claim and app-open triggers** with blocking-message fatigue protection
 
 ---
 
 ## Quick start
 
 The host is already mounted in both apps (`FullApp.tsx`), so **you don't write any React** — you
-just author the flag value in LaunchDarkly. Create a JSON flag named **`inAppMessages`** and paste
+just author the flag value in LaunchDarkly. Create a JSON flag named **`inAppMessagesV2`** and paste
 a value like:
+
+Keep `inAppMessages` compatible with older released clients: platform, role, and version targeting
+only, with no triggers or credential predicates. Publish credential-targeted and triggered messages
+under `inAppMessagesV2`. A numeric payload version does not protect old clients: they do not skip
+unknown versions. Move any such development campaigns to V2 before rollout.
+
+New clients use only V2 when it is present. Copy any legacy campaigns needed by new clients to V2,
+preserving their IDs. If V2 is absent, new clients fall back to legacy-compatible messages from
+`inAppMessages`; an explicitly empty, disabled, or malformed V2 value does not reactivate that feed.
+New rules placed in the legacy feed are rejected with a debug diagnostic. This client change does
+not edit live LaunchDarkly configuration.
 
 ```json
 {
@@ -201,6 +214,7 @@ Leaves:
 { "platform": ["ios", "android", "web"] }
 { "role": ["learner", "teacher", "guardian", "admin", "counselor", "developer"] }
 { "version": { "source": "native" | "web" | "capgo", "op": "lt"|"lte"|"eq"|"gte"|"gt", "value": "1.2.3" } }
+{ "credential": { "issuers"?: ["did:…"], "nestedIssuers"?: ["did:…"], "vcTypes"?: ["ClrCredential"], "categories"?: ["Learning History"], "achievementTypes"?: ["Course"], "issuedWithinDays"?: 30, "minCount"?: 1 } }
 ```
 
 Combinators (nest arbitrarily):
@@ -213,12 +227,82 @@ Combinators (nest arbitrarily):
 
 Version sources:
 
--   `native` — installed native binary version (`App.getInfo().version`)
--   `web` — web build's `package.json` version (`__APP_VERSION__`)
--   `capgo` — live Capgo/OTA bundle version (`CapacitorUpdater.current()`)
+- `native` — installed native binary version (`App.getInfo().version`)
+- `web` — web build's `package.json` version (`__APP_VERSION__`)
+- `capgo` — live Capgo/OTA bundle version (`CapacitorUpdater.current()`)
 
 > **Fails closed:** if a `version` source is unavailable (e.g. `capgo` on web) or the string can't
 > be parsed as semver, that predicate evaluates to `false` — the message simply won't show.
+
+Credential fields are ANDed against one credential summary; values within a field are ORed. Fields
+from different credentials are never combined. `minCount` defaults to 1; a match must specify at
+least one field, and supplied lists must be nonempty. Unknown credential fields are rejected.
+Missing facts do not match. Any credential rule below `not` vetoes the **entire message** while
+facts are incomplete, including inside an otherwise-matching `any`. Positive rules may match
+partial facts after the initial five-second loading deadline.
+
+For example, target users who have a pilot CLR but no pilot course achievement:
+
+```json
+{
+    "all": [
+        { "credential": { "issuers": ["did:example:pilot-issuer"], "vcTypes": ["ClrCredential"] } },
+        {
+            "not": {
+                "credential": {
+                    "issuers": ["did:example:pilot-issuer"],
+                    "achievementTypes": ["Course"]
+                }
+            }
+        }
+    ]
+}
+```
+
+These are separate holder checks; each leaf still requires all of its fields on the same credential.
+`nestedIssuers` checks credentials embedded in a CLR's `credentialSubject.verifiableCredential`.
+Certified Boost wrappers are unwrapped before matching. Age uses `validFrom`, falling back to
+`issuanceDate`; missing, invalid, and future dates do not satisfy `issuedWithinDays`.
+
+### Triggers and blocking fatigue
+
+Messages may add `trigger: { event, where?, windowMinutes? }`, where `event` is
+`credential.claimed` or `app.opened`. Claim events are emitted only after the credential is stored
+and any consent-flow acceptance succeeds;
+`where` evaluates against that claimed credential's local summary. Events remain in memory for 30
+minutes (at most 50 events) and are never persisted. The trigger window defaults to 10 minutes.
+Facts are saved before emitting the claim event, but this bookkeeping runs in the background so
+slow local storage does not delay completion of the claim.
+Targeting and the trigger must both pass. `app.opened` is emitted when the presentation gate first
+opens for the active account in this session. A claim made on a suppressed route remains eligible
+after navigation only while its trigger window is still open.
+
+The flag may add `settings: { maxBlockingPerSession, blockingCooldownHours }` (defaults: `1` and
+`48`). Modal messages are subject to both limits. Banners and toasts are not. Required messages
+(`dismissible: false`) and messages with `bypassFatigue: true` are exempt.
+Limits are recorded only when a real message presents, never while waiting for the gate or during
+a forced preview. The visible message stays mounted after consuming its own impression/cap.
+Resetting seen state also resets fatigue. Session counts and persisted cooldowns are account-scoped.
+Invalid settings fall back to those defaults and appear as a
+`settings` error in the debug report; valid messages still render.
+
+### Credential-facts privacy and lifecycle
+
+Only minimal summaries—URI, category, credential types, issuer identifiers, achievement types and
+issued date—are stored in the dedicated `lcb-in-app-messages-facts` IndexedDB database. Full
+decrypted credentials are never stored there. Summaries are isolated by active DID, cleared by the
+normal logout IndexedDB cleanup, and never enter network requests, analytics, Sentry, or persisted
+React Query state. Backfill reuses resolved-query cache entries first, decrypts at idle time in
+batches of four, and caps ordinary work at 200 decrypts per app session.
+The loader runs only while signed in and an enabled message uses credential targeting or
+`trigger.where`. It reconciles against the personal index newest-first, removes missing URIs, and
+shares work between host and debug panel. Resume/focus refreshes are throttled to five minutes.
+Successful summaries survive cold starts; failed/unvisited reads leave `credentialsComplete=false`.
+"Backfill now" explicitly overrides the session read budget and retries failed reads.
+
+Messages are parsed independently: an invalid sibling is listed in `report.invalid` without
+discarding valid messages. `parseInAppMessagesFlag` retains its compatibility signature;
+`parseInAppMessagesFlagWithErrors` also returns the invalid IDs and parse errors.
 
 ---
 
@@ -229,7 +313,7 @@ Everything is exported from `learn-card-base`:
 ```tsx
 import { useInAppMessages, evaluatePredicate, compareSemver } from 'learn-card-base';
 
-const { message, context, ready } = useInAppMessages(); // reads the `inAppMessages` flag
+const { message, context, ready } = useInAppMessages(); // reads `inAppMessagesV2`, with legacy fallback when absent
 ```
 
 ```ts
@@ -239,6 +323,10 @@ const ctx: InAppMessageRuntimeContext = {
     platform: 'ios',
     role: 'learner',
     versions: { native: '1.0.5', capgo: '1.0.7' },
+    now: Date.now(),
+    credentials: null,
+    credentialsComplete: false,
+    recentEvents: [],
 };
 
 evaluatePredicate({ version: { source: 'capgo', op: 'lt', value: '1.0.8' } }, ctx); // true
@@ -254,15 +342,15 @@ The Zod schema and inferred types live in `@learncard/types` (`inAppMessages.ts`
 To avoid interfering with login and other critical flows, the host will **not** present a message
 until the app is in a stable, safe state. A message only shows when **all** of these hold:
 
--   **Auth is settled** — `isAuthSettled(useAuthStatus())` is true (never during the boot/resume
-    window, which is what caused early flashes).
--   **The user is logged in** — `useIsLoggedIn()` (override with `requireAuth={false}`).
--   **Onboarding isn't open** — `useIsOnboardingOpen()` is false.
--   **Not on a critical route** — the current `location.pathname` isn't under a suppressed prefix
-    (`/login`, `/claim`, `/consent-flow`, `/waitingsofa`, `/connect`, `/invite`, `/share`, `/legal`,
-    `/hidden`, `/oid4vci`, `/oid4vp`, `/__/auth`, …).
--   **The state has settled for a moment** — the gate must stay open for `settleDelayMs` (default
-    1200ms) to ride out transient route flicker during navigation.
+- **Auth is settled** — `isAuthSettled(useAuthStatus())` is true (never during the boot/resume
+  window, which is what caused early flashes).
+- **The user is logged in** — `useIsLoggedIn()` (override with `requireAuth={false}`).
+- **Onboarding isn't open** — `useIsOnboardingOpen()` is false.
+- **Not on a critical route** — the current `location.pathname` isn't under a suppressed prefix
+  (`/login`, `/claim`, `/consent-flow`, `/waitingsofa`, `/connect`, `/invite`, `/share`, `/legal`,
+  `/hidden`, `/oid4vci`, `/oid4vp`, `/__/auth`, …).
+- **The state has settled for a moment** — the gate must stay open for `settleDelayMs` (default
+  1200ms) to ride out transient route flicker during navigation.
 
 A message's `frequency` impression is only consumed once it **actually** presents (post-gate), so a
 boot-time flash can no longer burn a `"once"` message.
@@ -289,9 +377,9 @@ gate transitions log as `[in-app-messages] gate { canPresent, reason }` (reasons
 
 ## Debugging ("why did / didn't this message show?")
 
-Turn on debug mode to trace the full decision pipeline — the resolved runtime context, every
-message's targeting result (with the exact predicate that passed/failed), suppression state, and
-the winner.
+Use the local report/debug panel to inspect each targeting and trigger result, suppression state,
+and winner. Tracing logs only non-credential evaluation metadata and presentation lifecycle events;
+credential summaries and credential-derived predicate traces are never sent to the central logger.
 
 **From the browser/native devtools console** (a `window.__inAppMessages` dev-global is installed
 whenever the feature is mounted):
@@ -302,6 +390,10 @@ __inAppMessages.report(); // structured snapshot of the last evaluation (see sha
 __inAppMessages.reset(); // clear "once"/"everyDays" dismissals so messages can re-show
 __inAppMessages.disable(); // turn tracing OFF
 __inAppMessages.isEnabled();
+__inAppMessages.facts(); // counts/completeness/budget only, not credential contents
+await __inAppMessages.backfill(); // explicitly override the ordinary read budget
+__inAppMessages.emit('app.opened'); // simulate an event for the active account
+__inAppMessages.resetCap(); // reset blocking cap and cooldown
 
 // Preview / force a message on demand (bypasses gate, targeting, AND frequency):
 __inAppMessages.list(); // ["pathways-launch-2026", ...] ids from the current flag
@@ -323,8 +415,8 @@ __inAppMessages.clearForce(); // stop forcing / close the preview
 
 You can also enable it **without the console**:
 
--   URL query param: append `?iamDebug=1`
--   localStorage: set `lcb-in-app-messages-debug` to `"1"`
+- URL query param: append `?iamDebug=1`
+- localStorage: set `lcb-in-app-messages-debug` to `"1"`
 
 When enabled, every evaluation logs a `[in-app-messages] evaluated` entry (via the central
 `logger` + `console.info`) plus `shown` / `closed` / `capgo:*` lifecycle events.
@@ -337,6 +429,7 @@ import { useInAppMessages } from 'learn-card-base';
 const { report } = useInAppMessages();
 // report.diagnostics: per-message { id, priority, enabled, matched, suppressed, willShow, trace }
 // report.winnerId, report.context, report.flagMessageCount
+// report.invalid: [{ id?, error }]
 ```
 
 Report / diagnostic shape:
@@ -344,16 +437,26 @@ Report / diagnostic shape:
 ```ts
 interface InAppMessagesReport {
     ready: boolean;
-    context: { platform; role; versions: { native?; web?; capgo? } } | null;
+    context: {
+        platform;
+        role;
+        versions;
+        credentialsComplete;
+        credentialCount;
+        recentEventCount;
+    } | null;
     flagMessageCount: number;
     winnerId: string | null;
+    invalid: Array<{ id?: string; error: string }>;
     diagnostics: Array<{
         id: string;
         priority: number;
         enabled: boolean;
-        matched: boolean; // targeting passed
+        matched: boolean; // targeting AND trigger passed
         suppressed: boolean; // frequency/dismissal suppressed it
-        willShow: boolean; // matched && !suppressed
+        triggerSatisfied: boolean;
+        fatigueSuppressed: boolean;
+        willShow: boolean; // matched && !suppressed && !fatigueSuppressed (gate is separate)
         trace: PredicateTrace | null; // recursive pass/fail tree with human labels
     }>;
 }
@@ -363,12 +466,30 @@ A `trace` node reads like `platform in [ios, android] — actual "web"` → `res
 can see exactly which clause vetoed a message. `getLastInAppMessagesReport()` and
 `setInAppMessagesDebug(true|false)` are also exported for non-React use.
 
+The LearnCard debug panel adds an issuer/type-filtered local facts inspector, copy-as-rule,
+picked/hand-entered claim simulation, the last ten events, and invalid-message diagnostics.
+Dry-run presets are **This device**, **None**, **Library CLR (`clr/minimal`)**, **Other-issuer
+library CLR**, **Library fixture non-CLR**, and **Incomplete**, with an optional claim event and the
+first failing rule shown. The CLR presets summarize the actual `clr/minimal` fixture from
+`@learncard/credential-library`; the ready-made templates match its stable `ClrCredential` and
+`Course` facts rather than its issuer because fixture issuance replaces the issuer with the signing
+wallet's DID. The builder supports credential predicates, negation/nested JSON trees, triggers,
+and fatigue bypass. Simulations do not add real credentials.
+Scouts has the same console APIs without requiring the LearnCard debug panel. The panel is lazy
+loaded only for dev/debug-enabled builds; normal production builds omit it.
+
 ## File map
 
 ```
 in-app-messages/
 ├── predicates.ts             — pure semver compare + predicate-tree evaluator (unit-tested)
 ├── dismissalStore.ts         — per-id frequency/dismissal persistence (localStorage + session)
+├── credentialFacts.ts        — pure credential summarization and matching
+├── credentialFactsStore.ts   — DID-isolated IndexedDB storage with memory fallback
+├── credentialFactsLoader.ts — shared, bounded idle backfill and index reconciliation
+├── useCredentialFacts.ts     — auth/account gating and resume subscriptions
+├── inAppMessageEvents.ts     — memory-only claim/app-open event buffer
+├── fatigueStore.ts           — blocking session cap and cooldown
 ├── storeLinks.ts             — native-aware App Store / Play Store link resolution + open
 ├── useRuntimeContext.ts      — gathers { platform, native/web/capgo versions, role }
 ├── useCapgoUpdate.ts         — OTA check → download (progress) → set/reload
@@ -391,3 +512,7 @@ in-app-messages/
 cd packages/learn-card-base
 bunx vitest run src/in-app-messages/__tests__/predicates.test.ts
 ```
+
+Staged consent-flow index entries are excluded from credential-fact backfill until acceptance is
+final. Failed, revoked, or suspended acceptance cannot emit a claim event or count a provisional
+credential as owned. Successful acceptance updates facts before emitting the claim event.

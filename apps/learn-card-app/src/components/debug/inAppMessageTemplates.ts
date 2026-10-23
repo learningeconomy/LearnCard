@@ -18,12 +18,10 @@
  * applied exactly like a real LaunchDarkly flag value would be.
  */
 
+import { CREDENTIAL_LIBRARY_CLR_CONDITION } from './inAppMessageDryRun';
+
 export type InAppMessageTemplateCategory =
-    | 'Basics'
-    | 'Announcements'
-    | 'Updates'
-    | 'Targeting'
-    | 'Operational';
+    'Basics' | 'Announcements' | 'Updates' | 'Targeting' | 'Operational';
 
 export interface InAppMessageTemplate {
     key: string;
@@ -389,6 +387,45 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                         ],
                     },
                 ],
+            },
+        },
+    },
+    {
+        key: 'clr-claim-celebration-example',
+        label: 'Credential Library CLR claim',
+        description: 'Triggered by claiming the credential-library clr/minimal fixture.',
+        category: 'Targeting',
+        json: {
+            id: 'clr-claim-celebration-example',
+            frequency: 'always',
+            presentation: 'modal',
+            title: 'Learning record added',
+            body: 'This test message confirms CLR claim targeting.',
+            actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
+            trigger: {
+                event: 'credential.claimed',
+                where: CREDENTIAL_LIBRARY_CLR_CONDITION,
+                windowMinutes: 10,
+            },
+        },
+    },
+    {
+        key: 'clr-holder-nudge-example',
+        label: 'Credential Library CLR holder',
+        description: 'Targets holders of the credential-library clr/minimal fixture.',
+        category: 'Targeting',
+        json: {
+            id: 'clr-holder-nudge-example',
+            frequency: 'once',
+            presentation: 'banner',
+            title: 'Your learning record is ready',
+            body: 'This test message confirms on-device credential targeting.',
+            actions: [{ label: 'Dismiss', style: 'dismiss', action: { type: 'dismiss' } }],
+            targeting: {
+                credential: {
+                    ...CREDENTIAL_LIBRARY_CLR_CONDITION,
+                    minCount: 1,
+                },
             },
         },
     },

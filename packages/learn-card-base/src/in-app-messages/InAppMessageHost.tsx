@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import type { InAppMessage } from '@learncard/types';
 
 import { useInAppMessages } from './useInAppMessages';
 import { markMessageSeen, onDismissalsReset } from './dismissalStore';
@@ -13,16 +14,30 @@ import {
 import { InAppMessageModal } from './InAppMessageModal';
 import { InAppMessageBanner } from './InAppMessageBanner';
 import { InAppMessageToast } from './InAppMessageToast';
+import { emitAppOpenedOnce } from './inAppMessageEvents';
+import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
 
 export type InAppMessageHostProps = PresentationGateOptions;
 
 export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => {
-    const { message } = useInAppMessages();
+    const { message, messages, credentialFacts } = useInAppMessages();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
+    const [opening, setOpening] = useState({
+        accountDid: credentialFacts.accountDid,
+        ready: false,
+    });
+    if (opening.accountDid !== credentialFacts.accountDid) {
+        setOpening({ accountDid: credentialFacts.accountDid, ready: false });
+    }
+    const [presented, setPresented] = useState<{
+        message: InAppMessage;
+        accountDid?: string;
+    } | null>(null);
 
     const [closedIds, setClosedIds] = useState<Set<string>>(() => new Set());
     const shownRef = useRef<string | null>(null);
+    const shownOverrideRef = useRef<string | null>(null);
     const gateReasonRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -35,7 +50,9 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     useEffect(() => {
         return onDismissalsReset(() => {
             setClosedIds(new Set());
+            setPresented(null);
             shownRef.current = null;
+            shownOverrideRef.current = null;
         });
     }, []);
 
@@ -46,9 +63,37 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         iamDebug('gate', { canPresent, reason });
     }, [canPresent, reason]);
 
-    const realActive = message && !closedIds.has(message.id) ? message : null;
-    const active = override ?? (canPresent ? realActive : null);
+    useEffect(() => {
+        const did = credentialFacts.accountDid;
+
+        if (!canPresent) return;
+
+        if (did) emitAppOpenedOnce(did);
+        // Let the event subscription reach evaluation before consuming an impression.
+        let canceled = false;
+        queueMicrotask(() => {
+            if (!canceled) setOpening({ accountDid: did, ready: true });
+        });
+        return () => {
+            canceled = true;
+        };
+    }, [canPresent, credentialFacts.accountDid]);
+
+    const accountDid = credentialFacts.accountDid ?? undefined;
+    const retained =
+        presented?.accountDid === accountDid
+            ? messages.find(current => current.id === presented?.message.id && current.enabled)
+            : undefined;
+    const candidate = retained ?? message;
+    const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
+    const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
+    const openingReady = !accountDid || (opening.accountDid === accountDid && opening.ready);
+    const active = override ?? (canPresent && openingReady ? realActive : null);
     const isOverride = Boolean(override);
+
+    // Retain a presented message after its own impression makes it ineligible.
+    if (presented && !retained) setPresented(null);
+    if (!presented && active && !isOverride) setPresented({ message: active, accountDid });
 
     const close = useCallback(
         (id: string) => {
@@ -60,33 +105,32 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
             }
 
             iamDebug('closed', { id });
+            setPresented(null);
 
             setClosedIds(prev => {
                 const next = new Set(prev);
 
-                next.add(id);
+                next.add(`${accountDid ?? 'anonymous'}:${id}`);
 
                 return next;
             });
         },
-        [override]
+        [accountDid, override]
     );
 
     useEffect(() => {
-        if (!active) {
-            // Only reset dedupe state for overrides: clearing a preview must
-            // allow the same draft (same id) to be previewed again, while real
-            // messages keep their once-per-appearance semantics intact.
-            if (shownRef.current?.startsWith('override:')) shownRef.current = null;
+        // Clearing a preview permits another preview without forgetting the retained campaign.
+        if (!isOverride) shownOverrideRef.current = null;
+        if (!active) return;
 
-            return;
-        }
+        const key = isOverride
+            ? `override:${active.id}:${active.presentation}`
+            : `${accountDid ?? 'anonymous'}:${active.id}`;
 
-        const key = isOverride ? `override:${active.id}:${active.presentation}` : active.id;
+        const shown = isOverride ? shownOverrideRef : shownRef;
+        if (shown.current === key) return;
 
-        if (shownRef.current === key) return;
-
-        shownRef.current = key;
+        shown.current = key;
         iamDebug('shown', {
             id: active.id,
             presentation: active.presentation,
@@ -98,8 +142,12 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         // stability), so a transient boot/navigation flicker cannot burn a
         // "once" impression. If the gate's settle debounce is ever removed,
         // revisit this.
-        if (!isOverride) markMessageSeen(active.id, active.frequency);
-    }, [active, isOverride]);
+        if (!isOverride) {
+            markMessageSeen(active.id, active.frequency, Date.now(), accountDid);
+
+            if (isFatigueControlled(active)) recordBlockingShown(Date.now(), accountDid);
+        }
+    }, [accountDid, active, isOverride]);
 
     // AnimatePresence must live here, in the always-mounted host: the
     // presented component is removed wholesale on close, so exit animations

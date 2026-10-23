@@ -9,8 +9,20 @@ const mocks = vi.hoisted(() => ({
     get: vi.fn(),
     add: vi.fn(),
     upload: vi.fn(),
+    read: vi.fn(),
     getConsentedContracts: vi.fn(),
     logError: vi.fn(),
+    saveFact: vi.fn(),
+}));
+vi.mock('localforage', () => ({
+    default: {
+        INDEXEDDB: 'asyncStorage',
+        createInstance: () => ({
+            setItem: mocks.saveFact,
+            keys: async () => [],
+            clear: async () => undefined,
+        }),
+    },
 }));
 vi.mock('../logging/logger', () => ({ getLogger: () => ({ error: mocks.logError }) }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
@@ -25,8 +37,10 @@ vi.mock('learn-card-base/stores/walletStore', () => ({
     walletStore: {
         get: {
             wallet: () => ({
+                id: { did: () => 'did:example:claiming-account' },
                 store: { LearnCloud: { uploadEncrypted: mocks.upload } },
                 index: { LearnCloud: { get: mocks.get, add: mocks.add } },
+                read: { get: mocks.read },
             }),
         },
     },
@@ -58,6 +72,15 @@ vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
 }));
 vi.mock('learn-card-base/constants/aiPassport', () => ({ LEARNCARD_AI_PASSPORT_CONTRACT_URI: '' }));
 import { useWallet } from './useWallet';
+import {
+    addCredentialSummary,
+    clearCredentialFacts,
+    loadCredentialFacts,
+} from '../in-app-messages/credentialFactsStore';
+import {
+    clearInAppMessageEvents,
+    getRecentInAppMessageEvents,
+} from '../in-app-messages/inAppMessageEvents';
 
 const credential = {
     '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -67,12 +90,17 @@ const credential = {
 } as VC;
 let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
-beforeEach(() => {
+beforeEach(async () => {
     vi.clearAllMocks();
+    clearInAppMessageEvents();
+    await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
     records = [];
+    mocks.saveFact.mockReset();
+    mocks.saveFact.mockResolvedValue(undefined);
     mocks.getConsentedContracts.mockReset().mockResolvedValue([]);
     mocks.upload.mockResolvedValue('encrypted-uri');
+    mocks.read.mockResolvedValue(credential);
     mocks.get.mockImplementation(async (query: Record<string, string>) =>
         records.filter(record =>
             Object.entries(query).every(
@@ -85,6 +113,114 @@ beforeEach(() => {
         return true;
     });
 });
+
+it('updates on-device targeting facts and emits the claim trigger after saving', async () => {
+    await useWallet().storeAndAddVCToWallet(credential);
+
+    expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
+        expect.objectContaining({
+            uri: 'encrypted-uri',
+            issuer: 'did:key:issuer',
+            category: 'Achievement',
+        }),
+    ]);
+    expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+        expect.objectContaining({
+            event: 'credential.claimed',
+            accountDid: 'did:example:claiming-account',
+            credential: expect.objectContaining({ uri: 'encrypted-uri' }),
+        }),
+    ]);
+});
+
+it.each([
+    [
+        'storeAndAddVCToWallet without a network account',
+        () => useWallet().storeAndAddVCToWallet(credential, {}, 'LearnCloud', true),
+        'encrypted-uri',
+    ],
+    [
+        'storeAndAddVCToWallet with a network account',
+        () => useWallet().storeAndAddVCToWallet(credential),
+        'encrypted-uri',
+    ],
+    [
+        'storeAndAddVCToWallet with deferred contract sync',
+        () => useWallet().storeAndAddVCToWallet(credential, { deferContractSync: true }),
+        'encrypted-uri',
+    ],
+    ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' }), 'existing-uri'],
+] as const)('%s completes while facts persistence is pending', async (_name, claim, uri) => {
+    let releaseWrite = (): void => undefined;
+    const blockedWrite = new Promise<void>(resolve => {
+        releaseWrite = resolve;
+    });
+    mocks.saveFact.mockReturnValueOnce(blockedWrite);
+    const backfill = addCredentialSummary(
+        'did:example:claiming-account',
+        'backfill-uri',
+        credential
+    );
+    let claimFinished = false;
+    const claimed = claim().then(result => {
+        expect(typeof result === 'boolean' ? result : result.result).toBe(true);
+        claimFinished = true;
+    });
+
+    try {
+        await vi.waitFor(() => expect(claimFinished).toBe(true));
+        expect(mocks.saveFact).toHaveBeenCalledOnce();
+        expect(records).toEqual([expect.objectContaining({ uri })]);
+        expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([]);
+    } finally {
+        releaseWrite();
+        await backfill;
+        await claimed;
+        await loadCredentialFacts('did:example:claiming-account');
+    }
+
+    await vi.waitFor(() =>
+        expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+            expect.objectContaining({
+                event: 'credential.claimed',
+                credential: expect.objectContaining({ uri }),
+            }),
+        ])
+    );
+    expect(mocks.saveFact).toHaveBeenCalledTimes(2);
+    expect(mocks.saveFact.mock.calls[1][1]).toEqual(expect.objectContaining({ uri }));
+});
+
+it('does not summarize or emit a claim when the index write fails', async () => {
+    mocks.add.mockResolvedValueOnce(false);
+    const result = await useWallet().storeAndAddVCToWallet(credential);
+
+    expect(result.result).toBe(false);
+    expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([]);
+    expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([]);
+});
+
+it.each([
+    ['storeAndAddVCToWallet', () => useWallet().storeAndAddVCToWallet(credential)],
+    ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' })],
+] as const)(
+    'records a successful %s claim even if downstream contract sync fails',
+    async (_name, claim) => {
+        mocks.getConsentedContracts.mockRejectedValueOnce(new Error('sync failed'));
+
+        await expect(claim()).rejects.toThrow('sync failed');
+
+        expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
+            expect.objectContaining({ issuer: 'did:key:issuer', category: 'Achievement' }),
+        ]);
+        expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+            expect.objectContaining({
+                event: 'credential.claimed',
+                accountDid: 'did:example:claiming-account',
+            }),
+        ]);
+    }
+);
 
 it.each([true, false])(
     'persists a stable inbox marker for an id-less claim (skipLCNUser=%s)',
@@ -143,6 +279,15 @@ it('finishes confirmed batch storage without waiting for sharing', async () => {
         expect(records).toEqual([
             { id: 'batch-credential', uri: 'encrypted-uri', category: 'Achievement' },
         ]);
+        expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+        await vi.waitFor(() =>
+            expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+                expect.objectContaining({
+                    event: 'credential.claimed',
+                    credential: expect.objectContaining({ uri: 'encrypted-uri' }),
+                }),
+            ])
+        );
     } finally {
         finishSharing.resolve([]);
         await saving;
@@ -283,4 +428,21 @@ it('scopes payload fingerprints to the account and includes signed extensions an
     expect(JSON.stringify(offered)).toBe(original);
     expect(first).toMatch(/^chapi:sha256:[a-f0-9]{64}$/);
     expect(first).not.toContain('private');
+});
+
+it('defers facts and claim events until staged acceptance is finalized', async () => {
+    const wallet = useWallet();
+    await wallet.addVCtoWallet({ uri: 'pending-uri', skipSync: true, deferClaim: true });
+    expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([]);
+    expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([]);
+    await wallet.recordAcceptedCredentialClaim(await wallet.initWallet(), 'pending-uri');
+    expect(await loadCredentialFacts('did:example:claiming-account')).toEqual([
+        expect.objectContaining({ uri: 'pending-uri' }),
+    ]);
+    expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+        expect.objectContaining({
+            event: 'credential.claimed',
+            credential: expect.objectContaining({ uri: 'pending-uri' }),
+        }),
+    ]);
 });

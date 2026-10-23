@@ -1,18 +1,20 @@
 # In-App Messages — Agent Guide
 
-Feature: a LaunchDarkly JSON flag (`inAppMessages`) that drives conditional, targeted user prompts
+Feature: a LaunchDarkly JSON flag (`inAppMessagesV2`, with legacy `inAppMessages` fallback) that drives conditional, targeted user prompts
 in `learn-card-app` and `scouts`. Targeting is evaluated **on-device** (platform / semver /
-role), the flag value is just the payload. Read `README.md` in this folder for the authored-flag
+role / credential facts / recent events), the flag value is just the payload. Read `README.md` in this folder for the authored-flag
 reference; this file is for making **code** changes safely.
 
 ## Architecture (data flow)
 
 ```
-LaunchDarkly `inAppMessages` (JSON)
+LaunchDarkly `inAppMessagesV2` (JSON; legacy-only fallback when absent)
    → useFlags()                       (launchdarkly-react-client-sdk)
-   → parseInAppMessagesFlag()         (@learncard/types — never throws)
-   → useInAppMessages()               (filter by targeting + frequency, pick highest priority)
+   → parseInAppMessagesFlagWithErrors() (@learncard/types — isolate invalid siblings)
+   → useInAppMessages()               (targeting + triggers + frequency + fatigue, highest priority)
         ├─ useRuntimeContext()        (platform + native/web/capgo versions + role)
+        ├─ useCredentialFacts()       (per-account shared loader → private IndexedDB summaries)
+        ├─ useRecentInAppMessageEvents() (in-memory claim/app-open events)
         ├─ messageMatches()/evaluatePredicate()  (predicates.ts — PURE)
         └─ filterSuppressed()         (dismissalStore.ts)
    → InAppMessageHost                 (mounted in each app's FullApp.tsx)
@@ -26,19 +28,32 @@ Schema is the single source of truth: `packages/learn-card-types/src/inAppMessag
 
 ## Golden rules
 
--   **Schema first.** Any new field/action/predicate starts in `@learncard/types/inAppMessages.ts`,
-    then flows through `predicates.ts` (if it affects matching) and the UI. Keep `.passthrough()` /
-    safe defaults so old clients never break on new flag fields.
--   **Fail closed.** Missing/unparseable data in a predicate must return `false`, never throw. A
-    malformed flag must degrade to "show nothing" (see `parseInAppMessagesFlag`).
--   **`predicates.ts` stays pure** — no React, no Capacitor, no I/O. It is the unit-tested core.
-    Every predicate/semver change requires a test in `__tests__/predicates.test.ts`.
--   **Native plugins are dynamic-imported** (`@capacitor/app`, `@capgo/capacitor-updater`,
-    `@capacitor/browser`) and guarded, so the web bundle and non-native paths never break. Do **not**
-    add static imports of these, and do **not** add `@capacitor/app-launcher` (not installed).
--   **UI follows `apps/*/AGENTS.md`**: only `grayscale-*/emerald-*/amber-*/red-*` tokens, `font-poppins`,
-    `rounded-[20px]` pill buttons, `animate-fade-in-up`, Ionicons (no raw emoji). No `IonModal`/`IonInput`.
--   **No `any` / `@ts-ignore` / `@ts-expect-error`.** Keep comments minimal (a repo hook flags them).
+- **Versioned delivery.** Credential targeting and all triggers belong in `inAppMessagesV2`.
+  Keep `inAppMessages` parseable by released clients; payload version numbers do not isolate it.
+- **Schema first.** Any new field/action/predicate starts in `@learncard/types/inAppMessages.ts`,
+  then flows through `predicates.ts` (if it affects matching) and the UI. Keep `.passthrough()` /
+  safe defaults so old clients never break on new flag fields.
+- **Fail closed.** Missing/unparseable data in a predicate must return `false`, never throw. A
+  malformed envelope must degrade to "show nothing"; invalid messages must not discard valid siblings.
+- **`predicates.ts` stays pure** — no React, no Capacitor, no I/O. It is the unit-tested core.
+  Every predicate/semver change requires a test in `__tests__/predicates.test.ts`.
+- **Native plugins are dynamic-imported** (`@capacitor/app`, `@capgo/capacitor-updater`,
+  `@capacitor/browser`) and guarded, so the web bundle and non-native paths never break. Do **not**
+  add static imports of these, and do **not** add `@capacitor/app-launcher` (not installed).
+- **UI follows `apps/*/AGENTS.md`**: only `grayscale-*/emerald-*/amber-*/red-*` tokens, `font-poppins`,
+  `rounded-[20px]` pill buttons, `animate-fade-in-up`, Ionicons (no raw emoji). No `IonModal`/`IonInput`.
+- **No `any` / `@ts-ignore` / `@ts-expect-error`.** Keep comments minimal (a repo hook flags them).
+- **Credential privacy.** Never log summaries or credential-derived traces, or put them in
+  analytics, Sentry, persisted React Query, or network payloads. Local debug inspection is allowed.
+- **Incomplete negation vetoes the whole message.** Propagate the internal sentinel through
+  every `all`/`any`/`not` branch; never let an unrelated matching OR branch bypass it.
+- **One backfill per active DID.** Reuse `credentialFactsLoader.ts`, resolved-query cache entries,
+  batches of four, and the 200-read session budget. Only explicit debug backfill bypasses the budget.
+  Stop stale account work before publishing; logout clears both persisted and in-memory facts/events.
+- **Claim ordering.** Successful claim helpers add the summary before emitting `credential.claimed`.
+  Bookkeeping failure must not fail a claim. No event for a failed index write or unaccepted
+  consent-flow credential. Defer claim recording during consent sync and exclude ownership-marker
+  entries from backfill until acceptance succeeds.
 
 ## How to extend
 
@@ -102,14 +117,14 @@ stable for `settleDelayMs`.
 
 Rules when touching this:
 
--   Keep `routeSuppression.ts` **React-free and pure** (it's unit-tested and imported by the pure
-    predicates test). Do not import React/stores/`react-router` into it — that pulls the heavy graph
-    into the vitest node env and breaks collection. Put anything hook-based in `usePresentationGate.ts`.
--   Prefix matching is `pathname === prefix || pathname.startsWith(prefix + '/')` — avoid bare
-    `startsWith(prefix)` (over-matches `/connections` for `/connect`).
--   New critical routes → add to `DEFAULT_SUPPRESSED_ROUTE_PREFIXES` (covers both apps) or pass
-    `suppressedRoutePrefixes` from the app mount for app-specific paths.
--   The host's gate props are optional; both apps currently mount `<InAppMessageHost />` bare.
+- Keep `routeSuppression.ts` **React-free and pure** (it's unit-tested and imported by the pure
+  predicates test). Do not import React/stores/`react-router` into it — that pulls the heavy graph
+  into the vitest node env and breaks collection. Put anything hook-based in `usePresentationGate.ts`.
+- Prefix matching is `pathname === prefix || pathname.startsWith(prefix + '/')` — avoid bare
+  `startsWith(prefix)` (over-matches `/connections` for `/connect`).
+- New critical routes → add to `DEFAULT_SUPPRESSED_ROUTE_PREFIXES` (covers both apps) or pass
+  `suppressedRoutePrefixes` from the app mount for app-specific paths.
+- The host's gate props are optional; both apps currently mount `<InAppMessageHost />` bare.
 
 ## Debugging
 
@@ -123,7 +138,7 @@ module-level `lastReport` (read via `getLastInAppMessagesReport()`); `debugGloba
 
 When adding logging: call `iamDebug(...)` (never raw `console`), keep the report cheap (it runs
 every evaluation), and add a `tracePredicate` branch for any new predicate leaf so the trace labels
-stay complete.
+stay complete. Keep credential traces in the local report only, never in `iamDebug`.
 
 ### Force/preview override (dev-only)
 
@@ -138,22 +153,23 @@ state or affect the real evaluation path.
 ## Verify before you finish
 
 ```bash
-# Unit tests for the pure core (fast — no nx build)
-cd packages/learn-card-base && bunx vitest run src/in-app-messages/__tests__/predicates.test.ts
+# Pure core, persistence, loader, hook, and host tests
+cd packages/learn-card-base && bunx vitest run src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts
+# Also run schema tests in packages/learn-card-types and builder/dry-run tests in learn-card-app.
 ```
 
--   Run `lsp_diagnostics` on changed files in this folder and on `apps/*/src/FullApp.tsx`.
--   If you touched the schema, sanity-check both apps still type-check (they consume it as source).
+- Run `lsp_diagnostics` on changed files in this folder and on `apps/*/src/FullApp.tsx`.
+- If you touched the schema, sanity-check both apps still type-check (they consume it as source).
 
 ## Gotchas
 
--   The host is mounted inside the router + `ModalsProvider` in `FullApp.tsx`, under the `LDProvider`
-    at `index.tsx`. `useHistory()` / `useFlags()` therefore work; don't move the host above them.
--   `frequency: "once"` persists in `localStorage` (`lcb-in-app-messages-seen`). During manual
-    testing call `resetInAppMessageDismissals()` (exported) or clear that key to see a message again.
--   JSX string literals with apostrophes must be wrapped (`{"You're …"}`) — ESLint
-    `react/no-unescaped-entities`.
--   LaunchDarkly here is **client-side only**; there is no server evaluation. All targeting is on-device.
+- The host is mounted inside the router + `ModalsProvider` in `FullApp.tsx`, under the `LDProvider`
+  at `index.tsx`. `useHistory()` / `useFlags()` therefore work; don't move the host above them.
+- `frequency: "once"` persists in `localStorage` (`lcb-in-app-messages-seen`). During manual
+  testing call `resetInAppMessageDismissals()` (exported) or clear that key to see a message again.
+- JSX string literals with apostrophes must be wrapped (`{"You're …"}`) — ESLint
+  `react/no-unescaped-entities`.
+- LaunchDarkly here is **client-side only**; there is no server evaluation. All targeting is on-device.
 
 ```
 
