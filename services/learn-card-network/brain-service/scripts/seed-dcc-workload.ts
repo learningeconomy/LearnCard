@@ -13,6 +13,7 @@ import { pathToFileURL } from 'node:url';
 import type { BundleManifestV11, CatalogReadinessGate, WorkloadPackage } from '@learncard/types';
 import {
     buildDccCoreWorkloadPackage,
+    buildDccExchangeWorkloadPackage,
     buildDccStatusWorkloadPackage,
 } from './fixtures/dcc-workload';
 import { DCC_READINESS } from './fixtures/dcc-tools';
@@ -28,7 +29,8 @@ const STATUS_LIST_GATE: CatalogReadinessGate = {
 export const seedDccWorkload = async (
     curatorSeed = 'a'.repeat(64),
     publisherSeed = process.env.DCC_DEV_PUBLISHER_SEED ?? 'b'.repeat(64),
-    status = false
+    status = false,
+    exchange = false
 ): Promise<{
     workload: { packageId: string; packageVersionId: string; manifestHash: string };
     bundle: { listingId: string; versionId: string; manifest: BundleManifestV11 };
@@ -52,10 +54,12 @@ export const seedDccWorkload = async (
 
     const curatorDid = (await getLearnCard(curatorSeed)).id.did();
     environment.WORKLOAD_CURATOR_DIDS = curatorDid;
-    const draft = status
-        ? buildDccStatusWorkloadPackage(curatorDid)
-        : buildDccCoreWorkloadPackage(curatorDid);
-    const bundleRelease = status ? '1.3.1' : '1.2.0';
+    const draft = exchange
+        ? buildDccExchangeWorkloadPackage(curatorDid)
+        : status
+          ? buildDccStatusWorkloadPackage(curatorDid)
+          : buildDccCoreWorkloadPackage(curatorDid);
+    const bundleRelease = exchange ? '1.4.2' : status ? '1.3.1' : '1.2.0';
     const signedPackage = await signManifestWithDidKey<WorkloadPackage>(draft, curatorSeed);
 
     const existingPackageVersion = await neogma.queryRunner.run(
@@ -77,6 +81,12 @@ export const seedDccWorkload = async (
         ),
         STATUS_LIST_GATE,
     ];
+    if (exchange)
+        readiness.push({
+            name: 'Learner claim choice (consent)',
+            status: 'OPEN',
+            note: 'Exchange claims are not consent-gated; wallet-claim-choice design deferred.',
+        });
     const publisherDid = dccTools.bundle.manifest.publisherDid;
     const unsignedBundle: Omit<BundleManifestV11, 'signature'> = {
         apiVersion: 'lc.bundle/v1.1',
@@ -170,7 +180,8 @@ const main = async (): Promise<void> => {
         const result = await seedDccWorkload(
             undefined,
             undefined,
-            process.argv.includes('--status')
+            process.argv.includes('--status'),
+            process.argv.includes('--exchange')
         );
         console.log('DCC workload seeded (no deployment; readiness gates remain open):', result);
     } finally {

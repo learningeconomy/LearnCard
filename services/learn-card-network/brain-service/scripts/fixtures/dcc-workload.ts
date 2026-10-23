@@ -371,3 +371,228 @@ export const buildDccStatusWorkloadPackage = (
     core.artifacts.module.ref = { uri: `https://example.invalid/sha256/${hash}`, sha256: hash };
     return core;
 };
+
+export const DCC_TRANSACTION_SERVICE_IMAGE =
+    'docker.io/digitalcredentials/transaction-service@sha256:937924f3b383426a41e95cfa63b53d14a5d03e861889a699ddcd99cc744bde75';
+export const DCC_WORKFLOW_COORDINATOR_IMAGE =
+    'docker.io/digitalcredentials/workflow-coordinator@sha256:a4b534d6e0c0b7c78e32da4802044afd78ef6cbf915b59e86ab6aaa58357e2d7';
+
+/** Fixed, hash-bound read-only proxy. Raw paths are validated without URL normalization. */
+export const DCC_STATUS_GATEWAY_SCRIPT = [
+    'const http = require("node:http");',
+    'const upstream = process.env.STATUS_UPSTREAM;',
+    'if (!upstream || !/^[a-z0-9-]+:[0-9]+$/.test(upstream)) process.exit(1);',
+    'http.createServer((req, res) => {',
+    'if (req.method !== "GET" && req.method !== "HEAD") { res.writeHead(405); res.end(); return; }',
+    'const path = req.url;',
+    'if (path === "/") { res.writeHead(200, {"Content-Type":"text/plain"}); res.end("ok"); return; }',
+    'if (!/^\\/[A-Za-z0-9_-]{1,128}$/.test(path) || path === "/credentials") { res.writeHead(404); res.end(); return; }',
+    'let finished = false; let outgoing;',
+    'const fail = () => { if (finished) return; finished = true; clearTimeout(timer); if (outgoing) outgoing.destroy(); res.writeHead(502); res.end(); };',
+    'const timer = setTimeout(fail, 5000);',
+    'res.on("close", () => { clearTimeout(timer); if (outgoing) outgoing.destroy(); });',
+    'try { outgoing = http.request("http://" + upstream + path, {method:req.method, headers:req.headers.accept ? {Accept:req.headers.accept} : {}}, (response) => {',
+    'if (finished) { response.destroy(); return; }',
+    'if (Number(response.headers["content-length"]) > 1048576) { fail(); response.destroy(); return; }',
+    'const chunks = []; let size = 0;',
+    'response.on("data", (chunk) => { if (finished) return; size += chunk.length; if (size > 1048576) { fail(); response.destroy(); } else chunks.push(chunk); });',
+    'response.on("error", fail); response.on("aborted", fail);',
+    'response.on("end", () => { if (finished) return; finished = true; clearTimeout(timer); const type = response.headers["content-type"]; res.writeHead(response.statusCode || 502, type ? {"Content-Type":type} : {}); res.end(Buffer.concat(chunks)); });',
+    '}); outgoing.on("error", fail); outgoing.end(); } catch { fail(); }',
+    '}).listen(4010);',
+].join(' ');
+
+/** Local exchange candidate, NOT consent-gated; published core/status manifests are immutable. */
+export const buildDccExchangeWorkloadPackage = (
+    publisherDid: string
+): Omit<WorkloadPackage, 'signature'> => {
+    const exchange = structuredClone(buildDccStatusWorkloadPackage(publisherDid));
+    const check = { timeoutMs: 2000, intervalMs: 5000, startupDeadlineMs: 120000 };
+    exchange.components.push(
+        {
+            id: 'status-gateway',
+            image: DCC_TRANSACTION_SERVICE_IMAGE,
+            platform: 'linux/arm64',
+            user: '1000:1000',
+            command: ['node', '-e', DCC_STATUS_GATEWAY_SCRIPT],
+            ports: [{ name: 'service', containerPort: 4010, protocol: 'tcp' }],
+            healthcheck: { kind: 'http', port: 'service', path: '/', ...check },
+            dependsOn: ['status-service-db'],
+            resources: { cpuMillis: 100, memoryMiB: 64, pids: 32 },
+            volumes: [],
+            env: [
+                {
+                    name: 'STATUS_UPSTREAM',
+                    source: {
+                        kind: 'endpoint',
+                        endpointId: 'status-service',
+                        part: 'hostport',
+                        address: 'private',
+                    },
+                },
+            ],
+        },
+        {
+            id: 'transaction-service',
+            image: DCC_TRANSACTION_SERVICE_IMAGE,
+            platform: 'linux/arm64',
+            user: '1000:1000',
+            tmpfs: [{ path: '/tmp', sizeMiB: 16 }],
+            ports: [{ name: 'service', containerPort: 4004, protocol: 'tcp' }],
+            // /healthz mutates exchange state; only use the shallow root probe.
+            healthcheck: { kind: 'http', port: 'service', path: '/', ...check },
+            dependsOn: [],
+            resources: { cpuMillis: 250, memoryMiB: 256, pids: 64 },
+            volumes: [],
+            env: [{ name: 'PORT', source: { kind: 'literal', value: '4004' } }],
+        },
+        {
+            id: 'workflow-coordinator',
+            image: DCC_WORKFLOW_COORDINATOR_IMAGE,
+            platform: 'linux/arm64',
+            user: '1000:1000',
+            tmpfs: [
+                { path: '/app/logs', sizeMiB: 16 },
+                { path: '/tmp', sizeMiB: 16 },
+            ],
+            ports: [{ name: 'service', containerPort: 4005, protocol: 'tcp' }],
+            healthcheck: { kind: 'http', port: 'service', path: '/', ...check },
+            dependsOn: ['transaction-service', 'signing-service', 'status-service-db'],
+            resources: { cpuMillis: 500, memoryMiB: 512, pids: 128 },
+            volumes: [],
+            env: [
+                { name: 'PORT', source: { kind: 'literal', value: '4005' } },
+                { name: 'ENABLE_STATUS_SERVICE', source: { kind: 'literal', value: 'true' } },
+                { name: 'ENABLE_HTTPS_FOR_DEV', source: { kind: 'literal', value: 'false' } },
+                { name: 'ENABLE_ACCESS_LOGGING', source: { kind: 'literal', value: 'false' } },
+                {
+                    name: 'SIGNING_SERVICE',
+                    source: {
+                        kind: 'endpoint',
+                        endpointId: 'signing-service',
+                        part: 'hostport',
+                        address: 'private',
+                    },
+                },
+                {
+                    name: 'STATUS_SERVICE',
+                    source: {
+                        kind: 'endpoint',
+                        endpointId: 'status-service',
+                        part: 'hostport',
+                        address: 'private',
+                    },
+                },
+                {
+                    name: 'TRANSACTION_SERVICE',
+                    source: {
+                        kind: 'endpoint',
+                        endpointId: 'transaction-service',
+                        part: 'hostport',
+                        address: 'private',
+                    },
+                },
+                {
+                    name: 'PUBLIC_EXCHANGE_HOST',
+                    source: {
+                        kind: 'endpoint',
+                        endpointId: 'exchange',
+                        part: 'origin',
+                        address: 'published',
+                    },
+                },
+                { name: 'TENANT_TOKEN_EDU', source: { kind: 'secret', name: 'tenant-token-edu' } },
+                {
+                    name: 'TENANT_TOKEN_TEST',
+                    source: { kind: 'secret', name: 'tenant-token-test' },
+                },
+                {
+                    name: 'TENANT_TOKEN_RANDOM',
+                    source: { kind: 'secret', name: 'tenant-token-random' },
+                },
+            ],
+        }
+    );
+    const statusService = exchange.components.find(
+        (component): boolean => component.id === 'status-service-db'
+    )!;
+    const statusOrigin = statusService.env.find(
+        (entry): boolean => entry.name === 'STATUS_CRED_SITE_ORIGIN'
+    )!;
+    statusOrigin.source = {
+        kind: 'endpoint',
+        endpointId: 'status-public',
+        part: 'origin',
+        address: 'published',
+    };
+    exchange.secretRefs
+        .find((secret): boolean => secret.name === 'tenant-token-edu')!
+        .consumers.push('workflow-coordinator');
+    for (const tenant of ['test', 'random']) {
+        exchange.secretRefs.push({
+            name: `tenant-token-${tenant}`,
+            purpose: `Protect the workflow-coordinator default ${tenant} tenant`,
+            consumers: ['workflow-coordinator'],
+            required: true,
+            provisioning: { kind: 'generate', format: 'token', bytes: 32 },
+        });
+    }
+    exchange.endpoints.push(
+        {
+            id: 'status-public',
+            component: 'status-gateway',
+            port: 'service',
+            path: '/',
+            protocol: 'http',
+            readiness: { path: '/' },
+            visibility: 'ecosystem',
+            auth: 'none',
+            purpose: 'status-list-publication',
+            preserveOnRetirement: false,
+        },
+        {
+            id: 'transaction-service',
+            component: 'transaction-service',
+            port: 'service',
+            path: '/',
+            protocol: 'http',
+            visibility: 'internal',
+            auth: 'none',
+            purpose: 'exchange-state',
+            preserveOnRetirement: false,
+        },
+        {
+            id: 'exchange',
+            component: 'workflow-coordinator',
+            port: 'service',
+            path: '/exchange',
+            protocol: 'http',
+            readiness: { path: '/' },
+            visibility: 'ecosystem',
+            auth: 'tenant-token',
+            purpose: 'credential-exchange',
+            preserveOnRetirement: false,
+        }
+    );
+    exchange.upstream.push(
+        {
+            name: 'DCC transaction-service',
+            repository: 'https://github.com/digitalcredentials/transaction-service',
+            license: 'MIT',
+            ref: '0.4.0',
+        },
+        {
+            name: 'DCC workflow-coordinator',
+            repository: 'https://github.com/digitalcredentials/workflow-coordinator',
+            license: 'MIT',
+            ref: '1.0.1',
+        }
+    );
+    exchange.id = 'org.dcc.issuer-exchange';
+    exchange.version = '1.0.2';
+    exchange.profiles[0]!.components = exchange.components.map((component): string => component.id);
+    exchange.sizing[0]!.resources = { cpuMillis: 2850, memoryMiB: 2880, pids: 736 };
+    const hash = createHash('sha256').update(JSON.stringify(exchange.components)).digest('hex');
+    exchange.artifacts.module.ref = { uri: `https://example.invalid/sha256/${hash}`, sha256: hash };
+    return exchange;
+};
