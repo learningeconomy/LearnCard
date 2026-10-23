@@ -6,14 +6,16 @@
 //   - A check that doesn't finish normally (spawn failure, signal, OOM, odd exit code) fails,
 //     and `--update` refuses to write a baseline from it.
 //   - `--update` (bun run typecheck:baseline) rewrites the baseline from the current counts.
+//   - `--report=PATH` writes full diagnostics for an advisory PR-base comparison.
 // Counts depend on build state, so run it the way CI does: install, build the libraries
 // (`nx run-many -t build` over lib projects), compile Paraglide messages, then this script.
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, cpus } from 'node:os';
 import { dirname, join, relative } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import ts from 'typescript';
+import { createDiagnosticReport } from './typecheck-diagnostics.mjs';
 
 // Data shapes:
 //   Project = { name, root, checks: Check[], incomplete?: string }   Check = { cmd, args, cwd }
@@ -221,6 +223,7 @@ export const nextBaseline = (results, baseline, only) => {
 const main = async () => {
     const BASELINE = 'scripts/typecheck-baseline.json';
     const update = process.argv.includes('--update');
+    const reportFile = process.argv.find(a => a.startsWith('--report='))?.slice('--report='.length);
     const only = process.argv.filter(a => a.startsWith('--project=')).map(a => a.slice(10));
 
     const projects = toProjects('.', nxProjects('.')).filter(
@@ -238,6 +241,14 @@ const main = async () => {
 
     const baseline = readJson(BASELINE);
     const { incomplete, raised, lowered, pass } = verdict(results, baseline);
+    if (reportFile) {
+        mkdirSync(dirname(reportFile), { recursive: true });
+        writeFileSync(
+            reportFile,
+            JSON.stringify(createDiagnosticReport(results, baseline, '.'), null, 2) + '\n'
+        );
+        console.log(`Diagnostic report: ${reportFile}`);
+    }
 
     for (const r of results) {
         const allowed = baseline[r.name] ?? 0;
@@ -286,10 +297,21 @@ const main = async () => {
 
     for (const r of raised) {
         console.error(`\n${r.name}: ${r.count} type errors, baseline ${baseline[r.name] ?? 0}.`);
-        for (const line of r.errors.slice(0, 30)) console.error(`  ${line}`);
+        if (reportFile)
+            console.error(
+                `  Full diagnostics saved in ${reportFile}; the PR comparison reports added diagnostics separately.`
+            );
+        else {
+            console.error(
+                '  Current diagnostic sample (first 30; not necessarily introduced by this branch):'
+            );
+            for (const line of r.errors.slice(0, 30)) console.error(`  ${line}`);
+        }
     }
     if (raised.length)
-        console.error('\nFix the new type errors. Do not raise the baseline to make this pass.');
+        console.error(
+            '\nFix the errors above allowance; use the PR comparison to identify additions. Do not raise the baseline to make this pass.'
+        );
     if (incomplete.length) console.error('\nA typecheck that does not finish counts as a failure.');
     process.exit(pass ? 0 : 1);
 };
