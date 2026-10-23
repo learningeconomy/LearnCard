@@ -11,14 +11,15 @@ import cache from '@cache';
 import { campaignsRouter } from '@routes/campaigns';
 import { getLiveCampaignsForProfile } from '@accesslayer/campaign/read';
 import { campaignTimeParams } from '@accesslayer/campaign/shared';
+import { constructUri } from '@helpers/uri.helpers';
 import { ensureCampaignConstraints } from '../src/models/campaign-constraints';
 
 const domain = 'localhost%3A3000';
 const tenant = resolveTenantFromRequest({}, 'learncard');
 const did = (profileId: string): string => `did:key:${profileId}`;
-const caller = (profileId: string, scope = '*:*') =>
+const caller = (profileId: string, scope = '*:*', callerDomain = domain) =>
     campaignsRouter.createCaller({
-        domain,
+        domain: callerDomain,
         tenant,
         user: { did: did(profileId), scope, isChallengeValid: true },
     });
@@ -198,7 +199,7 @@ describe('campaign audiences', () => {
     it('deduplicates DID aliases and verified emails, applies minor policy, and pages eligible profiles', async () => {
         await admin.create(draft());
         await neogma.queryRunner.run(
-            `MATCH (p:Profile {profileId: 'learner'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {type:'email', value:'learner@example.com', isVerified:true})`
+            `MATCH (p:Profile {profileId: 'learner'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {type:'email', value:'  Learner@Example.COM  ', isVerified:true})`
         );
         await neogma.queryRunner.run(
             `MATCH (p:Profile {profileId: 'other'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {type:'email', value:'unverified@example.com', isVerified:false})`
@@ -217,6 +218,14 @@ describe('campaign audiences', () => {
         expect(await admin.previewAudience(inputs)).toEqual({ count: 2 });
         expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(0);
         expect(await admin.addAudience(inputs)).toEqual({ count: 2 });
+        expect(
+            await admin.previewAudience(
+                audience({
+                    type: 'emails',
+                    emails: ['LEARNER@example.com', 'unverified@example.com'],
+                })
+            )
+        ).toEqual({ count: 1 });
         expect(
             await admin.addAudience(
                 audience({
@@ -334,6 +343,22 @@ describe('campaign audiences', () => {
         expect(await admin.addAudience(audience({ ...boostSource, includePending: true }))).toEqual(
             { count: 2 }
         );
+        for (const [callerDomain, boostUri] of [
+            [
+                'pr-99.preview.learncard.ai:brain',
+                constructUri('boost', 'test-boost', 'pr-99.preview.learncard.ai:brain'),
+            ],
+            [
+                'pr-99.preview.learncard.ai:brain',
+                'lc:network:pr-99.preview.learncard.ai%3Abrain/trpc:boost:test-boost',
+            ],
+            ['network.learncard.app', constructUri('boost', 'test-boost', 'network.learncard.app')],
+        ] as const) {
+            const domainAdmin = caller('campaign-admin', '*:*', callerDomain);
+            expect(
+                await domainAdmin.previewAudience(audience({ type: 'boostRecipients', boostUri }))
+            ).toEqual({ count: 1 });
+        }
         expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(2);
         await expect(
             admin.previewAudience(

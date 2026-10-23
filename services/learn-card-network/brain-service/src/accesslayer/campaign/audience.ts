@@ -8,7 +8,7 @@ import {
 
 import { neogma } from '@instance';
 import { traceDb } from '@tracing';
-import { getUriParts } from '@helpers/uri.helpers';
+import { constructUri, getUriParts } from '@helpers/uri.helpers';
 import type { CampaignAudienceQuery } from 'types/campaign';
 import {
     assertCampaignEditable,
@@ -18,6 +18,12 @@ import {
     withCampaignTransaction,
 } from './shared';
 import { getCampaign } from './read';
+
+const canonicalNetworkDomain = (domain: string): string => {
+    const decodedDomain = domain.replace(/\/trpc$/, '').replace(/%3A/gi, ':');
+
+    return getUriParts(constructUri('boost', 'domain-check', decodedDomain)).domain;
+};
 
 export const buildCampaignAudienceQuery = (
     rawSource: CampaignAudienceSource,
@@ -33,7 +39,8 @@ export const buildCampaignAudienceQuery = (
         case 'emails':
             return {
                 match: `MATCH (p:Profile)-[:HAS_CONTACT_METHOD]->(contact:ContactMethod)
-                    WHERE contact.type = 'email' AND contact.isVerified = true AND contact.value IN $emails`,
+                    WHERE contact.type = 'email' AND contact.isVerified = true
+                      AND toLower(trim(contact.value)) IN $emails`,
                 params: { emails: source.emails },
             };
         case 'inboxClaims':
@@ -47,7 +54,10 @@ export const buildCampaignAudienceQuery = (
             const params: Record<string, unknown> = { includePending: source.includePending };
             if (source.type === 'boostRecipients') {
                 const uri = getUriParts(source.boostUri);
-                if (uri.type !== 'boost' || uri.domain.replace(/\/trpc$/, '') !== domain) {
+                if (
+                    uri.type !== 'boost' ||
+                    canonicalNetworkDomain(uri.domain) !== canonicalNetworkDomain(domain)
+                ) {
                     throw new TRPCError({
                         code: 'BAD_REQUEST',
                         message: 'A boost URI from this network is required',

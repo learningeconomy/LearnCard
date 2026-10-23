@@ -140,6 +140,7 @@ jobs:
                     > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
 
             - name: Verify campaign SDK authorization boundaries
+              id: campaigns
               run: |
                   bun run --cwd apps/learn-card-app lc verify script \
                     services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
@@ -185,7 +186,7 @@ jobs:
             - name: Write sanitized status summary
               if: ${{ always() }}
               env:
-                  VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
+                  VERIFICATION_OUTCOME: ${{ steps.catalog.outcome == 'success' && steps.campaigns.outcome || steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
               run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
 

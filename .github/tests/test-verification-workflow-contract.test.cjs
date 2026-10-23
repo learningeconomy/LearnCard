@@ -19,20 +19,29 @@ const campaignsIndex = steps.findIndex(
     step => step.name === 'Verify campaign SDK authorization boundaries'
 );
 const teardownIndex = steps.findIndex(step => step.name === 'Always tear down owned resources');
+const summaryIndex = steps.findIndex(step => step.name === 'Write sanitized status summary');
 
 assert.ok(catalogIndex >= 0, 'catalog step must exist');
 assert.ok(campaignsIndex > catalogIndex, 'campaign proof must follow the catalog');
 assert.ok(teardownIndex > campaignsIndex, 'owned resources must be torn down after campaign proof');
+assert.ok(summaryIndex > teardownIndex, 'sanitized summary must follow teardown');
 
 const catalog = steps[catalogIndex];
 assert.match(catalog.run, /verify_args=\(run all --fresh --keep --json --dir "\$STACK_DIR"\)/);
 
 const campaigns = steps[campaignsIndex];
+assert.equal(campaigns.id, 'campaigns');
 assert.match(campaigns.run, /lc verify script/);
 assert.match(campaigns.run, /--dir "\$STACK_DIR"/);
 
 const teardown = steps[teardownIndex];
 assert.equal(teardown.if, '${{ always() }}');
 assert.match(teardown.run, /lc verify down --force --dir "\$STACK_DIR"/);
+
+const summary = steps[summaryIndex];
+assert.equal(
+    summary.env.VERIFICATION_OUTCOME,
+    "${{ steps.catalog.outcome == 'success' && steps.campaigns.outcome || steps.catalog.outcome }}"
+);
 
 console.log('verification workflow lifecycle contract passed');
