@@ -1232,7 +1232,9 @@
             "notDeveloper": "¿No eres desarrollador? ",
             "signInNormally": "Iniciar sesión normalmente",
             "securityWarning": "Mantén tu semilla en privado. Cualquiera que la tenga controla esta cuenta.",
-            "pasteHint": "Pégala en el campo de abajo."
+            "pasteHint": "Pégala en el campo de abajo.",
+            "showSeed": "Mostrar semilla",
+            "hideSeed": "Ocultar semilla"
         },
         "loader": {
             "messages": {
