@@ -427,6 +427,68 @@ export const BindingRevisionsValidator = z.object({
 });
 export type BindingRevisions = z.infer<typeof BindingRevisionsValidator>;
 
+const RecordFieldNameValidator = z.string().min(1).max(100);
+
+/** ADR-012 §3.2 Transactional intent declaration, plus a declared retention for stored records. */
+export const RecordProvisioningTransactionalDeclarationValidator = z
+    .object({
+        triggerAuthority: z.enum(['learner', 'operator', 'system-event']),
+        purpose: z.string().min(1).max(2000),
+        fields: z.array(RecordFieldNameValidator).min(1).max(50),
+        idempotencyKeyField: RecordFieldNameValidator,
+        timeoutMs: z.number().int().positive().max(60000),
+        maxRetries: z.number().int().nonnegative().max(10),
+        retentionDays: z.number().int().positive().max(365),
+    })
+    .strict();
+export type RecordProvisioningTransactionalDeclaration = z.infer<
+    typeof RecordProvisioningTransactionalDeclarationValidator
+>;
+
+/** ADR-013 §3.1 capabilityMetadata for `record-provisioning`. ETL declarations are not yet defined. */
+export const RecordProvisioningBindingMetadataValidator = z
+    .object({
+        capability: z.literal('record-provisioning'),
+        mode: z.enum(['TRANSACTIONAL', 'ETL']),
+        recordClass: RecordClassEnum,
+        legalBasis: z.string().min(1).max(2000),
+        identityBinding: z.enum([
+            'roster-mapped',
+            'subject-directed-claim',
+            'attested-match-confirmed',
+        ]),
+        transactional: RecordProvisioningTransactionalDeclarationValidator.optional(),
+    })
+    .strict()
+    .superRefine((metadata, ctx) => {
+        // ADR-012 §3.2: the per-mode declaration is required, and only for its own mode.
+        if ((metadata.mode === 'TRANSACTIONAL') !== Boolean(metadata.transactional)) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['transactional'],
+                message:
+                    'A Transactional declaration is required for, and only for, TRANSACTIONAL mode.',
+            });
+        }
+        if (
+            metadata.transactional &&
+            !metadata.transactional.fields.includes(metadata.transactional.idempotencyKeyField)
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['transactional', 'idempotencyKeyField'],
+                message: 'The idempotency key must be one of the declared fields.',
+            });
+        }
+    });
+export type RecordProvisioningBindingMetadata = z.infer<
+    typeof RecordProvisioningBindingMetadataValidator
+>;
+
+/** Capability-selected Binding metadata slot (ADR-013 §3.1); one member per capability that needs it. */
+export const BindingCapabilityMetadataValidator = RecordProvisioningBindingMetadataValidator;
+export type BindingCapabilityMetadata = z.infer<typeof BindingCapabilityMetadataValidator>;
+
 export const BindingValidator = z.object({
     apiVersion: z.literal('lc.binding/v1'),
     bindingId: z.string(),
@@ -438,6 +500,7 @@ export const BindingValidator = z.object({
     approvedBy: z.string().optional(),
     approvedAt: z.string().datetime().optional(),
     revisions: BindingRevisionsValidator,
+    capabilityMetadata: BindingCapabilityMetadataValidator.optional(),
 });
 export type Binding = z.infer<typeof BindingValidator>;
 
@@ -446,6 +509,7 @@ export const BindingProposalValidator = z.object({
     provider: BindingEndpointValidator,
     consumer: BindingEndpointValidator,
     reason: z.string().max(280).optional(),
+    capabilityMetadata: BindingCapabilityMetadataValidator.optional(),
 });
 export type BindingProposal = z.infer<typeof BindingProposalValidator>;
 
