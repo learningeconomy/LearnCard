@@ -19,7 +19,6 @@ import {
     QRCodeScannerOverlay,
     ModalsProvider,
     useSQLiteInitWeb,
-    getLogger,
     InAppMessageHost,
     ConnectionPromptCoordinator,
 } from 'learn-card-base';
@@ -61,12 +60,10 @@ import ExternalAuthServiceProvider from './pages/sync-my-school/ExternalAuthServ
 import AuthCoordinatorProvider from './providers/AuthCoordinatorProvider';
 import { FeedbackProvider } from './feedback/reporting';
 import { useInitializeTheme } from './theme/hooks/useTheme';
-import { persister } from './helpers/queryPersistence';
 import type { LearnCardAppEnvironment } from './config/buildEnvironment';
+import { persister } from './helpers/queryPersistence';
 
 declare const __APP_BUILD_ENV__: LearnCardAppEnvironment;
-
-const log = getLogger('cache');
 
 const DevDebugPanel =
     __APP_BUILD_ENV__.DEV || __APP_BUILD_ENV__.VITE_ENABLE_AUTH_DEBUG_WIDGET

@@ -9,9 +9,9 @@ const mocks = vi.hoisted(() => ({
     get: vi.fn(),
     add: vi.fn(),
     upload: vi.fn(),
-    logError: vi.fn(),
     read: vi.fn(),
-    getContracts: vi.fn(),
+    getConsentedContracts: vi.fn(),
+    logError: vi.fn(),
     saveFact: vi.fn(),
 }));
 vi.mock('localforage', () => ({
@@ -65,7 +65,7 @@ vi.mock('@tanstack/react-query', () => ({
 }));
 vi.mock('./useSharedUrisInTerms', () => ({ getOrCreateSharedUriForWallet: vi.fn() }));
 vi.mock('./useConsentedContracts', () => ({
-    getOrFetchConsentedContracts: mocks.getContracts,
+    getOrFetchConsentedContracts: mocks.getConsentedContracts,
 }));
 vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
     queueAiInsightCredentialRefresh: vi.fn(),
@@ -92,15 +92,15 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
     vi.clearAllMocks();
-    vi.stubGlobal('crypto', webcrypto);
     clearInAppMessageEvents();
     await clearCredentialFacts();
+    vi.stubGlobal('crypto', webcrypto);
     records = [];
     mocks.saveFact.mockReset();
     mocks.saveFact.mockResolvedValue(undefined);
+    mocks.getConsentedContracts.mockReset().mockResolvedValue([]);
     mocks.upload.mockResolvedValue('encrypted-uri');
     mocks.read.mockResolvedValue(credential);
-    mocks.getContracts.mockResolvedValue([]);
     mocks.get.mockImplementation(async (query: Record<string, string>) =>
         records.filter(record =>
             Object.entries(query).every(
@@ -142,6 +142,11 @@ it.each([
     [
         'storeAndAddVCToWallet with a network account',
         () => useWallet().storeAndAddVCToWallet(credential),
+        'encrypted-uri',
+    ],
+    [
+        'storeAndAddVCToWallet with deferred contract sync',
+        () => useWallet().storeAndAddVCToWallet(credential, { deferContractSync: true }),
         'encrypted-uri',
     ],
     ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' }), 'existing-uri'],
@@ -201,7 +206,7 @@ it.each([
 ] as const)(
     'records a successful %s claim even if downstream contract sync fails',
     async (_name, claim) => {
-        mocks.getContracts.mockRejectedValueOnce(new Error('sync failed'));
+        mocks.getConsentedContracts.mockRejectedValueOnce(new Error('sync failed'));
 
         await expect(claim()).rejects.toThrow('sync failed');
 
@@ -274,6 +279,15 @@ it('finishes confirmed batch storage without waiting for sharing', async () => {
         expect(records).toEqual([
             { id: 'batch-credential', uri: 'encrypted-uri', category: 'Achievement' },
         ]);
+        expect(mocks.getConsentedContracts).not.toHaveBeenCalled();
+        await vi.waitFor(() =>
+            expect(getRecentInAppMessageEvents('did:example:claiming-account')).toEqual([
+                expect.objectContaining({
+                    event: 'credential.claimed',
+                    credential: expect.objectContaining({ uri: 'encrypted-uri' }),
+                }),
+            ])
+        );
     } finally {
         finishSharing.resolve([]);
         await saving;

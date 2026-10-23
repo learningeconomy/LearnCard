@@ -356,7 +356,7 @@ const TargetingDryRun: React.FC<{
             )}
 
             {selected && (
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     <div className="p-3 bg-white rounded-xl space-y-2 font-poppins">
                         <label
                             className="block text-xs text-grayscale-700"
