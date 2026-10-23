@@ -146,7 +146,26 @@ const main = async (): Promise<void> => {
         );
         issuerGroupId = String(group.id);
     }
-    const signingAuthority = await ensureManagedSigningAuthorityForProfile(issuerProfile, domain);
+    // KNOWN GAP (ADR-001 identity Groups): requireManagedIdentityProfile demands a stored
+    // `did:web …:users:` DID, but /users/:id/did.json resolves the stored DID, so that form
+    // makes the document resolve itself and hang. Like createManagedProfile, the Profile must
+    // store an underlying did:key. Created with the accepted form above, then rotated here.
+    if (issuerProfile.did.includes(':users:')) {
+        const { randomBytes } = await import('node:crypto');
+        const { getLearnCard } = await import('@helpers/learnCard.helpers');
+        const { deleteDidDocForProfile } = await import('@cache/did-docs');
+        const keyDid = (await getLearnCard(randomBytes(32).toString('hex'))).id.did();
+        await neogma.queryRunner.run('MATCH (p:Profile {profileId: $id}) SET p.did = $did', {
+            id: ISSUER_PROFILE_ID,
+            did: keyDid,
+        });
+        await deleteDidDocForProfile(ISSUER_PROFILE_ID);
+        console.log(`  Issuer identity: stored DID rotated to a did:key (see KNOWN GAP)`);
+    }
+    const signingAuthority = await ensureManagedSigningAuthorityForProfile(
+        (await getProfileByProfileId(ISSUER_PROFILE_ID)) ?? issuerProfile,
+        domain
+    );
     console.log(
         `  Issuer Group ${issuerGroupId} → ${ISSUER_PROFILE_ID} (SA ${signingAuthority.relationship.name})`
     );

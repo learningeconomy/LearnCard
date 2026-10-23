@@ -30,6 +30,7 @@
         "prove:dcc-workload": "bun scripts/prove-dcc-workload.ts",
         "prove:demo-lms": "SEED=a SKIP_DIDKIT_NAPI=true bun scripts/prove-demo-lms.ts",
         "seed:demo-lms": "SEED=a SKIP_DIDKIT_NAPI=true bun scripts/seed-demo-lms.ts",
+        "prove:demo-learner": "bun scripts/prove-demo-learner.ts",
         "seed:education-os": "SKIP_DIDKIT_NAPI=true bun scripts/seed-education-os.ts",
         "dev:bootstrap": "bun run backfill:listing-kind && bun run seed:education-os && bun run seed:dcc-tools",
         "seed:demo-persona": "SKIP_DIDKIT_NAPI=true bun --conditions=development scripts/seed-demo-persona.ts",
