@@ -806,7 +806,7 @@ describe('escrow strategy', () => {
     it('recovers with a PIN and rotates to hold-only material', async () => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
         const recovered = await recoverPin();
-        expect(recovered).toEqual({ privateKey, did, escrowEnrolled: true });
+        expect(recovered).toEqual({ privateKey, did, escrowEnrolled: true, escrowRecovery: true });
         expect(version).toBe(3);
         expect(blob?.pinVerifier).toBeUndefined();
         expect(await reconstructFromShares([(await storage.getDeviceShare())!, authShare])).toBe(
@@ -825,7 +825,12 @@ describe('escrow strategy', () => {
         expect(burned).toEqual(['escrow-hold']);
         expect(storage.storeDeviceShare).not.toHaveBeenCalled();
         expect(storage.storeShareVersion).not.toHaveBeenCalled();
-        await expect(recoverPin()).resolves.toEqual({ privateKey, did, escrowEnrolled: true });
+        await expect(recoverPin()).resolves.toEqual({
+            privateKey,
+            did,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+        });
         const starts = calls.filter(call => call.path === '/keys/escrow/recover');
         const completes = calls.filter(call => call.path === '/keys/escrow/complete');
         expect(starts).toHaveLength(2);
@@ -2051,6 +2056,7 @@ describe('createSSSStrategy', () => {
                 privateKey: fixture.privateKey,
                 did: fixture.did,
                 escrowEnrolled: false,
+                escrowRecovery: false,
             });
             expect(fixture.getRebindCalls()).toBe(1);
             expect(vi.mocked(storage.storeDeviceShare).mock.calls.slice(writes)).toEqual([

@@ -104,7 +104,13 @@ export class AuthCoordinator {
     private recoveryGeneration = 0;
     private escrowRecoveryInFlight = false;
     private escrowStatusGeneration = 0;
-    private recoveredEscrowAccount?: { did: string; userId: string; clearPin: true };
+    private recoveredEscrowAccount?: {
+        did: string;
+        userId: string;
+        clearPin: true;
+        /** Only recovery from an existing escrow enrollment skips the rollout gate. */
+        bypassRolloutGate: boolean;
+    };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -327,13 +333,14 @@ export class AuthCoordinator {
             let publishedEnrollment = false;
             let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                // Recovery rotates away the old enrollment; this is maintenance, not rollout.
+                // Escrow recovery rotates away the old enrollment; repairing it is maintenance, not rollout.
                 const recovered = this.recoveredEscrowAccount;
                 const repairingRecovery =
                     recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
-                const gate = repairingRecovery
-                    ? { allowed: true }
-                    : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
+                const gate =
+                    repairingRecovery && recovered.bypassRolloutGate
+                        ? { allowed: true }
+                        : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
                 if (gate.allowed) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
@@ -861,12 +868,13 @@ export class AuthCoordinator {
                     signDidAuthVp: this.config.signDidAuthVp,
                     options: this.recoveryContactOptions({ authUser }),
                 });
-                // Only a failed direct enrollment needs the scoped post-recovery repair.
+                // Only a failed or deferred direct enrollment needs the scoped repair.
                 if (!result.escrowEnrolled) {
                     this.recoveredEscrowAccount = {
                         did: result.did,
                         userId: authUser.id,
                         clearPin: true,
+                        bypassRolloutGate: result.escrowRecovery === true,
                     };
                 }
 
@@ -1339,7 +1347,7 @@ export class AuthCoordinator {
                 signDidAuthVp: this.config.signDidAuthVp,
                 options: this.recoveryContactOptions({ authUser }),
             };
-            const { privateKey, did, escrowEnrolled } =
+            const { privateKey, did, escrowEnrolled, escrowRecovery } =
                 isEscrow &&
                 this.keyDerivation.hasPendingIdentityRecovery?.() &&
                 this.keyDerivation.completeIdentityRecovery
@@ -1351,7 +1359,12 @@ export class AuthCoordinator {
             }
 
             if (isEscrow && !escrowEnrolled)
-                this.recoveredEscrowAccount = { did, userId: authUser.id, clearPin: true };
+                this.recoveredEscrowAccount = {
+                    did,
+                    userId: authUser.id,
+                    clearPin: true,
+                    bypassRolloutGate: escrowRecovery ?? true,
+                };
             this.setState({
                 status: 'ready',
                 authUser,

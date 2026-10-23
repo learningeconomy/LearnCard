@@ -1065,6 +1065,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
               recoveryShare: string;
               authShare: string;
               rebindSessionToken: string;
+              /** Recovered from an existing escrow enrollment (hold or PIN), not another method. */
+              fromEscrow: boolean;
               rebind?: { shares: SSSShares; storageId: string | undefined; attempted: boolean };
           }
         | undefined;
@@ -2581,6 +2583,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryShare: plaintext.recoveryShare,
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
+                    fromEscrow: true,
                 };
                 // The OTP path uses exactly this pending state and atomic rebind operation.
                 // Without a provider session the caller completes it after signing in.
@@ -3316,6 +3319,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryShare,
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
+                    fromEscrow: false,
                 };
 
                 return { privateKey, did: material.primaryDid };
@@ -3486,21 +3490,24 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 })
             );
 
-            const enrolled = await tryEnrollEscrow(
-                params.token,
-                params.providerType,
-                pending.privateKey,
-                pending.primaryDid,
-                shares,
-                shareVersion,
-                signDidAuthVp,
-                undefined,
-                undefined,
-                true,
-                storage.assertCurrent,
-                params.options?.recoveryEmail,
-                params.options?.recoveryLanguage
-            );
+            // Other recovery methods leave enrollment to the caller's rollout gate.
+            const enrolled =
+                pending.fromEscrow &&
+                (await tryEnrollEscrow(
+                    params.token,
+                    params.providerType,
+                    pending.privateKey,
+                    pending.primaryDid,
+                    shares,
+                    shareVersion,
+                    signDidAuthVp,
+                    undefined,
+                    undefined,
+                    true,
+                    storage.assertCurrent,
+                    params.options?.recoveryEmail,
+                    params.options?.recoveryLanguage
+                ));
             if (activeStorageId !== storageId || storageGeneration !== generation) {
                 throw new Error('This recovery request was cancelled.');
             }
@@ -3516,6 +3523,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 privateKey: pending.privateKey,
                 did: pending.primaryDid,
                 escrowEnrolled: enrolled,
+                escrowRecovery: pending.fromEscrow,
             };
         },
 

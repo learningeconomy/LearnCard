@@ -662,6 +662,7 @@ describe('AuthCoordinator', () => {
                         completeIdentityRecovery: vi.fn().mockResolvedValue({
                             privateKey: 'recovered-pk',
                             did: 'did:key:z123',
+                            escrowRecovery: true,
                         }),
                         ensureEscrowEnrollment,
                         setEscrowPin: vi.fn().mockResolvedValue(undefined),
@@ -725,6 +726,47 @@ describe('AuthCoordinator', () => {
                     }
                 }
             );
+            it.each([
+                [false, 0],
+                [true, 1],
+            ] as const)(
+                'gates repair after non-escrow identity recovery (in rollout: %s)',
+                async (allowed, calls) => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: true, changed: true });
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(allowed);
+                    const { coordinator } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            hasPendingIdentityRecovery: vi.fn().mockReturnValue(true),
+                            completeIdentityRecovery: vi.fn().mockResolvedValue({
+                                privateKey: 'recovered-pk',
+                                did: 'did:key:z123',
+                                escrowEnrolled: false,
+                                escrowRecovery: false,
+                            }),
+                            ensureEscrowEnrollment,
+                            getEscrowEnrollmentState: vi
+                                .fn()
+                                .mockResolvedValue({ state: 'not-enrolled' }),
+                        },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    coordinator.finishIdentityRecovery();
+                    await vi.waitFor(() =>
+                        expect(coordinator.getState()).toMatchObject({
+                            escrowEnrollment: 'not-enrolled',
+                        })
+                    );
+                    expect(isEscrowEnrollmentAllowed).toHaveBeenCalled();
+                    expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(calls);
+                    for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                        expect(params.options).toMatchObject({ clearPin: true });
+                    }
+                }
+            );
             it('retries failed clear-PIN recovery repair on the next refresh', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()
@@ -738,6 +780,7 @@ describe('AuthCoordinator', () => {
                         completeIdentityRecovery: vi.fn().mockResolvedValue({
                             privateKey: 'recovered-pk',
                             did: 'did:key:z123',
+                            escrowRecovery: true,
                         }),
                         ensureEscrowEnrollment,
                     },
@@ -781,6 +824,7 @@ describe('AuthCoordinator', () => {
                             completeIdentityRecovery: vi.fn().mockResolvedValue({
                                 privateKey: 'recovered-pk',
                                 did: 'did:key:z123',
+                                escrowRecovery: true,
                             }),
                             ensureEscrowEnrollment,
                             getEscrowEnrollmentState,
