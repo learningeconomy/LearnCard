@@ -9,7 +9,7 @@ RUN mvn --batch-mode --no-transfer-progress --strict-checksums \
 
 # start --optimized rejects changes to build-time options at runtime: bake them here.
 # In 26.7.4 HTTP_RELATIVE_PATH is build-time; CACHE and CACHE_STACK are runtime.
-FROM quay.io/keycloak/keycloak:26.8.0 AS builder
+FROM quay.io/keycloak/keycloak:26.8.1 AS builder
 COPY --from=jdbc --chown=keycloak:keycloak /jdbc/providers/ /opt/keycloak/providers/
 
 # Apple Identity Provider for Keycloak (https://github.com/klausbetz/apple-identity-provider-keycloak)
@@ -30,7 +30,7 @@ ENV KC_DB=postgres \
     KC_HTTP_RELATIVE_PATH=/
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:26.8.0
+FROM quay.io/keycloak/keycloak:26.8.1
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
 CMD ["start", "--optimized"]
