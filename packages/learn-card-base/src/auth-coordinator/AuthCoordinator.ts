@@ -861,11 +861,14 @@ export class AuthCoordinator {
                     signDidAuthVp: this.config.signDidAuthVp,
                     options: this.recoveryContactOptions({ authUser }),
                 });
-                this.recoveredEscrowAccount = {
-                    did: result.did,
-                    userId: authUser.id,
-                    clearPin: true,
-                };
+                // Only a failed direct enrollment needs the scoped post-recovery repair.
+                if (!result.escrowEnrolled) {
+                    this.recoveredEscrowAccount = {
+                        did: result.did,
+                        userId: authUser.id,
+                        clearPin: true,
+                    };
+                }
 
                 // Rebinding can require fresh recovery enrollment. Honor older servers that
                 // report active, but do not skip enrollment if the status refresh fails.
@@ -1336,7 +1339,7 @@ export class AuthCoordinator {
                 signDidAuthVp: this.config.signDidAuthVp,
                 options: this.recoveryContactOptions({ authUser }),
             };
-            const { privateKey, did } =
+            const { privateKey, did, escrowEnrolled } =
                 isEscrow &&
                 this.keyDerivation.hasPendingIdentityRecovery?.() &&
                 this.keyDerivation.completeIdentityRecovery
@@ -1347,7 +1350,7 @@ export class AuthCoordinator {
                 throw new Error('This recovery request was cancelled.');
             }
 
-            if (isEscrow)
+            if (isEscrow && !escrowEnrolled)
                 this.recoveredEscrowAccount = { did, userId: authUser.id, clearPin: true };
             this.setState({
                 status: 'ready',

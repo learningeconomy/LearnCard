@@ -266,6 +266,8 @@ export interface RecoveryMethodInfo {
 export interface RecoveryResult {
     privateKey: string;
     did: string;
+    /** True when identity recovery already re-enrolled escrow; no post-recovery repair is needed. */
+    escrowEnrolled?: boolean;
 }
 
 export interface IdentityRecoverySession {

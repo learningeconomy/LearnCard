@@ -3509,7 +3509,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     clearPin: true,
                 };
             }
-            return { privateKey: pending.privateKey, did: pending.primaryDid };
+            return {
+                privateKey: pending.privateKey,
+                did: pending.primaryDid,
+                escrowEnrolled: enrolled,
+            };
         },
 
         // --- Contact method management ---

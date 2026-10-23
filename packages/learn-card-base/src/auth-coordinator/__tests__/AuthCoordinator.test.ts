@@ -678,6 +678,53 @@ describe('AuthCoordinator', () => {
                 await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalled());
                 expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
             });
+            it.each(['initialize', 'escrow'] as const)(
+                'skips the clear-PIN repair when recovery already enrolled via %s',
+                async path => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: true, changed: false });
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const { coordinator, keyDerivation } = setup({
+                        keyDerivation: {
+                            hasLocalKey: vi.fn().mockResolvedValue(false),
+                            hasPendingIdentityRecovery: vi
+                                .fn()
+                                .mockReturnValue(path === 'initialize'),
+                            completeIdentityRecovery: vi.fn().mockResolvedValue({
+                                privateKey: 'recovered-pk',
+                                did: 'did:key:z123',
+                                escrowEnrolled: true,
+                            }),
+                            ensureEscrowEnrollment,
+                            getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                state: 'enrolled',
+                                escrowPin: { enabled: false },
+                            }),
+                        },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    if (path === 'initialize') coordinator.finishIdentityRecovery();
+                    else {
+                        vi.mocked(keyDerivation.hasPendingIdentityRecovery!).mockReturnValue(true);
+                        await coordinator.recover({
+                            method: 'escrow',
+                            holdId: 'hold',
+                            resumeToken: 'resume',
+                            clientEphemeralPrivateKey: 'key',
+                        });
+                    }
+                    await vi.waitFor(() =>
+                        expect(coordinator.getState()).toMatchObject({
+                            escrowEnrollment: 'enrolled',
+                        })
+                    );
+                    for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                        expect(params.options).not.toHaveProperty('clearPin');
+                    }
+                }
+            );
             it('retries failed clear-PIN recovery repair on the next refresh', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()
