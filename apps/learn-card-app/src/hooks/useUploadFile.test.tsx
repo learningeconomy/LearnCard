@@ -495,6 +495,221 @@ describe('useUploadFile persistence outcomes', () => {
         expect(savedCredentials.size).toBe(0);
     });
 
+    it('keeps a busy upload unsaved after the foreground wait expires', async () => {
+        uploadMutationMock.mockRejectedValue(new FileExtractionError('UPLOAD_BUSY'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('capacity-expired'),
+                UploadTypesEnum.Certificate
+            );
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'extraction_failed',
+            failureCode: 'UPLOAD_BUSY',
+            originalSaved: false,
+        });
+        expect(wallet.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it('shows foreground waiting, cancels an unsaved batch, and allows a new upload', async () => {
+        const entered = Promise.withResolvers<void>();
+        uploadMutationMock.mockImplementationOnce(({ waitSignal, onWaiting }) => {
+            onWaiting(true);
+            entered.resolve();
+            return new Promise((_resolve, reject) => {
+                waitSignal.addEventListener(
+                    'abort',
+                    () => reject(new FileExtractionError('UPLOAD_CANCELLED')),
+                    { once: true }
+                );
+            });
+        });
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.getFiles(
+                createChangeEvent([
+                    new File(['certificate'], 'waiting.txt', { type: 'text/plain' }),
+                ]),
+                UploadTypesEnum.Certificate
+            );
+        });
+        let pending!: Promise<ParsedFileCredential[]>;
+        await act(async () => {
+            pending = result.current.fetchParsedCredentialsFromFiles(UploadTypesEnum.Certificate);
+            await entered.promise;
+        });
+        expect(result.current.isWaitingForCapacity).toBe(true);
+        await act(async () => {
+            result.current.cancelCapacityWait();
+            expect(await pending).toEqual([]);
+        });
+        expect(result.current.isWaitingForCapacity).toBe(false);
+        expect(result.current.fileUploadOutcomes).toEqual([]);
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+        expect(result.current.parsedCredentials).toEqual([]);
+        uploadMutationMock.mockImplementationOnce(async ({ waitSignal }) => {
+            expect(waitSignal.aborted).toBe(false);
+            return { vcs: [], processing: { outcome: 'empty', credentialCount: 0 } };
+        });
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('after-cancel'),
+                UploadTypesEnum.Certificate
+            );
+        });
+        expect(uploadMutationMock).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['user', 'session'])(
+        'preserves completed batch results only for user cancellation (%s)',
+        async cancellation => {
+            const cancelled = Promise.withResolvers<never>();
+            const entered = Promise.withResolvers<void>();
+            uploadMutationMock
+                .mockResolvedValueOnce({
+                    vcs: [parsedDraft(unsignedDraft('first-extracted'))],
+                    processing: { outcome: 'success', credentialCount: 1 },
+                })
+                .mockImplementationOnce(({ waitSignal, onWaiting }) => {
+                    onWaiting(true);
+                    entered.resolve();
+                    waitSignal.addEventListener(
+                        'abort',
+                        () => {
+                            cancelled.reject(new FileExtractionError('UPLOAD_CANCELLED'));
+                        },
+                        { once: true }
+                    );
+                    return cancelled.promise.finally(() => onWaiting(false));
+                });
+            const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+            await act(async () => {
+                await result.current.getFiles(
+                    createChangeEvent([
+                        new File(['first'], 'first.txt', { type: 'text/plain' }),
+                        new File(['second'], 'second.txt', { type: 'text/plain' }),
+                        new File(['third'], 'third.txt', { type: 'text/plain' }),
+                    ]),
+                    UploadTypesEnum.Certificate
+                );
+            });
+            const [first, second, third] = result.current.rawArtifactCredentials;
+            let pending!: Promise<ParsedFileCredential[]>;
+            await act(async () => {
+                pending = result.current.fetchParsedCredentialsFromFiles(
+                    UploadTypesEnum.Certificate
+                );
+                await entered.promise;
+            });
+            expect(result.current.isWaitingForCapacity).toBe(true);
+            let completed!: ParsedFileCredential[];
+            await act(async () => {
+                if (cancellation === 'user') result.current.cancelCapacityWait();
+                else cancelled.reject(new FileExtractionError('UPLOAD_CANCELLED'));
+                completed = await pending;
+            });
+            if (cancellation === 'session') {
+                expect(completed).toEqual([]);
+                expect(result.current.parsedCredentials).toEqual([]);
+                expect(result.current.fileUploadOutcomes).toEqual([]);
+                expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+                return;
+            }
+            expect(completed).toMatchObject([{ artifactId: first.id }]);
+            expect(result.current.parsedCredentials).toEqual(completed);
+            expect(result.current.fileUploadOutcomes).toMatchObject([
+                {
+                    artifact: { id: first.id },
+                    status: 'review',
+                    originalSaved: false,
+                },
+            ]);
+            expect(result.current.isWaitingForCapacity).toBe(false);
+            expect(uploadMutationMock).toHaveBeenCalledTimes(2);
+            expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+            await act(async () => {
+                await result.current.storeSelectedCredentials(
+                    completed.map(entry => entry.vc),
+                    first,
+                    UploadTypesEnum.Certificate
+                );
+            });
+            expect(savedCredentials.size).toBe(1);
+            expect(documents.has(`original:${first.id}`)).toBe(true);
+            expect(documents.has(`original:${second.id}`)).toBe(false);
+            expect(documents.has(`original:${third.id}`)).toBe(false);
+            expect(uploadMutationMock).toHaveBeenCalledTimes(2);
+        }
+    );
+
+    it('keeps the waiting state until all concurrent extraction waits finish', async () => {
+        const entered = [Promise.withResolvers<void>(), Promise.withResolvers<void>()];
+        const finish = [Promise.withResolvers<void>(), Promise.withResolvers<void>()];
+        for (let index = 0; index < 2; index += 1) {
+            uploadMutationMock.mockImplementationOnce(async ({ onWaiting }) => {
+                onWaiting(true);
+                entered[index].resolve();
+                await finish[index].promise;
+                onWaiting(false);
+                return { vcs: [], processing: { outcome: 'empty', credentialCount: 0 } };
+            });
+        }
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        let first!: Promise<ArtifactProcessingResult>;
+        let second!: Promise<ArtifactProcessingResult>;
+        await act(async () => {
+            first = result.current.retryFileExtraction(
+                rawArtifact('wait-one'),
+                UploadTypesEnum.Certificate
+            );
+            second = result.current.retryFileExtraction(
+                rawArtifact('wait-two'),
+                UploadTypesEnum.Certificate
+            );
+            await Promise.all(entered.map(item => item.promise));
+        });
+        expect(result.current.isWaitingForCapacity).toBe(true);
+        await act(async () => {
+            finish[0].resolve();
+            await first;
+        });
+        expect(result.current.isWaitingForCapacity).toBe(true);
+        await act(async () => {
+            finish[1].resolve();
+            await second;
+        });
+        expect(result.current.isWaitingForCapacity).toBe(false);
+    });
+
+    it('cancels an unmounted screen wait without persisting the original', async () => {
+        let signal!: AbortSignal;
+        const entered = Promise.withResolvers<void>();
+        uploadMutationMock.mockImplementationOnce(({ waitSignal }) => {
+            signal = waitSignal;
+            entered.resolve();
+            return new Promise((_resolve, reject) =>
+                signal.addEventListener(
+                    'abort',
+                    () => reject(new FileExtractionError('UPLOAD_CANCELLED')),
+                    { once: true }
+                )
+            );
+        });
+        const { result, unmount } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        const pending = result.current.retryFileExtraction(
+            rawArtifact('unmounted-wait'),
+            UploadTypesEnum.Certificate
+        );
+        const rejected = expect(pending).rejects.toMatchObject({ code: 'UPLOAD_CANCELLED' });
+        await entered.promise;
+        unmount();
+        await rejected;
+        expect(signal.aborted).toBe(true);
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
     it('does not replace the saved resume with a blank document or persist it on retry', async () => {
         records.set('resume-index', {
             id: 'resume-index',

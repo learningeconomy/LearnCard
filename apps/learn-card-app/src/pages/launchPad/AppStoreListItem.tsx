@@ -85,7 +85,10 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             </button>
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
-                                <button onClick={handleLaunch} className={connectedButtonClass}>
+                                <button
+                                    onClick={() => handleLaunch()}
+                                    className={connectedButtonClass}
+                                >
                                     {m['common.open']()}
                                 </button>
 

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     JobRegistryEntry,
     RegistryEntry,
@@ -6,7 +6,7 @@ import {
     LCAStylesPackRegistryEntry,
 } from 'learn-card-base';
 
-import { RegistryClient } from '@digitalcredentials/issuer-registry-client';
+import { knownDIDRegistryQueryOptions } from '../react-query/queries/issuerRegistry';
 import { isProductionEnvironment } from '../config/isProduction';
 
 export const useRegistry = () => {
@@ -75,89 +75,8 @@ export const useTrustedAppsRegistry = (profileId?: string) => {
 };
 
 export const useKnownDIDRegistry = (profileId?: string) => {
-    return useQuery({
-        queryKey: ['knownDidRegistry', profileId],
-        // Incomplete results get 60s freshness; conclusive results get 1 hour
-        staleTime: query =>
-            (query.state.data as { incomplete?: boolean } | undefined)?.incomplete
-                ? 60_000
-                : 60 * 60 * 1000,
-        gcTime: 60 * 60 * 1000,
-        enabled: !!profileId,
-        // Limit retries for catalogue fetch failures to avoid retry storms
-        retry: 1,
-        queryFn: async () => {
-            if (!profileId) {
-                return { source: 'unknown' as const, results: {}, incomplete: false };
-            }
-
-            const trustedRegistryClient = new RegistryClient();
-            const untrustedRegistryClient = new RegistryClient();
-
-            // Fetch both registry catalogues in parallel
-            const [trustedResponse, untrustedResponse] = await Promise.all([
-                fetch('https://registries.learncard.com/known-did-registries.json'),
-                fetch('https://registries.learncard.com/untrusted-did-registries.json'),
-            ]);
-
-            if (!trustedResponse.ok) {
-                throw new Error(`Failed to fetch known registries: ${trustedResponse.status}`);
-            }
-            if (!untrustedResponse.ok) {
-                throw new Error(
-                    `Failed to fetch untrusted registries: ${untrustedResponse.status}`
-                );
-            }
-
-            const [knownRegistries, unknownRegistries] = await Promise.all([
-                trustedResponse.json(),
-                untrustedResponse.json(),
-            ]);
-
-            // Initialize both clients in parallel
-            await Promise.all([
-                trustedRegistryClient.use({ registries: knownRegistries }),
-                untrustedRegistryClient.use({ registries: unknownRegistries }),
-            ]);
-
-            // Lookup in both registries in parallel
-            const [trustedResults, untrustedResults] = await Promise.all([
-                trustedRegistryClient.lookupIssuersFor(profileId),
-                untrustedRegistryClient.lookupIssuersFor(profileId),
-            ]);
-
-            const trustedUncheckedCount = trustedResults?.uncheckedRegistries?.length ?? 0;
-            const untrustedUncheckedCount = untrustedResults?.uncheckedRegistries?.length ?? 0;
-            const totalUncheckedCount = trustedUncheckedCount + untrustedUncheckedCount;
-
-            // Trusted match is conclusive — return immediately
-            if (trustedResults?.matchingIssuers.length > 0) {
-                return {
-                    source: 'trusted' as const,
-                    results: trustedResults,
-                    incomplete: false,
-                };
-            }
-
-            // Return untrusted match even if trusted lookup was incomplete.
-            // This keeps the "untrusted" warning visible (safety) while flagging
-            // the result for re-check within 60 seconds.
-            if (untrustedResults?.matchingIssuers.length > 0) {
-                return {
-                    source: 'untrusted' as const,
-                    results: untrustedResults,
-                    incomplete: trustedUncheckedCount > 0,
-                };
-            }
-
-            // No matches found — flag as incomplete if any registries couldn't be checked
-            return {
-                source: 'unknown' as const,
-                results: {},
-                incomplete: totalUncheckedCount > 0,
-            };
-        },
-    });
+    const queryClient = useQueryClient();
+    return useQuery(knownDIDRegistryQueryOptions(queryClient, profileId));
 };
 
 export const useLCAStylesPackRegistry = () => {

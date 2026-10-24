@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import * as m from '../paraglide/messages.js';
@@ -165,6 +165,26 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const [rawArtifactCredentials, setRawArtifactCredentials] = useState<RawArtifactCredential[]>(
         []
     );
+
+    const capacityWait = useRef(new AbortController());
+    const capacityWaiters = useRef(new Set<symbol>());
+    const waitMounted = useRef(true);
+    const [isWaitingForCapacity, setIsWaitingForCapacity] = useState(false);
+    useEffect(() => {
+        waitMounted.current = true;
+        capacityWait.current = new AbortController();
+        return () => {
+            waitMounted.current = false;
+            capacityWait.current.abort();
+        };
+    }, []);
+    // Cancel all foreground waits in this manager; accepted requests keep running.
+    const cancelCapacityWait = () => {
+        capacityWaiters.current.clear();
+        capacityWait.current.abort();
+        capacityWait.current = new AbortController();
+        setIsWaitingForCapacity(false);
+    };
 
     const savedArtifactUris = useRef(new Map<string, string>());
     const expectedResumeUris = useRef(new Map<string, string | null>());
@@ -860,11 +880,23 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     if (oldest) extractionAttempts.current.delete(oldest);
                 }
                 const wallet = await initWallet();
+                const waiter = Symbol();
                 const result = await uploadFile({
                     did: wallet.id.did(),
                     file: artifact.rawArtifact.data,
                     fileType,
                     attempt,
+                    waitSignal: capacityWait.current.signal,
+                    onAttempt: nextAttempt => {
+                        attempt = nextAttempt;
+                        extractionAttempts.current.set(artifact.id, nextAttempt);
+                    },
+                    onWaiting: (waiting: boolean) => {
+                        if (!waitMounted.current) return;
+                        if (waiting) capacityWaiters.current.add(waiter);
+                        else capacityWaiters.current.delete(waiter);
+                        setIsWaitingForCapacity(capacityWaiters.current.size > 0);
+                    },
                 });
                 const credentials: ParsedFileCredential[] = result.vcs.map(entry => {
                     // Service IDs can repeat across uploads; retries reuse this review's ID.
@@ -888,11 +920,14 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     },
                 };
             } catch (error) {
+                if (error instanceof FileExtractionError && error.code === 'UPLOAD_CANCELLED')
+                    throw error;
                 failureCode = error instanceof FileExtractionError ? error.code : undefined;
             }
             extractedCounts.current.set(artifact.id, 0);
             const originalSaved = savedArtifactUris.current.has(artifact.id);
             if (
+                failureCode === 'UPLOAD_BUSY' ||
                 failureCode === 'NO_READABLE_TEXT' ||
                 failureCode === 'AI_GATE_LOADING' ||
                 (failureCode === 'CONSENT_DENIED' && !originalOnly) ||
@@ -966,8 +1001,9 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         fileType: UploadTypesEnum
     ): Promise<ParsedFileCredential[]> => {
         checklistStore.set.updateIsParsing(fileType, true);
+        const results: ArtifactProcessingResult[] = [];
+        const waitSignal = capacityWait.current.signal;
         try {
-            const results: ArtifactProcessingResult[] = [];
             for (const artifact of artifacts) {
                 const result = await processArtifact(artifact, fileType);
                 results.push(result);
@@ -984,6 +1020,25 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                     log.error('file.checklist_refresh.failed')
                 );
             }
+            return credentials;
+        } catch (error) {
+            if (!(error instanceof FileExtractionError) || error.code !== 'UPLOAD_CANCELLED')
+                throw error;
+            const cancelled = new Set(artifacts.map(artifact => artifact.id));
+            // Only a foreground Cancel keeps partial results; session changes still discard them.
+            const completedResults = waitSignal.aborted && waitMounted.current ? results : [];
+            const completed = new Set(completedResults.map(result => result.outcome.artifact.id));
+            const credentials = completedResults.flatMap(result => result.credentials);
+            setParsedCredentials(credentials);
+            setFileUploadOutcomes(current =>
+                // Keep completed reviews and saved originals; discard the cancelled wait.
+                current.filter(
+                    item =>
+                        !cancelled.has(item.artifact.id) ||
+                        completed.has(item.artifact.id) ||
+                        item.originalSaved
+                )
+            );
             return credentials;
         } finally {
             checklistStore.set.updateIsParsing(fileType, false);
@@ -1097,6 +1152,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         isUploading,
         isSaving: isSaving || isSavingSelection,
         isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
         parsedCredentials,
         setParsedCredentials,
         fetchParsedCredentials,

@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "El archivo es demasiado grande. Elige uno de menos de 4 MB.",
                 "errorReadFailed": "No pudimos leer este archivo. Prueba con otro.",
                 "errorContentRejected": "No pudimos identificar un documento compatible en este archivo.",
+                "errorUploadBusy": "Las cargas siguen ocupadas. Inténtalo de nuevo en breve.",
                 "errorProcessingFailed": "No pudimos procesar este archivo ahora. Inténtalo de nuevo.",
                 "errorConsentDenied": "El procesamiento con IA no está disponible para esta cuenta.",
                 "errorResponseInvalid": "Recibimos un resultado incompleto. Inténtalo de nuevo.",
@@ -475,6 +476,7 @@
                 "noMatches": "No se encontraron tipos coincidentes"
             },
             "loader": {
+                "waitingForCapacity": "Hay muchas cargas en curso. Esperando un turno…",
                 "notifyWhenReady": "Avísame cuando esté listo",
                 "quotes": {
                     "resume": {
@@ -1232,7 +1234,9 @@
             "notDeveloper": "¿No eres desarrollador? ",
             "signInNormally": "Iniciar sesión normalmente",
             "securityWarning": "Mantén tu semilla en privado. Cualquiera que la tenga controla esta cuenta.",
-            "pasteHint": "Pégala en el campo de abajo."
+            "pasteHint": "Pégala en el campo de abajo.",
+            "showSeed": "Mostrar semilla",
+            "hideSeed": "Ocultar semilla"
         },
         "loader": {
             "messages": {
@@ -3724,6 +3728,20 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Siguiente",
+            "previous": "Anterior",
+            "done": "Listo",
+            "progress": "Progreso de la historia",
+            "error": "Algo salió mal. Inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "loading": "Cargando…",
+            "opening": "Abriendo…",
+            "checking": "Comprobando…",
+            "downloading": "Descargando… {{progress}}%",
+            "installing": "Instalando…",
+            "upToDate": "Tienes la última versión."
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",

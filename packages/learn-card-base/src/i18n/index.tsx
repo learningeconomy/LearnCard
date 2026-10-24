@@ -28,6 +28,18 @@ const I18nContext = createContext<I18nContextValue | null>(null);
  * inside its own catalog/resolver.
  */
 export const EN_DEFAULTS: Record<string, string> = {
+    'inAppMessages.next': 'Next',
+    'inAppMessages.previous': 'Previous',
+    'inAppMessages.done': 'Done',
+    'inAppMessages.progress': 'Story progress',
+    'inAppMessages.error': 'Something went wrong. Please try again.',
+    'inAppMessages.retry': 'Try Again',
+    'inAppMessages.loading': 'Loading…',
+    'inAppMessages.opening': 'Opening…',
+    'inAppMessages.checking': 'Checking…',
+    'inAppMessages.downloading': 'Downloading… {progress}%',
+    'inAppMessages.installing': 'Installing…',
+    'inAppMessages.upToDate': "You're on the latest version.",
     'consentAudience.title': 'Review who receives your data',
     'consentAudience.description':
         'Your selected information will be available to everyone listed below.',

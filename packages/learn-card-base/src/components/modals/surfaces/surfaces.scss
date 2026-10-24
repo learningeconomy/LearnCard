@@ -15,6 +15,40 @@
     padding-top: 0;
 }
 
+// Message chrome stays in flow; these layouts must retain the surface's insets.
+#full-screen-modal > section.lc-message-story,
+#full-screen-modal > section.lc-message-iframe {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    padding-inline: 0;
+    padding-top: var(--lc-safe-top);
+    padding-bottom: var(--lc-safe-bottom);
+    overflow: auto;
+}
+
+#center-modal > section.lc-message-story {
+    width: 100%;
+    max-width: 480px;
+    max-height: 100%;
+    padding: 0;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(24px);
+    overflow: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #center-modal:has(> .lc-message-story),
+    #full-screen-modal:has(> .lc-message-story),
+    #full-screen-modal:has(> .lc-message-iframe),
+    section.lc-message-story,
+    section.lc-message-iframe {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
 // Centered variants: the aside is the centering container; padding there
 // guarantees the card can never overlap a notch, without inflating the card.
 // --lc-gutter defaults to 0 so zero-inset (web/desktop) renders byte-identical

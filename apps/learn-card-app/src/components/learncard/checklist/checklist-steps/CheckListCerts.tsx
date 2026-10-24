@@ -52,6 +52,8 @@ export const CheckListCerts: React.FC = () => {
         isUploading,
         isSaving,
         isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
         parsedCredentials,
@@ -277,7 +279,11 @@ export const CheckListCerts: React.FC = () => {
             ) : (
                 <>
                     {isParsing && !isSaving && (
-                        <ChecklistLoader fileType={UploadTypesEnum.Certificate} />
+                        <ChecklistLoader
+                            waitingForCapacity={isWaitingForCapacity}
+                            onCancelWait={cancelCapacityWait}
+                            fileType={UploadTypesEnum.Certificate}
+                        />
                     )}
                     <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
