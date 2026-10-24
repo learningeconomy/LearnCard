@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.100.6
+
+### Patch Changes
+
+- [#1773](https://github.com/learningeconomy/LearnCard/pull/1773) [`eb3ff0177cfeeac012b996cae4d13622efe4053a`](https://github.com/learningeconomy/LearnCard/commit/eb3ff0177cfeeac012b996cae4d13622efe4053a) Thanks [@goblincore](https://github.com/goblincore)! - Wait and retry document uploads when extraction capacity is busy, with bounded backoff, cancellation, and localized feedback. Stop waiting on account changes or when the upload screen closes, and preserve results from requests already accepted for extraction.
+
+- [#1783](https://github.com/learningeconomy/LearnCard/pull/1783) [`8ca7c2e41ebc59c9e921fe1af9a01320483a50a9`](https://github.com/learningeconomy/LearnCard/commit/8ca7c2e41ebc59c9e921fe1af9a01320483a50a9) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2255] Improve Phone Number Login Error Handling and Verification Code Flow
+
+- [#1729](https://github.com/learningeconomy/LearnCard/pull/1729) [`af3e0abb8e4e247c0ff1c7076b1ffa6e58256a9f`](https://github.com/learningeconomy/LearnCard/commit/af3e0abb8e4e247c0ff1c7076b1ffa6e58256a9f) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2262]: Add credential targeting and triggers to in-app messages
+
+- [#1526](https://github.com/learningeconomy/LearnCard/pull/1526) [`9be748a0487b79ce4c2d43b7039824928a92dfcc`](https://github.com/learningeconomy/LearnCard/commit/9be748a0487b79ce4c2d43b7039824928a92dfcc) Thanks [@Custard7](https://github.com/Custard7)! - Allow users to zoom LearnCard in web browsers while preserving native viewport behavior and one main landmark per page.
+
+- [#1763](https://github.com/learningeconomy/LearnCard/pull/1763) [`eabb09dd327580b6157e65a20c2533ddea1f7b47`](https://github.com/learningeconomy/LearnCard/commit/eabb09dd327580b6157e65a20c2533ddea1f7b47) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2263] - Add Stories & Iframe in-app message presentations
+
 ## 1.100.5
 
 ### Patch Changes

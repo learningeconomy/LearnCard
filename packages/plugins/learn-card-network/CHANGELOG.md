@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 3.1.5
+
+### Patch Changes
+
+- [#1633](https://github.com/learningeconomy/LearnCard/pull/1633) [`867e5ff3e8e755ce56206b9c062b8d30156f89c1`](https://github.com/learningeconomy/LearnCard/commit/867e5ff3e8e755ce56206b9c062b8d30156f89c1) Thanks [@goblincore](https://github.com/goblincore)! - Deduplicate concurrent lookups of the same profile within a network client, while keeping subsequent reads fresh and allowing failed lookups to retry.
+
 ## 3.1.4
 
 ### Patch Changes
