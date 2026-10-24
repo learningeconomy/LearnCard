@@ -119,6 +119,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         );
         await waitForAuthenticatedState(page, {
             path: '/issue',
+            nextPath: '/issue',
             profileId: TEST_USER_PROFILE_ID,
             waitUntil: 'domcontentloaded',
         });
@@ -513,6 +514,7 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             // The HAR seed login keeps its private key in memory; reauthenticate after reload.
             await waitForAuthenticatedState(page, {
                 path: '/issue',
+                nextPath: '/issue',
                 profileId: TEST_USER_PROFILE_ID,
                 waitUntil: 'domcontentloaded',
             });

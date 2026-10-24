@@ -237,8 +237,14 @@ const setup = async (
 
 test.use({ screenshot: 'only-on-failure' });
 
+const openPrivacyAndData = async (page: Page): Promise<void> => {
+    await page.getByRole('button', { name: 'Open profile', exact: true }).click();
+    await page.getByRole('button', { name: 'Data Sharing', exact: true }).click();
+    await expect(page).toHaveURL(/\/privacy-and-data$/);
+};
+
 test.describe('Generic referrals @mocked', () => {
-    // These flows boot the unbundled app two or three times, including locale reloads.
+    // Includes cold app initialization and an explicit locale-persistence reload.
     test.describe.configure({ timeout: 180_000 });
 
     test('S1 referral card and target seen state', async ({ page }, testInfo) => {
@@ -258,7 +264,7 @@ test.describe('Generic referrals @mocked', () => {
                 { timeout: 30_000 }
             );
             await expect(page.getByTestId('contract-request-card')).toHaveCount(0);
-            await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+            await openPrivacyAndData(page);
             await expect(page.getByRole('heading', { name: /Privacy/ }).first()).toBeAttached({
                 timeout: 30_000,
             });
@@ -327,7 +333,7 @@ test.describe('Generic referrals @mocked', () => {
             page,
         }, testInfo) => {
             await setup(page, { connected: true, recipients });
-            await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+            await openPrivacyAndData(page);
             await page.getByText('Partner services', { exact: true }).click();
             const detailsAudience = page.getByTestId('contract-shared-with');
             if (recipients) {
@@ -416,7 +422,7 @@ test.describe('Generic referrals @mocked', () => {
         await expect.poll(state.archived).toBe(true);
         await expect(page.getByTestId('contract-request-card')).toHaveCount(0);
         expect(state.denied()).toBe(false);
-        await page.goto('/privacy-and-data', { waitUntil: 'domcontentloaded' });
+        await openPrivacyAndData(page);
         await page.getByTestId('pending-contract-requests').getByText('Partner services').click();
         await expect(
             page

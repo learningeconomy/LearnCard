@@ -40,6 +40,10 @@ keeps intentionally aborted backend calls and slow Vite startup from turning an
 online mocked flow into an offline sign-in remount. Offline-specific tests can
 override this route. Use `nextPath` in `waitForAuthenticatedState` to return directly
 to the tested route through developer sign-in, avoiding a second full app load.
+When `profileId` is supplied, developer sign-in creates the profile and resets its
+queries before returning. The helper does not wait for the legacy profile-setup
+modal, which is absent in this flow. Tests still assert their authenticated page
+content. Keep explicit reloads when persistence or recovery is the behavior under test.
 
 ## Writing a mocked test
 
@@ -58,6 +62,7 @@ test.describe('My feature @mocked', () => {
         await installNetwork(page);
         await waitForAuthenticatedState(page, {
             path: '/my-page',
+            nextPath: '/my-page',
             profileId: TEST_USER_PROFILE_ID,
         });
     });
