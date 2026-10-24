@@ -1427,8 +1427,39 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     sendWhenReady(messageToSend);
 }
 
-// Function to initiate a new session plan for a topic
-export async function startTopic(topic: string, mode: AiSessionMode = AiSessionMode.tutor) {
+/**
+ * The single start_topic currently in flight. `key` identifies the start (caller DID, topic
+ * and mode); `promise` settles once that start has been sent or has failed.
+ */
+type StartTopicInFlight = {
+    key: string;
+    promise: Promise<void>;
+};
+
+let startTopicInFlight: StartTopicInFlight | null = null;
+
+// Function to initiate a new session plan for a topic.
+// Concurrent identical calls (e.g. a remount before the socket opens) share one start_topic
+// send; otherwise both would flush from the same onopen and create two backend sessions.
+// A call with different args keeps today's last-start-wins behaviour and replaces the slot.
+export function startTopic(
+    topic: string,
+    mode: AiSessionMode = AiSessionMode.tutor
+): Promise<void> {
+    const key = JSON.stringify([auth.get().did ?? null, topic, mode]);
+
+    if (startTopicInFlight?.key === key) return startTopicInFlight.promise;
+
+    const promise = runStartTopic(topic, mode).finally(() => {
+        if (startTopicInFlight?.promise === promise) startTopicInFlight = null;
+    });
+
+    startTopicInFlight = { key, promise };
+
+    return promise;
+}
+
+async function runStartTopic(topic: string, mode: AiSessionMode): Promise<void> {
     resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
