@@ -758,6 +758,8 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 path: testInfo.outputPath('import-review.png'),
             });
             await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            // Autosaving the imported roster inserts the progress card above these controls.
+            await expect(page.getByTestId('issuance-progress')).toBeVisible();
             await page.getByRole('button', { name: 'Map columns', exact: true }).click();
             await expect(
                 page.getByRole('button', { name: 'Include Quiz Score', exact: true })

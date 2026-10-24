@@ -210,14 +210,11 @@ const setup = async (
             : [],
     }));
     mock.on('contracts.getConsentFlowCredentials', () => ({ hasMore: false, records: [] }));
-    await waitForAuthenticatedState(
-        page,
-        {
-            path: '/wallet',
-            profileId: TEST_USER_PROFILE_ID,
-        },
-        15_000
-    );
+    await waitForAuthenticatedState(page, {
+        path: '/wallet',
+        profileId: TEST_USER_PROFILE_ID,
+        waitUntil: 'domcontentloaded',
+    });
     await expect(page.getByRole('heading', { name: 'Passport', exact: true })).toBeVisible({
         timeout: 30_000,
     });
@@ -246,6 +243,9 @@ const setup = async (
 test.use({ screenshot: 'only-on-failure' });
 
 test.describe('Generic referrals @mocked', () => {
+    // These flows boot the unbundled app two or three times, including locale reloads.
+    test.describe.configure({ timeout: 180_000 });
+
     test('S1 referral card and target seen state', async ({ page }, testInfo) => {
         const state = await setup(page);
         const card = page.getByTestId('contract-request-card');
