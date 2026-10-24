@@ -160,10 +160,12 @@ const MyAppsLanding: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => history.push('/launchpad/browse?tab=All')}
-                                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[10px] border border-[#E2E3E9] bg-[#FBFBFC] px-4 py-2.5 font-poppins text-[15px] font-medium text-[#6366F1] md:order-3 md:text-[17px]"
+                                className="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[20px] bg-grayscale-900 px-4 py-3 font-poppins text-[15px] font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 md:order-3 md:text-[17px]"
                             >
                                 {m['myAppsPage.browseMore']()}{' '}
-                                <span className="text-[18px] leading-none">+</span>
+                                <span aria-hidden="true" className="text-[18px] leading-none">
+                                    +
+                                </span>
                             </button>
                         </div>
                         <div className="relative w-full md:order-2 md:max-w-[320px] md:flex-1">

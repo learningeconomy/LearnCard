@@ -266,6 +266,10 @@ export interface RecoveryMethodInfo {
 export interface RecoveryResult {
     privateKey: string;
     did: string;
+    /** True when identity recovery already re-enrolled escrow; no post-recovery repair is needed. */
+    escrowEnrolled?: boolean;
+    /** True when the key came from an existing escrow enrollment (hold or PIN). */
+    escrowRecovery?: boolean;
 }
 
 export interface IdentityRecoverySession {
@@ -560,9 +564,14 @@ export interface KeyDerivationStrategy<
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
-        options?: EscrowEnrollmentOptions;
+        options?: EscrowEnrollmentOptions & {
+            /** Clear the retired PIN when repairing enrollment after identity recovery. */
+            clearPin?: boolean;
+            /** Repair only an account with verified prior escrow enrollment; never enroll a new one. */
+            requirePriorEnrollment?: boolean;
+        };
     }): Promise<
-        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
         | { enrolled: true; changed: false }
         | { enrolled: true; changed: true; shareVersion: number }
     >;
@@ -676,6 +685,7 @@ export interface KeyDerivationStrategy<
         didFromPrivateKey?: (privateKey: string) => Promise<string>;
         /** Optional: sign the fresh challenge required to persist rotated shares */
         signDidAuthVp?: DidAuthVpSigner;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
 
     /** Set up a new recovery method */
@@ -730,6 +740,7 @@ export interface KeyDerivationStrategy<
         token: string;
         providerType: AuthProviderType;
         signDidAuthVp?: DidAuthVpSigner;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
 
     // --- Contact method management ---

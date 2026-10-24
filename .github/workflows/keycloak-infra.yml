@@ -4,6 +4,7 @@ on:
         paths:
             - 'infra/aws/bootstrap/**'
             - 'infra/aws/infisical-sync/**'
+            - 'infra/aws/infisical-sync-state/**'
             - 'infra/keycloak/**'
             - '.github/workflows/keycloak-infra.yml'
     push:
@@ -53,6 +54,7 @@ jobs:
                 root:
                     - infra/aws/bootstrap
                     - infra/aws/infisical-sync
+                    - infra/aws/infisical-sync-state
                     - infra/keycloak/terraform/network
                     - infra/keycloak/terraform/service
                     - infra/keycloak/terraform/realm

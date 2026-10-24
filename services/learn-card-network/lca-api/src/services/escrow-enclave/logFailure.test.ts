@@ -7,6 +7,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('escrow failure reasons', () => {
     it('logs invalid outbound holds without error details', () => {
+        const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         const error = new EscrowUnavailableError('invalid_hold');
         error.message = 'private hold contents';
@@ -14,6 +15,13 @@ describe('escrow failure reasons', () => {
         expect(warn).toHaveBeenCalledExactlyOnceWith('[LCA escrow] enclave operation failed', {
             reason: 'invalid_hold',
         });
+        const metric = JSON.parse(String(log.mock.calls[0]?.[0]));
+        expect(metric).toMatchObject({ Reason: 'invalid_hold', EnclaveFailure: 1 });
+        expect(metric._aws.CloudWatchMetrics[0]).toMatchObject({
+            Namespace: 'LearnCard/Escrow',
+            Dimensions: [['Reason']],
+        });
+        expect(JSON.stringify(log.mock.calls)).not.toContain('private hold contents');
     });
     it.each([
         [403, 'policy', 'policy'],

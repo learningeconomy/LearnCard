@@ -1128,7 +1128,8 @@
                 "error": "Unable to verify code. Please try again."
             },
             "error": {
-                "invalidEmail": "Missing or Invalid Email"
+                "invalidEmail": "Missing or Invalid Email",
+                "sendFailed": "Unable to send code. Please try again."
             },
             "label": "Email"
         },
@@ -1168,7 +1169,14 @@
             "button": "Sign in with SMS",
             "smsSent": "A verification code has been sent",
             "error": {
-                "invalidPhone": "Phone is required!"
+                "invalidPhone": "Phone is required!",
+                "invalidPhoneNumber": "Please enter a valid phone number.",
+                "invalidCode": "Invalid or expired code.",
+                "tooManyAttempts": "Too many attempts. Please resend code.",
+                "tooManyRequests": "Too many attempts from this phone number. For your security, please wait 10–15 minutes before trying again, or sign in with email instead.",
+                "quotaExceeded": "We can't send a text message right now. Please try again later or sign in with email.",
+                "network": "Connection issue. Please check your internet and try again.",
+                "generic": "Something went wrong. Please try again."
             }
         },
         "qrApproved": {
@@ -1216,7 +1224,9 @@
             "notDeveloper": "Not a developer? ",
             "signInNormally": "Sign in normally",
             "securityWarning": "Keep your seed private. Anyone with it controls this account.",
-            "pasteHint": "Paste it into the field below."
+            "pasteHint": "Paste it into the field below.",
+            "showSeed": "Show seed",
+            "hideSeed": "Hide seed"
         },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
@@ -3767,6 +3777,20 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Next",
+            "previous": "Previous",
+            "done": "Done",
+            "progress": "Story progress",
+            "error": "Something went wrong. Please try again.",
+            "retry": "Try Again",
+            "loading": "Loading…",
+            "opening": "Opening…",
+            "checking": "Checking…",
+            "downloading": "Downloading… {{progress}}%",
+            "installing": "Installing…",
+            "upToDate": "You're on the latest version."
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",

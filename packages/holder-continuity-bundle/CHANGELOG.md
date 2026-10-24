@@ -1,5 +1,14 @@
 # @learncard/holder-continuity
 
+## 0.2.24
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/init@2.5.5
+    - @learncard/sss-key-manager@0.2.3
+
 ## 0.2.23
 
 ### Patch Changes

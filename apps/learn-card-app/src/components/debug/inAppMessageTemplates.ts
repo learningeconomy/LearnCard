@@ -18,12 +18,10 @@
  * applied exactly like a real LaunchDarkly flag value would be.
  */
 
+import { CREDENTIAL_LIBRARY_CLR_CONDITION } from './inAppMessageDryRun';
+
 export type InAppMessageTemplateCategory =
-    | 'Basics'
-    | 'Announcements'
-    | 'Updates'
-    | 'Targeting'
-    | 'Operational';
+    'Basics' | 'Announcements' | 'Updates' | 'Targeting' | 'Operational';
 
 export interface InAppMessageTemplate {
     key: string;
@@ -34,6 +32,83 @@ export interface InAppMessageTemplate {
 }
 
 export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
+    {
+        key: 'openapp-test',
+        label: 'Open an app page',
+        category: 'Basics',
+        description: 'Replace the listing ID with an embedded app from your app store.',
+        json: {
+            id: 'debug-openapp-test',
+            title: 'Continue learning',
+            presentation: 'modal',
+            actions: [
+                {
+                    label: 'Open app',
+                    style: 'primary',
+                    action: {
+                        type: 'openApp',
+                        listingId: 'replace-with-listing-id',
+                        path: '/learn',
+                    },
+                },
+            ],
+        },
+    },
+    {
+        key: 'story-test',
+        label: 'Story walkthrough',
+        category: 'Basics',
+        description: 'Two screens with a translated title and final action.',
+        json: {
+            id: 'debug-story',
+            title: 'Explore your achievements',
+            presentation: 'story',
+            frequency: 'always',
+            steps: [
+                {
+                    title: 'Your achievements, together',
+                    body: 'Keep a record of what you have learned.',
+                    media: {
+                        type: 'image',
+                        url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBB4LQTn0vRq4ydPLp-uTj_lEUHOHYWUU18JlCq5KuMw&s=10',
+                        aspect: '3:2',
+                        alt: 'A monarch butterfly perched on an orange flower.',
+                    },
+                },
+                {
+                    title: 'Choose your next step',
+                    body: 'You are ready to explore.',
+                    media: {
+                        type: 'image',
+                        url: 'https://sites.cc.gatech.edu/classes/AY2016/cs4476_fall/results/proj1/html/gwright31/images/cat.bmp',
+                        aspect: '3:2',
+                        alt: 'A cat.',
+                    },
+                },
+            ],
+            actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
+            locales: {
+                es: {
+                    title: 'Explora tus logros',
+                    steps: [{ title: 'Tus logros, juntos' }, { title: 'Elige tu próximo paso' }],
+                    actionLabels: ['Listo'],
+                },
+            },
+        },
+    },
+    {
+        key: 'iframe-test',
+        label: 'Embedded HTTPS page',
+        category: 'Basics',
+        description: 'Replace the example URL with your separately hosted HTTPS bridge example.',
+        json: {
+            id: 'debug-iframe',
+            title: 'Learn more',
+            presentation: 'iframe',
+            frequency: 'always',
+            iframe: { url: 'https://example.com/', loadTimeoutMs: 10000 },
+        },
+    },
     {
         key: 'smoke-test',
         label: 'Simple test message',
@@ -221,6 +296,7 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                     style: 'primary',
                     action: { type: 'appStore' },
                 },
+                { label: 'Close', style: 'dismiss', action: { type: 'dismiss' } },
             ],
             targeting: {
                 all: [
@@ -293,7 +369,10 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
             presentation: 'modal',
             title: 'Update required',
             body: 'We need to apply an important fix before you continue. This only takes a moment.',
-            actions: [{ label: 'Update now', style: 'primary', action: { type: 'capgoUpdate' } }],
+            actions: [
+                { label: 'Update now', style: 'primary', action: { type: 'capgoUpdate' } },
+                { label: 'Close', style: 'dismiss', action: { type: 'dismiss' } },
+            ],
             targeting: {
                 all: [
                     { platform: ['ios', 'android'] },
@@ -389,6 +468,45 @@ export const IN_APP_MESSAGE_TEMPLATES: InAppMessageTemplate[] = [
                         ],
                     },
                 ],
+            },
+        },
+    },
+    {
+        key: 'clr-claim-celebration-example',
+        label: 'Credential Library CLR claim',
+        description: 'Triggered by claiming the credential-library clr/minimal fixture.',
+        category: 'Targeting',
+        json: {
+            id: 'clr-claim-celebration-example',
+            frequency: 'always',
+            presentation: 'modal',
+            title: 'Learning record added',
+            body: 'This test message confirms CLR claim targeting.',
+            actions: [{ label: 'Done', style: 'primary', action: { type: 'dismiss' } }],
+            trigger: {
+                event: 'credential.claimed',
+                where: CREDENTIAL_LIBRARY_CLR_CONDITION,
+                windowMinutes: 10,
+            },
+        },
+    },
+    {
+        key: 'clr-holder-nudge-example',
+        label: 'Credential Library CLR holder',
+        description: 'Targets holders of the credential-library clr/minimal fixture.',
+        category: 'Targeting',
+        json: {
+            id: 'clr-holder-nudge-example',
+            frequency: 'once',
+            presentation: 'banner',
+            title: 'Your learning record is ready',
+            body: 'This test message confirms on-device credential targeting.',
+            actions: [{ label: 'Dismiss', style: 'dismiss', action: { type: 'dismiss' } }],
+            targeting: {
+                credential: {
+                    ...CREDENTIAL_LIBRARY_CLR_CONDITION,
+                    minCount: 1,
+                },
             },
         },
     },
