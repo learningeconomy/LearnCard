@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.90.46
+
+### Patch Changes
+
+- [#1759](https://github.com/learningeconomy/LearnCard/pull/1759) [`08381b41d544d2207517f277d8027cf0adb38c33`](https://github.com/learningeconomy/LearnCard/commit/08381b41d544d2207517f277d8027cf0adb38c33) Thanks [@goblincore](https://github.com/goblincore)! - Use the shared credential footer for standalone credentials and earned IDs in ScoutPass, including Details/Back, Share, close, and options controls.
+
+- [#1763](https://github.com/learningeconomy/LearnCard/pull/1763) [`eabb09dd327580b6157e65a20c2533ddea1f7b47`](https://github.com/learningeconomy/LearnCard/commit/eabb09dd327580b6157e65a20c2533ddea1f7b47) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2263] - Add Stories & Iframe in-app message presentations
+
 ## 1.90.45
 
 ### Patch Changes
