@@ -68,13 +68,23 @@ run "disabled_is_structurally_a_noop" {
       toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.eventName) == toset(["StopLogging", "DeleteTrail", "UpdateTrail", "PutEventSelectors", "PutInsightSelectors"]) &&
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.requestParameters.name[0] == "escrow-enclave-staging-audit" &&
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][1].detail.requestParameters.trailName[0] == "escrow-enclave-staging-audit" &&
-      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.requestParameters.bucketName == ["learncard-escrow-cloudtrail-staging-123456789012"] &&
-      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName, name)]) &&
+      # Denied-call fallback (LC incident 2026-10-23): requestParameters is
+      # null once an SCP/IAM deny short-circuits the call, so these two
+      # branches key off errorCode instead and must NOT also require
+      # requestParameters, or they'd go right back to matching nothing.
+      toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName) == toset(["StopLogging", "DeleteTrail", "UpdateTrail", "PutEventSelectors", "PutInsightSelectors"]) &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.errorCode[0].prefix == "AccessDenied" &&
+      !contains(keys(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail), "requestParameters") &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][3].detail.requestParameters.bucketName == ["learncard-escrow-cloudtrail-staging-123456789012"] &&
+      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][3].detail.eventName, name)]) &&
+      toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][4].detail.eventName) == toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][3].detail.eventName) &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][4].detail.errorCode[0].prefix == "AccessDenied" &&
+      !contains(keys(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][4].detail), "requestParameters") &&
       jsondecode(aws_cloudwatch_event_target.trail_tamper.input).alarm == "EscrowCloudTrailTamper" &&
       aws_cloudwatch_event_target.trail_tamper.arn == aws_sns_topic.monitor.arn &&
       aws_cloudwatch_event_target.trail_tamper.dead_letter_config[0].arn == aws_sqs_queue.monitor_dlq.arn
     )
-    error_message = "Always-on tamper monitoring must cover the exact trail/bucket APIs, both CloudTrail parameter names, and fixed SNS/DLQ delivery."
+    error_message = "Always-on tamper monitoring must cover the exact trail/bucket APIs, both CloudTrail parameter names, the denied-call errorCode fallback branches (null requestParameters), and fixed SNS/DLQ delivery."
   }
   assert {
     condition     = var.host_ami_id == null && length(data.aws_ssm_parameter.al2023_ami) == 1 && aws_launch_template.enclave_host.image_id == data.aws_ssm_parameter.al2023_ami[0].value

@@ -1232,7 +1232,9 @@
             "notDeveloper": "لست مطوّرًا؟ ",
             "signInNormally": "تسجيل الدخول بالطريقة العادية",
             "securityWarning": "احتفظ ببذرتك سرّية. أي شخص يمتلكها يتحكم في هذا الحساب.",
-            "pasteHint": "الصقها في الحقل أدناه."
+            "pasteHint": "الصقها في الحقل أدناه.",
+            "showSeed": "إظهار البذرة",
+            "hideSeed": "إخفاء البذرة"
         },
         "loader": {
             "messages": {
@@ -3721,6 +3723,20 @@
         "skillsHub": "مركز المهارات"
     },
     "base": {
+        "inAppMessages": {
+            "next": "التالي",
+            "previous": "السابق",
+            "done": "تم",
+            "progress": "تقدم القصة",
+            "error": "حدث خطأ ما. حاول مرة أخرى.",
+            "retry": "حاول مرة أخرى",
+            "loading": "جارٍ التحميل…",
+            "opening": "جارٍ الفتح…",
+            "checking": "جارٍ التحقق…",
+            "downloading": "جارٍ التنزيل… {{progress}}%",
+            "installing": "جارٍ التثبيت…",
+            "upToDate": "لديك أحدث إصدار."
+        },
         "verification": {
             "selfIssued": "صادر ذاتياً",
             "trustedIssuer": "جهة إصدار موثوقة",
