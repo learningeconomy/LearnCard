@@ -4,6 +4,7 @@
  */
 
 import type { FeedbackSource } from '../feedback/reporting/types';
+import type { InAppMessagePresentationEvent } from 'learn-card-base';
 
 // ── LC-1853 Profile-building analytics ──────────────────────────────────────
 
@@ -55,6 +56,9 @@ export type InviteSurface = 'empty_state' | 'menu';
 export type FeedbackSentiment = 'negative' | 'neutral' | 'positive';
 
 export const AnalyticsEvents = {
+    IN_APP_MESSAGE_SHOWN: 'in_app_message_shown',
+    IN_APP_MESSAGE_ACTION: 'in_app_message_action',
+    IN_APP_MESSAGE_DISMISSED: 'in_app_message_dismissed',
     // Boost/Credential Claims
     CLAIM_BOOST: 'claim_boost',
 
@@ -334,6 +338,9 @@ export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof Analytics
  * Extend this interface as you add new events.
  */
 export interface AnalyticsEventPayloads {
+    [AnalyticsEvents.IN_APP_MESSAGE_SHOWN]: Omit<InAppMessagePresentationEvent, 'type'>;
+    [AnalyticsEvents.IN_APP_MESSAGE_ACTION]: Omit<InAppMessagePresentationEvent, 'type'>;
+    [AnalyticsEvents.IN_APP_MESSAGE_DISMISSED]: Omit<InAppMessagePresentationEvent, 'type'>;
     [AnalyticsEvents.CLAIM_BOOST]: {
         category?: string;
         boostType?: string;

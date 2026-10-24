@@ -1,25 +1,33 @@
-import React, { useEffect, useRef } from 'react';
-import { InAppMessage } from '@learncard/types';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion, Variants } from 'framer-motion';
 
 import { useInAppMessageActions } from './useInAppMessageActions';
+import type { MessagePresentationProps } from './presentationTypes';
+import { useT } from '../i18n';
 
 const AUTO_DISMISS_MS = 5000;
 
-export interface InAppMessageToastProps {
-    message: InAppMessage;
-    onClose: () => void;
+export interface InAppMessageToastProps extends MessagePresentationProps {
     durationMs?: number;
 }
 
 export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
     message,
     onClose,
+    onAction,
     durationMs = AUTO_DISMISS_MS,
 }) => {
     const shouldReduceMotion = useReducedMotion();
     const { runAction } = useInAppMessageActions();
+    const t = useT();
+    const [error, setError] = useState(false);
     const runningRef = useRef(false);
+    const completedRef = useRef(false);
+    const [expiryAttempt, setExpiryAttempt] = useState(0);
+    const closeRef = useRef(onClose);
+    useLayoutEffect(() => {
+        closeRef.current = onClose;
+    }, [onClose]);
 
     // Tapping runs the first non-dismiss action (if any) — a toast can't host
     // buttons, so without this an actionable toast would look interactive but
@@ -29,21 +37,45 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
     );
 
     useEffect(() => {
-        const timer = setTimeout(onClose, durationMs);
+        const timer = setTimeout(() => {
+            if (completedRef.current) return;
+            completedRef.current = true;
+            closeRef.current('expired');
+        }, durationMs);
 
         return () => clearTimeout(timer);
-    }, [onClose, durationMs]);
+    }, [durationMs, expiryAttempt]);
 
     const handleTap = async () => {
-        if (runningRef.current) return;
+        if (runningRef.current || completedRef.current) return;
 
         runningRef.current = true;
+        completedRef.current = true;
+        let completed = false;
+        setError(false);
 
         try {
-            if (primaryAction) await runAction(primaryAction.action);
+            if (primaryAction) {
+                const outcome = await runAction(primaryAction.action);
+                if (outcome !== 'closed') return;
+                onAction?.({
+                    actionIndex: message.actions.indexOf(primaryAction),
+                    actionSource: 'message',
+                    actionType: primaryAction.action.type,
+                });
+            }
+            completed = true;
+            onClose(
+                primaryAction && primaryAction.action.type !== 'dismiss' ? 'action' : 'dismissed'
+            );
+        } catch {
+            setError(true);
         } finally {
             runningRef.current = false;
-            onClose();
+            if (!completed) {
+                completedRef.current = false;
+                setExpiryAttempt(value => value + 1);
+            }
         }
     };
 
@@ -91,6 +123,11 @@ export const InAppMessageToast: React.FC<InAppMessageToastProps> = ({
                 )}
 
                 <span className="min-w-0">
+                    {error && (
+                        <span role="alert" className="block text-sm text-red-700">
+                            {t('inAppMessages.error')}
+                        </span>
+                    )}
                     <span className="block text-sm font-semibold text-grayscale-900 tracking-[-0.01em] truncate">
                         {message.title}
                     </span>

@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { clearAllIndexedDB } from '../indexedDBHelpers';
 import type { KeyDerivationStrategy } from '../../auth-coordinator/types';
+import { CREDENTIAL_FACTS_DATABASE_NAME } from '../../in-app-messages/credentialFactsStore';
 
 const logs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 vi.mock('../../logging/logger', () => ({
@@ -145,6 +146,14 @@ describe('clearAllIndexedDB', () => {
         expect(deletedDBs).not.toContain('lcb-sss-keys');
         expect(deletedDBs).toContain('app-cache');
         expect(deletedDBs).toContain('some-other-db');
+    });
+
+    it('deletes the on-device in-app message facts database on logout', async () => {
+        mockDatabases(['lcb-sss-keys', CREDENTIAL_FACTS_DATABASE_NAME]);
+
+        await clearAllIndexedDB();
+
+        expect(deletedDBs).toContain(CREDENTIAL_FACTS_DATABASE_NAME);
     });
 
     it('should NOT delete databases returned by strategy.getPreservedStorageKeys()', async () => {
