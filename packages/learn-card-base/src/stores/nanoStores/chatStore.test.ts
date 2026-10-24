@@ -173,6 +173,7 @@ const {
     planReadyThread,
     planSections,
     planStreamActive,
+    AiSessionMode,
     resetChatStores,
     sendMessage,
     sessionEnded,
@@ -246,6 +247,51 @@ describe('chat session startup', () => {
                 // replies in the user's language. Defaults to 'en'.
                 locale: 'en',
             },
+        ]);
+    });
+
+    it('shares one start_topic send between concurrent identical starts', async () => {
+        const firstStart = startTopic('Algebra');
+        const secondStart = startTopic('Algebra');
+        const socket = await openLatestSocket();
+        await Promise.all([firstStart, secondStart]);
+
+        const startTopicSends = (target: FakeWebSocket) =>
+            target.sent.filter(payload => JSON.parse(payload).action === 'start_topic');
+
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(startTopicSends(socket)).toHaveLength(1);
+        expect(secondStart).toBe(firstStart);
+
+        // Once the first start settles, the same args start a fresh session again.
+        const laterStart = startTopic('Algebra');
+        const laterSocket = await openLatestSocket();
+        await laterStart;
+
+        expect(laterStart).not.toBe(firstStart);
+        expect(startTopicSends(laterSocket)).toHaveLength(1);
+    });
+
+    it('does not share an in-flight start across different topics or modes', async () => {
+        const tutorStart = startTopic('Algebra');
+        const insightsStart = startTopic('Algebra', AiSessionMode.insights);
+        const otherTopicStart = startTopic('Geometry');
+
+        expect(insightsStart).not.toBe(tutorStart);
+        expect(otherTopicStart).not.toBe(insightsStart);
+
+        const socket = await openLatestSocket();
+        await Promise.all([tutorStart, insightsStart, otherTopicStart]);
+
+        expect(
+            socket.sent
+                .map(payload => JSON.parse(payload))
+                .filter(payload => payload.action === 'start_topic')
+                .map(({ topic, mode }) => ({ topic, mode }))
+        ).toEqual([
+            { topic: 'Algebra', mode: AiSessionMode.tutor },
+            { topic: 'Algebra', mode: AiSessionMode.insights },
+            { topic: 'Geometry', mode: AiSessionMode.tutor },
         ]);
     });
 
