@@ -1,15 +1,20 @@
 import { test as base, type BrowserContext } from '@playwright/test';
-import { mockDidKitWasmForContext } from '../route.helpers';
+import {
+    mockDidKitWasmForContext,
+    mockLaunchDarkly,
+    type MockFeatureFlags,
+} from '../route.helpers';
 
 /**
- * Fixture for the mocked-network tier. Applies the local DIDKit WASM mock (so
- * signing works offline) but omits the base fixture's `:3100/delete-all`
- * cleanup, which requires the docker backend the mocked tier deliberately avoids.
+ * Fixture for the mocked-network tier. Pins feature flags and applies the local
+ * DIDKit WASM mock, without the real fixture's docker-backed cleanup.
  */
-export const test = base.extend<{ context: BrowserContext }>({
-    context: async ({ context }, use) => {
+export const test = base.extend<{ context: BrowserContext; featureFlags: MockFeatureFlags }>({
+    featureFlags: [{}, { option: true }],
+    context: async ({ context, featureFlags }, runTest) => {
+        await mockLaunchDarkly(context, featureFlags);
         await mockDidKitWasmForContext(context);
-        await use(context);
+        await runTest(context);
     },
 });
 

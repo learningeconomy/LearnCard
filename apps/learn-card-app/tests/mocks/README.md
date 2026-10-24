@@ -28,6 +28,13 @@ The replay app is built with the **local** tenant config (`--stage local`) so it
 `localhost`, matching the recorded HAR. DIDKit signing runs locally (WASM mocked by the
 `mocked-test` fixture).
 
+The shared `mocked-test` fixture also intercepts LaunchDarkly evaluation, streaming,
+goals and telemetry requests. Flags are deterministic; both `inAppMessages` and
+`inAppMessagesV2` default to `{ messages: [] }`, so live announcements cannot cover
+controls during an unrelated test.
+Set flags explicitly with `test.use({ featureFlags: { flagName: { value: true } } })`.
+Existing page-level `mockLaunchDarkly(page, flags)` overrides still take precedence.
+
 ## Writing a mocked test
 
 Create `tests/<name>.mocked.spec.ts` (the `.mocked.spec.ts` suffix + a `@mocked` tag in
@@ -96,7 +103,7 @@ mock.on('boost.someNewProc', () => ({/* ... */}) satisfies BrainOutputs['boost']
 | `network.ts`                             | `installNetwork()` — HAR replay + optional typed override, record/replay    |
 | `trpc.ts`                                | `createTrpcMock` (batch-aware) + `BrainOutputs`/`CloudOutputs` type anchors |
 | `har/issue.har.zip`                      | Recorded boot + reads (single-file HAR)                                     |
-| `../fixtures/mocked-test.ts`             | WASM mock, no docker cleanup                                                |
+| `../fixtures/mocked-test.ts`             | WASM and feature-flag mocks, no docker cleanup                              |
 | `../../playwright.mock.config.ts`        | Replay config (vite, local stage, `@mocked` only)                           |
 | `../../playwright.mock-record.config.ts` | Record config (real docker)                                                 |
 
