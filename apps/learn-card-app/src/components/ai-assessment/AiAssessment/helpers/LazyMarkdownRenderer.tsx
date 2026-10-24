@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import * as m from '../../../../paraglide/messages.js';
 
 const importMarkdownRenderer = () => import('./MarkdownRenderer');
 
@@ -16,7 +17,13 @@ interface MarkdownRendererProps {
 }
 
 const LazyMarkdownRendererWrapper: React.FC<MarkdownRendererProps> = ({ children }) => (
-    <Suspense fallback={<div className="animate-pulse text-gray-400">Rendering…</div>}>
+    <Suspense
+        fallback={
+            <div className="animate-pulse text-grayscale-600" role="status">
+                {m['common.loading']()}
+            </div>
+        }
+    >
         <LazyMarkdownRenderer>{children}</LazyMarkdownRenderer>
     </Suspense>
 );
