@@ -46,6 +46,14 @@ export type {
 } from './types';
 
 export { VpError } from './types';
+export { parseDcApiRequest, createDcApiResponse, DcApiError } from './dcApi';
+export type {
+    DcApiRequest,
+    ParsedDcApiRequest,
+    DcApiResponse,
+    DcApiResponseOptions,
+    DcApiErrorCode,
+} from './dcApi';
 
 export type {
     CandidateCredential,
