@@ -18,6 +18,7 @@ import {
     getAuthConfig,
     getSSSConfig,
     getConfigCapabilities,
+    resumeAuthRedirect,
 } from 'learn-card-base';
 
 import { useFirebase } from '../../hooks/useFirebase';
@@ -109,7 +110,7 @@ const LoginPage: React.FC = () => {
                 } catch (e) {
                     log.error(e);
                 }
-                history.push(redirectTo);
+                resumeAuthRedirect(history, redirectTo);
             } else if (lcnRedirectTo) {
                 handleLCNetworkRedirect(lcnRedirectTo);
             } else {

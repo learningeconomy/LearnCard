@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { getPublicKeyAsync, verifyAsync } from '@noble/ed25519';
 import {
     createSSSStrategy,
+    formatVersionedEmailShare,
     type SSSStorageFunctions,
     type SSSStrategyConfig,
 } from './sss-strategy';
@@ -78,7 +79,8 @@ const frame = (value: Buffer): Buffer => {
     size.writeUInt32BE(value.length);
     return Buffer.concat([size, value]);
 };
-const response = (value: unknown): Response => new Response(JSON.stringify(value), { status: 200 });
+const response = (value: unknown, status = 200): Response =>
+    new Response(JSON.stringify(value), { status });
 
 const setup = async (legacyEnrolled = false) => {
     const pins = [
@@ -191,6 +193,8 @@ const setup = async (legacyEnrolled = false) => {
         snapshotOnly?: boolean;
         legacySnapshot?: boolean;
         releaseDid?: string;
+        failEnrollment?: boolean;
+        missingPinMetadata?: boolean;
     } = {};
     const signHold = async (record: EscrowHoldRecordLike): Promise<EscrowHoldRecordLike> => {
         const h = record.hold;
@@ -271,6 +275,19 @@ const setup = async (legacyEnrolled = false) => {
                 ).toBe(true);
                 expect(signed.intent.expectedEnrollmentVersion).toBe(state.enrollmentVersion);
                 intents.push(signed);
+                if (faults.failEnrollment) throw new Error('Temporary enrollment outage');
+                // Mirror escrow.enroll: rebind removes Mongo metadata, so carry cannot work.
+                if (
+                    faults.missingPinMetadata &&
+                    state.hasPin &&
+                    signed.intent.pinAction === 'keep'
+                ) {
+                    return response(
+                        { message: 'Set or clear your recovery PIN before continuing.' },
+                        412
+                    );
+                }
+                expect(!!body.clearPin).toBe(signed.intent.pinAction === 'clear');
                 let output: EscrowEnvelope | null = null;
                 if (path === '/keys/escrow') {
                     const plaintext = await decryptEscrowBlob(
@@ -462,7 +479,10 @@ const setup = async (legacyEnrolled = false) => {
                             did: faults.releaseDid ?? owner.intent.did,
                             holdId: pendingHold.hold.holdId,
                             shareVersion: version,
-                            recoveryShare: recoveryShares.recoveryShare,
+                            recoveryShare: state.envelope
+                                ? (await decryptEscrowBlob(state.envelope, keys.privateKey))
+                                      .recoveryShare
+                                : recoveryShares.recoveryShare,
                         },
                         pendingHold.hold.clientEphemeralPublicKey
                     ),
@@ -473,6 +493,22 @@ const setup = async (legacyEnrolled = false) => {
                 });
             }
             if (path === '/keys/escrow/opt-in') return response({ success: true });
+            if (path === '/keys/recovery-session/recover') {
+                return response({
+                    authShare: { encryptedData: authShare },
+                    primaryDid: owner.intent.did,
+                    rebindSessionToken: 'rebind-session',
+                });
+            }
+            if (path === '/keys/recovery-session/rebind') {
+                enrolled = false;
+                faults.missingPinMetadata = true;
+                authShare = (body.authShare as { encryptedData: string }).encryptedData;
+                return response({
+                    shareVersion: ++version,
+                    recoveryMethodsRequireConfirmation: [],
+                });
+            }
             throw new Error('Unexpected test request');
         })
     );
@@ -508,6 +544,7 @@ const setup = async (legacyEnrolled = false) => {
         identity,
         measurements,
         reload: () => createSSSStrategy(config),
+        emailShare: () => formatVersionedEmailShare(recoveryShares.emailShare, version),
         state: () => state,
         advance: () => {
             version++;
@@ -525,6 +562,136 @@ afterEach(() => {
 });
 
 describe('Nitro recovery initiating-client bindings and measurement rollover', () => {
+    it('retries recovered enrollment with clear-PIN intent after failure before enclave mutation', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        f.faults.failEnrollment = true;
+        await f.strategy.completeIdentityRecovery!(f.params);
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'replace', pinAction: 'clear' });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+        const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
+        f.faults.failEnrollment = false;
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, clearPin: true },
+            })
+        ).resolves.toMatchObject({ enrolled: true });
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'replace', pinAction: 'clear' });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
+    });
+    it('treats a successful recovered clear-PIN enrollment as satisfying the repair', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!(f.params);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
+        const intents = f.intents.length;
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, clearPin: true },
+            })
+        ).resolves.toMatchObject({ enrolled: true, changed: false });
+        expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
+        expect(f.intents).toHaveLength(intents);
+    });
+    it('repairs a prior enrollment after non-escrow identity recovery outside rollout', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        const intents = f.intents.length;
+        await f.strategy.prepareIdentityRecovery!({
+            recoverySessionToken: 'session',
+            input: { method: 'email', emailShare: f.emailShare() },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await expect(f.strategy.completeIdentityRecovery!(f.params)).resolves.toMatchObject({
+            escrowEnrolled: false,
+            escrowRecovery: false,
+        });
+        expect(f.intents).toHaveLength(intents);
+        // Outside rollout the verified authority proves prior enrollment, so the
+        // repair still runs and clears the retired PIN instead of carrying it.
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, clearPin: true, requirePriorEnrollment: true },
+            })
+        ).resolves.toMatchObject({ enrolled: true });
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'replace', pinAction: 'clear' });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+    });
+    it('does not enroll a never-enrolled account through prior-enrollment repair', async () => {
+        const f = await setup();
+        await f.strategy.prepareIdentityRecovery!({
+            recoverySessionToken: 'session',
+            input: { method: 'email', emailShare: f.emailShare() },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!(f.params);
+        await expect(
+            f.strategy.ensureEscrowEnrollment!({
+                ...f.params,
+                options: { ...f.params.options, clearPin: true, requirePriorEnrollment: true },
+            })
+        ).resolves.toEqual({ enrolled: false, reason: 'not-enrolled' });
+        expect(f.intents).toHaveLength(0);
+        expect(f.state()).toMatchObject({ status: 'empty' });
+    });
+    it('binds recovery contact into the enrollment intent after identity recovery', async () => {
+        const f = await setup();
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!({
+            ...f.params,
+            options: { recoveryEmail: 'recovered@example.com', recoveryLanguage: 'es' },
+        });
+        expect(f.intents.at(-1)?.intent).toMatchObject({
+            recoveryEmail: 'recovered@example.com',
+            recoveryLanguage: 'es',
+            action: 'enroll',
+        });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+    });
     const start = (f: Awaited<ReturnType<typeof setup>>) =>
         f.strategy.startEscrowRecovery!({
             token: 'token',

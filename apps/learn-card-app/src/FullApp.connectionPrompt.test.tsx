@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { readFileSync } from 'fs';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 
 const { coordinatorProps } = vi.hoisted(() => ({ coordinatorProps: vi.fn() }));
@@ -77,6 +77,14 @@ vi.mock('learn-card-base', () => ({
 
 vi.mock('learn-card-base/components/toast/Toast', () => ({ default: () => null }));
 vi.mock('./AppRouter', () => ({ default: () => null }));
+vi.mock('./i18n/SharedI18nProvider', () => ({
+    SharedI18nProvider: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid="shared-i18n-provider">{children}</div>
+    ),
+}));
+vi.mock('./analytics/InAppMessagesAnalyticsHost', () => ({
+    InAppMessagesAnalyticsHost: () => <div data-testid="in-app-messages-host" />,
+}));
 vi.mock('./pages/loadingPage/LoadingPage', () => ({ LoadingPageDumb: () => null }));
 vi.mock('./components/app-url-listener/AppUrlListener', () => ({ default: () => null }));
 vi.mock('./components/modalListener/ModalListener', () => ({ default: () => null }));
@@ -157,4 +165,13 @@ it('mounts exactly one shared modal accessibility manager in the app shell', () 
     ]).toHaveLength(1);
     render(<FullApp />);
     expect(screen.getAllByTestId('modal-accessibility-manager')).toHaveLength(1);
+});
+
+it('mounts one in-app message host inside the shared localization provider', () => {
+    render(<FullApp />);
+
+    expect(screen.getAllByTestId('in-app-messages-host')).toHaveLength(1);
+    expect(
+        within(screen.getByTestId('shared-i18n-provider')).getByTestId('in-app-messages-host')
+    ).toBeTruthy();
 });

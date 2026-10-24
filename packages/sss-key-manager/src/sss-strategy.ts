@@ -193,7 +193,7 @@ const describeHttpStatus = (response: Response): string =>
     response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
 
 type EscrowEnrollmentResult =
-    | { enrolled: false; reason: 'disabled' | 'opted-out' }
+    | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
     | { enrolled: true; changed: false }
     | { enrolled: true; changed: true; shareVersion: number };
 
@@ -1065,6 +1065,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
               recoveryShare: string;
               authShare: string;
               rebindSessionToken: string;
+              /** Recovered from an existing escrow enrollment (hold or PIN), not another method. */
+              fromEscrow: boolean;
               rebind?: { shares: SSSShares; storageId: string | undefined; attempted: boolean };
           }
         | undefined;
@@ -1421,10 +1423,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
-    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<void> => {
-        if (!config.escrow?.enabled) return;
+    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<boolean> => {
+        if (!config.escrow?.enabled) return false;
         try {
             await enrollEscrow(...args);
+            return true;
         } catch (err) {
             // A reporting callback must not turn a successful rotation into a failure.
             try {
@@ -1433,6 +1436,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             } catch {
                 console.warn('SSS: escrow error reporting failed');
             }
+            return false;
         }
     };
 
@@ -1443,7 +1447,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         forceRotate = false,
         allowDisabledEnrollment = false
     ): Promise<EscrowEnrollmentResult> => {
-        let clearPinForEnrollment = forceRotate;
+        let clearPinForEnrollment = forceRotate || params.options?.clearPin === true;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
         const recoveryEmail = params.options?.recoveryEmail ?? '';
@@ -1470,7 +1474,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         ('confirmationStatus' in method &&
                             method.confirmationStatus === 'confirmed'))
             );
+        if (
+            params.options?.requirePriorEnrollment &&
+            config.escrow.attestation.mode !== 'nitro' &&
+            !status.recoveryMethods.some(method => method.type === 'escrow')
+        )
+            return { enrolled: false, reason: 'not-enrolled' };
         let verifiedKey: VerifiedEnclaveIdentity | undefined;
+        // Locked, stale or unknown PIN state never satisfies a clear request.
+        let hasPin = status.escrowPin?.state !== 'none';
         if (config.escrow.attestation.mode === 'nitro') {
             if (!status.primaryDid || !params.signDidAuthVp)
                 throw new Error('Owner proof signing is required for escrow enrollment.');
@@ -1484,6 +1496,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 verifiedKey,
                 storage.assertCurrent
             );
+            // The signed authority survives the identity rebind that drops Mongo's blob.
+            if (params.options?.requirePriorEnrollment && current.status === 'empty')
+                return { enrolled: false, reason: 'not-enrolled' };
             if (current.status === 'disabled') {
                 verifiedEscrowEnvelope = undefined;
                 if (!allowDisabledEnrollment) return { enrolled: false, reason: 'opted-out' };
@@ -1496,7 +1511,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 current.shareVersion === status.shareVersion &&
                 current.envelope?.keyId === verifiedKey.keyId;
             if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
+            hasPin = current.hasPin;
         }
+        // A current, PIN-free enrollment already satisfies a clear request
+        // (e.g. post-recovery repair after direct enrollment succeeded).
+        if (
+            currentlyEnrolled &&
+            !forceRotate &&
+            pin === undefined &&
+            !hasPin &&
+            !status.escrowStale
+        )
+            clearPinForEnrollment = false;
         // A confirmed enrollment whose sealed blob no longer matches the active
         // enclave (P6 mode migration/rollback, or a rotated enclave key) still
         // needs the same rotation a missing enrollment would get — but only one
@@ -1519,7 +1545,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
         try {
             if (
-                !clearPinForEnrollment &&
+                !forceRotate &&
                 pin === undefined &&
                 unenrolledRotation &&
                 unenrolledRotation.shareVersion === status.shareVersion &&
@@ -1536,7 +1562,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     params.signDidAuthVp,
                     undefined,
                     undefined,
-                    retry.clearPin,
+                    clearPinForEnrollment || retry.clearPin,
                     storage.assertCurrent,
                     recoveryEmail,
                     recoveryLanguage
@@ -2220,7 +2246,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         providerType: params.providerType,
                     }),
                 });
-                return ensureEscrowEnrollmentUnguarded(this, params, storage, false, true);
+                const result = await ensureEscrowEnrollmentUnguarded(
+                    this,
+                    params,
+                    storage,
+                    false,
+                    true
+                );
+                // Explicit enable never requests prior-enrollment-only repair.
+                if (result.enrolled) return result;
+                if (result.reason === 'not-enrolled')
+                    throw new Error('Escrow enrollment did not complete');
+                return { enrolled: false as const, reason: result.reason };
             });
         },
 
@@ -2478,6 +2515,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             input: RecoveryInput;
             didFromPrivateKey?: (privateKey: string) => Promise<string>;
             signDidAuthVp?: DidAuthVpSigner;
+            options?: { recoveryEmail?: string; recoveryLanguage?: string };
         }): Promise<RecoveryResult> {
             const storage = guardedStorage();
             const { token, providerType, input, didFromPrivateKey, signDidAuthVp } = params;
@@ -2565,11 +2603,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryShare: plaintext.recoveryShare,
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
+                    fromEscrow: true,
                 };
                 // The OTP path uses exactly this pending state and atomic rebind operation.
                 // Without a provider session the caller completes it after signing in.
                 if (!token) return { privateKey, did: material.primaryDid };
-                return this.completeIdentityRecovery!({ token, providerType, signDidAuthVp });
+                return this.completeIdentityRecovery!({
+                    token,
+                    providerType,
+                    signDidAuthVp,
+                    options: params.options,
+                });
             }
 
             let recoveryShare: string;
@@ -3295,6 +3339,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryShare,
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
+                    fromEscrow: false,
                 };
 
                 return { privateKey, did: material.primaryDid };
@@ -3465,22 +3510,41 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 })
             );
 
-            await tryEnrollEscrow(
-                params.token,
-                params.providerType,
-                pending.privateKey,
-                pending.primaryDid,
-                shares,
-                shareVersion,
-                signDidAuthVp,
-                undefined,
-                undefined,
-                true
-            );
+            // Other recovery methods leave enrollment to the caller's rollout gate.
+            const enrolled =
+                pending.fromEscrow &&
+                (await tryEnrollEscrow(
+                    params.token,
+                    params.providerType,
+                    pending.privateKey,
+                    pending.primaryDid,
+                    shares,
+                    shareVersion,
+                    signDidAuthVp,
+                    undefined,
+                    undefined,
+                    true,
+                    storage.assertCurrent,
+                    params.options?.recoveryEmail,
+                    params.options?.recoveryLanguage
+                ));
             if (activeStorageId !== storageId || storageGeneration !== generation) {
                 throw new Error('This recovery request was cancelled.');
             }
-            return { privateKey: pending.privateKey, did: pending.primaryDid };
+            if (!enrolled) {
+                unenrolledRotation = {
+                    shares,
+                    shareVersion,
+                    primaryDid: pending.primaryDid,
+                    clearPin: true,
+                };
+            }
+            return {
+                privateKey: pending.privateKey,
+                did: pending.primaryDid,
+                escrowEnrolled: enrolled,
+                escrowRecovery: pending.fromEscrow,
+            };
         },
 
         // --- Contact method management ---

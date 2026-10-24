@@ -54,7 +54,6 @@ export const GameLogin: React.FC<GameLoginProps> = ({ handleBackToGame }) => {
                 buttonClassName="font-poppins text-[16px]! leading-[28px] tracking-[0.75px] mt-0! bg-emerald-700! hover:opacity-90 active:opacity-85 transition-opacity"
                 emailInputClassName="bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-500 tracking-normal"
                 emailInputVariant="appStore"
-                emailErrorPlacement="below"
                 verificationCodeInputClassName="gameflow"
                 startOverClassNameOverride="text-grayscale-800 underline font-bold"
                 resendCodeButtonClassNameOverride="text-grayscale-600 font-bold mt-4 border-b-grayscale-600 border-solid border-b"

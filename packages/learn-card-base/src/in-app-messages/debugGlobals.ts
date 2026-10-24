@@ -3,11 +3,16 @@ import { inAppMessageValidator, type InAppMessage } from '@learncard/types';
 import { isInAppMessagesDebug, setInAppMessagesDebug } from './debug';
 import {
     getLastInAppMessages,
+    getLastInAppMessageCredentialFacts,
     getLastInAppMessagesReport,
     type InAppMessagesReport,
 } from './useInAppMessages';
 import { resetInAppMessageDismissals } from './dismissalStore';
 import { setInAppMessageOverride } from './debugOverrideStore';
+import { emitInAppMessageEvent } from './inAppMessageEvents';
+import { resetInAppMessageFatigue } from './fatigueStore';
+import type { CredentialSummary } from './credentialFacts';
+import { requestInAppMessage } from './deepLinkRequestStore';
 
 export interface InAppMessagesDevApi {
     enable: () => string;
@@ -19,6 +24,11 @@ export interface InAppMessagesDevApi {
     forceShow: (id: string) => string;
     preview: (message: Partial<InAppMessage> & { title: string }) => string;
     clearForce: () => string;
+    facts: () => { loaded: number; total: number; complete: boolean; readsUsed: number };
+    backfill: () => Promise<string>;
+    emit: (event: 'credential.claimed' | 'app.opened', credential?: CredentialSummary) => string;
+    resetCap: () => string;
+    openDeepLink: (id: string) => void;
 }
 
 declare global {
@@ -28,6 +38,7 @@ declare global {
 }
 
 const api: InAppMessagesDevApi = {
+    openDeepLink: requestInAppMessage,
     enable: () => {
         setInAppMessagesDebug(true);
 
@@ -74,6 +85,39 @@ const api: InAppMessagesDevApi = {
         setInAppMessageOverride(null);
 
         return 'cleared forced/preview message';
+    },
+    facts: () => {
+        const facts = getLastInAppMessageCredentialFacts();
+
+        return {
+            loaded: facts?.summaries?.length ?? 0,
+            total: facts?.total ?? 0,
+            complete: facts?.complete ?? false,
+            readsUsed: facts?.readsUsed ?? 0,
+        };
+    },
+    backfill: async () => {
+        const facts = getLastInAppMessageCredentialFacts();
+
+        if (!facts) return 'credential facts are not active';
+
+        await facts.backfillNow();
+        return 'credential facts backfill complete';
+    },
+    emit: (event, credential) => {
+        const facts = getLastInAppMessageCredentialFacts();
+
+        emitInAppMessageEvent(event, {
+            ...(credential ? { credential } : {}),
+            ...(facts?.accountDid ? { accountDid: facts.accountDid } : {}),
+        });
+
+        return `emitted ${event}`;
+    },
+    resetCap: () => {
+        resetInAppMessageFatigue();
+
+        return 'in-app-messages blocking cap cleared';
     },
 };
 
