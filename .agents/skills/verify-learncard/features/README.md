@@ -45,19 +45,19 @@ Every feature file has an H1 and a one-paragraph summary, then exactly these H2s
 
 ## Features
 
-| Feature        | Surface               | Recipe                                       | Entries                                                                                                                 |
-| -------------- | --------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `account`      | web                   | [Sign-in & account](account.md)              | `auth-public-email-entry`, `auth-developer-seed`, `auth-onboarding`, `auth-sign-out`                                    |
-| `language`     | web                   | [Language switching](language.md)            | `locale-login-switch`, `locale-login-persistence`, `locale-sidebar-switch`                                              |
-| `credentials`  | web                   | [Boosting & claiming badges](credentials.md) | `wallet-self-issue`, `wallet-detail-persistence`, `wallet-peer-claim`                                                   |
-| `sharing`      | web                   | [Credential share links](sharing.md)         | `share-menu-copy`, `share-anonymous-view`                                                                               |
-| `contacts`     | web                   | [Contacts & connections](contacts.md)        | `contacts-search`, `contacts-request`, `contacts-accept`, `contacts-mutual`                                             |
-| `app-store`    | web + Partner Connect | [App store](app-store.md)                    | `apps-public-sign-in-intent`, `apps-browse-detail`, `apps-install-persist-launch`                                       |
-| `sdk`          | SDK                   | [LearnCard SDK](sdk.md)                      | `sdk-identity`, `sdk-issue-verify`, `sdk-presentation`, `sdk-cloud-roundtrip`, `sdk-boost-send-accept`                  |
-| `cli`          | CLI                   | [`learncard` CLI](cli.md)                    | `cli-send`, `cli-recipient-claims`, `cli-status`, `cli-verify`                                                          |
-| `sdk-to-app`   | cross-surface         | [SDK issuer → app learner](sdk-to-app.md)    | `cross-sdk-send`, `cross-app-claim`, `cross-app-wallet-detail`, `cross-sdk-observes-claim`                              |
-| `consent-flow` | cross-surface         | [ConsentFlow](consent-flow.md)               | `consent-partner-contract`, `consent-app-door`, `consent-app-accept`, `consent-partner-reads`, `consent-partner-issues` |
-| `docs`         | docs                  | [Docs quickstart](docs.md)                   | `docs-snippets-in-sync`, `docs-quickstart-send`, `docs-quickstart-received`                                             |
+| Feature        | Surface               | Recipe                                       | Entries                                                                                                                                           |
+| -------------- | --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`      | web                   | [Sign-in & account](account.md)              | `auth-public-email-entry`, `auth-developer-seed`, `auth-onboarding`, `auth-sign-out`                                                              |
+| `language`     | web                   | [Language switching](language.md)            | `locale-login-switch`, `locale-login-persistence`, `locale-sidebar-switch`                                                                        |
+| `credentials`  | web                   | [Boosting & claiming badges](credentials.md) | `wallet-self-issue`, `wallet-detail-persistence`, `wallet-peer-claim`                                                                             |
+| `sharing`      | web                   | [Credential share links](sharing.md)         | `share-menu-copy`, `share-public-preview-isolation`, `share-deleted-preview-recovery`, `share-endorsed-preview-stability`, `share-anonymous-view` |
+| `contacts`     | web                   | [Contacts & connections](contacts.md)        | `contacts-search`, `contacts-request`, `contacts-accept`, `contacts-mutual`                                                                       |
+| `app-store`    | web + Partner Connect | [App store](app-store.md)                    | `apps-public-sign-in-intent`, `apps-browse-detail`, `apps-install-persist-launch`                                                                 |
+| `sdk`          | SDK                   | [LearnCard SDK](sdk.md)                      | `sdk-identity`, `sdk-issue-verify`, `sdk-presentation`, `sdk-cloud-roundtrip`, `sdk-boost-send-accept`, `sdk-share-preview-lifecycle`             |
+| `cli`          | CLI                   | [`learncard` CLI](cli.md)                    | `cli-send`, `cli-recipient-claims`, `cli-status`, `cli-verify`                                                                                    |
+| `sdk-to-app`   | cross-surface         | [SDK issuer → app learner](sdk-to-app.md)    | `cross-sdk-send`, `cross-app-claim`, `cross-app-wallet-detail`, `cross-sdk-observes-claim`                                                        |
+| `consent-flow` | cross-surface         | [ConsentFlow](consent-flow.md)               | `consent-partner-contract`, `consent-app-door`, `consent-app-accept`, `consent-partner-reads`, `consent-partner-issues`                           |
+| `docs`         | docs                  | [Docs quickstart](docs.md)                   | `docs-snippets-in-sync`, `docs-quickstart-send`, `docs-quickstart-received`                                                                       |
 
 ## Not covered yet (and what each needs)
 

@@ -18,4 +18,5 @@ export * from './bitstring-status-list';
 export * from './inAppMessages';
 export * from './credential-refresh';
 export * from './share-links';
+export * from './share-previews';
 export * from './skillIcons';
