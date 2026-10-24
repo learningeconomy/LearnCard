@@ -72,7 +72,7 @@ import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
     isInboxClaimInteraction,
-    shouldCompleteInboxClaimLocally,
+    shouldCompleteCredentialClaimLocally,
 } from './claimRequest.helpers';
 import { canParticipateInExchange, deriveInboxClaimProfileState } from './inboxClaimGate';
 
@@ -640,11 +640,10 @@ const ClaimFromRequest: React.FC = () => {
             return;
         }
 
-        // Inbox credentials are finalized before the returned VCs are shown to the learner.
-        // Once the learner saves that batch locally, there is no server-side completion request
-        // left to make: posting an empty body would be interpreted as a new claim initiation and
-        // incorrectly return "No pending credentials found".
-        if (shouldCompleteInboxClaimLocally(vc_request_url, credentialClaimCount, body)) {
+        // Credentials are finalized before the returned VCs are shown to the learner. Once the
+        // learner saves that batch locally, the empty callback is a completion signal, not a
+        // server request. Posting it would restart an already-completed exchange.
+        if (shouldCompleteCredentialClaimLocally(credentialClaimCount, body)) {
             void handleAfterCredentialClaim();
             return;
         }

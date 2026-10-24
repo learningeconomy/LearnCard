@@ -4,7 +4,7 @@ import {
     getClaimInteractionBoostUri,
     getClaimInteractionDuplicateLookup,
     isInboxClaimInteraction,
-    shouldCompleteInboxClaimLocally,
+    shouldCompleteCredentialClaimLocally,
 } from './claimRequest.helpers';
 
 const exchangeId =
@@ -59,25 +59,35 @@ describe('isInboxClaimInteraction', () => {
     });
 });
 
-describe('shouldCompleteInboxClaimLocally', () => {
+describe('shouldCompleteCredentialClaimLocally', () => {
     const inboxRequestUrl = 'http://localhost:4000/api/workflows/inbox-claim/exchanges/claim-token';
+    const claimRequestUrl = 'http://localhost:4000/api/workflows/claim/exchanges/exchange-id';
 
-    it('completes a saved Universal Inbox batch without making an empty follow-up request', () => {
-        expect(shouldCompleteInboxClaimLocally(inboxRequestUrl, 2, {})).toBe(true);
+    it('completes a saved generic claim batch locally', () => {
+        expect(isInboxClaimInteraction(claimRequestUrl)).toBe(false);
+        expect(shouldCompleteCredentialClaimLocally(2, {})).toBe(true);
     });
 
-    it('continues with the server when submitting a presentation or another workflow', () => {
+    it('completes a saved inbox claim batch locally', () => {
+        expect(isInboxClaimInteraction(inboxRequestUrl)).toBe(true);
+        expect(shouldCompleteCredentialClaimLocally(1, {})).toBe(true);
+    });
+
+    it('continues with the server when submitting a presentation', () => {
         expect(
-            shouldCompleteInboxClaimLocally(inboxRequestUrl, 2, {
+            shouldCompleteCredentialClaimLocally(2, {
                 verifiablePresentation: { holder: 'did:key:holder' },
             })
         ).toBe(false);
         expect(
-            shouldCompleteInboxClaimLocally(
-                'http://localhost:4000/api/workflows/claim/exchanges/exchange-id',
-                1,
-                {}
-            )
+            shouldCompleteCredentialClaimLocally(2, {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+            })
         ).toBe(false);
+    });
+
+    it('continues with the server without a positive credential claim count', () => {
+        expect(shouldCompleteCredentialClaimLocally(undefined, {})).toBe(false);
+        expect(shouldCompleteCredentialClaimLocally(0, {})).toBe(false);
     });
 });
