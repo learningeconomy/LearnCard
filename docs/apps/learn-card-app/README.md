@@ -115,6 +115,8 @@ If uploads are busy, the app shows **Waiting for a turn…** and automatically t
 for up to two minutes, respecting the service's retry delay. Select **Cancel** or close the
 upload step to stop waiting. Closing the app stops retries; there is no background queue.
 If capacity remains unavailable, the file stays unsaved and you can try again shortly.
+The app checks for an available upload slot before sending the document, so waiting
+does not repeatedly transfer the file. Once admitted, extraction failures require a manual retry.
 Only requests explicitly rejected before processing are retried automatically.
 Once extraction has started, the existing **Notify me when it's ready** behavior still applies.
 
