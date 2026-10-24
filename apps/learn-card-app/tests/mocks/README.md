@@ -35,6 +35,12 @@ controls during an unrelated test.
 Set flags explicitly with `test.use({ featureFlags: { flagName: { value: true } } })`.
 Existing page-level `mockLaunchDarkly(page, flags)` overrides still take precedence.
 
+The fixture also serves the tracked `public/connectivity.txt` marker locally. This
+keeps intentionally aborted backend calls and slow Vite startup from turning an
+online mocked flow into an offline sign-in remount. Offline-specific tests can
+override this route. Use `nextPath` in `waitForAuthenticatedState` to return directly
+to the tested route through developer sign-in, avoiding a second full app load.
+
 ## Writing a mocked test
 
 Create `tests/<name>.mocked.spec.ts` (the `.mocked.spec.ts` suffix + a `@mocked` tag in
@@ -103,7 +109,7 @@ mock.on('boost.someNewProc', () => ({/* ... */}) satisfies BrainOutputs['boost']
 | `network.ts`                             | `installNetwork()` — HAR replay + optional typed override, record/replay    |
 | `trpc.ts`                                | `createTrpcMock` (batch-aware) + `BrainOutputs`/`CloudOutputs` type anchors |
 | `har/issue.har.zip`                      | Recorded boot + reads (single-file HAR)                                     |
-| `../fixtures/mocked-test.ts`             | WASM and feature-flag mocks, no docker cleanup                              |
+| `../fixtures/mocked-test.ts`             | WASM, connectivity and feature-flag mocks, no docker cleanup                |
 | `../../playwright.mock.config.ts`        | Replay config (vite, local stage, `@mocked` only)                           |
 | `../../playwright.mock-record.config.ts` | Record config (real docker)                                                 |
 

@@ -211,22 +211,17 @@ const setup = async (
     }));
     mock.on('contracts.getConsentFlowCredentials', () => ({ hasMore: false, records: [] }));
     await waitForAuthenticatedState(page, {
-        path: '/wallet',
+        path: '/notifications',
+        nextPath: '/notifications',
         profileId: TEST_USER_PROFILE_ID,
-        waitUntil: 'domcontentloaded',
     });
-    await expect(page.getByRole('heading', { name: 'Passport', exact: true })).toBeVisible({
-        timeout: 30_000,
-    });
-    await page.goto('/notifications', { waitUntil: 'domcontentloaded' });
-    // A full navigation initializes the account again before notifications load.
-    // Wait for that observable UI state, including on a cold CI server.
+    // Sign-in returns directly to Alerts; wait for its authenticated content.
     const notification = page.getByTestId(
         (options.tenant ?? true) && (options.flag ?? true)
             ? 'contract-request-card'
             : 'notification-title'
     );
-    await expect(notification).toBeVisible({ timeout: 30_000 });
+    await expect(notification).toBeVisible({ timeout: 60_000 });
     return {
         seen: () => seen,
         denied: () => denied,
