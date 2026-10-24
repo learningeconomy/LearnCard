@@ -83,11 +83,12 @@ export const waitForUploadCapacity = async (
             delay = Math.max(1000, delay) + Math.floor(Math.random() * 501);
             if (Date.now() + delay > deadline) return response;
             previous = response;
-            waiting = true;
-            options.onWaiting?.(true);
+            // Stay in one waiting state through retry round trips; admission is not yet known.
+            if (!waiting) {
+                waiting = true;
+                options.onWaiting?.(true);
+            }
             await wait(delay, [options.signal, options.waitSignal]);
-            waiting = false;
-            options.onWaiting?.(false);
         }
     } finally {
         if (waiting) options.onWaiting?.(false);

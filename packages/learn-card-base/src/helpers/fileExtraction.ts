@@ -166,7 +166,7 @@ export const extractFileCredentials = async (input: {
 }): Promise<FileExtractionResponse> => {
     const fileType = FILE_KINDS.find(kind => kind === input.fileType);
     if (!fileType) throw new FileExtractionError('INPUT_INVALID');
-    let attempt = input.attempt ?? createFileExtractionAttempt();
+    const attempt = input.attempt ?? createFileExtractionAttempt();
     if (!FileExtractionAttemptValidator.safeParse(attempt).success) {
         throw new FileExtractionError('INPUT_INVALID');
     }
@@ -182,8 +182,8 @@ export const extractFileCredentials = async (input: {
         let response: Response;
         try {
             response = await waitForUploadCapacity(
-                async retry => {
-                    if (retry) attempt = createFileExtractionAttempt(attempt);
+                async () => {
+                    // Admission rejections never start extraction: reuse its correlation and budget.
                     input.onAttempt?.(attempt);
                     return aiPassportFetch(
                         addActiveLocaleToUrl(
@@ -206,11 +206,13 @@ export const extractFileCredentials = async (input: {
                     signal: scope.signal,
                     waitSignal: input.waitSignal,
                     onWaiting: input.onWaiting,
-                    maxRetries: MAX_FILE_EXTRACTION_ATTEMPTS - attempt.attempt,
                 }
             );
-        } catch {
-            if (scope.signal.aborted || input.waitSignal?.aborted)
+        } catch (error) {
+            if (
+                scope.signal.aborted ||
+                (input.waitSignal?.aborted && error instanceof Error && error.name === 'AbortError')
+            )
                 throw new FileExtractionError('UPLOAD_CANCELLED');
             recordExtraction(attempt, fileType, undefined, 'NETWORK_FAILED');
             throw new FileExtractionError('NETWORK_FAILED');
@@ -220,6 +222,7 @@ export const extractFileCredentials = async (input: {
         try {
             body = await response.json();
         } catch {
+            if (scope.signal.aborted) throw new FileExtractionError('UPLOAD_CANCELLED');
             recordExtraction(attempt, fileType, undefined, 'RESPONSE_INVALID', response.status);
             throw new FileExtractionError('RESPONSE_INVALID', undefined, response.status);
         }

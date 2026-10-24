@@ -166,3 +166,40 @@ it('preserves an already-accepted result after the upload screen closes', async 
     finish(Response.json({ ok: true }));
     expect((await pending).ok).toBe(true);
 });
+
+it('keeps Cancel visible throughout slow retry round trips without waiting-state flicker', async () => {
+    const reply = Promise.withResolvers<Response>();
+    const send = vi
+        .fn()
+        .mockResolvedValueOnce(busy(503, 'upload_capacity_exceeded', '5'))
+        .mockReturnValueOnce(reply.promise)
+        .mockResolvedValue(Response.json({ ok: true }));
+    const onWaiting = vi.fn();
+    const pending = waitForUploadCapacity(send, { onWaiting });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(onWaiting.mock.calls).toEqual([[true]]);
+    reply.resolve(busy(503, 'upload_capacity_exceeded', '5'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(onWaiting.mock.calls).toEqual([[true]]);
+    await vi.runAllTimersAsync();
+    expect((await pending).ok).toBe(true);
+    expect(onWaiting.mock.calls).toEqual([[true], [false]]);
+});
+
+it('does not resend after Cancel during a pending rejected retry', async () => {
+    const reply = Promise.withResolvers<Response>();
+    const controller = new AbortController();
+    const send = vi
+        .fn()
+        .mockResolvedValueOnce(busy(503, 'upload_capacity_exceeded', '5'))
+        .mockReturnValueOnce(reply.promise);
+    const pending = waitForUploadCapacity(send, { waitSignal: controller.signal });
+    const rejected = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.advanceTimersByTimeAsync(5000);
+    controller.abort();
+    reply.resolve(busy(503, 'upload_capacity_exceeded', '5'));
+    await rejected;
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+});
