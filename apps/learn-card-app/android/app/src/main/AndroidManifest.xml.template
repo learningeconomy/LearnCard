@@ -32,6 +32,8 @@
         tools:targetApi="m"
         android:hardwareAccelerated="true"
         >
+        <!-- NativeCrashReportingPlugin installs the persisted privacy gate first. -->
+        <meta-data android:name="io.sentry.auto-init" android:value="false" />
         <!-- Notification icon -->
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_notification" />
         <!-- Barcode scanner -->

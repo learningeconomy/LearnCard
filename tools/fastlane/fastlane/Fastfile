@@ -39,6 +39,22 @@ def increment_version_by_type(current_version_string)
   parts.join('.')
 end
 
+# Upload before distributing the binary; unreadable native stacks defeat crash reporting.
+# sentry-cli reads credentials from the environment, never command-line arguments.
+def upload_sentry_native_symbols
+  keys = %w[SENTRY_AUTH_TOKEN SENTRY_ORG SENTRY_PROJECT]
+  configured = keys.all? { |key| !ENV[key].to_s.empty? }
+  if ENV["SENTRY_UPLOAD_REQUIRED"] == "true" && !configured
+    UI.user_error!("Native Sentry symbol upload requires #{keys.join(', ')}")
+  end
+  return unless configured
+
+  symbols = lane_context[SharedValues::DSYM_OUTPUT_PATH]
+  UI.user_error!("Missing dSYMs from build_app") unless symbols && File.exist?(symbols)
+  cli = File.expand_path("../../../node_modules/@sentry/cli/bin/sentry-cli", __dir__)
+  sh("node", cli, "debug-files", "upload", "--include-sources", symbols)
+end
+
 platform :ios do
   desc "Description of what the lane does"
 
@@ -151,6 +167,8 @@ platform :ios do
   #    path: ENV["XCODE_PROJECT"]
    # )
 
+    upload_sentry_native_symbols
+
     upload_to_app_store(
       force: true,
       submit_for_review: ENV['IOS_SUBMIT_TO_APP_REVIEW'],
@@ -232,6 +250,8 @@ platform :ios do
       use_automatic_signing: true,
       path: ENV["XCODE_PROJECT"]
     )
+
+    upload_sentry_native_symbols
 
     upload_to_app_store(
       force: true,

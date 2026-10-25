@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports -- This guard runs directly as a CommonJS Node CLI in CI. */
 // tools/capgo/check-channel-bump.js
 //
 // Detects whether a PR makes backwards-incompatible native runtime changes
@@ -30,7 +31,7 @@ const { parseDefaultChannel } = require('./readDefaultChannel.cjs');
 
 const args = process.argv.slice(2);
 
-const argFlag = (flag) => {
+const argFlag = flag => {
     const i = args.indexOf(flag);
 
     return i === -1 ? undefined : args[i + 1];
@@ -72,6 +73,7 @@ const NATIVE_PATH_PATTERNS = [
 // plugin (i.e. ships native code into the binary).
 //
 const NATIVE_DEP_PATTERNS = [
+    /^@sentry\/capacitor$/,
     /^@capacitor\//,
     /^@capgo\//,
     /^@capacitor-/, // @capacitor-community, @capacitor-firebase, @capacitor-mlkit, ...
@@ -80,13 +82,9 @@ const NATIVE_DEP_PATTERNS = [
 ];
 
 // Tooling deps that match the patterns but do NOT ship native code at runtime.
-const EXCLUDED_DEPS = new Set([
-    '@capacitor/cli',
-    '@capacitor/assets',
-    '@capgo/cli',
-]);
+const EXCLUDED_DEPS = new Set(['@capacitor/cli', '@capacitor/assets', '@capgo/cli']);
 
-const isNativeDep = (name) =>
+const isNativeDep = name =>
     !EXCLUDED_DEPS.has(name) && NATIVE_DEP_PATTERNS.some(re => re.test(name));
 
 // --- Git helpers ------------------------------------------------------------
@@ -116,9 +114,9 @@ const getChangedFiles = (baseSha, headSha) => {
 
 // --- Extractors -------------------------------------------------------------
 
-const extractDefaultChannel = (configContent) => parseDefaultChannel(configContent) ?? null;
+const extractDefaultChannel = configContent => parseDefaultChannel(configContent) ?? null;
 
-const collectNativeDeps = (pkgJsonContent) => {
+const collectNativeDeps = pkgJsonContent => {
     if (!pkgJsonContent.trim()) return {};
 
     try {
@@ -158,9 +156,7 @@ const diffNativeDeps = (baseDeps, headDeps) => {
 
 const changedFiles = getChangedFiles(base, head);
 
-const nativeFileChanges = changedFiles.filter(f =>
-    NATIVE_PATH_PATTERNS.some(re => re.test(f)),
-);
+const nativeFileChanges = changedFiles.filter(f => NATIVE_PATH_PATTERNS.some(re => re.test(f)));
 
 const baseDeps = collectNativeDeps(gitShowFile(base, PACKAGE_JSON));
 const headDeps = collectNativeDeps(gitShowFile(head, PACKAGE_JSON));
@@ -169,8 +165,7 @@ const depDiff = diffNativeDeps(baseDeps, headDeps);
 const baseChannel = extractDefaultChannel(gitShowFile(base, CAPACITOR_CONFIG));
 const headChannel = extractDefaultChannel(gitShowFile(head, CAPACITOR_CONFIG));
 
-const channelBumped =
-    baseChannel !== null && headChannel !== null && baseChannel !== headChannel;
+const channelBumped = baseChannel !== null && headChannel !== null && baseChannel !== headChannel;
 
 const nativeCompatChanged =
     nativeFileChanges.length > 0 ||

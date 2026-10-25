@@ -42,6 +42,8 @@ import {
 export { getResolvedTenantConfig, getTenantHeaders };
 
 const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> => {
+    // Capture provider/bootstrap failures after resolving the tenant, before auth.
+    await initSentryFromTenant();
     // 1. Bridge auth config so getAuthConfig() returns tenant-aware values.
     // Must run before initializeAuthProvider() so it resolves the tenant's
     // actual provider instead of the default.
@@ -87,7 +89,6 @@ const initializeTenantSubsystems = async (config: TenantConfig): Promise<void> =
     );
 
     // 4. Initialize Sentry from tenant observability config
-    initSentryFromTenant();
     emitConfigDebugEvent(
         'bootstrap:sentry_init',
         `Sentry initialized (DSN: ${config.observability.sentryDsn ? 'configured' : 'none'})`

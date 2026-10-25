@@ -924,7 +924,7 @@ jobs:
               run: bun scripts/lc.ts stage-env "${{ matrix.stage || 'production' }}" | tee -a "$GITHUB_OUTPUT"
 
             - name: Build App
-              run: bunx nx build ${{ steps.vars.outputs.project_name }}
+              run: bunx nx build ${{ steps.vars.outputs.project_name }} --skip-nx-cache
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ steps.scouts-stage-env.outputs.VITE_NODE_ENV || vars.VITE_NODE_ENV }}
@@ -932,6 +932,10 @@ jobs:
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  SENTRY_AUTH_TOKEN: ${{ steps.vars.outputs.project_name == 'learn-card-app' && secrets.SENTRY_AUTH_TOKEN || '' }}
+                  SENTRY_ORG: ${{ steps.vars.outputs.project_name == 'learn-card-app' && secrets.SENTRY_ORG || '' }}
+                  SENTRY_PROJECT: ${{ steps.vars.outputs.project_name == 'learn-card-app' && secrets.SENTRY_PROJECT || '' }}
+                  SENTRY_UPLOAD_REQUIRED: ${{ steps.vars.outputs.project_name == 'learn-card-app' }}
 
             - name: Validate Netlify target
               run: |
