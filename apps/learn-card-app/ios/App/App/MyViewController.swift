@@ -1,4 +1,5 @@
 import Capacitor
+import WebKit
 
 /**
  * Custom bridge view controller (LC-2086 Task 10).
@@ -11,6 +12,7 @@ import Capacitor
 class MyViewController: CAPBridgeViewController {
     private let shakeObserverPlugin = ShakeObserverPlugin()
     private let webAuthSessionPlugin = WebAuthSessionPlugin()
+    private var crashNavigationObserver: CrashNavigationObserver?
 
     override var canBecomeFirstResponder: Bool {
         true
@@ -20,6 +22,12 @@ class MyViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(ScreenshotObserverPlugin())
         bridge?.registerPluginInstance(shakeObserverPlugin)
         bridge?.registerPluginInstance(webAuthSessionPlugin)
+        bridge?.registerPluginInstance(NativeCrashReportingPlugin())
+        if let webView, let delegate = webView.navigationDelegate {
+            let observer = CrashNavigationObserver(delegate: delegate)
+            crashNavigationObserver = observer
+            webView.navigationDelegate = observer
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -33,5 +41,24 @@ class MyViewController: CAPBridgeViewController {
         }
 
         super.motionBegan(motion, with: event)
+    }
+}
+
+/// Forward every navigation callback to Capacitor, including its existing reload
+/// after a WebKit process termination. This diagnostic is not a fatal app crash.
+private class CrashNavigationObserver: NSObject, WKNavigationDelegate {
+    private let delegate: WKNavigationDelegate
+
+    init(delegate: WKNavigationDelegate) { self.delegate = delegate }
+
+    override func responds(to selector: Selector!) -> Bool {
+        super.responds(to: selector) || delegate.responds(to: selector)
+    }
+
+    override func forwardingTarget(for selector: Selector!) -> Any? { delegate }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        NativeCrashReporter.webViewTerminated()
+        delegate.webViewWebContentProcessDidTerminate?(webView)
     }
 }

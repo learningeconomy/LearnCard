@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect } from 'react';
 import { InAppMessagesAnalyticsHost } from './analytics/InAppMessagesAnalyticsHost';
 import { SharedI18nProvider } from './i18n/SharedI18nProvider';
-import { createBrowserHistory } from 'history';
+import { routingHistory as history } from './constants/routingHistory';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient, onlineManager } from '@tanstack/react-query';
 import { BatchedPersistQueryClientProvider } from './providers/BatchedPersistQueryClientProvider';
@@ -73,8 +73,6 @@ const DevDebugPanel =
     __APP_BUILD_ENV__.DEV || __APP_BUILD_ENV__.VITE_ENABLE_AUTH_DEBUG_WIDGET
         ? React.lazy(() => import('./components/debug/DevDebugPanel'))
         : null;
-
-const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 

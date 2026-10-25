@@ -18,6 +18,7 @@ const subscribe = (listener: () => void) => {
         listeners.delete(listener);
     };
 };
+export const subscribeSharePrivacy = subscribe;
 export const useSharePrivateSession = (): boolean =>
     useSyncExternalStore(subscribe, isSharePrivateSession, () => false);
 

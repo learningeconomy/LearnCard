@@ -1,6 +1,6 @@
 import React, { useRef, lazy } from 'react';
 
-import { createBrowserHistory } from 'history';
+import { routingHistory as history } from './constants/routingHistory';
 import { IonReactRouter } from '@ionic/react-router';
 import { QueryClient } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
@@ -41,7 +41,6 @@ import './index.scss';
 // base styles of swiper js
 import 'swiper/css';
 import '@ionic/react/css/ionic-swiper.css';
-const history = createBrowserHistory();
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 

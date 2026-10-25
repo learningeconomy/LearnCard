@@ -54,6 +54,11 @@ on:
                 required: false
                 type: string
                 default: ''
+            sentry_upload:
+                description: Upload Sentry source maps for this trusted build
+                required: false
+                type: boolean
+                default: true
             self_assign:
                 description: |
                     If 'true', run `channel set ... --self-assign` after upload so this
@@ -78,6 +83,12 @@ on:
                 type: string
                 default: ''
         secrets:
+            SENTRY_AUTH_TOKEN:
+                required: false
+            SENTRY_ORG:
+                required: false
+            SENTRY_PROJECT:
+                required: false
             CAPGO_TOKEN:
                 required: true
             VITE_WEB3AUTH_CLIENT_ID:
@@ -134,7 +145,7 @@ jobs:
                   bunx tsx scripts/prepare-native-config.ts "${{ inputs.tenant }}" $STAGE_FLAG
 
             - name: Build ${{ inputs.project }}
-              run: bunx nx build ${{ inputs.project }}
+              run: bunx nx build ${{ inputs.project }} --skip-nx-cache
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
@@ -144,6 +155,10 @@ jobs:
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  SENTRY_AUTH_TOKEN: ${{ inputs.project == 'learn-card-app' && inputs.sentry_upload && secrets.SENTRY_AUTH_TOKEN || '' }}
+                  SENTRY_ORG: ${{ inputs.project == 'learn-card-app' && inputs.sentry_upload && secrets.SENTRY_ORG || '' }}
+                  SENTRY_PROJECT: ${{ inputs.project == 'learn-card-app' && inputs.sentry_upload && secrets.SENTRY_PROJECT || '' }}
+                  SENTRY_UPLOAD_REQUIRED: ${{ inputs.project == 'learn-card-app' && inputs.sentry_upload }}
 
             # Ensure the channel exists before uploading. `channel add` errors if
             # the channel already exists, so swallow only that case — auth, network,
