@@ -78,7 +78,8 @@ export const waitForAuthenticatedState = async (
               path?: string;
               seed?: string;
               profileId?: string;
-              waitUntil?: 'load' | 'domcontentloaded';
+              /** Mocked flows can use commit, then assert their authenticated UI. */
+              waitUntil?: 'load' | 'domcontentloaded' | 'commit';
               /** Use the developer sign-in return path instead of another full app load. */
               nextPath?: string;
           } = '/',

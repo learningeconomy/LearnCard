@@ -5,7 +5,6 @@ import type { BrainOutputs, CloudOutputs } from './mocks/trpc';
 import { mockLaunchDarkly } from './route.helpers';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
-import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
 
 const uri = 'lc:network:localhost%3A4000/trpc:contract:referral-mock';
@@ -70,7 +69,6 @@ const setup = async (
         () => ({ records: [], hasMore: false }) satisfies CloudOutputs['index']['get']
     );
     mock.on('index.count', () => 0 satisfies CloudOutputs['index']['count']);
-    mock.on('utilities.getChallenges', () => Array.from({ length: 100 }, () => randomUUID()));
     mock.on('utilities.getEncryptionKey', () => 'a'.repeat(64));
     mock.on(
         'inbox.finalize',
@@ -214,6 +212,7 @@ const setup = async (
         path: '/notifications',
         nextPath: '/notifications',
         profileId: TEST_USER_PROFILE_ID,
+        waitUntil: 'commit',
     });
     // Sign-in returns directly to Alerts; wait for its authenticated content.
     const notification = page.getByTestId(
