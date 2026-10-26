@@ -59,10 +59,9 @@ export const getInfoFromCredential = (
 
     // Support both VC 2.0 (validFrom) and VC 1.0 (issuanceDate)
     // Gracefully handle missing dates
+    const awardDateText = typeof credential.awardedDate === 'string' ? credential.awardedDate : '';
     const awardedDate =
-        options.dateType === 'awarded' && typeof credential.awardedDate === 'string'
-            ? parseISO(credential.awardedDate)
-            : undefined;
+        options.dateType === 'awarded' && awardDateText ? parseISO(awardDateText) : undefined;
     const validAwardedDate = awardedDate && isValid(awardedDate) ? awardedDate : undefined;
     const dateValue = validAwardedDate ?? (validFrom || issuanceDate);
     let createdAt = '';
@@ -72,9 +71,11 @@ export const getInfoFromCredential = (
             const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
             // Offset-less ISO values describe a calendar day. Only explicit
             // instants need UTC conversion, matching the Details date helper.
-            const hasAwardOffset = /[T ].*(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(
-                String(credential.awardedDate)
-            );
+            // Inspect at most six suffix characters; never scan arbitrary input
+            // with a backtracking wildcard when looking for a timezone.
+            const hasAwardOffset =
+                (awardDateText.includes('T') || awardDateText.includes(' ')) &&
+                /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(awardDateText.slice(-6));
             const displayDate =
                 validAwardedDate && hasAwardOffset
                     ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
