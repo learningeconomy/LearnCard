@@ -650,6 +650,62 @@ describe('AuthCoordinator', () => {
         });
 
         describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
+            describe('post-recovery repair after reload (no in-memory marker)', () => {
+                const run = async (enrollmentState: unknown) => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: true, changed: true, shareVersion: 3 });
+                    const getEscrowEnrollmentState = vi.fn().mockResolvedValue(enrollmentState);
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const { coordinator } = setup({
+                        keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() => expect(getEscrowEnrollmentState).toHaveBeenCalled());
+                    await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalled());
+                    return ensureEscrowEnrollment;
+                };
+                it('requests a prior-enrollment repair for a leftover pending escrow method outside rollout', async () => {
+                    const ensureEscrowEnrollment = await run({
+                        state: 'not-enrolled',
+                        escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+                        priorEscrowMethod: true,
+                    });
+                    await vi.waitFor(() =>
+                        expect(ensureEscrowEnrollment).toHaveBeenCalledWith(
+                            expect.objectContaining({
+                                options: expect.objectContaining({
+                                    requirePriorEnrollment: true,
+                                }),
+                            })
+                        )
+                    );
+                });
+                it('keeps a never-enrolled account gated outside rollout', async () => {
+                    const ensureEscrowEnrollment = await run({ state: 'not-enrolled' });
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                    expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+                });
+                it('never asks to repair an opted-out account', async () => {
+                    const ensureEscrowEnrollment = vi.fn();
+                    const getEscrowEnrollmentState = vi
+                        .fn()
+                        .mockResolvedValue({ state: 'opted-out', priorEscrowMethod: true });
+                    const { coordinator } = setup({
+                        keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                        config: {
+                            signDidAuthVp: vi.fn(),
+                            isEscrowEnrollmentAllowed: vi.fn().mockResolvedValue(false),
+                        },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() => expect(getEscrowEnrollmentState).toHaveBeenCalled());
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                    for (const [params] of ensureEscrowEnrollment.mock.calls)
+                        expect(params.options?.requirePriorEnrollment).toBeUndefined();
+                });
+            });
             it('supersedes a failed recovery clear-PIN repair when a new PIN is set', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()

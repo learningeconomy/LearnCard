@@ -328,6 +328,13 @@ export interface EscrowEnrollmentState {
     escrowPin?: EscrowPinStatus;
     /** Present only when `state === 'stale'`. */
     staleReason?: EscrowBlobStaleReason;
+    /**
+     * `not-enrolled` only: the server still lists an escrow recovery method in some
+     * confirmation state (e.g. `pending` after an identity-recovery rebind). A hint,
+     * not proof: callers repair with `requirePriorEnrollment` so the strategy checks
+     * signed authority state before re-enrolling.
+     */
+    priorEscrowMethod?: boolean;
 }
 
 /**

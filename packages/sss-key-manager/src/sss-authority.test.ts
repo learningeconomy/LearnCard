@@ -246,7 +246,19 @@ const setup = async (legacyEnrolled = false) => {
                                   confirmedAt: new Date().toISOString(),
                               },
                           ]
-                        : [],
+                        : faults.missingPinMetadata
+                          ? // Mirror the rebind: methods reset to pending, Mongo PIN unset.
+                            [
+                                {
+                                    type: 'escrow',
+                                    shareVersion: version,
+                                    confirmationStatus: 'pending',
+                                },
+                            ]
+                          : [],
+                    ...(faults.missingPinMetadata
+                        ? { escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 } }
+                        : {}),
                 });
             }
             if (path === '/keys/escrow/attestation') return response({ attestation: {} });
@@ -651,6 +663,75 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         ).resolves.toMatchObject({ enrolled: true });
         expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'replace', pinAction: 'clear' });
         expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+    });
+    const recoverWithFailedDirectEnrollment = async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        f.faults.failEnrollment = true;
+        await f.strategy.completeIdentityRecovery!(f.params);
+        f.faults.failEnrollment = false;
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+        return f;
+    };
+    it.each([false, true])(
+        'after a reload, repairs a recovered PIN account by signing a clear (outside rollout: %s)',
+        async requirePriorEnrollment => {
+            const f = await recoverWithFailedDirectEnrollment();
+            const intents = f.intents.length;
+            // Fresh instance: no unenrolledRotation and no clear-PIN intent from the coordinator.
+            await expect(
+                f.reload().ensureEscrowEnrollment!({
+                    ...f.params,
+                    options: {
+                        ...f.params.options,
+                        ...(requirePriorEnrollment ? { requirePriorEnrollment } : {}),
+                    },
+                })
+            ).resolves.toMatchObject({ enrolled: true, changed: true });
+            expect(f.intents.slice(intents).map(signed => signed.intent)).toEqual([
+                expect.objectContaining({ action: 'replace', pinAction: 'clear' }),
+            ]);
+            expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        }
+    );
+    it('keeps the old carry when automatic PIN clear is disabled', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        const intents = f.intents.length;
+        await expect(
+            createSSSStrategy({ ...f.config, autoClearUncarryablePin: false })
+                .ensureEscrowEnrollment!(f.params)
+        ).rejects.toThrow();
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
+        expect(f.intents).toHaveLength(intents + 1);
+    });
+    it('does not burn a share version after a reload when the authority read fails', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
+        const intents = f.intents.length;
+        f.faults.snapshotNonce = true;
+        await expect(f.reload().ensureEscrowEnrollment!(f.params)).rejects.toThrow();
+        expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
+        expect(f.intents).toHaveLength(intents);
+    });
+    it('reports a leftover pending escrow method as prior enrollment after a reload', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        await expect(f.reload().getEscrowEnrollmentState!(f.params)).resolves.toMatchObject({
+            state: 'not-enrolled',
+            priorEscrowMethod: true,
+        });
     });
     it('does not enroll a never-enrolled account through prior-enrollment repair', async () => {
         const f = await setup();

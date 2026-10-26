@@ -279,7 +279,11 @@ export class AuthCoordinator {
     private async resolveEscrowEnrollmentGate(
         userKey: string,
         credentials: { token: string; providerType: string }
-    ): Promise<{ allowed: boolean; prefetched?: EscrowEnrollmentState }> {
+    ): Promise<{
+        allowed: boolean;
+        prefetched?: EscrowEnrollmentState;
+        requirePriorEnrollment?: boolean;
+    }> {
         if (!this.config.isEscrowEnrollmentAllowed) return { allowed: true };
 
         if (!this.keyDerivation.getEscrowEnrollmentState) {
@@ -306,7 +310,13 @@ export class AuthCoordinator {
             return { allowed: true, prefetched };
         }
 
-        return { allowed: await this.isEscrowEnrollmentAllowed(userKey), prefetched };
+        if (await this.isEscrowEnrollmentAllowed(userKey)) return { allowed: true, prefetched };
+        // A leftover (e.g. post-rebind `pending`) escrow method survives a reload where the
+        // in-memory recovery marker does not. Repair it as maintenance, but only if the
+        // strategy can prove prior enrollment (signed authority in Nitro mode).
+        return prefetched.priorEscrowMethod
+            ? { allowed: false, prefetched, requirePriorEnrollment: true }
+            : { allowed: false, prefetched };
     }
 
     /** Best-effort repair and hold discovery must never block account access. */
@@ -342,7 +352,10 @@ export class AuthCoordinator {
                         ? { allowed: true }
                         : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
                 // Outside rollout, a non-escrow recovery may only repair a verified prior enrollment.
-                const requirePriorEnrollment = repairingRecovery && !gate.allowed;
+                const requirePriorEnrollment =
+                    !gate.allowed &&
+                    (repairingRecovery ||
+                        ('requirePriorEnrollment' in gate && gate.requirePriorEnrollment === true));
                 if (gate.allowed || requirePriorEnrollment) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
@@ -358,7 +371,12 @@ export class AuthCoordinator {
                                                 ? { requirePriorEnrollment: true }
                                                 : {}),
                                         }
-                                      : this.recoveryContactOptions(ready),
+                                      : requirePriorEnrollment
+                                        ? {
+                                              ...this.recoveryContactOptions(ready),
+                                              requirePriorEnrollment: true,
+                                          }
+                                        : this.recoveryContactOptions(ready),
                               })
                             : undefined
                     ).catch(err => {

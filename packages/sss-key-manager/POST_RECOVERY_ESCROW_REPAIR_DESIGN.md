@@ -1,6 +1,27 @@
 # Persisting post-recovery escrow repair intent (design)
 
-**Status:** Proposal, not implemented. Follow-up to PR #1790 (review thread on
+**Status:** Option C implemented (client only; unit tests with mocked HTTP/crypto, not
+exercised on staging or a real enclave):
+
+- Part 1: `getEscrowEnrollmentState` adds `priorEscrowMethod: true` to a `not-enrolled`
+  result when lca-api still lists an escrow method in any confirmation state.
+  `resolveEscrowEnrollmentGate` turns a rollout denial for such an account into a repair
+  with `requirePriorEnrollment`, so the signed authority (Nitro) still decides. Never-enrolled
+  accounts stay gated; opted-out/disabled paths are unchanged. The in-memory
+  `recoveredEscrowAccount` path is kept.
+- Part 2: in Nitro mode, `ensureEscrowEnrollmentUnguarded` signs `replace` / `clear` instead
+  of `carry` / `keep` when the authority is `active` with `hasPin`, no PIN is being set, the
+  account is not currently enrolled, and lca-api reports `escrowPin.state === 'none'`
+  (Mongo PIN absent, which alone guarantees the `escrow.ts` precondition fails). Controlled
+  by `SSSStrategyConfig.autoClearUncarryablePin`, default `DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN
+= true`, because with it off no user-facing PIN prompt is reachable while unenrolled.
+- Q4: the authority read and attestation already run before rotation, so a failed read
+  burns no share version (now covered by a regression test).
+
+**Still open for security:** Q1 (automatic client-signed clear; flip the default to `false`
+and add a prompt if rejected), Q2, Q3, Q5, Q6. Staging test plan item 9 not run.
+
+**Original status:** Proposal. Follow-up to PR #1790 (review thread on
 `AuthCoordinator.ts`, "recovered account outside the rollout still ends up unenrolled if
 the app reloads before the repair succeeds").
 **Baseline:** `origin/main` at `73687f364`. Line references below are to that commit.

@@ -108,6 +108,13 @@ const SSS_DB_NAME = 'lcb-sss-keys';
 const DEFAULT_DEVICE_SHARE_ID = 'sss-device-share';
 const MAX_RECONCILIATION_HISTORY = 5;
 
+/**
+ * ON by default: with it off, a post-recovery repair of a PIN account fails on every
+ * refresh and no user-facing prompt to set a new PIN is reachable while unenrolled.
+ * Security open question Q1 in POST_RECOVERY_ESCROW_REPAIR_DESIGN.md.
+ */
+export const DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN = true;
+
 export interface SSSStorageFunctions {
     storeDeviceShare: (share: string, id?: string) => Promise<void>;
     getDeviceShare: (id?: string) => Promise<string | null>;
@@ -124,6 +131,15 @@ export interface SSSStrategyConfig {
 
     /** Report enrollment failures without logging recovery material. */
     onEscrowError?: (err: unknown) => void;
+
+    /**
+     * Nitro repair only: when the signed authority still has a PIN but lca-api holds
+     * no PIN to carry (an identity-recovery rebind deleted it), sign a PIN `clear`
+     * instead of a `carry` that lca-api would reject with PRECONDITION_FAILED.
+     * Defaults to {@link DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN}. Pending security
+     * sign-off: POST_RECOVERY_ESCROW_REPAIR_DESIGN.md, open question Q1.
+     */
+    autoClearUncarryablePin?: boolean;
 
     /** Server URL for key share operations */
     serverUrl: string;
@@ -1512,6 +1528,17 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 current.envelope?.keyId === verifiedKey.keyId;
             if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
             hasPin = current.hasPin;
+            // After an identity-recovery rebind lca-api has no PIN left to carry, so an
+            // automatic carry/keep can only fail; sign a clear instead (design doc Q1).
+            if (
+                (config.autoClearUncarryablePin ?? DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN) &&
+                current.status === 'active' &&
+                current.hasPin &&
+                pin === undefined &&
+                !currentlyEnrolled &&
+                status.escrowPin?.state === 'none'
+            )
+                clearPinForEnrollment = true;
         }
         // A current, PIN-free enrollment already satisfies a clear request
         // (e.g. post-recovery repair after direct enrollment succeeded).
@@ -2149,7 +2176,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     escrowPin: status.escrowPin,
                     staleReason: status.escrowStale,
                 };
-            return { state: enrolled ? 'enrolled' : 'not-enrolled', escrowPin: status.escrowPin };
+            if (enrolled) return { state: 'enrolled', escrowPin: status.escrowPin };
+            // A rebind leaves escrow methods `pending`; flag them so the caller can
+            // request a prior-enrollment repair instead of a first-time enrollment.
+            return {
+                state: 'not-enrolled',
+                escrowPin: status.escrowPin,
+                ...(status.recoveryMethods.some(method => method.type === 'escrow')
+                    ? { priorEscrowMethod: true }
+                    : {}),
+            };
         },
 
         async disableEscrowRecovery(params): Promise<void> {
