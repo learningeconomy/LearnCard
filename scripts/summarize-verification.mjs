@@ -21,13 +21,37 @@ const statuses = ['passed', 'failed', 'interrupted', 'running'];
 const outcome = value =>
     ['success', 'failure', 'cancelled', 'skipped'].includes(value) ? value : 'unknown';
 const phases = [
+    'command-total',
     'preflight',
     'build',
     'prepare',
     'compose',
     'readiness',
     'startup',
+    'stack-reuse-check',
+    'session-reuse-check',
+    'bootstrap',
+    'bootstrap-browser-launch',
+    'bootstrap-harness-setup',
+    'bootstrap-learner-sign-in',
+    'bootstrap-learner-reload',
+    'bootstrap-learner-evidence',
+    'bootstrap-recipient-sign-in',
+    'bootstrap-recipient-reload',
+    'bootstrap-recipient-evidence',
+    'bootstrap-evidence-close',
+    'bootstrap-browser-close',
+    'post-bootstrap-doctor',
+    'catalog-stack-check',
+    'catalog-browser-launch',
     'catalog',
+    'script-stack-check',
+    'script-load',
+    'script-browser-launch',
+    'script-harness-setup',
+    'script-execution',
+    'script-evidence-close',
+    'command-cleanup',
     'teardown',
 ];
 const duration = value =>
@@ -68,10 +92,47 @@ const formatDuration = value => {
     const tenths = Math.round(value / 100);
     return `${Math.floor(tenths / 600)}m ${((tenths % 600) / 10).toFixed(1)}s`;
 };
+// Directory names and script names are private. Only ordinal command groups leave the runner.
+const commandTimings = async folder => {
+    let entries;
+    try {
+        entries = await readdir(join(directory, folder), { withFileTypes: true });
+    } catch (error) {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+    }
+    const commands = [];
+    for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+        if (!entry.isDirectory()) continue;
+        const timings = await readTimings(join(directory, folder, entry.name, 'timings.json'));
+        if (timings.length) commands.push({ timings });
+    }
+    return commands;
+};
+const commandOutcomes = {
+    startup: outcome(process.env.STARTUP_OUTCOME),
+    script: outcome(process.env.SCRIPT_OUTCOME),
+    catalog: outcome(process.env.VERIFICATION_OUTCOME),
+};
+// Older callers provide only VERIFICATION_OUTCOME. New CI callers include all three commands.
+const suppliedOutcomes = [
+    process.env.STARTUP_OUTCOME,
+    process.env.SCRIPT_OUTCOME,
+    process.env.VERIFICATION_OUTCOME,
+]
+    .filter(value => value !== undefined)
+    .map(outcome);
+const sequenceOutcome =
+    ['failure', 'cancelled', 'unknown', 'skipped', 'success'].find(value =>
+        suppliedOutcomes.includes(value)
+    ) ?? 'unknown';
 const summary = {
-    run: outcome(process.env.VERIFICATION_OUTCOME),
+    run: sequenceOutcome,
+    commandOutcomes,
     teardown: outcome(process.env.TEARDOWN_OUTCOME),
     startupTimings: await readTimings(join(directory, 'startup-timings.json')),
+    startupCommands: await commandTimings('startup'),
+    scriptCommands: await commandTimings('scripts'),
     reports: [],
 };
 let directories = [];
@@ -118,9 +179,11 @@ for (const entry of directories.sort((a, b) => a.name.localeCompare(b.name))) {
 const lines = [
     '# LearnCard verification',
     '',
-    `Catalog step: **${summary.run}**. Teardown step: **${summary.teardown}**.`,
+    `Verification command sequence: **${summary.run}**. Teardown step: **${summary.teardown}**.`,
     '',
     'Only allowlisted statuses, coverage counts and numeric durations are retained; raw authentication evidence is not uploaded.',
+    '',
+    'Command totals and bootstrap totals include their nested subphases; do not add them together. GitHub step durations also include CLI loading. Dependency installation and preliminary checks are outside these command timings; use the full workflow duration as the overall baseline.',
     '',
 ];
 if (!summary.reports.length)
@@ -133,11 +196,20 @@ const timingTable = timings => {
     lines.push('');
 };
 if (summary.startupTimings.length) {
-    lines.push('## Startup breakdown', '');
+    lines.push('## Service startup breakdown', '');
     timingTable(summary.startupTimings);
 }
+for (const [label, commands] of [
+    ['Startup command', summary.startupCommands],
+    ['Script command', summary.scriptCommands],
+]) {
+    for (const [index, command] of commands.entries()) {
+        lines.push(`## ${label} ${index + 1}`, '');
+        timingTable(command.timings);
+    }
+}
 for (const [index, report] of summary.reports.entries()) {
-    lines.push(`## Run ${index + 1}: ${report.status}`, '');
+    lines.push(`## Catalog run ${index + 1}: ${report.status}`, '');
     timingTable(report.timings);
     lines.push('| Feature | Status | Entries | Duration |', '| --- | --- | --- | --- |');
     for (const feature of report.features) {

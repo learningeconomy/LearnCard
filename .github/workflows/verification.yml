@@ -148,14 +148,14 @@ jobs:
 
             - name: Check lifecycle, resolver and persistence boundaries
               run: |
-                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
+                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/command-timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
                   bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
 
             - name: Check sanitized timing summaries
               run: node --test scripts/summarize-verification.test.mjs
 
-            - name: Run message navigation and serial catalog on an owned stack
-              id: catalog
+            - name: Start owned stack and bootstrap sessions
+              id: stack
               env:
                   USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
               run: |
@@ -166,7 +166,15 @@ jobs:
                   fi
                   bun run --cwd apps/learn-card-app lc verify "${verify_args[@]}" \
                     > "$PRIVATE_LOG_DIR/startup.jsonl" 2> "$PRIVATE_LOG_DIR/startup.log"
+
+            - name: Verify message navigation on the owned stack
+              id: navigation
+              run: |
                   bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation.log" 2>&1
+
+            - name: Run serial catalog on the owned stack
+              id: catalog
+              run: |
                   bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
 
             - name: Verify campaign SDK authorization boundaries
@@ -216,7 +224,9 @@ jobs:
             - name: Write sanitized status summary
               if: ${{ always() }}
               env:
-                  VERIFICATION_OUTCOME: ${{ steps.catalog.outcome == 'success' && steps.campaigns.outcome || steps.catalog.outcome }}
+                  STARTUP_OUTCOME: ${{ steps.stack.outcome }}
+                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}
+                  VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
               run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
 
