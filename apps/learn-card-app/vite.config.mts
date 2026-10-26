@@ -12,6 +12,7 @@ import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import type { Plugin as EsbuildPlugin } from 'esbuild';
 
 import { findDuplicateMessageImports } from './scripts/check-i18n-imports.mjs';
@@ -158,6 +159,13 @@ export default defineConfig(async ({ mode, command }) => {
         command
     );
     const { default: tsconfigPaths } = await import('vite-tsconfig-paths');
+    // Build credentials stay in Node; never put them in __APP_BUILD_ENV__ or VITE_*.
+    const uploadSentryMaps = Boolean(
+        process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT
+    );
+    if (command === 'build' && process.env.SENTRY_UPLOAD_REQUIRED === 'true' && !uploadSentryMaps) {
+        throw new Error('Sentry uploads require SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT');
+    }
 
     // VITE_DOCKER_SOURCE is an explicit opt-in source/debug mode, keyed off the flag
     // rather than `mode`. Production and self-host docker-builds both run `vite build`
@@ -206,11 +214,33 @@ export default defineConfig(async ({ mode, command }) => {
                       }),
                   ]
                 : []),
+            ...(command === 'build' && uploadSentryMaps
+                ? [
+                      sentryVitePlugin({
+                          authToken: process.env.SENTRY_AUTH_TOKEN,
+                          org: process.env.SENTRY_ORG,
+                          project: process.env.SENTRY_PROJECT,
+                          telemetry: false,
+                          release: {
+                              name: `learncard-web@${packageVersion}+${resolveBuildSha(environment)}`,
+                              inject: false,
+                              create: false,
+                          },
+                          sourcemaps: {
+                              assets: path.join(__dirname, 'build/assets/**'),
+                              filesToDeleteAfterUpload: path.join(__dirname, 'build/**/*.map'),
+                          },
+                      }),
+                  ]
+                : []),
         ],
         build: {
             target: 'esnext',
             cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
+            // Upload exact generated chunks, with debug IDs, before cap sync/OTA.
+            // Maps are deleted by the upload plugin and never shipped to users.
+            sourcemap: uploadSentryMaps ? 'hidden' : false,
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
                 output: {

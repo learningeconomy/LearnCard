@@ -142,6 +142,10 @@ jobs:
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  SENTRY_AUTH_TOKEN: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_AUTH_TOKEN || '' }}
+                  SENTRY_ORG: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_ORG || '' }}
+                  SENTRY_PROJECT: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_PROJECT || '' }}
+                  SENTRY_UPLOAD_REQUIRED: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') }}
 
             - name: Sync Capacitor Files to iOS
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}
@@ -202,6 +206,10 @@ jobs:
                   IOS_SUBMIT_TO_APP_REVIEW: ${{ inputs.submitToAppStore || vars.IOS_SUBMIT_TO_APP_REVIEW }}
                   IOS_RELEASE_NOTES: ${{ inputs.releaseNotes }}
                   VERSION_BUMP_TYPE: ${{ inputs.versionBumpType || 'patch' }}
+                  SENTRY_AUTH_TOKEN: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_AUTH_TOKEN || '' }}
+                  SENTRY_ORG: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_ORG || '' }}
+                  SENTRY_PROJECT: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_PROJECT || '' }}
+                  SENTRY_UPLOAD_REQUIRED: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') }}
 
             #- name: Save nx cache
             #uses: actions/cache/save@v3
@@ -270,6 +278,10 @@ jobs:
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+                  SENTRY_AUTH_TOKEN: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_AUTH_TOKEN || '' }}
+                  SENTRY_ORG: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_ORG || '' }}
+                  SENTRY_PROJECT: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') && secrets.SENTRY_PROJECT || '' }}
+                  SENTRY_UPLOAD_REQUIRED: ${{ contains(vars.APP_WORKING_DIRECTORY, 'learn-card-app') }}
 
             - name: Sync Capacitor Files to Android
               working-directory: ${{ vars.APP_WORKING_DIRECTORY }}

@@ -96,6 +96,10 @@
 		"classpath": "ee.forgr.capacitor_updater.CapacitorUpdaterPlugin"
 	},
 	{
+		"pkg": "@sentry/capacitor",
+		"classpath": "io.sentry.capacitor.SentryCapacitor"
+	},
+	{
 		"pkg": "capacitor-native-settings",
 		"classpath": "nl.raphael.settings.NativeSettingsPlugin"
 	},

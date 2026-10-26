@@ -5,8 +5,9 @@ import { renderHook } from '@testing-library/react';
 
 const state = vi.hoisted(() => ({
     currentUser: { uid: 'firebase-user' } as { uid: string } | null,
-    preferences: { bugReportsEnabled: true },
+    preferences: { bugReportsEnabled: true } as { bugReportsEnabled: boolean } | undefined,
     preferencesLoading: false,
+    preferencesSuccess: true,
     eligibility: {
         bug: true,
         idea: true,
@@ -17,6 +18,13 @@ const state = vi.hoisted(() => ({
 
 const configureLoggerContext = vi.hoisted(() => vi.fn());
 const getDID = vi.hoisted(() => vi.fn(async () => 'did:key:secret'));
+const setCrashReportingEnabled = vi.hoisted(() => vi.fn());
+vi.mock('./nativeCrashReporting', () => ({
+    setCrashReportingEnabled,
+    canSendCrashReport: () => true,
+    initializeNativeCrashReporting: vi.fn(),
+    updateCrashReportingRoute: vi.fn(),
+}));
 
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
     default: () => state.currentUser,
@@ -27,6 +35,7 @@ vi.mock('learn-card-base', () => ({
     useGetPreferencesForDid: () => ({
         data: state.preferences,
         isLoading: state.preferencesLoading,
+        isSuccess: !state.preferencesLoading && state.preferencesSuccess,
     }),
     configureSentryTransport: vi.fn(),
     configureLoggerContext,
@@ -43,6 +52,7 @@ vi.mock('../config/bootstrapTenantConfig', () => ({
 
 vi.mock('@sentry/react', () => ({
     getClient: () => undefined,
+    getReplay: () => undefined,
     init: vi.fn(),
     setUser: vi.fn(),
     setTag: vi.fn(),
@@ -60,15 +70,42 @@ import { useSentryIdentify } from './sentry';
 describe('useSentryIdentify diagnostic collection lifecycle', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        window.history.replaceState({}, '', '/');
         state.currentUser = { uid: 'firebase-user' };
         state.preferences = { bugReportsEnabled: true };
         state.preferencesLoading = false;
+        state.preferencesSuccess = true;
         state.eligibility = {
             bug: true,
             idea: true,
             isLoading: false,
             profileId: 'adult-a',
         };
+    });
+
+    it('preserves the native persisted gate until preferences resolve, then applies opt-in', () => {
+        state.preferencesLoading = true;
+        const { rerender } = renderHook(() => useSentryIdentify());
+        expect(setCrashReportingEnabled).not.toHaveBeenCalled();
+        state.preferencesLoading = false;
+        rerender();
+        expect(setCrashReportingEnabled).toHaveBeenLastCalledWith(true);
+    });
+
+    it('does not turn a failed or disabled preference query into native permission', () => {
+        state.preferences = undefined;
+        state.preferencesSuccess = false;
+        renderHook(() => useSentryIdentify());
+        expect(setCrashReportingEnabled).not.toHaveBeenCalled();
+    });
+
+    it('does not persist private-view suppression as an account opt-out', () => {
+        window.history.replaceState({}, '', '/s/example#private-key');
+        renderHook(() => useSentryIdentify());
+        expect(setCrashReportingEnabled).toHaveBeenLastCalledWith(true);
+        expect(configureLoggerContext).toHaveBeenLastCalledWith(
+            expect.objectContaining({ bugReportsEnabled: false })
+        );
     });
 
     it('keeps remote crash reporting enabled while adult feedback diagnostics are ineligible', () => {

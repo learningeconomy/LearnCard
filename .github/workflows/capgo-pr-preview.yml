@@ -220,6 +220,9 @@ jobs:
             stage: staging
             self_assign: 'true'
         secrets:
+            SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+            SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+            SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
             CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
 
     finalize:
