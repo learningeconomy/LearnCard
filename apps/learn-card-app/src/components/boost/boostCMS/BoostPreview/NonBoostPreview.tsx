@@ -126,6 +126,9 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     isPreview = false,
 }) => {
     const { track } = useAnalytics();
+    // A preview flag must not hide verification of an already signed credential.
+    const isUnsignedPreview =
+        isPreview && !credential?.proof && !credential?.boostCredential?.proof;
     const { initWallet } = useWallet();
     const [verificationResult, setVerificationResult] = useState<{
         credential: VC;
@@ -152,7 +155,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     useEffect(() => {
-        if (isPreview) return;
+        if (isUnsignedPreview) return;
         let cancelled = false;
 
         const verify = async () => {
@@ -169,7 +172,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [credential, isPreview]);
+    }, [credential, isUnsignedPreview]);
 
     useEffect(() => {
         if (!isEarnedBoost || isPreview) return;
@@ -220,7 +223,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 isEarnedBoost={isEarnedBoost}
                 isClrChildCredential={isClrChildCredential}
                 renderMethodCredential={credential as VC | UnsignedVC}
-                isPreview={isPreview}
+                isPreview={isUnsignedPreview}
             />,
             {
                 className: 'bg-transparent!',
@@ -349,13 +352,13 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 issuerOverride={issuerOverride}
                 issueHistory={issueHistory}
                 categoryType={categoryType}
-                skipVerification={isPreview}
-                verificationItems={isPreview ? [] : verifications}
+                skipVerification={isUnsignedPreview}
+                verificationItems={isUnsignedPreview ? [] : verifications}
                 lifecycleStatus={lifecycleStatus}
                 customThumbComponent={customThumbComponent}
                 customBodyCardComponent={customBodyCardComponent}
                 customFooterComponent={
-                    isPreview ? (
+                    isUnsignedPreview ? (
                         <PreviewCredentialFooter />
                     ) : isClrChildCredential ? (
                         <VerifiedChildCLRFooter />
@@ -474,7 +477,7 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                             isEarnedBoost={isEarnedBoost}
                             isClrChildCredential={isClrChildCredential}
                             renderMethodCredential={credential as VC | UnsignedVC}
-                            isPreview={isPreview}
+                            isPreview={isUnsignedPreview}
                         />
                     )}
                 </div>

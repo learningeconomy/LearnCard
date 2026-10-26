@@ -108,7 +108,7 @@ describe('Credential Helpers', () => {
 });
 
 describe('award-date formatting', () => {
-    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00'])(
+    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00', '2027-10-01T20:00:00'])(
         'shows a consistent calendar award day for %s',
         awardedDate => {
             expect(

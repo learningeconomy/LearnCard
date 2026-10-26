@@ -486,7 +486,7 @@ describe('Qualifications notifications', () => {
 });
 
 describe('credential award date display', () => {
-    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00'])(
+    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00', '2027-10-01T20:00:00'])(
         'shows a consistent calendar award day for %s',
         awardedDate => {
             expect(formatCredentialAwardedDate({ awardedDate } as never)).toBe('October 01, 2027');
@@ -556,6 +556,12 @@ describe('evidence attachment classification', () => {
     it.each([
         ['https://evidence.example.test/course/12', 'link'],
         ['https://portfolio.example.test/ada', 'link'],
+        ['https://cdn.example.test/clip.mp4', 'video'],
+        ['https://cdn.example.test/clip.WEBM?download=1#preview', 'video'],
+        ['https://cdn.example.test/clip.mov', 'video'],
+        ['https://cdn.example.test/page?attachment=clip.mp4', 'link'],
+        ['https://cdn.example.test/clip.mp4.html', 'link'],
+        ['ftp://cdn.example.test/clip.mp4', 'text'],
         ['https://youtube.com.example.test/watch?v=abc123', 'link'],
         ['https://notyoutube.com/watch?v=abc123', 'link'],
         ['https://notvimeo.com/12345', 'link'],

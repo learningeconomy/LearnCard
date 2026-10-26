@@ -216,6 +216,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         );
     }, [credentialWithEdits?.id, renderMethod?.template]);
     const credential = credentialWithEdits ?? unwrappedCredential;
+    // Preserve verification if the original or displayed credential has a proof.
+    const isUnsignedPreview = isPreview && !_credential?.proof && !credential?.proof;
     const { newModal, closeModal } = useModal();
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
         useReactCredentialIssuerPopover();
@@ -226,7 +228,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
 
     const vcVerifications = useVerification(
         credential,
-        !sharedOriginal && !isPreview && !skipVerification
+        !sharedOriginal && !isUnsignedPreview && !skipVerification
     );
     const [isFront, setIsFront] = useState(true);
     const viewedCredentialIdRef = useRef<string | undefined>(undefined);
@@ -307,7 +309,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 renderMethodCredential={_credential as VC | UnsignedVC}
                 issuancesSummaryComponent={issuancesSummaryComponent}
                 hideEndorsementRequestCard={sharedOriginal}
-                isPreview={isPreview}
+                isPreview={isUnsignedPreview}
             />,
             {
                 className: 'bg-transparent!',
@@ -365,7 +367,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     subjectImageComponent={subjectImageComponent}
                     issuerImageComponent={issuerImageComponent}
                     customFooterComponent={
-                        isPreview ? <PreviewCredentialFooter /> : customFooterComponent
+                        isUnsignedPreview ? <PreviewCredentialFooter /> : customFooterComponent
                     }
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     hideNavButtons
@@ -384,7 +386,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     customThumbComponent={customThumbComponent}
                     customBodyCardComponent={customBodyCardComponent}
                     customFooterComponent={
-                        isPreview ? (
+                        isUnsignedPreview ? (
                             <PreviewCredentialFooter />
                         ) : isClrChildCredential ? (
                             <VerifiedChildCLRFooter />
@@ -477,7 +479,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             renderMethodCredential={_credential as VC | UnsignedVC}
                             issuancesSummaryComponent={issuancesSummaryComponent}
                             hideEndorsementRequestCard={sharedOriginal}
-                            isPreview={isPreview}
+                            isPreview={isUnsignedPreview}
                         />
                     )}
                     <ReactCredentialIssuerPopover {...credentialIssuerPopoverProps} />

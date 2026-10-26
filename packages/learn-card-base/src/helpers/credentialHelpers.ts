@@ -1563,6 +1563,17 @@ export const getEvidenceAttachmentType = async (url: string): Promise<EvidenceAt
     const mimeType = getEvidenceMimeType(url);
     if (isPdfAttachmentSource(url) || mimeType === 'application/pdf') return 'document';
     if (mimeType?.startsWith('image/')) return 'photo';
+    try {
+        const source = new URL(url);
+        if (
+            ['http:', 'https:'].includes(source.protocol) &&
+            /\.(mp4|mov|webm)$/i.test(source.pathname)
+        ) {
+            return 'video';
+        }
+    } catch {
+        // Text evidence has no URL pathname to classify.
+    }
 
     const [videoMetadata, docMetadata] = await Promise.all([
         getVideoMetadata(url),
