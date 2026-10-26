@@ -14,6 +14,8 @@ assert.equal(result.status, 0, result.stderr);
 
 const workflow = JSON.parse(result.stdout);
 const steps = workflow.jobs.verification.steps;
+const stackIndex = steps.findIndex(step => step.id === 'stack');
+const navigationIndex = steps.findIndex(step => step.id === 'navigation');
 const catalogIndex = steps.findIndex(step => step.id === 'catalog');
 const campaignsIndex = steps.findIndex(
     step => step.name === 'Verify campaign SDK authorization boundaries'
@@ -21,14 +23,20 @@ const campaignsIndex = steps.findIndex(
 const teardownIndex = steps.findIndex(step => step.name === 'Always tear down owned resources');
 const summaryIndex = steps.findIndex(step => step.name === 'Write sanitized status summary');
 
-assert.ok(catalogIndex >= 0, 'catalog step must exist');
+assert.ok(stackIndex >= 0, 'stack startup step must exist');
+assert.ok(navigationIndex > stackIndex, 'navigation proof must follow stack startup');
+assert.ok(catalogIndex > navigationIndex, 'catalog proof must follow navigation proof');
 assert.ok(campaignsIndex > catalogIndex, 'campaign proof must follow the catalog');
 assert.ok(teardownIndex > campaignsIndex, 'owned resources must be torn down after campaign proof');
 assert.ok(summaryIndex > teardownIndex, 'sanitized summary must follow teardown');
 
+const stack = steps[stackIndex];
+assert.match(stack.run, /verify_args=\(up --json --dir "\$STACK_DIR"\)/);
+
+const navigation = steps[navigationIndex];
+assert.match(navigation.run, /lc verify script .*verify-navigation\.mjs.*--dir "\$STACK_DIR"/);
+
 const catalog = steps[catalogIndex];
-assert.match(catalog.run, /verify_args=\(up --json --dir "\$STACK_DIR"\)/);
-assert.match(catalog.run, /lc verify script .*verify-navigation\.mjs.*--dir "\$STACK_DIR"/);
 assert.match(catalog.run, /lc verify run all --json --dir "\$STACK_DIR"/);
 
 const campaigns = steps[campaignsIndex];
@@ -41,9 +49,11 @@ assert.equal(teardown.if, '${{ always() }}');
 assert.match(teardown.run, /lc verify down --force --dir "\$STACK_DIR"/);
 
 const summary = steps[summaryIndex];
+assert.equal(summary.env.STARTUP_OUTCOME, '${{ steps.stack.outcome }}');
 assert.equal(
-    summary.env.VERIFICATION_OUTCOME,
-    "${{ steps.catalog.outcome == 'success' && steps.campaigns.outcome || steps.catalog.outcome }}"
+    summary.env.SCRIPT_OUTCOME,
+    "${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}"
 );
+assert.equal(summary.env.VERIFICATION_OUTCOME, '${{ steps.catalog.outcome }}');
 
 console.log('verification workflow lifecycle contract passed');
