@@ -99,6 +99,18 @@ capture and closure. Durations use a monotonic clock. Startup timing files are c
 after ownership is claimed, so a failed preflight can be retried in the same directory.
 Timing writes are best-effort diagnostics: a storage failure cannot prevent work or mask its
 original error. Completed/failed phases are saved at each boundary when storage is available; a killed process can leave a phase marked running without a final duration.
+CI presents stack startup/bootstrap, message navigation, and catalog execution as separate
+steps. The summary also reads `startup/<id>/timings.json` and `scripts/<id-name>/timings.json`:
+startup commands break out browser/harness setup, each bootstrap sign-in/reload/evidence
+capture, evidence/browser closure, and the final doctor check. Script commands break out
+stack checks, script loading, browser/harness setup, execution, evidence closure and cleanup.
+Each `up`, `run`, and `script` records an inclusive `command-total`; bootstrap is also an
+inclusive parent. Do not add parent totals to their children. Command timers exclude CLI
+module loading and the workflow's preliminary install/build/test steps: use the GitHub full
+workflow duration as the end-to-end baseline. Command groups are shown by ordinal number,
+never by private run directory, arbitrary script name, profile ID or URL. A failed/cancelled
+startup or navigation command cannot appear successful merely because the catalog was skipped.
+
 The hosted Markdown/JSON summaries retain only allowlisted phase/feature names, statuses,
 coverage counts and validated numeric durations. Raw timestamps and error text are excluded.
 
