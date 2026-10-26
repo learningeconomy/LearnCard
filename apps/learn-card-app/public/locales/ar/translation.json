@@ -2811,7 +2811,8 @@
             "preview": {
                 "criteria": "المعايير",
                 "certificate": "شهادة",
-                "id": "معرف"
+                "id": "معرف",
+                "awardedOn": "مُنحت في {{date}}"
             },
             "loading": {
                 "issuing": "جارٍ إصدار Boost...",
@@ -3824,7 +3825,9 @@
             "lifecycle": {
                 "revoked": "ملغاة",
                 "suspended": "معلقة"
-            }
+            },
+            "awardedOn": "مُنحت في {{date}}",
+            "awardedOnBy": "مُنحت في {{date}} بواسطة"
         }
     },
     "skills": {
@@ -9485,7 +9488,8 @@
         },
         "preview": {
             "willLook": "هكذا ستبدو شهادتك.",
-            "pickToStart": "اختر نوعًا لتبدأ تصميم شهادتك."
+            "pickToStart": "اختر نوعًا لتبدأ تصميم شهادتك.",
+            "verificationPending": "يتم التحقق بعد إصدارها."
         },
         "err": {
             "network": "مشكلة في الاتصال. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.",
