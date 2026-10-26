@@ -28,7 +28,10 @@ const ProofOptionsValidator = z
     .strict();
 
 const VerificationProofOptionsValidator = ProofOptionsValidator.extend({
-    checks: z.enum(['proof', 'JWS', 'credentialStatus', 'credentialSchema']).array().optional(),
+    checks: z
+        .enum(['proof', 'JWS', 'credentialStatus', 'credentialSchema', 'issuerAuthorization'])
+        .array()
+        .optional(),
 });
 
 export const IssueEndpointValidator = z.object({
