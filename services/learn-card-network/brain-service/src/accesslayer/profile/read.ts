@@ -3,6 +3,7 @@ import { Profile } from '@models';
 import { ProfileType, FlatProfileType } from 'types/profile';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
+import { environment } from '@environment';
 
 export const getProfileByProfileId = async (profileId: string): Promise<ProfileType | null> => {
     const result = await new QueryBuilder()
@@ -38,14 +39,28 @@ export const getProfilesByProfileIds = async (profileIds: string[]): Promise<Pro
     );
 };
 
+/**
+ * Only this deployment's own `did:web:<domain>:users:<profileId>` names a Profile by id.
+ * Any other DID (another domain, another path, a bring-your-own issuer DID) must match a
+ * stored DID exactly; matching on the last segment alone let foreign did:webs alias Profiles.
+ */
+const localUsersProfileId = (did: string): string | null => {
+    const match = /^did:web:([^:]+):users:([^:]+)$/.exec(did);
+    if (!match) return null;
+    const localDomains = new Set(
+        [environment.DOMAIN_NAME, `localhost%3A${environment.PORT}`].filter(Boolean)
+    );
+    return localDomains.has(match[1]!) ? match[2]! : null;
+};
+
 export const getProfileByDid = async (did: string): Promise<ProfileType | null> => {
-    const isNetworkProfile = did.startsWith('did:web');
+    const profileId = localUsersProfileId(did);
 
     const result = await new QueryBuilder()
         .match({
             model: Profile,
             identifier: 'profile',
-            where: isNetworkProfile ? { profileId: did.split(':').at(-1)! } : { did },
+            where: profileId ? { profileId } : { did },
         })
         .return('profile')
         .limit(1)
