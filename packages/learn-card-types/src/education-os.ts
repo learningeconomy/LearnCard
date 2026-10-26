@@ -477,6 +477,12 @@ export const RecordIssuanceDeclarationValidator = z
         /** Pins the Group's identity at approval; a replaced identity cannot issue under it. */
         issuerIdentityProfileId: z.string().min(1).max(200),
         template: PlatformCredentialTemplateValidator,
+        /**
+         * How the credential reaches the learner. 'push' (the default when absent) signs at
+         * release and sends to the learner's Profile. 'offer' signs nothing at release and
+         * returns a claim offer the learner's own wallet redeems over VC-API.
+         */
+        delivery: z.enum(['push', 'offer']).optional(),
     })
     .strict();
 export type RecordIssuanceDeclaration = z.infer<typeof RecordIssuanceDeclarationValidator>;
