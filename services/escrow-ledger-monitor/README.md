@@ -62,7 +62,8 @@ success: it raises coverage failure/missing heartbeat and requires capacity revi
 or a separately reviewed sharded/checkpoint design before further rollout.
 
 Fixed metrics/notifications are `AuthorityIntegrityFailure`,
-`AuthorityCoverageFailure`, and `AuthoritySweepCompleted`, with only operator-owned
+`AuthorityCoverageFailure`, `AuthoritySweepCompleted`, and (metric only)
+`AuthorityRepeatedPinClear`, with only operator-owned
 Tenant dimensions. A separate authority heartbeat alarm treats missing data as
 breaching. Integrity findings may accompany a completed sweep; completion is a
 coverage signal, not an assertion that every row is valid. No historical release
@@ -115,6 +116,18 @@ trusted-time lower bound. Either gap alarms `AuthorityIntegrityFailure` exactly
 like any other reconstructed-state violation; this mirrors (and independently
 re-checks, rather than trusts) the enclave's own `authority_release_with_receipt`
 gate.
+
+Repeated PIN clears: from a fully verified history, every committed event whose
+signed `previous_pin` was configured and whose `pin` is not is counted as a PIN clear
+(only an owner `Enroll`/`Replace` can change the PIN generation). When an account has
+at least 2 clears whose signed `time.interval.hi_ms` falls in the 30 days before the
+sweep, the sweep emits the metric `AuthorityRepeatedPinClear` (no SNS message; the
+`AuthorityRepeatedPinClear` CloudWatch alarm notifies). This is a rate signal, not an
+integrity finding: the clients may sign one clear automatically after an
+identity-recovery rebind (`packages/sss-key-manager/POST_RECOVERY_ESCROW_REPAIR_DESIGN.md`,
+Q1), so a second one within the window is unusual. Signed records cannot tell a
+user-initiated clear from an automatic one, and the metric has only the Tenant
+dimension; find the account from the authority table.
 
 Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
 4,096 rows / 32 MiB per account, and the shared 900-second Lambda deadline.

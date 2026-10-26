@@ -297,6 +297,7 @@ registerKeyDerivationFactory('sss', () => {
         escrowRelayKeyId: sss.escrowRelayKeyId,
         escrow: getEscrowStrategyConfig(sss),
         onEscrowError: err => log.warn('escrow.enrollment.failed', err),
+        onEscrowPinAutoCleared: event => log.warn('escrow.pin.auto_cleared', event),
         storage: createDeviceShareStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
         tenantId,
@@ -589,6 +590,10 @@ const AuthSessionManager: React.FC<{
         coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
     const readyEnrollment =
         coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
+    const readyPinResetRequired =
+        coordinator.state.status === 'ready' && coordinator.state.escrowPinResetRequired === true;
+    // Once per DID per app start: a dismissal must not re-prompt on every refresh.
+    const pinResetPromptedRef = useRef<string | null>(null);
 
     // Identity recovery only completes through the escrow hold, and initialize()
     // re-derives this status after a reload, unlike the in-memory onRecover signal.
@@ -629,8 +634,13 @@ const AuthSessionManager: React.FC<{
                 pinEnabled: readyPinEnabled,
                 enrollment: readyEnrollment,
                 promptFlag: flag,
+                pinResetRequired: readyPinResetRequired && pinResetPromptedRef.current !== did,
             });
-            if (prompt.kind === 'after-recovery') {
+            if (prompt.kind === 'pin-reset-required') {
+                pinResetPromptedRef.current = did;
+                setRecoveryPinSetupReason('pin-reset-required');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'after-recovery') {
                 writeRecoveryPinPromptFlag(did, 'set');
                 setRecoveryPinSetupReason('after-recovery');
                 recoveredViaEscrowRef.current = null;
@@ -642,7 +652,13 @@ const AuthSessionManager: React.FC<{
                 setShowRecoveryPinReset(true);
             }
         }
-    }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
+    }, [
+        coordinator.state.status,
+        readyDid,
+        readyPinEnabled,
+        readyEnrollment,
+        readyPinResetRequired,
+    ]);
 
     // --- QR login device share pickup from sessionStorage ---
     // When Device B completes Firebase auth after a QR login, the coordinator

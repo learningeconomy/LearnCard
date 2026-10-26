@@ -41,6 +41,9 @@ without a single real user being auto-enrolled — this is the intended
 
 Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), these items remain open:
 
+Decision records (options, risks, recommendations, owner/approver placeholders)
+for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISIONS.md).
+
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
    host. Remaining: the operators' availability and rate limits for production
