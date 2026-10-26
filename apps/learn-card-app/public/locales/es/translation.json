@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "El archivo es demasiado grande. Elige uno de menos de 4 MB.",
                 "errorReadFailed": "No pudimos leer este archivo. Prueba con otro.",
                 "errorContentRejected": "No pudimos identificar un documento compatible en este archivo.",
+                "errorUploadBusy": "Las cargas siguen ocupadas. Inténtalo de nuevo en breve.",
                 "errorProcessingFailed": "No pudimos procesar este archivo ahora. Inténtalo de nuevo.",
                 "errorConsentDenied": "El procesamiento con IA no está disponible para esta cuenta.",
                 "errorResponseInvalid": "Recibimos un resultado incompleto. Inténtalo de nuevo.",
@@ -475,6 +476,7 @@
                 "noMatches": "No se encontraron tipos coincidentes"
             },
             "loader": {
+                "waitingForCapacity": "Hay muchas cargas en curso. Esperando un turno…",
                 "notifyWhenReady": "Avísame cuando esté listo",
                 "quotes": {
                     "resume": {

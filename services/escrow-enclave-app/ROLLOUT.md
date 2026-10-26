@@ -44,15 +44,22 @@ Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blo
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
    host. Remaining: the operators' availability and rate limits for production
-   traffic (time.txryan.com's operator has approved our use).
-2. **No authenticated enrollment authority.** The production enclave wires in
-   `UnavailableEnrollment`, so create hold, release and cancel fail closed with
-   `Unavailable` (carry and rewrap do not use it). The design is in
-   [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md). Nothing can be released in
-   production without it.
-3. **Hold path relies on lca-api for notification (attack C).** A compromised lca-api
-   could start a hold and suppress the warning emails. The chosen fix is
-   enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9).
+   traffic (time.txryan.com's operator, Tanner Ryan, approved our use on 2026-10-01).
+2. **Enrollment authority — verified on staging, not yet deployed to production.**
+   Without a configured authority the enclave wires in `UnavailableEnrollment`, so
+   create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
+   do not use it). The design is in [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md).
+   Staging runs it (generation `staging-g1`); a real 7-day hold released there
+   (jackson+pin2, operator-reported), and staging passed the live attack C run on image `v79ea1bd7`
+   ([SECURITY.md](SECURITY.md#staging-verification-2026-10-23)). Production
+   closes when the production stack is configured and verified the same way.
+3. **Attack C (hold notification) — verified on staging; soak and inbox check remain.**
+   Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
+   staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
+   refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
+   cancellation is signed. Remaining: an operator inbox confirmation of the code
+   email, and the 7-day-since-confirmation soak (jackson+wait3, releasing about
+   2026-10-30) on the new image.
 4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS

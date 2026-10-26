@@ -1,9 +1,9 @@
 import React from 'react';
 
-import NewAiSessionContainer from '../components/new-ai-session/NewAiSessionContainer';
+import NewAiSessionContainer from '../components/new-ai-session/LazyNewAiSessionContainer';
 
 import { ModalTypes, useGetCredentialList, useModal } from 'learn-card-base';
-import { useConsentFlowByUri } from '../pages/consentFlow/useConsentFlow';
+import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 
 import {
     aiPassportApps,
@@ -13,7 +13,7 @@ import {
 export const useAiSession = () => {
     const { newModal } = useModal();
 
-    const { data: topics, isLoading: topicsLoading } = useGetCredentialList('AI Topic');
+    const { data: topics } = useGetCredentialList('AI Topic');
     const existingTopics = topics?.pages?.[0]?.records || [];
 
     const openNewAiSessionModal = () => {
@@ -34,18 +34,17 @@ export const useAiSession = () => {
 
 export const useHasConsentedToAiApp = () => {
     const aiAppsAvailable = areAiPassportAppsAvailable();
-    const [chatGPTApp, claudeApp, geminiApp] = aiPassportApps;
-    const { hasConsented: chatGPTHasConsented } = useConsentFlowByUri(
-        aiAppsAvailable ? chatGPTApp.contractUri : undefined
-    ); // chatGPT
-    const { hasConsented: claudeHasConsented } = useConsentFlowByUri(
-        aiAppsAvailable ? claudeApp.contractUri : undefined
-    ); // claude
-    const { hasConsented: geminiHasConsented } = useConsentFlowByUri(
-        aiAppsAvailable ? geminiApp.contractUri : undefined
-    ); // gemini
-
-    const hasConsentedToAiApps = chatGPTHasConsented || claudeHasConsented || geminiHasConsented;
+    const { data: consentedContracts } = useConsentedContracts();
+    // Preserve the three supported entries previously checked by this hook.
+    // Reading consent status does not need contract details or the consent UI.
+    const appContractUris = new Set(aiPassportApps.slice(0, 3).map(app => app.contractUri));
+    const hasConsentedToAiApps =
+        aiAppsAvailable &&
+        Boolean(
+            consentedContracts?.some(
+                c => appContractUris.has(c.contract?.uri) && c.status !== 'withdrawn'
+            )
+        );
 
     return {
         hasConsentedToAiApps,

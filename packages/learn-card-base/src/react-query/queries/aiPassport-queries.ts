@@ -172,10 +172,19 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                     );
 
                     const boostUri = topicVc?.boostId;
+                    if (!boostUri) {
+                        return {
+                            topicRecord: record,
+                            topicVc,
+                            sessions: [],
+                            hasUnfinishedSessions: false,
+                            hasFinishedSessions: false,
+                            unfinishedSessionsCount: 0,
+                        };
+                    }
 
                     const topicBoost = (await wallet.invoke.getBoost(boostUri)) as
-                        | Boost
-                        | undefined;
+                        Boost | undefined;
 
                     const sessionBoosts = (
                         await wallet.invoke.getBoostChildren(boostUri, {
@@ -230,9 +239,7 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
 
                     const hasFinishedSessions = sessions.some(s => s.hasAssessment);
                     const hasUnfinishedSessions = sessions.some(s => !s.hasAssessment);
-                    const unfinishedSessionsCount = sessions.filter(
-                        s => !s.hasAssessment
-                    ).length;
+                    const unfinishedSessionsCount = sessions.filter(s => !s.hasAssessment).length;
 
                     return {
                         topicRecord: record,
@@ -246,7 +253,7 @@ export const useGetEnrichedTopicsList = (credentials?: LCR[], enabled: boolean =
                                     record,
                                     hasAssessment,
                                     completed,
-                                } as AiSession)
+                                }) as AiSession
                         ),
                         hasUnfinishedSessions,
                         hasFinishedSessions,
@@ -289,7 +296,7 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
             );
 
             const summaryBoosts = (
-                await wallet?.invoke?.getBoostChildren(topicVc?.boostId, {
+                await wallet?.invoke?.getBoostChildren(topicVc?.boostId ?? topicUri, {
                     query: {
                         category:
                             categoryMetadata[CredentialCategoryEnum.aiSummary]
@@ -305,18 +312,14 @@ export const useGetEnrichedSession = (topicUri: string, enabled: boolean = true)
             const sessions = await Promise.all(
                 summaryBoosts?.map(async boost => {
                     const [record, fullBoost] = await Promise.all([
-                        getOrFetchCredentialRecordForBoost(
-                            boost.uri,
-                            initWallet,
-                            queryClient
-                        ),
+                        getOrFetchCredentialRecordForBoost(boost.uri, initWallet, queryClient),
                         wallet.invoke.getBoost(boost.uri),
                     ]);
-                    const vc = (await getOrFetchResolvedCredential(
+                    const vc = await getOrFetchResolvedCredential(
                         record?.uri ?? '',
                         initWallet,
                         queryClient
-                    ))!;
+                    );
 
                     return {
                         boost: fullBoost,
