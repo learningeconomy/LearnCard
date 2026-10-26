@@ -45,31 +45,25 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    # escrow-enclave-host: `escrow-enclave` (and therefore rsa and
-                    # p256 -> elliptic-curve -> crypto-bigint 0.5) is a
-                    # [dev-dependencies] entry only. Neither crate is linked into
-                    # the host binary (`cargo tree -i rsa --locked` and
-                    # `cargo tree -i crypto-bigint --locked` print nothing for
-                    # normal edges); they are in Cargo.lock only for tests.
+                    # escrow-enclave-host: `escrow-enclave` (and therefore rsa) is a
+                    # [dev-dependencies] entry only. rsa is not linked into the
+                    # host binary (`cargo tree -i rsa --locked` prints nothing for
+                    # normal edges); it is in Cargo.lock only for tests.
                     #   RUSTSEC-2023-0071 (rsa Marvin): no fixed rsa release.
-                    #   RUSTSEC-2026-0387 (crypto-bigint 0.5 timing): fix is
-                    #     0.7.6, unreachable without a p256 0.14 major upgrade.
+                    # RUSTSEC-2026-0387 (crypto-bigint 0.5) is resolved by the
+                    # p256/p384 0.14 upgrade (crypto-bigint 0.7.10); no ignore.
                     - crate: escrow-enclave-host
-                      ignores: --ignore RUSTSEC-2023-0071 --ignore RUSTSEC-2026-0387
+                      ignores: --ignore RUSTSEC-2023-0071
                     # escrow-ledger-monitor: depends on escrow-enclave with
                     # `default-features = false`, which drops `enclave-runtime`
                     # and so drops `dep:rsa` from the production build; rsa is
                     # only enabled via the dev-dependency `fake-kms` feature.
                     #   RUSTSEC-2023-0071 (rsa Marvin): no fixed release; no
                     #     RSA private-key operation exists in the monitor binary.
-                    #   RUSTSEC-2026-0387 (crypto-bigint 0.5 timing): pulled in
-                    #     via p256 0.13. The monitor only performs ECDSA
-                    #     *verification* (p256::ecdsa::VerifyingKey over public
-                    #     ledger records / public keys) — no secret operands, so
-                    #     constant-time leakage has nothing to leak. Fix needs
-                    #     p256 0.14 (major); tracked as a follow-up.
+                    # RUSTSEC-2026-0387 (crypto-bigint 0.5) is resolved by the
+                    # p256 0.14 upgrade (crypto-bigint 0.7.10); no ignore.
                     - crate: escrow-ledger-monitor
-                      ignores: --ignore RUSTSEC-2023-0071 --ignore RUSTSEC-2026-0387
+                      ignores: --ignore RUSTSEC-2023-0071
         defaults:
             run:
                 working-directory: services/${{ matrix.crate }}

@@ -46,7 +46,7 @@ fn sign(ledger: &Ledger, record: &mut LedgerRecord) {
         .unwrap();
     record
         .sig
-        .copy_from_slice(&signature.normalize_s().unwrap_or(signature).to_bytes());
+        .copy_from_slice(&signature.normalize_s().to_bytes());
 }
 
 #[tokio::test]

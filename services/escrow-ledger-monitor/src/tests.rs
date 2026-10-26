@@ -497,8 +497,8 @@ async fn key_map_accepts_rotation_and_rejects_unknown_ids() {
         .map(|r| r.canonical_bytes().unwrap())
         .collect();
     let value = serde_json::json!({
-        "K1": hex::encode(old.public_key().to_encoded_point(false).as_bytes()),
-        "K2": hex::encode(new.public_key().to_encoded_point(false).as_bytes()),
+        "K1": hex::encode(old.public_key().to_sec1_point(false).as_bytes()),
+        "K2": hex::encode(new.public_key().to_sec1_point(false).as_bytes()),
     })
     .to_string();
     let mut monitor = Monitor {
@@ -514,7 +514,7 @@ async fn key_map_accepts_rotation_and_rejects_unknown_ids() {
         monitor.verify(&enrollment.chain_id(), &bytes),
         Err(Error::Integrity)
     ));
-    let legacy = hex::encode(old.public_key().to_encoded_point(false).as_bytes());
+    let legacy = hex::encode(old.public_key().to_sec1_point(false).as_bytes());
     monitor.key = TrustedKeys::parse(&legacy).unwrap();
     assert!(monitor.verify(&enrollment.chain_id(), &bytes[..1]).is_ok());
     assert!(monitor.verify(&enrollment.chain_id(), &bytes).is_err());

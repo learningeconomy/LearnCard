@@ -1,15 +1,114 @@
 //! PUBLIC, deterministic test keys. Never a production trust root.
 use super::*;
-use der::{Encode, EncodePem};
 use p384::ecdsa::{signature::Signer, DerSignature, Signature, SigningKey};
 use sha2::{Digest, Sha384};
 use x509_cert::{
-    builder::{Builder, CertificateBuilder, Profile},
+    builder::{profile::BuilderProfile, Builder, CertificateBuilder},
+    der::{Encode, EncodePem},
+    ext::{
+        pkix::{
+            AuthorityKeyIdentifier, BasicConstraints, KeyUsage, KeyUsages, SubjectKeyIdentifier,
+        },
+        Extension, ToExtension,
+    },
     name::Name,
-    spki::SubjectPublicKeyInfoOwned,
+    spki::{SubjectPublicKeyInfo, SubjectPublicKeyInfoRef},
     time::{Time, Validity},
-    Certificate,
+    Certificate, TbsCertificate,
 };
+
+/// Reproduces the x509-cert 0.2 `Profile::{Root, SubCA, Leaf}` extension set
+/// byte-for-byte (SKI, AKI except root, BasicConstraints, KeyUsage) so fake
+/// NSM chains — and the golden `rootSha256` fixtures — are unchanged.
+pub(crate) enum TestProfile {
+    Root(Name),
+    SubCa {
+        subject: Name,
+        issuer: Name,
+        path_len_constraint: Option<u8>,
+    },
+    Leaf {
+        subject: Name,
+        issuer: Name,
+    },
+}
+
+impl BuilderProfile for TestProfile {
+    fn get_issuer(&self, subject: &Name) -> Name {
+        match self {
+            Self::Root(_) => subject.clone(),
+            Self::SubCa { issuer, .. } | Self::Leaf { issuer, .. } => issuer.clone(),
+        }
+    }
+
+    fn get_subject(&self) -> Name {
+        match self {
+            Self::Root(subject) | Self::SubCa { subject, .. } | Self::Leaf { subject, .. } => {
+                subject.clone()
+            }
+        }
+    }
+
+    fn build_extensions(
+        &self,
+        spk: SubjectPublicKeyInfoRef<'_>,
+        issuer_spk: SubjectPublicKeyInfoRef<'_>,
+        tbs: &TbsCertificate,
+    ) -> x509_cert::builder::Result<Vec<Extension>> {
+        let subject = tbs.subject();
+        let mut extensions = vec![SubjectKeyIdentifier::try_from(spk)?.to_extension(subject, &[])?];
+        if !matches!(self, Self::Root(_)) {
+            extensions.push(
+                AuthorityKeyIdentifier::try_from(issuer_spk)?.to_extension(subject, &extensions)?,
+            );
+        }
+        let constraints = match self {
+            Self::Root(_) => BasicConstraints {
+                ca: true,
+                path_len_constraint: None,
+            },
+            Self::SubCa {
+                path_len_constraint,
+                ..
+            } => BasicConstraints {
+                ca: true,
+                path_len_constraint: *path_len_constraint,
+            },
+            Self::Leaf { .. } => BasicConstraints {
+                ca: false,
+                path_len_constraint: None,
+            },
+        };
+        extensions.push(constraints.to_extension(subject, &extensions)?);
+        let usage = match self {
+            Self::Leaf { .. } => KeyUsages::DigitalSignature | KeyUsages::NonRepudiation,
+            _ => KeyUsages::KeyCertSign | KeyUsages::CRLSign,
+        };
+        extensions.push(KeyUsage(usage).to_extension(subject, &extensions)?);
+        Ok(extensions)
+    }
+}
+
+/// Fixed validity window shared by the deterministic test chains.
+pub(crate) fn validity(not_before: u64, not_after: u64) -> x509_cert::der::Result<Validity> {
+    let at = |s| Time::try_from(std::time::UNIX_EPOCH + std::time::Duration::from_secs(s));
+    Ok(Validity::new(at(not_before)?, at(not_after)?))
+}
+
+/// Builds an RFC6979-deterministic P-384 test certificate.
+pub(crate) fn certificate_builder(
+    profile: TestProfile,
+    serial: u32,
+    validity: Validity,
+    subject: &SigningKey,
+) -> Result<CertificateBuilder<TestProfile>, Box<dyn std::error::Error>> {
+    Ok(CertificateBuilder::new(
+        profile,
+        serial.into(),
+        validity,
+        SubjectPublicKeyInfo::from_key(subject.verifying_key())?,
+    )?)
+}
 
 /// Native test driver; absent unless testing or explicitly enabling `fake-nsm`.
 /// All keys are public test material. Timestamp and PCRs are caller-controlled.
@@ -32,30 +131,19 @@ fn key(seed: &[u8; 32], role: u8) -> Result<SigningKey, NsmError> {
 }
 
 fn certificate(
-    profile: Profile,
-    name: Name,
+    profile: TestProfile,
     serial: u32,
     subject: &SigningKey,
     issuer: &SigningKey,
 ) -> Result<Certificate, NsmError> {
     let build = || -> Result<Certificate, Box<dyn std::error::Error>> {
-        let validity = Validity {
-            not_before: Time::try_from(
-                std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_577_836_800),
-            )?,
-            not_after: Time::try_from(
-                std::time::UNIX_EPOCH + std::time::Duration::from_secs(2_524_608_000),
-            )?,
-        };
-        Ok(CertificateBuilder::new(
+        Ok(certificate_builder(
             profile,
-            serial.into(),
-            validity,
-            name,
-            SubjectPublicKeyInfoOwned::from_key(*subject.verifying_key())?,
-            issuer,
+            serial,
+            validity(1_577_836_800, 2_524_608_000)?,
+            subject,
         )?
-        .build::<DerSignature>()?)
+        .build::<_, DerSignature>(issuer)?)
     };
     build().map_err(|_| NsmError::Signing)
 }
@@ -78,24 +166,27 @@ impl FakeNsm {
         let name = |s: &str| s.parse::<Name>().map_err(|_| NsmError::Signing);
         let root_name = name("CN=LearnCard TEST ONLY Nitro Root")?;
         let intermediate_name = name("CN=LearnCard TEST ONLY Nitro Intermediate")?;
-        let root = certificate(Profile::Root, root_name.clone(), 1, &root_key, &root_key)?;
+        let root = certificate(
+            TestProfile::Root(root_name.clone()),
+            1,
+            &root_key,
+            &root_key,
+        )?;
         let intermediate = certificate(
-            Profile::SubCA {
+            TestProfile::SubCa {
+                subject: intermediate_name.clone(),
                 issuer: root_name,
                 path_len_constraint: Some(0),
             },
-            intermediate_name.clone(),
             2,
             &intermediate_key,
             &root_key,
         )?;
         let leaf = certificate(
-            Profile::Leaf {
+            TestProfile::Leaf {
+                subject: name("CN=LearnCard TEST ONLY Nitro Leaf")?,
                 issuer: intermediate_name,
-                enable_key_agreement: false,
-                enable_key_encipherment: false,
             },
-            name("CN=LearnCard TEST ONLY Nitro Leaf")?,
             3,
             &signer,
             &intermediate_key,
@@ -114,7 +205,7 @@ impl FakeNsm {
 
     pub fn root_pem(&self) -> Result<String, NsmError> {
         self.root
-            .to_pem(der::pem::LineEnding::LF)
+            .to_pem(x509_cert::der::pem::LineEnding::LF)
             .map_err(|_| NsmError::Signing)
     }
 

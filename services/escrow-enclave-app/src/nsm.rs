@@ -168,7 +168,7 @@ pub fn parse_attestation_document(bytes: &[u8]) -> Result<ParsedAttestation, Nsm
 }
 
 #[cfg(any(test, feature = "fake-nsm"))]
-mod fake;
+pub(crate) mod fake;
 #[cfg(any(test, feature = "fake-nsm"))]
 pub use fake::FakeNsm;
 

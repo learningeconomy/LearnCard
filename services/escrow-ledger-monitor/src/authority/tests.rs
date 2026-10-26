@@ -32,7 +32,7 @@ fn key() -> SigningKey {
     SigningKey::from_slice(&[42; 32]).unwrap()
 }
 fn trust() -> AuthorityTrust {
-    AuthorityTrust::parse(&json!({"key":{"publicKey":hex::encode(key().verifying_key().to_encoded_point(false).as_bytes()),"measurements":["07".repeat(32)]}}).to_string()).unwrap()
+    AuthorityTrust::parse(&json!({"key":{"publicKey":hex::encode(key().verifying_key().to_sec1_point(false).as_bytes()),"measurements":["07".repeat(32)]}}).to_string()).unwrap()
 }
 fn envelope() -> EscrowEnvelope {
     let file: Value = serde_json::from_str(include_str!(
@@ -51,7 +51,7 @@ fn signed(event: &AuthorityEvent) -> Vec<u8> {
         signature: String::new(),
     };
     let sig: Signature = key().sign_prehash(&record.signing_hash().unwrap()).unwrap();
-    record.signature = STANDARD.encode(sig.normalize_s().unwrap_or(sig).to_bytes());
+    record.signature = STANDARD.encode(sig.normalize_s().to_bytes());
     serde_json::to_vec(&record).unwrap()
 }
 fn events() -> Vec<AuthorityEvent> {
@@ -620,7 +620,7 @@ fn rpc_artifacts_are_verified_by_kind_but_never_substitute_for_execution_receipt
     }
     assert!(
         AuthorityTrust::parse(&hex::encode(
-            key().verifying_key().to_encoded_point(false).as_bytes()
+            key().verifying_key().to_sec1_point(false).as_bytes()
         ))
         .is_err()
     );
