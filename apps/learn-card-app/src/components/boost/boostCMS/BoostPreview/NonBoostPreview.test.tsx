@@ -379,3 +379,25 @@ it('shows a neutral footer and prevents nested proof verification for an unsigne
     expect(mocks.displayCard.mock.lastCall?.[0].skipVerification).toBe(true);
     expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual([]);
 });
+
+it('retains proof verification and the supplied footer for an issued credential', async () => {
+    const proof = [{ check: 'proof', status: VerificationStatusEnum.Success }];
+    mocks.verify.mockClear();
+    mocks.verify.mockResolvedValue(proof);
+    render(
+        <NonBoostPreview
+            credential={credential}
+            verificationItems={[]}
+            categoryType={BoostCategoryOptionsEnum.achievement}
+            customThumbComponent={null}
+            customBodyCardComponent={null}
+            customFooterComponent={<span>Issued credential footer</span>}
+            customIssueHistoryComponent={null}
+            handleCloseModal={vi.fn()}
+        />
+    );
+    expect(screen.getByText('Issued credential footer')).toBeTruthy();
+    expect(screen.queryByText('Verification runs after you issue it.')).toBeNull();
+    await waitFor(() => expect(mocks.verify).toHaveBeenCalledWith(credential, {}, true));
+    expect(mocks.displayCard.mock.lastCall?.[0].skipVerification).toBe(false);
+});

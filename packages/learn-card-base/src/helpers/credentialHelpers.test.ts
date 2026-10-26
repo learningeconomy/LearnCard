@@ -527,6 +527,7 @@ describe('evidence attachment classification', () => {
         ['https://drive.google.com/file/d/example/view', 'link'],
         ['https://docs.google.com/document/d/example/edit', 'link'],
         ['https://example.test/report.pdf?download=1', 'document'],
+        ['https://example.test/photo.PNG?download=1', 'photo'],
         ['data:application/pdf;base64,AAAA', 'document'],
         ['An explanation with no link', 'text'],
         ['', 'text'],
@@ -574,4 +575,22 @@ describe('evidence attachment classification', () => {
             }),
         ]);
     });
+});
+
+it('preserves explicit media genres when URLs cannot identify the uploaded type', async () => {
+    const attachments = await getEvidenceAttachments([
+        {
+            id: 'https://files.example.test/opaque',
+            type: ['Evidence'],
+            genre: 'video',
+            name: 'Recorded work',
+        },
+        {
+            id: 'https://files.example.test/opaque2',
+            type: ['EvidenceFile'],
+            genre: 'document',
+            name: 'Report',
+        },
+    ] as never);
+    expect(attachments?.map(item => item.type)).toEqual(['video', 'document']);
 });
