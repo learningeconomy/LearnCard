@@ -58,6 +58,15 @@ import {
     setValidExchangeChallengeForToken,
 } from '@cache/exchanges';
 import { randomUUID } from 'crypto';
+import { contractsRouter } from '@routes/contracts';
+import { enforceRateLimits } from '@helpers/rateLimit.helpers';
+import {
+    CONSENT_WORKFLOW_ID,
+    completeConsentExchange,
+    consentExchangeRequest,
+    getConsentExchangeStatus,
+    startConsentExchange,
+} from '@helpers/consent-exchange.helpers';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -101,7 +110,81 @@ const ExchangeInfoValidator = z.object({
 
 type ExchangeInfoType = z.infer<typeof ExchangeInfoValidator>;
 
+/** Public base URL for this deployment's REST API, used in wallet-facing links. */
+export const apiBaseUrl = (domain: string): string =>
+    `${domain.includes('localhost') ? 'http' : 'https'}://${domain.replace(/%3A/g, ':')}/api`;
+
 export const workflowsRouter = t.router({
+    startConsentExchange: openRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/educationos/consent-exchanges',
+                tags: ['Workflows', 'VC-API'],
+                summary: 'Start a learner consent exchange',
+                description:
+                    'Starts a single-use VC-API exchange in which a learner wallet authenticates and consents to an ecosystem-governed agreement.',
+            },
+        })
+        .input(z.object({ contractId: z.string().min(1).max(200) }))
+        .output(
+            z.object({ exchangeId: z.string(), exchangeUrl: z.string(), statusToken: z.string() })
+        )
+        .mutation(async ({ ctx, input }) => {
+            // Unauthenticated by design (the learner has not proven anything yet), so bounded.
+            await enforceRateLimits([
+                {
+                    key: `consent-exchange:ip:${ctx.sourceIp ?? 'unknown'}`,
+                    limit: 30,
+                    windowSeconds: 60,
+                    description: 'consent exchange caller',
+                },
+                {
+                    key: `consent-exchange:contract:${input.contractId}`,
+                    limit: 300,
+                    windowSeconds: 60,
+                    description: 'consent exchanges per agreement',
+                },
+            ]);
+            const { exchangeId, statusToken } = await startConsentExchange(input.contractId);
+            return {
+                exchangeId,
+                statusToken,
+                exchangeUrl: `${apiBaseUrl(ctx.domain)}/workflows/${CONSENT_WORKFLOW_ID}/exchanges/${exchangeId}`,
+            };
+        }),
+
+    consentExchangeStatus: openRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/educationos/consent-exchanges/{exchangeId}',
+                tags: ['Workflows'],
+                summary: 'Read a learner consent exchange status',
+                description:
+                    'PENDING, IN_PROGRESS, COMPLETED (with the consenting wallet DID) or FAILED. Requires the status token returned when the exchange started.',
+            },
+        })
+        .input(
+            z.object({
+                exchangeId: z.string().min(1).max(200),
+                statusToken: z.string().min(1).max(200),
+            })
+        )
+        .output(
+            z.object({
+                status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'EXPIRED']),
+                reason: z.string().optional(),
+                holderDid: z.string().optional(),
+            })
+        )
+        .query(
+            async ({ input }) =>
+                (await getConsentExchangeStatus(input.exchangeId, input.statusToken)) ?? {
+                    status: 'EXPIRED',
+                }
+        ),
+
     participateInExchange: openRoute
         .meta({
             openapi: {
@@ -118,6 +201,34 @@ export const workflowsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { localWorkflowId, localExchangeId, verifiablePresentation } = input;
             const { domain } = ctx;
+
+            // EducationOS learner consent from any VC-API wallet (RFC 2026-10 Stage 5).
+            if (localWorkflowId === CONSENT_WORKFLOW_ID) {
+                if (!verifiablePresentation) {
+                    return consentExchangeRequest(localExchangeId, domain);
+                }
+                return completeConsentExchange(
+                    localExchangeId,
+                    verifiablePresentation,
+                    domain,
+                    async ({ holderDid, contractUri, terms, audienceVersion }) => {
+                        // The learner's own ConsentFlow route, authenticated by the verified VP.
+                        await contractsRouter
+                            .createCaller({
+                                domain,
+                                tenant: ctx.tenant,
+                                sourceIp: ctx.sourceIp,
+                                // Least privilege: the exchange may only record consent.
+                                user: {
+                                    did: holderDid,
+                                    isChallengeValid: true,
+                                    scope: 'contracts:write',
+                                },
+                            })
+                            .consentToContract({ contractUri, terms, audienceVersion });
+                    }
+                );
+            }
 
             // Demonstration of VC-API workflow with redirect
             if (localWorkflowId == 'redirect') {

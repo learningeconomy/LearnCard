@@ -24,6 +24,7 @@ import { registerPublicShareLinkNoStore } from './public-share-link-http';
 import { openApiDocument } from './openapi';
 import { inboxBatchResponseMeta } from './helpers/inbox-batch-http.helpers';
 import { didFastifyPlugin } from './dids';
+import { educationOsConsentPagePlugin } from './educationos-consent-page';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
 import { credentialRefreshFastifyPlugin } from './credential-refresh';
@@ -167,6 +168,7 @@ server.get('/docs', (_request, reply) => {
 });
 
 server.register(didFastifyPlugin);
+server.register(educationOsConsentPagePlugin);
 server.register(skillsViewerFastifyPlugin);
 server.register(statusListsFastifyPlugin);
 server.register(credentialRefreshFastifyPlugin);

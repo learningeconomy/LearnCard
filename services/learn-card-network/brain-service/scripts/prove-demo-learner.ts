@@ -7,6 +7,7 @@
  *   bun run prove:demo-learner -- --register   # create the `demo-learner` profile
  *   bun run prove:demo-learner -- --consent <contract uri>   # consent, as the app does
  *   bun run prove:demo-learner -- --withdraw <contract uri>  # withdraw that consent
+ *   bun run prove:demo-learner -- --consent-exchange <url>   # consent via the hosted page's VC-API link
  *   bun run prove:demo-learner -- --claim [--issuer <did>]  # accept, decrypt and verify
  *
  * Standalone wallet: does not import Brain's database environment.
@@ -72,6 +73,39 @@ const main = async (): Promise<void> => {
             audienceVersion: details.audienceVersion,
         });
         log(`CONSENTED to ${contractUri} (terms ${termsUri})`);
+        return;
+    }
+
+    const exchangeIndex = process.argv.indexOf('--consent-exchange');
+    if (exchangeIndex >= 0) {
+        // Wallet-neutral path: plain VC-API, as any wallet would drive the hosted page's link.
+        const exchangeUrl = process.argv[exchangeIndex + 1];
+        if (!exchangeUrl) throw new Error('Pass --consent-exchange <exchange url>.');
+        const post = async (body: unknown): Promise<unknown> => {
+            const response = await fetch(exchangeUrl, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+            if (!response.ok)
+                throw new Error(`Exchange HTTP ${response.status}: ${await response.text()}`);
+            return response.json();
+        };
+        const request = z
+            .object({
+                verifiablePresentationRequest: z.object({
+                    challenge: z.string(),
+                    domain: z.string(),
+                }),
+            })
+            .parse(await post({}));
+        const vp = await wallet.invoke.getDidAuthVp({
+            challenge: request.verifiablePresentationRequest.challenge,
+            domain: request.verifiablePresentationRequest.domain,
+            proofPurpose: 'authentication',
+        });
+        await post({ verifiablePresentation: vp });
+        log('CONSENTED via VC-API exchange (DID authentication)');
         return;
     }
 
