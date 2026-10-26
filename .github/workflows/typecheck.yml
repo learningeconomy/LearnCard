@@ -85,6 +85,17 @@ jobs:
               if: ${{ always() && steps.ratchet.outcome == 'failure' }}
               run: node scripts/typecheck-diagnostics.mjs render "$RUNNER_TEMP/typecheck-head.json" "$RUNNER_TEMP/typecheck-base.json"
 
+            # Probe only: exercise the unavailable-base renderer as well as the real comparison.
+            - name: Probe current diagnostics when the base report is missing
+              if: ${{ always() && steps.ratchet.outcome == 'failure' }}
+              run: |
+                  node scripts/typecheck-diagnostics.mjs render "$RUNNER_TEMP/typecheck-head.json" "$RUNNER_TEMP/intentionally-missing-base.json" | tee "$RUNNER_TEMP/typecheck-fallback.txt"
+                  rg --quiet 'Current head diagnostic sample' "$RUNNER_TEMP/typecheck-fallback.txt"
+                  rg --quiet 'title=Current TS' "$RUNNER_TEMP/typecheck-fallback.txt"
+                  if rg --quiet 'title=Added|[0-9]+ added diagnostic' "$RUNNER_TEMP/typecheck-fallback.txt"; then
+                      exit 1
+                  fi
+
             - name: Retain diagnostic reports
               if: ${{ always() }}
               continue-on-error: true
