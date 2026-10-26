@@ -22,6 +22,12 @@ EducationOS decides the release, not this server. A record is stored only when:
 
 Every attempt is audited.
 
+When the Binding declares `issuance.delivery: 'offer'`, EducationOS signs nothing at release
+and returns a claim offer (`issuance.offerUri`). Discovery is the partner's job, so the page
+shows it as a link. With `LEARNCARD_APP_URL` set, the link is the LearnCard app's
+`/request?vc_request_url=<offerUri>`; otherwise it is the raw VC-API exchange URL. Only the
+learner's own wallet can redeem it. Resubmitting the same completion returns the same offer.
+
 ## Run
 
 ```sh
@@ -30,6 +36,7 @@ DEMO_LMS_HEALTH_URL=http://localhost:4321/health \
 SERVICE_ACCOUNT_ID=... SERVICE_ACCOUNT_SECRET=... \
 INSTALL_ID=... ECOSYSTEM_ID=... \
 PLATFORM_JWK='{"kty":"OKP","crv":"Ed25519","x":"..."}' \
+LEARNCARD_APP_URL=<optional LearnCard app origin> \
 bun start
 ```
 

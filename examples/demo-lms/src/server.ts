@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { submitCompletion, type SubmitResult } from './brain';
+import { claimLinkFor, submitCompletion, type SubmitResult } from './brain';
 import { loadConfig } from './config';
 import { verifyHealthChallenge } from './health';
 
@@ -11,6 +11,16 @@ const COURSES = [
 
 const escape = (value: string): string =>
     value.replace(/[&<>"']/g, char => `&#${char.charCodeAt(0)};`);
+
+const config = loadConfig();
+
+/** A claim offer is the learner's only way to their credential, so it is shown as a link. */
+const offerLink = (result?: SubmitResult): string =>
+    result?.ok && result.issuance?.status === 'OFFERED'
+        ? `<p class="offer">Claim your credential: <a id="claim-offer" href="${escape(
+              claimLinkFor(result.issuance.offerUri, config.learnCardAppUrl)
+          )}" data-offer-uri="${escape(result.issuance.offerUri)}">open in your wallet</a></p>`
+        : '';
 
 const page = (result?: SubmitResult): string => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Demo LMS</title>
@@ -27,7 +37,7 @@ ${
             ? `<p class="ok">Record ${escape(result.status)}: ${escape(result.recordId)}</p>`
             : `<p class="err">Denied (${escape(result.code)}): ${escape(result.message)}</p>`
         : ''
-}
+}${offerLink(result)}
 <form method="post" action="/complete">
 <label for="learner">Learner profile ID</label><input id="learner" name="learner" required>
 <label for="course">Course</label><select id="course" name="course">
@@ -36,7 +46,6 @@ ${COURSES.map(c => `<option value="${c.id}">${escape(c.title)}</option>`).join('
 <button type="submit">Mark complete</button></form></body></html>`;
 
 const html = { 'content-type': 'text/html; charset=utf-8' };
-const config = loadConfig();
 
 Bun.serve({
     port: config.port,

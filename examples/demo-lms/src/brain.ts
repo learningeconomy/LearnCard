@@ -7,9 +7,26 @@ export type CompletionFields = {
     completedAt: string;
 };
 
-export type SubmitResult =
-    | { ok: true; recordId: string; status: 'ACCEPTED' | 'DUPLICATE' }
-    | { ok: false; code: string; message: string };
+/** What EducationOS did with the released record (submitRecord's `issuance`). */
+export type Issuance =
+    | { status: 'ISSUED'; credentialUri: string }
+    | { status: 'OFFERED'; offerUri: string }
+    | { status: 'ISSUE_FAILED' }
+    | { status: 'PENDING' };
+
+type Released = { recordId: string; status: 'ACCEPTED' | 'DUPLICATE'; issuance?: Issuance };
+
+export type SubmitResult = ({ ok: true } & Released) | { ok: false; code: string; message: string };
+
+/**
+ * The link the partner shows the learner for a claim offer. With a LearnCard app URL it is
+ * the app's generic VC-API client (`/request?vc_request_url=`); otherwise the raw exchange
+ * URL, which any VC-API wallet can redeem.
+ */
+export const claimLinkFor = (offerUri: string, learnCardAppUrl?: string): string =>
+    learnCardAppUrl
+        ? `${learnCardAppUrl.replace(/\/$/, '')}/request?vc_request_url=${encodeURIComponent(offerUri)}`
+        : offerUri;
 
 type TrpcResponse<T> = {
     result?: { data: T };
@@ -54,7 +71,7 @@ export const submitCompletion = async (
     subjectProfileId: string,
     fields: CompletionFields
 ): Promise<SubmitResult> => {
-    const response = await callTrpc<{ recordId: string; status: 'ACCEPTED' | 'DUPLICATE' }>(
+    const response = await callTrpc<Released>(
         config,
         'integrationService.submitRecord',
         { subjectProfileId, fields },

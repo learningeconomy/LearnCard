@@ -12,6 +12,8 @@ export type DemoLmsConfig = {
     ecosystemId: string;
     /** Platform signing JWK, pinned over a trusted channel (INTEGRATION-AUTH.md). */
     platformJwk: JWK;
+    /** Optional LearnCard app origin; claim offers are then shown as its /request link. */
+    learnCardAppUrl?: string;
 };
 
 const required = (name: string): string => {
@@ -44,4 +46,5 @@ export const loadConfig = (): DemoLmsConfig => ({
     installId: required('INSTALL_ID'),
     ecosystemId: required('ECOSYSTEM_ID'),
     platformJwk: parsePlatformJwk(required('PLATFORM_JWK')),
+    learnCardAppUrl: process.env.LEARNCARD_APP_URL || undefined,
 });
