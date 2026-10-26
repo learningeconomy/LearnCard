@@ -1,0 +1,74 @@
+# Copy to ignored production.tfvars. Placeholders intentionally fail validation.
+# Variable names checked against LearnCard-nitro-sync's staging.tfvars; no values copied.
+# Follow services/escrow-enclave-app/PRODUCTION.md; this is NOT a first full apply.
+aws_region  = "us-east-1"
+environment = "production"
+vpc_id      = "<PRODUCTION_VPC_ID>"
+private_subnet_ids = ["<PRIVATE_SUBNET_AZ_ONE>", "<PRIVATE_SUBNET_AZ_TWO>"]
+lca_api_security_group_id = null
+privatelink_allowed_principals = ["arn:aws:iam::<LCA_API_ACCOUNT_ID>:role/<ENDPOINT_CREATOR_ROLE>"]
+
+instance_type         = "m6i.xlarge"
+host_ami_id           = "<REVIEWED_REGIONAL_AL2023_X86_64_AMI_ID>"
+asg_min_size          = 2
+asg_max_size          = 4
+enclave_cpu_count     = 2
+enclave_memory_mib    = 2048
+instance_profile_name = null
+enable_ssm            = false
+
+eif_s3_uri            = "s3://<ARTIFACTS_BUCKET>/eif/<RUN_ID>/<RUN_ATTEMPT>/escrow-enclave.eif"
+enclave_image_version = "<REVIEWED_PRODUCTION_IMAGE_VERSION>"
+host_binary_s3_uri    = "s3://<ARTIFACTS_BUCKET>/host/<VERSION>/escrow-enclave-host"
+host_binary_sha256    = "<VERIFIED_HOST_SHA256>"
+escrow_key_id         = "<PRODUCTION_LOGICAL_KEY_ID>"
+sealed_key_object    = "sealed-keys/<PRODUCTION_LOGICAL_KEY_ID>"
+escrow_previous_key_ids     = []
+escrow_previous_key_objects = []
+# Steady state. First boot needs a separately reviewed measured provisioning image.
+escrow_allow_first_boot = false
+kms_admin_role_arn      = "arn:aws:iam::<ACCOUNT_ID>:role/escrow-kms-admin"
+enclave_measurements = [{
+  label = "<REVIEWED_IMAGE_LABEL>"
+  pcr0  = "<VERIFIED_PCR0_96_HEX>"
+  pcr1  = "<VERIFIED_PCR1_96_HEX>"
+  pcr2  = "<VERIFIED_PCR2_96_HEX>"
+}]
+
+# Names only; never put token, TLS key, or dedicated IAM credentials in state.
+host_bearer_token_parameter_name    = "/learncard/escrow-enclave/production/bearer-token"
+host_tls_certificate_parameter_name = "/learncard/escrow-enclave/production/tls-cert"
+host_tls_private_key_parameter_name = "/learncard/escrow-enclave/production/tls-key"
+audit_retention_days               = 2555
+cloudwatch_log_kms_key_arn          = null
+ledger_monitor_sns_topic_arn        = null
+roughtime_servers = [
+  { id = "cloudflare", host = "roughtime.cloudflare.com", port = 2003 },
+  { id = "int08h", host = "roughtime.int08h.com", port = 2002 },
+  { id = "txryan", host = "time.txryan.com", port = 2002 },
+]
+
+# Resource-only phase, AFTER both SCPs are independently verified. Keep delivery
+# off until both ciphertext slots exist and the matching host/EIF are ready.
+enable_enrollment_authority          = true
+authority_tenant                     = "<PRODUCTION_TENANT>"
+authority_generation                 = "<APPROVED_NEW_GENERATION>"
+authority_guardrail_policy_id         = "<VERIFIED_AUTHORITY_SCP_ID>"
+authority_monitor_guardrail_policy_id = "<VERIFIED_MONITOR_SCP_ID>"
+enable_enclave_email                 = true
+enable_credential_delivery           = false
+# Decided SES domain: child zone delegated from notify.learncard.com, like staging.
+sending_domain                       = "vault.notify.learncard.com"
+create_sending_zone                  = true
+email_dmarc_report_address           = "REPLACE_DMARC_REPORTS@example.invalid"
+# Begin monitoring; promote to quarantine/reject after alignment/report review.
+email_dmarc_policy = "none"
+
+monitor_zip_path                  = "<LOCAL_LINUX_MONITOR_ZIP_PATH>"
+monitor_tenant                    = "<PRODUCTION_TENANT>"
+monitor_public_key_parameter_name = "/learncard/escrow-enclave/production/ledger-public-key"
+monitor_alarm_email               = "REPLACE_SECURITY_ONCALL@example.invalid"
+# Review against expected traffic; integrity/coverage alarms remain zero-tolerance.
+monitor_released_hourly_threshold   = 100
+monitor_pin_failed_hourly_threshold = 100
+tags = {}

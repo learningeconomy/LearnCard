@@ -1,5 +1,6 @@
 import { getLogger } from '../logging/logger';
 const log = getLogger('auth-coordinator');
+let logoutAttempt = 0;
 /**
  * Auth Coordinator
  *
@@ -103,6 +104,13 @@ export class AuthCoordinator {
     private recoveryGeneration = 0;
     private escrowRecoveryInFlight = false;
     private escrowStatusGeneration = 0;
+    private recoveredEscrowAccount?: {
+        did: string;
+        userId: string;
+        clearPin: true;
+        /** Only recovery from an existing escrow enrollment skips the rollout gate. */
+        bypassRolloutGate: boolean;
+    };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -148,6 +156,7 @@ export class AuthCoordinator {
     }
 
     private setState(newState: UnifiedAuthState): void {
+        if (newState.status === 'idle') this.recoveredEscrowAccount = undefined;
         if (newState.status !== 'ready') this.escrowStatusGeneration++;
         const enteringReady =
             newState.status === 'ready' &&
@@ -324,21 +333,49 @@ export class AuthCoordinator {
             let publishedEnrollment = false;
             let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                const gate = await this.resolveEscrowEnrollmentGate(ready.did, credentials);
-                if (gate.allowed) {
+                // Recovery rotates away the old enrollment; repairing it is maintenance, not rollout.
+                const recovered = this.recoveredEscrowAccount;
+                const repairingRecovery =
+                    recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
+                const gate =
+                    repairingRecovery && recovered.bypassRolloutGate
+                        ? { allowed: true }
+                        : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
+                // Outside rollout, a non-escrow recovery may only repair a verified prior enrollment.
+                const requirePriorEnrollment = repairingRecovery && !gate.allowed;
+                if (gate.allowed || requirePriorEnrollment) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
                                   ...credentials,
                                   privateKey: ready.privateKey,
                                   signDidAuthVp,
-                                  options: this.recoveryContactOptions(ready),
+                                  options: repairingRecovery
+                                      ? {
+                                            ...this.recoveryContactOptions(ready),
+                                            clearPin: recovered.clearPin,
+                                            ...(requirePriorEnrollment
+                                                ? { requirePriorEnrollment: true }
+                                                : {}),
+                                        }
+                                      : this.recoveryContactOptions(ready),
                               })
                             : undefined
                     ).catch(err => {
                         enrollmentVerificationFailed = true;
                         log.warn('escrow.enrollment.failed', err);
                     });
+                    // Keep the scoped intent through transient failures for the next refresh;
+                    // drop it once repaired or once there is no prior enrollment to repair.
+                    if (
+                        repairingRecovery &&
+                        (enrollmentResult?.enrolled ||
+                            (enrollmentResult && enrollmentResult.reason === 'not-enrolled')) &&
+                        isCurrentAccount() &&
+                        this.recoveredEscrowAccount === recovered
+                    ) {
+                        this.recoveredEscrowAccount = undefined;
+                    }
                     if (
                         enrollmentResult &&
                         !enrollmentResult.enrolled &&
@@ -562,6 +599,11 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
+        const recovered = this.recoveredEscrowAccount;
+        const supersedesRecovery =
+            recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
+        // An explicit new PIN supersedes recovery's intent to clear the retired PIN.
+        if (supersedesRecovery) this.recoveredEscrowAccount = undefined;
         this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
         try {
             await this.runEscrowOperation(async () =>
@@ -573,6 +615,14 @@ export class AuthCoordinator {
                     options: this.recoveryContactOptions(ready),
                 })
             );
+        } catch (err) {
+            if (
+                supersedesRecovery &&
+                generation === this.escrowStatusGeneration &&
+                !this.recoveredEscrowAccount
+            )
+                this.recoveredEscrowAccount = recovered;
+            throw err;
         } finally {
             await this.refreshEscrowPinStatus(ready, generation);
         }
@@ -640,9 +690,9 @@ export class AuthCoordinator {
      * enclave fail closed for nitro/authority-mode enroll/replace rather
      * than silently default a jargon-adjacent placeholder.
      */
-    private recoveryContactOptions(
-        ready: Extract<UnifiedAuthState, { status: 'ready' }>
-    ): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
+    private recoveryContactOptions(ready: {
+        authUser?: AuthUser;
+    }): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
         const recoveryEmail = ready.authUser?.email;
         const recoveryLanguage = this.config.getRecoveryLanguage?.();
         if (!recoveryEmail && !recoveryLanguage) return undefined;
@@ -823,7 +873,17 @@ export class AuthCoordinator {
                     token,
                     providerType,
                     signDidAuthVp: this.config.signDidAuthVp,
+                    options: this.recoveryContactOptions({ authUser }),
                 });
+                // Only a failed or deferred direct enrollment needs the scoped repair.
+                if (!result.escrowEnrolled) {
+                    this.recoveredEscrowAccount = {
+                        did: result.did,
+                        userId: authUser.id,
+                        clearPin: true,
+                        bypassRolloutGate: result.escrowRecovery === true,
+                    };
+                }
 
                 // Rebinding can require fresh recovery enrollment. Honor older servers that
                 // report active, but do not skip enrollment if the status refresh fails.
@@ -1292,8 +1352,9 @@ export class AuthCoordinator {
                     : input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
+                options: this.recoveryContactOptions({ authUser }),
             };
-            const { privateKey, did } =
+            const { privateKey, did, escrowEnrolled, escrowRecovery } =
                 isEscrow &&
                 this.keyDerivation.hasPendingIdentityRecovery?.() &&
                 this.keyDerivation.completeIdentityRecovery
@@ -1304,6 +1365,13 @@ export class AuthCoordinator {
                 throw new Error('This recovery request was cancelled.');
             }
 
+            if (isEscrow && !escrowEnrolled)
+                this.recoveredEscrowAccount = {
+                    did,
+                    userId: authUser.id,
+                    clearPin: true,
+                    bypassRolloutGate: escrowRecovery ?? true,
+                };
             this.setState({
                 status: 'ready',
                 authUser,
@@ -1618,24 +1686,62 @@ export class AuthCoordinator {
      * call `forgetDevice()` before or after logout.
      */
     async logout(): Promise<void> {
+        const logoutAttemptId = ++logoutAttempt;
+        const startedAt = performance.now();
+        type LogoutPhase = 'pending_recovery' | 'provider_sign_out' | 'key_cleanup' | 'app_cleanup';
+        let phase: LogoutPhase = 'pending_recovery';
+        const elapsedMs = (): number => Math.round(performance.now() - startedAt);
+        const runPhase = async (
+            nextPhase: LogoutPhase,
+            action: () => Promise<void>
+        ): Promise<void> => {
+            phase = nextPhase;
+            const phaseStartedAt = performance.now();
+            log.info('Logout phase started', { logoutAttemptId, phase, elapsedMs: elapsedMs() });
+            await action();
+            log.info('Logout phase completed', {
+                logoutAttemptId,
+                phase,
+                phaseDurationMs: Math.round(performance.now() - phaseStartedAt),
+                elapsedMs: elapsedMs(),
+            });
+        };
+        log.info('Logout started', { logoutAttemptId });
         this.endingSession = true;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
         try {
-            await this.drainEscrowOperations();
-            this.keyDerivation.cancelIdentityRecovery?.();
-            await this.config.authProvider.signOut();
+            await runPhase('pending_recovery', async () => {
+                await this.drainEscrowOperations();
+                this.keyDerivation.cancelIdentityRecovery?.();
+            });
+            await runPhase('provider_sign_out', () => this.config.authProvider.signOut());
 
             if (this.keyDerivation.cleanup) {
-                await this.keyDerivation.cleanup();
+                await runPhase('key_cleanup', async () => {
+                    await this.keyDerivation.cleanup?.();
+                });
             }
 
             if (this.config.onLogout) {
-                await this.config.onLogout();
+                await runPhase('app_cleanup', async () => {
+                    await this.config.onLogout?.();
+                });
             }
 
             this.setState({ status: 'idle' });
+            // App cleanup may schedule asynchronous deletions; their terminal
+            // results are reported separately by the IndexedDB helper.
+            log.info('Logout completed', { logoutAttemptId, elapsedMs: elapsedMs() });
+        } catch (error) {
+            log.error('Logout failed', {
+                logoutAttemptId,
+                phase,
+                errorType: error instanceof Error ? 'error' : typeof error,
+                elapsedMs: elapsedMs(),
+            });
+            throw error;
         } finally {
             this.endingSession = false;
         }

@@ -46,7 +46,7 @@ export const AiSessionTopicItem: React.FC<{
                     `/ai/sessions?topicBoostUri=${encodeURIComponent(topicBoost?.uri ?? '')}`
                 );
             }}
-            className="flex items-center justify-between w-full bg-white rounded-2xl shadow-sm px-4 py-3 mb-3"
+            className="flex items-center justify-between w-full bg-white rounded-2xl shadow-xs px-4 py-3 mb-3"
         >
             <div className="flex items-center justify-start flex-1 min-w-0">
                 <div className="w-[42px] h-[42px] shrink-0">

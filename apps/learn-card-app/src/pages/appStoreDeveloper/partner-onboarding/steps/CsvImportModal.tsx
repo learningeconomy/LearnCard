@@ -87,7 +87,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                 </div>
 
                 {/* Modal Body */}
-                <div className="flex-1 overflow-auto p-4 space-y-6">
+                <div className="flex-1 overflow-auto p-4 space-y-v3-6">
                     {/* Explanation */}
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
                         <p className="font-medium mb-1">
@@ -189,7 +189,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                             </span>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {csvColumns.map(column => {
                                 const mapping = columnMappings[column] || 'skip';
                                 const sampleValue = csvSampleRows[0]?.[column] || '';
@@ -218,7 +218,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                         </div>
 
                                         <ArrowDown
-                                            className={`w-4 h-4 flex-shrink-0 ${
+                                            className={`w-4 h-4 shrink-0 ${
                                                 mapping === 'skip'
                                                     ? 'text-gray-300'
                                                     : 'text-emerald-500'
@@ -233,7 +233,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                                     [column]: e.target.value,
                                                 }))
                                             }
-                                            className={`px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                                            className={`px-3 py-2 text-sm border rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500 ${
                                                 mapping === 'skip'
                                                     ? 'border-gray-300 bg-white'
                                                     : 'border-emerald-300 bg-white'
@@ -316,7 +316,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                                     [field.id]: e.target.checked,
                                                 }))
                                             }
-                                            className="w-4 h-4 rounded border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
+                                            className="w-4 h-4 rounded-sm border-gray-300 text-violet-500 focus:ring-2 focus:ring-violet-500"
                                         />
 
                                         <div className="flex-1">
@@ -324,7 +324,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                                 <span className="font-medium text-gray-800 text-sm">
                                                     {field.label}
                                                 </span>
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-violet-100 text-violet-700">
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-violet-100 text-violet-700">
                                                     {m[
                                                         'developerPortal.onboarding.templateBuilder.csvDynamic'
                                                     ]()}
@@ -336,7 +336,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                         </div>
 
                                         {isIncluded && (
-                                            <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded">
+                                            <code className="text-xs text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-sm">
                                                 {`{{${field.id}}}`}
                                             </code>
                                         )}
@@ -348,7 +348,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                         {/* System fields - informational only */}
                         <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-xl">
                             <div className="flex items-center gap-2 mb-2">
-                                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-cyan-100 text-cyan-700">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-sm font-medium bg-cyan-100 text-cyan-700">
                                     {m['developerPortal.onboarding.templateBuilder.csvSystem']()}
                                 </span>
                                 <span className="text-xs text-cyan-700 font-medium">
@@ -357,7 +357,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                                     ]()}
                                 </span>
                             </div>
-                            <div className="space-y-1">
+                            <div className="space-y-v3-1">
                                 {ISSUANCE_FIELDS.filter(f => f.type === 'system').map(field => (
                                     <div
                                         key={field.id}
@@ -378,7 +378,7 @@ export const CsvImportModal: React.FC<CsvImportModalProps> = ({
                             {m['developerPortal.onboarding.templateBuilder.csvPreview']()}
                         </h4>
 
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {csvSampleRows.slice(0, 3).map((row, idx) => {
                                 const nameCol = Object.entries(columnMappings).find(
                                     ([_, type]) => type === 'achievement.name'

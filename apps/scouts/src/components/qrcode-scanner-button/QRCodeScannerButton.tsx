@@ -35,7 +35,7 @@ export const QRCodeScannerButton: React.FC<{ branding: BrandingEnum }> = ({ bran
                 handleQRCodeCardModal={() => closeModalById(cardId)}
                 qrOnly
             />,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };

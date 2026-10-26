@@ -1,4 +1,5 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,12 +15,33 @@ const snippets = {
     READ_USER_DATA_MJS: 'consentflow/read-user-data.mjs',
     ISSUE_THROUGH_CONTRACT_MJS: 'consentflow/issue-through-contract.mjs',
 };
-const lines = await Promise.all(
-    Object.entries(snippets).map(
-        async ([name, file]) =>
-            `export const ${name} = ${JSON.stringify(await readFile(resolve(root, 'docs/snippets', file), 'utf8'))};\n`
-    )
-);
-const output = resolve(root, 'packages/learn-card-cli/src/generated/snippets.ts');
-await mkdir(dirname(output), { recursive: true });
-await writeFile(output, '// Generated from docs/snippets. Do not edit.\n' + lines.join(''));
+/** Deterministic and atomic: independent checkout users never read a partial module. */
+export const embedSnippets = async (signal?: AbortSignal): Promise<void> => {
+    signal?.throwIfAborted();
+    const lines = await Promise.all(
+        Object.entries(snippets).map(
+            async ([name, file]) =>
+                `export const ${name} = ${JSON.stringify(await readFile(resolve(root, 'docs/snippets', file), { encoding: 'utf8', signal }))};\n`
+        )
+    );
+    const output = resolve(root, 'packages/learn-card-cli/src/generated/snippets.ts');
+    const content = '// Generated from docs/snippets. Do not edit.\n' + lines.join('');
+    try {
+        if ((await readFile(output, 'utf8')) === content) return;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    await mkdir(dirname(output), { recursive: true });
+    const temporary = `${output}.${randomUUID()}.tmp`;
+    try {
+        await writeFile(temporary, content, { flag: 'wx', signal });
+        signal?.throwIfAborted();
+        await rename(temporary, output);
+    } finally {
+        await rm(temporary, { force: true });
+    }
+};
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    await embedSnippets();
+}

@@ -1,0 +1,224 @@
+name: LearnCard Verification
+
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - 'apps/learn-card-app/**'
+            - 'packages/**'
+            - 'services/learn-card-network/**'
+            - 'examples/app-store-apps/**'
+            - 'docs/**'
+            - 'Dockerfile.monorepo'
+            - '.agents/skills/verify-learncard/**'
+            - '.github/workflows/verification.yml'
+            - '.github/actions/setup/**'
+            - 'scripts/check-verification-map.ts'
+            - 'scripts/summarize-verification*.mjs'
+            - 'package.json'
+            - 'bun.lock'
+            - '.nvmrc'
+    workflow_dispatch:
+        inputs:
+            use_docker_cache:
+                description: 'Experiment with Docker dependency caching (no measured speedup yet)'
+                type: boolean
+                default: false
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    verification:
+        if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
+        # Never run PR code on a privileged/self-hosted runner or via pull_request_target.
+        runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        env:
+            LC_VERIFY_TRUST_LOCAL_DOCKER: '1' # Trust the ephemeral GitHub-hosted VM's default daemon.
+        steps:
+            - name: Initialize private evidence paths
+              run: |
+                  umask 077
+                  mkdir -p "$RUNNER_TEMP/lc-verification/private" "$RUNNER_TEMP/lc-verification-summary"
+                  {
+                    echo "STACK_DIR=$RUNNER_TEMP/lc-verification/stack"
+                    echo "PRIVATE_LOG_DIR=$RUNNER_TEMP/lc-verification/private"
+                    echo "SUMMARY_DIR=$RUNNER_TEMP/lc-verification-summary"
+                  } >> "$GITHUB_ENV"
+
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
+
+            - name: Setup local Docker cache builder
+              if: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
+              uses: docker/setup-buildx-action@v3
+              with:
+                  name: lc-verification
+                  endpoint: unix:///var/run/docker.sock
+                  driver: docker-container
+                  use: false
+                  # Replaces the action's security.insecure default; Buildx may still add network.host.
+                  # Builds request neither entitlement.
+                  buildkitd-flags: --log-format=text
+
+            # Warm only the existing dependency target. The catalog's source build uses
+            # this same builder, but still creates its own token-labelled checkout image.
+            - name: Restore and refresh backend dependency layers
+              if: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
+              uses: docker/build-push-action@v6
+              env:
+                  DOCKER_BUILD_SUMMARY: 'false'
+                  DOCKER_BUILD_RECORD_UPLOAD: 'false'
+              with:
+                  builder: lc-verification
+                  context: .
+                  file: Dockerfile.monorepo
+                  target: backend-dependencies
+                  outputs: type=cacheonly
+                  provenance: false
+                  cache-from: |
+                      type=gha,scope=lc-verification-backend-dependencies
+                      type=gha,scope=e2e-backend-dependencies
+                  cache-to: type=gha,scope=lc-verification-backend-dependencies,mode=min,ignore-error=true
+
+            - name: Install Chromium and Linux libraries
+              run: bunx playwright install --with-deps chromium
+
+            - name: Build and test message schemas
+              working-directory: packages/learn-card-types
+              run: |
+                  bun run build
+                  bun run test -- src/inAppMessagePresentations.test.ts src/inAppMessagePath.test.ts src/inAppMessages.test.ts
+
+            - name: Test shared messages and modal ownership
+              working-directory: packages/learn-card-base
+              run: bun run test -- src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
+
+            - name: Test message authoring and analytics
+              working-directory: apps/learn-card-app
+              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx src/pages/launchPad/buildEmbedUrlWithPath.test.ts src/pages/launchPad/AppListingPage.navigation.test.tsx src/components/app-url-listener/AppUrlListener.test.tsx
+
+            - name: Typecheck hosted iframe example test
+              run: bunx tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom packages/learn-card-base/src/in-app-messages/__tests__/iframeExample.test.ts
+
+            - name: Lint and format message sources
+              shell: bash
+              run: |
+                  mapfile -t message_files < <(git ls-files -- \
+                    'packages/learn-card-base/src/in-app-messages/*' \
+                    'packages/learn-card-types/src/inAppMessage*.ts' \
+                    'apps/learn-card-app/src/components/debug/*nAppMessage*.ts*')
+                  bun scripts/lint-workspace.ts --files "${message_files[@]}"
+                  bunx prettier --check "${message_files[@]}"
+                  node scripts/check-safe-area.mjs
+
+            - name: Check catalog documentation contract
+              run: bun scripts/check-verification-map.ts
+
+            - name: Prepare clean checkout
+              run: |
+                  mkdir -p "$PRIVATE_LOG_DIR"
+                  bun run --cwd apps/learn-card-app lc verify prepare --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/prepare.log" 2>&1
+
+            - name: Check local prerequisites
+              run: bun run --cwd apps/learn-card-app lc verify doctor --preflight > "$PRIVATE_LOG_DIR/preflight.log" 2>&1
+
+            - name: Build service declaration prerequisites
+              run: bunx nx run-many -t build --projects=network-brain-service,learn-cloud-service,lca-api-service --parallel=1 --skip-nx-cache > "$PRIVATE_LOG_DIR/declarations.log" 2>&1
+
+            - name: Typecheck verification source
+              run: bunx tsc -p apps/learn-card-app/scripts/verification/tsconfig.json > "$PRIVATE_LOG_DIR/typecheck.log" 2>&1
+
+            - name: Check lifecycle, resolver and persistence boundaries
+              run: |
+                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
+                  bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
+
+            - name: Check sanitized timing summaries
+              run: node --test scripts/summarize-verification.test.mjs
+
+            - name: Run message navigation and serial catalog on an owned stack
+              id: catalog
+              env:
+                  USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
+              run: |
+                  verify_args=(up --json --dir "$STACK_DIR")
+                  if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
+                    verify_args+=(--docker-builder lc-verification)
+                  fi
+                  bun run --cwd apps/learn-card-app lc verify "${verify_args[@]}" \
+                    > "$PRIVATE_LOG_DIR/startup.jsonl" 2> "$PRIVATE_LOG_DIR/startup.log"
+                  bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation.log" 2>&1
+                  bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
+
+            # Public proof handoff: selected media and sanitized rendering data only.
+            - name: Stage proof media
+              if: ${{ always() }}
+              continue-on-error: true
+              run: |
+                  if [[ -d "$STACK_DIR/runs" ]]; then
+                    RUN_DIR=$(node --input-type=module -e '
+                      import { readdirSync } from "node:fs";
+                      import { join } from "node:path";
+                      const root = join(process.env.STACK_DIR, "runs");
+                      const newest = readdirSync(root, { withFileTypes: true })
+                        .filter(entry => entry.isDirectory()).map(entry => entry.name).sort().at(-1);
+                      if (newest) console.log(join(root, newest));
+                    ')
+                    if [[ -n "$RUN_DIR" ]]; then
+                      bun scripts/proof.ts stage --from-run "$RUN_DIR" --out "$RUNNER_TEMP/lc-proof-media" --images-only
+                    fi
+                  fi
+
+            - name: Retain proof media
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-proof-media-${{ github.run_id }}
+                  path: ${{ runner.temp }}/lc-proof-media
+                  retention-days: 14
+                  if-no-files-found: ignore
+
+            - name: Always tear down owned resources
+              id: teardown
+              if: ${{ always() }}
+              run: |
+                  mkdir -p "$PRIVATE_LOG_DIR"
+                  if [[ -f "$STACK_DIR/state.json" ]]; then
+                    bun run --cwd apps/learn-card-app lc verify down --force --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/teardown.log" 2>&1
+                  fi
+
+            - name: Write sanitized status summary
+              if: ${{ always() }}
+              env:
+                  VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
+                  TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
+              run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
+
+            - name: Retain sanitized summary only
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-verification-summary-${{ github.run_id }}
+                  path: |
+                      ${{ env.SUMMARY_DIR }}/summary.json
+                      ${{ env.SUMMARY_DIR }}/summary.md
+                  if-no-files-found: error
+                  retention-days: 14

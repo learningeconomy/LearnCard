@@ -1,6 +1,6 @@
 {
     "name": "scoutpass-app",
-    "version": "1.90.41",
+    "version": "1.90.45",
     "private": true,
     "engines": {
         "node": ">=24.12 <25"
@@ -145,9 +145,11 @@
     },
     "browserslist": {
         "production": [
-            ">0.2%",
-            "not dead",
-            "not op_mini all"
+            "Chrome >= 111",
+            "Safari >= 16.4",
+            "iOS >= 16.4",
+            "Firefox >= 128",
+            "Edge >= 111"
         ],
         "development": [
             "last 1 chrome version",
@@ -161,21 +163,21 @@
         "@inlang/paraglide-js": "2.20.2",
         "@ionic/cli": "^7.2.1",
         "@playwright/test": "^1.51.0",
-        "@tailwindcss/line-clamp": "^0.4.4",
         "@types/async": "^3.2.24",
         "@types/uuid": "^9.0.8",
         "@vitejs/plugin-basic-ssl": "^1.2.0",
         "@vitejs/plugin-react-swc": "^3.8.0",
-        "autoprefixer": "^10.4.20",
         "eslint-plugin-i18next": "^6.1.4",
         "jeep-sqlite": "2.5.8",
         "node-stdlib-browser": "1.2.1",
         "postcss": "^8.5.10",
         "sass": "^1.84.0",
-        "tailwindcss": "^3.4.17",
+        "tailwindcss": "^4.3.3",
         "vite": "^6.4.3",
         "vite-plugin-svgr": "^3.3.0",
-        "vite-tsconfig-paths": "4.2.3"
+        "vite-tsconfig-paths": "4.2.3",
+        "@tailwindcss/vite": "^4.3.3",
+        "autoprefixer": "^10.4.20"
     },
     "description": "An Ionic project"
 }

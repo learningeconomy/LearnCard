@@ -24,7 +24,7 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
             newModal(
                 <CreateFrameworkModal isEdit frameworkInfo={frameworkInfo} />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none',
+                    sectionClassName: 'bg-transparent! shadow-none!',
                 },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
             );
@@ -43,7 +43,7 @@ const FrameworkOptionsModal: React.FC<FrameworkOptionsModalProps> = ({ framework
                     closeAllModals();
                 }}
             />,
-            { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+            { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };

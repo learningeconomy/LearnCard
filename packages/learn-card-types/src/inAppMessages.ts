@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { isSafeInAppMessagePath } from './inAppMessagePath';
+export { isSafeInAppMessagePath } from './inAppMessagePath';
 
 /**
  * In-App Messages — schema for the LaunchDarkly JSON flag that drives
@@ -52,10 +54,47 @@ export const versionPredicateValidator = z
     })
     .strict();
 
+const credentialMatchShape = {
+    issuers: z.array(z.string()).nonempty().optional(),
+    nestedIssuers: z.array(z.string()).nonempty().optional(),
+    vcTypes: z.array(z.string()).nonempty().optional(),
+    categories: z.array(z.string()).nonempty().optional(),
+    achievementTypes: z.array(z.string()).nonempty().optional(),
+    issuedWithinDays: z.number().positive().optional(),
+};
+
+/** All configured fields must match one credential; values within a field are OR'd. */
+export const credentialMatchValidator = z
+    .object(credentialMatchShape)
+    .strict()
+    .refine(value => Object.values(value).some(field => field !== undefined), {
+        message: 'At least one credential match field is required',
+    });
+export type CredentialMatch = z.infer<typeof credentialMatchValidator>;
+
+export const credentialPredicateValidator = z
+    .object({
+        credential: z
+            .object({
+                ...credentialMatchShape,
+                minCount: z.number().int().positive().default(1),
+            })
+            .strict()
+            .refine(
+                value =>
+                    Object.entries(value).some(
+                        ([key, field]) => key !== 'minCount' && field !== undefined
+                    ),
+                { message: 'At least one credential match field is required' }
+            ),
+    })
+    .strict();
+
 export type InAppMessagePredicate =
     | z.infer<typeof platformPredicateValidator>
     | z.infer<typeof rolePredicateValidator>
     | z.infer<typeof versionPredicateValidator>
+    | z.infer<typeof credentialPredicateValidator>
     | { all: InAppMessagePredicate[] }
     | { any: InAppMessagePredicate[] }
     | { not: InAppMessagePredicate };
@@ -65,6 +104,7 @@ export const inAppMessagePredicateValidator: z.ZodType<InAppMessagePredicate> = 
         platformPredicateValidator,
         rolePredicateValidator,
         versionPredicateValidator,
+        credentialPredicateValidator,
         z.object({ all: z.array(inAppMessagePredicateValidator) }).strict(),
         z.object({ any: z.array(inAppMessagePredicateValidator) }).strict(),
         z.object({ not: inAppMessagePredicateValidator }).strict(),
@@ -115,12 +155,32 @@ export const capgoUpdateActionValidator = z
 /** Dismiss/close the message without any side effect. */
 export const dismissActionValidator = z.object({ type: z.literal('dismiss') }).passthrough();
 
+export const openAppActionValidator = z
+    .object({
+        type: z.literal('openApp'),
+        listingId: z.string().trim().min(1),
+        path: z
+            .string()
+            .refine(isSafeInAppMessagePath, 'A safe app-relative path is required')
+            .optional(),
+    })
+    .passthrough();
+
+export const openMessageActionValidator = z
+    .object({
+        type: z.literal('openMessage'),
+        messageId: z.string().trim().min(1),
+    })
+    .passthrough();
+
 export const inAppMessageActionTargetValidator = z.union([
     internalLinkActionValidator,
     externalLinkActionValidator,
     appStoreActionValidator,
     capgoUpdateActionValidator,
     dismissActionValidator,
+    openAppActionValidator,
+    openMessageActionValidator,
 ]);
 export type InAppMessageActionTarget = z.infer<typeof inAppMessageActionTargetValidator>;
 
@@ -134,6 +194,21 @@ export const inAppMessageActionValidator = z
     })
     .passthrough();
 export type InAppMessageAction = z.infer<typeof inAppMessageActionValidator>;
+
+// Keep this list aligned with action-runner outcomes. openMessage is added by the stacked
+// navigation change and always closes after recording its request; openApp is intentionally
+// excluded because it can no-op in hosts that do not provide app navigation.
+const GUARANTEED_CLOSING_ACTION_TYPES = new Set([
+    'dismiss',
+    'externalLink',
+    'internalLink',
+    'openMessage',
+]);
+
+const hasGuaranteedClosingAction = (actions: InAppMessageAction[]): boolean =>
+    actions.some(
+        action => action.closeOnComplete && GUARANTEED_CLOSING_ACTION_TYPES.has(action.action.type)
+    );
 
 export const inAppMessageMediaValidator = z
     .object({
@@ -165,9 +240,100 @@ export const inAppMessageFrequencyValidator = z
 export type InAppMessageFrequency = z.infer<typeof inAppMessageFrequencyValidator>;
 
 export const inAppMessagePresentationValidator = z
-    .enum(['modal', 'banner', 'toast'])
+    .enum(['modal', 'banner', 'toast', 'story', 'iframe'])
     .default('modal');
 export type InAppMessagePresentation = z.infer<typeof inAppMessagePresentationValidator>;
+
+export const inAppMessageTriggerValidator = z
+    .object({
+        event: z.enum(['credential.claimed', 'app.opened']),
+        where: credentialMatchValidator.optional(),
+        windowMinutes: z.number().positive().default(10),
+    })
+    .strict();
+export type InAppMessageTrigger = z.infer<typeof inAppMessageTriggerValidator>;
+
+export const inAppMessageSettingsValidator = z
+    .object({
+        maxBlockingPerSession: z.number().int().nonnegative().default(1),
+        blockingCooldownHours: z.number().nonnegative().default(48),
+    })
+    .passthrough()
+    .default({ maxBlockingPerSession: 1, blockingCooldownHours: 48 });
+export type InAppMessageSettings = z.infer<typeof inAppMessageSettingsValidator>;
+
+export const inAppMessageHttpsUrlValidator = z
+    .string()
+    .url()
+    .refine(value => {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'https:' && !url.username && !url.password;
+        } catch {
+            return false;
+        }
+    }, 'An HTTPS URL without embedded credentials is required');
+
+export const inAppMessageStepValidator = z
+    .object({
+        title: z.string(),
+        body: z.string().optional(),
+        media: inAppMessageMediaValidator.optional(),
+        emoji: z.string().optional(),
+        actions: z.array(inAppMessageActionValidator).optional(),
+    })
+    .passthrough();
+export type InAppMessageStep = z.infer<typeof inAppMessageStepValidator>;
+
+/** Exact app-relative destination, including any explicitly approved query and fragment. */
+export const inAppMessageInternalPathValidator = z
+    .string()
+    .refine(
+        path =>
+            path.startsWith('/') &&
+            !path.startsWith('//') &&
+            [...path].every(
+                char =>
+                    char.charCodeAt(0) > 32 &&
+                    char.charCodeAt(0) !== 127 &&
+                    char !== '\\' &&
+                    !/\s/.test(char)
+            ),
+        'A single-slash app-relative path without whitespace or backslashes is required'
+    );
+
+export const inAppMessageIframeValidator = z
+    .object({
+        url: inAppMessageHttpsUrlValidator,
+        title: z.string().optional(),
+        loadTimeoutMs: z.number().int().positive().max(30000).default(10000),
+        allowedInternalPaths: z.array(inAppMessageInternalPathValidator).default([]),
+    })
+    .passthrough();
+
+export const inAppMessageLocalesValidator = z.record(
+    z.string(),
+    z
+        .object({
+            title: z.string().optional(),
+            body: z.string().optional(),
+            actionLabels: z.array(z.string().nullable()).optional(),
+            steps: z
+                .array(
+                    z
+                        .object({
+                            title: z.string().optional(),
+                            body: z.string().optional(),
+                            actionLabels: z.array(z.string().nullable()).optional(),
+                        })
+                        .passthrough()
+                        .nullable()
+                )
+                .optional(),
+            iframeUrl: inAppMessageHttpsUrlValidator.optional(),
+        })
+        .passthrough()
+);
 
 export const inAppMessageValidator = z
     .object({
@@ -175,7 +341,7 @@ export const inAppMessageValidator = z
         id: z.string(),
         /** Higher priority wins when multiple messages match. Default 0. */
         priority: z.number().default(0),
-        /** When false, the message is required/blocking (no dismiss affordance). */
+        /** When false, the message is required; iframe errors still allow a host-owned close. */
         dismissible: z.boolean().default(true),
         frequency: inAppMessageFrequencyValidator,
         presentation: inAppMessagePresentationValidator,
@@ -185,24 +351,183 @@ export const inAppMessageValidator = z
         title: z.string(),
         body: z.string().optional(),
         actions: z.array(inAppMessageActionValidator).default([]),
+        steps: z.array(inAppMessageStepValidator).optional(),
+        iframe: inAppMessageIframeValidator.optional(),
+        locales: inAppMessageLocalesValidator.optional(),
         /** Targeting predicate tree. Omitted → matches everyone. */
         targeting: inAppMessagePredicateValidator.optional(),
         /** Allow disabling a message without removing it from the flag. */
         enabled: z.boolean().default(true),
+        trigger: inAppMessageTriggerValidator.optional(),
+        bypassFatigue: z.boolean().default(false),
     })
-    .passthrough();
+    .passthrough()
+    .superRefine((message, ctx) => {
+        if (message.presentation === 'story') {
+            message.steps?.slice(0, -1).forEach((step, index) => {
+                if (step.actions !== undefined) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ['steps', index, 'actions'],
+                        message: 'Only the final story screen may define actions',
+                    });
+                }
+            });
+
+            if (message.iframe !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['iframe'],
+                    message: 'Stories cannot define iframe configuration',
+                });
+            }
+        }
+        if (message.presentation === 'story' && !message.steps?.length) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['steps'],
+                message: 'Stories require at least one screen',
+            });
+        }
+
+        if (message.presentation === 'iframe') {
+            if (!message.iframe) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['iframe'],
+                    message: 'Iframe configuration is required',
+                });
+            }
+            if (message.steps !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['steps'],
+                    message: 'Iframes cannot define story screens',
+                });
+            }
+        } else if (message.presentation !== 'story') {
+            if (message.steps !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['steps'],
+                    message: `${message.presentation} messages cannot define story screens`,
+                });
+            }
+            if (message.iframe !== undefined) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['iframe'],
+                    message: `${message.presentation} messages cannot define iframe configuration`,
+                });
+            }
+        }
+
+        if (!message.dismissible && message.presentation === 'story' && message.steps?.length) {
+            const finalStepIndex = message.steps.length - 1;
+            const finalStepActions = message.steps[finalStepIndex]?.actions;
+            const effectiveActions = finalStepActions ?? message.actions;
+
+            if (!hasGuaranteedClosingAction(effectiveActions)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path:
+                        finalStepActions === undefined
+                            ? ['actions']
+                            : ['steps', finalStepIndex, 'actions'],
+                    message:
+                        'Required stories need at least one final-screen action that closes the message',
+                });
+            }
+        }
+    });
 export type InAppMessage = z.infer<typeof inAppMessageValidator>;
 
 export const inAppMessagesFlagValidator = z
     .object({
         version: z.number().default(1),
         messages: z.array(inAppMessageValidator).default([]),
+        settings: inAppMessageSettingsValidator,
     })
     .passthrough();
 export type InAppMessagesFlag = z.infer<typeof inAppMessagesFlagValidator>;
 
 /** Empty, safe default used when the flag is absent or malformed. */
-export const EMPTY_IN_APP_MESSAGES_FLAG: InAppMessagesFlag = { version: 1, messages: [] };
+export const EMPTY_IN_APP_MESSAGES_FLAG: InAppMessagesFlag = {
+    version: 1,
+    messages: [],
+    settings: { maxBlockingPerSession: 1, blockingCooldownHours: 48 },
+};
+
+export interface InvalidInAppMessage {
+    id?: string;
+    error: string;
+}
+
+export interface ParsedInAppMessagesFlag {
+    flag: InAppMessagesFlag;
+    invalid: InvalidInAppMessage[];
+}
+
+const inAppMessagesFlagEnvelopeValidator = z
+    .object({
+        version: z.number().default(1),
+        messages: z.array(z.unknown()).default([]),
+        settings: z.unknown().optional(),
+    })
+    .passthrough();
+
+export const parseInAppMessagesFlagWithErrors = (raw: unknown): ParsedInAppMessagesFlag => {
+    const envelope = inAppMessagesFlagEnvelopeValidator.safeParse(raw);
+
+    if (!envelope.success) {
+        return {
+            flag: EMPTY_IN_APP_MESSAGES_FLAG,
+            invalid: [{ error: envelope.error.issues[0]?.message ?? 'Invalid flag' }],
+        };
+    }
+
+    const messages: InAppMessage[] = [];
+    const invalid: InvalidInAppMessage[] = [];
+    const settings = inAppMessageSettingsValidator.safeParse(envelope.data.settings);
+    if (!settings.success) {
+        invalid.push({
+            error: `settings: ${settings.error.issues[0]?.message ?? 'Invalid settings'}`,
+        });
+    }
+
+    envelope.data.messages.forEach(rawMessage => {
+        const result = inAppMessageValidator.safeParse(rawMessage);
+
+        if (result.success) {
+            messages.push(result.data);
+            return;
+        }
+
+        const id =
+            typeof rawMessage === 'object' &&
+            rawMessage !== null &&
+            'id' in rawMessage &&
+            typeof rawMessage.id === 'string'
+                ? rawMessage.id
+                : undefined;
+        const issue = result.error.issues[0];
+        const path = issue?.path.join('.');
+
+        invalid.push({
+            ...(id ? { id } : {}),
+            error: `${path ? `${path}: ` : ''}${issue?.message ?? 'Invalid message'}`,
+        });
+    });
+
+    return {
+        flag: {
+            ...envelope.data,
+            settings: settings.success ? settings.data : EMPTY_IN_APP_MESSAGES_FLAG.settings,
+            messages,
+        },
+        invalid,
+    };
+};
 
 /**
  * Parse an unknown flag value into a validated `InAppMessagesFlag`.
@@ -210,7 +535,5 @@ export const EMPTY_IN_APP_MESSAGES_FLAG: InAppMessagesFlag = { version: 1, messa
  * the host app.
  */
 export const parseInAppMessagesFlag = (raw: unknown): InAppMessagesFlag => {
-    const result = inAppMessagesFlagValidator.safeParse(raw);
-
-    return result.success ? result.data : EMPTY_IN_APP_MESSAGES_FLAG;
+    return parseInAppMessagesFlagWithErrors(raw).flag;
 };

@@ -39,10 +39,10 @@ export const TroopsIDCMS: React.FC<TroopsIDCMSProps> = ({
             <TroopsCMSLayout
                 state={state}
                 viewMode={rootViewMode}
-                layoutClassName="!max-w-[375px] vc-preview-modal-safe-area"
+                layoutClassName="max-w-[375px]! vc-preview-modal-safe-area"
             >
                 <div className="rounded-t-[20px] shadow-box-bottom overflow-hidden flex flex-col mb-[-2.5px]">
-                    <div className="w-full flex items-center justify-center flex-col bg-white bg-opacity-70 backdrop-blur-[10px] rounded-t-[20px]">
+                    <div className="w-full flex items-center justify-center flex-col bg-white/70  backdrop-blur-[10px] rounded-t-[20px]">
                         <div className="w-full py-4 max-w-[335px]">
                             <TroopIDCard
                                 idState={state}
@@ -55,7 +55,7 @@ export const TroopsIDCMS: React.FC<TroopsIDCMSProps> = ({
                     </div>
                 </div>
 
-                <div className="w-full flex items-center justify-center relative mb-[-2.5px] bg-white bg-opacity-70 backdrop-blur-[10px]">
+                <div className="w-full flex items-center justify-center relative mb-[-2.5px] bg-white/70  backdrop-blur-[10px]">
                     <IDSleeve className="h-auto w-full" />
                 </div>
 

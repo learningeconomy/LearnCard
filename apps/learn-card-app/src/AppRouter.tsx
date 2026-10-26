@@ -263,7 +263,7 @@ const AppRouter: React.FC = () => {
             if (isChild) {
                 newModal(
                     <ShareInsightsWithUserWrapper targetProfileId={teacherProfileId as string} />,
-                    { className: '!bg-transparent' },
+                    { className: 'bg-transparent!' },
                     { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
                 );
             } else {
@@ -279,7 +279,7 @@ const AppRouter: React.FC = () => {
                     profileId={learnerProfileId as string}
                     redirectToLink={`/passport?shareInsights=${isShareInsightsRequest}&learnerProfileId=${learnerProfileId}`}
                 />,
-                { className: '!bg-transparent' },
+                { className: 'bg-transparent!' },
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
@@ -291,7 +291,7 @@ const AppRouter: React.FC = () => {
             history.replace({ search: queryString.stringify(allOtherSearchParams) });
             newModal(
                 <NewMyData />,
-                { sectionClassName: '!max-w-[350px]' },
+                { sectionClassName: 'max-w-[350px]!' },
                 { desktop: ModalTypes.Cancel }
             );
         }
@@ -544,7 +544,7 @@ const AppRouter: React.FC = () => {
                                     event.preventDefault();
                                     document.getElementById('main')?.focus();
                                 }}
-                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-[10000] focus-visible:rounded-[20px] focus-visible:bg-white focus-visible:px-4 focus-visible:py-3 focus-visible:text-sm focus-visible:font-medium focus-visible:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 Skip to main content
                             </a>
@@ -560,9 +560,9 @@ const AppRouter: React.FC = () => {
                                     {isLoggedIn && !hideSideMenu && (
                                         <SideMenu branding={BrandingEnum.learncard} />
                                     )}
-                                    <main id="main" tabIndex={-1} className="w-full">
+                                    <div id="main" tabIndex={-1} className="w-full">
                                         <MobileNavBar />
-                                    </main>
+                                    </div>
                                 </GenericErrorBoundary>
                             </IonSplitPane>
                         </>

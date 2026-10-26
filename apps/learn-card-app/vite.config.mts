@@ -1,10 +1,11 @@
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { execSync } from 'child_process';
 import { createRequire } from 'module';
 import { readdirSync, readFileSync, existsSync } from 'fs';
 
 import { NodeGlobalsPolyfillPlugin as GlobalPolyfill } from '@esbuild-plugins/node-globals-polyfill';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import svgr from 'vite-plugin-svgr';
 import stdlibbrowser from 'node-stdlib-browser';
@@ -22,6 +23,17 @@ const globalPolyfillPlugin = GlobalPolyfill({
     process: true,
     buffer: true,
 }) as unknown as EsbuildPlugin;
+
+// Re-optimization can replace chunks without changing a dependency entry's URL version.
+// Revalidate dev responses instead of keeping Vite's year-long immutable browser cache.
+// A named plugin also changes the optimizer fingerprint, retiring already-cached URLs.
+const devCacheRevalidation: Plugin = {
+    name: 'dev-cache-revalidation',
+    apply: (_config, { command, isPreview }) => command === 'serve' && !isPreview,
+    config: () => ({
+        server: { headers: { 'Cache-Control': 'no-cache' } },
+    }),
+};
 
 /**
  * Fail the build/dev start if any file imports paraglide/messages.js twice
@@ -173,6 +185,8 @@ export default defineConfig(async ({ mode, command }) => {
 
     return {
         plugins: [
+            devCacheRevalidation,
+            tailwindcss(),
             i18nImportGuard(),
             react(),
             svgr(),
@@ -195,6 +209,7 @@ export default defineConfig(async ({ mode, command }) => {
         ],
         build: {
             target: 'esnext',
+            cssTarget: ['chrome111', 'safari16.4', 'firefox128'],
             outDir: path.join(__dirname, 'build'),
             rollupOptions: {
                 onwarn: paraglideMissingKeyOnWarn,
@@ -219,6 +234,9 @@ export default defineConfig(async ({ mode, command }) => {
             // the initial dependency scan. Pre-bundle them before serving the first page:
             // discovering them during sign-in replaces chunks and reloads active navigation.
             include: [
+                // Lazy XLSX workers must not discover dependencies and reload an active import.
+                'xlsx',
+                'fflate',
                 'buffer',
                 'process',
                 'react-router',
@@ -230,6 +248,10 @@ export default defineConfig(async ({ mode, command }) => {
                 'zod/v4',
                 '@learncard/sss-key-manager > shamir-secret-sharing',
                 '@learncard/sss-key-manager > hash-wasm',
+                // Escrow Nitro attestation (recovery) imports these at runtime.
+                '@learncard/sss-key-manager > reflect-metadata',
+                '@learncard/sss-key-manager > cborg',
+                '@learncard/sss-key-manager > @peculiar/x509',
                 '@learncard/sss-key-manager > @scure/bip39/wordlists/english',
                 '@learncard/react > react-barcode',
                 '@learncard/react > react-flip-toolkit',
@@ -238,6 +260,7 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/vpqr-plugin > @digitalbazaar/vpqr',
                 '@learncard/ethereum-plugin > ethers',
                 '@learncard/network-brain-client > @trpc/client',
+                '@learncard/lca-api-plugin > @learncard/lca-api-client > @trpc/client',
                 '@learncard/core > core-js/actual/promise',
                 '@learncard/core > abort-controller/dist/abort-controller.js',
                 '@learncard/core > isomorphic-webcrypto',

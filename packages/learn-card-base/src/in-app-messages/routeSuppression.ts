@@ -1,5 +1,6 @@
 export const DEFAULT_SUPPRESSED_ROUTE_PREFIXES: string[] = [
     '/login',
+    '/m',
     '/__/auth',
     '/acctmgmt/__/auth',
     '/waitingsofa',

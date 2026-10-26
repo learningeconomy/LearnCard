@@ -35,6 +35,7 @@ import './theme/floating-tab-bar.css';
 
 // importing styles
 import '@learncard/react/main.css';
+import './tailwind.css';
 import './index.scss';
 
 // base styles of swiper js

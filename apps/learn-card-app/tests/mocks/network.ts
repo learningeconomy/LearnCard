@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import path from 'path';
-import { createTrpcMock, type TrpcMock } from './trpc';
+import { createTrpcMock, type BrainOutputs, type TrpcMock } from './trpc';
 
 // A .zip HAR is a single self-contained artifact (manifest + response bodies).
 // A plain .har path would instead scatter each body into a hash-named file.
@@ -35,7 +35,19 @@ export const installNetwork = async (page: Page): Promise<TrpcMock> => {
     });
 
     const trpc = createTrpcMock(page);
-    if (!RECORDING) await trpc.install();
+    if (!RECORDING) {
+        // Both clients randomize challenge refill sizes. HAR matching includes
+        // the request body, so recorded sizes cannot cover every auth bootstrap.
+        let challenge = 0;
+        trpc.on('utilities.getChallenges', input => {
+            const amount = (input as { amount?: number } | undefined)?.amount ?? 100;
+            return Array.from(
+                { length: amount },
+                () => `mock-challenge-${++challenge}`
+            ) satisfies BrainOutputs['utilities']['getChallenges'];
+        });
+        await trpc.install();
+    }
 
     // Opt-in diagnostics: `PWNETLOG=1` prints aborted backend calls + page errors
     // so a failing mocked flow reveals which request/exception is uncovered.

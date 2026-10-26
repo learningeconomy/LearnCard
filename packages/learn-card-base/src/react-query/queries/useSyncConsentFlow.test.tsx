@@ -1,0 +1,540 @@
+// @vitest-environment happy-dom
+
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
+
+const LIST_KEY = ['useGetCredentialList', 'did:web:test:scout', 'Merit Badge'];
+const COUNT_KEY = ['useGetCredentialCount', 'did:web:test:scout', 'Merit Badge'];
+
+const host = vi.hoisted(() => ({
+    pending: [] as string[],
+    // Wallet index: record id -> credential URI.
+    index: new Map<string, string>(),
+    get stored() {
+        return new Set(this.index.values());
+    },
+    // Issuer-side status on the CREDENTIAL_SENT edge; anything not listed is active.
+    lifecycle: new Map<string, 'revoked' | 'suspended'>(),
+    lifecycleLookupFails: false,
+    client: undefined as unknown as import('@tanstack/react-query').QueryClient,
+    unreadable: new Set<string>(),
+    failAccept: new Set<string>(),
+    failAcceptOnce: new Set<string>(),
+    failStoreOnce: new Set<string>(),
+    accept: vi.fn(),
+    addVCtoWallet: vi.fn(),
+    recordAcceptedCredentialClaim: vi.fn().mockResolvedValue(undefined),
+}));
+
+const wallet = {
+    id: { did: () => 'did:web:test:scout' },
+    invoke: {
+        getConsentFlowCredentials: vi.fn(async () => ({
+            hasMore: false,
+            records: host.pending.map(credentialUri => ({
+                credentialUri,
+                contractUri: 'lc:network:test:contract:jota-joti',
+                termsUri: 'lc:network:test:terms:scout',
+            })),
+        })),
+        getMyCredentialLifecycleStatuses: vi.fn(async ({ uris }: { uris: string[] }) => {
+            if (host.lifecycleLookupFails) throw new Error('lifecycle lookup unavailable');
+            return Object.fromEntries(uris.map(uri => [uri, host.lifecycle.get(uri) ?? 'active']));
+        }),
+        getRevokedCredentials: vi.fn(async () =>
+            [...host.lifecycle].filter(([, status]) => status === 'revoked').map(([uri]) => uri)
+        ),
+    },
+    cache: { flushIndex: vi.fn(async () => true) },
+    read: {
+        get: vi.fn(async (uri: string) => (host.unreadable.has(uri) ? undefined : { id: uri })),
+    },
+    index: {
+        LearnCloud: {
+            get: vi.fn(async ({ uri }: { uri: string }) =>
+                [...host.index]
+                    .filter(([, indexedUri]) => indexedUri === uri)
+                    .map(([id]) => ({ id, uri }))
+            ),
+            remove: vi.fn(async (id: string) => {
+                if (!host.index.delete(id)) throw new Error('Could not delete record');
+                return true;
+            }),
+        },
+    },
+};
+
+vi.mock('learn-card-base', () => ({
+    categoryMetadata: {},
+    credentialWithEditsHelper: vi.fn(),
+    CredentialCategoryEnum: {},
+    contractCategoryNameToCategoryMetadata: vi.fn(),
+    newCredsStore: { set: { addNewCreds: vi.fn() } },
+    switchedProfileStore: { use: { switchedDid: () => 'did:web:test:scout' } },
+    syncProgressStore: { set: {}, get: {} },
+    useToast: () => ({ presentToast: vi.fn() }),
+    useWallet: () => ({
+        initWallet: async () => wallet,
+        addVCtoWallet: host.addVCtoWallet,
+        recordAcceptedCredentialClaim: host.recordAcceptedCredentialClaim,
+    }),
+    walletStore: { set: { setIsSyncing: vi.fn() } },
+    WalletSyncState: { Syncing: 'syncing', Completed: 'completed', NotSyncing: 'not-syncing' },
+}));
+vi.mock('learn-card-base/helpers/credentialHelpers', () => ({ getIssuanceDate: vi.fn() }));
+vi.mock('learn-card-base/hooks/useWallet', () => ({
+    getCategoryForCredential: vi.fn(async () => 'Merit Badge'),
+}));
+vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
+    getOrFetchConsentedContracts: vi.fn(async () => []),
+}));
+vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
+    getOrFetchCredentialRecordForBoost: vi.fn(),
+}));
+vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: vi.fn() }));
+vi.mock('learn-card-base/hooks/useSharedUrisInTerms', () => ({
+    getOrCreateSharedUriForWallet: vi.fn(),
+}));
+vi.mock('../../hooks/consentAudience', () => ({ loadContractAudience: vi.fn() }));
+vi.mock('../mutations/ai-passport', () => ({ queueAiInsightCredentialRefresh: vi.fn() }));
+vi.mock('../mutations/mutations', () => ({
+    useAcceptCredentialMutation: () => ({ mutateAsync: host.accept }),
+}));
+
+import { useSyncConsentFlow, useSyncRevokedCredentials } from './vcQueries';
+
+const trpcBadRequest = (message: string) =>
+    Object.assign(new Error(message), { data: { code: 'BAD_REQUEST', httpStatus: 400 } });
+
+const listedUris = () =>
+    (
+        host.client.getQueryData<{ pages: { records: { uri: string }[] }[] }>(LIST_KEY)?.pages ?? []
+    ).flatMap(page => page.records.map(record => record.uri));
+
+const renderSync = (
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+) => {
+    host.client = client;
+    return renderHook(() => useSyncConsentFlow(true), {
+        wrapper: ({ children }: { children: React.ReactNode }) => (
+            <QueryClientProvider client={client}>{children}</QueryClientProvider>
+        ),
+    });
+};
+
+const storedUris = () => host.addVCtoWallet.mock.calls.map(([args]) => args.uri);
+
+describe('useSyncConsentFlow', () => {
+    beforeEach(() => {
+        host.recordAcceptedCredentialClaim.mockClear();
+        host.pending = [];
+        host.index.clear();
+        window.localStorage.clear();
+        host.lifecycle.clear();
+        host.lifecycleLookupFails = false;
+        host.unreadable.clear();
+        host.failAccept.clear();
+        host.failAcceptOnce.clear();
+        host.failStoreOnce.clear();
+        wallet.invoke.getConsentFlowCredentials.mockClear();
+        host.accept.mockReset().mockImplementation(async ({ uri }: { uri: string }) => {
+            const status = host.lifecycle.get(uri);
+            if (status === 'revoked') throw trpcBadRequest('Credential has been revoked');
+            if (status === 'suspended') throw trpcBadRequest('Credential is suspended');
+            // Transient failures look like a dropped request, not a lifecycle rejection.
+            if (host.failAccept.has(uri)) throw new TypeError('Failed to fetch');
+            if (host.failAcceptOnce.delete(uri)) throw new TypeError('Failed to fetch');
+            // Accepting creates CREDENTIAL_RECEIVED, so the server stops listing it as pending.
+            host.pending = host.pending.filter(pendingUri => pendingUri !== uri);
+        });
+        host.addVCtoWallet
+            .mockReset()
+            .mockImplementation(async ({ id, uri }: Record<string, string>) => {
+                if (host.failStoreOnce.delete(uri)) throw new Error(`store failed for ${uri}`);
+                const recordId = id ?? `record-${host.index.size}-${uri}`;
+                host.index.set(recordId, uri);
+                // Mirror the caches the real addVCtoWallet updates.
+                host.client.setQueryData(LIST_KEY, (data?: { pages: { records: object[] }[] }) => ({
+                    pages: [
+                        {
+                            hasMore: false,
+                            records: [{ id: recordId, uri }, ...(data?.pages[0]?.records ?? [])],
+                        },
+                    ],
+                    pageParams: [undefined],
+                }));
+                host.client.setQueryData(COUNT_KEY, (count?: number) => (count ?? 0) + 1);
+                host.client.setQueryData(['useGetResolvedCredential', uri], { id: uri });
+            });
+    });
+
+    afterEach(() => {
+        cleanup();
+        focusManager.setFocused(undefined);
+    });
+
+    it('records only accepted claims after a pending acceptance completes', async () => {
+        const uri = 'urn:test:accepted-after-store';
+        host.pending = [uri];
+        let accept: () => void = () => undefined;
+        host.accept.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    accept = resolve;
+                })
+        );
+        const { result } = renderSync();
+        await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+        expect(host.addVCtoWallet).toHaveBeenCalledWith(
+            expect.objectContaining({ uri, deferClaim: true })
+        );
+        expect(host.recordAcceptedCredentialClaim).not.toHaveBeenCalled();
+        await act(async () => accept());
+        await waitFor(() =>
+            expect(host.recordAcceptedCredentialClaim).toHaveBeenCalledWith(wallet, uri)
+        );
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    });
+
+    it('syncs a second contract write in the same session after the first sync saved something', async () => {
+        host.pending = ['urn:test:a:first-write'];
+        renderSync();
+
+        await waitFor(() => expect(storedUris()).toEqual(['urn:test:a:first-write']));
+
+        host.pending.push('urn:test:a:second-write');
+        act(() => {
+            focusManager.setFocused(false);
+            focusManager.setFocused(true);
+        });
+
+        await waitFor(() =>
+            expect(storedUris()).toEqual(['urn:test:a:first-write', 'urn:test:a:second-write'])
+        );
+    });
+
+    it('does not let one unreadable credential block the others', async () => {
+        host.pending = ['urn:test:b:good-1', 'urn:test:b:unreadable', 'urn:test:b:good-2'];
+        host.unreadable.add('urn:test:b:unreadable');
+        renderSync();
+
+        await waitFor(() =>
+            expect(storedUris().sort()).toEqual(['urn:test:b:good-1', 'urn:test:b:good-2'])
+        );
+        expect(host.accept).not.toHaveBeenCalledWith({ uri: 'urn:test:b:unreadable' });
+    });
+
+    it('does not let one failed accept block the others from being stored', async () => {
+        host.pending = ['urn:test:c:good-1', 'urn:test:c:accept-fails', 'urn:test:c:good-2'];
+        host.failAccept.add('urn:test:c:accept-fails');
+        renderSync();
+
+        // Storing happens before accepting, so the failed accept stays pending on the server
+        // (and gets accepted on a later sync) while the others are accepted and stored.
+        await waitFor(() => expect(host.pending).toEqual(['urn:test:c:accept-fails']));
+        expect(host.stored).toEqual(
+            new Set(['urn:test:c:good-1', 'urn:test:c:accept-fails', 'urn:test:c:good-2'])
+        );
+        expect(host.accept).toHaveBeenCalledWith({ uri: 'urn:test:c:accept-fails' });
+    });
+
+    it('stores a credential on a later sync when storing failed once after a successful accept', async () => {
+        host.pending = ['urn:test:e:store-fails-once', 'urn:test:e:good'];
+        host.failStoreOnce.add('urn:test:e:store-fails-once');
+        renderSync();
+
+        await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:e:good'])));
+        expect(host.addVCtoWallet).toHaveBeenCalledWith(
+            expect.objectContaining({ uri: 'urn:test:e:store-fails-once' })
+        );
+
+        act(() => {
+            focusManager.setFocused(false);
+            focusManager.setFocused(true);
+        });
+
+        await waitFor(() =>
+            expect(host.stored).toEqual(new Set(['urn:test:e:good', 'urn:test:e:store-fails-once']))
+        );
+        expect(host.pending).toEqual([]);
+    });
+
+    it('accepts an already-stored credential on a later sync without storing it again', async () => {
+        host.pending = ['urn:test:f:accept-fails-once'];
+        host.failAcceptOnce.add('urn:test:f:accept-fails-once');
+        renderSync();
+
+        await waitFor(() => expect(host.accept).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:f:accept-fails-once'])));
+        expect(host.pending).toEqual(['urn:test:f:accept-fails-once']);
+
+        act(() => {
+            focusManager.setFocused(false);
+            focusManager.setFocused(true);
+        });
+
+        await waitFor(() => expect(host.pending).toEqual([]));
+        expect(host.accept).toHaveBeenCalledTimes(2);
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps a suspended pending credential out of the wallet index and caches', async () => {
+        host.pending = ['urn:test:g:suspended', 'urn:test:g:good'];
+        host.lifecycle.set('urn:test:g:suspended', 'suspended');
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        renderSync(client);
+
+        await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:g:good'])));
+        expect(host.accept).toHaveBeenCalledWith({ uri: 'urn:test:g:suspended' });
+        expect(host.recordAcceptedCredentialClaim).not.toHaveBeenCalledWith(
+            wallet,
+            'urn:test:g:suspended'
+        );
+        expect(listedUris()).toEqual(['urn:test:g:good']);
+        expect(client.getQueryData(['useGetResolvedCredential', 'urn:test:g:suspended'])).toBe(
+            undefined
+        );
+        expect(client.getQueryState(COUNT_KEY)?.isInvalidated).toBe(true);
+        expect(wallet.cache.flushIndex).toHaveBeenCalled();
+
+        // Still pending on the server, but a later sync doesn't store and roll it back again.
+        act(() => {
+            focusManager.setFocused(false);
+            focusManager.setFocused(true);
+        });
+        await waitFor(() =>
+            expect(wallet.invoke.getConsentFlowCredentials.mock.calls.length).toBeGreaterThan(1)
+        );
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(storedUris().filter(uri => uri === 'urn:test:g:suspended')).toHaveLength(1);
+        expect(host.stored).toEqual(new Set(['urn:test:g:good']));
+    });
+
+    it('keeps a revoked pending credential out of the wallet index and caches', async () => {
+        host.pending = ['urn:test:h:revoked'];
+        host.lifecycle.set('urn:test:h:revoked', 'revoked');
+        // Exercise the fallback: classify from the accept error when the lookup is unavailable.
+        host.lifecycleLookupFails = true;
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        renderSync(client);
+
+        await waitFor(() =>
+            expect(host.accept).toHaveBeenCalledWith({ uri: 'urn:test:h:revoked' })
+        );
+        await waitFor(() => expect(storedUris()).toEqual(['urn:test:h:revoked']));
+        await waitFor(() => expect(host.stored).toEqual(new Set()));
+        expect(host.recordAcceptedCredentialClaim).not.toHaveBeenCalledWith(
+            wallet,
+            'urn:test:h:revoked'
+        );
+        expect(listedUris()).toEqual([]);
+        expect(client.getQueryData(['useGetResolvedCredential', 'urn:test:h:revoked'])).toBe(
+            undefined
+        );
+        expect(client.getQueryState(COUNT_KEY)?.isInvalidated).toBe(true);
+    });
+
+    it('never removes a credential that was already in the wallet when acceptance is refused', async () => {
+        host.pending = ['urn:test:i:already-indexed-suspended'];
+        host.index.set('pre-existing-record', 'urn:test:i:already-indexed-suspended');
+        host.lifecycle.set('urn:test:i:already-indexed-suspended', 'suspended');
+        renderSync();
+
+        await waitFor(() =>
+            expect(host.accept).toHaveBeenCalledWith({
+                uri: 'urn:test:i:already-indexed-suspended',
+            })
+        );
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(host.addVCtoWallet).not.toHaveBeenCalled();
+        expect(wallet.index.LearnCloud.remove).not.toHaveBeenCalledWith('pre-existing-record');
+        expect([...host.index.keys()]).toEqual(['pre-existing-record']);
+    });
+
+    it('does not bring a revoked credential back when revocation cleanup races the sync', async () => {
+        host.pending = ['urn:test:j:revoked'];
+        let releaseAccept = () => {};
+        const acceptGate = new Promise<void>(resolve => {
+            releaseAccept = resolve;
+        });
+        host.accept.mockImplementation(async ({ uri }: { uri: string }) => {
+            await acceptGate;
+            if (host.lifecycle.get(uri) === 'revoked') {
+                throw trpcBadRequest('Credential has been revoked');
+            }
+            host.pending = host.pending.filter(pendingUri => pendingUri !== uri);
+        });
+
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        renderSync(client);
+        await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:j:revoked'])));
+
+        // The issuer revokes while acceptance is in flight, and revocation cleanup removes the
+        // record the sync just stored before the sync's own rollback runs.
+        host.lifecycle.set('urn:test:j:revoked', 'revoked');
+        renderHook(() => useSyncRevokedCredentials(true), {
+            wrapper: ({ children }: { children: React.ReactNode }) => (
+                <QueryClientProvider client={client}>{children}</QueryClientProvider>
+            ),
+        });
+        await waitFor(() => expect(host.stored).toEqual(new Set()));
+        releaseAccept();
+
+        // Later syncs (focus/resume) and cleanup runs must not re-add it.
+        for (let i = 0; i < 2; i += 1) {
+            await new Promise(resolve => setTimeout(resolve, 30));
+            act(() => {
+                focusManager.setFocused(false);
+                focusManager.setFocused(true);
+            });
+        }
+        await waitFor(() =>
+            expect(wallet.invoke.getConsentFlowCredentials.mock.calls.length).toBeGreaterThan(2)
+        );
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(host.stored).toEqual(new Set());
+        expect(listedUris()).toEqual([]);
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back a suspended credential after an index write lands but its response is lost', async () => {
+        // From goblincore's review on #1737.
+        const uri = 'urn:test:k:committed-write-lost-response';
+        host.pending = [uri];
+        host.lifecycle.set(uri, 'suspended');
+        const normalStore = host.addVCtoWallet.getMockImplementation()!;
+        host.addVCtoWallet.mockImplementationOnce(async (args: Record<string, string>) => {
+            await normalStore(args);
+            // The index write committed, but the response never arrived.
+            throw new TypeError('Failed to fetch');
+        });
+        const hook = renderSync();
+        await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+        expect(host.stored.has(uri)).toBe(true);
+        expect(host.accept).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await hook.result.current.refetch();
+        });
+        await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+        await waitFor(() => expect(host.stored.has(uri)).toBe(false));
+        expect(listedUris()).not.toContain(uri);
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back after an app reload when the store worked, the accept failed, and the issuer then suspended it', async () => {
+        const uri = 'urn:test:l:reload-then-suspended';
+        host.pending = [uri];
+        host.failAcceptOnce.add(uri);
+        renderSync();
+        await waitFor(() => expect(host.accept).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(host.stored).toEqual(new Set([uri])));
+        cleanup();
+
+        // Simulate an app reload: drop every module's in-memory state, keep storage.
+        vi.resetModules();
+        const { useSyncConsentFlow: useSyncAfterReload } = await import('./vcQueries');
+        host.lifecycle.set(uri, 'suspended');
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        host.client = client;
+        renderHook(() => useSyncAfterReload(true), {
+            wrapper: ({ children }: { children: React.ReactNode }) => (
+                <QueryClientProvider client={client}>{children}</QueryClientProvider>
+            ),
+        });
+
+        await waitFor(() => expect(host.accept).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(host.stored).toEqual(new Set()));
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(1);
+    });
+
+    it('rolls back a lost-response write even when localStorage rejects the marker write', async () => {
+        // goblincore's hook-level repro on #1737: storage is readable but setItem throws.
+        const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+            throw new DOMException('Storage quota exceeded', 'QuotaExceededError');
+        });
+        try {
+            const uri = 'urn:test:n:quota-lost-response';
+            host.pending = [uri];
+            host.lifecycle.set(uri, 'suspended');
+            const normalStore = host.addVCtoWallet.getMockImplementation()!;
+            host.addVCtoWallet.mockImplementationOnce(async (args: Record<string, string>) => {
+                await normalStore(args);
+                throw new TypeError('Failed to fetch');
+            });
+            const hook = renderSync();
+            await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+            expect(host.stored.has(uri)).toBe(true);
+
+            await act(async () => {
+                await hook.result.current.refetch();
+            });
+            await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+            await waitFor(() => expect(host.stored.has(uri)).toBe(false));
+            expect(listedUris()).not.toContain(uri);
+        } finally {
+            setItem.mockRestore();
+        }
+    });
+
+    it('treats rolling back a write that never landed as a no-op and keeps records it did not create', async () => {
+        const uri = 'urn:test:m:write-never-landed';
+        host.pending = [uri];
+        host.failStoreOnce.add(uri);
+        const hook = renderSync();
+        await waitFor(() => expect(host.addVCtoWallet).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+        expect(host.stored).toEqual(new Set());
+
+        // Something else puts the credential in the wallet, then the issuer suspends it.
+        host.index.set('someone-elses-record', uri);
+        host.lifecycle.set(uri, 'suspended');
+        await act(async () => {
+            await hook.result.current.refetch();
+        });
+
+        await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect([...host.index.keys()]).toEqual(['someone-elses-record']);
+    });
+
+    it('accepts each credential once when refetches overlap across hook instances', async () => {
+        let releaseAccept = () => {};
+        const acceptGate = new Promise<void>(resolve => {
+            releaseAccept = resolve;
+        });
+        host.accept.mockImplementation(async ({ uri }: { uri: string }) => {
+            await acceptGate;
+            host.pending = host.pending.filter(pendingUri => pendingUri !== uri);
+        });
+
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        const first = renderSync(client);
+        renderSync(client);
+        await waitFor(() => expect(first.result.current.isSuccess).toBe(true));
+
+        // With data already cached, a refetch cancels the in-flight queryFn and starts a
+        // new one while the old one keeps running, so these runs genuinely overlap.
+        host.pending = ['urn:test:d:one', 'urn:test:d:two'];
+        for (let i = 0; i < 3; i += 1) {
+            void client
+                .refetchQueries({ queryKey: ['useSyncConsentFlow'], type: 'all' })
+                .catch(() => undefined);
+            act(() => {
+                focusManager.setFocused(false);
+                focusManager.setFocused(true);
+            });
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        expect(wallet.invoke.getConsentFlowCredentials.mock.calls.length).toBeGreaterThan(2);
+        releaseAccept();
+
+        await waitFor(() =>
+            expect(storedUris().sort()).toEqual(['urn:test:d:one', 'urn:test:d:two'])
+        );
+        expect(host.accept).toHaveBeenCalledTimes(2);
+        expect(host.addVCtoWallet).toHaveBeenCalledTimes(2);
+    });
+});

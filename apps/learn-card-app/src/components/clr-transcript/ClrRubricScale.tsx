@@ -48,7 +48,7 @@ const ClrRubricScale: React.FC<{
     if (levels.length === 0) return null;
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                 {title}
             </p>

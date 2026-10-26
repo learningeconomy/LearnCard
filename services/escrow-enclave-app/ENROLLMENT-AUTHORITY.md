@@ -565,14 +565,18 @@ deletion protection, point-in-time recovery, SCP-guarded lifecycle/restore/impor
 actions and a read-only monitor that verifies execution rows. There is **no**
 authority-to-Object-Lock archiver or persistent audit outbox yet. Long-term
 immutable retention of authority rows therefore remains **in scope as a
-production-enablement gate**, not a delivered control: before production,
+pre-50%-rollout gate**, not a launch blocker or delivered control: before stage 4,
 copy exact signed execution bytes to the existing COMPLIANCE Object Lock bucket
 idempotently (synchronous gating optional; durable outbox + reconciliation
-acceptable), and have the monitor check coverage. Staging may run without it. No cross-service atomicity
+acceptable), and have the monitor check coverage. Earlier rollout requires verified
+CloudTrail write/governance alarms and security acceptance of R-AUTHORITY-ROLLBACK;
+security rejection requires the archiver sooner. Staging may run without it. No cross-service atomicity
 with S3 or Mongo is claimed. Stored receipts permit metadata reconciliation, never
 replay of a PIN comparison or release. Enclave high-water marks still never reset
 on failure; losing concurrent signers may require exact-history reconciliation.
 Must separate speculative proposals from committed high-water marks.
+
+Proposed archiver/outbox design and retention boundary: [AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md).
 
 Cancellation intent may remain caller-authenticated for denial-only operations,
 as in `app/src/policy.rs::cancel_hold`: a compromised host can already deny service.
@@ -633,7 +637,7 @@ change as independently committed; an API `{success:true}` is insufficient.
   The escrow CMK policy is NOT touched (it denies Encrypt).
   The new KMS key policy allows Decrypt only with an attested Recipient matching pinned PCRs.
   Add single-region tables, fixed TLS endpoint, alarms and backup policy. The audit
-  outbox/Object Lock archiver is a production gate (see section 5), not in this stack.
+  outbox/Object Lock archiver is a pre-50%-rollout gate (see section 5), not in this stack.
   Host/API get no table writes, signing grants or cross-account administrator role.
   Update `infra/escrow-enclave/{iam,ledger,kms,storage,monitor}.tf` integration and
   measured endpoint/pin configuration. Preserve existing PCR tuple/KMS denies.
@@ -861,3 +865,94 @@ hold's 7-day-plus-24h window elapses.
 4. What traffic forecast, monthly cost ceiling, latency target and regional outage objective must staging demonstrate before approval?
 5. Accept the listed D2/D10/D18 and witness-admin residual risks, and assign owners to reconcile SECURITY/STAGING/ROLLOUT wording before the launch review?
 6. Email binding format inside the blob (address normalisation, language tag), code length/expiry/guess and resend limits, and SES quota targets?
+
+## 11. Hold delivery evidence and state reads (2026-10-16)
+
+After a successful create commit, a rejected or ambiguous SES send now returns the
+signed hold, not `unavailable`. Optional response-only `delivery: {codeSent, proof}`
+reports SES acceptance (`false` includes unknown outcome, not proof of non-delivery).
+Its Snapshot signs `["learncard-authority-code-delivery-v1", tenant, generation,
+holdDigestHex, codeSent]`. The API persists the unchanged hold and returns this
+evidence plus `codeSent`; the SDK verifies it against the attested ledger key and
+the independently verified hold binding before displaying the resend notice.
+Absent evidence from an old image means unknown, never an authenticated success.
+This belongs outside `hold_hash`: delivery occurs after the immutable hold commit,
+and changing that digest would strand existing holds. No persisted schema changes
+are made. Send errors do not advance confirmation, refund the throttle, or change
+the existing 60-second/three-per-day resend rules. Whole-operation timeout, process
+death, or loss of the response can still orphan a newly committed hold; this change
+fixes returned send failures, not general create-response reconciliation.
+
+Confirmation returns `codeMismatch`, `codeExpired`, or `codeLocked` (HTTP 403).
+The fifth unsuccessful comparison returns locked; already locked requests do not
+compare. Expired attempts retain the previous consumption behavior. These public
+outcomes disclose budget/expiry state, not any code digits or a reusable proof;
+hold binding, constant-time comparison, five guesses and send limits remain intact.
+Invalid bindings still return generic policy errors. Old `policy` errors retain
+the client's generic refusal copy. There is no reason-code logger on this branch.
+
+`POST /v1/hold-state` uses the existing bearer authentication and accepts
+`{expectedDid, hold: SignedHoldRecord, nonce}`. Generate a new 32-byte random nonce
+(64 lowercase hex) for each read. The response is `{proof}`, a Snapshot signing:
+
+```text
+["learncard-authority-hold-state-v3", nonce, tenant, generation, did, holdId,
+ holdDigestHex, status, confirmedHiMs|null, releaseWarningSentHiMs|null,
+ attemptsRemaining, codeSendStatus]
+```
+
+Status is `awaitingConfirmation`, `pending`, `released`, or `cancelled`; warning
+time is separate. `codeSendStatus` is `notRequired` for PIN holds and `unknown`
+otherwise: durable state records attempted sends, not their acceptance. Neither
+`email_throttle` nor the code hash can honestly establish delivery. The initial
+response's signed delivery evidence is more specific, but is not durable history.
+`verifyEscrowHoldState` verifies the current attested key/measurement, nonce, exact
+retained identity/generation/hold digest, tuple shape and public field bounds.
+This is a read-time statement, not a guarantee that no transition happened afterward.
+The minimal API client is implemented; no public lca-api route is added.
+
+### Mixed-version rollout and existing staging holds
+
+Deploy the **new host before the new image**: the old host rejects unknown framed
+response fields/error codes and cannot forward `holdState`. The new API can precede
+either, accepts absent delivery evidence, and sends no new fields inside hold DTOs.
+The production host exposes delivery only when the API sends
+`X-Escrow-Delivery-Evidence: 1`; older API clients would otherwise retain this extra
+passthrough field inside the hold and echo it to a strict image. Without the header
+the host returns the old bare SignedHoldRecord. Old APIs may show generic service
+errors for new confirmation reasons; they never gain authorization. The development
+emulator returns delivery evidence without negotiation and is not a mixed-version
+deployment target. The new hold-state method requires the new host and image.
+
+Keep the existing generation, sealed signing/decryption keys, and old/new PCR
+allowlists throughout the ordinary two-phase roll. No HoldItem, enrollment,
+operation, receipt, hold digest, or v2 retry-snapshot encoding changes. The current
+confirmed staging hold remains idempotently confirmable, releasable after its
+existing seven-day and warning gates, and cancellable. The regression
+`pre_roll_confirmed_hold_survives_restart_reconfirm_release_and_cancel` freezes the
+old strict HoldItem struct, checks byte-identical old/new serialization, then
+restarts policy over that persisted state and exercises reconfirmation and both
+terminal paths. It is offline compatibility evidence, not a read of the real
+staging user's record. Removing historical PCR trust or rotating away its keys is
+not covered by this compatibility claim.
+
+## 12. Cancellation authorization design (not implemented)
+
+Today the vault accepts cancellation based on bearer-mediated access and the exact
+hold commitment, not an owner signature. A compromised lca-api that has the hold can
+cancel legitimate recovery: durable denial of service, **not theft**. Signed-in-device
+and legacy email-link authorization are currently API checks, not vault guarantees.
+
+| Option                                   | Benefit and UX consequence                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Owner DID signature checked in the vault | Bind a domain-separated cancel intent to tenant, generation, DID and hold digest. A signed-in device can sign it; a locked-out user without an account key cannot. This matches the vault email's instruction to cancel from a signed-in device. The existing API-only email cancel link must not remain a bearer-only bypass.                                                                                                                                                                  |
+| Vault-generated emailed cancel token     | A high-entropy, hold-bound, cancellation-only capability permits inbox-only cancellation. Store its commitment in a separately versioned protocol; generate and send it only inside the vault, verify/consume it there, and never log or expose it in read snapshots. Email scanners must not cancel on GET. An API-served page can steal a token when the user presents it, so client/origin trust and phishing remain relevant. The current API-generated cancel token is not this mechanism. |
+| Accept bearer cancellation as residual   | No new key/capability flow; preserves both current UX paths. Explicitly accepts durable cancellation by a compromised API in addition to that API's existing ability to suppress requests.                                                                                                                                                                                                                                                                                                      |
+
+**Recommendation:** require an owner DID signature for the signed-in-device path in
+a separately reviewed change. Keep the vault emails' existing signed-in-device
+instruction and remove any bearer-only bypass when enforcing it. If product needs
+inbox-only cancellation, separately design a vault-issued token rather than trusting
+the existing API token. Even owner signatures cannot force a malicious API/host to
+deliver cancellation or provide recovery service; they prevent unauthorized durable
+cancellation, not general denial of service. No cancellation semantics change here.

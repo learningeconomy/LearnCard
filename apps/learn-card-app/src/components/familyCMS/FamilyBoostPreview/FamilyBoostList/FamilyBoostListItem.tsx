@@ -14,7 +14,7 @@ export const FamilyBoostListItem: React.FC<{
     return (
         <div
             onClick={onClick}
-            className="flex items-center justify-between w-full mb-2 border-solid border-b-[2px] pb-4 border-grayscale-100"
+            className="flex items-center justify-between w-full mb-2 border-solid border-b-2 pb-4 border-grayscale-100"
         >
             <p className="flex items-center text-grayscale-900 font-poppins text-xl">
                 <span className="me-2 min-h-[40px] min-w-[40px] flex items-center justify-center">

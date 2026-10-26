@@ -11,7 +11,7 @@ const ClrTranscriptHeader: React.FC<{
     showSource?: boolean;
 }> = ({ model, showSource = false }) => {
     return (
-        <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-4">
+        <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 space-y-v3-4">
             {model.meta.partial && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
                     <p className="text-xs font-medium text-amber-800">
@@ -20,7 +20,7 @@ const ClrTranscriptHeader: React.FC<{
                     </p>
                 </div>
             )}
-            <div className="space-y-2">
+            <div className="space-y-v3-2">
                 <ClrTranscriptSourceField
                     label="Credential"
                     field={model.header.title}

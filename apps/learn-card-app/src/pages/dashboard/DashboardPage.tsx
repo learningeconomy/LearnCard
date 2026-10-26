@@ -292,7 +292,7 @@ const DashboardPage: React.FC = () => {
     const goToCollect = () => {
         openAddToPassportModal(
             <AddToPassportMenu />,
-            { sectionClassName: '!max-w-[500px]' },
+            { sectionClassName: 'max-w-[500px]!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.BottomSheet }
         );
     };

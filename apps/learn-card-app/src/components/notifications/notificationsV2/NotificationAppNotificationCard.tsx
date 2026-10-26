@@ -143,7 +143,7 @@ const NotificationAppNotificationCard: React.FC<NotificationAppNotificationCardP
                 onClick={handleOpenApp}
                 className={`${
                     notificationCardStyles.shell
-                } min-h-[100px] gap-3 !items-center cursor-pointer ${className ?? ''}`}
+                } min-h-[100px] gap-3 items-center! cursor-pointer ${className ?? ''}`}
             >
                 {!isRead && <div className="notification-count-mobile unread-indicator-dot" />}
 

@@ -1,5 +1,32 @@
 # @learncard/network-brain-client
 
+## 2.5.63
+
+### Patch Changes
+
+- [#1718](https://github.com/learningeconomy/LearnCard/pull/1718) [`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a) Thanks [@goblincore](https://github.com/goblincore)! - Import and edit spreadsheet recipients on the Issue page, issue through durable inbox batches, and recover interrupted runs from IndexedDB without resending successful or unconfirmed rows. Support standard Open Badges Evidence without requiring LearnCard extension contexts.
+
+    All sends to specific people now require local IndexedDB recovery and Web Locks, including picker-only profile sends. Signing out clears local recovery records for privacy; accepted server work can continue. Restore issue lifecycle analytics, add dismissible saved-run reminders and receipt-only delivery checks, and reject edits to submitted rows with a clear message. Import XLSX content without counting formatting-only trailing ranges against row limits.
+
+    Evidence attachments retain standard names and URLs but omit unsupported EvidenceFile, fileName, and fileType extensions in every issuance mode, including single sends. Changing credential type keeps recipient values for review instead of clearing imported data.
+
+- Updated dependencies [[`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a), [`c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910`](https://github.com/learningeconomy/LearnCard/commit/c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/network-brain-service@4.0.4
+
+## 2.5.62
+
+### Patch Changes
+
+- Updated dependencies [[`cb54286a0d2bce596a3981f5e8c5f413d46493e4`](https://github.com/learningeconomy/LearnCard/commit/cb54286a0d2bce596a3981f5e8c5f413d46493e4), [`f7f37e3195f35a63f86fcbe44d2e314679f0924d`](https://github.com/learningeconomy/LearnCard/commit/f7f37e3195f35a63f86fcbe44d2e314679f0924d), [`43bcd912c30b108bb4cee41691eedb87300cf8eb`](https://github.com/learningeconomy/LearnCard/commit/43bcd912c30b108bb4cee41691eedb87300cf8eb), [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f), [`a36ca5dbfc61276e5da533ee40c3d20d86026742`](https://github.com/learningeconomy/LearnCard/commit/a36ca5dbfc61276e5da533ee40c3d20d86026742)]:
+    - @learncard/network-brain-service@4.0.3
+
+## 2.5.61
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/network-brain-service@4.0.2
+
 ## 2.5.60
 
 ### Patch Changes

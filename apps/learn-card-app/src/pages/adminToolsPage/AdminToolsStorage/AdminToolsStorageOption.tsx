@@ -172,7 +172,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
     return (
         <section className="h-full w-full flex items-start justify-center overflow-y-scroll pt-4">
             <section className="bg-white max-w-[800px] w-full rounded-[20px]">
-                <AdminToolsOptionItemHeader option={option} className="!pb-1" />
+                <AdminToolsOptionItemHeader option={option} className="pb-1!" />
 
                 <div className="w-full flex flex-col items-center justify-center px-4">
                     <IonRadioGroup

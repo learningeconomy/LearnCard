@@ -18,8 +18,11 @@ real issuance — that's a signing + multi-service backend flow that lives in th
 1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and all
    backend reads on `localhost:4000/4100/5100` (tRPC, `/api`, `/keys`, and non-tRPC calls
    like did:web resolution) verbatim. Recorded once against real docker; refreshable.
-2. **A typed tRPC mock** (`trpc.ts`) layered on top — installed but empty by default; a
-   test can register per-procedure overrides on the returned mock (`mock.on(...)`).
+2. **A typed tRPC mock** (`trpc.ts`) layered on top — serves authentication challenge
+   refills for both services; a test can register per-procedure overrides on the
+   returned mock (`mock.on(...)`). The clients randomize refill sizes, so exact HAR
+   request-body matching cannot cover every bootstrap. The stub returns the requested
+   number of unique strings; recording mode still uses the real backend.
 
 On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
 (`notFound: 'abort'`) — missing coverage fails loudly instead of hanging.
@@ -27,6 +30,33 @@ On replay, any backend call that isn't in the HAR (and isn't overridden) is **ab
 The replay app is built with the **local** tenant config (`--stage local`) so it points at
 `localhost`, matching the recorded HAR. DIDKit signing runs locally (WASM mocked by the
 `mocked-test` fixture).
+
+The shared `mocked-test` fixture also intercepts LaunchDarkly evaluation, streaming,
+goals and telemetry requests. Flags are deterministic; both `inAppMessages` and
+`inAppMessagesV2` default to `{ messages: [] }`, so live announcements cannot cover
+controls during an unrelated test.
+Set flags explicitly with `test.use({ featureFlags: { flagName: { value: true } } })`.
+Existing page-level `mockLaunchDarkly(page, flags)` overrides still take precedence.
+
+The fixture also serves the tracked `public/connectivity.txt` marker locally. This
+keeps intentionally aborted backend calls and slow Vite startup from turning an
+online mocked flow into an offline sign-in remount. Offline-specific tests can
+override this route. Use `nextPath` in `waitForAuthenticatedState` to return directly
+to the tested route through developer sign-in, avoiding a second full app load.
+When `profileId` is supplied, developer sign-in creates the profile and resets its
+queries before returning. The helper does not wait for the legacy profile-setup
+modal, which is absent in this flow. Tests still assert their authenticated page
+content. Keep explicit reloads when persistence or recovery is the behavior under test.
+
+For mocked sign-in and persistence reloads, use `waitUntil: 'commit'` and then wait
+for the feature's visible authenticated content. The document's `load` event also
+waits for unrelated resources and frames, so it is not an app-readiness signal.
+`navigation.mocked.spec.ts` exercises sign-in while a document resource stays pending.
+
+For a complete Linux run before opening a PR, push the branch and run
+`gh workflow run mock-e2e.yml --ref <branch>`. Manual runs execute the full suite even
+when Nx finds no affected changes. Each manual run has its own concurrency group,
+so repeated runs can complete independently; PR updates still cancel superseded runs.
 
 ## Writing a mocked test
 
@@ -45,6 +75,7 @@ test.describe('My feature @mocked', () => {
         await installNetwork(page);
         await waitForAuthenticatedState(page, {
             path: '/my-page',
+            nextPath: '/my-page',
             profileId: TEST_USER_PROFILE_ID,
         });
     });
@@ -55,7 +86,7 @@ test.describe('My feature @mocked', () => {
 });
 ```
 
-Run it: `pnpm test-mock` (or `pnpm exec nx run learn-card-app:test-mock`). Stop docker
+Run it: `bun run test-mock` (or `bunx nx run learn-card-app:test-mock`). Stop docker
 first to prove it's truly offline.
 
 ## Adding coverage for NEW backend calls
@@ -66,9 +97,12 @@ failure's `error-context.md` / network log names the procedure. Two options:
 ### Reads / boot (input-specific) → re-record the HAR
 
 ```bash
-pnpm test:e2e:mock:record     # runs @mocked specs against real docker, PWHAR=update
+bun run test:e2e:mock:record  # runs @mocked specs against real docker, PWHAR=update
+bun tests/mocks/normalize-har-cors.ts # allow replay on any PW_MOCK_PORT
 git add tests/mocks/har/issue.har.zip
 ```
+
+Normalize recorded response origins after recording: real-backend captures use port 3000, while replay defaults to 3010. These test fixtures use bearer headers rather than browser cookies, so replay responses use `Access-Control-Allow-Origin: *`. Wait for app readiness assertions with `waitUntil: 'domcontentloaded'` when external assets are irrelevant.
 
 Records to a single `.zip` (never a loose `.har` — that scatters ~hundreds of body files;
 the `har/.gitignore` blocks those).
@@ -93,7 +127,7 @@ mock.on('boost.someNewProc', () => ({/* ... */}) satisfies BrainOutputs['boost']
 | `network.ts`                             | `installNetwork()` — HAR replay + optional typed override, record/replay    |
 | `trpc.ts`                                | `createTrpcMock` (batch-aware) + `BrainOutputs`/`CloudOutputs` type anchors |
 | `har/issue.har.zip`                      | Recorded boot + reads (single-file HAR)                                     |
-| `../fixtures/mocked-test.ts`             | WASM mock, no docker cleanup                                                |
+| `../fixtures/mocked-test.ts`             | WASM, connectivity and feature-flag mocks, no docker cleanup                |
 | `../../playwright.mock.config.ts`        | Replay config (vite, local stage, `@mocked` only)                           |
 | `../../playwright.mock-record.config.ts` | Record config (real docker)                                                 |
 

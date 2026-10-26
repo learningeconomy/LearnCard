@@ -220,6 +220,20 @@
         }
     },
     "base": {
+        "inAppMessages": {
+            "next": "التالي",
+            "previous": "السابق",
+            "done": "تم",
+            "progress": "تقدم القصة",
+            "error": "حدث خطأ ما. حاول مرة أخرى.",
+            "retry": "حاول مرة أخرى",
+            "loading": "جارٍ التحميل…",
+            "opening": "جارٍ الفتح…",
+            "checking": "جارٍ التحقق…",
+            "downloading": "جارٍ التنزيل… {{progress}}%",
+            "installing": "جارٍ التثبيت…",
+            "upToDate": "لديك أحدث إصدار."
+        },
         "verification": {
             "selfIssued": "صادر ذاتياً",
             "trustedIssuer": "جهة إصدار موثوقة",
@@ -408,6 +422,7 @@
         "deletingAccount": "جاري حذف الحساب...",
         "deleteForever": "حذف نهائي",
         "fullName": "الاسم الكامل",
+        "fullNameOptional": "الاسم الكامل (اختياري)",
         "emailAddress": "البريد الإلكتروني",
         "phoneNumber": "رقم الهاتف",
         "userID": "معرف المستخدم",
@@ -631,6 +646,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "تعذّر حفظ ملفك الشخصي. تحقّق من اتصالك وحاول مرة أخرى.",
         "welcomeTo": "مرحباً بك في",
         "setupProf": "قم بإعداد ملفك الشخصي للبدء!",
         "dataOwn": "أنت تملك بياناتك.",

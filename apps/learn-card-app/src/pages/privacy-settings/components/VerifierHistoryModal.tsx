@@ -76,7 +76,7 @@ export const VerifierHistoryModal: React.FC<{
             data-html2canvas-ignore
             data-feedback-exclude
         >
-            <header className="shrink-0 border-b border-grayscale-200 p-6 space-y-3">
+            <header className="shrink-0 border-b border-grayscale-200 p-6 space-y-v3-3">
                 <div className="flex items-center justify-between gap-3">
                     <h2 id={titleId} className="text-xl font-semibold">
                         {m['verifierHistory.title']()}
@@ -118,7 +118,7 @@ export const VerifierHistoryModal: React.FC<{
             </header>
             {current && (
                 <>
-                    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto p-6 space-y-4">
+                    <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto p-6 space-y-v3-4">
                         <p className="text-xs text-grayscale-600 leading-relaxed">
                             {m['verifierHistory.limits']()}
                         </p>

@@ -87,10 +87,10 @@ export const FamilyBoostPreviewFrontFace: React.FC<{
             />,
             {
                 sectionClassName:
-                    '!bg-transparent !border-none !shadow-none !rounded-none mb-[-10px]',
+                    'bg-transparent! border-none! shadow-none! rounded-none! mb-[-10px]',
                 hideButton: true,
                 usePortal: true,
-                portalClassName: '!max-w-[400px] !mb-[-70px] h-[150px] ',
+                portalClassName: 'max-w-[400px]! mb-[-70px]! h-[150px] ',
             },
             { mobile: ModalTypes.FullScreen, desktop: ModalTypes.Cancel }
         );

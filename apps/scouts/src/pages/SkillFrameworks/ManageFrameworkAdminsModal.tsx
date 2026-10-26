@@ -100,7 +100,7 @@ const ManageFrameworkAdminsModal: React.FC<ManageFrameworkAdminsModalProps> = ({
                     <div className="flex gap-[10px]">
                         <IonInput
                             onIonInput={e => setNewAdminProfileId(e.detail.value ?? '')}
-                            className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] !px-[15px] !h-[40px] flex-1"
+                            className="bg-grayscale-100 text-grayscale-800 rounded-[16px] py-[8px] px-[15px]! h-[40px]! flex-1"
                             placeholder={m['skillFrameworks.enterPid']()}
                             value={newAdminProfileId}
                         />
