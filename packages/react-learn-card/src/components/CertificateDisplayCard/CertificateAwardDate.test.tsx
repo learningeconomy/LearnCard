@@ -41,6 +41,10 @@ describe.each([
         render(renderFace({ ...credential, awardedDate: undefined }));
         expect(screen.getByText(/^Awarded on Oct 26, 2026(?: by)?$/)).toBeTruthy();
     });
+    it('retains the issuance-date fallback when the award date is invalid', () => {
+        render(renderFace({ ...credential, awardedDate: 'not-a-date' }));
+        expect(screen.getByText(/^Awarded on Oct 26, 2026(?: by)?$/)).toBeTruthy();
+    });
     it('omits the date for an undated draft', () => {
         render(renderFace({ ...credential, awardedDate: undefined, validFrom: undefined }));
         expect(screen.queryByText(/Awarded on/)).toBeNull();

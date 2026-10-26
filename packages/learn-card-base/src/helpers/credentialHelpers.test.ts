@@ -541,6 +541,7 @@ describe('evidence attachment classification', () => {
             .mockRejectedValue(new Error('No network in test'));
         try {
             expect(await getEvidenceAttachmentType(url)).toBe(expected);
+            expect(fetch).not.toHaveBeenCalled();
         } finally {
             fetch.mockRestore();
         }

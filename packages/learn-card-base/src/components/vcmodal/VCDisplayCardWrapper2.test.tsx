@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
-    displayCard: vi.fn(() => null),
+    displayCard: vi.fn((_props: unknown) => null),
     verifyCredential: vi.fn(),
 }));
 
@@ -56,10 +56,13 @@ vi.mock('learn-card-base', () => ({
 vi.mock('learn-card-base/helpers/lifecycleVerification.helpers', () => ({
     applyLifecycleStatusToVerifications: (items: unknown[]) => items,
 }));
-vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    unwrapBoostCredential: (credential: VC) => credential,
-    getDefaultCategoryForCredential: () => 'Social Badge',
-}));
+vi.mock('learn-card-base/helpers/credentialHelpers', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../helpers/credentialHelpers')>();
+    return {
+        unwrapBoostCredential: actual.unwrapBoostCredential,
+        getDefaultCategoryForCredential: () => 'Social Badge',
+    };
+});
 vi.mock('learn-card-base/helpers/credentials/ids', () => ({
     ID_CARD_DISPLAY_TYPES: { PermanentResidentCard: 'PermanentResidentCard' },
 }));
@@ -86,6 +89,27 @@ const endorsement = {
 describe('VCDisplayCardWrapper2', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+    });
+
+    it('passes the inner award date and issuance date to the renderer for a certified boost', () => {
+        const innerCredential = { ...endorsement, awardedDate: '2027-10-01T00:00:00Z' };
+        const wrappedCredential = {
+            ...endorsement,
+            type: ['VerifiableCredential', 'CertifiedBoostCredential'],
+            issuanceDate: '2026-10-26T12:00:00Z',
+            awardedDate: '2028-01-01T00:00:00Z',
+            boostCredential: innerCredential,
+        } as unknown as VC;
+
+        render(
+            <VCDisplayCardWrapper2 credential={wrappedCredential} categoryType="Social Badge" />
+        );
+
+        const displayProps = mocks.displayCard.mock.calls.at(-1)?.[0] as { credential: VC };
+        expect(displayProps.credential).toEqual(expect.objectContaining(innerCredential));
+        expect(displayProps.credential.awardedDate).toBe('2027-10-01T00:00:00Z');
+        expect(displayProps.credential.issuanceDate).toBe(endorsement.issuanceDate);
+        expect(displayProps.credential.boostCredential).toBeUndefined();
     });
 
     it('forwards endorsement identity overrides to the final credential card', () => {
