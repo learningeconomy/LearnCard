@@ -108,20 +108,23 @@ describe('Credential Helpers', () => {
 });
 
 describe('award-date formatting', () => {
-    it('falls back safely for a large malformed award date', () => {
-        const options = { uppercaseDate: false, dateType: 'awarded' } as const;
-        const malformed = ' '.repeat(100_000);
-        expect(
-            getInfoFromCredential(
-                { ...VC2CredentialWithValidFrom, awardedDate: malformed } as never,
-                'MMM dd, yyyy',
-                options
-            ).createdAt
-        ).toBe(
-            getInfoFromCredential(VC2CredentialWithValidFrom as never, 'MMM dd, yyyy', options)
-                .createdAt
-        );
-    });
+    it.each(['awarded', 'issuance'] as const)(
+        'falls back safely for a large malformed award date in %s mode',
+        dateType => {
+            const options = { uppercaseDate: false, dateType } as const;
+            const malformed = ' '.repeat(100_000);
+            expect(
+                getInfoFromCredential(
+                    { ...VC2CredentialWithValidFrom, awardedDate: malformed } as never,
+                    'MMM dd, yyyy',
+                    options
+                ).createdAt
+            ).toBe(
+                getInfoFromCredential(VC2CredentialWithValidFrom as never, 'MMM dd, yyyy', options)
+                    .createdAt
+            );
+        }
+    );
     it.each(['2027-10-01T00:30+02', '2027-10-01T00:30+0200', '2027-10-01T00:30+02:00'])(
         'recognizes an explicit award timezone in %s',
         awardedDate => {

@@ -74,6 +74,7 @@ export const getInfoFromCredential = (
             // Inspect at most six suffix characters; never scan arbitrary input
             // with a backtracking wildcard when looking for a timezone.
             const hasAwardOffset =
+                validAwardedDate &&
                 (awardDateText.includes('T') || awardDateText.includes(' ')) &&
                 /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(awardDateText.slice(-6));
             const displayDate =
