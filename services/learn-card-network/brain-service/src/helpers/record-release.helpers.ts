@@ -351,8 +351,12 @@ export const submitProvisionedRecord = async (
         outcome = committed;
 
         // Issuance follows the committed release; its failure is recorded, never rolled back,
-        // and never turns an accepted release into an error for the partner.
-        if (committed.status === 'ACCEPTED') {
+        // and never turns an accepted release into an error for the partner. In offer mode a
+        // replay re-runs it too: the partner's offerUri is the learner's only link, so a lost
+        // response must be recoverable. Offer issuance signs nothing and reuses the offer.
+        const replayOffer =
+            committed.status === 'DUPLICATE' && metadata.issuance?.delivery === 'offer';
+        if (committed.status === 'ACCEPTED' || replayOffer) {
             try {
                 const issued = await issuer.issue(
                     {
@@ -398,11 +402,15 @@ export const submitProvisionedRecord = async (
     }
 };
 
-/** Retention enforcement for stored records; deletes records past their declared retention. */
+/**
+ * Retention enforcement for stored records; deletes records past their declared retention,
+ * together with the copy brain keeps of a credential claimed from an offer (CLAIMED_AS).
+ */
 export const purgeExpiredProvisionedRecords = async (now = new Date()): Promise<number> => {
     const result = await neogma.queryRunner.run(
         `MATCH (r:ProvisionedRecord) WHERE r.expiresAt <= $now
-         WITH r, r.id AS id DETACH DELETE r RETURN count(id) AS purged`,
+         OPTIONAL MATCH (r)-[:CLAIMED_AS]->(c:Credential)
+         WITH r, c, r.id AS id DETACH DELETE c, r RETURN count(DISTINCT id) AS purged`,
         { now: now.toISOString() }
     );
 

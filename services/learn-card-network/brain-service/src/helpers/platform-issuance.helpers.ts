@@ -13,6 +13,7 @@ import { getCredentialUri, sendCredential } from '@helpers/credential.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import type { IssuanceOutcome } from '@helpers/issuers/types';
+import { issueRecordOffer } from '@helpers/claim-offer.helpers';
 
 export type RecordIssuer = {
     group: { id: string; name: string };
@@ -123,11 +124,48 @@ export const renderPlatformCredential = (input: {
     };
 };
 
-/** Platform Issuance never produces offers; the shared outcome type keeps adapters in step. */
-export type PlatformIssuanceResult = Exclude<IssuanceOutcome, { status: 'OFFERED' }>;
+/** Platform Issuance pushes (ISSUED) or, when the Binding declares delivery 'offer', offers. */
+export type PlatformIssuanceResult = IssuanceOutcome;
 
-/** A credential already sent for this record (e.g. a status write lost after delivery). */
-const findDeliveredCredentialUri = async (
+/** A committed record handed to Platform Issuance, with the Binding's issuance declaration. */
+export type ProvisionedRecordIssuance = {
+    recordId: string;
+    bindingId: string;
+    ecosystemId: string;
+    subjectProfileId: string;
+    fields: Record<string, string>;
+    issuance: RecordIssuanceDeclaration;
+    domain: string;
+};
+
+/** Renders the record's credential as the resolved issuer, for a given subject DID. */
+export const buildRecordCredential = (input: {
+    recordId: string;
+    ecosystemId: string;
+    fields: Record<string, string>;
+    issuance: RecordIssuanceDeclaration;
+    issuer: RecordIssuer;
+    subjectDid: string;
+    domain: string;
+}): UnsignedVC =>
+    renderPlatformCredential({
+        template: input.issuance.template,
+        fields: input.fields,
+        recordId: input.recordId,
+        ecosystemId: input.ecosystemId,
+        issuer: {
+            did: getDidWeb(input.domain, input.issuer.profile.profileId),
+            name: input.issuer.group.name,
+        },
+        subjectDid: input.subjectDid,
+        issuedAt: new Date().toISOString(),
+    });
+
+/**
+ * A credential already delivered for this record: sent to the Profile (e.g. a status write
+ * lost after delivery), or claimed from an offer. Either way it must never be signed again.
+ */
+export const findDeliveredCredentialUri = async (
     recordId: string,
     domain: string
 ): Promise<string | null> => {
@@ -136,8 +174,59 @@ const findDeliveredCredentialUri = async (
         { recordId }
     );
     const id: unknown = result.records[0]?.get('id');
+    if (typeof id === 'string') return getCredentialUri(id, domain);
 
-    return typeof id === 'string' ? getCredentialUri(id, domain) : null;
+    const claimed = await neogma.queryRunner.run(
+        `MATCH (r:ProvisionedRecord {id: $recordId}) WHERE r.claimedAt IS NOT NULL
+         RETURN r.credentialUri AS uri LIMIT 1`,
+        { recordId }
+    );
+    const uri: unknown = claimed.records[0]?.get('uri');
+
+    return typeof uri === 'string' ? uri : null;
+};
+
+/**
+ * Records an issuance outcome on the record and audits it. `onlyFrom` restricts the write to
+ * records still in one of those states, so a late failure cannot clobber a claim in flight.
+ */
+export const writeIssuanceOutcome = async (
+    input: Pick<
+        ProvisionedRecordIssuance,
+        'recordId' | 'bindingId' | 'ecosystemId' | 'subjectProfileId'
+    >,
+    result: Exclude<IssuanceOutcome, { status: 'OFFERED' }>,
+    onlyFrom?: string[]
+): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (r:ProvisionedRecord {id: $recordId})
+         ${onlyFrom ? 'WHERE r.issuanceStatus IN $onlyFrom' : ''}
+         SET r.issuanceStatus = $status, r.credentialUri = $credentialUri, r.issuedAt = $now
+         CREATE (:InstallIntentAuditEvent {id: $auditId, action: $action,
+             ecosystemId: $ecosystemId, bindingId: $bindingId, timestamp: $now,
+             afterSummary: $afterSummary})`,
+        {
+            recordId: input.recordId,
+            onlyFrom: onlyFrom ?? null,
+            status: result.status,
+            credentialUri: result.status === 'ISSUED' ? result.credentialUri : null,
+            now: new Date().toISOString(),
+            auditId: `install_intent_audit_${randomUUID()}`,
+            action:
+                result.status === 'ISSUED'
+                    ? 'RECORD_CREDENTIAL_ISSUED'
+                    : 'RECORD_CREDENTIAL_ISSUE_FAILED',
+            ecosystemId: input.ecosystemId,
+            bindingId: input.bindingId,
+            afterSummary: JSON.stringify({
+                recordId: input.recordId,
+                subjectProfileId: input.subjectProfileId,
+                ...(result.status === 'ISSUED'
+                    ? { credentialUri: result.credentialUri }
+                    : { reason: result.reason }),
+            }),
+        }
+    );
 };
 
 /**
@@ -145,17 +234,14 @@ const findDeliveredCredentialUri = async (
  * issue time, signs through its signing authority and sends to the subject's Profile. Safe to
  * repeat: an already-delivered record is reconciled, never re-signed. The outcome is recorded
  * and audited; a failure never undoes the stored record, and a lost write leaves it PENDING.
+ * A Binding declaring delivery 'offer' signs nothing here: the learner's wallet claims it.
  */
-export const issueProvisionedRecord = async (input: {
-    recordId: string;
-    bindingId: string;
-    ecosystemId: string;
-    subjectProfileId: string;
-    fields: Record<string, string>;
-    issuance: RecordIssuanceDeclaration;
-    domain: string;
-}): Promise<PlatformIssuanceResult> => {
-    let result: PlatformIssuanceResult;
+export const issueProvisionedRecord = async (
+    input: ProvisionedRecordIssuance
+): Promise<PlatformIssuanceResult> => {
+    if (input.issuance.delivery === 'offer') return issueRecordOffer(input);
+
+    let result: Exclude<IssuanceOutcome, { status: 'OFFERED' }>;
 
     try {
         const delivered = await findDeliveredCredentialUri(input.recordId, input.domain);
@@ -169,17 +255,10 @@ export const issueProvisionedRecord = async (input: {
         else if (!issuer || !subject) {
             result = { status: 'ISSUE_FAILED', reason: 'Subject Profile missing.' };
         } else {
-            const unsigned = renderPlatformCredential({
-                template: input.issuance.template,
-                fields: input.fields,
-                recordId: input.recordId,
-                ecosystemId: input.ecosystemId,
-                issuer: {
-                    did: getDidWeb(input.domain, issuer.profile.profileId),
-                    name: issuer.group.name,
-                },
+            const unsigned = buildRecordCredential({
+                ...input,
+                issuer,
                 subjectDid: getDidWeb(input.domain, subject.profileId),
-                issuedAt: new Date().toISOString(),
             });
             const credential = await issueCredentialWithSigningAuthority(
                 { type: 'profile', profile: issuer.profile },
@@ -206,33 +285,7 @@ export const issueProvisionedRecord = async (input: {
     }
 
     try {
-        await neogma.queryRunner.run(
-            `MATCH (r:ProvisionedRecord {id: $recordId})
-             SET r.issuanceStatus = $status, r.credentialUri = $credentialUri, r.issuedAt = $now
-             CREATE (:InstallIntentAuditEvent {id: $auditId, action: $action,
-                 ecosystemId: $ecosystemId, bindingId: $bindingId, timestamp: $now,
-                 afterSummary: $afterSummary})`,
-            {
-                recordId: input.recordId,
-                status: result.status,
-                credentialUri: result.status === 'ISSUED' ? result.credentialUri : null,
-                now: new Date().toISOString(),
-                auditId: `install_intent_audit_${randomUUID()}`,
-                action:
-                    result.status === 'ISSUED'
-                        ? 'RECORD_CREDENTIAL_ISSUED'
-                        : 'RECORD_CREDENTIAL_ISSUE_FAILED',
-                ecosystemId: input.ecosystemId,
-                bindingId: input.bindingId,
-                afterSummary: JSON.stringify({
-                    recordId: input.recordId,
-                    subjectProfileId: input.subjectProfileId,
-                    ...(result.status === 'ISSUED'
-                        ? { credentialUri: result.credentialUri }
-                        : { reason: result.reason }),
-                }),
-            }
-        );
+        await writeIssuanceOutcome(input, result);
     } catch (error) {
         // The record stays PENDING; retryRecordIssuance (issuers/retry.ts) reconciles it without re-signing.
         console.error('Platform issuance status write failed', error);

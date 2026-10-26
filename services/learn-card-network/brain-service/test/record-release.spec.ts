@@ -103,14 +103,19 @@ const approveRecordBinding = async (
     client: OwnerClient,
     ecosystemId: string,
     installId: string,
-    issuer: Issuer
+    issuer: Issuer,
+    delivery?: 'push' | 'offer'
 ) => {
+    const metadata = metadataFor(issuer);
     const proposed = await client.installIntent.proposeBinding({
         ecosystemId,
         capability: 'record-provisioning',
         provider: { resourceType: 'INTEGRATION_INSTALL', resourceId: installId, ecosystemId },
         consumer: { resourceType: 'ECOSYSTEM', resourceId: ecosystemId, ecosystemId },
-        capabilityMetadata: metadataFor(issuer),
+        capabilityMetadata:
+            delivery && metadata.issuance
+                ? { ...metadata, issuance: { ...metadata.issuance, delivery } }
+                : metadata,
     });
     const preflight = await client.installIntent.prepareBindingConsentPreflight({
         bindingId: proposed.bindingId,
@@ -123,7 +128,9 @@ const approveRecordBinding = async (
     });
 };
 
-const setup = async (options: { learnerConsent?: LearnerConsent } = {}) => {
+const setup = async (
+    options: { learnerConsent?: LearnerConsent; delivery?: 'push' | 'offer' } = {}
+) => {
     const { ecosystem: root, client, profileId } = await setupServiceAccount();
     const installEco = await createEcosystem({
         name: 'District',
@@ -244,7 +251,13 @@ const setup = async (options: { learnerConsent?: LearnerConsent } = {}) => {
 
     const issuer = await createIssuerGroup(installEco.id);
     const issuerGroupId = issuer.groupId;
-    const binding = await approveRecordBinding(client, installEco.id, account.installId, issuer);
+    const binding = await approveRecordBinding(
+        client,
+        installEco.id,
+        account.installId,
+        issuer,
+        options.delivery
+    );
 
     // The learner: a member of the district, consenting (or not) to the governed contract.
     const learnerId = `learner-${randomUUID()}`;
@@ -329,7 +342,9 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
             { recordId: first.recordId, issuerGroupId }
         );
         expect(sent.records[0]?.get('status')).toBe('ISSUED');
-        expect(String(sent.records[0]?.get('uri'))).toBe(first.issuance?.credentialUri);
+        expect(String(sent.records[0]?.get('uri'))).toBe(
+            first.issuance?.status === 'ISSUED' ? first.issuance.credentialUri : ''
+        );
         expect(Number(sent.records[0]?.get('sent'))).toBe(1);
 
         const replay = await partner.integrationService.submitRecord({
@@ -340,6 +355,77 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
         expect(replay).toEqual({ recordId: first.recordId, status: 'DUPLICATE' });
         expect(await storedRecords(learnerId)).toBe(1);
         expect(await decisions(learnerId)).toEqual(['ALLOW', 'ALLOW']);
+    });
+
+    it('returns a claim offer instead of pushing when the Binding declares offer delivery', async () => {
+        const { partner, learnerId } = await setup({ delivery: 'offer' });
+        const result = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields: record(),
+        });
+        expect(result.status).toBe('ACCEPTED');
+        expect(result.issuance?.status).toBe('OFFERED');
+        const offerUri = result.issuance?.status === 'OFFERED' ? result.issuance.offerUri : '';
+        expect(offerUri).toMatch(/\/api\/workflows\/educationos-claim\/exchanges\/[\w-]{43}$/);
+        const state = await neogma.queryRunner.run(
+            `MATCH (r:ProvisionedRecord {id: $recordId})
+             OPTIONAL MATCH (:Profile)-[s:CREDENTIAL_SENT]->(:Credential)
+             WHERE s.\`metadata.educationOsRecordId\` = $recordId
+             RETURN r.issuanceStatus AS status, r.deliveryChannel AS channel, count(s) AS sent`,
+            { recordId: result.recordId }
+        );
+        expect(state.records[0]?.get('status')).toBe('OFFERED');
+        expect(state.records[0]?.get('channel')).toBe('offer');
+        expect(Number(state.records[0]?.get('sent'))).toBe(0);
+    });
+
+    it('returns the same claim offer again when an offer-mode release is replayed', async () => {
+        const { partner, learnerId } = await setup({ delivery: 'offer' });
+        const fields = record();
+        const first = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields,
+        });
+        expect(first.issuance?.status).toBe('OFFERED');
+
+        // A partner whose first response was lost recovers the learner's only link.
+        const replay = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields,
+        });
+        expect(replay).toEqual({
+            recordId: first.recordId,
+            status: 'DUPLICATE',
+            issuance: first.issuance,
+        });
+        const offered = async (): Promise<number> => {
+            const result = await neogma.queryRunner.run(
+                `MATCH (a:InstallIntentAuditEvent {action: 'RECORD_CREDENTIAL_OFFERED'})
+                 WHERE a.afterSummary CONTAINS $recordId RETURN count(a) AS count`,
+                { recordId: first.recordId }
+            );
+            return Number(result.records[0]?.get('count'));
+        };
+        expect(await offered()).toBe(1);
+
+        // An offer write that failed after release (issuance PENDING) is created on replay.
+        await neogma.queryRunner.run(
+            `MATCH (r:ProvisionedRecord {id: $recordId})
+             SET r.issuanceStatus = 'PENDING'
+             REMOVE r.offerId, r.offerExpiresAt, r.deliveryChannel`,
+            { recordId: first.recordId }
+        );
+        const recovered = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields,
+        });
+        expect(recovered.status).toBe('DUPLICATE');
+        expect(recovered.issuance?.status).toBe('OFFERED');
+        const recoveredUri =
+            recovered.issuance?.status === 'OFFERED' ? recovered.issuance.offerUri : '';
+        expect(recoveredUri).toMatch(/\/exchanges\/[\w-]{43}$/);
+        expect(await storedRecords(learnerId)).toBe(1);
+        expect(await offered()).toBe(2);
     });
 
     it('denies and stores nothing when the learner has not consented', async () => {

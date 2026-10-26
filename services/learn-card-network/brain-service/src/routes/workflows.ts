@@ -67,6 +67,12 @@ import {
     getConsentExchangeStatus,
     startConsentExchange,
 } from '@helpers/consent-exchange.helpers';
+import {
+    CLAIM_WORKFLOW_ID,
+    claimOfferRequest,
+    completeClaimOffer,
+} from '@helpers/claim-offer.helpers';
+import { apiBaseUrl } from '@helpers/uri.helpers';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -110,9 +116,7 @@ const ExchangeInfoValidator = z.object({
 
 type ExchangeInfoType = z.infer<typeof ExchangeInfoValidator>;
 
-/** Public base URL for this deployment's REST API, used in wallet-facing links. */
-export const apiBaseUrl = (domain: string): string =>
-    `${domain.includes('localhost') ? 'http' : 'https'}://${domain.replace(/%3A/g, ':')}/api`;
+export { apiBaseUrl };
 
 export const workflowsRouter = t.router({
     startConsentExchange: openRoute
@@ -228,6 +232,33 @@ export const workflowsRouter = t.router({
                             .consentToContract({ contractUri, terms, audienceVersion });
                     }
                 );
+            }
+
+            // EducationOS claim offer, redeemable only by the record's learner (RFC 2026-10 N3).
+            if (localWorkflowId === CLAIM_WORKFLOW_ID) {
+                // Unauthenticated until the VP verifies, so bounded per caller before any lookup
+                // or verify. There is deliberately no per-offer bucket here: anyone holding a
+                // forwarded link could fill it and lock the learner out. completeClaimOffer
+                // limits per offer only once the learner has authenticated.
+                await enforceRateLimits([
+                    {
+                        key: `claim-offer:ip:${ctx.sourceIp ?? 'unknown'}`,
+                        limit: 60,
+                        windowSeconds: 60,
+                        description: 'claim offer caller',
+                    },
+                ]);
+                if (!verifiablePresentation) {
+                    return claimOfferRequest(localExchangeId, domain);
+                }
+                const credential = await completeClaimOffer(
+                    localExchangeId,
+                    verifiablePresentation,
+                    domain
+                );
+                return {
+                    verifiablePresentation: await issueResponsePresentationWithVcs([credential]),
+                };
             }
 
             // Demonstration of VC-API workflow with redirect

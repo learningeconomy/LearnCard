@@ -13,7 +13,8 @@ export type IssuableRecord = {
 
 /**
  * What issuance produced; the record is kept either way. ISSUED: a credential was delivered.
- * OFFERED: a claim offer any sanctioned wallet can redeem (neutrality N3). ISSUE_FAILED: why not.
+ * OFFERED: a claim offer any sanctioned wallet can redeem (neutrality N3); Platform Issuance
+ * returns it when the Binding declares issuance.delivery 'offer'. ISSUE_FAILED: why not.
  */
 export type IssuanceOutcome =
     | { status: 'ISSUED'; credentialUri: string }

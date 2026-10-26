@@ -203,6 +203,7 @@ const indexQueries = [
     'CREATE INDEX boost_category_idx IF NOT EXISTS FOR (b:Boost) ON (b.category)',
     'CREATE INDEX boost_autoconnect_idx IF NOT EXISTS FOR (b:Boost) ON (b.autoConnectRecipients)',
     'CREATE INDEX credential_id_idx IF NOT EXISTS FOR (c:Credential) ON (c.id)',
+    'CREATE INDEX provisioned_record_offer_idx IF NOT EXISTS FOR (r:ProvisionedRecord) ON (r.offerId)',
     'CREATE INDEX profilemanager_id_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.id)',
     'CREATE INDEX profile_manager_created_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.created)',
     'CREATE INDEX role_id_idx IF NOT EXISTS FOR (r:Role) ON (r.id)',

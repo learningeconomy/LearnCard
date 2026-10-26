@@ -10,6 +10,10 @@ import { isEncrypted } from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import { getLearnCard } from './learnCard.helpers';
 
+/** Public base URL for this deployment's REST API, used in wallet-facing links. */
+export const apiBaseUrl = (domain: string): string =>
+    `${domain.includes('localhost') ? 'http' : 'https'}://${domain.replace(/%3A/g, ':')}/api`;
+
 export const URI_TYPES = [
     'credential',
     'presentation',
