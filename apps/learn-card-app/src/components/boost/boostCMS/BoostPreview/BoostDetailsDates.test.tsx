@@ -62,7 +62,10 @@ describe.each([
         render(
             <Component
                 credential={
-                    { awardedDate: '2027-10-01T00:00:00Z', validFrom: '2026-10-26T12:00:00Z' } as VC
+                    {
+                        awardedDate: '2027-10-01T00:00:00Z',
+                        validFrom: '2026-10-26T12:00:00Z',
+                    } as unknown as VC
                 }
                 verificationItems={[]}
                 isPreview
@@ -73,12 +76,15 @@ describe.each([
     });
     it('falls back to the legacy issuance date', () => {
         render(
-            <Component credential={{ issuanceDate: '2026-10-26' } as VC} verificationItems={[]} />
+            <Component
+                credential={{ issuanceDate: '2026-10-26' } as unknown as VC}
+                verificationItems={[]}
+            />
         );
         expect(screen.getByText('Awarded on October 26, 2026')).toBeTruthy();
     });
     it('does not invent an award day for an undated draft', () => {
-        render(<Component credential={{} as VC} verificationItems={[]} isPreview />);
+        render(<Component credential={{} as unknown as VC} verificationItems={[]} isPreview />);
         expect(screen.queryByText(/Awarded on/)).toBeNull();
     });
 });
