@@ -18,8 +18,12 @@ import {
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet } from 'learn-card-base';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { useWallet, useGetSelfAssignedSkillsBoost } from 'learn-card-base';
+import {
+    getDefaultCategoryForCredential,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME,
+} from 'learn-card-base/helpers/credentialHelpers';
+import { isHiddenActivity } from '../../pages/wallet/activity-feed/activityFeed.helpers';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -89,6 +93,9 @@ export const ShareLinkCreate = ({
     initialSelectedUri,
 }: ShareLinkCreateProps) => {
     const { initWallet } = useWallet();
+    const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
+    const selfAssignedSkillsUriRef = useRef<string | undefined>(selfAssignedSkillsBoost?.uri);
+    selfAssignedSkillsUriRef.current = selfAssignedSkillsBoost?.uri;
     const assetEdit = Boolean(editShare?.attachmentId);
     if (assetEdit) enterSharePrivacy();
     const qrExport = useRef<HTMLDivElement>(null);
@@ -217,7 +224,18 @@ export const ShareLinkCreate = ({
                 if (!page || (page.hasMore && (!page.cursor || seenCursors.has(page.cursor))))
                     throw new Error('page');
                 records.push(
-                    ...page.records.filter(record => !record.id?.startsWith('__verifiable_data_'))
+                    ...page.records.filter(record => {
+                        if (initialSelectedUri && record.uri === initialSelectedUri) return true;
+                        if (record.id?.startsWith('__verifiable_data_')) return false;
+                        if (isHiddenActivity(record.category)) return false;
+                        if (
+                            selfAssignedSkillsUriRef.current &&
+                            record.uri === selfAssignedSkillsUriRef.current
+                        )
+                            return false;
+                        if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
+                        return true;
+                    })
                 );
                 if (!page.hasMore) break;
                 pageCursor = page.cursor;
