@@ -3825,7 +3825,8 @@
                 "revoked": "Révoqué",
                 "suspended": "Suspendu"
             },
-            "awardedOn": "Décernée le {{date}}"
+            "awardedOn": "Décernée le {{date}}",
+            "awardedOnBy": "Décernée le {{date}} par"
         }
     },
     "skills": {

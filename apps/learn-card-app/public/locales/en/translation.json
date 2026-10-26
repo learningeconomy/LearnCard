@@ -3876,7 +3876,8 @@
                 "revoked": "Revoked",
                 "suspended": "Suspended"
             },
-            "awardedOn": "Awarded on {{date}}"
+            "awardedOn": "Awarded on {{date}}",
+            "awardedOnBy": "Awarded on {{date}} by"
         }
     },
     "skills": {

@@ -3822,7 +3822,8 @@
                 "revoked": "ملغاة",
                 "suspended": "معلقة"
             },
-            "awardedOn": "مُنحت في {{date}}"
+            "awardedOn": "مُنحت في {{date}}",
+            "awardedOnBy": "مُنحت في {{date}} بواسطة"
         }
     },
     "skills": {

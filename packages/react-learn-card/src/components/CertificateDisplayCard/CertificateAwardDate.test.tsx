@@ -4,6 +4,8 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
+import MeritBadgeFrontFace from '../MeritBadgeDisplayCard/MeritBadgeFrontFace';
+import MeritBadgeBackFace from '../MeritBadgeDisplayCard/MeritBadgeBackFace';
 import { I18nProvider } from '../../i18n';
 import type { VC } from '@learncard/types';
 
@@ -22,17 +24,22 @@ const credential = {
 afterEach(cleanup);
 
 describe.each([
-    ['front', (value: VC) => <CertificateFrontFace credential={value} />],
-    ['back', (value: VC) => <CertificateBackFace credential={value} verificationItems={[]} />],
-] as const)('certificate %s award date', (_, renderFace) => {
+    ['certificate front', (value: VC) => <CertificateFrontFace credential={value} />],
+    [
+        'certificate back',
+        (value: VC) => <CertificateBackFace credential={value} verificationItems={[]} />,
+    ],
+    ['award front', (value: VC) => <MeritBadgeFrontFace credential={value} />],
+    ['award back', (value: VC) => <MeritBadgeBackFace credential={value} verificationItems={[]} />],
+] as const)('%s award date', (_, renderFace) => {
     it('shows the mapped award day instead of the issuance day', () => {
         render(renderFace(credential));
-        expect(screen.getByText('Awarded on Oct 01, 2027')).toBeTruthy();
+        expect(screen.getByText(/^Awarded on Oct 01, 2027(?: by)?$/)).toBeTruthy();
         expect(screen.queryByText(/Awarded on Oct 26, 2026/)).toBeNull();
     });
     it('retains the legacy issuance-date fallback', () => {
         render(renderFace({ ...credential, awardedDate: undefined }));
-        expect(screen.getByText('Awarded on Oct 26, 2026')).toBeTruthy();
+        expect(screen.getByText(/^Awarded on Oct 26, 2026(?: by)?$/)).toBeTruthy();
     });
     it('omits the date for an undated draft', () => {
         render(renderFace({ ...credential, awardedDate: undefined, validFrom: undefined }));
@@ -43,7 +50,9 @@ describe.each([
             <I18nProvider
                 locale="fr"
                 resolve={(key, params) =>
-                    key === 'credential.awardedOn' ? `Décernée le ${params?.date}` : undefined
+                    key.startsWith('credential.awardedOn')
+                        ? `Décernée le ${params?.date}`
+                        : undefined
                 }
             >
                 {renderFace(credential)}
