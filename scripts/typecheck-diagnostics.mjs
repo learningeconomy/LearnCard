@@ -118,6 +118,7 @@ export const compareReports = (head, base) =>
                 allowance: current.allowance,
                 baseCount: previous?.count ?? null,
                 unavailable: reason,
+                headDiagnostics: current.diagnostics,
                 added: reason ? null : addedDiagnostics(current.diagnostics, previous.diagnostics),
             };
         });
@@ -154,29 +155,38 @@ export const formatComparison = comparisons => {
                 `**Comparison unavailable:** ${md(project.unavailable)} No claim about newly introduced diagnostics can be made. The original ratchet failure remains.`,
                 ''
             );
-            continue;
-        }
-        lines.push(
-            `**${project.added.length} added diagnostic(s)**; ${project.count - project.added.length} match base diagnostics.`,
-            ''
-        );
-        if (!project.added.length)
             lines.push(
-                'No added diagnostics were identified. Check whether the base already exceeds the allowance or preparation/toolchain state differs.',
+                project.headDiagnostics.length
+                    ? '**Current head diagnostic sample** (first 30; not necessarily introduced by this branch):'
+                    : 'No head diagnostics were captured. Check the typecheck log for the incomplete check.',
                 ''
             );
-        for (const d of project.added.slice(0, 50)) {
+        } else {
+            lines.push(
+                `**${project.added.length} added diagnostic(s)**; ${project.count - project.added.length} match base diagnostics.`,
+                ''
+            );
+            if (!project.added.length)
+                lines.push(
+                    'No added diagnostics were identified. Check whether the base already exceeds the allowance or preparation/toolchain state differs.',
+                    ''
+                );
+        }
+        const diagnostics = project.unavailable ? project.headDiagnostics : project.added;
+        const limit = project.unavailable ? 30 : 50;
+        const label = project.unavailable ? 'Current' : 'Added';
+        for (const d of diagnostics.slice(0, limit)) {
             lines.push(
                 `- \`${md(d.file ?? '(configuration)')}${d.line ? `:${d.line}:${d.column}` : ''}\` — **${d.code}**: ${md(d.message)}`
             );
             if (d.file && within(d.file) && d.line)
                 annotations.push(
-                    `::error file=${escapeProperty(d.file)},line=${d.line},col=${d.column},title=${escapeProperty(`Added ${d.code} (${project.name})`)}::${escapeData(d.message)}`
+                    `::error file=${escapeProperty(d.file)},line=${d.line},col=${d.column},title=${escapeProperty(`${label} ${d.code} (${project.name})`)}::${escapeData(d.message)}`
                 );
         }
-        if (project.added.length > 50)
+        if (diagnostics.length > limit)
             lines.push(
-                `Showing 50 of ${project.added.length}; the uploaded diagnostic reports contain every entry.`
+                `Showing ${limit} of ${diagnostics.length}; the uploaded diagnostic reports contain every entry.`
             );
         lines.push('');
     }

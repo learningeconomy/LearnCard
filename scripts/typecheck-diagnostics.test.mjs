@@ -98,10 +98,47 @@ for (const [label, base] of [
         const formatted = formatComparison(compared);
         assert.match(formatted.markdown, /Comparison unavailable/);
         assert.doesNotMatch(formatted.markdown, /0 added/);
-        assert.deepEqual(formatted.annotations, []);
+        assert.match(formatted.markdown, /Current head diagnostic sample/);
+        assert.match(formatted.markdown, /not necessarily introduced by this branch/);
+        assert.match(formatted.markdown, /src\/a.ts:1:1.*TS2322.*Old problem/);
+        assert.equal(formatted.annotations.length, 1);
+        assert.match(formatted.annotations[0], /title=Current TS2322/);
+        assert.doesNotMatch(formatted.annotations[0], /title=Added/);
     });
 
-test('only added errors get source annotations, and workflow-command fields are escaped', () => {
+test('unavailable comparison samples are bounded, escaped, and keep configuration diagnostics visible', () => {
+    const errors = Array.from({ length: 35 }, (_, i) =>
+        diagnostic(i + 1, `Problem ${i} <script>\n::notice::injected`)
+    );
+    errors[0] = parseDiagnostic('error TS6053: File missing', '/repo');
+    errors[1].file = 'src/a,b.ts';
+    errors[2].file = '../outside.ts';
+    const formatted = formatComparison(compareReports(report(result(errors)), undefined));
+    assert.match(formatted.markdown, /\(configuration\).*TS6053.*File missing/);
+    assert.match(formatted.markdown, /Showing 30 of 35/);
+    assert.match(formatted.markdown, /&lt;script&gt;/);
+    assert.doesNotMatch(formatted.markdown, /Problem 30/);
+    assert.equal(formatted.annotations.length, 28);
+    assert.match(formatted.annotations[0], /file=src\/a%2Cb.ts,line=2,col=1/);
+    assert.match(formatted.annotations[0], /%0A::notice::injected/);
+    assert.ok(formatted.annotations.every(annotation => annotation.split('\n').length === 1));
+    assert.doesNotMatch(formatted.annotations.join('\n'), /file=\.\.\//);
+});
+
+test('head configuration errors also fall back to current diagnostics', () => {
+    const error = parseDiagnostic('error TS6053: File missing', '/repo');
+    const compared = compareReports(
+        report(result([error], { configErrors: 1 })),
+        report(result([]))
+    );
+    const formatted = formatComparison(compared);
+    assert.match(formatted.markdown, /Comparison unavailable.*configuration errors/);
+    assert.match(formatted.markdown, /Current head diagnostic sample/);
+    assert.match(formatted.markdown, /TS6053.*File missing/);
+    assert.deepEqual(formatted.annotations, []);
+});
+
+test('available comparisons annotate only added errors, and workflow-command fields are escaped', () => {
     const added = { ...diagnostic(3, 'message\n::notice::injected'), file: 'src/a,b.ts' };
     const formatted = formatComparison([
         {
@@ -224,6 +261,11 @@ const fs = require('node:fs'); const file = process.argv.find(a => a.startsWith(
         ]);
         assert.equal(missing.status, 0);
         assert.match(missing.stdout, /Comparison unavailable/);
+        assert.match(missing.stdout, /Current head diagnostic sample/);
+        assert.match(missing.stdout, /app\/src\/a.ts:3:7.*TS2322/);
+        assert.match(missing.stdout, /Showing 30 of 41/);
+        assert.match(missing.stdout, /::error file=app\/src\/a.ts,line=3,col=7,title=Current/);
+        assert.match(readFileSync(summary, 'utf8'), /Current head diagnostic sample/);
         assert.doesNotMatch(missing.stdout, /0 added/);
         const corruptFile = join(directory, 'corrupt.json');
         writeFileSync(
@@ -233,6 +275,8 @@ const fs = require('node:fs'); const file = process.argv.find(a => a.startsWith(
         const corrupt = run(['scripts/typecheck-diagnostics.mjs', 'render', headFile, corruptFile]);
         assert.equal(corrupt.status, 0);
         assert.match(corrupt.stdout, /Comparison unavailable/);
+        assert.match(corrupt.stdout, /Current head diagnostic sample/);
+        assert.match(corrupt.stdout, /app\/src\/a.ts:3:7.*TS2322/);
         assert.doesNotMatch(corrupt.stdout, /0 added/);
         const selected = run(['scripts/typecheck-diagnostics.mjs', 'select', headFile]);
         assert.equal(selected.status, 0);
@@ -253,7 +297,22 @@ test('an incomplete head is explained even though it has no valid count to compa
     const formatted = formatComparison(compared);
     assert.match(formatted.markdown, /Head typecheck did not finish/);
     assert.match(formatted.markdown, /not completed/);
+    assert.match(formatted.markdown, /No head diagnostics were captured/);
     assert.deepEqual(formatted.annotations, []);
+});
+
+test('partial diagnostics from an incomplete head remain visible without claiming additions', () => {
+    const compared = compareReports(
+        report(
+            result([diagnostic(4)], { raised: false, count: null, incomplete: 'killed by SIGKILL' })
+        ),
+        report(result([]))
+    );
+    const formatted = formatComparison(compared);
+    assert.match(formatted.markdown, /Head typecheck did not finish/);
+    assert.match(formatted.markdown, /src\/a.ts:4:1.*Old problem/);
+    assert.match(formatted.annotations[0], /title=Current TS2322/);
+    assert.doesNotMatch(formatted.markdown, /added diagnostic\(s\)/);
 });
 
 test('project-local commands resolve diagnostics against their check cwd, preserving repository source annotations', async () => {
