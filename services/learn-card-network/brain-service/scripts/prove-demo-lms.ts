@@ -317,17 +317,40 @@ const main = async (): Promise<void> => {
             binding.status === 'ACTIVE'
     );
     const pinned = bindings.find(binding => binding.bindingId === active?.bindingId);
-    // A Binding pinned to a different issuing identity is revoked and re-proposed.
+    // A Binding approved against a different issuing identity or agreement is re-proposed.
+    const approvedContract = pinned
+        ? await neogma.queryRunner.run(
+              `MATCH (:Binding {bindingId: $bindingId})-[:APPROVED_WITH]->(s:BindingConsentPreflight)
+               RETURN s.snapshot AS snapshot ORDER BY s.consumedAt DESC LIMIT 1`,
+              { bindingId: pinned.bindingId }
+          )
+        : null;
+    const approvedContractId = approvedContract?.records[0]
+        ? z
+              .object({ evidence: z.object({ governanceContractId: z.string().optional() }) })
+              .passthrough()
+              .parse(JSON.parse(String(approvedContract.records[0].get('snapshot')))).evidence
+              .governanceContractId
+        : undefined;
+    const currentContract = await neogma.queryRunner.run(
+        `MATCH (:Ecosystem {id: $ecosystemId})-[:GOVERNS_CONSENT_CONTRACT]->(c:ConsentFlowContract)
+         RETURN c.id AS id LIMIT 1`,
+        { ecosystemId: district.id }
+    );
+    const currentContractId = currentContract.records[0]?.get('id');
     if (
         pinned &&
-        pinned.capabilityMetadata?.issuance?.issuerIdentityProfileId !== issuerIdentityProfileId
+        (pinned.capabilityMetadata?.issuance?.issuerIdentityProfileId !== issuerIdentityProfileId ||
+            approvedContractId !== currentContractId)
     ) {
         await rpc(
             'bindings.revoke',
             { bindingId: pinned.bindingId, expectedRevision: pinned.revision },
             true
         );
-        log(`REVOKED binding ${pinned.bindingId} (pinned a previous issuing identity)`);
+        log(
+            `REVOKED binding ${pinned.bindingId} (approved against a previous identity or agreement)`
+        );
         active = undefined;
     }
     if (!active) {

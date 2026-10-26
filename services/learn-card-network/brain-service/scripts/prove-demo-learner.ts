@@ -5,6 +5,8 @@
  * side of the flow can be proven without the app UI. It does not exercise the app's screens.
  *
  *   bun run prove:demo-learner -- --register   # create the `demo-learner` profile
+ *   bun run prove:demo-learner -- --consent <contract uri>   # consent, as the app does
+ *   bun run prove:demo-learner -- --withdraw <contract uri>  # withdraw that consent
  *   bun run prove:demo-learner -- --claim [--issuer <did>]  # accept, decrypt and verify
  *
  * Standalone wallet: does not import Brain's database environment.
@@ -12,7 +14,7 @@
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { z } from 'zod';
-import { VCValidator } from '@learncard/types';
+import { ConsentFlowTermsValidator, VCValidator } from '@learncard/types';
 
 const network = process.env.LCN_NETWORK ?? 'http://localhost:4000/trpc';
 const profileId = process.env.DEMO_LEARNER_PROFILE_ID ?? 'demo-learner';
@@ -46,7 +48,55 @@ const main = async (): Promise<void> => {
         return;
     }
 
-    if (!process.argv.includes('--claim')) throw new Error('Pass --register or --claim.');
+    const consentIndex = process.argv.indexOf('--consent');
+    if (consentIndex >= 0) {
+        // The same network route the LearnCard app's /consent-flow screen uses.
+        const contractUri = process.argv[consentIndex + 1];
+        if (!contractUri) throw new Error('Pass --consent <contract uri>.');
+        // Grant exactly the categories the contract requires, as the app's consent screen does.
+        const details = await wallet.invoke.getContract(contractUri);
+        const { contract } = details;
+        const required = (categories: Record<string, { required: boolean }>) =>
+            Object.fromEntries(
+                Object.entries(categories)
+                    .filter(([, category]) => category.required)
+                    .map(([name]) => [name, true])
+            );
+        const terms = ConsentFlowTermsValidator.parse({
+            read: { credentials: { categories: {} } },
+            write: { credentials: { categories: required(contract.write.credentials.categories) } },
+        });
+        // Bind consent to the audience version reviewed; governance changes bump it.
+        const { termsUri } = await wallet.invoke.consentToContract(contractUri, {
+            terms,
+            audienceVersion: details.audienceVersion,
+        });
+        log(`CONSENTED to ${contractUri} (terms ${termsUri})`);
+        return;
+    }
+
+    const withdrawIndex = process.argv.indexOf('--withdraw');
+    if (withdrawIndex >= 0) {
+        const contractUri = process.argv[withdrawIndex + 1];
+        const consented = z
+            .object({
+                records: z.array(
+                    z
+                        .object({ uri: z.string(), contract: z.object({ uri: z.string() }) })
+                        .passthrough()
+                ),
+            })
+            .parse(await wallet.invoke.getConsentedContracts());
+        const terms = consented.records.find(record => record.contract.uri === contractUri);
+        if (!terms) throw new Error(`No consent to ${contractUri} found for this learner.`);
+        await wallet.invoke.withdrawConsent(terms.uri);
+        log(`WITHDREW consent to ${contractUri}`);
+        return;
+    }
+
+    if (!process.argv.includes('--claim')) {
+        throw new Error('Pass --register, --consent <uri>, --withdraw <uri> or --claim.');
+    }
 
     const incoming = await wallet.invoke.getIncomingCredentials();
     const pending = incoming.filter(entry => entry.metadata?.educationOsRecordId);
