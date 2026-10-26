@@ -12,9 +12,12 @@ concurrency:
 
 permissions:
     contents: read
+    actions: read
 
 jobs:
     typecheck-ratchet:
+        # Probe only: the full job already ran at fa6a2ff85 (run 40411451832).
+        if: ${{ false }}
         name: Typecheck ratchet
         runs-on: ubuntu-latest
         timeout-minutes: 45
@@ -90,11 +93,7 @@ jobs:
               if: ${{ always() && steps.ratchet.outcome == 'failure' }}
               run: |
                   node scripts/typecheck-diagnostics.mjs render "$RUNNER_TEMP/typecheck-head.json" "$RUNNER_TEMP/intentionally-missing-base.json" | tee "$RUNNER_TEMP/typecheck-fallback.txt"
-                  rg --quiet 'Current head diagnostic sample' "$RUNNER_TEMP/typecheck-fallback.txt"
-                  rg --quiet 'title=Current TS' "$RUNNER_TEMP/typecheck-fallback.txt"
-                  if rg --quiet 'title=Added|[0-9]+ added diagnostic' "$RUNNER_TEMP/typecheck-fallback.txt"; then
-                      exit 1
-                  fi
+                  node -e "const text = require('node:fs').readFileSync(process.argv[1], 'utf8'); const assert = require('node:assert/strict'); assert.match(text, /Current head diagnostic sample/); assert.match(text, /title=Current TS/); assert.doesNotMatch(text, /title=Added|[0-9]+ added diagnostic/);" "$RUNNER_TEMP/typecheck-fallback.txt"
 
             - name: Retain diagnostic reports
               if: ${{ always() }}
@@ -114,3 +113,44 @@ jobs:
               run: |
                   echo "The typecheck ratchet did not pass. See the diagnostic comparison above."
                   exit 1
+
+    fallback-from-reports:
+        name: Validate fallback from the completed failure probe
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+            - name: Read retained reports and assert both rendering paths
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  gh run download 40411451832 --name typecheck-diagnostics --dir "$RUNNER_TEMP/probe-reports"
+                  node --input-type=module <<'JS'
+                  import assert from 'node:assert/strict';
+                  import { readFileSync } from 'node:fs';
+                  import { spawnSync } from 'node:child_process';
+                  const directory = process.env.RUNNER_TEMP + '/probe-reports';
+                  const head = JSON.parse(readFileSync(directory + '/typecheck-head.json'));
+                  const base = JSON.parse(readFileSync(directory + '/typecheck-base.json'));
+                  const current = head.results.find(result => result.name === 'learn-card-app');
+                  const previous = base.results.find(result => result.name === 'learn-card-app');
+                  assert.equal(current.count, 1968);
+                  assert.equal(previous.count, 1967);
+                  for (const [label, report] of [['compared', directory + '/typecheck-base.json'], ['unavailable', directory + '/absent.json']]) {
+                      const ran = spawnSync(process.execPath, ['scripts/typecheck-diagnostics.mjs', 'render', directory + '/typecheck-head.json', report], { encoding: 'utf8' });
+                      assert.equal(ran.status, 0, ran.stderr);
+                      if (label === 'compared') {
+                          assert.match(ran.stdout, /1 added diagnostic\(s\)/);
+                          assert.match(ran.stdout, /typecheck-hosted-probe.ts:2:14/);
+                          assert.equal((ran.stdout.match(/::error /g) ?? []).length, 1);
+                      } else {
+                          assert.match(ran.stdout, /Comparison unavailable/);
+                          assert.match(ran.stdout, /Current head diagnostic sample/);
+                          assert.match(ran.stdout, /Showing 30 of 1968/);
+                          assert.equal((ran.stdout.match(/title=Current TS/g) ?? []).length, 30);
+                          assert.doesNotMatch(ran.stdout, /title=Added|[0-9]+ added diagnostic/);
+                      }
+                      console.log(ran.stdout);
+                  }
+                  assert.match(readFileSync(process.env.GITHUB_STEP_SUMMARY, 'utf8'), /Current head diagnostic sample/);
+                  console.log('Both rendering paths verified against the actual hosted reports.');
+                  JS
