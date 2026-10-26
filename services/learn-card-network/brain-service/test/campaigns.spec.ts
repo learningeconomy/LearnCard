@@ -58,13 +58,21 @@ beforeEach(async () => {
                 'minor',
                 'child',
                 'unknown-dob',
+                'managed-adult',
+                'managed-service',
             ].map(profileId => ({
                 profileId,
                 did: did(profileId),
                 displayName: profileId,
                 shortBio: '',
                 bio: '',
-                type: profileId === 'child' ? 'child' : 'person',
+                type:
+                    profileId === 'child'
+                        ? 'child'
+                        : profileId === 'managed-service'
+                          ? 'organization'
+                          : 'person',
+                isServiceProfile: profileId === 'managed-service',
                 dob:
                     profileId === 'minor'
                         ? '2020-01-01'
@@ -81,6 +89,8 @@ beforeEach(async () => {
         'minor',
         'child',
         'unknown-dob',
+        'managed-adult',
+        'managed-service',
     ]) {
         await cache.delete([`campaigns:user:${profileId}`]);
     }
@@ -308,6 +318,53 @@ describe('campaign audiences', () => {
         expect(await admin.addAudience(inputs)).toEqual({ count: 4 });
         await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: true } });
         expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toHaveLength(2);
+    });
+
+    it.each([
+        ['localhost%3A3000', 'did:web:localhost%3A3000:users:learner'],
+        ['network.learncard.app', 'did:web:network.learncard.app:users:learner'],
+        [
+            'pr-99.preview.learncard.ai:brain',
+            'did:web:pr-99.preview.learncard.ai%3Abrain:users:learner',
+        ],
+    ])('matches the canonical did:web alias for %s', async (callerDomain, learnerDid) => {
+        await admin.create(draft());
+        const domainAdmin = caller('campaign-admin', '*:*', callerDomain);
+
+        expect(
+            await domainAdmin.previewAudience(audience({ type: 'dids', dids: [learnerDid] }))
+        ).toEqual({ count: 1 });
+    });
+
+    it('treats managed human profiles as minors without classifying managed services as children', async () => {
+        await admin.create(draft({ status: 'live', selfEnroll: true }));
+        await neogma.queryRunner.run(
+            `MATCH (adult:Profile {profileId: 'managed-adult'}),
+                   (service:Profile {profileId: 'managed-service'}),
+                   (admin:Profile {profileId: 'campaign-admin'})
+             CREATE (:ProfileManager {id: 'guardian-manager', created: $now, managerType: 'guardian'})-[:MANAGES]->(adult)
+             CREATE (service)-[:MANAGED_BY]->(admin)`,
+            { now: new Date().toISOString() }
+        );
+        const input = audience({
+            type: 'dids',
+            dids: [did('managed-adult'), did('managed-service')],
+        });
+
+        expect(await admin.previewAudience(input)).toEqual({ count: 1 });
+        await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: false } });
+        expect(await admin.previewAudience(input)).toEqual({ count: 2 });
+        expect(await admin.addAudience(input)).toEqual({ count: 2 });
+        await expect(
+            caller('managed-adult').enroll({ campaignId: 'pilot-clr' })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        await expect(caller('managed-service').enroll({ campaignId: 'pilot-clr' })).resolves.toBe(
+            true
+        );
+
+        await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: true } });
+        expect(await caller('managed-adult').getMyCampaigns()).toEqual([]);
+        expect(await caller('managed-service').getMyCampaigns()).toHaveLength(1);
     });
 
     it.each([null, '', 'unknown'])(

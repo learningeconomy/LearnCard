@@ -8,6 +8,7 @@ import {
 
 import { neogma } from '@instance';
 import { traceDb } from '@tracing';
+import { getDidWeb } from '@helpers/did.helpers';
 import { constructUri, getUriParts } from '@helpers/uri.helpers';
 import type { CampaignAudienceQuery } from 'types/campaign';
 import {
@@ -33,8 +34,8 @@ export const buildCampaignAudienceQuery = (
     switch (source.type) {
         case 'dids':
             return {
-                match: `MATCH (p:Profile) WHERE p.did IN $dids OR ('did:web:' + $domain + ':users:' + p.profileId) IN $dids`,
-                params: { dids: source.dids, domain },
+                match: `MATCH (p:Profile) WHERE p.did IN $dids OR ($didWebPrefix + p.profileId) IN $dids`,
+                params: { dids: source.dids, didWebPrefix: getDidWeb(domain, '') },
             };
         case 'emails':
             return {

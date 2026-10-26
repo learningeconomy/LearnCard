@@ -7,8 +7,12 @@ import { traceDb } from '@tracing';
 
 const knownBirthdayPredicate = `p.dob IS NOT NULL
     AND p.dob =~ '[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])'`;
+const managedProfilePredicate = `(EXISTS { MATCH (p)-[:MANAGED_BY]->(:Profile) }
+    OR EXISTS { MATCH (:ProfileManager)-[:MANAGES]->(p) })`;
+const serviceProfilePredicate = `(p.isServiceProfile = true AND coalesce(p.type, '') <> 'child')`;
 export const adultProfilePredicate = `${knownBirthdayPredicate}
-    AND coalesce(p.type, '') <> 'child' AND p.dob <= $adultCutoff`;
+    AND coalesce(p.type, '') <> 'child' AND p.dob <= $adultCutoff
+    AND (${serviceProfilePredicate} OR NOT ${managedProfilePredicate})`;
 export const campaignAgePredicate = `(${knownBirthdayPredicate}
     AND (c.excludeMinors = false OR (${adultProfilePredicate})))`;
 export const liveCampaignPredicate = `c.status = 'live'

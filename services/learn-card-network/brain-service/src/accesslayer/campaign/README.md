@@ -85,8 +85,8 @@ const page = await client.campaigns.pageAudience.query({ campaignId, limit: 100 
 ```
 
 - DID/email lists accept 1–1000 entries per call. DIDs match stored DIDs or this network's
-  `did:web:<domain>:users:<profileId>` alias. Emails are trimmed/lowercased and only verified
-  contact methods qualify; the profile's display email is not used.
+  canonically encoded `did:web:<domain>:users:<profileId>` alias. Emails are trimmed/lowercased
+  and only verified contact methods qualify; the profile's display email is not used.
 - `credentialsSentBy` requires exactly one sender profile or listing. All metadata entries
   must match exactly on `CREDENTIAL_SENT.metadata.*`; `since` filters the send date. Metadata is
   limited to 20 keys, with values of at most 2048 characters.
@@ -125,9 +125,11 @@ accepted by the enrollment/event endpoints, and campaign routes disable Sentry i
 
 **Product/legal sign-off is still required for the age policy.** The implemented policy
 excludes missing, empty, and non-date-format birthdays from every audience, including when
-`excludeMinors: false`. It also excludes `type: 'child'` and known under-18 birthdays when
-`excludeMinors` is enabled. Age uses UTC calendar dates; a Feb 29 birthday reaches the cutoff on March 1
-in a non-leap year. No policy approval or production rollout is implied by this PR.
+`excludeMinors: false`. It also excludes `type: 'child'`, guardian-managed human profiles, and
+known under-18 birthdays when `excludeMinors` is enabled. Managed service/organization profiles
+remain age-exempt unless explicitly typed as a child. Age uses UTC calendar dates; a Feb 29 birthday
+reaches the cutoff on March 1 in a non-leap year. No policy approval or production rollout is implied
+by this PR.
 
 ## Engagement and SDK
 
