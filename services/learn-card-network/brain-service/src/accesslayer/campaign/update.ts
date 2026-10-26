@@ -35,6 +35,12 @@ export const updateCampaign = async (input: UpdateCampaignInput): Promise<Campai
         });
         if (!result.success)
             throw new TRPCError({ code: 'BAD_REQUEST', message: result.error.message });
+        if (existing.status !== 'draft' && result.data.status === 'draft') {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: `Campaign status cannot transition from ${existing.status} to draft`,
+            });
+        }
         await transaction.run('MATCH (c:Campaign {id: $campaignId}) SET c += $properties', {
             campaignId,
             properties: campaignProperties(result.data),

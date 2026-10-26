@@ -29,7 +29,8 @@ IDs are immutable, lowercase `[a-z0-9-]{3,64}`, unique, and always replace `mess
 Creation defaults to `draft`, `excludeMinors: true`, `selfEnroll: false`. Supported statuses
 are `draft`, `live`, `paused`, `archived`; archived campaigns cannot be edited or have
 audience members added. Only drafts and archived campaigns can be deleted: archive a live or paused
-campaign first. Admin deletion removes the campaign and its relationships.
+campaign first. Live and paused campaigns cannot transition back to draft. Admin deletion removes
+the campaign and its relationships.
 Use a new ID for a new campaign; deleting/reusing an ID cannot clear clients' local seen state.
 
 `channels` must contain `inApp`, `notify`, or both without duplicates. `notify` requires
@@ -132,8 +133,7 @@ in a non-leap year. No policy approval or production rollout is implied by this 
 
 `recordEvent({ campaignId, event })` accepts `shown`, `clicked`, `dismissed`, `converted`.
 It returns `false` without profile-lock or engagement writes for missing campaigns, nonmembers,
-or age-ineligible profiles. It
-accepts delayed member events after pause/expiry so reports can arrive after presentation.
+age-ineligible profiles, and campaigns that are not currently live and in-window.
 `shown` sets `firstShownAt` once, updates `lastShownAt`, and increments `shownCount`.
 Other events store their latest timestamp. Per-profile transactional locking prevents
 duplicate state edges and lost increments under concurrent devices. Repeated requests

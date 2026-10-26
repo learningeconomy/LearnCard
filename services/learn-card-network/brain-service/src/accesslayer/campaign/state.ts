@@ -5,6 +5,7 @@ import {
     adultProfilePredicate,
     campaignAgePredicate,
     campaignTimeParams,
+    liveCampaignPredicate,
     lockCampaign,
     withCampaignTransaction,
 } from './shared';
@@ -61,7 +62,7 @@ export const recordCampaignEvent = async (
         // or losing shown increments, without locking the entire campaign audience.
         const locked = await transaction.run(
             `MATCH (p:Profile {profileId: $profileId})-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
-             WHERE ${campaignAgePredicate}
+             WHERE ${liveCampaignPredicate} AND ${campaignAgePredicate}
              SET p.campaignStateLock = coalesce(p.campaignStateLock, 0) + 1
              RETURN p.profileId AS profileId`,
             params
@@ -69,7 +70,7 @@ export const recordCampaignEvent = async (
         if (!locked.records.length) return false;
         const result = await transaction.run(
             `MATCH (p:Profile {profileId: $profileId})-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
-             WHERE ${campaignAgePredicate}
+             WHERE ${liveCampaignPredicate} AND ${campaignAgePredicate}
              MERGE (p)-[state:CAMPAIGN_STATE]->(c) SET ${assignments[event]}
              RETURN state`,
             params

@@ -195,6 +195,28 @@ describe('campaign lifecycle and access', () => {
         });
     });
 
+    it.each(['live', 'paused'] as const)(
+        'does not let a %s campaign roll back to draft and bypass archive-before-delete',
+        async status => {
+            await admin.create(draft({ status: 'live' }));
+            if (status === 'paused') await admin.setStatus({ campaignId: 'pilot-clr', status });
+
+            await expect(
+                admin.setStatus({ campaignId: 'pilot-clr', status: 'draft' })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: `Campaign status cannot transition from ${status} to draft`,
+            });
+            await expect(
+                admin.update({ campaignId: 'pilot-clr', updates: { status: 'draft' } })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(admin.delete({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+            expect(await admin.get({ campaignId: 'pilot-clr' })).toMatchObject({ status });
+        }
+    );
+
     it('paginates campaigns by immutable ID and filters status', async () => {
         await admin.create(draft({ id: 'aaa', status: 'live' }));
         await admin.create(draft({ id: 'bbb' }));
@@ -586,6 +608,27 @@ describe('campaign eligibility and engagement', () => {
             expect((await admin.getStats({ campaignId: 'pilot-clr' })).shown).toBe(0);
         }
     );
+
+    it.each([
+        ['paused', { status: 'paused' as const }],
+        ['not started', { status: 'live' as const, startsAt: '2999-01-01T00:00:00Z' }],
+        ['ended', { status: 'live' as const, endsAt: '2000-01-01T00:00:00Z' }],
+    ])('does not write profile or engagement state when a campaign is %s', async (_, options) => {
+        await admin.create(draft(options));
+        await addLearner();
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'}) SET p.campaignStateLock = 17`
+        );
+
+        expect(await learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' })).toBe(false);
+        const result = await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'})
+             OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(:Campaign {id: 'pilot-clr'})
+             RETURN p.campaignStateLock AS lockVersion, state`
+        );
+        expect(result.records[0]!.get('lockVersion').toNumber()).toBe(17);
+        expect(result.records[0]!.get('state')).toBeNull();
+    });
 
     it('persists shared state and counts unique engaged profiles under concurrent shown events', async () => {
         await admin.create(draft({ status: 'live' }));
