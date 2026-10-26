@@ -30,9 +30,10 @@ import '@ionic/react/css/normalize.css';
 import '@ionic/react/css/structure.css';
 import '@ionic/react/css/typography.css';
 
-// Match App.tsx: card components require their own utilities and font faces.
+// Keep the renderer and host stylesheet order aligned with App.tsx.
 import '@learncard/react/main.css';
-import '../../../packages/learn-card-base/src/assets/styles/modal.scss';
+import '../src/tailwind.css';
+import '../src/index.scss';
 import './preview.css';
 
 setupIonicReact({ swipeBackEnabled: false });

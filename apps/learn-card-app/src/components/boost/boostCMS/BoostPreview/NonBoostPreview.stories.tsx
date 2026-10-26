@@ -61,7 +61,21 @@ export default meta;
 type Story = StoryObj<typeof NonBoostPreview>;
 
 /** Actual unsigned preview: neutral footer, two links, and a separate award date. */
-export const UnsignedBadge: Story = {};
+export const UnsignedBadge: Story = {
+    play: async ({ canvasElement }) => {
+        const card = await within(canvasElement).findByRole('group', { name: 'Web Foundations' });
+        const pane = card.closest('.boost-cms-preview');
+        if (!pane) throw new Error('Credential preview pane is missing');
+        const cardBox = card.getBoundingClientRect();
+        const paneBox = pane.getBoundingClientRect();
+        // Host Sass centers the fixed-width ribbon card; SDK CSS alone is insufficient.
+        await expect(
+            Math.abs(cardBox.left + cardBox.width / 2 - (paneBox.left + paneBox.width / 2))
+        ).toBeLessThan(2);
+        await expect(within(card).getByText('Preview', { exact: true })).toBeInTheDocument();
+        await expect(within(card).queryByText('Failed', { exact: true })).toBeNull();
+    },
+};
 
 export const UnsignedCertificate: Story = {
     args: { credential: { ...credential, display: { displayType: 'certificate' } } as VC },
