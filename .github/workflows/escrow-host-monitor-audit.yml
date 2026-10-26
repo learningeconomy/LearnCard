@@ -17,6 +17,9 @@ on:
             - 'services/escrow-ledger-monitor/Cargo.toml'
             - 'services/escrow-ledger-monitor/Cargo.lock'
             - 'services/escrow-enclave-app/Cargo.toml'
+            - 'services/escrow-enclave-host/**/audit.toml'
+            - 'services/escrow-ledger-monitor/**/audit.toml'
+            - '.cargo/audit.toml'
             - '.github/workflows/escrow-host-monitor-audit.yml'
     push:
         branches:
@@ -27,7 +30,13 @@ on:
             - 'services/escrow-ledger-monitor/Cargo.toml'
             - 'services/escrow-ledger-monitor/Cargo.lock'
             - 'services/escrow-enclave-app/Cargo.toml'
+            - 'services/escrow-enclave-host/**/audit.toml'
+            - 'services/escrow-ledger-monitor/**/audit.toml'
+            - '.cargo/audit.toml'
             - '.github/workflows/escrow-host-monitor-audit.yml'
+    # Daily: new RustSec advisories land without any repo change.
+    schedule:
+        - cron: '17 6 * * *'
     workflow_dispatch:
 
 permissions:

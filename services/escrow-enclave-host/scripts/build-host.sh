@@ -20,6 +20,15 @@ set -euo pipefail
 
 BASE_IMAGE='amazonlinux:2023@sha256:2851878b108218cccbe7af6ab7dfb87a5883a725623384e19e6256f4072027a3'
 PLATFORM='linux/amd64'
+# rustup-init binary, pinned by version + sha256 (no `curl | sh`). The
+# checksum matches the published
+# https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init.sha256
+# and was recomputed locally on download (2026-10-26). To bump: change both
+# values together after checking the new published .sha256 against your own.
+RUSTUP_VERSION='1.29.2'
+RUSTUP_INIT_SHA256='5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4'
+# Open question: dnf packages (gcc, tar, gzip) are resolved by the pinned
+# base image's repos at build time and are not version-pinned here.
 
 out=''
 while [[ $# -gt 0 ]]; do
@@ -53,14 +62,21 @@ out="$(cd "$out" && pwd)"
 docker run --rm --platform "$PLATFORM" \
     -e "RUST_TOOLCHAIN=${toolchain}" \
     -e "BASE_IMAGE=${BASE_IMAGE}" \
+    -e "RUSTUP_VERSION=${RUSTUP_VERSION}" \
+    -e "RUSTUP_INIT_SHA256=${RUSTUP_INIT_SHA256}" \
     -v "${services_dir}/escrow-enclave-host:/ro/escrow-enclave-host:ro" \
     -v "${services_dir}/escrow-enclave-app:/ro/escrow-enclave-app:ro" \
     -v "${out}:/out" \
     "$BASE_IMAGE" \
     bash -euo pipefail -c '
         dnf install -y -q gcc tar gzip >/dev/null
-        curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup-init.sh
-        sh /tmp/rustup-init.sh -y -q --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
+        mkdir -p /tmp/rustup
+        curl --proto "=https" --tlsv1.2 -sSf -o /tmp/rustup/rustup-init \
+            "https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/x86_64-unknown-linux-gnu/rustup-init"
+        # Fail closed: sha256sum -c exits non-zero on mismatch (set -e).
+        (cd /tmp/rustup && printf "%s  rustup-init\n" "$RUSTUP_INIT_SHA256" | sha256sum -c --strict -)
+        chmod 0755 /tmp/rustup/rustup-init
+        /tmp/rustup/rustup-init -y -q --profile minimal --default-toolchain "$RUST_TOOLCHAIN"
         . "$HOME/.cargo/env"
         mkdir -p /src
         cp -a /ro/escrow-enclave-host /ro/escrow-enclave-app /src/

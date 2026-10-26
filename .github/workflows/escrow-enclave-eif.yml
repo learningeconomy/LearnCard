@@ -153,6 +153,43 @@ jobs:
               run: cargo audit --ignore RUSTSEC-2023-0071
 
     # ---------------------------------------------------------------------
+    # PR-only, NON-signing smoke test of build-host.sh: two builds in the
+    # pinned image, fail on sha256 mismatch. No cosign, no id-token, no
+    # secrets/vars, no environment; read-only token. Non-PR events skip it
+    # because the `eif` job runs the same double build there.
+    # ---------------------------------------------------------------------
+    host-build-smoke:
+        name: host-build-smoke
+        if: github.event_name == 'pull_request'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  persist-credentials: false
+
+            - name: Build host binary (host-a)
+              run: services/escrow-enclave-host/scripts/build-host.sh --out "${RUNNER_TEMP}/host-a"
+
+            - name: Build host binary (host-b)
+              run: services/escrow-enclave-host/scripts/build-host.sh --out "${RUNNER_TEMP}/host-b"
+
+            - name: Verify host binary reproducibility (host-a vs host-b)
+              run: |
+                  set -euo pipefail
+                  a="$(cut -d' ' -f1 "${RUNNER_TEMP}/host-a/escrow-enclave-host.sha256")"
+                  b="$(cut -d' ' -f1 "${RUNNER_TEMP}/host-b/escrow-enclave-host.sha256")"
+                  echo "host-a: ${a}"
+                  echo "host-b: ${b}"
+                  if [[ "${a}" != "${b}" ]]; then
+                      echo "::error::escrow-enclave-host is not reproducible between two builds"
+                      exit 1
+                  fi
+                  (cd "${RUNNER_TEMP}/host-a" && sha256sum -c escrow-enclave-host.sha256)
+
+    # ---------------------------------------------------------------------
     # Reproducible EIF build + PCR measurement + keyless signing.
     #
     # Runs on a plain GitHub-hosted runner: `nitro-cli build-enclave` does
