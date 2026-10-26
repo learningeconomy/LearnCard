@@ -108,6 +108,18 @@ describe('Credential Helpers', () => {
 });
 
 describe('award-date formatting', () => {
+    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00'])(
+        'shows a consistent calendar award day for %s',
+        awardedDate => {
+            expect(
+                getInfoFromCredential(
+                    { ...VC2CredentialWithValidFrom, awardedDate } as never,
+                    'MMM dd, yyyy',
+                    { uppercaseDate: false, dateType: 'awarded' }
+                ).createdAt
+            ).toBe('Oct 01, 2027');
+        }
+    );
     it('uses the standard award date only when requested and retains issuance metadata', () => {
         const credential = { ...VC2CredentialWithValidFrom, awardedDate: '2027-10-01T00:00:00Z' };
         expect(

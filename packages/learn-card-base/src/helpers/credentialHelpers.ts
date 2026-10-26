@@ -1575,6 +1575,9 @@ export const getEvidenceAttachmentType = async (url: string): Promise<EvidenceAt
         if (['docx', 'doc', 'ppt', 'pptx', 'pdf'].includes(docMetadata.fileExtension ?? '')) {
             return 'document';
         }
+        if (['mp4', 'mov', 'webm'].includes(docMetadata.fileExtension ?? '')) {
+            return 'video';
+        }
     }
     // The video helper always returns an object, even for an unknown URL. Drive
     // also returns an embed for any file, so it cannot establish a video type.

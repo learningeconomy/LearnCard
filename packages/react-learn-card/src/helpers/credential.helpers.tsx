@@ -63,17 +63,22 @@ export const getInfoFromCredential = (
         options.dateType === 'awarded' && typeof credential.awardedDate === 'string'
             ? parseISO(credential.awardedDate)
             : undefined;
-    const hasAwardedDate = awardedDate && isValid(awardedDate);
-    const dateValue = hasAwardedDate ? credential.awardedDate : validFrom || issuanceDate;
+    const validAwardedDate = awardedDate && isValid(awardedDate) ? awardedDate : undefined;
+    const dateValue = validAwardedDate ?? (validFrom || issuanceDate);
     let createdAt = '';
 
     if (dateValue) {
         try {
-            const date = new Date(dateValue);
-            // Match the UTC date shown by the spreadsheet award-date editor.
-            const displayDate = hasAwardedDate
-                ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
-                : date;
+            const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+            // Offset-less ISO values describe a calendar day. Only explicit
+            // instants need UTC conversion, matching the Details date helper.
+            const hasAwardOffset = /[T ].*(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(
+                String(credential.awardedDate)
+            );
+            const displayDate =
+                validAwardedDate && hasAwardOffset
+                    ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+                    : date;
             createdAt = format(displayDate, dateFormat);
             if (options.uppercaseDate) {
                 createdAt = createdAt.toUpperCase();

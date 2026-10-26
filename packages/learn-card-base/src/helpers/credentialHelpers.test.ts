@@ -36,6 +36,7 @@ import {
     getNotificationType,
     NotificationTypeEnum,
 } from '../components/notifications/notifications';
+import * as uploadMetadata from '../filestack/images/images.helpers';
 
 const createWallet = () => {
     const get = vi.fn();
@@ -485,6 +486,12 @@ describe('Qualifications notifications', () => {
 });
 
 describe('credential award date display', () => {
+    it.each(['20271001', '2027-10-01T00:00', '2027-10-01T00:00:00'])(
+        'shows a consistent calendar award day for %s',
+        awardedDate => {
+            expect(formatCredentialAwardedDate({ awardedDate } as never)).toBe('October 01, 2027');
+        }
+    );
     it('prefers the standard top-level awardedDate without changing the credential', () => {
         const credential = {
             awardedDate: '2027-10-01T00:00:00.000Z',
@@ -502,6 +509,7 @@ describe('credential award date display', () => {
         [{ awardedDate: '' }, ''],
         [{}, ''],
         [{ validFrom: 'invalid' }, ''],
+        [{ issuanceDate: 'October 26, 2026' }, ''],
         [undefined, ''],
         [
             { boostCredential: { awardedDate: '2027-10-01', validFrom: '2026-10-26' } },
@@ -522,6 +530,29 @@ describe('credential award date display', () => {
 });
 
 describe('evidence attachment classification', () => {
+    it.each(['mp4', 'mov', 'webm'])(
+        'classifies an uploaded %s using file metadata without an explicit genre',
+        async extension => {
+            const metadata = vi.spyOn(uploadMetadata, 'getMetadata').mockResolvedValue({
+                filename: `recorded-work.${extension}`,
+                size: 12345,
+            } as Awaited<ReturnType<typeof uploadMetadata.getMetadata>>);
+            try {
+                const attachments = await getEvidenceAttachments([
+                    {
+                        id: 'https://cdn.filestackcontent.com/exampleHandle',
+                        type: ['Evidence'],
+                        name: 'Recorded work',
+                    },
+                ] as never);
+                expect(attachments).toEqual([
+                    expect.objectContaining({ type: 'video', title: 'Recorded work' }),
+                ]);
+            } finally {
+                metadata.mockRestore();
+            }
+        }
+    );
     it.each([
         ['https://evidence.example.test/course/12', 'link'],
         ['https://portfolio.example.test/ada', 'link'],
