@@ -2001,6 +2001,10 @@
                 "body": "Le PIN que vous venez d’utiliser a été retiré : chaque PIN ne sert qu’une fois pour garder votre compte protégé. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
+            "pinResetRequired": {
+                "title": "Définissez un nouveau PIN de récupération",
+                "body": "Votre ancien PIN de récupération ne peut plus être utilisé depuis la récupération de votre compte. Définissez un nouveau PIN à 6 chiffres pour rétablir la récupération automatique."
+            },
             "useInstead": "Utiliser mon code PIN de récupération"
         },
         "confirmCode": {
@@ -9731,7 +9735,8 @@
         "savedToLearnCard": "Enregistré dans LearnCard",
         "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
         "signInToSave": "Se connecter pour enregistrer",
-        "saveHint": "Conservez cette collection signée dans vos éléments reçus."
+        "saveHint": "Conservez cette collection signée dans vos éléments reçus.",
+        "viewCredential": "Voir le justificatif"
     },
     "resumePublishing": {
         "linkReady": "Votre lien privé est prêt.",

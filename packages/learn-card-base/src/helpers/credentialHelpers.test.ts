@@ -27,6 +27,7 @@ import {
     resolveSharedCredential,
     getDefaultCategoryForCredential,
     getAllSortedCredentials,
+    getCredentialName,
 } from './credentialHelpers';
 import {
     getNotificationType,
@@ -477,5 +478,12 @@ describe('Qualifications notifications', () => {
         expect(getNotificationType('ext:LCA_CUSTOM:Qualifications:Continuing_Education')).toBe(
             NotificationTypeEnum.Qualifications
         );
+    });
+});
+
+describe('getCredentialName', () => {
+    it('returns an empty string when no name source or specific type exists', () => {
+        expect(getCredentialName({ type: ['VerifiableCredential'] } as never)).toBe('');
+        expect(getCredentialName({} as never)).toBe('');
     });
 });

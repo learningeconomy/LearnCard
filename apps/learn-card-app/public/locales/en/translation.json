@@ -2325,6 +2325,10 @@
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             },
+            "pinResetRequired": {
+                "title": "Set a new recovery PIN",
+                "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
+            },
             "useInstead": "Use my recovery PIN instead"
         },
         "confirmCode": {
@@ -9782,7 +9786,8 @@
         "savedToLearnCard": "Saved to LearnCard",
         "saveError": "Could not save these credentials. Please try again.",
         "signInToSave": "Sign in to save",
-        "saveHint": "Keep this signed collection with your received items."
+        "saveHint": "Keep this signed collection with your received items.",
+        "viewCredential": "View credential"
     },
     "resumePublishing": {
         "linkReady": "Your private link is ready.",

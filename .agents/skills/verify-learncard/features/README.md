@@ -69,6 +69,7 @@ Drive these with `$LCV script` when your change touches them, and record what yo
 - **Boost CMS / `/issue` authoring, claim links (`/claim/boost`), OID4VCI/OID4VP, CHAPI.** Reachable through `script`. OID4VC interop has its own suites in `tests/openid4vc-*`.
 - **Families/guardian flows, Pathways, skills frameworks, resume builder.** Reachable through `script`. Skill frameworks need `bun run skill-frameworks seed` against the stack.
 - **ScoutPass (`apps/scouts`).** A separate app that this stack does not serve.
+- **In-app messages** (banners, modals, stories, iframe/native-bridge content, app destinations and deep links, `packages/learn-card-base/src/in-app-messages/`). Preview-only recipes exist: `$LCV script "$PWD/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir /tmp/lcv` (the hosted workflow runs this one) and `examples/verify-story.mjs`, both through Dev Debug → Messages. Flag-delivered messages and OS handoff need staging or device QA.
 - **Native (Capacitor iOS/Android), push notifications, Capgo OTA.** Need devices or emulators; browser runs prove nothing native.
 - **Escrow enclave services, xAPI/LRS, file uploads.** Not in the verification compose set.
 

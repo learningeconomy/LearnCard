@@ -1,5 +1,6 @@
 vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
     getActivityFilters: () => [],
+    isHiddenActivity: (category?: string) => category === 'Resume',
 }));
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -47,6 +48,7 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: async () => mocks.wallet }),
     ModalTypes: { FullScreen: 'fullscreen' },
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useGetSelfAssignedSkillsBoost: () => ({ data: undefined }),
 }));
 vi.mock('@capacitor/clipboard', () => ({ Clipboard: { write: vi.fn() } }));
 vi.mock('learn-card-base/helpers/walletHelpers', () => ({
@@ -79,9 +81,16 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
     unwrapBoostCredential: (credential: unknown) => credential,
     getImageUrlFromCredential: () => undefined,
+    getCredentialName: (credential: { name?: string }) => credential?.name ?? 'Credential',
+    isBoostCredential: () => false,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME: 'Self-Assigned Skills',
 }));
 vi.mock('./sharePrivacy', () => ({
     enterSharePrivacy: vi.fn(),
+}));
+vi.mock('./CredentialPreviewButton', () => ({
+    CredentialPreviewButton: () => null,
+    default: () => null,
 }));
 vi.mock('learn-card-base/helpers/share-links', () => ({
     isShareLinkError: () => false,
@@ -255,6 +264,24 @@ describe('create screen', () => {
         render(<ShareLinkCreate initialSelectedUri="private:one" onDismiss={() => {}} />);
         expect(await screen.findByRole('checkbox')).toBeChecked();
         expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
+    });
+    it('keeps a hidden-category initial selection visible so it can be unselected', async () => {
+        mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+            records: [
+                { uri: 'private:resume', title: 'Published resume', category: 'Resume' },
+                { uri: 'private:other-resume', title: 'Other resume', category: 'Resume' },
+                { uri: 'private:badge', title: 'Badge', category: 'Social Badge' },
+            ],
+            hasMore: false,
+        });
+        render(<ShareLinkCreate initialSelectedUri="private:resume" onDismiss={() => {}} />);
+        await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
+        const [pinned] = screen.getAllByRole('checkbox');
+        expect(pinned).toBeChecked();
+        await waitFor(() => expect(pinned).toBeEnabled());
+        fireEvent.click(pinned);
+        expect(pinned).not.toBeChecked();
+        expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
 
     it('keeps Continue disabled without a selection', async () => {

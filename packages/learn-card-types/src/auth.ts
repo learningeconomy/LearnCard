@@ -328,6 +328,13 @@ export interface EscrowEnrollmentState {
     escrowPin?: EscrowPinStatus;
     /** Present only when `state === 'stale'`. */
     staleReason?: EscrowBlobStaleReason;
+    /**
+     * `not-enrolled` only: the server still has an escrow recovery method in some
+     * confirmation state (e.g. `pending` after an identity-recovery rebind). A hint,
+     * not proof: callers repair with `requirePriorEnrollment` so the strategy checks
+     * signed authority state before re-enrolling.
+     */
+    priorEscrowMethod?: boolean;
 }
 
 /**
@@ -347,6 +354,11 @@ export interface ServerKeyStatus {
     escrowPin?: EscrowPinStatus;
     escrowStale?: EscrowBlobStaleReason;
     sssActivationState?: SssActivationState | null;
+    /**
+     * The server has an escrow recovery method in some confirmation state but none
+     * confirmed at the current share version. Absent from older servers.
+     */
+    priorEscrowEnrollment?: boolean;
 }
 
 /** Signs a DID-Auth VP. A supplied challenge must be embedded as the VP nonce. */
@@ -572,8 +584,24 @@ export interface KeyDerivationStrategy<
         };
     }): Promise<
         | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
+        /**
+         * Nitro only: the signed authority still holds a PIN that lca-api cannot carry
+         * (e.g. after an identity-recovery rebind) and no new PIN was supplied. Nothing
+         * was rotated or signed; the caller must ask the user to set a new PIN.
+         */
+        | { enrolled: false; reason: 'pin-reset-required' }
         | { enrolled: true; changed: false }
-        | { enrolled: true; changed: true; shareVersion: number }
+        | {
+              enrolled: true;
+              changed: true;
+              shareVersion: number;
+              /**
+               * Set only when the strategy cleared a retired PIN on its own (Nitro
+               * post-rebind repair) rather than because the caller asked; the caller
+               * must prompt the user to set a new PIN.
+               */
+              pinCleared?: 'automatic';
+          }
     >;
 
     /** Set or change a PIN by rotating escrow material with an owner proof. */
