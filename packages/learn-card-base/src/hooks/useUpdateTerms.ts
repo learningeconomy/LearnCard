@@ -62,7 +62,7 @@ export const useUpdateTerms = (
         onSuccess: data => {
             if (data) {
                 const switchedDid = switchedProfileStore.get.switchedDid();
-                queryClient.refetchQueries({
+                return queryClient.invalidateQueries({
                     queryKey: ['useConsentedContracts', switchedDid ?? ''],
                 });
             }

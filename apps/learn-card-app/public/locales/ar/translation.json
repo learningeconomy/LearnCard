@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "حجم الملف كبير جدًا. اختر ملفًا أصغر من 4 ميغابايت.",
                 "errorReadFailed": "تعذّرت قراءة الملف. جرّب ملفًا آخر.",
                 "errorContentRejected": "لم نعثر على مستند مدعوم في هذا الملف.",
+                "errorUploadBusy": "عمليات الرفع لا تزال مشغولة. يُرجى المحاولة مجددًا بعد قليل.",
                 "errorProcessingFailed": "تعذّرت معالجة الملف الآن. يرجى المحاولة مجددًا.",
                 "errorConsentDenied": "معالجة الذكاء الاصطناعي غير متاحة لهذا الحساب.",
                 "errorResponseInvalid": "تلقينا نتيجة غير مكتملة. يرجى المحاولة مجددًا.",
@@ -475,6 +476,7 @@
                 "noMatches": "لم يُعثر على أنواع مطابقة"
             },
             "loader": {
+                "waitingForCapacity": "عمليات الرفع مشغولة. جارٍ انتظار الدور…",
                 "notifyWhenReady": "أبلغني عندما يصبح جاهزاً",
                 "quotes": {
                     "resume": {
@@ -3723,6 +3725,20 @@
         "skillsHub": "مركز المهارات"
     },
     "base": {
+        "inAppMessages": {
+            "next": "التالي",
+            "previous": "السابق",
+            "done": "تم",
+            "progress": "تقدم القصة",
+            "error": "حدث خطأ ما. حاول مرة أخرى.",
+            "retry": "حاول مرة أخرى",
+            "loading": "جارٍ التحميل…",
+            "opening": "جارٍ الفتح…",
+            "checking": "جارٍ التحقق…",
+            "downloading": "جارٍ التنزيل… {{progress}}%",
+            "installing": "جارٍ التثبيت…",
+            "upToDate": "لديك أحدث إصدار."
+        },
         "verification": {
             "selfIssued": "صادر ذاتياً",
             "trustedIssuer": "جهة إصدار موثوقة",

@@ -32,6 +32,7 @@ vi.mock('learn-card-base', () => ({
     switchedProfileStore: { use: { switchedDid: () => 'did:key:test-account' } },
     useWallet: () => ({
         initWallet: async () => ({
+            id: { did: () => 'did:key:test-account' },
             index: { LearnCloud: { get: host.indexGet } },
             read: { get: host.readGet },
         }),
@@ -97,8 +98,17 @@ beforeAll(async () => {
             subject: did,
             boostName: 'World Scouting',
             achievementType: 'ext:GlobalID',
-            display: { displayType: 'id' },
-            boostID: { idDescription: 'World Scouting membership' },
+            display: {
+                displayType: 'id',
+                emoji: {
+                    activeSkinTone: '',
+                    unified: '',
+                    unifiedWithoutSkinTone: '',
+                    names: [],
+                    imageUrl: '',
+                },
+            },
+            boostID: { idDescription: 'World Scouting membership', repeatIdBackgroundImage: false },
         },
         crypto
     );

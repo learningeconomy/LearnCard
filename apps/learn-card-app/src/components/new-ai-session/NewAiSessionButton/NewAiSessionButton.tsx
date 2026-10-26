@@ -2,7 +2,7 @@ import React from 'react';
 
 import { m } from '../../../paraglide/messages.js';
 
-import NewAiSessionContainer from '../NewAiSessionContainer';
+import NewAiSessionContainer from '../LazyNewAiSessionContainer';
 import NewAiSessionSideMenuButton from './NewAiSessionSideMenuButton';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import NewAiSessionNavbarButton from './NewAiSessionNavbarButton';

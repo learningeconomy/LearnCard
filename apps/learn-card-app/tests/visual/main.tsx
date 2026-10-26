@@ -8,6 +8,7 @@ import {
     TenantConfigProvider,
     DEFAULT_LEARNCARD_TENANT_CONFIG,
 } from 'learn-card-base';
+import { resolvedCredentialQueryKey } from 'learn-card-base/react-query/queries/credentialResolution';
 import { BoostGenericCard } from '@learncard/react';
 import { WalletCategoryTypes } from '../../../../packages/react-learn-card/src/types';
 import { AnalyticsContextProvider } from '../../src/analytics';
@@ -46,7 +47,7 @@ const client = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity, refetchOnWindowFocus: false } },
 });
 Object.entries(personaCredentials).forEach(([uri, credential]) => {
-    client.setQueryData(['useGetResolvedCredential', uri], credential);
+    client.setQueryData(resolvedCredentialQueryKey(uri, ''), credential);
 });
 seedPageQueries(client, params.get('state') ?? undefined);
 

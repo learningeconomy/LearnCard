@@ -33,6 +33,25 @@ export const clearAllIndexedDB = async (strategy?: KeyDerivationStrategy): Promi
     const elapsedMs = (): number => Math.round(performance.now() - startedAt);
     log.info('IndexedDB logout cleanup started', { cleanupAttemptId });
     try {
+        const [
+            { stopCredentialFactsLoaders },
+            { disposeCredentialFacts },
+            { resetInAppMessageEventSession },
+            { clearInAppMessageRequest },
+        ] = await Promise.all([
+            import('../in-app-messages/credentialFactsLoader'),
+            import('../in-app-messages/credentialFactsStore'),
+            import('../in-app-messages/inAppMessageEvents'),
+            import('../in-app-messages/deepLinkRequestStore'),
+        ]);
+        stopCredentialFactsLoaders();
+        resetInAppMessageEventSession();
+        clearInAppMessageRequest();
+        await disposeCredentialFacts();
+    } catch {
+        // A failed dynamic import must not prevent the general logout database sweep.
+    }
+    try {
         const preserved = new Set([
             ...ALWAYS_PRESERVED,
             ...(strategy?.getPreservedStorageKeys() ?? DEFAULT_PRESERVED),
