@@ -135,6 +135,26 @@ describe('decidePinPromptAfterReady', () => {
         });
     });
 
+    it('asks for a new PIN when repair requires a PIN reset, even while unenrolled', () => {
+        for (const recoveredVia of [null, 'hold', 'pin'] as const)
+            expect(
+                decidePinPromptAfterReady({
+                    ...base,
+                    recoveredVia,
+                    enrollment: 'not-enrolled',
+                    pinResetRequired: true,
+                })
+            ).toEqual({ kind: 'pin-reset-required' });
+        expect(
+            decidePinPromptAfterReady({
+                ...base,
+                recoveredVia: null,
+                pinResetRequired: true,
+                pinEnabled: true,
+            })
+        ).toEqual({ kind: 'none' });
+    });
+
     it('offers a PIN after waiting out the hold, even if a PIN was set before', () => {
         expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'hold' })).toEqual({
             kind: 'after-hold-recovery',
