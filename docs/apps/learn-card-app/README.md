@@ -77,6 +77,24 @@ flowchart LR
 
 For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
 
+### Saving a Shared Collection
+
+Saving someone else's shared collection keeps it for reference, even when it contains
+only one credential. It does not issue those credentials to you, change their subjects,
+or add them to your earned Passport credentials.
+
+```mermaid
+flowchart LR
+    A[Open a shared collection] --> B[Sign in if needed]
+    B --> C[Save collection]
+    C --> D[View saved collections]
+    D --> E[Data & Sharing: Shared with you]
+    E --> F[Open the saved collection]
+```
+
+The success message appears only after saving is confirmed. If saving fails, the
+collection stays open with an error and the option to try again.
+
 ### Private Verifier History
 
 Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.

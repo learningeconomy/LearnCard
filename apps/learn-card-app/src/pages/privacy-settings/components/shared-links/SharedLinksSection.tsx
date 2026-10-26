@@ -61,10 +61,13 @@ const shareKey = (share: ShareLink): string => `${share.id}:${share.version}`;
  * because modal content is a static snapshot, the live view model is published
  * to `useSharedLinksStore` and the sheets read it from there.
  */
-const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?: number }> = ({
-    vm,
-    delay = 0,
-}) => {
+const SharedLinksSection: React.FC<{
+    vm: DataSharingSharedLinksViewModel;
+    delay?: number;
+    openReceived?: boolean;
+    onReceivedOpened?: () => void;
+    showOwnerLinks?: boolean;
+}> = ({ vm, delay = 0, openReceived = false, onReceivedOpened, showOwnerLinks = true }) => {
     const { newModal, closeModalById } = useModal();
     const setVm = useSharedLinksStore(state => state.setVm);
 
@@ -131,6 +134,16 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
     const openAllReceived = () => {
         openSheet(onClose => <SharedWithYouAllSheet onClose={onClose} />, FULL_SHEET);
     };
+    const receivedOpenedRef = useRef(false);
+    React.useEffect(() => {
+        if (!openReceived) {
+            receivedOpenedRef.current = false;
+        } else if (!receivedOpenedRef.current) {
+            receivedOpenedRef.current = true;
+            openAllReceived();
+            onReceivedOpened?.();
+        }
+    }, [openReceived, onReceivedOpened]);
 
     const nothingAtAll = !vm.isLoading && !vm.error && vm.records.length === 0 && !vm.hasMore;
     // Nothing received yet (or still loading): leave the section out entirely.
@@ -148,81 +161,83 @@ const SharedLinksSection: React.FC<{ vm: DataSharingSharedLinksViewModel; delay?
             className="animate-fade-in-up flex flex-col gap-6"
             style={delay ? { animationDelay: `${delay}ms`, animationFillMode: 'both' } : undefined}
         >
-            <section>
-                <SectionHeader
-                    title={m['dataShareCenter.shared.yourLinks']()}
-                    caption={
-                        activeCount > 0 ? activeCountLabel(activeCount, vm.hasMore) : undefined
-                    }
-                    action={newLinkButton}
-                />
-                {nothingAtAll ? (
-                    <GlassCard className="flex flex-col items-center gap-3 px-6 py-8 text-center">
-                        <ShareCredentialsIllustration className="h-16 w-16" />
-                        <p className="font-medium text-grayscale-900">
-                            {m['dataShareCenter.shared.emptyTitle']()}
-                        </p>
-                        <p className="text-sm text-grayscale-600">
-                            {m['dataShareCenter.shared.emptyLinksBody']()}
-                        </p>
-                        <button
-                            type="button"
-                            onClick={vm.onCreateShare}
-                            className="mt-1 rounded-[20px] bg-grayscale-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
-                        >
-                            {m['dataShareCenter.shared.newLink']()}
-                        </button>
-                    </GlassCard>
-                ) : (
-                    <ListShell label={m['dataShareCenter.shared.yourLinks']()}>
-                        {vm.isLoading && vm.records.length === 0 ? (
-                            <SkeletonRows />
-                        ) : vm.error && vm.records.length === 0 ? (
-                            <MessageRow
-                                tone="error"
-                                action={<RetryButton onClick={vm.onRefresh} />}
+            {showOwnerLinks && (
+                <section>
+                    <SectionHeader
+                        title={m['dataShareCenter.shared.yourLinks']()}
+                        caption={
+                            activeCount > 0 ? activeCountLabel(activeCount, vm.hasMore) : undefined
+                        }
+                        action={newLinkButton}
+                    />
+                    {nothingAtAll ? (
+                        <GlassCard className="flex flex-col items-center gap-3 px-6 py-8 text-center">
+                            <ShareCredentialsIllustration className="h-16 w-16" />
+                            <p className="font-medium text-grayscale-900">
+                                {m['dataShareCenter.shared.emptyTitle']()}
+                            </p>
+                            <p className="text-sm text-grayscale-600">
+                                {m['dataShareCenter.shared.emptyLinksBody']()}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={vm.onCreateShare}
+                                className="mt-1 rounded-[20px] bg-grayscale-900 px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
                             >
-                                {m['dataShareCenter.shared.loadError']()}
-                            </MessageRow>
-                        ) : preview.length === 0 ? (
-                            <MessageRow>
-                                {vm.hasMore
-                                    ? m['dataShareCenter.shared.noActiveLoaded']()
-                                    : m['dataShareCenter.shared.noActive']()}
-                            </MessageRow>
-                        ) : (
-                            preview.map((share, index) => (
-                                <ShareLinkRow
-                                    key={shareKey(share)}
-                                    share={share}
-                                    index={index}
-                                    animate={animatedLinkKeys.has(shareKey(share))}
-                                    pending={Boolean(vm.pendingActions[share.id])}
-                                    busy={vm.busyId === share.id}
-                                    showViewStats={vm.showViewStats}
-                                    onOpen={openShare}
-                                    onCopy={vm.onCopy}
+                                {m['dataShareCenter.shared.newLink']()}
+                            </button>
+                        </GlassCard>
+                    ) : (
+                        <ListShell label={m['dataShareCenter.shared.yourLinks']()}>
+                            {vm.isLoading && vm.records.length === 0 ? (
+                                <SkeletonRows />
+                            ) : vm.error && vm.records.length === 0 ? (
+                                <MessageRow
+                                    tone="error"
+                                    action={<RetryButton onClick={vm.onRefresh} />}
+                                >
+                                    {m['dataShareCenter.shared.loadError']()}
+                                </MessageRow>
+                            ) : preview.length === 0 ? (
+                                <MessageRow>
+                                    {vm.hasMore
+                                        ? m['dataShareCenter.shared.noActiveLoaded']()
+                                        : m['dataShareCenter.shared.noActive']()}
+                                </MessageRow>
+                            ) : (
+                                preview.map((share, index) => (
+                                    <ShareLinkRow
+                                        key={shareKey(share)}
+                                        share={share}
+                                        index={index}
+                                        animate={animatedLinkKeys.has(shareKey(share))}
+                                        pending={Boolean(vm.pendingActions[share.id])}
+                                        busy={vm.busyId === share.id}
+                                        showViewStats={vm.showViewStats}
+                                        onOpen={openShare}
+                                        onCopy={vm.onCopy}
+                                    />
+                                ))
+                            )}
+                            {showLinksViewAll && (
+                                <ViewAllRow
+                                    label={viewAllLabel(vm.records.length, vm.hasMore)}
+                                    onClick={openAllLinks}
                                 />
-                            ))
-                        )}
-                        {showLinksViewAll && (
-                            <ViewAllRow
-                                label={viewAllLabel(vm.records.length, vm.hasMore)}
-                                onClick={openAllLinks}
-                            />
-                        )}
-                        {vm.error && vm.records.length > 0 && (
-                            <MessageRow
-                                compact
-                                tone="error"
-                                action={<RetryButton onClick={vm.onRefresh} />}
-                            >
-                                {m['dataShareCenter.shared.loadError']()}
-                            </MessageRow>
-                        )}
-                    </ListShell>
-                )}
-            </section>
+                            )}
+                            {vm.error && vm.records.length > 0 && (
+                                <MessageRow
+                                    compact
+                                    tone="error"
+                                    action={<RetryButton onClick={vm.onRefresh} />}
+                                >
+                                    {m['dataShareCenter.shared.loadError']()}
+                                </MessageRow>
+                            )}
+                        </ListShell>
+                    )}
+                </section>
+            )}
 
             {!hideReceived && (
                 <section>

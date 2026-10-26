@@ -17,9 +17,18 @@ import './dataSharingCenter.scss';
 type DataSharingCenterViewProps = {
     vm: DataSharingCenterViewModel;
     verifierHistory?: React.ReactNode;
+    openSaved?: boolean;
+    onSavedOpened?: () => void;
+    showOwnerLinks?: boolean;
 };
 
-const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm, verifierHistory }) => {
+const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
+    vm,
+    verifierHistory,
+    openSaved = false,
+    onSavedOpened,
+    showOwnerLinks = true,
+}) => {
     const { isLoading, isMinor, contracts, onContractsUpdate, ai, profile, diagnostics, shared } =
         vm;
 
@@ -53,7 +62,15 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({ vm, verif
                         <PendingContractRequests />
                         <TrustSummaryCard contracts={contracts} />
 
-                        {shared && <SharedLinksSection vm={shared} delay={60} />}
+                        {shared && (
+                            <SharedLinksSection
+                                vm={shared}
+                                delay={60}
+                                openReceived={openSaved}
+                                onReceivedOpened={onSavedOpened}
+                                showOwnerLinks={showOwnerLinks}
+                            />
+                        )}
                         {verifierHistory}
 
                         <ConnectedAppsSection

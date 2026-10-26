@@ -341,6 +341,25 @@ describe('row animation', () => {
 });
 
 describe('shared with you', () => {
+    it('opens the received destination without exposing disabled owner controls', () => {
+        const vm = viewModel();
+        const props = { vm, openReceived: true, showOwnerLinks: false };
+        const view = render(React.createElement(SharedLinksSection, props));
+        const sheet = openTopSheet();
+
+        expect(screen.queryByRole('heading', { name: 'Your shared links' })).toBeNull();
+        expect(screen.queryByRole('button', { name: 'New link' })).toBeNull();
+        expect(sheet.getByRole('button', { name: /^Career highlights/ })).toBeEnabled();
+        fireEvent.click(sheet.getByRole('button', { name: 'Back' }));
+        expect(closeModalById).toHaveBeenCalledWith(0);
+
+        view.rerender(React.createElement(SharedLinksSection, { ...props, vm: { ...vm } }));
+        expect(modals).toHaveLength(1);
+        view.rerender(React.createElement(SharedLinksSection, { ...props, openReceived: false }));
+        view.rerender(React.createElement(SharedLinksSection, props));
+        expect(modals).toHaveLength(2);
+    });
+
     it('lists received collections without a tab and previews one', () => {
         const vm = viewModel();
         renderSection(vm);

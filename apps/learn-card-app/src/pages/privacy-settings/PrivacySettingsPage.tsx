@@ -68,15 +68,26 @@ const PrivacySettingsPage: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();
     const { isAiEnabled, reason: aiReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
-    const [savingField, setSavingField] = useState<string | null>(null);
     const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
+    const refreshSavedRef = useRef<(() => Promise<void>) | null>(null);
     const hasEnteredRef = useRef(false);
+    const [savedRequested, setSavedRequested] = useState(
+        () => new URLSearchParams(window.location.search).get('view') === 'saved'
+    );
+    const [openSavedOnEntry, setOpenSavedOnEntry] = useState(false);
+    const [savingField, setSavingField] = useState<string | null>(null);
 
     useIonViewWillEnter(() => {
-        if (hasEnteredRef.current) void refreshSharedRef.current?.();
-        else hasEnteredRef.current = true;
+        const requested = new URLSearchParams(window.location.search).get('view') === 'saved';
+        setSavedRequested(requested);
+        setOpenSavedOnEntry(requested);
+        if (hasEnteredRef.current) {
+            void refreshSharedRef.current?.();
+            void refreshSavedRef.current?.();
+        } else hasEnteredRef.current = true;
     });
 
+    const handleSavedOpened = useCallback(() => setOpenSavedOnEntry(false), []);
     const handleUpdateShare = useCallback(
         (share: ShareLink) => {
             newModal(
@@ -131,8 +142,9 @@ const PrivacySettingsPage: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const shareFeatureEnabled = flags?.shareMultipleEnabled === true;
     const shared = useSharedLinks(
-        flags?.shareMultipleEnabled === true,
+        shareFeatureEnabled || savedRequested,
         !isMinor ||
             (currentLCNUser?.isServiceProfile === true &&
                 currentLCNUser.type !== 'child' &&
@@ -143,6 +155,8 @@ const PrivacySettingsPage: React.FC = () => {
         handleCreateShare
     );
     refreshSharedRef.current = shared?.onRefresh ?? null;
+    const savedDestinationReady = Boolean(shared && !shared.savedCollections.isLoading);
+    refreshSavedRef.current = shared?.savedCollections.onRefresh ?? null;
 
     const contracts = useMemo(
         () =>
@@ -295,6 +309,9 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent>
                 <DataSharingCenterView
                     vm={vm}
+                    openSaved={openSavedOnEntry && savedDestinationReady}
+                    onSavedOpened={handleSavedOpened}
+                    showOwnerLinks={shareFeatureEnabled}
                     verifierHistory={
                         <VerifierHistorySection
                             eligible={historyEligible()}
