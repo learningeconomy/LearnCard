@@ -167,10 +167,14 @@ pub fn parse_attestation_document(bytes: &[u8]) -> Result<ParsedAttestation, Nsm
     decode(payload)
 }
 
+// Private: only `FakeNsm` is public (fake-nsm feature), and the X.509 test
+// helpers are re-exported to the crate only for the kms transport tests.
 #[cfg(any(test, feature = "fake-nsm"))]
-pub(crate) mod fake;
+mod fake;
 #[cfg(any(test, feature = "fake-nsm"))]
 pub use fake::FakeNsm;
+#[cfg(all(test, feature = "kms"))]
+pub(crate) use fake::{certificate_builder, validity, TestProfile};
 
 #[cfg(test)]
 mod tests;

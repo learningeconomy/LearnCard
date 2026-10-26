@@ -1,5 +1,5 @@
 use super::*;
-use crate::nsm::fake::{certificate_builder, validity, TestProfile};
+use crate::nsm::{certificate_builder, validity, TestProfile};
 use crate::time::{TimeError, TimeEvidence, TimeFuture};
 use p384::ecdsa::{DerSignature, SigningKey};
 use x509_cert::{
