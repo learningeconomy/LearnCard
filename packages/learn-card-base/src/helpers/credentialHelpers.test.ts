@@ -30,6 +30,7 @@ import {
     formatCredentialAwardedDate,
     getEvidenceAttachmentType,
     getEvidenceAttachments,
+    getCredentialName,
 } from './credentialHelpers';
 import {
     getNotificationType,
@@ -596,4 +597,11 @@ it('preserves explicit media genres when URLs cannot identify the uploaded type'
         },
     ] as never);
     expect(attachments?.map(item => item.type)).toEqual(['video', 'document']);
+});
+
+describe('getCredentialName', () => {
+    it('returns an empty string when no name source or specific type exists', () => {
+        expect(getCredentialName({ type: ['VerifiableCredential'] } as never)).toBe('');
+        expect(getCredentialName({} as never)).toBe('');
+    });
 });

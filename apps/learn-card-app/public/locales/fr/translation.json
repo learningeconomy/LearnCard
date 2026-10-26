@@ -9722,7 +9722,8 @@
         "savedToLearnCard": "Enregistré dans LearnCard",
         "saveError": "Impossible d’enregistrer ces justificatifs. Réessayez.",
         "signInToSave": "Se connecter pour enregistrer",
-        "saveHint": "Conservez cette collection signée dans vos éléments reçus."
+        "saveHint": "Conservez cette collection signée dans vos éléments reçus.",
+        "viewCredential": "Voir le justificatif"
     },
     "resumePublishing": {
         "linkReady": "Votre lien privé est prêt.",
