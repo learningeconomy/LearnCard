@@ -13,7 +13,9 @@ import {
 } from '@learncard/types';
 import { BoostCategoryOptionsEnum } from '../../types/boostCategories';
 
-const SHARE_CREDENTIAL_CATEGORY_VALUES: readonly string[] = Object.values(BoostCategoryOptionsEnum);
+const SHARE_CREDENTIAL_CATEGORY_VALUES: Record<string, true> = Object.fromEntries(
+    Object.values(BoostCategoryOptionsEnum).map(category => [category, true])
+);
 
 /**
  * Recipient-manifest construction and structural validation.
@@ -64,7 +66,9 @@ export const getShareCredentialCategories = (
         return undefined;
     }
     return metadata.map(value =>
-        typeof value === 'string' && SHARE_CREDENTIAL_CATEGORY_VALUES.includes(value) ? value : null
+        typeof value === 'string' && Object.hasOwn(SHARE_CREDENTIAL_CATEGORY_VALUES, value)
+            ? value
+            : null
     );
 };
 
