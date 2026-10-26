@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, Loader2, Settings as SettingsIcon, Shield } from 'lucide-react';
+import { BadgeCheck, Building2, Loader2, Settings as SettingsIcon, Shield } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { AuditLog } from '../components/audit/AuditLog';
+import { IssuingIdentityPanel } from '../components/settings/IssuingIdentityPanel';
 import { getEcosystemDetail, type DashboardSession } from '../api';
 
 type Detail = Awaited<ReturnType<typeof getEcosystemDetail>>;
@@ -67,6 +68,10 @@ export function Settings({ session }: { session: DashboardSession }) {
                         <Building2 className="w-3.5 h-3.5" />
                         <span>General</span>
                     </TabsTrigger>
+                    <TabsTrigger value="issuing" className="gap-1.5 text-xs sm:text-sm">
+                        <BadgeCheck className="w-3.5 h-3.5" />
+                        <span>Issuing identity</span>
+                    </TabsTrigger>
                     <TabsTrigger value="security" className="gap-1.5 text-xs sm:text-sm">
                         <Shield className="w-3.5 h-3.5" />
                         <span>Security</span>
@@ -120,6 +125,14 @@ export function Settings({ session }: { session: DashboardSession }) {
                             </p>
                         )}
                     </div>
+                </TabsContent>
+
+                <TabsContent value="issuing" className="space-y-6 mt-4">
+                    <IssuingIdentityPanel
+                        ecosystemId={ecosystemId}
+                        defaultName={eco?.name ?? ''}
+                        canManage={role === 'OWNER' || role === 'ADMIN'}
+                    />
                 </TabsContent>
 
                 <TabsContent value="security" className="space-y-6 mt-4">

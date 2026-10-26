@@ -121,6 +121,25 @@ export async function getEcosystemDetail(id: string) {
     return trpc.ecosystem.get.query({ id });
 }
 
+export type IssuingIdentity = {
+    groupId: string;
+    name: string;
+    profileId: string;
+    did: string;
+    signingReady: boolean;
+};
+
+export async function getIssuingIdentity(id: string): Promise<IssuingIdentity | null> {
+    return trpc.ecosystem.issuingIdentity.query({ id });
+}
+
+export async function provisionIssuingIdentity(input: {
+    id: string;
+    name: string;
+}): Promise<IssuingIdentity> {
+    return trpc.ecosystem.provisionIssuingIdentity.mutate(input);
+}
+
 export async function grantEcosystemMembership(input: {
     id: string;
     profileId: string;
