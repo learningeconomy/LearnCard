@@ -707,6 +707,59 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
         }
     );
+    it('reports an automatic clear once, without the DID', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        const onEscrowPinAutoCleared = vi.fn();
+        await expect(
+            createSSSStrategy({ ...f.config, onEscrowPinAutoCleared }).ensureEscrowEnrollment!(
+                f.params
+            )
+        ).resolves.toEqual({
+            enrolled: true,
+            changed: true,
+            shareVersion: expect.any(Number),
+            pinCleared: 'automatic',
+        });
+        expect(onEscrowPinAutoCleared).toHaveBeenCalledTimes(1);
+        expect(onEscrowPinAutoCleared).toHaveBeenCalledWith({
+            type: 'escrow.pin.auto_cleared',
+            shareVersion: expect.any(Number),
+            authorityShareVersion: expect.any(Number),
+        });
+        expect(JSON.stringify(onEscrowPinAutoCleared.mock.calls)).not.toContain(owner.intent.did);
+    });
+    it('does not report a clear the caller asked for as automatic', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        const onEscrowPinAutoCleared = vi.fn();
+        const result = await createSSSStrategy({
+            ...f.config,
+            onEscrowPinAutoCleared,
+        }).ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, clearPin: true },
+        });
+        expect(result).toMatchObject({ enrolled: true, changed: true });
+        expect(result).not.toHaveProperty('pinCleared');
+        expect(f.intents.at(-1)?.intent).toMatchObject({ pinAction: 'clear' });
+        expect(onEscrowPinAutoCleared).not.toHaveBeenCalled();
+    });
+    it('does not clear automatically without rebind evidence from the authority', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        const intents = f.intents.length;
+        const onEscrowPinAutoCleared = vi.fn();
+        // An authority already at the server's share version is no rebind.
+        f.state().shareVersion = (
+            await f.reload().fetchServerKeyStatus(f.params.token, f.params.providerType)
+        ).shareVersion;
+        await expect(
+            createSSSStrategy({ ...f.config, onEscrowPinAutoCleared }).ensureEscrowEnrollment!(
+                f.params
+            )
+        ).rejects.toThrow();
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
+        expect(f.intents).toHaveLength(intents + 1);
+        expect(onEscrowPinAutoCleared).not.toHaveBeenCalled();
+    });
     it('keeps the old carry when automatic PIN clear is disabled', async () => {
         const f = await recoverWithFailedDirectEnrollment();
         const intents = f.intents.length;

@@ -18,8 +18,68 @@ exercised on staging or a real enclave):
 - Q4: the authority read and attestation already run before rotation, so a failed read
   burns no share version (now covered by a regression test).
 
-**Still open for security:** Q1 (automatic client-signed clear; flip the default to `false`
-and add a prompt if rejected), Q2, Q3, Q5, Q6. Staging test plan item 9 not run.
+**Q1 guardrails (implemented; unit tests only, not run on staging or a real enclave):**
+
+1. **Narrowed trigger.** The automatic clear now also requires rebind evidence. Read from
+   source: `/keys/auth-share` (`lca-api/src/routes/keys.ts`, `getAuthShare`) returns only
+   recovery methods that pass `isRecoveryMethodConfirmed`, and exposes `confirmedAt` but not
+   `confirmationStatus`. The rebind's `pending` escrow method is therefore never visible to
+   the client. The exact condition is now all of:
+    - `autoClearUncarryablePin` is on (default) and the caller did not already ask for a
+      clear (`clearPin`, forced rotation, or explicit enable of a disabled authority);
+    - Nitro authority `status === 'active'` and `hasPin === true`;
+    - no new PIN is being set, and the account is not currently enrolled;
+    - lca-api `escrowPin.state === 'none'`;
+    - **new:** signed authority `shareVersion` < lca-api `shareVersion` (the rebind bumps the
+      server version and leaves the authority at the old one);
+    - **new:** lca-api lists no confirmed escrow method (`confirmedAt` or
+      `confirmationStatus === 'confirmed'`) at any share version.
+
+    If any condition fails, the strategy signs `carry` / `keep` exactly as before, which
+    lca-api rejects. Nothing was broadened.
+
+2. **User is always told.** A committed automatic clear returns
+   `{ enrolled: true, changed: true, shareVersion, pinCleared: 'automatic' }`. The
+   coordinator sets `ready.escrowPinAutoCleared = true`. Later enrollment publishes keep the
+   flag; `setEscrowPin` and `clearEscrowPin` drop it. Once enrollment is `enrolled` with no
+   PIN, the app's `decidePinPromptAfterReady` returns `after-pin-cleared`. The provider then
+   calls `acknowledgeEscrowPinAutoClear()` and opens `RecoveryPinSetupOverlay`, the same
+   overlay used after hold recovery, with new copy (`recovery.pin.afterPinCleared.*`, in
+   en/es/fr/ar). The prompt shows once. Explicit user clears never set the flag.
+   Limitation: the flag is in memory only. If the app reloads after the clear commits but
+   before the prompt shows, the prompt is lost. The PIN stays cleared, and the next repair
+   does not clear again because the authority no longer has a PIN.
+
+3. **Abuse is visible.**
+    - Client: every committed automatic clear calls
+      `SSSStrategyConfig.onEscrowPinAutoCleared` once with
+      `{ type: 'escrow.pin.auto_cleared', shareVersion, authorityShareVersion }`. It carries
+      no DID, email, or PIN material and defaults to `console.warn`. learn-card-app logs it as
+      `escrow.pin.auto_cleared`. ScoutPass uses the default.
+    - Monitor: `services/escrow-ledger-monitor` counts committed PIN clears per account
+      from verified signed authority events (`previous_pin.configured && !pin.configured`).
+      When there are at least 2 clears with signed `hi_ms` in the last 30 days, it emits
+      `AuthorityRepeatedPinClear` (metric only). Terraform alarm
+      `<prefix>-AuthorityRepeatedPinClear` (`infra/escrow-enclave/authority-audit.tf`) sends
+      it to the monitor SNS topic. Signed records cannot tell automatic clears from
+      user-initiated ones, so the alarm counts both.
+
+**Proposed security sign-off wording (Q1):** "The client may complete a recovery-intended
+PIN clear without a user prompt, only when the Nitro-signed authority is active with a PIN
+at a share version older than lca-api's current share version, lca-api reports no escrow
+PIN and lists no confirmed escrow recovery method, the account is not currently enrolled,
+and the user is not setting or explicitly clearing a PIN, always followed by a prompt to
+set a new PIN, with automatic clears logged and alerted."
+
+**Part 1 caveat** (found while checking the server fields above; not verified end to end):
+`priorEscrowMethod` keys off any listed escrow method, but `/keys/auth-share` omits the
+rebind's `pending` methods. So the rollout-bypass half of Option C probably never triggers
+against the real lca-api. The unit-test fixture lists the pending method, which the real
+server does not. Repair outside the rollout after a reload likely still needs a
+server-exposed signal (see Q3).
+
+**Still open for security:** Q1 sign-off on the wording above, Q2, Q3, Q5, Q6. Staging test
+plan item 9 not run.
 
 **Original status:** Proposal. Follow-up to PR #1790 (review thread on
 `AuthCoordinator.ts`, "recovered account outside the rollout still ends up unenrolled if

@@ -109,6 +109,7 @@ run "disabled_is_structurally_a_noop" {
       length(aws_iam_role_policy.authority_monitor) == 0,
       length(aws_cloudwatch_metric_alarm.authority_integrity) == 0,
       length(aws_cloudwatch_metric_alarm.authority_heartbeat) == 0,
+      length(aws_cloudwatch_metric_alarm.authority_repeated_pin_clear) == 0,
       output.authority_monitor_trust_parameter_name == null,
       !contains(keys(aws_lambda_function.monitor.environment[0].variables), "AUTHORITY_TABLE"),
       length(aws_ses_domain_identity.enclave) == 0, length(aws_ses_domain_dkim.enclave) == 0,
@@ -194,7 +195,7 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Observer grants and fixed table/generation/trust wiring must be read-only."
   }
   assert {
-    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].metric_name == "AuthorityRepeatedPinClear" && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
     error_message = "Monitor must have no write/control escape and must alarm on failures or missing coverage."
   }
 }

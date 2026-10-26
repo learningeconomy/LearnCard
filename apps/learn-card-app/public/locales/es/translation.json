@@ -2001,6 +2001,10 @@
                 "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
                 "hint": "Las mismas reglas: 6 dígitos, nada obvio."
             },
+            "afterPinCleared": {
+                "title": "Configura un nuevo PIN de recuperación",
+                "body": "Al restaurar la recuperación automática de tu cuenta, eliminamos tu PIN de recuperación anterior. Configura un nuevo PIN de 6 dígitos para tener lista la recuperación instantánea."
+            },
             "useInstead": "Usar mi PIN de recuperación"
         },
         "confirmCode": {

@@ -297,6 +297,7 @@ registerKeyDerivationFactory('sss', () => {
         escrowRelayKeyId: sss.escrowRelayKeyId,
         escrow: getEscrowStrategyConfig(sss),
         onEscrowError: err => log.warn('escrow.enrollment.failed', err),
+        onEscrowPinAutoCleared: event => log.warn('escrow.pin.auto_cleared', event),
         storage: createDeviceShareStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
         tenantId,
@@ -589,6 +590,9 @@ const AuthSessionManager: React.FC<{
         coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
     const readyEnrollment =
         coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
+    const readyPinAutoCleared =
+        coordinator.state.status === 'ready' && coordinator.state.escrowPinAutoCleared === true;
+    const { acknowledgeEscrowPinAutoClear } = coordinator;
 
     // Identity recovery only completes through the escrow hold, and initialize()
     // re-derives this status after a reload, unlike the in-memory onRecover signal.
@@ -629,8 +633,14 @@ const AuthSessionManager: React.FC<{
                 pinEnabled: readyPinEnabled,
                 enrollment: readyEnrollment,
                 promptFlag: flag,
+                pinAutoCleared: readyPinAutoCleared,
             });
-            if (prompt.kind === 'after-recovery') {
+            if (prompt.kind === 'after-pin-cleared') {
+                // Acknowledge first so the automatic-clear prompt shows exactly once.
+                acknowledgeEscrowPinAutoClear();
+                setRecoveryPinSetupReason('after-pin-cleared');
+                recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'after-recovery') {
                 writeRecoveryPinPromptFlag(did, 'set');
                 setRecoveryPinSetupReason('after-recovery');
                 recoveredViaEscrowRef.current = null;
@@ -642,7 +652,14 @@ const AuthSessionManager: React.FC<{
                 setShowRecoveryPinReset(true);
             }
         }
-    }, [coordinator.state.status, readyDid, readyPinEnabled, readyEnrollment]);
+    }, [
+        coordinator.state.status,
+        readyDid,
+        readyPinEnabled,
+        readyEnrollment,
+        readyPinAutoCleared,
+        acknowledgeEscrowPinAutoClear,
+    ]);
 
     // --- QR login device share pickup from sessionStorage ---
     // When Device B completes Firebase auth after a QR login, the coordinator

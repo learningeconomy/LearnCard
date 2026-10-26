@@ -649,6 +649,55 @@ describe('AuthCoordinator', () => {
             );
         });
 
+        describe('automatic PIN clear prompt', () => {
+            const run = async (result: unknown) => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue(result);
+                const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                    state: 'enrolled',
+                    escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+                });
+                const clearEscrowPin = vi.fn().mockResolvedValue(undefined);
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        ensureEscrowEnrollment,
+                        getEscrowEnrollmentState,
+                        clearEscrowPin,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({ escrowEnrollment: 'enrolled' })
+                );
+                return coordinator;
+            };
+            it('flags an automatic clear until the prompt is acknowledged once', async () => {
+                const coordinator = await run({
+                    enrolled: true,
+                    changed: true,
+                    shareVersion: 3,
+                    pinCleared: 'automatic',
+                });
+                // Survives the enrollment publish that follows the repair.
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'ready',
+                    escrowEnrollment: 'enrolled',
+                    escrowPinAutoCleared: true,
+                });
+                coordinator.acknowledgeEscrowPinAutoClear();
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinAutoCleared', true);
+            });
+            it('does not flag a repair that did not clear the PIN automatically', async () => {
+                const coordinator = await run({ enrolled: true, changed: true, shareVersion: 3 });
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinAutoCleared', true);
+            });
+            it('does not flag an explicit user PIN clear', async () => {
+                const coordinator = await run({ enrolled: true, changed: false });
+                await coordinator.clearEscrowPin();
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinAutoCleared', true);
+            });
+        });
+
         describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
             describe('post-recovery repair after reload (no in-memory marker)', () => {
                 const run = async (enrollmentState: unknown) => {

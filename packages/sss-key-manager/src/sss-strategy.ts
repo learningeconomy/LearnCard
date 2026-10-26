@@ -141,6 +141,13 @@ export interface SSSStrategyConfig {
      */
     autoClearUncarryablePin?: boolean;
 
+    /**
+     * Called once after every committed automatic PIN clear
+     * ({@link SSSStrategyConfig.autoClearUncarryablePin}). Must not throw; defaults
+     * to a console warning. Never receives the DID, email or PIN material.
+     */
+    onEscrowPinAutoCleared?: (event: EscrowPinAutoClearedEvent) => void;
+
     /** Server URL for key share operations */
     serverUrl: string;
 
@@ -211,7 +218,16 @@ const describeHttpStatus = (response: Response): string =>
 type EscrowEnrollmentResult =
     | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
     | { enrolled: true; changed: false }
-    | { enrolled: true; changed: true; shareVersion: number };
+    | { enrolled: true; changed: true; shareVersion: number; pinCleared?: 'automatic' };
+
+/** Telemetry for an automatic post-rebind PIN clear. Carries no DID, email or PIN data. */
+export interface EscrowPinAutoClearedEvent {
+    type: 'escrow.pin.auto_cleared';
+    /** Share version the PIN-free enrollment was committed at. */
+    shareVersion: number;
+    /** Share version the signed authority was still active at (pre-rebind). */
+    authorityShareVersion: number | null;
+}
 
 /** HTTP failure metadata without potentially sensitive server response text. */
 export class EscrowRequestError extends Error {
@@ -1456,6 +1472,26 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
+    /** Report a committed automatic PIN clear so the caller can prompt for a new PIN. */
+    const withAutoClear = (
+        shareVersion: number,
+        autoClearedFrom: { authorityShareVersion: number | null } | undefined
+    ): EscrowEnrollmentResult => {
+        if (!autoClearedFrom) return { enrolled: true, changed: true, shareVersion };
+        try {
+            const event: EscrowPinAutoClearedEvent = {
+                type: 'escrow.pin.auto_cleared',
+                shareVersion,
+                authorityShareVersion: autoClearedFrom.authorityShareVersion,
+            };
+            if (config.onEscrowPinAutoCleared) config.onEscrowPinAutoCleared(event);
+            else console.warn('SSS: escrow PIN cleared automatically', event);
+        } catch {
+            console.warn('SSS: escrow event reporting failed');
+        }
+        return { enrolled: true, changed: true, shareVersion, pinCleared: 'automatic' };
+    };
+
     const ensureEscrowEnrollmentUnguarded = async (
         self: SSSKeyDerivationStrategy,
         params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
@@ -1464,6 +1500,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         allowDisabledEnrollment = false
     ): Promise<EscrowEnrollmentResult> => {
         let clearPinForEnrollment = forceRotate || params.options?.clearPin === true;
+        let autoClearedFrom: { authorityShareVersion: number | null } | undefined;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
         const recoveryEmail = params.options?.recoveryEmail ?? '';
@@ -1530,15 +1567,31 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             hasPin = current.hasPin;
             // After an identity-recovery rebind lca-api has no PIN left to carry, so an
             // automatic carry/keep can only fail; sign a clear instead (design doc Q1).
+            // Rebind evidence: the signed authority is still active at an older share
+            // version, and lca-api lists no confirmed escrow method at any version (the
+            // rebind resets escrow to `pending`, which /keys/auth-share omits).
             if (
                 (config.autoClearUncarryablePin ?? DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN) &&
+                !clearPinForEnrollment &&
                 current.status === 'active' &&
                 current.hasPin &&
                 pin === undefined &&
                 !currentlyEnrolled &&
-                status.escrowPin?.state === 'none'
-            )
+                status.escrowPin?.state === 'none' &&
+                current.shareVersion !== null &&
+                status.shareVersion !== null &&
+                current.shareVersion < status.shareVersion &&
+                !status.recoveryMethods.some(
+                    method =>
+                        method.type === 'escrow' &&
+                        (Boolean(method.confirmedAt) ||
+                            ('confirmationStatus' in method &&
+                                method.confirmationStatus === 'confirmed'))
+                )
+            ) {
                 clearPinForEnrollment = true;
+                autoClearedFrom = { authorityShareVersion: current.shareVersion };
+            }
         }
         // A current, PIN-free enrollment already satisfies a clear request
         // (e.g. post-recovery repair after direct enrollment succeeded).
@@ -1595,7 +1648,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryLanguage
                 );
                 unenrolledRotation = undefined;
-                return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
+                return withAutoClear(retry.shareVersion, autoClearedFrom);
             }
             // Verify the enclave before rotating: a bad attestation must not burn
             // a share version (and, repeated, the retained auth-share history).
@@ -1654,7 +1707,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 recoveryLanguage
             );
             unenrolledRotation = undefined;
-            return { enrolled: true, changed: true, shareVersion };
+            return withAutoClear(shareVersion, autoClearedFrom);
         } catch (err) {
             // A background repair the caller never asked for must not surface as
             // a hard failure (mirrors tryEnrollEscrow's existing swallow-and-report

@@ -394,6 +394,17 @@ export class AuthCoordinator {
                     ) {
                         this.recoveredEscrowAccount = undefined;
                     }
+                    // The strategy cleared the retired PIN without being asked; the user
+                    // must be told and offered a new PIN (design doc Q1).
+                    if (
+                        enrollmentResult?.enrolled &&
+                        enrollmentResult.changed &&
+                        enrollmentResult.pinCleared === 'automatic' &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready'
+                    ) {
+                        this.setState({ ...this.state, escrowPinAutoCleared: true });
+                    }
                     if (
                         enrollmentResult &&
                         !enrollmentResult.enrolled &&
@@ -622,7 +633,12 @@ export class AuthCoordinator {
             recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
         // An explicit new PIN supersedes recovery's intent to clear the retired PIN.
         if (supersedesRecovery) this.recoveredEscrowAccount = undefined;
-        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        this.setState({
+            ...ready,
+            escrowPin: undefined,
+            escrowEnrollment: undefined,
+            escrowPinAutoCleared: undefined,
+        });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.setEscrowPin!({
@@ -646,6 +662,12 @@ export class AuthCoordinator {
         }
     }
 
+    /** Mark the post-automatic-clear "set a new PIN" prompt as shown, so it shows once. */
+    acknowledgeEscrowPinAutoClear(): void {
+        if (this.state.status === 'ready' && this.state.escrowPinAutoCleared)
+            this.setState({ ...this.state, escrowPinAutoCleared: undefined });
+    }
+
     /** Remove a PIN by rotating escrow material with an owner proof. */
     async clearEscrowPin(): Promise<void> {
         const ready = this.state;
@@ -657,7 +679,12 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        this.setState({
+            ...ready,
+            escrowPin: undefined,
+            escrowEnrollment: undefined,
+            escrowPinAutoCleared: undefined,
+        });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.clearEscrowPin!({

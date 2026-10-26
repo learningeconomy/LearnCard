@@ -243,7 +243,7 @@ fn rows(events: &[AuthorityEvent]) -> Vec<Row> {
     }
     result
 }
-fn verify(rows: &[Row]) -> Result<()> {
+fn verify(rows: &[Row]) -> Result<AccountAudit> {
     verify_account(
         "learncard",
         "g1",
@@ -738,4 +738,106 @@ async fn unavailable_reads_never_report_success_and_integrity_alarms_are_fixed_l
         "AuthorityIntegrityFailure"
     );
     assert_eq!(Error::Integrity.to_string(), "ledger integrity failure");
+}
+
+/// Enroll with a PIN, clear it, set a new one, clear again: every PIN change is
+/// an owner-signed Replace. `clears_hi_ms` are the two clears' signed times.
+fn pin_clear_chain(clears_hi_ms: [u64; 2]) -> Vec<AuthorityEvent> {
+    let blob = escrow_blob_identity(&envelope()).unwrap();
+    let steps: [(Kind, bool, [u8; 32], u8, u64); 4] = [
+        (Kind::Enroll, true, [0xa1; 32], 10, 1000),
+        (Kind::Replace, false, [0xa2; 32], 11, clears_hi_ms[0]),
+        (Kind::Replace, true, [0xa3; 32], 12, clears_hi_ms[0]),
+        (Kind::Replace, false, blob, 2, clears_hi_ms[1]),
+    ];
+    let mut events: Vec<AuthorityEvent> = Vec::new();
+    for (index, (kind, configured, target, digest, hi_ms)) in steps.into_iter().enumerate() {
+        let n = index as u64 + 1;
+        let previous = events.last();
+        events.push(AuthorityEvent {
+            binding: binding(),
+            request_id: format!("pin-clear-request-{digest}"),
+            kind,
+            outcome: Outcome::Committed,
+            previous_revisions: previous.map(|e| e.revisions),
+            revisions: Revisions {
+                operation: count(n),
+                enrollment: count(n),
+            },
+            previous_pin: previous.map(|e| e.pin),
+            pin: PinState {
+                generation: count(n),
+                configured,
+                attempts_used: 0,
+            },
+            epoch: count(n),
+            source_identity: previous.and_then(|e| e.target_identity),
+            target_identity: Some(target),
+            share_version: Some(1),
+            rewrap_delegated: true,
+            hold_id: None,
+            hold_status: None,
+            request_digest: [digest; 32],
+            time: TimeEvidence {
+                interval: TrustedInterval {
+                    lo_ms: hi_ms - 1,
+                    hi_ms,
+                },
+                sources: vec![],
+            },
+        });
+    }
+    events
+}
+#[test]
+fn verified_history_reports_each_signed_pin_clear() {
+    assert_eq!(
+        verify(&rows(&pin_clear_chain([5_000, 9_000]))),
+        Ok(AccountAudit {
+            pin_clears_hi_ms: vec![5_000, 9_000]
+        })
+    );
+    // PIN attempts and holds are not clears.
+    assert_eq!(verify(&rows(&events())), Ok(AccountAudit::default()));
+}
+#[test]
+fn repeated_pin_clear_counts_only_clears_inside_the_window() {
+    let now = 100 * REPEATED_PIN_CLEAR_WINDOW_MS;
+    let audit = |clears: Vec<u64>| AccountAudit {
+        pin_clears_hi_ms: clears,
+    };
+    assert!(audit(vec![now - 10, now - 5]).repeated_pin_clear(now));
+    assert!(audit(vec![now - REPEATED_PIN_CLEAR_WINDOW_MS, now]).repeated_pin_clear(now));
+    assert!(!audit(vec![now - REPEATED_PIN_CLEAR_WINDOW_MS - 1, now]).repeated_pin_clear(now));
+    assert!(!audit(vec![now]).repeated_pin_clear(now));
+    assert!(!audit(vec![]).repeated_pin_clear(now));
+}
+#[tokio::test]
+async fn sweep_reports_repeated_recent_pin_clears_without_an_integrity_alarm() {
+    let now = now_ms();
+    let mut m = monitor(false, false);
+    m.backend.rows = rows(&pin_clear_chain([now - 60_000, now - 1_000]));
+    m.sweep_authority(&config()).await.unwrap();
+    assert_eq!(
+        *m.backend.metrics.lock().unwrap(),
+        vec![
+            Metric::AuthorityRepeatedPinClear,
+            Metric::AuthoritySweepCompleted
+        ]
+    );
+    // One clear inside the window (the expected post-recovery repair) is quiet.
+    let mut m = monitor(false, false);
+    m.backend.rows = rows(&pin_clear_chain([
+        now - REPEATED_PIN_CLEAR_WINDOW_MS - 60_000,
+        now - 1_000,
+    ]));
+    m.sweep_authority(&config()).await.unwrap();
+    assert_eq!(
+        *m.backend.metrics.lock().unwrap(),
+        vec![Metric::AuthoritySweepCompleted]
+    );
+    assert_eq!(
+        Metric::AuthorityRepeatedPinClear.name(),
+        "AuthorityRepeatedPinClear"
+    );
 }

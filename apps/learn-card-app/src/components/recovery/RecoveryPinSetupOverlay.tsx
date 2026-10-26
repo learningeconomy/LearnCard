@@ -6,7 +6,8 @@ import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import { m } from '../../paraglide/messages.js';
 
-export type RecoveryPinSetupReason = 'first-time' | 'after-recovery' | 'after-hold-recovery';
+export type RecoveryPinSetupReason =
+    'first-time' | 'after-recovery' | 'after-hold-recovery' | 'after-pin-cleared';
 
 interface RecoveryPinSetupOverlayProps {
     setPin: (pin: string) => Promise<void>;
@@ -23,6 +24,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
 }) => {
     const afterRecovery = reason === 'after-recovery';
     const afterHoldRecovery = reason === 'after-hold-recovery';
+    const afterPinCleared = reason === 'after-pin-cleared';
     const [step, setStep] = useState<'enter' | 'confirm' | 'saving' | 'success'>('enter');
     const [pin, setPin] = useState('');
     const [confirmPin, setConfirmPin] = useState('');
@@ -85,14 +87,18 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
                                 ? m['recovery.pin.afterRecovery.title']()
                                 : afterHoldRecovery
                                   ? m['recovery.pin.afterHoldRecovery.title']()
-                                  : m['recovery.pin.setPin']()}
+                                  : afterPinCleared
+                                    ? m['recovery.pin.afterPinCleared.title']()
+                                    : m['recovery.pin.setPin']()}
                         </h2>
                         <p className="text-sm text-grayscale-600 leading-relaxed">
                             {afterRecovery
                                 ? m['recovery.pin.afterRecovery.body']()
                                 : afterHoldRecovery
                                   ? m['recovery.pin.afterHoldRecovery.body']()
-                                  : m['recovery.pin.setPinDesc']()}
+                                  : afterPinCleared
+                                    ? m['recovery.pin.afterPinCleared.body']()
+                                    : m['recovery.pin.setPinDesc']()}
                         </p>
                         {afterRecovery && (
                             <p className="text-xs text-grayscale-500 leading-relaxed">

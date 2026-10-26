@@ -580,7 +580,17 @@ export interface KeyDerivationStrategy<
     }): Promise<
         | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
         | { enrolled: true; changed: false }
-        | { enrolled: true; changed: true; shareVersion: number }
+        | {
+              enrolled: true;
+              changed: true;
+              shareVersion: number;
+              /**
+               * Set only when the strategy cleared a retired PIN on its own (Nitro
+               * post-rebind repair) rather than because the caller asked; the caller
+               * must prompt the user to set a new PIN.
+               */
+              pinCleared?: 'automatic';
+          }
     >;
 
     /** Set or change a PIN by rotating escrow material with an owner proof. */
