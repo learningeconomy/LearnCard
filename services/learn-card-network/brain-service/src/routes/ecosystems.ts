@@ -28,6 +28,10 @@ import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getTenantRootEcosystem } from '@accesslayer/tenant/read';
 import { readAppStoreListingById } from '@accesslayer/app-store-listing/read';
 import { getCatalogPolicySnapshot } from '@helpers/catalog-policy.helpers';
+import {
+    getEcosystemIssuingIdentity,
+    provisionEcosystemIssuingIdentity,
+} from '@accesslayer/ecosystem/issuing-identity';
 
 // OWNER is structural (set once at Ecosystem creation, one per Ecosystem) and cannot be
 // conferred as a membership grant. Only ADMIN can grant, and never a role above their own.
@@ -42,6 +46,14 @@ const CatalogPolicyStateValidator = z.object({
     allowedListings: z.array(z.string()).nullable(),
     requireEndorsement: z.boolean(),
     unrestricted: z.boolean(),
+});
+
+const IssuingIdentityValidator = z.object({
+    groupId: z.string(),
+    name: z.string(),
+    profileId: z.string(),
+    did: z.string(),
+    signingReady: z.boolean(),
 });
 
 const resolveCallerRole = async (
@@ -465,6 +477,59 @@ export const ecosystemsRouter = t.router({
 
             return readCatalogPolicyState(input.id);
         }),
+
+    getIssuingIdentity: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/ecosystem/{id}/issuing-identity',
+                tags: ['Ecosystems'],
+                summary: "Get an Ecosystem's issuing identity",
+                description:
+                    'Returns the managed identity credentials are issued as, if provisioned. Caller must be an Ecosystem member.',
+            },
+        })
+        .input(z.object({ id: z.string() }))
+        .output(IssuingIdentityValidator.nullable())
+        .query(async ({ ctx, input }) => {
+            const ecosystem = await getEcosystemById(input.id);
+
+            if (!ecosystem)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Ecosystem not found' });
+
+            if (!(await resolveCallerRole(ecosystem, ctx.user.profile.profileId))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: "Only Ecosystem members may read the Ecosystem's issuing identity",
+                });
+            }
+
+            return getEcosystemIssuingIdentity(input.id, ctx.domain);
+        }),
+
+    provisionIssuingIdentity: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/ecosystem/{id}/issuing-identity',
+                tags: ['Ecosystems'],
+                summary: "Provision an Ecosystem's managed issuing identity",
+                description:
+                    'Creates (idempotently) the managed identity this Ecosystem issues credentials as, with a managed signing key. Caller must own or be an ADMIN of the Ecosystem.',
+            },
+        })
+        .input(z.object({ id: z.string(), name: z.string().min(1).max(120) }))
+        .output(IssuingIdentityValidator)
+        .mutation(async ({ ctx, input }) =>
+            provisionEcosystemIssuingIdentity({
+                ecosystemId: input.id,
+                name: input.name,
+                actorProfileId: ctx.user.profile.profileId,
+                domain: ctx.domain,
+            })
+        ),
 
     enableListing: profileRoute
         .meta({

@@ -234,19 +234,33 @@ export const assertParentOwnershipCompatibility = async (
     return parent;
 };
 
-export const requireManagedIdentityProfile = async (profileId: string): Promise<void> => {
+/**
+ * ADR-001 identity rule (RFC 2026-10 decision 4): the Profile must be managed by a
+ * ProfileManager that administers the Group's owning ecosystem. Checked by relationship,
+ * never by DID shape: a stored did:web makes /users/:id/did.json resolve itself.
+ */
+export const requireManagedIdentityProfile = async (
+    profileId: string,
+    ownerEcosystemId: string
+): Promise<void> => {
     const profile = await Profile.findOne({ where: { profileId }, plain: true });
 
     if (!profile) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Identity Profile not found' });
     }
 
-    const did = String(profile.did ?? '');
+    const managed = await neogma.queryRunner.run(
+        `MATCH (m:ProfileManager)-[:MANAGES]->(:Profile {profileId: $profileId})
+         MATCH (m)-[:ADMINISTRATES]->(:Ecosystem {id: $ownerEcosystemId})
+         RETURN count(m) > 0 AS managed`,
+        { profileId, ownerEcosystemId }
+    );
 
-    if (!did.includes(':users:')) {
+    if (managed.records[0]?.get('managed') !== true) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Only managed user Profiles may be attached as Group identities.',
+            message:
+                'Only Profiles managed by the owning ecosystem may be attached as Group identities.',
         });
     }
 };

@@ -40,8 +40,21 @@ const seedProfile = (profileId: string, did: string) =>
         typeof createProfile
     >[0]);
 
+// Managed Profiles store an underlying did:key, as createManagedProfile does.
 const seedManagedProfile = (profileId: string) =>
-    seedProfile(profileId, `did:web:localhost%3A3000:users:${profileId}`);
+    seedProfile(profileId, `did:key:z6MkManaged${profileId.replace(/[^a-zA-Z0-9]/g, '')}`);
+
+/** ADR-001 rule: the ecosystem's ProfileManager administers it and manages the Profile. */
+const manageFor = async (profileId: string, ecosystemId: string): Promise<void> => {
+    await neogma.queryRunner.run(
+        `MATCH (p:Profile {profileId: $profileId}), (e:Ecosystem {id: $ecosystemId})
+         MERGE (m:ProfileManager {id: 'manager-' + $ecosystemId})
+         ON CREATE SET m.created = $now
+         MERGE (m)-[:ADMINISTRATES]->(e)
+         MERGE (m)-[:MANAGES]->(p)`,
+        { profileId, ecosystemId, now: new Date().toISOString() }
+    );
+};
 
 const createOwnerEcosystem = async (ownerProfileId = 'owner') =>
     createEcosystem({
@@ -72,6 +85,7 @@ describe('Groups', () => {
         await Group.delete({ detach: true, where: {} });
         await Ecosystem.delete({ detach: true, where: {} });
         await Profile.delete({ detach: true, where: {} });
+        await neogma.queryRunner.run('MATCH (m:ProfileManager) DETACH DELETE m');
     });
 
     it('creates, reads, and exposes groups through the read routes', async () => {
@@ -320,6 +334,43 @@ describe('Groups', () => {
         ).rejects.toThrow();
     });
 
+    it('accepts only identities managed by the owning ecosystem, never by DID shape', async () => {
+        const owner = await seedProfile('owner', OWNER_DID);
+        const otherOwner = await seedProfile('wrong-admin', WRONG_ADMIN_DID);
+        const ecosystem = await createOwnerEcosystem(owner.profileId);
+        const otherEcosystem = await createOtherEcosystem(otherOwner.profileId);
+        await seedProfile('legacy-shape', 'did:web:localhost%3A3000:users:legacy-shape');
+        const foreign = await seedManagedProfile('foreign-managed');
+        await manageFor(foreign.profileId, otherEcosystem.id);
+        const groupInput = (identityProfileId: string, slug: string) => ({
+            name: 'Issuer',
+            slug,
+            type: 'administrative' as const,
+            description: undefined,
+            parentGroupId: null,
+            ownerEcosystemId: ecosystem.id,
+            identityProfileId,
+            identityIssuanceEnabled: true,
+            membershipMode: 'EXPLICIT' as const,
+            computedCriteria: undefined,
+            status: 'ACTIVE' as const,
+        });
+
+        for (const [profileId, slug] of [
+            ['legacy-shape', 'legacy'],
+            [foreign.profileId, 'foreign'],
+        ] as const) {
+            await expect(
+                ownerClient.group.createGroup(groupInput(profileId, slug))
+            ).rejects.toThrow(/managed by the owning ecosystem/);
+        }
+
+        const local = await seedManagedProfile('local-managed');
+        await manageFor(local.profileId, ecosystem.id);
+        const group = await ownerClient.group.createGroup(groupInput(local.profileId, 'local'));
+        expect(group.identityProfileId).toBe(local.profileId);
+    });
+
     it('enforces identity attach 1:1, disable, detach, and transfer sequencing', async () => {
         const owner = await seedProfile('owner', OWNER_DID);
         const newOwner = await seedProfile('new-owner', 'did:key:z6MkNewOwner');
@@ -327,6 +378,8 @@ describe('Groups', () => {
         await seedManagedProfile('managed-b');
         const ecosystem = await createOwnerEcosystem(owner.profileId);
         const targetEcosystem = await createOtherEcosystem(newOwner.profileId);
+        await manageFor('managed-a', ecosystem.id);
+        await manageFor('managed-b', ecosystem.id);
 
         const group = await ownerClient.group.createGroup({
             name: 'Issuer Group',
@@ -404,6 +457,7 @@ describe('Groups', () => {
             status: 'ARCHIVED',
         });
         const targetEcosystem = await createOtherEcosystem(targetOwner.profileId);
+        await manageFor(managed.profileId, archivedEcosystem.id);
         const group = await createGroup({
             name: 'Transfer Me',
             slug: 'transfer-me',
@@ -516,6 +570,7 @@ describe('Groups', () => {
         const otherOwner = await seedProfile('other-owner', 'did:key:z6MkOtherOwner');
         const ecosystem = await createOwnerEcosystem(owner.profileId);
         const otherEcosystem = await createOtherEcosystem(otherOwner.profileId);
+        await manageFor(managed.profileId, ecosystem.id);
         const root = await ownerClient.group.createGroup({
             name: 'Root',
             slug: 'root',
@@ -588,6 +643,7 @@ describe('Groups', () => {
         const ecosystem = await createOwnerEcosystem(owner.profileId);
         const consumerEcosystem = await createOtherEcosystem('consumer');
         const transferTarget = await createOtherEcosystem(targetOwner.profileId);
+        await manageFor(managed.profileId, ecosystem.id);
 
         const group = await ownerClient.group.createGroup({
             name: 'Audited',

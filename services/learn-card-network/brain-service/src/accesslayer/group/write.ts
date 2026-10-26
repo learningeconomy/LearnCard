@@ -125,7 +125,7 @@ export const createGroup = async (
     await assertSlugUnique(input.parentGroupId, input.slug);
 
     if (input.identityProfileId) {
-        await requireManagedIdentityProfile(input.identityProfileId);
+        await requireManagedIdentityProfile(input.identityProfileId, input.ownerEcosystemId);
         await assertHasIdentityAvailability('', input.identityProfileId);
     }
 
@@ -408,7 +408,7 @@ export const moveGroup = async (
 
         await updateGroupNode(node.id, {
             parentGroupId:
-                node.id === group.id ? parentGroupId ?? null : node.parentGroupId ?? undefined,
+                node.id === group.id ? (parentGroupId ?? null) : (node.parentGroupId ?? undefined),
             pathIds,
             depth: pathIds.length - 1,
             rootGroupId: newRootPath[0],
@@ -442,7 +442,7 @@ export const attachIdentity = async (
         allowBreakGlass: getBreakGlassFlag(ecosystem.status, options.actorProfileId),
     });
 
-    await requireManagedIdentityProfile(identityProfileId);
+    await requireManagedIdentityProfile(identityProfileId, group.ownerEcosystemId);
     await assertHasIdentityAvailability(group.id, identityProfileId);
 
     if (group.identityProfileId && group.identityProfileId !== identityProfileId) {
