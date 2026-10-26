@@ -84,7 +84,7 @@ const useBoostMenu = ({
 
         newModal(
             <CredentialHistoryModal record={record as LCR} handleCloseModal={() => closeModal()} />,
-            { sectionClassName: '!max-w-[480px]' }
+            { sectionClassName: 'max-w-[480px]!' }
         );
     };
 
@@ -132,7 +132,7 @@ const useBoostMenu = ({
                 }
                 isDraft={isDraft}
             />,
-            { sectionClassName: '!max-w-[400px]' }
+            { sectionClassName: 'max-w-[400px]!' }
         );
     };
 

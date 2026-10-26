@@ -91,7 +91,7 @@ const IdOptionsModal: React.FC<IdOptionsModalProps> = ({
     const handleViewJson = () => {
         closeModal();
         newModal(<ViewJsonModal boost={_credential} />, {
-            sectionClassName: '!max-h-[90%] !mx-[20px]',
+            sectionClassName: 'max-h-[90%]! mx-[20px]!',
         });
     };
 
@@ -253,7 +253,7 @@ const IdOptionRow: React.FC<IdOptionRowProps> = ({ text, icon, onClick }) => {
     return (
         <button
             onClick={onClick}
-            className="flex gap-[10px] items-center py-[10px] text-grayscale-900 border-b-[1px] border-grayscale-200 border-solid last:border-b-0 h-[56px]"
+            className="flex gap-[10px] items-center py-[10px] text-grayscale-900 border-b border-grayscale-200 border-solid last:border-b-0 h-[56px]"
         >
             <span className="font-notoSans text-[17px]">{text}</span>
             <div className="ml-auto">{icon}</div>

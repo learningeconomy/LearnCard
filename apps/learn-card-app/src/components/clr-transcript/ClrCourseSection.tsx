@@ -14,7 +14,7 @@ const ClrCourseSection: React.FC<{
     adminMode?: boolean;
 }> = ({ model, onSelectCourse, adminMode = false }) => {
     return (
-        <div id="course-history" className="space-y-3 scroll-mt-6">
+        <div id="course-history" className="space-y-v3-3 scroll-mt-6">
             <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
                 <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
                     Course History

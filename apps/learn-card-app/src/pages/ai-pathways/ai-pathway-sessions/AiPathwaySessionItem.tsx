@@ -34,7 +34,7 @@ export const AiPathwaySessionsItem: React.FC<{
     return (
         <div
             role="button"
-            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
+            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border border-grayscale-200 rounded-xl"
             onClick={() =>
                 handleStart({
                     title,

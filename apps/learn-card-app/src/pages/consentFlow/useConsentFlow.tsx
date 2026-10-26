@@ -55,7 +55,8 @@ export const useConsentFlow = (
         childInsightsProfile?: LCNProfile | string,
         disableRedirect?: boolean,
         onCloseCallback?: () => void,
-        onBackCallback?: () => void
+        onBackCallback?: () => void,
+        keepParentModalsOpen?: boolean
     ) => {
         if (contract?.needsGuardianConsent && !hasConsented) {
             newModal(
@@ -74,6 +75,7 @@ export const useConsentFlow = (
                     insightsProfile={insightsProfile}
                     childInsightsProfile={childInsightsProfile}
                     disableRedirect={disableRedirect}
+                    keepParentModalsOpen={keepParentModalsOpen}
                     onCloseCallback={onCloseCallback}
                     onBackCallback={onBackCallback}
                 />,

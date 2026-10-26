@@ -126,7 +126,7 @@ const TroopIDCard: React.FC<TroopIDCardProps> = ({ state, idState, rootViewMode,
                                 id: 'did:example:123',
                             },
                         }}
-                        iconClassName="!h-[17px] !w-[17px]"
+                        iconClassName="h-[17px]! w-[17px]!"
                     /> */}
                     {name}
                 </span>

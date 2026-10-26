@@ -48,7 +48,7 @@ const RubricScale: React.FC<{
     achieved?: RubricLevelDisplayModel;
     required?: RubricLevelDisplayModel;
 }> = ({ levels, achieved, required }) => (
-    <div className="space-y-1.5" role="list" aria-label="Rubric scale">
+    <div className="space-y-v3-1.5" role="list" aria-label="Rubric scale">
         {levels.map(level => {
             const isAchieved =
                 (level.id !== undefined && level.id === achieved?.id) ||
@@ -270,7 +270,7 @@ const ClrResultWithScaleList: React.FC<{
     if (results.length === 0) return null;
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             {results.map((result, index) => (
                 <div
                     key={`${result.resultDescriptionId?.value ?? 'result'}-${index}`}
@@ -321,7 +321,7 @@ const ClrResultWithScaleList: React.FC<{
                     )}
 
                     {result.alignments.length > 0 && (
-                        <div className="mt-3 space-y-1">
+                        <div className="mt-3 space-y-v3-1">
                             {result.alignments.map((alignment, alignmentIndex) => (
                                 <ResultAlignment
                                     key={`${alignment.targetUrl?.value ?? alignment.targetName?.value ?? 'alignment'}-${alignmentIndex}`}

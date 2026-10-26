@@ -9,9 +9,12 @@ use cms::{
     enveloped_data::{EnvelopedData, RecipientInfo},
 };
 use der::{asn1::ObjectIdentifier, Decode, Sequence};
-use p256::pkcs8::{EncodePrivateKey, EncodePublicKey};
+use p256::pkcs8::{EncodePrivateKey, EncodePublicKey as _};
 use rand_core::{OsRng, RngCore};
-use rsa::{pkcs8::spki::AlgorithmIdentifierOwned, Oaep, RsaPrivateKey};
+use rsa::{
+    pkcs8::{spki::AlgorithmIdentifierOwned, EncodePublicKey},
+    Oaep, RsaPrivateKey,
+};
 use sha2::Sha256;
 use thiserror::Error;
 use zeroize::Zeroizing;
@@ -30,6 +33,8 @@ pub use aws::{AwsKmsClient, Credentials};
 mod fake;
 #[cfg(all(target_os = "linux", feature = "kms"))]
 pub mod vsock_forward;
+#[cfg(all(test, feature = "kms"))]
+pub(crate) use fake::wrap as wrap_test_payload;
 #[cfg(any(test, feature = "fake-kms"))]
 pub use fake::FakeKmsClient;
 

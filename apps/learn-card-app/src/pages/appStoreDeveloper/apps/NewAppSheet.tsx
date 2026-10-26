@@ -135,7 +135,7 @@ export const NewAppSheet: React.FC<NewAppSheetProps> = ({
                         <p className="text-sm text-grayscale-600 mt-1 mb-5">
                             Pick the one closest to what you have.
                         </p>
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             {LISTING_TYPES.map(option => (
                                 <ChoiceRow
                                     key={option.type}

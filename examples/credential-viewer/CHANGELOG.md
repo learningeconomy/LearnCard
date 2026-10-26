@@ -1,5 +1,36 @@
 # @learncard/credential-viewer
 
+## 0.0.33
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/credential-library@2.1.3
+    - @learncard/init@2.5.5
+    - @learncard/lca-api-plugin@2.0.11
+    - @learncard/sd-jwt-vc-plugin@0.2.18
+
+## 0.0.32
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/credential-library@2.1.2
+    - @learncard/init@2.5.4
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/sd-jwt-vc-plugin@0.2.17
+
+## 0.0.31
+
+### Patch Changes
+
+- Updated dependencies [[`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638)]:
+    - @learncard/credential-library@2.1.1
+    - @learncard/init@2.5.3
+    - @learncard/lca-api-plugin@2.0.9
+
 ## 0.0.30
 
 ### Patch Changes

@@ -10,7 +10,7 @@ const AcademicClrEmbed: React.FC<{
     model: ClrTranscriptDisplayModel;
 }> = ({ model }) => {
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             <ClrTranscriptHeader model={model} />
             <ClrTranscriptSummaryStats model={model} />
             <ClrTranscriptEvidenceList evidence={model.evidence} compact />

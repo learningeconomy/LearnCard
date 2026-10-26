@@ -85,6 +85,48 @@ const bundledFixture = t => {
     return { ...f, dist, metadata, writeMetadata };
 };
 
+test('scoped publish resolves workspace versions without requiring unrelated service builds', t => {
+    const f = bundledFixture(t);
+    rmSync(f.dist, { recursive: true });
+    const scope = '--package=@learncard/a-public';
+    assert.equal(f.run(scope, '--dry-run').status, 0);
+    assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
+    const result = f.run(scope);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(f.read('a-public').dependencies['@learncard/public'], '^2.0.0');
+    assert.equal(f.read('service').dependencies['@learncard/service-config'], 'workspace:*');
+    // The full registry publish must still enforce build evidence.
+    const full = f.run();
+    assert.equal(full.status, 1);
+    assert.match(full.stderr, /Build evidence missing/);
+});
+
+test('scoped publish still rejects private dependencies before writing any manifests', t => {
+    const f = fixture(t, 'dependencies');
+    const result = f.run('--package=@learncard/a-public', '--package=@learncard/service');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /references a private workspace package/);
+    assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
+});
+
+test('scoped service publish still requires build evidence', t => {
+    const f = bundledFixture(t);
+    rmSync(f.dist, { recursive: true });
+    const result = f.run('--package=@learncard/network-brain-service');
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Build evidence missing/);
+});
+
+for (const name of ['@learncard/missing', '@learncard/service-config', '']) {
+    test('rejects invalid publish scope: ' + JSON.stringify(name), t => {
+        const f = fixture(t, 'devDependencies');
+        const result = f.run('--package=@learncard/a-public', '--package=' + name);
+        assert.equal(result.status, 1);
+        assert.match(result.stderr, /Publish scope must name a public workspace package/);
+        assert.equal(f.read('a-public').dependencies['@learncard/public'], 'workspace:^');
+    });
+}
+
 test('removes only the verified bundled helper from the public service install graph', t => {
     const f = bundledFixture(t);
     assert.equal(f.run('--dry-run').status, 0);

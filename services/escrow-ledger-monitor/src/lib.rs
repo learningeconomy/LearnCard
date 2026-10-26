@@ -3,6 +3,7 @@ use escrow_enclave::ledger::{Enrollment, Event, Ledger, LedgerRecord, MAX_CHAIN_
 use p256::ecdsa::VerifyingKey;
 use std::collections::BTreeMap;
 
+pub mod authority;
 pub mod aws;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -19,6 +20,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Only fixed metric names and an operator-configured tenant leave the monitor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Metric {
+    AuthorityIntegrityFailure,
+    AuthorityCoverageFailure,
+    AuthoritySweepCompleted,
+    AuthorityRepeatedPinClear,
     LedgerIntegrityFailure,
     AuditMismatch,
     HoldCreated,
@@ -34,6 +39,10 @@ pub enum Metric {
 impl Metric {
     pub fn name(self) -> &'static str {
         match self {
+            Self::AuthorityIntegrityFailure => "AuthorityIntegrityFailure",
+            Self::AuthorityCoverageFailure => "AuthorityCoverageFailure",
+            Self::AuthoritySweepCompleted => "AuthoritySweepCompleted",
+            Self::AuthorityRepeatedPinClear => "AuthorityRepeatedPinClear",
             Self::LedgerIntegrityFailure => "LedgerIntegrityFailure",
             Self::AuditMismatch => "AuditMismatch",
             Self::HoldCreated => "HoldCreated",

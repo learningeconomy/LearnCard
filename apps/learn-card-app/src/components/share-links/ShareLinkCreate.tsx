@@ -18,8 +18,12 @@ import {
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet } from 'learn-card-base';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { useWallet, useGetSelfAssignedSkillsBoost } from 'learn-card-base';
+import {
+    getDefaultCategoryForCredential,
+    SELF_ASSIGNED_SKILLS_BOOST_NAME,
+} from 'learn-card-base/helpers/credentialHelpers';
+import { isHiddenActivity } from '../../pages/wallet/activity-feed/activityFeed.helpers';
 import { isShareLinkError } from 'learn-card-base/helpers/share-links';
 import { environment } from '../../config/environment';
 import { getAppBaseUrl } from '../../config/bootstrapTenantConfig';
@@ -54,7 +58,7 @@ export const primary =
 export const secondary =
     'px-5 py-3 rounded-[20px] ring-1 ring-inset ring-grayscale-300 text-grayscale-700 text-sm font-medium hover:bg-grayscale-10 transition-colors disabled:opacity-40';
 const inputClass =
-    'w-full px-4 py-3 rounded-xl border border-grayscale-300 text-sm text-grayscale-900 bg-white placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
+    'w-full px-4 py-3 rounded-xl border border-grayscale-300 text-sm text-grayscale-900 bg-white placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
 export const Busy = ({ children }: { children: React.ReactNode }) => (
     <span className="inline-flex items-center gap-2">
         <span
@@ -89,6 +93,9 @@ export const ShareLinkCreate = ({
     initialSelectedUri,
 }: ShareLinkCreateProps) => {
     const { initWallet } = useWallet();
+    const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
+    const selfAssignedSkillsUriRef = useRef<string | undefined>(selfAssignedSkillsBoost?.uri);
+    selfAssignedSkillsUriRef.current = selfAssignedSkillsBoost?.uri;
     const assetEdit = Boolean(editShare?.attachmentId);
     if (assetEdit) enterSharePrivacy();
     const qrExport = useRef<HTMLDivElement>(null);
@@ -217,7 +224,18 @@ export const ShareLinkCreate = ({
                 if (!page || (page.hasMore && (!page.cursor || seenCursors.has(page.cursor))))
                     throw new Error('page');
                 records.push(
-                    ...page.records.filter(record => !record.id?.startsWith('__verifiable_data_'))
+                    ...page.records.filter(record => {
+                        if (initialSelectedUri && record.uri === initialSelectedUri) return true;
+                        if (record.id?.startsWith('__verifiable_data_')) return false;
+                        if (isHiddenActivity(record.category)) return false;
+                        if (
+                            selfAssignedSkillsUriRef.current &&
+                            record.uri === selfAssignedSkillsUriRef.current
+                        )
+                            return false;
+                        if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
+                        return true;
+                    })
                 );
                 if (!page.hasMore) break;
                 pageCursor = page.cursor;
@@ -563,7 +581,7 @@ export const ShareLinkCreate = ({
                     {m['shareLinks.share']()}
                 </span>
                 <button
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 hover:bg-grayscale-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full p-0 hover:bg-grayscale-100 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     aria-label={m['shareLinks.close']()}
                     onClick={onDismiss}
                 >
@@ -571,7 +589,7 @@ export const ShareLinkCreate = ({
                 </button>
             </header>
             <div className="flex-1 overflow-y-auto px-6 py-8 md:py-12">
-                <div className="max-w-2xl mx-auto space-y-6">
+                <div className="max-w-2xl mx-auto space-y-v3-6">
                     <ShareCredentialsIllustration complete={step === 'done'} />
                     <div>
                         <p className="text-xs font-medium text-grayscale-500 mb-2">
@@ -691,7 +709,7 @@ export const ShareLinkCreate = ({
                         </>
                     )}
                     {step === 'details' && (
-                        <div className="space-y-5">
+                        <div className="space-y-v3-5">
                             {assetEdit && (
                                 <p className="rounded-[20px] border border-grayscale-200 bg-grayscale-100 p-4 text-sm text-grayscale-700">
                                     {m['resumePublishing.manageContent']()}
@@ -711,7 +729,7 @@ export const ShareLinkCreate = ({
                                     </p>
                                 )}
                             </div>
-                            <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-4">
+                            <section className="rounded-[20px] border border-grayscale-200 p-5 space-y-v3-4">
                                 <div className="flex gap-3">
                                     <IonIcon
                                         icon={lockClosedOutline}
@@ -736,7 +754,7 @@ export const ShareLinkCreate = ({
                                             >
                                                 <span
                                                     aria-hidden="true"
-                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'}`}
+                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${passcodeEnabled ? 'translate-x-5' : 'translate-x-0'}`}
                                                 />
                                             </button>
                                         </span>
@@ -777,7 +795,7 @@ export const ShareLinkCreate = ({
                                                 aria-pressed={showPasscode}
                                                 disabled={fieldsLocked}
                                                 onClick={() => setShowPasscode(shown => !shown)}
-                                                className="absolute inset-y-0 end-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                                                className="absolute inset-y-0 inset-e-1 my-auto inline-flex h-10 w-10 items-center justify-center rounded-full text-lg text-grayscale-600 transition-colors hover:bg-grayscale-100 hover:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                                             >
                                                 <IonIcon
                                                     aria-hidden="true"
@@ -818,7 +836,7 @@ export const ShareLinkCreate = ({
                                             >
                                                 <span
                                                     aria-hidden="true"
-                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${notifyOnView ? 'translate-x-5' : 'translate-x-0'}`}
+                                                    className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${notifyOnView ? 'translate-x-5' : 'translate-x-0'}`}
                                                 />
                                             </button>
                                         </span>
@@ -869,7 +887,7 @@ export const ShareLinkCreate = ({
                                         : m['shareLinks.neverExpires']()}
                                 </p>
                             ) : (
-                                <fieldset className="space-y-2">
+                                <fieldset className="space-y-v3-2">
                                     <legend className="text-xs font-medium text-grayscale-700">
                                         {m['shareLinks.expiry']()}
                                     </legend>
@@ -917,7 +935,7 @@ export const ShareLinkCreate = ({
                         </div>
                     )}
                     {step === 'preview' && prepared.current && (
-                        <div className="space-y-5">
+                        <div className="space-y-v3-5">
                             <ShareLinkPreview
                                 heading={m['shareLinks.previewHeading']()}
                                 title={prepared.current.input.title ?? editShare?.title ?? title}
@@ -947,9 +965,9 @@ export const ShareLinkCreate = ({
                         </div>
                     )}
                     {step === 'done' && (
-                        <div ref={qrExport} className="space-y-5">
+                        <div ref={qrExport} className="space-y-v3-5">
                             <section className="p-5 rounded-[20px] border border-grayscale-200">
-                                <p className="font-medium break-words">{title}</p>
+                                <p className="font-medium wrap-break-word">{title}</p>
                                 <p className="text-xs text-grayscale-500 mt-2">
                                     {m['shareLinks.selected']({ count: String(selected.length) })}
                                 </p>

@@ -187,7 +187,7 @@ Environment='ESCROW_ROUGHTIME_ALLOWLIST_JSON=$ROUGHTIME_ALLOWLIST_JSON'
 WantedBy=multi-user.target
 HOST_UNIT_EOF
 
-systemctl daemon-reload
+${authority_setup}systemctl daemon-reload
 systemctl enable vsock-proxy.service
 systemctl start vsock-proxy.service
 systemctl enable --now escrow-enclave-host.service

@@ -156,7 +156,7 @@ const ClrTranscriptEvidenceList: React.FC<{
     }
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-v3-3">
             {evidence.some(item => item.id?.value) && (
                 <MediaAttachmentsBox
                     evidence={evidence
@@ -169,18 +169,18 @@ const ClrTranscriptEvidenceList: React.FC<{
                 .map((item, index) => (
                     <section
                         key={`${item.sourceCredentialId}-${index}`}
-                        className="space-y-2 rounded-[20px] border border-grayscale-200 bg-white p-4"
+                        className="space-y-v3-2 rounded-[20px] border border-grayscale-200 bg-white p-4"
                     >
-                        <h4 className="break-words text-sm font-medium text-grayscale-900">
+                        <h4 className="wrap-break-word text-sm font-medium text-grayscale-900">
                             {item.name?.value ?? m['clrRenderer.evidence']()}
                         </h4>
                         {item.description && (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-600">
+                            <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-600">
                                 {item.description.value}
                             </p>
                         )}
                         {item.narrative && (
-                            <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-grayscale-600">
+                            <p className="whitespace-pre-wrap wrap-break-word text-sm leading-relaxed text-grayscale-600">
                                 {item.narrative.value}
                             </p>
                         )}

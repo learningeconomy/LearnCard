@@ -266,11 +266,17 @@ export interface RecoveryMethodInfo {
 export interface RecoveryResult {
     privateKey: string;
     did: string;
+    /** True when identity recovery already re-enrolled escrow; no post-recovery repair is needed. */
+    escrowEnrolled?: boolean;
+    /** True when the key came from an existing escrow enrollment (hold or PIN). */
+    escrowRecovery?: boolean;
 }
 
 export interface IdentityRecoverySession {
     recoverySessionToken: string;
     recoveryMethods: RecoveryMethodInfo[];
+    /** The verified account's DID (same source as `ServerKeyStatus.primaryDid`). */
+    primaryDid: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -280,7 +286,15 @@ export interface IdentityRecoverySession {
 export type SssActivationState = 'provisional' | 'active';
 
 /** Optional PIN enrollment requires rotating the existing escrow share. */
-export type EscrowEnrollmentOptions = { pin?: string };
+export type EscrowEnrollmentOptions = {
+    pin?: string;
+    /** P9.1 (attack C): required by the enclave for nitro/authority-mode
+     *  enroll/replace; bound into the sealed blob + signed intent, never read
+     *  or changed by lca-api. The authenticated account's email + the app's
+     *  current locale (one of the compiled template languages). */
+    recoveryEmail?: string;
+    recoveryLanguage?: string;
+};
 
 /** Stable error-message contract shared by PIN recovery clients and servers. */
 export const ESCROW_PIN_LOCKED_MESSAGE =
@@ -314,6 +328,13 @@ export interface EscrowEnrollmentState {
     escrowPin?: EscrowPinStatus;
     /** Present only when `state === 'stale'`. */
     staleReason?: EscrowBlobStaleReason;
+    /**
+     * `not-enrolled` only: the server still has an escrow recovery method in some
+     * confirmation state (e.g. `pending` after an identity-recovery rebind). A hint,
+     * not proof: callers repair with `requirePriorEnrollment` so the strategy checks
+     * signed authority state before re-enrolling.
+     */
+    priorEscrowMethod?: boolean;
 }
 
 /**
@@ -333,6 +354,11 @@ export interface ServerKeyStatus {
     escrowPin?: EscrowPinStatus;
     escrowStale?: EscrowBlobStaleReason;
     sssActivationState?: SssActivationState | null;
+    /**
+     * The server has an escrow recovery method in some confirmation state but none
+     * confirmed at the current share version. Absent from older servers.
+     */
+    priorEscrowEnrollment?: boolean;
 }
 
 /** Signs a DID-Auth VP. A supplied challenge must be embedded as the VP nonce. */
@@ -384,6 +410,20 @@ export interface KeyDerivationCapabilities {
 // ---------------------------------------------------------------------------
 // Key Derivation Strategy (generic)
 // ---------------------------------------------------------------------------
+
+/** Initiating-client bindings. Persist with the recovery secrets and never replace
+ * these with fields from a status response. Missing bindings require a new start. */
+export interface EscrowRecoveryExpectations {
+    tenant: string;
+    did: string;
+    holdId: string;
+    clientEphemeralPublicKey: string;
+    blobHash: string;
+    authorityGeneration: string;
+    holdDigest: string;
+    ledgerPublicKey: string;
+    keyId: string;
+}
 
 /**
  * Key Derivation Strategy
@@ -536,11 +576,32 @@ export interface KeyDerivationStrategy<
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
-        options?: EscrowEnrollmentOptions;
+        options?: EscrowEnrollmentOptions & {
+            /** Clear the retired PIN when repairing enrollment after identity recovery. */
+            clearPin?: boolean;
+            /** Repair only an account with verified prior escrow enrollment; never enroll a new one. */
+            requirePriorEnrollment?: boolean;
+        };
     }): Promise<
-        | { enrolled: false; reason: 'disabled' | 'opted-out' }
+        | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
+        /**
+         * Nitro only: the signed authority still holds a PIN that lca-api cannot carry
+         * (e.g. after an identity-recovery rebind) and no new PIN was supplied. Nothing
+         * was rotated or signed; the caller must ask the user to set a new PIN.
+         */
+        | { enrolled: false; reason: 'pin-reset-required' }
         | { enrolled: true; changed: false }
-        | { enrolled: true; changed: true; shareVersion: number }
+        | {
+              enrolled: true;
+              changed: true;
+              shareVersion: number;
+              /**
+               * Set only when the strategy cleared a retired PIN on its own (Nitro
+               * post-rebind repair) rather than because the caller asked; the caller
+               * must prompt the user to set a new PIN.
+               */
+              pinCleared?: 'automatic';
+          }
     >;
 
     /** Set or change a PIN by rotating escrow material with an owner proof. */
@@ -550,18 +611,27 @@ export interface KeyDerivationStrategy<
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
         pin: string;
+        /** P9.1: only `recoveryEmail`/`recoveryLanguage` apply here; `options.pin`
+         *  is ignored in favor of the required top-level `pin`. */
+        options?: EscrowEnrollmentOptions;
     }): Promise<void>;
 
-    /** Remove a PIN by rotating escrow material with an owner proof. */
+    /** Remove a PIN by rotating escrow material with an owner proof. In
+     * nitro/authority mode this is a `replace` enrollment action, which
+     * requires `options.recoveryEmail`/`recoveryLanguage`, same as
+     * `setEscrowPin`. */
     clearEscrowPin?(params: {
         token: string;
         providerType: AuthProviderType;
         privateKey: string;
         signDidAuthVp: DidAuthVpSigner;
+        options?: EscrowEnrollmentOptions;
     }): Promise<void>;
 
     /** Start an escrow hold. Securely persist the returned secrets; null means an existing hold. */
     startEscrowRecovery?(params: {
+        /** Account selected by the initiating client, required for Nitro recovery. */
+        expectedDid?: string;
         token?: string;
         providerType?: AuthProviderType;
         recoverySessionToken?: string;
@@ -576,15 +646,19 @@ export interface KeyDerivationStrategy<
         completedAt?: string;
         resumeToken: string | null;
         clientEphemeralPrivateKey: string;
+        /** Persist alongside the private key; pass unchanged on status, confirm and restore. */
+        expectations?: EscrowRecoveryExpectations;
         pinSalt?: string;
         /** Absent on legacy hold-only strategies. */
         releasePolicy?: 'hold' | 'pin';
+        /** Present only for an authority-mode hold-policy hold; see confirmEscrowRecovery. */
+        requiresConfirmation?: boolean;
     }>;
 
     /** Read a hold using its resume proof or the active device's provider session. */
     getEscrowRecoveryStatus?(
         params:
-            | { holdId: string; resumeToken: string }
+            | { holdId: string; resumeToken: string; expectations?: EscrowRecoveryExpectations }
             | { token: string; providerType: AuthProviderType }
     ): Promise<{
         holdId: string;
@@ -595,6 +669,9 @@ export interface KeyDerivationStrategy<
         releasePolicy?: 'hold' | 'pin';
         cancelledAt?: string;
         completedAt?: string;
+        /** Only present for an authority-mode hold-policy hold; `confirmed` only appears alongside it. */
+        requiresConfirmation?: boolean;
+        confirmed?: boolean;
     } | null>;
 
     /** Cancel a pending hold with a fresh, owner-signed DID challenge. */
@@ -605,6 +682,28 @@ export interface KeyDerivationStrategy<
         signDidAuthVp: DidAuthVpSigner;
     }): Promise<{ cancelled: boolean }>;
 
+    /**
+     * Submit the confirmation code the enclave emailed to the account's
+     * recovery address. Only meaningful when startEscrowRecovery returned
+     * `requiresConfirmation: true`; the resume proof (no DID session exists
+     * yet at this point in the flow) is the only credential.
+     */
+    confirmEscrowRecovery?(params: {
+        /** Retained initiating-client bindings, required in Nitro mode, including after reload. */
+        expectations?: EscrowRecoveryExpectations;
+        holdId: string;
+        resumeToken: string;
+        code: string;
+        tenantId?: string;
+    }): Promise<{ success: true }>;
+
+    /** Request a fresh confirmation code for a hold awaiting confirmation. */
+    resendEscrowRecoveryCode?(params: {
+        holdId: string;
+        resumeToken: string;
+        tenantId?: string;
+    }): Promise<{ success: true }>;
+
     /** Execute a recovery flow and return the recovered private key + DID */
     executeRecovery(params: {
         token: string;
@@ -614,6 +713,7 @@ export interface KeyDerivationStrategy<
         didFromPrivateKey?: (privateKey: string) => Promise<string>;
         /** Optional: sign the fresh challenge required to persist rotated shares */
         signDidAuthVp?: DidAuthVpSigner;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
 
     /** Set up a new recovery method */
@@ -668,6 +768,7 @@ export interface KeyDerivationStrategy<
         token: string;
         providerType: AuthProviderType;
         signDidAuthVp?: DidAuthVpSigner;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
 
     // --- Contact method management ---

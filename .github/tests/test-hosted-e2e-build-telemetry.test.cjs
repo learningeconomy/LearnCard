@@ -26,7 +26,7 @@ const optionsFor = (service, environment) => {
                               return {};
                           },
                       }
-                    : require(name),
+                    : createRequire(filename)(name),
         },
         { filename }
     );

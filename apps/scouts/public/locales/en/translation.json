@@ -220,6 +220,20 @@
         }
     },
     "base": {
+        "inAppMessages": {
+            "next": "Next",
+            "previous": "Previous",
+            "done": "Done",
+            "progress": "Story progress",
+            "error": "Something went wrong. Please try again.",
+            "retry": "Try Again",
+            "loading": "Loading…",
+            "opening": "Opening…",
+            "checking": "Checking…",
+            "downloading": "Downloading… {{progress}}%",
+            "installing": "Installing…",
+            "upToDate": "You're on the latest version."
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -408,6 +422,7 @@
         "deletingAccount": "Deleting Account...",
         "deleteForever": "Delete Forever",
         "fullName": "Full Name",
+        "fullNameOptional": "Full Name (optional)",
         "emailAddress": "Email address",
         "phoneNumber": "Phone Number",
         "userID": "User ID",
@@ -631,6 +646,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "We couldn’t save your profile. Check your connection and try again.",
         "welcomeTo": "Welcome to",
         "setupProf": "Set up your profile to get started!",
         "dataOwn": "You own your own data.",

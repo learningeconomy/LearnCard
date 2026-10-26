@@ -27,7 +27,7 @@ import {
     isAutoBoostConsentCurrent,
 } from './update';
 import { getConsentFlowContractVersionRecord } from '@accesslayer/consentflowcontract/versions';
-import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
+import { getBoostUri, sendBoost, stampIssuanceDate } from '@helpers/boost.helpers';
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -326,6 +326,8 @@ export const consentToContract = async (
                     const boostCredential = JSON.parse(boost.target.boost) as UnsignedVC | VC;
 
                     boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
+
+                    stampIssuanceDate(boostCredential);
 
                     if (boostCredential.type.includes('BoostCredential')) {
                         boostCredential.boostId = getBoostUri(boost.target.id, domain);

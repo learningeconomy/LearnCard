@@ -202,7 +202,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.consentFlowTesting.title']()}
@@ -213,7 +213,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
             </div>
 
             {/* Step 1: Test Consent Redirect */}
-            <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+            <div className="border border-gray-200 rounded-xl p-5 space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center">
                         <Link2 className="w-4 h-4 text-cyan-600" />
@@ -230,7 +230,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 </div>
 
                 {consentUrl ? (
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
                             <p className="text-xs text-gray-500 mb-1 font-medium">
                                 {m[
@@ -340,7 +340,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
             </section>
 
             {/* Step 2: Verify Callback */}
-            <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+            <div className="border border-gray-200 rounded-xl p-5 space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
                         <Code className="w-4 h-4 text-violet-600" />
@@ -385,7 +385,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
             </div>
 
             {/* Step 3: Send Test Credential */}
-            <div className="border border-gray-200 rounded-xl p-5 space-y-4">
+            <div className="border border-gray-200 rounded-xl p-5 space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
                         <Send className="w-4 h-4 text-emerald-600" />
@@ -418,7 +418,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                 ) : (
                     <>
                         {/* Template Selector */}
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <label className="block text-xs font-medium text-gray-600">
                                 {m['developerPortal.dashboards.tabs.consentFlowTesting.template']()}
                             </label>
@@ -471,7 +471,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         </div>
 
                         {/* DID Input */}
-                        <div className="space-y-2">
+                        <div className="space-y-v3-2">
                             <label className="block text-xs font-medium text-gray-600">
                                 {m[
                                     'developerPortal.dashboards.tabs.consentFlowTesting.recipientDid'
@@ -490,7 +490,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 placeholder={m[
                                     'developerPortal.dashboards.tabs.consentFlowTesting.didPlaceholder'
                                 ]()}
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
+                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 font-mono"
                             />
                         </div>
 
@@ -499,7 +499,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                             <button
                                 onClick={handleSendTest}
                                 disabled={!testDid.trim() || !selectedTemplate?.boostUri}
-                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-linear-to-r/srgb from-cyan-500 to-emerald-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 <Send className="w-4 h-4" />
                                 {m[
@@ -520,9 +520,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         )}
 
                         {testStatus === 'success' && testResult && (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="font-medium text-emerald-800 text-sm">
                                             {m[
@@ -560,9 +560,9 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                         )}
 
                         {testStatus === 'error' && testResult && (
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-                                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                                     <div className="flex-1">
                                         <p className="font-medium text-red-800 text-sm">
                                             {m[
@@ -602,7 +602,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </span>
                 </div>
 
-                <ul className="text-sm text-gray-600 space-y-2">
+                <ul className="text-sm text-gray-600 space-y-v3-2">
                     <li className="flex items-start gap-2">
                         <span className="text-gray-400">•</span>
                         <span>
@@ -623,7 +623,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                 components={[
                                     <code
                                         key="callback-value"
-                                        className="bg-gray-200 px-1 rounded text-xs"
+                                        className="bg-gray-200 px-1 rounded-sm text-xs"
                                     />,
                                 ]}
                             />

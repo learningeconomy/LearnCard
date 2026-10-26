@@ -36,7 +36,7 @@ const MyDataSettings: React.FC<{
                                     </button>
 
                                     <div className="flex items-center justify-normal">
-                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-sm">
+                                        <div className="w-[40px] h-[40px] flex items-center justify-center rounded-[10px] overflow-hidden shadow-xs">
                                             <img
                                                 src={selectedItem?.image}
                                                 className="h-full w-full"
@@ -325,7 +325,7 @@ const MyDataSettings: React.FC<{
                                             Data shared with {selectedItem?.name}
                                         </h3>
                                     </div>
-                                    <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                    <CaretLeft className="rotate-180 text-grayscale-500" />
                                 </button>
                             </IonCol>
                         </IonRow>
@@ -341,7 +341,7 @@ const MyDataSettings: React.FC<{
                                             Data usage by {selectedItem?.name}
                                         </h3>
                                     </div>
-                                    <CaretLeft className="rotate-[180deg] text-grayscale-500" />
+                                    <CaretLeft className="rotate-180 text-grayscale-500" />
                                 </button>
                             </IonCol>
                         </IonRow>

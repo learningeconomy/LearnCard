@@ -235,7 +235,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">
@@ -267,7 +267,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
             {/* Create New App Form */}
             {isCreating && (
-                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-3">
+                <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-xl space-y-v3-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {m['developerPortal.dashboards.tabs.appListings.appName']()}
@@ -279,7 +279,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                             placeholder={m[
                                 'developerPortal.dashboards.tabs.appListings.appNamePlaceholder'
                             ]()}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                             autoFocus
                             onKeyDown={e => {
                                 if (e.key === 'Enter') handleCreateListing();
@@ -347,7 +347,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
             {/* App Listings */}
             {!isLoading && listings && listings.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {listings.map(listing => {
                         const isSelected = selectedListing?.listing_id === listing.listing_id;
                         const isExpanded = expandedListing === listing.listing_id;
@@ -377,7 +377,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                 >
                                     {/* Icon */}
                                     <div
-                                        className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                                        className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${
                                             isSelected ? 'bg-cyan-100' : 'bg-gray-100'
                                         }`}
                                     >
@@ -416,7 +416,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                     {/* Actions */}
                                     <div
-                                        className="flex items-center gap-1 flex-shrink-0"
+                                        className="flex items-center gap-1 shrink-0"
                                         onClick={e => e.stopPropagation()}
                                     >
                                         <button
@@ -452,7 +452,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                     {/* Selection Indicator */}
                                     <div
-                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                                             isSelected
                                                 ? 'border-cyan-500 bg-cyan-500'
                                                 : 'border-gray-300'
@@ -464,7 +464,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                 {/* Expanded Details */}
                                 {isExpanded && !isEditing && (
-                                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-3">
+                                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-v3-3">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div>
                                                 <label className="text-xs font-medium text-gray-500">
@@ -543,7 +543,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
 
                                 {/* Edit Form */}
                                 {isEditing && (
-                                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-4">
+                                    <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-v3-4">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -560,7 +560,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                             display_name: e.target.value,
                                                         }))
                                                     }
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
 
@@ -582,7 +582,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                     placeholder={m[
                                                         'developerPortal.dashboards.tabs.appListings.taglinePlaceholder'
                                                     ]()}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
                                         </div>
@@ -605,7 +605,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                         }))
                                                     }
                                                     placeholder="https://your-app.com"
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
                                             <p className="text-xs text-gray-500 mt-1">
@@ -633,7 +633,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 placeholder={m[
                                                     'developerPortal.dashboards.tabs.appListings.descriptionPlaceholder'
                                                 ]()}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
 
@@ -644,7 +644,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                 ]()}
                                             </label>
                                             <div className="flex items-center gap-3">
-                                                <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                                <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                                                     {editForm.icon_url ? (
                                                         <img
                                                             src={editForm.icon_url}
@@ -663,7 +663,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
                                                     value={editForm.icon_url}
                                                     onChange={handleIconUrlChange}
                                                     placeholder="https://example.com/icon.png"
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                                 />
                                             </div>
                                         </div>
@@ -705,7 +705,7 @@ export const AppListingsTab: React.FC<AppListingsTabProps> = ({
             {selectedListing && (
                 <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
                     <div className="flex items-start gap-3">
-                        <Layout className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                        <Layout className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                         <div>
                             <p className="font-medium text-violet-800">
                                 {m['developerPortal.dashboards.tabs.appListings.selectedApp']({

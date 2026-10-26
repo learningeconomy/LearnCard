@@ -108,7 +108,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
             type="button"
             key={walletPageItem.categoryId}
             aria-label={categoryTitle}
-            className="w-full flex items-center justify-center flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-[25px]"
+            className="w-full flex items-center justify-center flex-1 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-[25px]"
             onClick={() => handleClickSquare(categoryType)}
         >
             <div
@@ -127,7 +127,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
 
                 <div className="w-full flex items-center justify-center flex-col relative">
                     <p
-                        className={`font-poppins text-[18px] font-[600] xs:text-[14px] text-center ${
+                        className={`font-poppins text-[18px] font-semibold xs:text-[14px] text-center ${
                             passportCardTextColor ?? 'text-grayscale-900'
                         }`}
                     >

@@ -126,6 +126,7 @@
 ## 📱 Products
 
 - [LearnCard App](apps/learn-card-app/README.md)
+    - [Issue credentials from a spreadsheet](apps/learn-card-app/spreadsheet-issuance.md)
     - [Referral Invitations](apps/learn-card-app/consent-flow/referral-invitations.md)
     - [Use LearnCard with Claude or ChatGPT](how-to-guides/connect-systems/connect-ai-agent.md)
     - [Export & Import Your Data](how-to-guides/export-and-import-your-data.md)

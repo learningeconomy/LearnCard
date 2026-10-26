@@ -32,12 +32,12 @@ export const OfflineBootGate: React.FC = () => {
 
     return (
         <Overlay>
-            <div className="p-8 text-center space-y-5">
+            <div className="p-8 text-center space-y-v3-5">
                 <div className="mx-auto w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-6">
                     <IonIcon icon={cloudOfflineOutline} className="text-amber-500 text-3xl" />
                 </div>
 
-                <div className="space-y-1 mb-6">
+                <div className="space-y-v3-1 mb-6">
                     <h2 className="text-xl font-semibold text-grayscale-900">
                         {m['connectivity.offlineTitle']()}
                     </h2>

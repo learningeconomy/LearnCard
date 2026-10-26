@@ -11,7 +11,7 @@ const ClrIssuerAddress: React.FC<{
         .join(', ');
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-v3-1">
             <p className="text-xs font-medium text-grayscale-700">Issuer Address</p>
             <div className="text-sm text-grayscale-900 leading-relaxed">
                 {address.streetAddress && <p>{address.streetAddress}</p>}

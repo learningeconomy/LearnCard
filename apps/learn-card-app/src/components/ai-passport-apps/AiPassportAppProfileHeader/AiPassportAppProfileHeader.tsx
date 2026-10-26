@@ -16,13 +16,13 @@ export const AiPassportAppProfileHeader: React.FC<{
             <div className="flex items-center justify-normal ion-padding">
                 <div className="h-[65px] w-[65px] mr-2">
                     <img
-                        className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border-[1px] border-solid"
+                        className="w-full h-full object-cover bg-white rounded-[16px] overflow-hidden border border-solid"
                         alt={`${app?.name} logo`}
                         src={img}
                     />
                 </div>
                 <div className="flex flex-col items-start justify-center">
-                    <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-[1]">
+                    <p className="text-[22px] font-semibold text-grayscale-900 font-poppins leading-none">
                         {appName}
                     </p>
                     <p className="text-sm text-grayscale-600 font-poppins">

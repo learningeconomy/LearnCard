@@ -6,12 +6,12 @@ import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
-    getBaseUrl,
     getCategoryForCredential,
     queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
+    useTenantBaseUrl,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -60,6 +60,7 @@ export const baseBoostShareRouteName = 'share-boost';
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
+    const tenantBaseUrl = useTenantBaseUrl();
 
     return useMutation({
         mutationFn: async ({
@@ -73,7 +74,7 @@ export const useShareBoostMutation = () => {
             credentialId?: string;
             shareRouteName?: string;
         }) => {
-            const baseUrl = getBaseUrl();
+            const baseUrl = new URL(tenantBaseUrl).host;
 
             // get current index data stored on ceramic for user
             // currentUser's wallet

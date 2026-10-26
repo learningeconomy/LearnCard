@@ -4,6 +4,11 @@ This runbook governs turning on **automatic** escrow recovery enrollment for rea
 tenants, stage by stage. It is operator-facing, not implementation documentation —
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
+Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
+The authority Object Lock archiver/outbox is **deferred to a pre-50% rollout gate**,
+not a launch blocker, unless security rejects R-AUTHORITY-ROLLBACK. Preparing
+infrastructure or passing offline Terraform tests does not close any live gate.
+
 ## What this controls (and what it doesn't)
 
 Two independent tenant-config switches gate escrow:
@@ -34,38 +39,58 @@ without a single real user being auto-enrolled — this is the intended
 
 ## Launch blockers — DO NOT roll out beyond internal until these are resolved
 
-Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), three items remain open:
+Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), these items remain open:
 
-1. **No second production-grade Roughtime time source.** The enclave's 7-day
-   hold timer requires ≥2 independent signed time sources; today only one
-   (Cloudflare) is realistically usable and it's explicitly marked
-   "DO NOT USE IN PRODUCTION" upstream. Every production release would
-   currently fail closed with `InsufficientSources`. Needs a product/security
-   decision (add more Roughtime operators, run LearnCard-operated servers in
-   separate accounts, or accept a documented weaker model) before any real
-   user can complete a hold-based release in production.
-2. **No authenticated EnrollmentSource.** The production enclave currently wires
-   in `UnavailableEnrollment`, so every mutating operation (create hold, release,
-   cancel) fails closed with `Unavailable`. A protocol design and separate security
-   review are required to independently authenticate the current enrollment.
-   Nothing can be released in production without it.
-3. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
+Decision records (options, risks, recommendations, owner/approver placeholders)
+for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISIONS.md).
+
+1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
+   servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
+   host. Remaining: the operators' availability and rate limits for production
+   traffic (time.txryan.com's operator, Tanner Ryan, approved our use on 2026-10-01).
+2. **Enrollment authority — verified on staging, not yet deployed to production.**
+   Without a configured authority the enclave wires in `UnavailableEnrollment`, so
+   create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
+   do not use it). The design is in [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md).
+   Staging runs it (generation `staging-g1`); a real 7-day hold released there
+   (jackson+pin2, operator-reported), and staging passed the live attack C run on image `v79ea1bd7`
+   ([SECURITY.md](SECURITY.md#staging-verification-2026-10-23)). Production
+   closes when the production stack is configured and verified the same way.
+3. **Attack C (hold notification) — verified on staging; soak and inbox check remain.**
+   Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
+   staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
+   refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
+   cancellation is signed. Remaining: an operator inbox confirmation of the code
+   email, and the 7-day-since-confirmation soak (jackson+wait3, releasing about
+   2026-10-30) on the new image.
+4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
-   two-person review, `DenyPutKeyPolicyWithoutMFA`, a CloudTrail alarm — see
-   below), not eliminated. Security must explicitly accept this residual risk
-   (or adopt the immutable-key-policy alternative documented in
-   `infra/escrow-enclave/README.md`) before rollout proceeds past internal.
+   review, root-only `DenyRootPutKeyPolicyWithoutMFA`, MFA required to assume
+   `escrow-kms-admin`, a CloudTrail alarm), not eliminated. Security must
+   explicitly accept this residual risk (or adopt the immutable-key-policy
+   alternative documented in `infra/escrow-enclave/README.md`) before rollout
+   proceeds past internal.
 
 **Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
 risk" sign-off counts as resolved for D10. Stages 2+ (1% and above, i.e. any real,
 non-internal user) must not start until all are actually fixed or the
-Roughtime and Enrollment items specifically are closed (D10 is a residual, security-accepted
-risk by design; the Roughtime and Enrollment items are hard functional blockers — recovery
-literally cannot complete without them).
+Roughtime, enrollment and attack C items specifically are closed (D10 is a residual, security-accepted
+risk by design; the enrollment item is a hard functional blocker — recovery
+literally cannot complete without it).
 
 ## Key Rotation
+
+Before initial launch, apply the escrow-account CloudTrail trail in bootstrap,
+update both management-account guardrails, then apply core monitoring. Verify
+`get-trail-status` reports logging/delivery, a denied SSO authority-table write
+pages, and the next image-roll `PutKeyPolicy` fires `EscrowKmsGovernanceChange`.
+See [bootstrap order](PRODUCTION.md#ordered-bootstrap-and-verification) and
+[operator drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only).
+These governance alarms were previously inert: the account had no enabled trail.
+Security must explicitly accept **R-AUTHORITY-ROLLBACK** before any launch without
+the archiver. This does not waive the existing functional, soak or D10 gates.
 
 Key rotation must be rehearsed on staging before being performed in production. See [STAGING.md](./STAGING.md#11-key-rotation-rehearsal) and [SECURITY.md](./SECURITY.md#key-rotation-procedure).
 
@@ -109,6 +134,18 @@ was previously in the bucket falls out of it just because the percent went
 up.
 
 ## Go/no-go criteria per stage
+
+**Before stage 4 (50%):** ship and security-approve
+[AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md), including independent immutable
+history, reconciliation, rollback/purge drills and independent alarm delivery.
+Remain at 10% or below until this gate closes. Security rejection of
+R-AUTHORITY-ROLLBACK moves this requirement earlier, including before launch.
+This is an operator gate, not a newly implemented automatic percentage limit.
+
+At every stage, require zero unexplained `AuthorityGovernance:unexpected_write`,
+`AuthorityGovernance:denied_write` or `EscrowCloudTrailTamper` alerts. Planned
+drills must have recorded outcomes. Confirm trail delivery and monitor SNS/DLQ
+health; absence of alerts alone is not evidence of coverage.
 
 Tied to the P7.1 `escrow-ledger-monitor` alarms
 (`infra/escrow-enclave/monitor.tf`, dashboard `<prefix>-ledger-monitor`,

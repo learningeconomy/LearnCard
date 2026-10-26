@@ -47,6 +47,11 @@ provider "aws" {
   skip_metadata_api_check     = true
 }
 
+# Gated global governance has no resources here; never consult ambient credentials.
+mock_provider "aws" {
+  alias = "governance"
+}
+
 variables {
   environment                         = "staging"
   vpc_id                              = "vpc-0123456789abcdef0"
@@ -670,4 +675,11 @@ run "host_cannot_read_other_ssm_parameters" {
     ])
     error_message = "The host role must explicitly deny SSM parameter reads outside its three host parameters"
   }
+}
+override_resource {
+  target = aws_cloudwatch_event_rule.trail_tamper
+  values = { arn = "arn:aws:events:us-east-1:123456789012:rule/trail-tamper" }
+}
+override_resource {
+  target = aws_cloudwatch_event_target.trail_tamper
 }

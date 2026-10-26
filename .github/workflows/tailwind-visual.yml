@@ -1,0 +1,40 @@
+name: Tailwind visual regression
+
+on:
+    workflow_dispatch:
+
+concurrency:
+    group: tailwind-visual-${{ github.ref }}
+    cancel-in-progress: true
+
+env:
+    CI: true
+    NODE_OPTIONS: '--max-old-space-size=8192'
+
+permissions:
+    contents: read
+
+jobs:
+    visual:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+            - uses: ./.github/actions/setup
+            - name: Install browsers
+              run: bunx playwright install --with-deps chromium webkit
+              working-directory: apps/learn-card-app
+            - name: Compare populated dashboard and shared component styles
+              run: bunx nx run learn-card-app:test-visual
+            - name: Upload screenshots and traces
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: tailwind-visual-report
+                  path: |
+                      apps/learn-card-app/playwright-report/visual/
+                      apps/learn-card-app/test-results/
+                  retention-days: 14

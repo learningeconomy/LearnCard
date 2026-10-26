@@ -69,7 +69,7 @@ const ClrCourseDetailPanel: React.FC<{
     };
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-auto">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -104,7 +104,7 @@ const ClrCourseDetailPanel: React.FC<{
                     {showCloseButton && (
                         <button
                             onClick={closeModal}
-                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                            className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2 mt-0.5"
                         >
                             <X className="w-6 h-6" />
                         </button>
@@ -112,7 +112,7 @@ const ClrCourseDetailPanel: React.FC<{
                 </div>
             </div>
 
-            <div className="px-5 space-y-5">
+            <div className="px-5 space-y-v3-5">
                 {(credits.length > 0 || course.description?.value || relationships.length > 0) && (
                     <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
                         {credits.length > 0 && (
@@ -173,7 +173,7 @@ const ClrCourseDetailPanel: React.FC<{
                             </span>
                         </button>
                         {competenciesOpen && (
-                            <div className="px-4 pb-4 space-y-4">
+                            <div className="px-4 pb-4 space-y-v3-4">
                                 {courseCompetencies.map(c => (
                                     <ClrCompetencyBlock
                                         key={c.sourceCredentialId}

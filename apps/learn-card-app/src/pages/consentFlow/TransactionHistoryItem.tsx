@@ -63,7 +63,7 @@ const TransactionHistoryItem: React.FC<TransactionHistoryItemProps> = ({
     contractOwner,
 }) => {
     return (
-        <li className="w-full py-4 [&:not(:last-of-type)]:border-b flex flex-col gap-2">
+        <li className="w-full py-4 not-last-of-type:border-b flex flex-col gap-2">
             <header className="flex gap-1 text-sm font-poppins text-grayscale-800">
                 <span className={`${ACTION_COLOR[transaction.action]} font-bold`}>
                     {getActionText()[transaction.action]}

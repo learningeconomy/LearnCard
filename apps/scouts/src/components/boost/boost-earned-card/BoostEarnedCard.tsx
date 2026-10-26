@@ -427,7 +427,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                     {cardTitle}
                 </span>
 
-                <span className="text-sp-purple-base text-[12px] font-[600] uppercase font-notoSans">
+                <span className="text-sp-purple-base text-[12px] font-semibold uppercase font-notoSans">
                     {m['boost.meritBadge']()}
                 </span>
                 <span className="px-[10px] text-[11px] line-clamp-1">{parentSourceTitle}</span>

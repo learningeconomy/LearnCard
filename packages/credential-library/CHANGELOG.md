@@ -1,5 +1,35 @@
 # @learncard/credential-library
 
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/sd-jwt-vc-plugin@0.2.18
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/sd-jwt-vc-plugin@0.2.17
+
+## 2.1.1
+
+### Patch Changes
+
+- [#1708](https://github.com/learningeconomy/LearnCard/pull/1708) [`a01708aa51aad9626dba85495f9089fa09d81638`](https://github.com/learningeconomy/LearnCard/commit/a01708aa51aad9626dba85495f9089fa09d81638) Thanks [@gerardopar](https://github.com/gerardopar)! - Add a shared CLR renderer with academic, military, and neutral fallback layouts, reusable record sections, and a comprehensive military fixture.
+
+    Collection layout selection is intentionally conservative: course counts, credits,
+    and terms alone no longer select academic. Without an academic title, explicit GPA
+    or degree evidence is required in a collection whose children all have compatible
+    academic types; untyped children, certificates, licenses, and memberships fall back
+    to the general view. Explicit academic titles retain the academic view. Military
+    record titles include Joint Services Transcript, AARTS, CCAF Transcript, and service
+    branch record titles. No classification is derived from issuer names or child text.
+
 ## 2.1.0
 
 ### Minor Changes

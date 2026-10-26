@@ -10,7 +10,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use hkdf::Hkdf;
 use p256::{
     ecdh::diffie_hellman,
-    elliptic_curve::sec1::ToEncodedPoint,
+    elliptic_curve::{sec1::ToSec1Point, Generate},
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     PublicKey, SecretKey,
 };
@@ -30,6 +30,9 @@ pub const ESCROW_RELEASE_INFO: &str = "learncard-escrow-release-v1";
 pub const ESCROW_CLIENT_KEY_ID: &str = "client";
 /// Includes surrounding whitespace; checked before trimming or base64 allocation.
 const MAX_ENCODED_KEY_BYTES: usize = 512;
+/// P9.1 (attack C): compiled template languages. Any other tag fails closed.
+/// Keep in lockstep with the app's `SUPPORTED_LANGUAGES` (apps/learn-card-app/src/i18n).
+pub const RECOVERY_LANGUAGES: [&str; 4] = ["en", "es", "fr", "ar"];
 
 /// Deliberately excludes underlying errors and secret input from diagnostics.
 #[derive(Debug, Error)]
@@ -70,6 +73,13 @@ pub struct EscrowBlobPlaintext {
     /// P8.3 (not secret; not zeroized beyond the struct's blanket derive).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pin_attempts_floor: Option<u8>,
+    /// P9.1 (attack C): bound by the user's own device at enrollment, never by
+    /// lca-api. Always both-present or both-absent; see `normalize`. Changing the
+    /// address requires a fresh signed `Replace` intent (re-enrollment), not an edit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery_email: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery_language: Option<String>,
 }
 
 impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
@@ -88,6 +98,10 @@ impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
             pin_verifier: Option<Zeroizing<String>>,
             #[serde(default)]
             pin_attempts_floor: Option<u8>,
+            #[serde(default, deserialize_with = "optional_secret_string")]
+            recovery_email: Option<Zeroizing<String>>,
+            #[serde(default)]
+            recovery_language: Option<String>,
         }
         let mut fields = Fields::deserialize(d)?;
         Ok(Self {
@@ -100,6 +114,11 @@ impl<'de> Deserialize<'de> for EscrowBlobPlaintext {
                 .as_mut()
                 .map(|s| std::mem::take(&mut **s)),
             pin_attempts_floor: fields.pin_attempts_floor,
+            recovery_email: fields
+                .recovery_email
+                .as_mut()
+                .map(|s| std::mem::take(&mut **s)),
+            recovery_language: fields.recovery_language,
         })
     }
 }
@@ -142,6 +161,10 @@ impl<'de> Deserialize<'de> for EscrowReleasePlaintext {
             pin_verifier: Option<Zeroizing<String>>,
             #[serde(default)]
             pin_attempts_floor: Option<u8>,
+            #[serde(default, deserialize_with = "optional_secret_string")]
+            recovery_email: Option<Zeroizing<String>>,
+            #[serde(default)]
+            recovery_language: Option<String>,
             #[serde(deserialize_with = "secret_string")]
             hold_id: Zeroizing<String>,
         }
@@ -157,6 +180,11 @@ impl<'de> Deserialize<'de> for EscrowReleasePlaintext {
                     .as_mut()
                     .map(|s| std::mem::take(&mut **s)),
                 pin_attempts_floor: fields.pin_attempts_floor,
+                recovery_email: fields
+                    .recovery_email
+                    .as_mut()
+                    .map(|s| std::mem::take(&mut **s)),
+                recovery_language: fields.recovery_language,
             },
             hold_id: std::mem::take(&mut *fields.hold_id),
         })
@@ -226,6 +254,35 @@ impl EscrowBlobPlaintext {
         {
             return Err(CryptoError::Invalid("pinAttemptsFloor"));
         }
+        // P9.1: deliberately conservative (not full RFC 5322/IDN); an address that
+        // fails here is rejected client-side too, not silently reinterpreted.
+        if let Some(language) = &self.recovery_language {
+            if self.recovery_email.is_none() || !RECOVERY_LANGUAGES.contains(&language.as_str()) {
+                return Err(CryptoError::Invalid("recoveryLanguage"));
+            }
+        }
+        if let Some(email) = &mut self.recovery_email {
+            if self.recovery_language.is_none() {
+                return Err(CryptoError::Invalid("recoveryEmail"));
+            }
+            let trimmed = email.trim().to_ascii_lowercase();
+            bounded(&trimmed, "recoveryEmail", 3, 254)?;
+            if !trimmed.bytes().all(|b| b.is_ascii_graphic()) {
+                return Err(CryptoError::Invalid("recoveryEmail"));
+            }
+            let mut parts = trimmed.splitn(3, '@');
+            let (local, domain) = match (parts.next(), parts.next(), parts.next()) {
+                (Some(local), Some(domain), None) if !local.is_empty() && !domain.is_empty() => {
+                    (local, domain)
+                }
+                _ => return Err(CryptoError::Invalid("recoveryEmail")),
+            };
+            if !domain.contains('.') || domain.starts_with('.') || domain.ends_with('.') {
+                return Err(CryptoError::Invalid("recoveryEmail"));
+            }
+            let _ = local;
+            *email = trimmed;
+        }
         Ok(())
     }
 }
@@ -276,7 +333,7 @@ pub fn escrow_blob_identity(envelope: &EscrowEnvelope) -> Result<[u8; 32], Crypt
         return Err(CryptoError::Invalid("ephemeralPublicKey"));
     }
     let public = PublicKey::from_sec1_bytes(&point).map_err(|_| CryptoError::Key)?;
-    let encoded = public.to_encoded_point(false);
+    let encoded = public.to_sec1_point(false);
     let salt = decode(&envelope.salt)?;
     let iv = decode(&envelope.iv)?;
     let ciphertext = decode(&envelope.ciphertext)?;
@@ -324,7 +381,7 @@ fn aes_key(
 
 /// Generate an extractable P-256 pair in the same formats as WebCrypto.
 pub fn generate_escrow_key_pair() -> Result<EscrowKeyPair, CryptoError> {
-    let secret = SecretKey::random(&mut OsRng);
+    let secret = SecretKey::try_generate().map_err(|_| CryptoError::Key)?;
     let public = secret
         .public_key()
         .to_public_key_der()
@@ -345,7 +402,7 @@ fn encrypt(
     identifier(key_id, "keyId")?;
     let public = PublicKey::from_public_key_der(&decode_key(spki, "publicKey")?)
         .map_err(|_| CryptoError::Key)?;
-    let secret = SecretKey::random(&mut OsRng);
+    let secret = SecretKey::try_generate().map_err(|_| CryptoError::Key)?;
     let mut salt = [0u8; 32];
     let mut iv = [0u8; 12];
     OsRng.fill_bytes(&mut salt);
@@ -356,8 +413,7 @@ fn encrypt(
         version: ESCROW_ENVELOPE_VERSION,
         algorithm: ESCROW_ALGORITHM.into(),
         key_id: key_id.into(),
-        ephemeral_public_key: STANDARD
-            .encode(secret.public_key().to_encoded_point(false).as_bytes()),
+        ephemeral_public_key: STANDARD.encode(secret.public_key().to_sec1_point(false).as_bytes()),
         salt: STANDARD.encode(salt),
         iv: STANDARD.encode(iv),
         ciphertext: String::new(),
@@ -666,7 +722,7 @@ mod tests {
         let public = PublicKey::from_sec1_bytes(&point).unwrap();
         let negated = PublicKey::from_affine(-*public.as_affine()).unwrap();
         let mut twin = envelope.clone();
-        twin.ephemeral_public_key = STANDARD.encode(negated.to_encoded_point(false).as_bytes());
+        twin.ephemeral_public_key = STANDARD.encode(negated.to_sec1_point(false).as_bytes());
         twin
     }
 
@@ -795,6 +851,8 @@ mod tests {
             share_version: 3.0,
             pin_verifier: Some("ab".repeat(32)),
             pin_attempts_floor: None,
+            recovery_email: None,
+            recovery_language: None,
         };
         let envelope = encrypt_escrow_blob(&carried, &keys.public_key, "test").unwrap();
         let plaintext = decrypt(&envelope, &keys.private_key, ESCROW_BLOB_INFO).unwrap();

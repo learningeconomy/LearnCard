@@ -220,6 +220,20 @@
         }
     },
     "base": {
+        "inAppMessages": {
+            "next": "Siguiente",
+            "previous": "Anterior",
+            "done": "Listo",
+            "progress": "Progreso de la historia",
+            "error": "Algo salió mal. Inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "loading": "Cargando…",
+            "opening": "Abriendo…",
+            "checking": "Comprobando…",
+            "downloading": "Descargando… {{progress}}%",
+            "installing": "Instalando…",
+            "upToDate": "Tienes la última versión."
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -408,6 +422,7 @@
         "deletingAccount": "Eliminando Cuenta...",
         "deleteForever": "Eliminar Permanentemente",
         "fullName": "Nombre Completo",
+        "fullNameOptional": "Nombre completo (opcional)",
         "emailAddress": "Dirección de correo",
         "phoneNumber": "Número de Teléfono",
         "userID": "ID de Usuario",
@@ -631,6 +646,7 @@
         }
     },
     "networkPrompts": {
+        "profileSaveFailed": "No pudimos guardar tu perfil. Comprueba tu conexión e inténtalo de nuevo.",
         "welcomeTo": "Bienvenido a",
         "setupProf": "¡Configura tu perfil para empezar!",
         "dataOwn": "Tus datos te pertenecen.",

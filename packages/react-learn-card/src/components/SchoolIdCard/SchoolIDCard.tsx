@@ -29,7 +29,7 @@ export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
     if (userImage && userImage?.trim() !== '') {
         issueeImageEl = (
             <div
-                className="h-[80px] w-[80px] rounded-full overflow-hidden bg-no-repeat bg-cover bg-center border-solid border-[2px] border-white mr-2"
+                className="h-[80px] w-[80px] rounded-full overflow-hidden bg-no-repeat bg-cover bg-center border-solid border-2 border-white mr-2"
                 style={{ backgroundImage: `url(${userImage})` }}
             />
         );

@@ -859,7 +859,7 @@ export const AuthDebugTab: React.FC = () => {
         isProductionTenant(getAuthConfig().tenantId);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             {/* ── Status headline ── */}
             <div className={`rounded-lg p-3 ${meta.bg} ring-1 ${meta.ring}`}>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -915,7 +915,7 @@ export const AuthDebugTab: React.FC = () => {
 
                 {/* State-specific fields */}
                 {stateDetails.length > 0 && (
-                    <div className="space-y-0">
+                    <div className="space-y-v3-0">
                         {stateDetails.map(({ label, value }) => (
                             <KVRow
                                 key={label}
@@ -956,7 +956,7 @@ export const AuthDebugTab: React.FC = () => {
                     })}
 
                     {state.status === 'error' && (
-                        <div className="px-1.5 py-0.5 rounded text-[8px] font-medium bg-red-950/40 text-red-400 ring-1 ring-red-700">
+                        <div className="px-1.5 py-0.5 rounded-sm text-[8px] font-medium bg-red-950/40 text-red-400 ring-1 ring-red-700">
                             Error
                         </div>
                     )}
@@ -1231,7 +1231,7 @@ export const AuthDebugTab: React.FC = () => {
                 actions={
                     <button
                         onClick={fetchServerState}
-                        className="p-1 rounded hover:bg-gray-600 transition-colors"
+                        className="p-1 rounded-sm hover:bg-gray-600 transition-colors"
                         title="Fetch server state"
                         disabled={serverLoading}
                     >
@@ -1244,7 +1244,7 @@ export const AuthDebugTab: React.FC = () => {
                 }
             >
                 {!serverState ? (
-                    <div className="text-center py-2 space-y-1">
+                    <div className="text-center py-2 space-y-v3-1">
                         <button
                             onClick={fetchServerState}
                             disabled={serverLoading || !authUser}
@@ -1254,7 +1254,7 @@ export const AuthDebugTab: React.FC = () => {
                         </button>
 
                         {serverError && (
-                            <div className="text-[9px] text-red-400 bg-red-950/30 rounded p-1.5 text-left break-words">
+                            <div className="text-[9px] text-red-400 bg-red-950/30 rounded-sm p-1.5 text-left wrap-break-word">
                                 <span className="font-semibold">Error:</span> {serverError}
                             </div>
                         )}
@@ -1453,7 +1453,7 @@ export const AuthDebugTab: React.FC = () => {
                     allShares.length > 0 ? (
                         <button
                             onClick={handleClearDeviceShare}
-                            className="p-1 rounded hover:bg-red-900/50 transition-colors"
+                            className="p-1 rounded-sm hover:bg-red-900/50 transition-colors"
                             title="Clear ALL device shares"
                         >
                             <Trash2 className="w-3 h-3 text-gray-500 hover:text-red-400" />
@@ -1483,7 +1483,7 @@ export const AuthDebugTab: React.FC = () => {
                               : 'No device shares in IndexedDB'}
                     </p>
                 ) : (
-                    <div className="mt-1.5 space-y-1">
+                    <div className="mt-1.5 space-y-v3-1">
                         {allShares.map(entry => {
                             const isActive = activeStorageId === entry.id;
                             const isLegacy = entry.id === 'sss-device-share';
@@ -1517,13 +1517,13 @@ export const AuthDebugTab: React.FC = () => {
                                             </span>
 
                                             {isActive && (
-                                                <span className="text-[8px] px-1 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium shrink-0">
+                                                <span className="text-[8px] px-1 py-0.5 rounded-sm bg-emerald-500/20 text-emerald-400 font-medium shrink-0">
                                                     active
                                                 </span>
                                             )}
 
                                             {isLegacy && (
-                                                <span className="text-[8px] px-1 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-medium shrink-0">
+                                                <span className="text-[8px] px-1 py-0.5 rounded-sm bg-yellow-500/20 text-yellow-400 font-medium shrink-0">
                                                     legacy
                                                 </span>
                                             )}
@@ -1531,7 +1531,7 @@ export const AuthDebugTab: React.FC = () => {
 
                                         <button
                                             onClick={() => handleDeleteSingleShare(entry.id)}
-                                            className="p-0.5 rounded hover:bg-red-900/50 transition-colors shrink-0"
+                                            className="p-0.5 rounded-sm hover:bg-red-900/50 transition-colors shrink-0"
                                             title={`Delete share: ${entry.id}`}
                                         >
                                             <Trash2 className="w-2.5 h-2.5 text-gray-600 hover:text-red-400" />
@@ -1545,14 +1545,14 @@ export const AuthDebugTab: React.FC = () => {
                                         </span>
 
                                         {entry.shareVersion != null && (
-                                            <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-gray-700 text-gray-400 shrink-0">
+                                            <span className="text-[8px] font-mono px-1 py-0.5 rounded-sm bg-gray-700 text-gray-400 shrink-0">
                                                 v{entry.shareVersion}
                                             </span>
                                         )}
 
                                         <button
                                             onClick={() => copyToClipboard(entry.id, entry.id)}
-                                            className="opacity-0 hover:opacity-100 p-0.5 rounded hover:bg-gray-600 transition-all shrink-0"
+                                            className="opacity-0 hover:opacity-100 p-0.5 rounded-sm hover:bg-gray-600 transition-all shrink-0"
                                             title="Copy storage ID"
                                         >
                                             {copied === entry.id ? (
@@ -1807,11 +1807,11 @@ export const AuthDebugTab: React.FC = () => {
                     Actions
                 </p>
                 {escrowActionError && (
-                    <div className="text-[9px] text-red-400 bg-red-950/30 rounded p-1.5 text-left break-words mb-2">
+                    <div className="text-[9px] text-red-400 bg-red-950/30 rounded-sm p-1.5 text-left wrap-break-word mb-2">
                         <span className="font-semibold">Error:</span> {escrowActionError}
                     </div>
                 )}
-                <div className="space-y-1.5">
+                <div className="space-y-v3-1.5">
                     <div className="flex gap-1.5">
                         <button
                             onClick={handleFetchEscrowEnrollment}
@@ -1866,7 +1866,7 @@ export const AuthDebugTab: React.FC = () => {
                             value={escrowPinInput}
                             onChange={e => setEscrowPinInput(e.target.value)}
                             placeholder="6-digit PIN"
-                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-gray-900 border border-gray-700 text-gray-300 focus:outline-none focus:border-sky-500"
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-md bg-gray-900 border border-gray-700 text-gray-300 focus:outline-hidden focus:border-sky-500"
                         />
                         <button
                             onClick={handleSetEscrowPin}
@@ -1894,9 +1894,9 @@ export const AuthDebugTab: React.FC = () => {
                 </div>
 
                 {(!!escrowEnrollmentState || !!escrowHoldStatus || !!escrowAttestation) && (
-                    <div className="mt-2 space-y-1.5">
+                    <div className="mt-2 space-y-v3-1.5">
                         {escrowEnrollmentState && (
-                            <div className="bg-gray-900/50 rounded p-1.5">
+                            <div className="bg-gray-900/50 rounded-sm p-1.5">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[9px] font-semibold text-gray-500">
                                         Enrollment State
@@ -1908,13 +1908,13 @@ export const AuthDebugTab: React.FC = () => {
                                         Clear
                                     </button>
                                 </div>
-                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap break-words">
+                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap wrap-break-word">
                                     {JSON.stringify(escrowEnrollmentState, null, 2)}
                                 </pre>
                             </div>
                         )}
                         {escrowHoldStatus && (
-                            <div className="bg-gray-900/50 rounded p-1.5">
+                            <div className="bg-gray-900/50 rounded-sm p-1.5">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[9px] font-semibold text-gray-500">
                                         Hold Status
@@ -1926,13 +1926,13 @@ export const AuthDebugTab: React.FC = () => {
                                         Clear
                                     </button>
                                 </div>
-                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap break-words">
+                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap wrap-break-word">
                                     {JSON.stringify(escrowHoldStatus, null, 2)}
                                 </pre>
                             </div>
                         )}
                         {!!escrowAttestation && (
-                            <div className="bg-gray-900/50 rounded p-1.5">
+                            <div className="bg-gray-900/50 rounded-sm p-1.5">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-[9px] font-semibold text-gray-500">
                                         Attestation
@@ -1944,7 +1944,7 @@ export const AuthDebugTab: React.FC = () => {
                                         Clear
                                     </button>
                                 </div>
-                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap break-words">
+                                <pre className="text-[8px] text-gray-400 overflow-x-auto whitespace-pre-wrap wrap-break-word">
                                     {JSON.stringify(escrowAttestation, null, 2)}
                                 </pre>
                             </div>
@@ -1955,7 +1955,7 @@ export const AuthDebugTab: React.FC = () => {
 
             {/* ── Danger Zone (testing tools) ── */}
             <Section title="Danger Zone" icon={<Zap className="w-3 h-3 text-red-400" />}>
-                <div className="space-y-2 py-1">
+                <div className="space-y-v3-2 py-1">
                     <div>
                         <button
                             onClick={handleInvalidateSession}
@@ -1989,7 +1989,7 @@ export const AuthDebugTab: React.FC = () => {
                         <div className="flex items-center gap-0.5">
                             <button
                                 onClick={handleExportEvents}
-                                className="p-1 rounded hover:bg-gray-600 transition-colors"
+                                className="p-1 rounded-sm hover:bg-gray-600 transition-colors"
                                 title={
                                     copied === 'export' ? 'Copied!' : 'Export full debug snapshot'
                                 }
@@ -2003,7 +2003,7 @@ export const AuthDebugTab: React.FC = () => {
 
                             <button
                                 onClick={handleClearEvents}
-                                className="p-1 rounded hover:bg-gray-600 transition-colors"
+                                className="p-1 rounded-sm hover:bg-gray-600 transition-colors"
                                 title="Clear events"
                             >
                                 <Trash2 className="w-3 h-3 text-gray-500" />
@@ -2018,14 +2018,14 @@ export const AuthDebugTab: React.FC = () => {
                             Events appear as auth actions occur
                         </p>
                     ) : (
-                        <div className="space-y-0.5">
+                        <div className="space-y-v3-0.5">
                             {events.map(event => {
                                 const isExpanded = expandedEvents.has(event.id);
 
                                 return (
                                     <div
                                         key={event.id}
-                                        className="rounded bg-gray-900/50 hover:bg-gray-900/80 transition-colors overflow-hidden"
+                                        className="rounded-sm bg-gray-900/50 hover:bg-gray-900/80 transition-colors overflow-hidden"
                                     >
                                         <button
                                             onClick={() => toggleEventExpanded(event.id)}
@@ -2054,7 +2054,7 @@ export const AuthDebugTab: React.FC = () => {
                                                 <p
                                                     className={`text-[9px] text-gray-400 ${
                                                         isExpanded
-                                                            ? 'whitespace-pre-wrap break-words'
+                                                            ? 'whitespace-pre-wrap wrap-break-word'
                                                             : 'truncate'
                                                     }`}
                                                 >
@@ -2071,7 +2071,7 @@ export const AuthDebugTab: React.FC = () => {
 
                                         {isExpanded && event.data && (
                                             <div className="px-2 pb-1.5 ml-4">
-                                                <pre className="text-[8px] text-gray-500 bg-gray-950 rounded p-1.5 overflow-x-auto whitespace-pre-wrap break-words">
+                                                <pre className="text-[8px] text-gray-500 bg-gray-950 rounded-sm p-1.5 overflow-x-auto whitespace-pre-wrap wrap-break-word">
                                                     {JSON.stringify(event.data, null, 2)}
                                                 </pre>
 

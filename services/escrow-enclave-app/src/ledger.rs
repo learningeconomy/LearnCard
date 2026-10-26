@@ -203,10 +203,56 @@ pub struct Ledger {
     payload_key: Zeroizing<[u8; 32]>,
     key_id: String,
     measurement: Hash,
-    high_water: BTreeMap<String, (u64, Hash)>,
+    checkpoints: BTreeMap<String, Checkpoint>,
+}
+
+#[derive(Default)]
+struct Checkpoint {
+    committed: Option<(u64, Hash)>,
+    pending: Option<Proposal>,
+}
+
+struct Proposal {
+    seq: u64,
+    hash: Hash,
+    /// A conflict permits reconciliation to a different signed successor, never
+    /// to the old prefix. The parent conflict flag alone is not proof of a winner.
+    conflicted: bool,
 }
 
 impl Ledger {
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    pub(crate) fn sign_authority_record(
+        &self,
+        kind: crate::authority::record::RecordKind,
+        payload: &[u8],
+    ) -> Result<crate::authority::record::SignedAuthorityRecord, LedgerError> {
+        let mut record = crate::authority::record::SignedAuthorityRecord {
+            version: 1,
+            kind,
+            key_id: self.key_id.clone(),
+            measurement: self.measurement,
+            payload: STANDARD.encode(payload),
+            signature: String::new(),
+        };
+        let signature: Signature = self
+            .signing_key
+            .sign_prehash(&record.signing_hash()?)
+            .map_err(|_| LedgerError::Signature)?;
+        record.signature = STANDARD.encode(signature.normalize_s().to_bytes());
+        Ok(record)
+    }
+    #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+    pub(crate) fn verify_authority_record(
+        &self,
+        record: &crate::authority::record::SignedAuthorityRecord,
+    ) -> Result<(), LedgerError> {
+        record.verify(
+            self.verifiers
+                .get(&record.key_id)
+                .ok_or(LedgerError::Signature)?,
+        )
+    }
     /// Derive separate ledger and PIN commitment keys from the escrow scalar.
     /// Attestation/monitor enrollment must bind public_key() to the allowed image.
     pub fn new(
@@ -243,7 +289,7 @@ impl Ledger {
                     payload_key,
                     key_id,
                     measurement,
-                    high_water: BTreeMap::new(),
+                    checkpoints: BTreeMap::new(),
                 });
             }
         }
@@ -312,7 +358,7 @@ impl Ledger {
             let hash = record.record_hash()?;
             let signature =
                 Signature::from_slice(&record.sig).map_err(|_| LedgerError::Signature)?;
-            if signature.normalize_s().is_some() {
+            if signature.normalize_s() != signature {
                 return Err(LedgerError::Signature);
             }
             keys.get(&record.key_id)
@@ -346,28 +392,38 @@ impl Ledger {
     ) -> Result<ChainState, LedgerError> {
         let state = Self::verify_chain_with_keys(records, expected, &self.verifiers)?;
         let id = expected.chain_id();
-        if let Some((seq, hash)) = self.high_water.get(&id) {
+        if let Some((seq, hash)) = self.checkpoints.get(&id).and_then(|c| c.committed) {
             if records
-                .get(*seq as usize)
+                .get(seq as usize)
                 .map(LedgerRecord::record_hash)
                 .transpose()?
-                != Some(*hash)
+                != Some(hash)
             {
                 return Err(LedgerError::Rollback);
             }
         }
+        if let Some(proposal) = self.checkpoints.get(&id).and_then(|c| c.pending.as_ref()) {
+            let successor = records
+                .get(proposal.seq as usize)
+                .ok_or(LedgerError::Rollback)?;
+            if !proposal.conflicted && successor.record_hash()? != proposal.hash {
+                return Err(LedgerError::Rollback);
+            }
+        }
         if let Some(head) = state.head() {
-            self.remember(id, head)?;
+            let hash = head.record_hash()?;
+            let checkpoint = self.checkpoint(id)?;
+            checkpoint.committed = Some((head.seq, hash));
+            checkpoint.pending = None;
         }
         Ok(state)
     }
 
-    fn remember(&mut self, id: String, head: &LedgerRecord) -> Result<(), LedgerError> {
-        if !self.high_water.contains_key(&id) && self.high_water.len() >= MAX_TRACKED_CHAINS {
+    fn checkpoint(&mut self, id: String) -> Result<&mut Checkpoint, LedgerError> {
+        if !self.checkpoints.contains_key(&id) && self.checkpoints.len() >= MAX_TRACKED_CHAINS {
             return Err(LedgerError::Capacity);
         }
-        self.high_water.insert(id, (head.seq, head.record_hash()?));
-        Ok(())
+        Ok(self.checkpoints.entry(id).or_default())
     }
 
     async fn load(
@@ -415,13 +471,31 @@ impl Ledger {
             .map_err(|_| LedgerError::Signature)?;
         record
             .sig
-            .copy_from_slice(&signature.normalize_s().unwrap_or(signature).to_bytes());
+            .copy_from_slice(&signature.normalize_s().to_bytes());
         let mut proposed = state.records.clone();
         proposed.push(record.clone());
-        // Remember BEFORE handing signed bytes to an untrusted store. Cancellation,
-        // Conflict or Unavailable cannot allow us to sign a conflicting successor.
-        self.observe(&proposed, enrollment)?;
-        store.append(&enrollment.chain_id(), &record).await?;
+        // Validate without advancing the committed high-water mark. Keep the
+        // proposal BEFORE IO so cancellation/ambiguous writes still fail closed.
+        Self::verify_chain_with_keys(&proposed, enrollment, &self.verifiers)?;
+        let id = enrollment.chain_id();
+        let hash = record.record_hash()?;
+        self.checkpoint(id.clone())?.pending = Some(Proposal {
+            seq: record.seq,
+            hash,
+            conflicted: false,
+        });
+        if let Err(error) = store.append(&id, &record).await {
+            if error == AppendError::Conflict {
+                // Do not trust the flag enough to forget the proposed sequence.
+                // A later authenticated readback must show a successor there.
+                if let Some(proposal) = self.checkpoint(id)?.pending.as_mut() {
+                    proposal.conflicted = true;
+                }
+            }
+            return Err(error.into());
+        }
+        // Non-conflicted proposals require their exact hash in the readback;
+        // observing a competing winner can never authorize this operation.
         self.load(store, enrollment).await?;
         Ok(record)
     }

@@ -31,7 +31,7 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
         </IonContent>
     </IonPage>
 );
-import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
+import NewAiSessionContainer from '../new-ai-session/LazyNewAiSessionContainer';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import BoostsTwoTonedIcon from 'learn-card-base/svgs/SideNav/BoostsTwoTonedIcon';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
@@ -118,7 +118,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
             <IssueManagedBoostSelector />,
             {
                 hideButton: true,
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
             },
             {
                 desktop: ModalTypes.Cancel,
@@ -132,7 +132,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
 
         newModal(
             <CheckListContainer />,
-            { className: '!bg-transparent' },
+            { className: 'bg-transparent!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };
@@ -150,7 +150,7 @@ export const AddToLearnCardMenu: React.FC<{ className?: string }> = ({ className
             <Suspense fallback={<PasteOrUploadClaimModalFallback />}>
                 <LazyPasteOrUploadClaimModal />
             </Suspense>,
-            { hideButton: true, sectionClassName: '!max-w-[500px]' },
+            { hideButton: true, sectionClassName: 'max-w-[500px]!' },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
         );
     };

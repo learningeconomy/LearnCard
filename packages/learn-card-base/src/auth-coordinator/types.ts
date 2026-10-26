@@ -32,6 +32,7 @@ export type {
     EscrowEnrollmentState,
     EscrowEnrollmentOptions,
     EscrowPinStatus,
+    EscrowRecoveryExpectations,
 } from '@learncard/types';
 
 // --- SSS-specific (canonical source: @learncard/sss-key-manager) ---
@@ -80,6 +81,13 @@ export type UnifiedAuthState =
           recoveryReason: RecoveryReason;
           maskedRecoveryEmail?: string | null;
           sssActivationState?: SssActivationState | null;
+          /**
+           * The account's DID as independently known from the server key-status
+           * lookup (never from an escrow status response). Required by Nitro
+           * escrow recovery (hold start and PIN release) to bind the request to
+           * this account; see `EscrowRecoveryExpectations`.
+           */
+          expectedDid?: string;
       }
     | {
           status: 'identity_recovery';
@@ -89,6 +97,14 @@ export type UnifiedAuthState =
           recoveryMethods: RecoveryMethodInfo[];
           recoveredDid?: string;
           error?: string;
+          /**
+           * The verified account's DID, independently known from the
+           * verify-recovery-session response (never from an escrow response).
+           * Required by Nitro escrow recovery (hold start/restart) to bind the
+           * request to this account when no provider session exists yet; see
+           * `expectedDid` on the `needs_recovery` state above.
+           */
+          expectedDid?: string;
       }
     | { status: 'awaiting_rebind'; did: string }
     | {
@@ -105,6 +121,17 @@ export type UnifiedAuthState =
           pendingEscrowHold?: { holdId: string; requestedAt: string; releaseAfter: string };
           /** Whether a recovery PIN is set on the escrow release policy, and attempts remaining. */
           escrowPin?: EscrowPinStatus;
+          /**
+           * The strategy cleared a retired PIN on its own during a post-recovery repair.
+           * The app must prompt for a new PIN, then call `acknowledgeEscrowPinAutoClear`.
+           */
+          escrowPinAutoCleared?: true;
+          /**
+           * The signed authority still has a PIN that lca-api cannot carry (e.g. after an
+           * identity-recovery rebind), so automatic repair stopped without signing
+           * anything. The app should ask the user to set a new PIN (`setEscrowPin`).
+           */
+          escrowPinResetRequired?: true;
           authUser?: AuthUser;
           did: string;
           privateKey: string;
@@ -203,4 +230,16 @@ export interface AuthCoordinatorConfig {
      * @default 4000
      */
     serverStatusTimeoutMs?: number;
+
+    /**
+     * P9.1 (attack C): optional, app-supplied current locale (one of the
+     * app's compiled recovery-email languages, e.g. 'en'/'es'/'fr'/'ar'),
+     * bound alongside the account email into the sealed escrow blob on every
+     * enroll/replace. The device is the source of truth for this binding —
+     * lca-api cannot read or change it afterward; changing the recovery
+     * address or language requires a fresh enrollment from the device, not
+     * an edit. Omitted/unrecognized values fail closed at the enclave for
+     * nitro/authority-mode enroll/replace, never silently defaulted.
+     */
+    getRecoveryLanguage?: () => string | undefined;
 }

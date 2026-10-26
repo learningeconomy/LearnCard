@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { useLDClient } from 'launchdarkly-react-client-sdk';
+import type { InAppMessage } from '@learncard/types';
 
 import { useInAppMessages } from './useInAppMessages';
 import { markMessageSeen, onDismissalsReset } from './dismissalStore';
@@ -13,16 +15,96 @@ import {
 import { InAppMessageModal } from './InAppMessageModal';
 import { InAppMessageBanner } from './InAppMessageBanner';
 import { InAppMessageToast } from './InAppMessageToast';
+import { emitAppOpenedOnce } from './inAppMessageEvents';
+import { isFatigueControlled, recordBlockingShown } from './fatigueStore';
+import { useI18nLocale } from '../i18n';
+import { localizeMessage } from './localizeMessage';
+import { InAppMessageRichPresentation } from './InAppMessageSurface';
+import { isInAppMessagePresentationSupported } from './presentationSupport';
+import { clearInAppMessageRequest, useInAppMessageRequest } from './deepLinkRequestStore';
+import { MessageNavigationContext } from './MessageNavigationContext';
+import type {
+    InAppMessagePresentationEvent,
+    MessageInteraction,
+    MessagePresentationProps,
+} from './presentationTypes';
 
-export type InAppMessageHostProps = PresentationGateOptions;
+export interface InAppMessageHostProps extends PresentationGateOptions {
+    onEvent?: (event: InAppMessagePresentationEvent) => void;
+    onOpenApp?: (listingId: string, path?: string) => void;
+}
 
-export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => {
-    const { message } = useInAppMessages();
+export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
+    onEvent,
+    onOpenApp,
+    ...gateOptions
+}) => {
+    const locale = useI18nLocale();
+    const eventRef = useRef(onEvent);
+    useLayoutEffect(() => {
+        eventRef.current = onEvent;
+    }, [onEvent]);
+    const { message, messages, credentialFacts } = useInAppMessages();
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
+    const request = useInAppMessageRequest();
+    const launchDarklyClient = useLDClient();
+    const [initializedLaunchDarklyClient, setInitializedLaunchDarklyClient] =
+        useState<typeof launchDarklyClient>();
+    useEffect(() => {
+        let canceled = false;
+
+        launchDarklyClient
+            ?.waitForInitialization()
+            .then(() => {
+                if (!canceled) setInitializedLaunchDarklyClient(launchDarklyClient);
+            })
+            .catch(() => undefined);
+
+        return () => {
+            canceled = true;
+        };
+    }, [launchDarklyClient]);
+    const flagDeliveryReady =
+        Boolean(launchDarklyClient) && initializedLaunchDarklyClient === launchDarklyClient;
+    const previousAccount = useRef(credentialFacts.accountDid);
+    useEffect(() => {
+        if (previousAccount.current && previousAccount.current !== credentialFacts.accountDid) {
+            clearInAppMessageRequest();
+        }
+        previousAccount.current = credentialFacts.accountDid;
+    }, [credentialFacts.accountDid]);
+    const requestedMessage = request
+        ? messages.find(
+              item =>
+                  item.id === request.messageId &&
+                  item.enabled &&
+                  isInAppMessagePresentationSupported(item)
+          )
+        : undefined;
+    useEffect(() => {
+        if (!request || requestedMessage || !flagDeliveryReady) return;
+        const timer = setTimeout(
+            () => clearInAppMessageRequest(request.token),
+            Math.max(0, request.requestedAt + 5000 - Date.now())
+        );
+        return () => clearTimeout(timer);
+    }, [flagDeliveryReady, request, requestedMessage]);
+    const [opening, setOpening] = useState({
+        accountDid: credentialFacts.accountDid,
+        ready: false,
+    });
+    if (opening.accountDid !== credentialFacts.accountDid) {
+        setOpening({ accountDid: credentialFacts.accountDid, ready: false });
+    }
+    const [presented, setPresented] = useState<{
+        message: InAppMessage;
+        accountDid?: string;
+    } | null>(null);
 
     const [closedIds, setClosedIds] = useState<Set<string>>(() => new Set());
     const shownRef = useRef<string | null>(null);
+    const shownOverrideRef = useRef<string | null>(null);
     const gateReasonRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -35,7 +117,9 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
     useEffect(() => {
         return onDismissalsReset(() => {
             setClosedIds(new Set());
+            setPresented(null);
             shownRef.current = null;
+            shownOverrideRef.current = null;
         });
     }, []);
 
@@ -46,9 +130,61 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         iamDebug('gate', { canPresent, reason });
     }, [canPresent, reason]);
 
-    const realActive = message && !closedIds.has(message.id) ? message : null;
-    const active = override ?? (canPresent ? realActive : null);
+    useEffect(() => {
+        const did = credentialFacts.accountDid;
+
+        if (!canPresent) return;
+
+        if (did) emitAppOpenedOnce(did);
+        // Let the event subscription reach evaluation before consuming an impression.
+        let canceled = false;
+        queueMicrotask(() => {
+            if (!canceled) setOpening({ accountDid: did, ready: true });
+        });
+        return () => {
+            canceled = true;
+        };
+    }, [canPresent, credentialFacts.accountDid]);
+
+    const accountDid = credentialFacts.accountDid ?? undefined;
+    const retained =
+        presented?.accountDid === accountDid
+            ? messages.find(current => current.id === presented?.message.id && current.enabled)
+            : undefined;
+    const candidate = retained ?? message;
+    const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
+    const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
+    const openingReady = opening.accountDid === credentialFacts.accountDid && opening.ready;
+    const requested =
+        override ??
+        (canPresent && openingReady ? (request ? (requestedMessage ?? null) : realActive) : null);
+    // Preview overrides bypass targeting and frequency, never platform security policy.
+    const active = requested && isInAppMessagePresentationSupported(requested) ? requested : null;
     const isOverride = Boolean(override);
+    const isDeepLink = !isOverride && Boolean(requestedMessage && request);
+    const localized = active ? localizeMessage(active, locale) : null;
+    const emit = useCallback(
+        (type: InAppMessagePresentationEvent['type'], details: MessageInteraction = {}) => {
+            if (!active) return;
+            try {
+                eventRef.current?.({
+                    type,
+                    messageId: active.id,
+                    presentation: active.presentation,
+                    source: isOverride ? 'override' : isDeepLink ? 'deepLink' : 'flag',
+                    ...details,
+                });
+            } catch {
+                // Optional telemetry must never prevent presentation or dismissal.
+            }
+        },
+        [active, isOverride, isDeepLink]
+    );
+
+    // Retain a presented message after its own impression makes it ineligible.
+    if (presented && !retained) setPresented(null);
+    if (!presented && active && !isOverride && !isDeepLink)
+        setPresented({ message: active, accountDid });
 
     const close = useCallback(
         (id: string) => {
@@ -60,33 +196,35 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
             }
 
             iamDebug('closed', { id });
+            if (isDeepLink && request) clearInAppMessageRequest(request.token);
+            setPresented(current =>
+                current?.message.id === id && current.accountDid === accountDid ? null : current
+            );
 
             setClosedIds(prev => {
                 const next = new Set(prev);
 
-                next.add(id);
+                next.add(`${accountDid ?? 'anonymous'}:${id}`);
 
                 return next;
             });
         },
-        [override]
+        [accountDid, override, isDeepLink, request]
     );
 
-    useEffect(() => {
-        if (!active) {
-            // Only reset dedupe state for overrides: clearing a preview must
-            // allow the same draft (same id) to be previewed again, while real
-            // messages keep their once-per-appearance semantics intact.
-            if (shownRef.current?.startsWith('override:')) shownRef.current = null;
+    const onShown = useCallback(() => {
+        // Clearing a preview permits another preview without forgetting the retained campaign.
+        if (!isOverride) shownOverrideRef.current = null;
+        if (!active) return;
 
-            return;
-        }
+        const key = isOverride
+            ? `override:${active.id}:${active.presentation}`
+            : `${accountDid ?? 'anonymous'}:${active.id}:${isDeepLink ? request?.token : 'flag'}`;
 
-        const key = isOverride ? `override:${active.id}:${active.presentation}` : active.id;
+        const shown = isOverride ? shownOverrideRef : shownRef;
+        if (shown.current === key) return;
 
-        if (shownRef.current === key) return;
-
-        shownRef.current = key;
+        shown.current = key;
         iamDebug('shown', {
             id: active.id,
             presentation: active.presentation,
@@ -98,28 +236,73 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = gateOptions => 
         // stability), so a transient boot/navigation flicker cannot burn a
         // "once" impression. If the gate's settle debounce is ever removed,
         // revisit this.
-        if (!isOverride) markMessageSeen(active.id, active.frequency);
-    }, [active, isOverride]);
+        if (!isOverride) {
+            markMessageSeen(active.id, active.frequency, Date.now(), accountDid);
+
+            if (isFatigueControlled(active)) recordBlockingShown(Date.now(), accountDid);
+        }
+        emit('shown');
+    }, [accountDid, active, isOverride, isDeepLink, request, emit]);
+
+    useLayoutEffect(() => {
+        if (!active || (active.presentation !== 'story' && active.presentation !== 'iframe'))
+            onShown();
+    }, [active, onShown]);
 
     // AnimatePresence must live here, in the always-mounted host: the
     // presented component is removed wholesale on close, so exit animations
     // only play if the presence boundary survives that unmount.
-    const key = active ? `${active.id}:${active.presentation}` : null;
+    const key = active
+        ? `${accountDid ?? 'anonymous'}:${isOverride}:${isDeepLink ? request?.token : 'flag'}:${active.id}:${active.presentation}`
+        : null;
+    const onClose: MessagePresentationProps['onClose'] = (reason = 'dismissed', details): void => {
+        if (!active) return;
+        if (reason === 'dismissed') emit('dismissed', details);
+        close(active.id);
+    };
+    const onAction = (details: MessageInteraction): void => emit('action', details);
 
     return (
-        <AnimatePresence>
-            {active && active.presentation === 'toast' && (
-                <InAppMessageToast key={key} message={active} onClose={() => close(active.id)} />
-            )}
+        <MessageNavigationContext.Provider value={{ openApp: onOpenApp }}>
+            <AnimatePresence>
+                {localized && localized.presentation === 'toast' && (
+                    <InAppMessageToast
+                        key={key}
+                        message={localized}
+                        onClose={onClose}
+                        onAction={onAction}
+                    />
+                )}
 
-            {active && active.presentation === 'banner' && (
-                <InAppMessageBanner key={key} message={active} onClose={() => close(active.id)} />
-            )}
+                {localized && localized.presentation === 'banner' && (
+                    <InAppMessageBanner
+                        key={key}
+                        message={localized}
+                        onClose={onClose}
+                        onAction={onAction}
+                    />
+                )}
 
-            {active && active.presentation === 'modal' && (
-                <InAppMessageModal key={key} message={active} onClose={() => close(active.id)} />
-            )}
-        </AnimatePresence>
+                {localized && localized.presentation === 'modal' && (
+                    <InAppMessageModal
+                        key={key}
+                        message={localized}
+                        onClose={onClose}
+                        onAction={onAction}
+                    />
+                )}
+                {localized &&
+                    (localized.presentation === 'story' || localized.presentation === 'iframe') && (
+                        <InAppMessageRichPresentation
+                            key={key}
+                            message={localized}
+                            onClose={onClose}
+                            onShown={onShown}
+                            onAction={onAction}
+                        />
+                    )}
+            </AnimatePresence>
+        </MessageNavigationContext.Provider>
     );
 };
 

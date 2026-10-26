@@ -300,7 +300,7 @@ const PrivacySettingsModal: React.FC = () => {
                     </div>
                 )}
 
-                <div className="bg-white rounded-[16px] overflow-hidden shadow-sm p-5">
+                <div className="bg-white rounded-[16px] overflow-hidden shadow-xs p-5">
                     <div className="mb-4">
                         <p className="text-[15px] font-medium text-grayscale-900">
                             {m['settings.privacy.profilePrivacy']()}
@@ -371,7 +371,7 @@ const PrivacySettingsModal: React.FC = () => {
                 </div>
 
                 {/* AI Features */}
-                <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
+                <div className="bg-white rounded-[16px] overflow-hidden shadow-xs">
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
@@ -446,7 +446,7 @@ const PrivacySettingsModal: React.FC = () => {
                 </div>
 
                 {/* Analytics */}
-                <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
+                <div className="bg-white rounded-[16px] overflow-hidden shadow-xs">
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">
@@ -465,7 +465,7 @@ const PrivacySettingsModal: React.FC = () => {
                 </div>
 
                 {/* Crash Reports */}
-                <div className="bg-white rounded-[16px] overflow-hidden shadow-sm">
+                <div className="bg-white rounded-[16px] overflow-hidden shadow-xs">
                     <div className="flex items-center justify-between px-5 py-4">
                         <div className="flex-1 pr-4">
                             <p className="text-[15px] font-medium text-grayscale-900">

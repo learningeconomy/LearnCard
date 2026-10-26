@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 
@@ -21,7 +22,7 @@ export default defineConfig({
     // `Plugin` it returns is nominally a different type from this package's
     // Vite instance even though the versions match. Cast to this package's
     // `PluginOption` to reconcile the duplicate-instance type mismatch.
-    plugins: [react(), playgroundApiPlugin()] as PluginOption[],
+    plugins: [tailwindcss(), react(), playgroundApiPlugin()] as PluginOption[],
     server: {
         port: 5173,
     },

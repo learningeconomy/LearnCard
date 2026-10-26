@@ -58,7 +58,7 @@ export const RadioButton: React.FC<RadioButtonProps> = ({
             tabIndex={tabIndex}
             onKeyDown={handleKeyDown}
             onClick={() => onClick(!checked)}
-            className={`transition-colors h-8 w-8 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+            className={`transition-colors h-8 w-8 rounded-full flex items-center justify-center focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${
                 checked ? 'bg-emerald-700' : 'bg-grayscale-200'
             } ${className}`}
         >

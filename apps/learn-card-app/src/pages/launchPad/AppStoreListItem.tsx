@@ -45,7 +45,7 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
     return (
         <IonItem
             lines="none"
-            className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-sm"
+            className="w-full max-w-[600px] ion-no-border px-[12px] py-[12px] max-h-[76px] border-gray-200 border-b-2 last:border-b-0 flex bg-white items-center justify-between notificaion-list-item overflow-visible rounded-[12px] mt-2 first:mt-4 shadow-xs"
         >
             <div className="flex items-center justify-start w-full bg-white-100">
                 <div className="rounded-lg w-[50px] h-[50px] me-3 min-w-[50px] min-h-[50px]">
@@ -85,7 +85,10 @@ const AppStoreListItem: React.FC<AppStoreListItemProps> = ({
                             </button>
                         ) : isInstalled || installedAt || launchConfig.skipInstallation ? (
                             <>
-                                <button onClick={handleLaunch} className={connectedButtonClass}>
+                                <button
+                                    onClick={() => handleLaunch()}
+                                    className={connectedButtonClass}
+                                >
                                     {m['common.open']()}
                                 </button>
 

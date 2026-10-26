@@ -111,11 +111,29 @@
                 "script": "test:inbox:e2e"
             }
         },
+        "test:profile-search": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": ["source", "tests", "{projectRoot}/vitest.profile-search-neo4j.config.ts"],
+            "options": {
+                "script": "test:profile-search"
+            }
+        },
         "test:integration": {
             "executor": "nx:run-script",
             "inputs": ["source", "tests"],
             "options": {
                 "script": "test:integration"
+            }
+        },
+        "test:boost-recipients": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": ["source", "tests", "{projectRoot}/vitest.boost-recipients-neo4j.config.ts"],
+            "options": {
+                "script": "test:boost-recipients"
             }
         }
     }

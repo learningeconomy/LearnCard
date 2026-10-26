@@ -26,6 +26,7 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 import NewMyData from '../../components/new-my-data/NewMyData';
 import ConsentFlowEditAccess from '../launchPad/ConsentFlowEditAccess';
 import {
+    AiPassportReauthenticationRequired,
     getConsentFlowContractRedirect,
     getConsentFlowDidAuthRedirect,
 } from './issueConsentFlowDidAuth';
@@ -166,7 +167,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             onClick={() => {
                                 newModal(
                                     <NewMyData />,
-                                    { sectionClassName: '!max-w-[350px]' },
+                                    { sectionClassName: 'max-w-[350px]!' },
                                     { desktop: ModalTypes.Cancel }
                                 );
                             }}
@@ -205,6 +206,13 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                             setLoading(true);
 
                             try {
+                                getConsentFlowContractRedirect({
+                                    challenge,
+                                    domain,
+                                    registeredRedirectUrl: contractDetails.redirectUrl,
+                                    returnTo,
+                                    contractUri: contractDetails.uri,
+                                });
                                 const { redirectUrl: contractRedirectUrl } =
                                     await consentToContract({
                                         terms,
@@ -219,7 +227,10 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                 const allowedContractRedirectUrl = getConsentFlowContractRedirect({
                                     challenge,
                                     contractRedirectUrl,
+                                    contractUri: contractDetails?.uri,
                                     domain,
+                                    registeredRedirectUrl: contractDetails?.redirectUrl,
+                                    returnTo,
                                 });
 
                                 if (allowedContractRedirectUrl) {
@@ -242,15 +253,22 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                                             contractUri: contractDetails.uri,
                                             domain,
                                             ownerDid,
+                                            registeredRedirectUrl: contractDetails.redirectUrl,
                                             returnTo,
                                             wallet,
                                         });
                                     } else history.push(returnTo);
                                 } else history.push(`/launchpad?uri=${contractDetails.uri}`);
-                            } catch {
-                                presentToast('Unable to complete sign in. Please try again.', {
-                                    type: ToastTypeEnum.Error,
-                                });
+                            } catch (error) {
+                                presentToast(
+                                    error instanceof AiPassportReauthenticationRequired
+                                        ? m['consentFlow.aiPassportReauthenticationRequired']()
+                                        : 'Unable to complete sign in. Please try again.',
+                                    {
+                                        type: ToastTypeEnum.Error,
+                                    }
+                                );
+                                return; // Keep the consent review available for recovery.
                             } finally {
                                 setLoading(false);
                             }

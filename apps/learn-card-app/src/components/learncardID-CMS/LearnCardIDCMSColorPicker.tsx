@@ -34,7 +34,7 @@ export const LearnCardIDCMSColorPicker: React.FC<{
 
                 <HexColorPicker color={color ? color : '#353E64'} onChange={handleColorChange} />
             </div>,
-            { className: '!bg-transparent !shadow-none' },
+            { className: 'bg-transparent! shadow-none!' },
             { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
         );
     };

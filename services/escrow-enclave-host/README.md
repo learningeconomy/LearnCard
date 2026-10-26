@@ -36,15 +36,18 @@ compared with `subtle` constant-time equality. The NLB is TCP passthrough: host
 TLS certificates must cover the DNS name used by lca-api and be trusted there.
 No plaintext API listener or certificate-verification bypass exists.
 
-| HTTP path                | vsock method       |
-| ------------------------ | ------------------ |
-| `/v1/attest`             | `attest`           |
-| `/v1/verify-blob`        | `verifyBlob`       |
-| `/v1/carry-pin-verifier` | `carryPinVerifier` |
-| `/v1/rewrap-escrow-blob` | `rewrapEscrowBlob` |
-| `/v1/create-hold`        | `createHold`       |
-| `/v1/release`            | `release`          |
-| `/v1/cancel-hold`        | `cancel`           |
+| HTTP path                  | vsock method         |
+| -------------------------- | -------------------- |
+| `/v1/attest`               | `attest`             |
+| `/v1/verify-blob`          | `verifyBlob`         |
+| `/v1/carry-pin-verifier`   | `carryPinVerifier`   |
+| `/v1/rewrap-escrow-blob`   | `rewrapEscrowBlob`   |
+| `/v1/create-hold`          | `createHold`         |
+| `/v1/confirm-hold`         | `confirmHold`        |
+| `/v1/resend-code`          | `resendCode`         |
+| `/v1/release`              | `release`            |
+| `/v1/cancel-hold`          | `cancel`             |
+| `/v1/send-release-warning` | `sendReleaseWarning` |
 
 Bodies use the corresponding independent `src/wire.rs` fields **without** the
 `method` discriminator. Responses remove it too. Attestation mode is preserved,
@@ -54,9 +57,14 @@ are replaced by constants. Unsigned legacy holds, unknown fields and host `now`
 are rejected. HTTP bodies and each framed message are capped at 256 KiB; one
 connection/one request/one response, u32 big-endian length then JSON. Responses
 must match the requested method. No retries. At most 32 active authorized API
-calls; each complete body/bridge operation has a 10-second timeout.
+calls; each complete body/bridge operation has a 12-second timeout (above the enclave's own 10-second request deadline).
 Connection admission occurs before TLS: 128 HTTPS / 16 health connections, each
 with a hard 60-second lifetime (including handshake and slow headers).
+`confirmHold` and `sendReleaseWarning` responses additionally carry
+`confirmedHiMs` / `releaseWarningSentHiMs`: the enclave's authoritative
+confirmation/warning timestamp, present on both a fresh commit and an
+idempotent retry snapshot, which the host DTO must preserve across
+reserialization rather than let a caller fall back to a locally observed clock.
 
 Cross-component tests link the enclave crate as a **dev-dependency only** with its
 four fake features. `tests/parent_interop.rs` drives the production enclave parent
@@ -87,6 +95,10 @@ Parent CID3:5002 accepts one u32-BE length-prefixed JSON request, <=32 KiB,
 
 - `{method:"boot",keyId}` -> framed JSON
   `{sealed:base64|null,accessKeyId,secretAccessKey,sessionToken}` (no method tag).
+  When explicitly configured, CURRENT-key responses additionally include
+  `authorityCredentialCiphertext` and/or `emailCredentialCiphertext` (base64 KMS
+  ciphertext only, each 1–6144 decoded bytes). Unset options are omitted, preserving
+  the old response shape. Previous-key responses never include these fields.
 - `{method:"persistKey",keyId,sealed:base64}` -> one byte `0` success / `2` unavailable.
 - `{method:"getChain",chainId}` -> raw u32-BE count, then each raw CBOR record
   individually prefixed by u32-BE length; <=64 records / 8192 each / 524288 total.
@@ -117,6 +129,19 @@ has no IMDS. The current P1.8 KMS adapter is boot-scoped; any future post-boot K
 operation needs an agreed refresh protocol, not a restart to clear ledger state.
 The KMS path remains opaque enclave-to-AWS TLS through the separate port-8000
 proxy; parent code never receives KMS plaintext keys or CMS recipient plaintext.
+
+Optional dedicated-credential delivery is read-only and never invokes KMS on the
+host. `ESCROW_AUTHORITY_CREDENTIAL_OBJECT` must be exactly
+`credentials/authority-writer/<generation>`; `ESCROW_EMAIL_CREDENTIAL_OBJECT` must
+be `credentials/email-sender/<generation>`, with a bounded alphanumeric/underscore/
+hyphen generation. Both use the artifacts bucket. Missing/empty/oversized objects
+fail the boot response, with no first-boot exception or fallback credentials.
+`persistKey` cannot write either path. The enclave's credential unsealer and data
+clients remain unwired. Gated Terraform supplies the proxy units and optional
+ciphertext settings; the existing artifacts read grant covers ciphertext. The
+management-account guardrail and operator provisioning must precede enabling
+`enable_credential_delivery`. Activation and live AWS/Nitro verification are pending.
+Never put dedicated plaintext access keys in host environment variables or files.
 
 ## Persistence / audit ordering
 
@@ -202,10 +227,11 @@ oversize/truncation, a connected UDP socket filters source, total lifetime is 2s
 
 User-data already orders the unit after allocator and KMS vsock-proxy. Supply
 the additional configuration before starting it; add `LimitCORE=0` and a bounded
-`MemoryMax`, `TasksMax`, file-descriptor limit. The existing NLB health check is
-**TCP**, not HTTP: a listening 8444 socket alone is accepted even when `/health`
-returns 503. Change the NLB check to HTTP `/health` in an infra follow-up before
-rollout. This crate does not modify infra. Real Linux/vsock/AWS/TLS deployment and
+`MemoryMax`, `TasksMax`, file-descriptor limit. The NLB target group checks HTTP
+`GET /health` on 8444 (matcher 200, `infra/escrow-enclave/nlb.tf`) and the ASG uses
+ELB health, so a 503 `/health` takes the instance out of service. `/health` reflects
+enclave readiness only: it stays 200 when the host cannot parse a newer enclave's
+responses, so roll the host and EIF from the same build. This crate does not modify infra. Real Linux/vsock/AWS/TLS deployment and
 readiness must be verified in staging; native compilation is not that verification.
 
 ## Verification
@@ -215,6 +241,18 @@ cargo fmt --check && cargo clippy -- -D warnings && cargo test
 cargo audit
 cargo build --release
 ```
+
+Deployable binaries come from `.github/workflows/escrow-enclave-eif.yml`, which builds this crate
+twice from the same commit as the EIF and signs `hostSha256` alongside `eifSha256`. The same build
+runs locally (needs Docker; linux/amd64 under emulation on Apple Silicon):
+
+```sh
+services/escrow-enclave-host/scripts/build-host.sh --out /tmp/escrow-host
+```
+
+It builds in the pinned `amazonlinux:2023` amd64 image (glibc 2.34) with the `rust-toolchain.toml`
+toolchain via `cargo build --release --locked`, and writes the binary, its `.sha256`, and
+`host-build.json`. Deploy only a binary taken from the same run's artifact as the EIF.
 
 Default-features are disabled on AWS config/DynamoDB/S3: `default-https-client`
 selects hyper 1.x/rustls 0.23, not the legacy rustls 0.21/h2 0.3 stack. Commit

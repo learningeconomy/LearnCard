@@ -617,10 +617,10 @@ export function useLearnCardMessageHandlers({
                                     onReject: handleReject,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         } catch (error) {
@@ -756,10 +756,10 @@ export function useLearnCardMessageHandlers({
                                     accepting,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px] !h-[90vh] !max-h-[90vh]',
+                                    sectionClassName: 'max-w-[500px]! h-[90vh]! max-h-[90vh]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         } catch (error) {
@@ -889,7 +889,7 @@ export function useLearnCardMessageHandlers({
                                     origin: embedOrigin,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[600px] h-full',
+                                    sectionClassName: 'max-w-[600px]! h-full',
                                     hideButton: true,
                                     usePortal: true,
                                 }
@@ -986,7 +986,7 @@ export function useLearnCardMessageHandlers({
                                     origin: embedOrigin,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[1200px] !h-[95vh] min-h-[95vh]',
+                                    sectionClassName: 'max-w-[1200px]! h-[95vh]! min-h-[95vh]',
                                     hideButton: true,
                                     usePortal: true,
                                 }
@@ -1057,10 +1057,10 @@ export function useLearnCardMessageHandlers({
                                     signing,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px] !h-[90vh] !max-h-[90vh]',
+                                    sectionClassName: 'max-w-[500px]! h-[90vh]! max-h-[90vh]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 }
                             );
                         } catch (error) {
@@ -1224,10 +1224,10 @@ export function useLearnCardMessageHandlers({
                                     showBoostContext: true,
                                 }),
                                 {
-                                    sectionClassName: '!max-w-[500px]',
+                                    sectionClassName: 'max-w-[500px]!',
                                     hideButton: true,
                                     usePortal: true,
-                                    portalClassName: '!max-w-[500px]',
+                                    portalClassName: 'max-w-[500px]!',
                                 },
                                 { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
                             );

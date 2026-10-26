@@ -183,6 +183,11 @@ export const publicationPending = (manager, result) => {
                 return (
                     diagnostic.type === 'error' &&
                     (diagnostic.name === 82 ||
+                        // Yarn Classic reports missing versions without a numeric code.
+                        (typeof diagnostic.data === 'string' &&
+                            /^Couldn't find any versions for ".+" that matches ".+"$/.test(
+                                diagnostic.data
+                            )) ||
                         (diagnostic.name === 35 &&
                             /(?:404|Package not found)/.test(
                                 diagnostic.displayName + ' ' + diagnostic.data
@@ -289,6 +294,7 @@ export const installPackages = async ({
                 npm_config_cache: join(cwd, '.registry-cache', String(attempt), 'npm'),
                 XDG_CACHE_HOME: join(cwd, '.registry-cache', String(attempt)),
                 YARN_GLOBAL_FOLDER: join(cwd, '.registry-cache', String(attempt), 'yarn'),
+                YARN_CACHE_FOLDER: join(cwd, '.registry-cache', String(attempt), 'yarn-cache'),
                 YARN_NPM_REGISTRY_SERVER: REGISTRY,
                 YARN_NODE_LINKER: 'node-modules',
             },

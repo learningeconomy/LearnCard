@@ -31,6 +31,11 @@ import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
 import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
+import {
+    addCredentialSummary,
+    getCredentialFactsEpoch,
+} from '../in-app-messages/credentialFactsStore';
+import { emitInAppMessageEvent } from '../in-app-messages/inAppMessageEvents';
 const log = getLogger('use-wallet');
 
 let generating = false; // Mutex flag to allow first init call to acquire a lock
@@ -317,6 +322,53 @@ export const useWallet = () => {
         return true;
     };
 
+    // Run in the background so local facts persistence cannot delay a successful claim.
+    const recordCredentialClaim = async (
+        wallet: BespokeLearnCard,
+        uri: string,
+        vc: VC,
+        category: CredentialCategory
+    ): Promise<void> => {
+        try {
+            const accountDid = wallet.id.did();
+            const activeDid =
+                switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did();
+            if (activeDid !== accountDid) return;
+            const epoch = getCredentialFactsEpoch();
+            const summary = await addCredentialSummary(accountDid, uri, vc, category);
+            if (epoch !== getCredentialFactsEpoch()) return;
+            if (
+                (switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did()) !==
+                accountDid
+            )
+                return;
+
+            // Emit only after the wallet index and local facts are updated, so
+            // trigger.where can evaluate the claimed credential immediately.
+            emitInAppMessageEvent('credential.claimed', {
+                credential: summary,
+                accountDid,
+            });
+        } catch {
+            // Facts and trigger bookkeeping must never break a successful claim or log credential data.
+        }
+    };
+
+    /** Publish facts/events only after a staged consent-flow credential has been accepted. */
+    const recordAcceptedCredentialClaim = async (
+        wallet: BespokeLearnCard,
+        uri: string
+    ): Promise<void> => {
+        try {
+            const vc = await wallet.read.get(uri);
+            if (!vc) return;
+            const category = await getCategoryForCredential(vc as VC, wallet);
+            await recordCredentialClaim(wallet, uri, vc as VC, category);
+        } catch {
+            // Claim bookkeeping must not fail a completed acceptance.
+        }
+    };
+
     const resolveCredential = async (uri: string) => {
         if (!uri) throw new Error('URI is required');
 
@@ -387,43 +439,64 @@ export const useWallet = () => {
     const storeAndAddVCToWallet = async (
         vc: VC,
         metadata: Partial<{
+            id: string;
             title: string;
             imgUrl: string;
             allowDuplicate: boolean;
             inboxDeliveryId: string;
             boostUri: string;
+            /** Batch callers synchronize once after all local saves are confirmed. */
+            deferContractSync: boolean;
         }> = {},
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud',
         skipLCNUser?: boolean // skip steps requiring a LCN account eg didweb
     ): Promise<{ result: boolean; credentialUri: string; category: string }> => {
         const {
+            id: recordId,
             title,
             imgUrl,
             allowDuplicate,
             inboxDeliveryId,
             boostUri: sourceBoostUri,
+            deferContractSync,
         } = metadata;
-        const _id = inboxDeliveryId
-            ? vc.id || `inbox:${inboxDeliveryId}`
-            : allowDuplicate
-              ? uuidv4()
-              : vc.id || uuidv4();
+        const _id =
+            recordId ??
+            (inboxDeliveryId
+                ? vc.id || `inbox:${inboxDeliveryId}`
+                : allowDuplicate
+                  ? uuidv4()
+                  : vc.id || uuidv4());
         let returnUri: string | undefined;
+        let stage = 'initialize';
 
         try {
             const wallet = await getWallet();
 
+            stage = 'category';
             const category = await getCategoryForCredential(vc, wallet);
-            if (inboxDeliveryId) {
-                const existing = await wallet.index[location].get({ inboxDeliveryId });
-                const saved = existing[0] ?? (await wallet.index[location].get({ id: _id }))[0];
+            // Explicit IDs identify the caller's save operation, not necessarily
+            // the credential's issuer ID. CHAPI uses full-payload fingerprints
+            // so exact retries dedupe without dropping same-ID revisions.
+            if (inboxDeliveryId || recordId) {
+                stage = 'lookup';
+                const existing = await wallet.index[location].get(
+                    inboxDeliveryId ? { inboxDeliveryId } : { id: _id }
+                );
+                const saved =
+                    existing[0] ??
+                    (inboxDeliveryId
+                        ? (await wallet.index[location].get({ id: _id }))[0]
+                        : undefined);
                 if (saved) return { result: true, credentialUri: saved.uri, category };
             }
             const boostUri = sourceBoostUri ?? vc.boostId ?? unwrapBoostCredential(vc)?.boostId;
             let result: boolean | undefined;
 
             if (skipLCNUser) {
+                stage = 'upload';
                 const uri2 = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
+                if (!uri2) throw new Error('credential.upload.failed');
                 const record = {
                     id: _id,
                     uri: uri2,
@@ -434,12 +507,16 @@ export const useWallet = () => {
                     ...(imgUrl ? { imgUrl } : {}),
                 };
 
+                stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri2;
+                if (result) void recordCredentialClaim(wallet, uri2, vc, category);
             }
 
             if (!skipLCNUser) {
+                stage = 'upload';
                 const uri = (await wallet.store.LearnCloud.uploadEncrypted?.(vc)) ?? '';
+                if (!uri) throw new Error('credential.upload.failed');
 
                 const record = {
                     id: _id,
@@ -451,9 +528,12 @@ export const useWallet = () => {
                     ...(imgUrl ? { imgUrl } : {}),
                 };
 
+                stage = 'index';
                 result = await wallet.index[location].add(record);
                 returnUri = uri;
+                if (result) void recordCredentialClaim(wallet, uri, vc, category);
 
+                stage = 'cache';
                 const didWeb = switchedProfileStore.get.switchedDid();
 
                 if (result) {
@@ -503,7 +583,8 @@ export const useWallet = () => {
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
                 });
 
-                if (!skipLCNUser) {
+                if (!deferContractSync) {
+                    stage = 'sync';
                     await syncCredentialToContracts({ record, category });
                 }
             }
@@ -514,7 +595,14 @@ export const useWallet = () => {
                 category,
             };
         } catch (e) {
-            log.error(vc, e);
+            // Incoming credentials and counterparty errors can contain private
+            // claims or capability URLs. Keep diagnostics to an operational code.
+            const errorType =
+                e instanceof Error &&
+                ['Error', 'TypeError', 'AbortError', 'TimeoutError'].includes(e.name)
+                    ? e.name
+                    : 'UnknownError';
+            log.error('credential.save.failed', { stage, errorType });
             throw e instanceof Error ? e : new Error(String(e));
         }
     };
@@ -530,10 +618,19 @@ export const useWallet = () => {
 
     // Adds a VC to wallet given a URI
     const addVCtoWallet = async (
-        input: AddVCInput & { skipSync?: boolean },
+        input: AddVCInput & { skipSync?: boolean; deferClaim?: boolean },
         location: 'SQLite' | 'LearnCloud' = 'LearnCloud'
     ) => {
-        const { uri, id, title, imgUrl, contractUri, boostUri: sourceBoostUri, skipSync } = input;
+        const {
+            uri,
+            id,
+            title,
+            imgUrl,
+            contractUri,
+            boostUri: sourceBoostUri,
+            skipSync,
+            deferClaim,
+        } = input;
         let _id = id;
         if (!uri) throw new Error('No uri was provided, uri required');
 
@@ -574,6 +671,7 @@ export const useWallet = () => {
             const didWeb = switchedProfileStore.get.switchedDid();
 
             if (result) {
+                if (!deferClaim) void recordCredentialClaim(wallet, uri, vc as VC, category);
                 await queryClient.cancelQueries({
                     queryKey: ['useGetCredentialList', didWeb ?? '', category],
                 });
@@ -847,6 +945,7 @@ export const useWallet = () => {
 
     return {
         initWallet: getWallet,
+        recordAcceptedCredentialClaim,
         installChapi,
         getVCFromWallet,
         getVCsFromWallet,
