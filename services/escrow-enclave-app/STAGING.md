@@ -517,7 +517,7 @@ printf '%s  %s\n' "$(jq -r .eifSha256 manifest.json)" build-a/escrow-enclave.eif
 
 Upload `host-a/escrow-enclave-host` to the artifacts bucket (write-once, read back and compare), set
 `host_binary_s3_uri` to that object and `host_binary_sha256` to the manifest's `hostSha256`, and
-point the launch template at the EIF from the same artifact. Record the run ID with both. `/health` and the TCP NLB check stay green when the host cannot parse new
+point the launch template at the EIF from the same artifact. Record the run ID with both. `/health` and the HTTP NLB check stay green when the host cannot parse new
 enclave responses; it returns `503 unavailable` per request instead (2026-10-23, see SECURITY.md).
 After the roll, an unauthenticated `POST /v1/hold-state` on host loopback returns 401 (route known)
 rather than 404 on a current host.
