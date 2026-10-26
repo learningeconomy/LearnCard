@@ -11,10 +11,12 @@ import {
     type ShareSelectionEntry,
     type ShareSharer,
 } from '@learncard/types';
-import { BoostCategoryOptionsEnum } from '../../types/boostCategories';
+import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from '../../types/boostCategories';
 
 const SHARE_CREDENTIAL_CATEGORY_VALUES: Record<string, true> = Object.fromEntries(
-    Object.values(BoostCategoryOptionsEnum).map(category => [category, true])
+    [...Object.values(BoostCategoryOptionsEnum), ...Object.values(CredentialCategoryEnum)].map(
+        category => [category, true]
+    )
 );
 
 /**
@@ -38,7 +40,8 @@ export const SHARE_CREDENTIAL_CATEGORIES_CONTEXT = {
 
 /**
  * Read optional category hints without making legacy or malformed shares
- * unreadable. Entries align with the VP's credential array; null or unknown categories request inference.
+ * unreadable. Both boost types and wallet-index categories are recognized.
+ * Entries align with the VP's credential array; null or unknown categories request inference.
  */
 export const getShareCredentialCategories = (
     presentation: ShareManifestPresentation

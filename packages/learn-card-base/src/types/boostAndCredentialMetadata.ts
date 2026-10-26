@@ -1,7 +1,7 @@
 import React from 'react';
 import { z } from 'zod';
-import { BoostCategoryOptionsEnum } from './boostCategories';
-export { BoostCategoryOptionsEnum } from './boostCategories';
+import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from './boostCategories';
+export { BoostCategoryOptionsEnum, CredentialCategoryEnum } from './boostCategories';
 
 import BrokenStar from 'learn-card-base/svgs/BrokenStar';
 import PuzzlePiece, { TiltedPuzzlePiece } from 'learn-card-base/svgs/PuzzlePiece';
@@ -77,60 +77,6 @@ import AiPathwaysIcon, {
 import AiInsightsIcon, {
     AiInsightsIconWithShape,
 } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
-
-// Used in the actual index for credentials (see: IndexMetadata in learn-card-base/src/types/credentials.ts)
-export enum CredentialCategoryEnum {
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    qualifications = 'Qualifications',
-    accomplishment = 'Accomplishment',
-    accommodation = 'Accommodation',
-    workHistory = 'Work History',
-    resume = 'Resume',
-    experience = 'Experience',
-    learningHistory = 'Learning History',
-    course = 'Course',
-
-    skill = 'Skill',
-
-    events = 'Events',
-    family = 'Family',
-    relationship = 'Relationship',
-
-    meritBadge = 'Merit Badge',
-    troops = 'Membership',
-
-    // troops 2.0 ID categories
-    globalAdminId = 'Global Admin ID',
-    nationalNetworkAdminId = 'National Network Admin ID',
-    troopLeaderId = 'Troop Leader ID',
-    scoutId = 'Scout ID',
-
-    // AI
-    aiSummary = 'AI Summary',
-    aiTopic = 'AI Topic',
-    aiPathway = 'AI Pathway',
-    aiInsight = 'AI Insight',
-    aiAssessment = 'AI Assessment',
-
-    goals = 'Goals',
-    professionalTitle = 'Professional Title',
-    roleExperience = 'Role Experience',
-    workExperience = 'Work Experience',
-    payRate = 'Pay Rate',
-    workLifeBalance = 'Work Life Balance',
-    jobStability = 'Job Stability',
-    selfAssignedSkills = 'Self-Assigned Skills',
-
-    verifiableData = 'VerifiableData',
-
-    // todo
-    membership = 'Membership',
-
-    // deprecated
-    id = 'ID',
-    currency = 'Currency',
-}
 
 export const BoostCategoryOptionsEnumValidator = z.nativeEnum(BoostCategoryOptionsEnum);
 

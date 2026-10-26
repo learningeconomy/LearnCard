@@ -206,43 +206,46 @@ describe('recipient manifest construction and validation', () => {
         expect(input.selection).toEqual([{ credentialIndex: 0 }, { credentialIndex: 1 }]);
     });
 
-    it('preserves signed categories and originals through encrypted manifest round trips', async () => {
-        const input = deepFreeze(baseInput());
-        const manifest = buildShareManifest({
-            ...input,
-            presentation: {
-                ...input.presentation,
-                '@context': [
-                    ...input.presentation['@context'],
-                    SHARE_CREDENTIAL_CATEGORIES_CONTEXT,
-                ],
-                lcCredentialCategories: ['Achievement', null],
-            },
-        });
-        const key = encodeBase64Url(new Uint8Array(32).fill(11));
-        const envelope = await encryptSharePayload({
-            shareId: SHARE_ID,
-            contentVersion: 4,
-            key,
-            payload: manifest,
-        });
-        const decoded = await decryptSharePayload({
-            shareId: SHARE_ID,
-            contentVersion: 4,
-            key,
-            envelope,
-        });
-        const result = validateShareManifest(decoded, { shareId: SHARE_ID, contentVersion: 4 });
-        expect(result.ok).toBe(true);
-        if (!result.ok) throw new Error(result.message);
-        expect(getShareCredentialCategories(result.manifest.presentation)).toEqual([
-            'Achievement',
-            null,
-        ]);
-        expect(result.manifest.presentation.verifiableCredential).toEqual(
-            input.presentation.verifiableCredential
-        );
-    });
+    it.each(['Achievement', 'Job', 'Work Experience', 'Resume', 'Professional Title'])(
+        'preserves signed %s categories and originals through encrypted manifest round trips',
+        async category => {
+            const input = deepFreeze(baseInput());
+            const manifest = buildShareManifest({
+                ...input,
+                presentation: {
+                    ...input.presentation,
+                    '@context': [
+                        ...input.presentation['@context'],
+                        SHARE_CREDENTIAL_CATEGORIES_CONTEXT,
+                    ],
+                    lcCredentialCategories: [category, null],
+                },
+            });
+            const key = encodeBase64Url(new Uint8Array(32).fill(11));
+            const envelope = await encryptSharePayload({
+                shareId: SHARE_ID,
+                contentVersion: 4,
+                key,
+                payload: manifest,
+            });
+            const decoded = await decryptSharePayload({
+                shareId: SHARE_ID,
+                contentVersion: 4,
+                key,
+                envelope,
+            });
+            const result = validateShareManifest(decoded, { shareId: SHARE_ID, contentVersion: 4 });
+            expect(result.ok).toBe(true);
+            if (!result.ok) throw new Error(result.message);
+            expect(getShareCredentialCategories(result.manifest.presentation)).toEqual([
+                category,
+                null,
+            ]);
+            expect(result.manifest.presentation.verifiableCredential).toEqual(
+                input.presentation.verifiableCredential
+            );
+        }
+    );
 
     it.each(['Unknown category', 'Verified by University', 'constructor', 'toString', '__proto__'])(
         'falls back to inference for unrecognized category %s without losing valid hints',
