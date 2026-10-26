@@ -274,7 +274,7 @@ describe('chat session startup', () => {
         expect(startTopicSends(laterSocket)).toHaveLength(1);
     });
 
-    it('does not share an in-flight start across different topics or modes', async () => {
+    it('lets the last start win across different topics or modes', async () => {
         const tutorStart = startTopic('Algebra');
         const insightsStart = startTopic('Algebra', AiSessionMode.insights);
         const otherTopicStart = startTopic('Geometry');
@@ -282,19 +282,93 @@ describe('chat session startup', () => {
         expect(insightsStart).not.toBe(tutorStart);
         expect(otherTopicStart).not.toBe(insightsStart);
 
-        const socket = await openLatestSocket();
+        await openLatestSocket();
         await Promise.all([tutorStart, insightsStart, otherTopicStart]);
+
+        expect(
+            FakeWebSocket.instances
+                .flatMap(target => target.sent.map(payload => JSON.parse(payload)))
+                .filter(payload => payload.action === 'start_topic')
+                .map(({ topic, mode }) => ({ topic, mode }))
+        ).toEqual([{ topic: 'Geometry', mode: AiSessionMode.tutor }]);
+    });
+
+    it('cancels a displaced start when the session is disconnected', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        // Algebra waits on auth, Geometry displaces it, then the chat unmounts.
+        const algebraStart = startTopic('Algebra');
+        const geometryStart = startTopic('Geometry');
+        disconnectWebSocket();
+
+        resolve();
+        for (let attempt = 0; attempt < 10; attempt += 1) await Promise.resolve();
+        FakeWebSocket.instances.forEach(target => target.open());
+        await Promise.all([algebraStart, geometryStart]);
+
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toEqual([]);
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+    });
+
+    it('clears loading state when a pending start is cancelled with no replacement', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const start = startTopic('Algebra');
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+
+        disconnectWebSocket();
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+
+        resolve();
+        await start;
+
+        expect(isLoading.get()).toBe(false);
+        expect(isTyping.get()).toBe(false);
+        expect(FakeWebSocket.instances).toHaveLength(0);
+    });
+
+    it("does not let a cancelled start clear a newer session's loading state", async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const staleStart = startTopic('Algebra');
+        disconnectWebSocket();
+        const freshStart = startTopic('Geometry');
+
+        // Release auth for both: the stale run resumes and bails out first.
+        resolve();
+        await staleStart;
+
+        expect(isLoading.get()).toBe(true);
+        expect(isTyping.get()).toBe(true);
+
+        const socket = await openLatestSocket();
+        await freshStart;
 
         expect(
             socket.sent
                 .map(payload => JSON.parse(payload))
                 .filter(payload => payload.action === 'start_topic')
-                .map(({ topic, mode }) => ({ topic, mode }))
-        ).toEqual([
-            { topic: 'Algebra', mode: AiSessionMode.tutor },
-            { topic: 'Algebra', mode: AiSessionMode.insights },
-            { topic: 'Geometry', mode: AiSessionMode.tutor },
-        ]);
+                .map(({ topic }) => topic)
+        ).toEqual(['Geometry']);
+        expect(isLoading.get()).toBe(true);
     });
 
     it('starts fresh after a disconnect instead of joining the stale start', async () => {

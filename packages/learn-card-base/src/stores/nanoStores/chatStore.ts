@@ -1455,19 +1455,22 @@ const START_TOPIC_JOIN_WINDOW_MS = 10_000;
 /**
  * Drop the in-flight startTopic and stop it from sending. Called from every other session
  * entry point, disconnectWebSocket and resetChatStores, so a later startTopic with the same
- * args runs its own reset/disconnect instead of joining a stale promise.
+ * args runs its own reset/disconnect instead of joining a stale promise. Returns whether a
+ * start was cancelled.
  */
-function clearStartTopicInFlight() {
-    if (!startTopicInFlight) return;
+function clearStartTopicInFlight(): boolean {
+    if (!startTopicInFlight) return false;
 
     startTopicInFlight.cancelled = true;
     startTopicInFlight = null;
+
+    return true;
 }
 
 // Function to initiate a new session plan for a topic.
 // Concurrent identical calls (e.g. a remount before the socket opens) share one start_topic
 // send; otherwise both would flush from the same onopen and create two backend sessions.
-// A call with different args keeps today's last-start-wins behaviour and replaces the slot.
+// A call with different args cancels the in-flight start, so the last start wins.
 export function startTopic(
     topic: string,
     mode: AiSessionMode = AiSessionMode.tutor
@@ -1477,9 +1480,9 @@ export function startTopic(
 
     if (inFlight?.key === key) {
         if (Date.now() - inFlight.startedAt < START_TOPIC_JOIN_WINDOW_MS) return inFlight.promise;
-
-        clearStartTopicInFlight();
     }
+
+    clearStartTopicInFlight();
 
     const entry: StartTopicInFlight = {
         key,
@@ -1516,8 +1519,8 @@ async function runStartTopic(
         return;
     }
 
-    // closeWebSocket, not disconnectWebSocket: a different-args start replaces the slot but
-    // keeps today's last-start-wins behaviour rather than cancelling the older start.
+    // startTopic already cancelled any displaced start. closeWebSocket, not disconnectWebSocket,
+    // so this run does not count as a standalone cancel and clear its own loading flags.
     closeWebSocket();
     await ensureChatAiPassportAuth(did);
     if (entry.cancelled) return;
@@ -1714,8 +1717,13 @@ export function getWebSocket() {
 
 // Gracefully close the WebSocket and prevent auto-reconnect. Also cancels any in-flight
 // startTopic, so a remount's startTopic runs fresh instead of joining a stale start.
+// A cancelled start bails out silently, so clear its loading flags here. Doing it now rather
+// than when the stale run resumes means it can never clear a newer session's flags.
 export function disconnectWebSocket() {
-    clearStartTopicInFlight();
+    if (clearStartTopicInFlight()) {
+        isTyping.set(false);
+        isLoading.set(false);
+    }
     closeWebSocket();
 }
 
