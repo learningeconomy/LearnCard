@@ -56,19 +56,23 @@ export const recordCampaignEvent = async (
         converted: 'state.convertedAt = $now',
     };
     return withCampaignTransaction('campaign:recordEvent', async transaction => {
+        const params = { profileId, campaignId, ...campaignTimeParams() };
         // A profile lock prevents concurrent devices from creating duplicate state edges
         // or losing shown increments, without locking the entire campaign audience.
-        await transaction.run(
-            `MATCH (p:Profile {profileId: $profileId})
-             SET p.campaignStateLock = coalesce(p.campaignStateLock, 0) + 1`,
-            { profileId }
+        const locked = await transaction.run(
+            `MATCH (p:Profile {profileId: $profileId})-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
+             WHERE ${campaignAgePredicate}
+             SET p.campaignStateLock = coalesce(p.campaignStateLock, 0) + 1
+             RETURN p.profileId AS profileId`,
+            params
         );
+        if (!locked.records.length) return false;
         const result = await transaction.run(
             `MATCH (p:Profile {profileId: $profileId})-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
              WHERE ${campaignAgePredicate}
              MERGE (p)-[state:CAMPAIGN_STATE]->(c) SET ${assignments[event]}
              RETURN state`,
-            { profileId, campaignId, ...campaignTimeParams() }
+            params
         );
         return result.records.length > 0;
     });

@@ -122,7 +122,13 @@ export const CampaignAudienceSourceValidator = z.discriminatedUnion('type', [
             type: z.literal('credentialsSentBy'),
             senderProfileId: identifier.optional(),
             listingId: identifier.optional(),
-            metadata: z.record(metadataKey, z.string().max(2048)).optional(),
+            metadata: z
+                .record(metadataKey, z.string().max(2048))
+                .refine(
+                    value => Object.keys(value).length <= 20,
+                    'Too many metadata keys (maximum 20)'
+                )
+                .optional(),
             since: timestamp.optional(),
             includePending: z.boolean().default(false),
         })

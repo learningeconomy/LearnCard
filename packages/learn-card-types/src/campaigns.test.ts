@@ -100,4 +100,32 @@ describe('campaign schemas', () => {
             CampaignAudienceSourceValidator.parse({ type: 'emails', emails: ['Alice@Example.com'] })
         ).toEqual({ type: 'emails', emails: ['alice@example.com'] });
     });
+
+    it('allows at most twenty metadata filters for profile and listing senders', () => {
+        const metadata = Object.fromEntries(
+            Array.from({ length: 20 }, (_, index) => [`filter_${index}`, 'transcript'])
+        );
+        for (const sender of [{ senderProfileId: 'issuer' }, { listingId: 'listing' }]) {
+            const source = { type: 'credentialsSentBy', ...sender };
+            expect(
+                CampaignAudienceSourceValidator.safeParse({ ...source, metadata: {} }).success
+            ).toBe(true);
+            expect(CampaignAudienceSourceValidator.parse({ ...source, metadata })).toMatchObject({
+                metadata,
+            });
+            const oversized = CampaignAudienceSourceValidator.safeParse({
+                ...source,
+                metadata: { ...metadata, overflow: 'transcript' },
+            });
+            expect(oversized.success).toBe(false);
+            if (!oversized.success) {
+                expect(oversized.error.issues).toEqual([
+                    expect.objectContaining({
+                        path: ['metadata'],
+                        message: expect.stringContaining('maximum 20'),
+                    }),
+                ]);
+            }
+        }
+    });
 });

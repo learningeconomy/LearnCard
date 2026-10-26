@@ -28,7 +28,8 @@ await client.campaigns.setStatus.mutate({ campaignId: campaign.id, status: 'live
 IDs are immutable, lowercase `[a-z0-9-]{3,64}`, unique, and always replace `message.id`.
 Creation defaults to `draft`, `excludeMinors: true`, `selfEnroll: false`. Supported statuses
 are `draft`, `live`, `paused`, `archived`; archived campaigns cannot be edited or have
-audience members added. Admin deletion removes the campaign and its relationships.
+audience members added. Only drafts and archived campaigns can be deleted: archive a live or paused
+campaign first. Admin deletion removes the campaign and its relationships.
 Use a new ID for a new campaign; deleting/reusing an ID cannot clear clients' local seen state.
 
 `channels` must contain `inApp`, `notify`, or both without duplicates. `notify` requires
@@ -86,7 +87,8 @@ const page = await client.campaigns.pageAudience.query({ campaignId, limit: 100 
   `did:web:<domain>:users:<profileId>` alias. Emails are trimmed/lowercased and only verified
   contact methods qualify; the profile's display email is not used.
 - `credentialsSentBy` requires exactly one sender profile or listing. All metadata entries
-  must match exactly on `CREDENTIAL_SENT.metadata.*`; `since` filters the send date.
+  must match exactly on `CREDENTIAL_SENT.metadata.*`; `since` filters the send date. Metadata is
+  limited to 20 keys, with values of at most 2048 characters.
   Keys are validated and values are bound parameters, never interpolated into Cypher.
 - `inboxClaims` matches the stored issuer DID and filters the **claim** timestamp.
 - Boost URIs must identify a boost on this network. Credential sources exclude revoked
@@ -129,7 +131,8 @@ in a non-leap year. No policy approval or production rollout is implied by this 
 ## Engagement and SDK
 
 `recordEvent({ campaignId, event })` accepts `shown`, `clicked`, `dismissed`, `converted`.
-It returns `false` without state writes for nonmembers or age-ineligible profiles. It
+It returns `false` without profile-lock or engagement writes for missing campaigns, nonmembers,
+or age-ineligible profiles. It
 accepts delayed member events after pause/expiry so reports can arrive after presentation.
 `shown` sets `firstShownAt` once, updates `lastShownAt`, and increments `shownCount`.
 Other events store their latest timestamp. Per-profile transactional locking prevents

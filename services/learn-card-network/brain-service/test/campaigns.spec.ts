@@ -157,6 +157,44 @@ describe('campaign lifecycle and access', () => {
         });
     });
 
+    it.each(['live', 'paused'] as const)(
+        'requires archiving a %s campaign before deletion and preserves audience and engagement on refusal',
+        async status => {
+            await admin.create(draft({ status: 'live' }));
+            await addLearner();
+            await learner.recordEvent({ campaignId: 'pilot-clr', event: 'shown' });
+            if (status === 'paused') await admin.setStatus({ campaignId: 'pilot-clr', status });
+            const before = await admin.get({ campaignId: 'pilot-clr' });
+            const stats = await admin.getStats({ campaignId: 'pilot-clr' });
+
+            await expect(admin.delete({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: 'Archive live or paused campaigns before deleting them',
+            });
+            expect(await admin.get({ campaignId: 'pilot-clr' })).toEqual(before);
+            expect(await admin.getStats({ campaignId: 'pilot-clr' })).toEqual(stats);
+            const state = await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: 'learner'})-[state:CAMPAIGN_STATE]->(:Campaign {id: 'pilot-clr'})
+                 RETURN state.shownCount AS shownCount`
+            );
+            expect(state.records[0]!.get('shownCount').toNumber()).toBe(1);
+
+            await admin.setStatus({ campaignId: 'pilot-clr', status: 'archived' });
+            expect(await admin.delete({ campaignId: 'pilot-clr' })).toBe(true);
+            await expect(admin.get({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+        }
+    );
+
+    it('deletes draft campaigns and reports missing campaigns', async () => {
+        await admin.create(draft());
+        expect(await admin.delete({ campaignId: 'pilot-clr' })).toBe(true);
+        await expect(admin.delete({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+
     it('paginates campaigns by immutable ID and filters status', async () => {
         await admin.create(draft({ id: 'aaa', status: 'live' }));
         await admin.create(draft({ id: 'bbb' }));
@@ -516,6 +554,38 @@ describe('campaign eligibility and engagement', () => {
             enrolled: 0,
         });
     });
+
+    it.each(['missing campaign', 'nonmember', 'age-ineligible member'])(
+        'does not write profile properties or campaign state for a rejected event: %s',
+        async scenario => {
+            await admin.create(draft({ status: 'live' }));
+            await addLearner();
+            const profileId = scenario === 'age-ineligible member' ? 'learner' : 'other';
+            const actor = caller(profileId);
+            if (scenario === 'age-ineligible member') {
+                await neogma.queryRunner.run(
+                    `MATCH (p:Profile {profileId: $profileId}) REMOVE p.dob`,
+                    { profileId }
+                );
+            }
+            await neogma.queryRunner.run(
+                `MATCH (p:Profile {profileId: $profileId}) SET p.campaignStateLock = 17`,
+                { profileId }
+            );
+            const readProfile = async (): Promise<Record<string, unknown>> => {
+                const result = await neogma.queryRunner.run(
+                    `MATCH (p:Profile {profileId: $profileId}) RETURN properties(p) AS profile`,
+                    { profileId }
+                );
+                return result.records[0]!.get('profile');
+            };
+            const before = await readProfile();
+            const campaignId = scenario === 'missing campaign' ? 'missing' : 'pilot-clr';
+            expect(await actor.recordEvent({ campaignId, event: 'shown' })).toBe(false);
+            expect(await readProfile()).toEqual(before);
+            expect((await admin.getStats({ campaignId: 'pilot-clr' })).shown).toBe(0);
+        }
+    );
 
     it('persists shared state and counts unique engaged profiles under concurrent shown events', async () => {
         await admin.create(draft({ status: 'live' }));
