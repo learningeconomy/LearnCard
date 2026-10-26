@@ -524,6 +524,9 @@ describe('evidence attachment classification', () => {
     it.each([
         ['https://evidence.example.test/course/12', 'link'],
         ['https://portfolio.example.test/ada', 'link'],
+        ['https://youtube.com.example.test/watch?v=abc123', 'link'],
+        ['https://notyoutube.com/watch?v=abc123', 'link'],
+        ['https://notvimeo.com/12345', 'link'],
         ['https://drive.google.com/file/d/example/view', 'link'],
         ['https://docs.google.com/document/d/example/edit', 'link'],
         ['https://example.test/report.pdf?download=1', 'document'],
