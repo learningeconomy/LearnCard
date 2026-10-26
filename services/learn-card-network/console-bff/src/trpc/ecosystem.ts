@@ -49,6 +49,15 @@ const getEffectiveEcosystemRole = (
 
 type BrainCaller = <T>(path: string, input: unknown) => Promise<T>;
 
+/** Mirrors brain IssuingIdentityValidator (routes/ecosystems.ts). */
+export type IssuingIdentity = {
+    groupId: string;
+    name: string;
+    profileId: string;
+    did: string;
+    signingReady: boolean;
+};
+
 const makeBrainCaller = (
     kms: KeyManagementService,
     transport: BrainServiceTransport,
@@ -224,5 +233,28 @@ export const ecosystemRouter = router({
             const mutate = makeBrainMutator(ctx.kms, ctx.transport, ctx.session.managedDid, keyRef);
 
             return mutate<{ revoked: boolean }>('ecosystem.revokeMembership', input);
+        }),
+
+    // Source of truth: brain routes/ecosystems.ts getIssuingIdentity / provisionIssuingIdentity.
+    issuingIdentity: protectedProcedure
+        .input(z.object({ id: z.string().min(1) }))
+        .query(async ({ ctx, input }): Promise<IssuingIdentity | null> => {
+            const keyRef = await ctx.keyRefFor(ctx.session.managedDid);
+            if (!keyRef) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No managed key' });
+
+            const query = makeBrainCaller(ctx.kms, ctx.transport, ctx.session.managedDid, keyRef);
+
+            return query<IssuingIdentity | null>('ecosystem.getIssuingIdentity', input);
+        }),
+
+    provisionIssuingIdentity: protectedProcedure
+        .input(z.object({ id: z.string().min(1), name: z.string().min(1).max(120) }))
+        .mutation(async ({ ctx, input }): Promise<IssuingIdentity> => {
+            const keyRef = await ctx.keyRefFor(ctx.session.managedDid);
+            if (!keyRef) throw new TRPCError({ code: 'UNAUTHORIZED', message: 'No managed key' });
+
+            const mutate = makeBrainMutator(ctx.kms, ctx.transport, ctx.session.managedDid, keyRef);
+
+            return mutate<IssuingIdentity>('ecosystem.provisionIssuingIdentity', input);
         }),
 });
