@@ -4,7 +4,7 @@
  * the stack is up (brain with INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP=true, console-bff,
  * console on :5173, api on :5100) and `seed:demo-lms` has run.
  *
- *   bun run prove:demo-lms -- --learner <profileId>
+ *   bun run prove:demo-lms -- --learner <profileId> [--delivery push|offer]
  *
  * Console (BFF) steps, as the dev operator: plan → approve → apply the Demo LMS in the
  * district; propose → preflight → approve the record-provisioning Binding.
@@ -12,6 +12,8 @@
  * credential and write examples/demo-lms/.env.local (mode 0600, gitignored).
  * Then start the demo LMS (`bun start` in examples/demo-lms) and mark a course complete;
  * `--submit` does that from here and reports the release and issuance outcome.
+ * `--delivery offer` (re-)approves the Binding for claim offers and reports the offer link
+ * the demo LMS shows; redeem it with `prove-demo-learner --claim-offer <offerUri>`.
  */
 import { chmod, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -103,6 +105,7 @@ const main = async (): Promise<void> => {
     // SEED must equal brain's (compose-local `a`); the package script sets it explicitly.
     const learnerId = arg('learner');
     if (!learnerId) throw new Error('Pass --learner <profileId>.');
+    const delivery = z.enum(['push', 'offer']).parse(arg('delivery') ?? 'push');
 
     const { neogma } = await import('@instance');
     const { getChildEcosystems } = await import('@accesslayer/ecosystem/read');
@@ -281,6 +284,8 @@ const main = async (): Promise<void> => {
         issuance: {
             issuerGroupId,
             issuerIdentityProfileId,
+            // Absent means push, so a push run proposes exactly what it did before.
+            ...(delivery === 'offer' ? { delivery } : {}),
             template: {
                 kind: 'obv3-achievement',
                 achievementType: 'Course',
@@ -303,7 +308,12 @@ const main = async (): Promise<void> => {
                 provider: z.object({ resourceId: z.string() }),
                 capabilityMetadata: z
                     .object({
-                        issuance: z.object({ issuerIdentityProfileId: z.string() }).optional(),
+                        issuance: z
+                            .object({
+                                issuerIdentityProfileId: z.string(),
+                                delivery: z.enum(['push', 'offer']).optional(),
+                            })
+                            .optional(),
                     })
                     .passthrough()
                     .optional(),
@@ -317,7 +327,8 @@ const main = async (): Promise<void> => {
             binding.status === 'ACTIVE'
     );
     const pinned = bindings.find(binding => binding.bindingId === active?.bindingId);
-    // A Binding approved against a different issuing identity or agreement is re-proposed.
+    // A Binding approved against a different issuing identity, agreement or delivery is
+    // re-proposed.
     const approvedContract = pinned
         ? await neogma.queryRunner.run(
               `MATCH (:Binding {bindingId: $bindingId})-[:APPROVED_WITH]->(s:BindingConsentPreflight)
@@ -341,6 +352,7 @@ const main = async (): Promise<void> => {
     if (
         pinned &&
         (pinned.capabilityMetadata?.issuance?.issuerIdentityProfileId !== issuerIdentityProfileId ||
+            (pinned.capabilityMetadata?.issuance?.delivery ?? 'push') !== delivery ||
             approvedContractId !== currentContractId)
     ) {
         await rpc(
@@ -349,7 +361,7 @@ const main = async (): Promise<void> => {
             true
         );
         log(
-            `REVOKED binding ${pinned.bindingId} (approved against a previous identity or agreement)`
+            `REVOKED binding ${pinned.bindingId} (approved against a previous identity, agreement or delivery)`
         );
         active = undefined;
     }
@@ -413,7 +425,9 @@ const main = async (): Promise<void> => {
                 )
             );
     }
-    log(`BINDING ${active.bindingId} ${active.status} (record-provisioning → Platform Issuance)`);
+    log(
+        `BINDING ${active.bindingId} ${active.status} (record-provisioning → Platform Issuance, delivery ${delivery})`
+    );
 
     if (!submit) {
         log('NEXT start examples/demo-lms (bun start), then re-run with --submit or use its page');
@@ -442,14 +456,31 @@ const main = async (): Promise<void> => {
     log(
         `DEMO LMS submit → ${outcome?.[1] === 'ok' ? 'RELEASED' : 'DENIED'}: ${outcome?.[2] ?? 'no result'}`
     );
+    // The partner half of offer delivery: the page must show the learner their claim link.
+    const shown = page.match(/<a id="claim-offer" href="([^"]*)" data-offer-uri="([^"]*)"/);
+    const unescape = (value: string): string =>
+        value.replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)));
+    if (shown?.[1] && shown[2]) {
+        log(`DEMO LMS shows claim link ${unescape(shown[1])}`);
+        log(`NEXT prove-demo-learner --claim-offer ${unescape(shown[2])}`);
+    } else if (delivery === 'offer' && outcome?.[1] === 'ok') {
+        throw new Error('The demo LMS did not show a claim link for an offer-mode release.');
+    }
 
     const record = await neogma.queryRunner.run(
         `MATCH (r:ProvisionedRecord {subjectProfileId: $learnerId, bindingId: $bindingId})
-         RETURN r.issuanceStatus AS status, r.credentialUri AS uri ORDER BY r.receivedAt DESC LIMIT 1`,
+         RETURN r.issuanceStatus AS status, r.credentialUri AS uri, r.offerId AS offerId
+         ORDER BY r.receivedAt DESC LIMIT 1`,
         { learnerId, bindingId: active.bindingId }
     );
+    const offerId: unknown = record.records[0]?.get('offerId');
+    const { offerExchangeUrl } = await import('@helpers/claim-offer.helpers');
     log(
-        `ISSUANCE ${record.records[0]?.get('status') ?? 'no record'} ${record.records[0]?.get('uri') ?? ''}`
+        `ISSUANCE ${record.records[0]?.get('status') ?? 'no record'} ${record.records[0]?.get('uri') ?? ''}${
+            typeof offerId === 'string'
+                ? ` offer ${offerExchangeUrl('localhost%3A4000', offerId)}`
+                : ''
+        }`
     );
     await neogma.driver.close();
 };
