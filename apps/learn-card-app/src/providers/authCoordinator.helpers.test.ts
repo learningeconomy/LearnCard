@@ -150,6 +150,20 @@ describe('decidePinPromptAfterReady', () => {
         ).toEqual({ kind: 'none' });
     });
 
+    it('offers the hold prompt when asynchronous enrollment becomes known', () => {
+        const recovery = { recoveredVia: 'hold', promptFlag: null } as const;
+        expect(
+            decidePinPromptAfterReady({ ...recovery, enrollment: undefined, pinEnabled: undefined })
+        ).toEqual({ kind: 'none' });
+        // The provider consumes recoveredVia only when showing the prompt (or a working PIN).
+        expect(
+            decidePinPromptAfterReady({ ...recovery, enrollment: 'enrolled', pinEnabled: false })
+        ).toEqual({ kind: 'after-hold-recovery' });
+        expect(decidePinPromptAfterReady({ ...base, recoveredVia: null })).toEqual({
+            kind: 'none',
+        });
+    });
+
     it('waits until PIN status is known and never prompts when a PIN works', () => {
         for (const pinEnabled of [undefined, true]) {
             expect(

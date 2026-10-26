@@ -135,6 +135,15 @@ Apply order for the **existing staging account**, from the repository root:
   be denied and trigger `EscrowCloudTrailTamper`; immediately verify logging is
   still on. Never run this drill as the excepted MFA admin. Also verify a normal
   successful enclave transaction is logged but does not produce a nonwriter alert.
+  **2026-10-23 finding:** this drill previously produced zero invocations — an
+  SCP-denied `StopLogging` returns `requestParameters: null` in CloudTrail, and
+  `trail_tamper`'s pattern matched only on named `requestParameters`. Fixed in
+  `trail-monitor.tf` to also match denied calls via `errorCode`; **this drill
+  must be re-run after that fix is applied** to confirm the page actually fires.
+  In the same drill, attempt an SSO `PutBucketPolicy` on the CloudTrail log
+  bucket: it must be denied and page `EscrowCloudTrailTamper`. Record whether
+  the denied event keeps `requestParameters.bucketName`. Denied calls on the
+  audit, artifacts and tfstate buckets also page under this rule, by design.
 
 The trail is multi-region; EventBridge rules are regional. These new rules cover
 the home-region trail/log bucket and authority table. Existing forwarding covers
@@ -487,6 +496,13 @@ Reference `services/escrow-enclave-host/README.md` for the full env var contract
 
 Roll the ASG to the new EIF via the launch template (Terraform `compute.tf`), then confirm the
 host's `/health` endpoint (via the internal NLB) reports healthy before pointing lca-api at it.
+
+**Rebuild the host binary with every EIF whose wire format changed** (`git log <host commit>..<EIF
+commit> -- services/escrow-enclave-app/src/wire.rs`), in the pinned `amazonlinux:2023` amd64 image,
+and roll both together. `/health` and the TCP NLB check stay green when the host cannot parse new
+enclave responses; it returns `503 unavailable` per request instead (2026-10-23, see SECURITY.md).
+After the roll, an unauthenticated `POST /v1/hold-state` on host loopback returns 401 (route known)
+rather than 404 on a current host.
 
 Set lca-api's `ESCROW_ENCLAVE_MODE=remote`, `ESCROW_ENCLAVE_REMOTE_URL=<internal NLB URL>`,
 `ESCROW_ENCLAVE_REMOTE_TOKEN=<same token as above>`.

@@ -28,12 +28,15 @@ const authRequests = new Map<string, Promise<AiPassportAuthMode>>();
 const authModes = new Map<string, AiPassportAuthMode>();
 const authTokens = new Map<string, string>();
 let authGeneration = 0;
+const requestScopes = new Set<AbortController>();
 
 const getAuthKey = (did: string): string => `${networkStore.get.aiServiceUrl()}|${did}`;
 
 /** Invalidate both negotiated sessions and every continuation of an in-flight request. */
 export const clearAiPassportAuth = (): void => {
     authGeneration += 1;
+    for (const controller of requestScopes) controller.abort();
+    requestScopes.clear();
     authRequests.clear();
     authModes.clear();
     authTokens.clear();
@@ -68,6 +71,23 @@ const guardCurrentIdentity = (did: string): (() => void) => {
         ) {
             throw new Error('AI Passport session identity or service changed');
         }
+    };
+};
+
+/** Cancel foreground work on logout, any profile transition, or a service change. */
+export const createAiPassportRequestScope = (did: string, signal?: AbortSignal) => {
+    guardCurrentIdentity(did)();
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    requestScopes.add(controller);
+    if (signal?.aborted) abort();
+    else signal?.addEventListener('abort', abort, { once: true });
+    return {
+        signal: controller.signal,
+        dispose: () => {
+            signal?.removeEventListener('abort', abort);
+            requestScopes.delete(controller);
+        },
     };
 };
 

@@ -5,15 +5,38 @@ import { asyncWithLDProvider, useFlags } from 'launchdarkly-react-client-sdk';
 import type { LDClient } from 'launchdarkly-js-client-sdk';
 import { getLaunchDarklyConfig } from './runtimeLaunchDarkly';
 
+const launchDarklyEnvironment = vi.hoisted(() => ({
+    clientSideIdOverride: undefined as string | undefined,
+}));
+
 vi.mock('../config/bootstrapTenantConfig', () => ({
     getResolvedTenantConfig: () => ({
         observability: { launchDarklyClientId: 'test-client' },
     }),
 }));
 
+vi.mock('../config/environment', () => ({
+    environment: {
+        get VITE_LAUNCHDARKLY_CLIENT_ID() {
+            return launchDarklyEnvironment.clientSideIdOverride;
+        },
+    },
+}));
+
 afterEach(() => {
     cleanup();
     vi.useRealTimers();
+    launchDarklyEnvironment.clientSideIdOverride = undefined;
+});
+
+it('uses the tenant LaunchDarkly client ID by default', () => {
+    expect(getLaunchDarklyConfig().clientSideID).toBe('test-client');
+});
+
+it('uses the LaunchDarkly client ID override when configured', () => {
+    launchDarklyEnvironment.clientSideIdOverride = 'local-test-client';
+
+    expect(getLaunchDarklyConfig().clientSideID).toBe('local-test-client');
 });
 
 it('mounts during stalled flag initialization and receives flags when the client recovers', async () => {

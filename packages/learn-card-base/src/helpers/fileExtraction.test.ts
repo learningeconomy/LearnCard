@@ -9,8 +9,17 @@ import {
 } from './fileExtraction';
 import type { FileExtractionAttempt } from './fileExtraction';
 
-const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }));
-vi.mock('./aiPassportAuth', () => ({ aiPassportFetch: fetchMock }));
+const { fetchMock, scopeState } = vi.hoisted(() => ({
+    fetchMock: vi.fn(),
+    scopeState: { controller: new AbortController() },
+}));
+vi.mock('./aiPassportAuth', () => ({
+    aiPassportFetch: fetchMock,
+    createAiPassportRequestScope: () => ({
+        signal: scopeState.controller.signal,
+        dispose: () => {},
+    }),
+}));
 vi.mock('../i18n', () => ({ addActiveLocaleToUrl: (url: string) => url }));
 vi.mock('../stores/NetworkStore', () => ({
     networkStore: { get: { aiServiceUrl: () => 'https://synthetic.invalid' } },
@@ -48,6 +57,7 @@ const respond = (body: unknown, status = 200) =>
 beforeEach(() => {
     vi.restoreAllMocks();
     fetchMock.mockReset();
+    scopeState.controller = new AbortController();
     configureLoggerContext({
         bugReportsEnabled: true,
         diagnosticLogCollectionEnabled: true,
@@ -58,6 +68,159 @@ beforeEach(() => {
 });
 
 describe('file extraction outcomes', () => {
+    it('reuses the extraction attempt across automatic admission retries', async () => {
+        vi.useFakeTimers();
+        try {
+            const attempt = createFileExtractionAttempt();
+            const waiting = vi.fn();
+            const onAttempt = vi.fn();
+            fetchMock.mockResolvedValueOnce(
+                Response.json(
+                    { code: 'upload_capacity_exceeded' },
+                    { status: 503, headers: { 'Retry-After': '0' } }
+                )
+            );
+            fetchMock.mockImplementationOnce(async (_url, options) => {
+                const request = JSON.parse(options.body);
+                return Response.json({ vcs: [], processing: metadata(request.diagnostics) });
+            });
+            const pending = extractFileCredentials({
+                ...input(attempt),
+                onWaiting: waiting,
+                onAttempt,
+            });
+            await vi.runAllTimersAsync();
+            expect((await pending).processing.outcome).toBe('empty');
+            const first = JSON.parse(fetchMock.mock.calls[0][1].body).diagnostics;
+            const second = JSON.parse(fetchMock.mock.calls[1][1].body).diagnostics;
+            expect(second.operationId).toBe(first.operationId);
+            expect(second.attemptId).toBe(first.attemptId);
+            expect(second.attempt).toBe(first.attempt);
+            expect(onAttempt).toHaveBeenCalledTimes(2);
+            expect(onAttempt).toHaveBeenLastCalledWith({
+                operationId: second.operationId,
+                attemptId: second.attemptId,
+                attempt: second.attempt,
+            });
+            expect(waiting).toHaveBeenCalledWith(true);
+            expect(waiting).toHaveBeenLastCalledWith(false);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('can still retry admission at the final extraction attempt', async () => {
+        vi.useFakeTimers();
+        try {
+            const attempt = { ...createFileExtractionAttempt(), attempt: 100 };
+            fetchMock.mockResolvedValueOnce(
+                Response.json(
+                    { code: 'upload_capacity_exceeded' },
+                    { status: 503, headers: { 'Retry-After': '5' } }
+                )
+            );
+            respond({ vcs: [], processing: metadata(attempt) });
+            const pending = extractFileCredentials(input(attempt));
+            await vi.runAllTimersAsync();
+            expect((await pending).processing.attempt).toBe(100);
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not consume extraction attempts across repeated busy waits', async () => {
+        vi.useFakeTimers();
+        try {
+            let attempt = createFileExtractionAttempt();
+            fetchMock.mockImplementation(async () =>
+                Response.json(
+                    { code: 'upload_capacity_exceeded' },
+                    { status: 503, headers: { 'Retry-After': '5' } }
+                )
+            );
+            for (let manual = 0; manual < 6; manual += 1) {
+                if (manual) attempt = createFileExtractionAttempt(attempt);
+                const onAttempt = vi.fn();
+                const pending = expect(
+                    extractFileCredentials({ ...input(attempt), onAttempt })
+                ).rejects.toMatchObject({ code: 'UPLOAD_BUSY' });
+                await vi.runAllTimersAsync();
+                await pending;
+                expect(onAttempt.mock.calls.every(([sent]) => sent.attempt === manual + 1)).toBe(
+                    true
+                );
+            }
+            expect(attempt.attempt).toBe(6);
+            fetchMock.mockReset();
+            const next = createFileExtractionAttempt(attempt);
+            respond({ vcs: [], processing: metadata(next) });
+            expect((await extractFileCredentials(input(next))).processing.attempt).toBe(7);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('preserves a transport failure after a foreground Cancel on an in-flight request', async () => {
+        const controller = new AbortController();
+        fetchMock.mockImplementationOnce(async () => {
+            controller.abort();
+            throw new TypeError('synthetic transport failure');
+        });
+        await expect(
+            extractFileCredentials({
+                ...input(createFileExtractionAttempt()),
+                waitSignal: controller.signal,
+            })
+        ).rejects.toMatchObject({ code: 'NETWORK_FAILED' });
+    });
+
+    it('treats a session abort during JSON reading as cancellation', async () => {
+        const response = Response.json({});
+        vi.spyOn(response, 'json').mockImplementationOnce(async () => {
+            scopeState.controller.abort();
+            throw new DOMException('synthetic abort', 'AbortError');
+        });
+        fetchMock.mockResolvedValueOnce(response);
+        await expect(
+            extractFileCredentials(input(createFileExtractionAttempt()))
+        ).rejects.toMatchObject({ code: 'UPLOAD_CANCELLED' });
+        expect(
+            getDiagnosticLogs().filter(entry => entry.message === 'file.extraction.completed')
+        ).toEqual([]);
+    });
+
+    it('records capacity deadline exhaustion with the final attempt and HTTP status', async () => {
+        vi.useFakeTimers();
+        try {
+            const attempt = createFileExtractionAttempt();
+            respond({ code: 'upload_capacity_exceeded' }, 503);
+            const pending = expect(extractFileCredentials(input(attempt))).rejects.toMatchObject({
+                code: 'UPLOAD_BUSY',
+                statusCode: 503,
+            });
+            await vi.runAllTimersAsync();
+            await pending;
+            const finalAttempt = JSON.parse(fetchMock.mock.calls.at(-1)![1].body).diagnostics;
+            expect(
+                getDiagnosticLogs().filter(entry => entry.message === 'file.extraction.completed')
+            ).toMatchObject([
+                {
+                    data: {
+                        operationId: attempt.operationId,
+                        attemptId: finalAttempt.attemptId,
+                        attempt: finalAttempt.attempt,
+                        code: 'UPLOAD_BUSY',
+                        statusCode: 503,
+                        outcome: 'failed',
+                    },
+                },
+            ]);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('accepts genuine empty output and returns validated credentials for nonempty output', async () => {
         const attempt = createFileExtractionAttempt();
         respond({ vcs: [], processing: metadata(attempt) });

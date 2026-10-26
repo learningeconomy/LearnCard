@@ -25,6 +25,7 @@ const host = vi.hoisted(() => ({
     failStoreOnce: new Set<string>(),
     accept: vi.fn(),
     addVCtoWallet: vi.fn(),
+    recordAcceptedCredentialClaim: vi.fn().mockResolvedValue(undefined),
 }));
 
 const wallet = {
@@ -74,7 +75,11 @@ vi.mock('learn-card-base', () => ({
     switchedProfileStore: { use: { switchedDid: () => 'did:web:test:scout' } },
     syncProgressStore: { set: {}, get: {} },
     useToast: () => ({ presentToast: vi.fn() }),
-    useWallet: () => ({ initWallet: async () => wallet, addVCtoWallet: host.addVCtoWallet }),
+    useWallet: () => ({
+        initWallet: async () => wallet,
+        addVCtoWallet: host.addVCtoWallet,
+        recordAcceptedCredentialClaim: host.recordAcceptedCredentialClaim,
+    }),
     walletStore: { set: { setIsSyncing: vi.fn() } },
     WalletSyncState: { Syncing: 'syncing', Completed: 'completed', NotSyncing: 'not-syncing' },
 }));
@@ -123,6 +128,7 @@ const storedUris = () => host.addVCtoWallet.mock.calls.map(([args]) => args.uri)
 
 describe('useSyncConsentFlow', () => {
     beforeEach(() => {
+        host.recordAcceptedCredentialClaim.mockClear();
         host.pending = [];
         host.index.clear();
         window.localStorage.clear();
@@ -167,6 +173,29 @@ describe('useSyncConsentFlow', () => {
     afterEach(() => {
         cleanup();
         focusManager.setFocused(undefined);
+    });
+
+    it('records only accepted claims after a pending acceptance completes', async () => {
+        const uri = 'urn:test:accepted-after-store';
+        host.pending = [uri];
+        let accept: () => void = () => undefined;
+        host.accept.mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    accept = resolve;
+                })
+        );
+        const { result } = renderSync();
+        await waitFor(() => expect(host.accept).toHaveBeenCalledWith({ uri }));
+        expect(host.addVCtoWallet).toHaveBeenCalledWith(
+            expect.objectContaining({ uri, deferClaim: true })
+        );
+        expect(host.recordAcceptedCredentialClaim).not.toHaveBeenCalled();
+        await act(async () => accept());
+        await waitFor(() =>
+            expect(host.recordAcceptedCredentialClaim).toHaveBeenCalledWith(wallet, uri)
+        );
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });
 
     it('syncs a second contract write in the same session after the first sync saved something', async () => {
@@ -259,6 +288,10 @@ describe('useSyncConsentFlow', () => {
 
         await waitFor(() => expect(host.stored).toEqual(new Set(['urn:test:g:good'])));
         expect(host.accept).toHaveBeenCalledWith({ uri: 'urn:test:g:suspended' });
+        expect(host.recordAcceptedCredentialClaim).not.toHaveBeenCalledWith(
+            wallet,
+            'urn:test:g:suspended'
+        );
         expect(listedUris()).toEqual(['urn:test:g:good']);
         expect(client.getQueryData(['useGetResolvedCredential', 'urn:test:g:suspended'])).toBe(
             undefined
@@ -292,6 +325,10 @@ describe('useSyncConsentFlow', () => {
         );
         await waitFor(() => expect(storedUris()).toEqual(['urn:test:h:revoked']));
         await waitFor(() => expect(host.stored).toEqual(new Set()));
+        expect(host.recordAcceptedCredentialClaim).not.toHaveBeenCalledWith(
+            wallet,
+            'urn:test:h:revoked'
+        );
         expect(listedUris()).toEqual([]);
         expect(client.getQueryData(['useGetResolvedCredential', 'urn:test:h:revoked'])).toBe(
             undefined

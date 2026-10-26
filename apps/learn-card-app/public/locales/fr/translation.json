@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "Ce fichier est trop volumineux. Choisissez un fichier de moins de 4 Mo.",
                 "errorReadFailed": "Impossible de lire ce fichier. Essayez-en un autre.",
                 "errorContentRejected": "Impossible d’identifier un document pris en charge dans ce fichier.",
+                "errorUploadBusy": "Les envois sont toujours occupés. Réessayez dans un instant.",
                 "errorProcessingFailed": "Impossible de traiter ce fichier pour le moment. Veuillez réessayer.",
                 "errorConsentDenied": "Le traitement par IA n’est pas disponible pour ce compte.",
                 "errorResponseInvalid": "Nous avons reçu un résultat incomplet. Veuillez réessayer.",
@@ -475,6 +476,7 @@
                 "noMatches": "Aucun type correspondant trouvé"
             },
             "loader": {
+                "waitingForCapacity": "Les envois sont nombreux. En attente de votre tour…",
                 "notifyWhenReady": "Prévenez-moi quand c'est prêt",
                 "quotes": {
                     "resume": {
@@ -1161,7 +1163,8 @@
                 "error": "Impossible de vérifier le code. Veuillez réessayer."
             },
             "error": {
-                "invalidEmail": "E-mail manquant ou invalide"
+                "invalidEmail": "E-mail manquant ou invalide",
+                "sendFailed": "Impossible d'envoyer le code. Veuillez réessayer."
             },
             "label": "E-mail"
         },
@@ -1170,7 +1173,14 @@
             "button": "Se connecter par SMS",
             "smsSent": "Un code de vérification a été envoyé",
             "error": {
-                "invalidPhone": "Le numéro de téléphone est requis !"
+                "invalidPhone": "Le numéro de téléphone est requis !",
+                "invalidPhoneNumber": "Veuillez saisir un numéro de téléphone valide.",
+                "invalidCode": "Code invalide ou expiré.",
+                "tooManyAttempts": "Trop de tentatives. Veuillez renvoyer le code.",
+                "tooManyRequests": "Trop de tentatives depuis ce numéro de téléphone. Pour votre sécurité, veuillez patienter 10 à 15 minutes avant de réessayer, ou connectez-vous par e-mail.",
+                "quotaExceeded": "Nous ne pouvons pas envoyer de SMS pour le moment. Veuillez réessayer plus tard ou vous connecter par e-mail.",
+                "network": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
+                "generic": "Une erreur s'est produite. Veuillez réessayer."
             }
         },
         "social": {
@@ -1224,7 +1234,9 @@
             "notDeveloper": "Vous n'êtes pas développeur ? ",
             "signInNormally": "Se connecter normalement",
             "securityWarning": "Gardez votre seed privé. Quiconque le possède contrôle ce compte.",
-            "pasteHint": "Collez-le dans le champ ci-dessous."
+            "pasteHint": "Collez-le dans le champ ci-dessous.",
+            "showSeed": "Afficher la seed",
+            "hideSeed": "Masquer la seed"
         },
         "loader": {
             "messages": {
@@ -3716,6 +3728,20 @@
         "skillsHub": "Pôle de compétences"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Suivant",
+            "previous": "Précédent",
+            "done": "Terminé",
+            "progress": "Progression de la présentation",
+            "error": "Une erreur est survenue. Réessayez.",
+            "retry": "Réessayer",
+            "loading": "Chargement…",
+            "opening": "Ouverture…",
+            "checking": "Vérification…",
+            "downloading": "Téléchargement… {{progress}}%",
+            "installing": "Installation…",
+            "upToDate": "Vous utilisez la dernière version."
+        },
         "verification": {
             "selfIssued": "Auto-émis",
             "trustedIssuer": "Émetteur de confiance",
