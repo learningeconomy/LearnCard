@@ -1,6 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
 import {
-    RecordProvisioningBindingMetadataValidator,
     type PlatformCredentialTemplate,
     type RecordIssuanceDeclaration,
     type UnsignedVC,
@@ -13,6 +12,7 @@ import { getDidWeb } from '@helpers/did.helpers';
 import { getCredentialUri, sendCredential } from '@helpers/credential.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import type { IssuanceOutcome } from '@helpers/issuers/types';
 
 export type RecordIssuer = {
     group: { id: string; name: string };
@@ -123,8 +123,8 @@ export const renderPlatformCredential = (input: {
     };
 };
 
-export type PlatformIssuanceResult =
-    { status: 'ISSUED'; credentialUri: string } | { status: 'ISSUE_FAILED'; reason: string };
+/** Platform Issuance never produces offers; the shared outcome type keeps adapters in step. */
+export type PlatformIssuanceResult = Exclude<IssuanceOutcome, { status: 'OFFERED' }>;
 
 /** A credential already sent for this record (e.g. a status write lost after delivery). */
 const findDeliveredCredentialUri = async (
@@ -234,52 +234,9 @@ export const issueProvisionedRecord = async (input: {
             }
         );
     } catch (error) {
-        // The record stays PENDING; retryRecordIssuance reconciles it without re-signing.
+        // The record stays PENDING; retryRecordIssuance (issuers/retry.ts) reconciles it without re-signing.
         console.error('Platform issuance status write failed', error);
     }
 
     return result;
-};
-
-/**
- * Operator/sweeper entry point for PENDING or ISSUE_FAILED records. Uses the Binding's current
- * declaration and re-runs every issuer check; an already-delivered record is only reconciled.
- */
-export const retryRecordIssuance = async (
-    recordId: string,
-    domain: string
-): Promise<PlatformIssuanceResult | null> => {
-    const found = await neogma.queryRunner.run(
-        `MATCH (r:ProvisionedRecord {id: $recordId})
-         WHERE r.issuanceStatus IN ['PENDING', 'ISSUE_FAILED']
-         MATCH (b:Binding {bindingId: r.bindingId}) WHERE b.status = 'ACTIVE'
-         RETURN r.bindingId AS bindingId, r.ecosystemId AS ecosystemId,
-                r.subjectProfileId AS subjectProfileId, r.fields AS fields,
-                b.capabilityMetadata AS metadata`,
-        { recordId }
-    );
-    const row = found.records[0];
-    if (!row) return null;
-
-    const metadata = RecordProvisioningBindingMetadataValidator.safeParse(
-        JSON.parse(String(row.get('metadata') ?? 'null'))
-    );
-    const fields: unknown = JSON.parse(String(row.get('fields')));
-    if (!metadata.success || !metadata.data.issuance || !fields || typeof fields !== 'object') {
-        return null;
-    }
-
-    return issueProvisionedRecord({
-        recordId,
-        bindingId: String(row.get('bindingId')),
-        ecosystemId: String(row.get('ecosystemId')),
-        subjectProfileId: String(row.get('subjectProfileId')),
-        fields: Object.fromEntries(
-            Object.entries(fields).filter(
-                (entry): entry is [string, string] => typeof entry[1] === 'string'
-            )
-        ),
-        issuance: metadata.data.issuance,
-        domain,
-    });
 };

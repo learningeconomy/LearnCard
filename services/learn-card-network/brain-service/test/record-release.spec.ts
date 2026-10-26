@@ -13,7 +13,9 @@ import { ServiceAccount } from '@models';
 import { reconcileInstallIntent } from '@reconciler';
 import { exchangeServiceAccountCredential } from '@accesslayer/service-account/auth';
 import { purgeExpiredProvisionedRecords } from '@helpers/record-release.helpers';
-import { retryRecordIssuance } from '@helpers/platform-issuance.helpers';
+import { retryRecordIssuance } from '@helpers/issuers/retry';
+import { resolveIssuerAdapter } from '@helpers/issuers/registry';
+import { resolveRecordLaneGaps } from '@accesslayer/binding/record-lane';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
 import { createUseSigningAuthorityRelationship } from '@accesslayer/signing-authority/relationships/create';
@@ -660,5 +662,77 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
         expect(bad.status).toBe('ACCEPTED');
         expect(bad.issuance).toEqual({ status: 'ISSUE_FAILED' });
         expect((await issuanceState(bad.recordId)).sent).toBe(0);
+    });
+
+    it('routes the lane to a registered issuer and fails closed for consumers without one', async () => {
+        const { binding, ecosystem } = await setup();
+        expect(resolveIssuerAdapter(binding.consumer)?.kind).toBe('platform');
+        expect(await resolveRecordLaneGaps(binding)).toEqual([]);
+
+        for (const resourceType of ['WORKLOAD_DEPLOYMENT', 'INTEGRATION_INSTALL'] as const) {
+            const consumer = { resourceType, resourceId: 'some-issuer', ecosystemId: ecosystem.id };
+            expect(resolveIssuerAdapter(consumer)).toBeNull();
+            expect(await resolveRecordLaneGaps({ ...binding, consumer })).toContain(
+                'No credential issuer implementation exists for this consumer yet.'
+            );
+        }
+    });
+
+    const denialReasons = async (subjectProfileId: string): Promise<string[]> => {
+        const result = await neogma.queryRunner.run(
+            `MATCH (a:InstallIntentAuditEvent {action: 'RECORD_PROVISION_DENY'})
+             WHERE a.afterSummary CONTAINS $subjectProfileId RETURN a.afterSummary AS summary`,
+            { subjectProfileId }
+        );
+        return result.records.map(row => JSON.parse(String(row.get('summary'))).reason);
+    };
+
+    it('denies release without an issuance declaration and stores nothing', async () => {
+        const { partner, learnerId, binding } = await setup();
+        await neogma.queryRunner.run(
+            'MATCH (b:Binding {bindingId: $bindingId}) SET b.capabilityMetadata = $metadata',
+            {
+                bindingId: binding.bindingId,
+                metadata: JSON.stringify({ ...binding.capabilityMetadata, issuance: undefined }),
+            }
+        );
+        await expect(
+            partner.integrationService.submitRecord({
+                subjectProfileId: learnerId,
+                fields: record(),
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(await storedRecords(learnerId)).toBe(0);
+        expect(await denialReasons(learnerId)).toContain('NO_ISSUANCE_DECLARATION');
+    });
+
+    it('fails closed at release and retry when the consumer has no issuer', async () => {
+        const { partner, learnerId, binding, ecosystem } = await setup();
+        const first = await partner.integrationService.submitRecord({
+            subjectProfileId: learnerId,
+            fields: record(),
+        });
+        await neogma.queryRunner.run(
+            `MATCH (b:Binding {bindingId: $bindingId}) SET b.consumer = $consumer
+             WITH b MATCH (r:ProvisionedRecord {id: $recordId}) SET r.issuanceStatus = 'PENDING'`,
+            {
+                bindingId: binding.bindingId,
+                recordId: first.recordId,
+                consumer: JSON.stringify({
+                    resourceType: 'WORKLOAD_DEPLOYMENT',
+                    resourceId: 'some-issuer',
+                    ecosystemId: ecosystem.id,
+                }),
+            }
+        );
+        await expect(
+            partner.integrationService.submitRecord({
+                subjectProfileId: learnerId,
+                fields: record(),
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(await storedRecords(learnerId)).toBe(1);
+        expect(await denialReasons(learnerId)).toContain('NO_ISSUER');
+        expect(await retryRecordIssuance(first.recordId, 'localhost%3A3000')).toBeNull();
     });
 });

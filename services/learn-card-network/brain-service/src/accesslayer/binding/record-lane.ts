@@ -4,14 +4,8 @@ import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
 import { readListingVersionById } from '@accesslayer/listing-version/read';
 import { assertSignedListingVersionOrThrow } from '@helpers/manifest-signature.helpers';
 import { getIntentTargetId, getTargetDeclarationId } from '@helpers/install-intent.helpers';
-import { resolveRecordIssuer } from '@helpers/platform-issuance.helpers';
+import { resolveIssuerAdapter } from '@helpers/issuers/registry';
 import type { BindingRecordType } from 'types/binding';
-
-/**
- * Record classes Platform Issuance consumes. Platform-native capabilities have no manifest,
- * so this server-owned constant stands in for the consumer declaration (ADR-013 §3.1).
- */
-export const PLATFORM_SUPPORTED_RECORD_CLASSES: readonly RecordClass[] = ['academic'];
 
 const readProviderRecordClasses = async (
     binding: BindingRecordType
@@ -76,19 +70,15 @@ export const resolveRecordLaneGaps = async (binding: BindingRecordType): Promise
         gaps.push('Only the academic record class is implemented.');
     }
 
-    if (
-        binding.consumer.resourceType !== 'ECOSYSTEM' ||
-        !PLATFORM_SUPPORTED_RECORD_CLASSES.includes(metadata.recordClass)
-    ) {
-        gaps.push('The consumer must be Platform Issuance and support the declared record class.');
-    }
-
-    // Platform Issuance needs a pinned issuer identity and template (ADR-001 identity Group).
-    if (!metadata.issuance) {
-        gaps.push('Platform Issuance requires a pinned issuer Group and credential template.');
+    // Neutrality N1: any registered credential issuer may consume the lane.
+    const issuer = resolveIssuerAdapter(binding.consumer);
+    if (!issuer) {
+        gaps.push('No credential issuer implementation exists for this consumer yet.');
     } else {
-        const issuer = await resolveRecordIssuer(binding.ecosystemId, metadata.issuance);
-        if (typeof issuer === 'string') gaps.push(issuer);
+        if (!issuer.supportedRecordClasses.includes(metadata.recordClass)) {
+            gaps.push(`The ${issuer.kind} issuer does not support the declared record class.`);
+        }
+        gaps.push(...(await issuer.readinessGaps(binding)));
     }
 
     const providerClasses = await readProviderRecordClasses(binding);
