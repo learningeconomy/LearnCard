@@ -406,7 +406,7 @@ describe('campaign audiences', () => {
         }
     );
 
-    it('matches the exact sender/listing, metadata and since; excludes pending and revoked by default', async () => {
+    it('matches profile and listing senders, deduplicates dual attribution, and preserves recipient identity', async () => {
         await admin.create(draft());
         await neogma.queryRunner.run(
             `CREATE (listing:AppStoreListing {listing_id:'transcript-app'}), (boost:Boost {id:'test-boost'})
@@ -424,6 +424,17 @@ describe('campaign audiences', () => {
         // A shared credential can have other recipients: only sent.to belongs to this send.
         await neogma.queryRunner.run(
             `MATCH (c:Credential {id:'learner'}), (p:Profile {profileId:'other'}) CREATE (c)-[:CREDENTIAL_RECEIVED]->(p)`
+        );
+        // Legacy and specialized paths can write a listing-only sent edge. The
+        // shared learner credential above has both edges and must still count once.
+        await neogma.queryRunner.run(
+            `MATCH (listing:AppStoreListing {listing_id:'transcript-app'}),
+                   (boost:Boost {id:'test-boost'}), (other:Profile {profileId:'other'})
+             CREATE (listingOnly:Credential {id:'listing-only'})-[:INSTANCE_OF]->(boost)
+             CREATE (listing)-[:CREDENTIAL_SENT {
+                to:'other', date:'2026-10-20T00:00:00.000Z', \`metadata.kind\`:'listing-only'
+             }]->(listingOnly)
+             CREATE (listingOnly)-[:CREDENTIAL_RECEIVED]->(other)`
         );
         for (const identity of [
             { senderProfileId: 'campaign-admin' },
@@ -456,9 +467,9 @@ describe('campaign audiences', () => {
             type: 'boostRecipients' as const,
             boostUri: `lc:network:${domain}/trpc:boost:test-boost`,
         };
-        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 1 });
+        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 2 });
         expect(await admin.addAudience(audience({ ...boostSource, includePending: true }))).toEqual(
-            { count: 2 }
+            { count: 3 }
         );
         for (const [callerDomain, boostUri] of [
             [
@@ -474,9 +485,14 @@ describe('campaign audiences', () => {
             const domainAdmin = caller('campaign-admin', '*:*', callerDomain);
             expect(
                 await domainAdmin.previewAudience(audience({ type: 'boostRecipients', boostUri }))
-            ).toEqual({ count: 1 });
+            ).toEqual({ count: 2 });
         }
-        expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(2);
+        expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toEqual([
+            { profileId: 'learner', did: did('learner') },
+            { profileId: 'other', did: did('other') },
+            { profileId: 'pending', did: did('pending') },
+        ]);
+        expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(3);
         await expect(
             admin.previewAudience(
                 audience({
@@ -488,11 +504,11 @@ describe('campaign audiences', () => {
         await neogma.queryRunner.run(
             `MATCH (c:Credential {id:'learner'})-[received:CREDENTIAL_RECEIVED]->() SET received.status = 'revoked'`
         );
-        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 0 });
+        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 1 });
         await neogma.queryRunner.run(
             `MATCH (c:Credential {id:'pending'}), (p:Profile {profileId:'pending'}) CREATE (c)-[:CREDENTIAL_RECEIVED {status:'pending'}]->(p)`
         );
-        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 0 });
+        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 1 });
     });
 
     it('matches inbox claims by issuer and claim time, and rejects injection before querying', async () => {

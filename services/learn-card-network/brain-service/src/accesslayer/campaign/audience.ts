@@ -64,7 +64,8 @@ export const buildCampaignAudienceQuery = (
                         message: 'A boost URI from this network is required',
                     });
                 }
-                match = `MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)<-[sent:CREDENTIAL_SENT]-(sender:Profile)`;
+                match = `MATCH (boost:Boost {id: $boostId})<-[:INSTANCE_OF]-(credential:Credential)<-[sent:CREDENTIAL_SENT]-(sender)
+                    WHERE sender:Profile OR sender:AppStoreListing`;
                 params.boostId = uri.id;
             } else {
                 match = source.senderProfileId
