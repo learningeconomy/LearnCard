@@ -241,6 +241,18 @@ cargo audit
 cargo build --release
 ```
 
+Deployable binaries come from `.github/workflows/escrow-enclave-eif.yml`, which builds this crate
+twice from the same commit as the EIF and signs `hostSha256` alongside `eifSha256`. The same build
+runs locally (needs Docker; linux/amd64 under emulation on Apple Silicon):
+
+```sh
+services/escrow-enclave-host/scripts/build-host.sh --out /tmp/escrow-host
+```
+
+It builds in the pinned `amazonlinux:2023` amd64 image (glibc 2.34) with the `rust-toolchain.toml`
+toolchain via `cargo build --release --locked`, and writes the binary, its `.sha256`, and
+`host-build.json`. Deploy only a binary taken from the same run's artifact as the EIF.
+
 Default-features are disabled on AWS config/DynamoDB/S3: `default-https-client`
 selects hyper 1.x/rustls 0.23, not the legacy rustls 0.21/h2 0.3 stack. Commit
 Cargo.lock with this crate. No advisory-ignore configuration is provided.
