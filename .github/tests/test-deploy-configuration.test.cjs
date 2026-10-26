@@ -719,6 +719,7 @@ serviceConfigContract({
         'NOTIFICATIONS_SERVICE_WEBHOOK_URL',
         'LOGIN_PROVIDER_DID',
         'APP_STORE_ADMIN_PROFILE_IDS',
+        'CAMPAIGN_ADMIN_PROFILE_IDS',
     ],
     lengths: {
         LAMBDA_STAGE: 10,
@@ -744,6 +745,7 @@ serviceConfigContract({
         SMART_RESUME_CONTRACT_URI: 80,
         LOGIN_PROVIDER_DID: 80,
         APP_STORE_ADMIN_PROFILE_IDS: 200,
+        CAMPAIGN_ADMIN_PROFILE_IDS: 200,
         SKILL_EMBEDDING_GOOGLE_API_KEY: 48,
         POSTHOG_API_KEY: 48,
         SENTRY_DSN: 100,
