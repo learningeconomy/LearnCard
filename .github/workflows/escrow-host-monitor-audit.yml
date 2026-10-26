@@ -1,0 +1,113 @@
+name: Escrow Host/Monitor Audit
+
+# RustSec gate for the two escrow crates that run OUTSIDE the enclave
+# (escrow-enclave-host, escrow-ledger-monitor). Mirrors the `cargo audit`
+# step of escrow-enclave-eif.yml's `test` job: same pinned cargo-audit,
+# same cache layout, and the same failure semantics (no `--deny warnings`:
+# vulnerabilities fail the job, informational warnings such as
+# unsound/yanked/unmaintained are reported but do not fail it).
+#
+# Both crates take a path dependency on ../escrow-enclave-app, so that
+# crate's Cargo.toml is a trigger too (it can change their resolution).
+on:
+    pull_request:
+        paths:
+            - 'services/escrow-enclave-host/Cargo.toml'
+            - 'services/escrow-enclave-host/Cargo.lock'
+            - 'services/escrow-ledger-monitor/Cargo.toml'
+            - 'services/escrow-ledger-monitor/Cargo.lock'
+            - 'services/escrow-enclave-app/Cargo.toml'
+            - 'services/escrow-enclave-host/**/audit.toml'
+            - 'services/escrow-ledger-monitor/**/audit.toml'
+            - '.cargo/audit.toml'
+            - '.github/workflows/escrow-host-monitor-audit.yml'
+    push:
+        branches:
+            - main
+        paths:
+            - 'services/escrow-enclave-host/Cargo.toml'
+            - 'services/escrow-enclave-host/Cargo.lock'
+            - 'services/escrow-ledger-monitor/Cargo.toml'
+            - 'services/escrow-ledger-monitor/Cargo.lock'
+            - 'services/escrow-enclave-app/Cargo.toml'
+            - 'services/escrow-enclave-host/**/audit.toml'
+            - 'services/escrow-ledger-monitor/**/audit.toml'
+            - '.cargo/audit.toml'
+            - '.github/workflows/escrow-host-monitor-audit.yml'
+    # Daily: new RustSec advisories land without any repo change.
+    schedule:
+        - cron: '17 6 * * *'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+env:
+    # Keep in lockstep with escrow-enclave-eif.yml.
+    CARGO_AUDIT_VERSION: '0.22.2'
+
+jobs:
+    audit:
+        name: cargo audit (${{ matrix.crate }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    # escrow-enclave-host: `escrow-enclave` (and therefore rsa) is a
+                    # [dev-dependencies] entry only. rsa is not linked into the
+                    # host binary (`cargo tree -i rsa --locked` prints nothing for
+                    # normal edges); it is in Cargo.lock only for tests.
+                    #   RUSTSEC-2023-0071 (rsa Marvin): no fixed rsa release.
+                    # RUSTSEC-2026-0387 (crypto-bigint 0.5) is resolved by the
+                    # p256/p384 0.14 upgrade (crypto-bigint 0.7.10); no ignore.
+                    - crate: escrow-enclave-host
+                      ignores: --ignore RUSTSEC-2023-0071
+                    # escrow-ledger-monitor: depends on escrow-enclave with
+                    # `default-features = false`, which drops `enclave-runtime`
+                    # and so drops `dep:rsa` from the production build; rsa is
+                    # only enabled via the dev-dependency `fake-kms` feature.
+                    #   RUSTSEC-2023-0071 (rsa Marvin): no fixed release; no
+                    #     RSA private-key operation exists in the monitor binary.
+                    # RUSTSEC-2026-0387 (crypto-bigint 0.5) is resolved by the
+                    # p256 0.14 upgrade (crypto-bigint 0.7.10); no ignore.
+                    - crate: escrow-ledger-monitor
+                      ignores: --ignore RUSTSEC-2023-0071
+        defaults:
+            run:
+                working-directory: services/${{ matrix.crate }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+            - name: Setup Rust (1.93.0, per rust-toolchain.toml)
+              uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
+              with:
+                  toolchain: 1.93.0
+
+            # Same cache shape as escrow-enclave-eif.yml, minus target/ (audit
+            # does not compile). advisory-db is cached so repeats only pull.
+            - name: Cache cargo
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+              with:
+                  path: |
+                      ~/.cargo/registry/index/
+                      ~/.cargo/registry/cache/
+                      ~/.cargo/git/db/
+                      ~/.cargo/advisory-db
+                  key: ${{ runner.os }}-cargo-audit-${{ matrix.crate }}-${{ hashFiles(format('services/{0}/Cargo.lock', matrix.crate)) }}
+
+            # Shares the binary cache key with escrow-enclave-eif.yml.
+            - name: Cache cargo-audit binary
+              id: cargo-audit-cache
+              uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+              with:
+                  path: ~/.cargo/bin/cargo-audit
+                  key: ${{ runner.os }}-cargo-audit-bin-${{ env.CARGO_AUDIT_VERSION }}
+
+            - name: Install cargo-audit (pinned)
+              if: steps.cargo-audit-cache.outputs.cache-hit != 'true'
+              run: cargo install cargo-audit --version "${CARGO_AUDIT_VERSION}" --locked
+
+            - name: cargo audit
+              run: cargo audit ${{ matrix.ignores }}

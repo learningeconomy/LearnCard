@@ -23,7 +23,7 @@ fn sign(
         signature: String::new(),
     };
     let signature: Signature = key.sign_prehash(&record.signing_hash().unwrap()).unwrap();
-    record.signature = STANDARD.encode(signature.normalize_s().unwrap_or(signature).to_bytes());
+    record.signature = STANDARD.encode(signature.normalize_s().to_bytes());
     record
 }
 
@@ -44,11 +44,7 @@ fn client_authority_golden_fixture() {
         let target: EscrowEnvelope =
             serde_json::from_value(envelopes["blobs"][1]["envelope"].clone()).unwrap();
         let key = SigningKey::from_slice(&[42; 32]).unwrap();
-        let public = key
-            .verifying_key()
-            .to_encoded_point(false)
-            .as_bytes()
-            .to_vec();
+        let public = key.verifying_key().to_sec1_point(false).as_bytes().to_vec();
         let measurement: Hash = Sha256::digest([[1; 48], [2; 48], [3; 48]].concat()).into();
         let state = json!({"tenant":"learncard","authorityGeneration":"staging-g2","did":intent.did,"enrollmentVersion":7,"enrollmentEpoch":3,"status":"active","envelope":envelopes["blobs"][0]["envelope"],"shareVersion":1,"hasPin":true,"pinGeneration":2,"attemptsUsed":8});
         let proof = sign(
