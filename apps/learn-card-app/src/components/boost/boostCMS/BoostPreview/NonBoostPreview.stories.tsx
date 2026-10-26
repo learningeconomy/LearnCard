@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, within } from '@storybook/test';
 import { BoostCategoryOptionsEnum } from 'learn-card-base';
 import type { VC } from '@learncard/types';
 import NonBoostPreview from './NonBoostPreview';
@@ -40,7 +41,8 @@ const credential = {
 const meta: Meta<typeof NonBoostPreview> = {
     title: 'Issue/CredentialPreview',
     component: NonBoostPreview,
-    parameters: { layout: 'fullscreen' },
+    tags: ['credential-preview-regression'],
+    parameters: { layout: 'fullscreen', chromatic: { viewports: [390, 1280] } },
     args: {
         credential,
         categoryType: BoostCategoryOptionsEnum.achievement,
@@ -63,4 +65,21 @@ export const UnsignedBadge: Story = {};
 
 export const UnsignedCertificate: Story = {
     args: { credential: { ...credential, display: { displayType: 'certificate' } } as VC },
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        const card = await canvas.findByRole('group', { name: 'Web Foundations' });
+        const heading = within(card).getByRole('heading', { name: 'Web Foundations' });
+        const imageFrame = card.firstElementChild?.firstElementChild;
+        if (!(imageFrame instanceof HTMLElement)) throw new Error('Certificate image is missing');
+        const imageBox = imageFrame.getBoundingClientRect();
+        const cardBox = card.getBoundingClientRect();
+        const titleBox = heading.getBoundingClientRect();
+        // Exercise computed browser geometry, not just the presence of class names.
+        // Missing SDK CSS previously put the badge over the title at the left edge.
+        await expect(
+            Math.abs(imageBox.left + imageBox.width / 2 - (cardBox.left + cardBox.width / 2))
+        ).toBeLessThan(2);
+        await expect(imageBox.bottom).toBeLessThanOrEqual(titleBox.top);
+        await expect(getComputedStyle(heading).fontFamily).toContain('Jacques Francois');
+    },
 };
