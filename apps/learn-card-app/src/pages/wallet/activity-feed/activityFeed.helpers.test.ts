@@ -242,8 +242,11 @@ describe('isHiddenActivity', () => {
         expect(isHiddenActivity('ai-topic')).toBe(true);
         expect(isHiddenActivity('Pay Rate')).toBe(true);
     });
+    it('hides both uploaded resumes and published Resume Builder credentials', () => {
+        expect(isHiddenActivity('resume')).toBe(true);
+        expect(isHiddenActivity('Resume')).toBe(true);
+    });
     it.each([
-        ['resume', 'Resume'],
         ['certificate', 'Certificate'],
         ['transcript', 'Transcript'],
         ['diploma', 'Diploma'],

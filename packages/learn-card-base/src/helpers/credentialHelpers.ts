@@ -907,7 +907,8 @@ export const getCredentialName = (credential: VC): string => {
         credential?.name ||
         name ||
         credentialSubjectAchievementName ||
-        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType)
+        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType) ||
+        ''
     );
 };
 

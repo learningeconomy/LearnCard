@@ -137,9 +137,10 @@ export const HIDDEN_ACTIVITY_CATEGORIES: ReadonlySet<CredentialCategoryEnum> = n
     CredentialCategoryEnum.aiPathway,
     CredentialCategoryEnum.aiInsight,
     CredentialCategoryEnum.aiAssessment,
+    CredentialCategoryEnum.resume,
 ]);
 
-// Upload categories are lowercase; published credentials such as "Resume" remain visible.
+// Upload categories are lowercase; published credentials such as "Resume" are hidden via HIDDEN_ACTIVITY_CATEGORIES.
 const ORIGINAL_DOCUMENT_CATEGORIES = new Set<string>(FILE_KINDS);
 
 export const isHiddenActivity = (category?: string): boolean => {

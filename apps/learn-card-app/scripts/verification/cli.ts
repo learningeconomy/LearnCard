@@ -6,7 +6,7 @@ import { parseArgs } from 'node:util';
 import net from 'node:net';
 
 import { chromium } from '@playwright/test';
-import { createTimings } from './timings';
+import { createTimings, type FinishTiming, type TimingRecorder } from './timings';
 import type { Browser, BrowserContext } from '@playwright/test';
 
 import { verificationFeatures } from './catalog';
@@ -116,20 +116,22 @@ const bootstrapSessions = async (
     directory: string,
     headed: boolean,
     signal: AbortSignal,
-    onReady: (browser: Browser, harness?: VerificationHarness) => void
+    onReady: (browser: Browser, harness?: VerificationHarness) => void,
+    measure: TimingRecorder
 ): Promise<void> => {
     signal.throwIfAborted();
-    const browser = await chromium.launch({ ...OWN_SIGNALS, headless: !headed });
+    const browser = await measure('bootstrap-browser-launch', () =>
+        chromium.launch({ ...OWN_SIGNALS, headless: !headed })
+    );
     onReady(browser);
     let harness: VerificationHarness | undefined;
     try {
         signal.throwIfAborted();
         const runId = newRunId();
-        harness = await createHarness(
-            browser,
-            join(directory, 'sessions', 'bootstrap', runId),
-            runId,
-            { stackDirectory: directory }
+        harness = await measure('bootstrap-harness-setup', () =>
+            createHarness(browser, join(directory, 'sessions', 'bootstrap', runId), runId, {
+                stackDirectory: directory,
+            })
         );
         onReady(browser, harness);
         signal.throwIfAborted();
@@ -137,26 +139,35 @@ const bootstrapSessions = async (
         for (const role of ['learner', 'recipient'] as const) {
             signal.throwIfAborted();
             const actor = harness.context.actors[role];
-            const page = await harness.context.newPage(role, { signInAs: actor });
-            await page.reload();
-            await expect(
-                page.getByRole('button', { name: 'Open profile', exact: true })
-            ).toBeVisible({
-                timeout: 60_000,
+            const context = harness.context;
+            const page = await measure(`bootstrap-${role}-sign-in`, () =>
+                context.newPage(role, { signInAs: actor })
+            );
+            await measure(`bootstrap-${role}-reload`, async () => {
+                await page.reload();
+                await expect(
+                    page.getByRole('button', { name: 'Open profile', exact: true })
+                ).toBeVisible({
+                    timeout: 60_000,
+                });
             });
-            await harness.context.capture(page, `${role}-ready`);
-            await saveJson(join(directory, 'sessions', `${role}.json`), {
-                ...(await page.context().storageState({ indexedDB: true })),
-                verificationActor: actor,
+            await measure(`bootstrap-${role}-evidence`, async () => {
+                await context.capture(page, `${role}-ready`);
+                await saveJson(join(directory, 'sessions', `${role}.json`), {
+                    ...(await page.context().storageState({ indexedDB: true })),
+                    verificationActor: actor,
+                });
             });
             profiles[role] = { profileId: actor.profileId, displayName: actor.displayName };
         }
         await saveJson(join(directory, 'sessions', 'profiles.json'), profiles);
     } finally {
         try {
-            await harness?.close();
+            await measure('bootstrap-evidence-close', async () => {
+                await harness?.close();
+            });
         } finally {
-            await browser.close();
+            await measure('bootstrap-browser-close', () => browser.close());
         }
     }
 };
@@ -252,7 +263,6 @@ const runScript = async (
     positionals: string[],
     values: { eval?: string; name?: string; headed?: boolean; video?: boolean; json?: boolean }
 ): Promise<void> => {
-    await requireStack(directory);
     const runId = newRunId();
     const label = values.name ?? (values.eval ? 'inline' : (positionals[1] ?? 'script'));
     const artifacts = join(
@@ -261,6 +271,8 @@ const runScript = async (
         `${runId}-${label.replace(/[^\w-]+/g, '-').slice(-40)}`
     );
     await mkdir(artifacts, { recursive: true, mode: 0o700 });
+    const measure = createTimings(join(artifacts, 'timings.json'));
+    const finishCommand = await measure.start('command-total');
     const report: Record<string, unknown> = {
         runId,
         script: values.eval ? 'inline-script.ts' : positionals[1],
@@ -286,23 +298,32 @@ const runScript = async (
     process.on('SIGTERM', onSignal);
     try {
         await saveJson(join(artifacts, 'report.json'), report);
-        const file = values.eval
-            ? await writeInlineScript(artifacts, values.eval)
-            : (assert(positionals[1], 'script requires FILE or -e CODE'), positionals[1]);
-        report.script = file;
-        const script = await loadScript(file);
+        await measure('script-stack-check', () => requireStack(directory));
         assert(!interrupted, 'Verification script interrupted');
-        browser = await chromium.launch({ ...OWN_SIGNALS, headless: !values.headed });
-        assert(!interrupted, 'Verification script interrupted');
-        harness = await createHarness(browser, artifacts, runId, {
-            video: values.video,
-            stackDirectory: directory,
+        const script = await measure('script-load', async () => {
+            const file = values.eval
+                ? await writeInlineScript(artifacts, values.eval)
+                : (assert(positionals[1], 'script requires FILE or -e CODE'), positionals[1]);
+            report.script = file;
+            return loadScript(file);
         });
         assert(!interrupted, 'Verification script interrupted');
-        const result = await Promise.race([
-            script(createScriptContext(harness.context, artifacts)),
-            interruption,
-        ]);
+        browser = await measure('script-browser-launch', () =>
+            chromium.launch({ ...OWN_SIGNALS, headless: !values.headed })
+        );
+        assert(!interrupted, 'Verification script interrupted');
+        const scriptBrowser = browser;
+        harness = await measure('script-harness-setup', () =>
+            createHarness(scriptBrowser, artifacts, runId, {
+                video: values.video,
+                stackDirectory: directory,
+            })
+        );
+        assert(!interrupted, 'Verification script interrupted');
+        const scriptContext = harness.context;
+        const result = await measure('script-execution', () =>
+            Promise.race([script(createScriptContext(scriptContext, artifacts)), interruption])
+        );
         assert(!interrupted, 'Verification script interrupted');
         // Unsupported results must fail within the reporting lifecycle, not erase the report.
         if (result !== undefined) report.result = JSON.parse(JSON.stringify(result));
@@ -315,7 +336,9 @@ const runScript = async (
         report.error = error instanceof Error ? error.stack : String(error);
     } finally {
         try {
-            await harness?.close();
+            await measure('script-evidence-close', async () => {
+                await harness?.close();
+            });
         } catch (error) {
             report.status = interrupted ? 'interrupted' : 'failed';
             report.evidenceError = String(error);
@@ -323,8 +346,10 @@ const runScript = async (
             failure ??= error;
         }
         try {
-            await stopLearnCardCommands();
-            await browser?.close();
+            await measure('command-cleanup', async () => {
+                await stopLearnCardCommands();
+                await browser?.close();
+            });
         } catch (error) {
             report.status = interrupted ? 'interrupted' : 'failed';
             report.cleanupError = String(error);
@@ -351,6 +376,7 @@ const runScript = async (
         if (values.json) writeEvent({ event: 'result', command: 'script', ...report, artifacts });
         else console.log(JSON.stringify({ status: report.status, result: report.result }, null, 2));
         console.log(`Evidence retained: ${artifacts}`);
+        await finishCommand(interrupted ? 'interrupted' : failed ? 'failed' : 'passed');
     }
     if (failed) throw failure;
 };
@@ -387,6 +413,7 @@ const runFeatures = async (
                 .filter(feature => !selected.includes(feature))
                 .map(feature => feature.id),
         });
+    let finishCommand: FinishTiming | undefined;
     let browser: Browser | undefined;
     let current: VerificationHarness | undefined;
     let interrupted = false;
@@ -420,6 +447,7 @@ const runFeatures = async (
     let failure: unknown;
     try {
         await mkdir(artifacts, { recursive: true, mode: 0o700 });
+        finishCommand = await measure.start('command-total');
         console.log(`Verification directory: ${directory}`);
         if (ownsStack)
             await measure('startup', () =>
@@ -432,39 +460,49 @@ const runFeatures = async (
                             : console.error(`[lc verify] ${JSON.stringify(event)}`),
                 })
             );
-        else await requireStack(directory);
+        else await measure('stack-reuse-check', () => requireStack(directory));
         endpoints = await readStackEndpoints(directory);
         assert(!interrupted, 'Verification interrupted');
         if (command === 'up') {
-            const reusable = await Promise.all(
-                ['learner', 'recipient'].map(role =>
-                    readSessionActor(join(directory, 'sessions', `${role}.json`)).then(
-                        () => true,
-                        () => false
+            const reusable = await measure('session-reuse-check', () =>
+                Promise.all(
+                    ['learner', 'recipient'].map(role =>
+                        readSessionActor(join(directory, 'sessions', `${role}.json`)).then(
+                            () => true,
+                            () => false
+                        )
                     )
                 )
             );
             if (!reusable.every(Boolean)) {
-                await bootstrapSessions(
-                    directory,
-                    Boolean(values.headed),
-                    startup.signal,
-                    (activeBrowser, harness) => {
-                        browser = activeBrowser;
-                        current = harness;
-                    }
+                await measure('bootstrap', () =>
+                    bootstrapSessions(
+                        directory,
+                        Boolean(values.headed),
+                        startup.signal,
+                        (activeBrowser, harness) => {
+                            browser = activeBrowser;
+                            current = harness;
+                        },
+                        measure
+                    )
                 );
             }
             assert(!interrupted, 'Verification interrupted');
-            ready = await doctor(directory);
+            ready = await measure('post-bootstrap-doctor', () => doctor(directory));
             if (!values.json) console.log(JSON.stringify(ready, null, 2));
             assert(!interrupted, 'Verification interrupted');
             console.log(`Ready. Next: lc verify run all --dir ${directory}`);
         } else {
             await mkdir(artifacts, { recursive: true, mode: 0o700 });
             await report('running');
-            await saveJson(join(artifacts, 'doctor.json'), await requireStack(directory));
-            browser = await chromium.launch({ ...OWN_SIGNALS, headless: !values.headed });
+            await saveJson(
+                join(artifacts, 'doctor.json'),
+                await measure('catalog-stack-check', () => requireStack(directory))
+            );
+            browser = await measure('catalog-browser-launch', () =>
+                chromium.launch({ ...OWN_SIGNALS, headless: !values.headed })
+            );
             const catalogBrowser = browser;
             await measure('catalog', async () => {
                 for (const feature of selected) {
@@ -565,8 +603,10 @@ const runFeatures = async (
         const teardown =
             ownsStack && (failed || interrupted || (command === 'run' && !values.keep));
         try {
-            await stopLearnCardCommands();
-            await browser?.close();
+            await measure('command-cleanup', async () => {
+                await stopLearnCardCommands();
+                await browser?.close();
+            });
         } catch (error) {
             cleanupErrors.push(error);
         }
@@ -619,6 +659,9 @@ const runFeatures = async (
                           : String(failure),
                 cleanupErrors: cleanupErrors.length ? cleanupErrors.map(String) : undefined,
             });
+        await finishCommand?.(
+            interrupted ? 'interrupted' : failed || cleanupErrors.length ? 'failed' : 'passed'
+        );
     }
     if (cleanupErrors.length) {
         throw new AggregateError(

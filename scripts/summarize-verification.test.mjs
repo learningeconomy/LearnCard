@@ -15,13 +15,14 @@ const fixture = async action => {
     const output = join(directory, 'summary');
     await mkdir(run, { recursive: true });
     const json = (path, value) => writeFile(path, JSON.stringify(value));
-    const summarize = async () => {
+    const summarize = async (extraEnv = {}) => {
         await exec(process.execPath, [script.pathname, directory, output], {
             env: {
                 ...process.env,
                 GITHUB_STEP_SUMMARY: join(directory, 'github-summary.md'),
                 VERIFICATION_OUTCOME: 'failure',
                 TEARDOWN_OUTCOME: 'success',
+                ...extraEnv,
             },
         });
         return {
@@ -133,5 +134,108 @@ test('supports older reports using only validated numeric timestamp differences'
         assert.equal(features.find(value => value.feature === 'language').durationMs, null);
         assert.equal(features.find(value => value.feature === 'contacts').durationMs, null);
         assert.deepEqual(data.startupTimings, []);
+    });
+});
+
+test('includes startup and script subphases without exposing directory, script or actor identifiers', async () => {
+    await fixture(async ({ directory, run, json, summarize }) => {
+        const startup = join(directory, 'startup', 'private-startup-id');
+        const scriptRun = join(directory, 'scripts', 'private-script-name');
+        await mkdir(startup, { recursive: true });
+        await mkdir(scriptRun, { recursive: true });
+        await json(join(startup, 'timings.json'), [
+            { phase: 'command-total', status: 'passed', durationMs: 90_000 },
+            { phase: 'startup', status: 'passed', durationMs: 30_000 },
+            { phase: 'bootstrap', status: 'passed', durationMs: 50_000 },
+            {
+                phase: 'bootstrap-learner-sign-in',
+                status: 'passed',
+                durationMs: 25_000,
+                actor: 'private-actor',
+            },
+            { phase: 'bootstrap-recipient-reload', status: 'passed', durationMs: 5_000 },
+            { phase: 'post-bootstrap-doctor', status: 'passed', durationMs: 1_000 },
+            { phase: 'private-actor', status: 'passed', durationMs: 2 },
+        ]);
+        await json(join(scriptRun, 'timings.json'), [
+            { phase: 'command-total', status: 'failed', durationMs: 45_000 },
+            { phase: 'script-stack-check', status: 'passed', durationMs: 500 },
+            {
+                phase: 'script-execution',
+                status: 'failed',
+                durationMs: 30_000,
+                error: 'private-token',
+            },
+            { phase: 'script-evidence-close', status: 'passed', durationMs: 5_000 },
+            { phase: 'private-token', status: 'passed', durationMs: 123 },
+        ]);
+        await json(join(scriptRun, 'report.json'), {
+            script: 'private-script-name',
+            actors: ['private-actor'],
+        });
+        await json(join(run, 'report.json'), { status: 'passed', results: [] });
+        const { data, markdown } = await summarize({
+            STARTUP_OUTCOME: 'success',
+            SCRIPT_OUTCOME: 'failure',
+            VERIFICATION_OUTCOME: 'skipped',
+        });
+        assert.equal(data.run, 'failure');
+        assert.deepEqual(data.commandOutcomes, {
+            startup: 'success',
+            script: 'failure',
+            catalog: 'skipped',
+        });
+        assert.equal(data.startupCommands[0].timings.length, 6);
+        assert.equal(data.scriptCommands[0].timings.length, 4);
+        assert.equal(
+            data.startupCommands[0].timings.find(
+                value => value.phase === 'bootstrap-learner-sign-in'
+            ).durationMs,
+            25_000
+        );
+        assert.match(markdown, /Startup command 1/);
+        assert.match(markdown, /Script command 1/);
+        assert.match(markdown, /do not add them together/);
+        assert.match(markdown, /full workflow duration/);
+        assert.doesNotMatch(
+            JSON.stringify(data) + markdown,
+            /private-startup-id|private-script-name|private-actor|private-token/
+        );
+    });
+});
+
+test('preserves interrupted and malformed command timings with skipped downstream commands', async () => {
+    await fixture(async ({ directory, summarize }) => {
+        const startup = join(directory, 'startup', 'private-startup-id');
+        const scriptRun = join(directory, 'scripts', 'private-script-name');
+        await mkdir(startup, { recursive: true });
+        await mkdir(scriptRun, { recursive: true });
+        await writeFile(
+            join(startup, 'timings.json'),
+            JSON.stringify([
+                { phase: 'command-total', status: 'interrupted', durationMs: 500 },
+                { phase: 'bootstrap', status: 'running', durationMs: null },
+                { phase: 'bootstrap-learner-sign-in', status: 'private-error', durationMs: -1 },
+            ])
+        );
+        await writeFile(join(scriptRun, 'timings.json'), '{');
+        const { data, markdown } = await summarize({
+            STARTUP_OUTCOME: 'cancelled',
+            SCRIPT_OUTCOME: 'skipped',
+            VERIFICATION_OUTCOME: 'skipped',
+        });
+        assert.equal(data.run, 'cancelled');
+        assert.equal(data.startupCommands[0].timings[0].status, 'interrupted');
+        assert.deepEqual(data.startupCommands[0].timings.at(-1), {
+            phase: 'bootstrap-learner-sign-in',
+            status: 'unknown',
+            durationMs: null,
+        });
+        assert.deepEqual(data.scriptCommands, []);
+        assert.equal(data.reports[0].status, 'unreadable');
+        assert.doesNotMatch(
+            JSON.stringify(data) + markdown,
+            /private-error|private-script-name|private-startup-id/
+        );
     });
 });
