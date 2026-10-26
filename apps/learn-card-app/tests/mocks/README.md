@@ -18,8 +18,11 @@ real issuance — that's a signing + multi-service backend flow that lives in th
 1. **HAR replay** (`har/issue.har.zip`) — serves the recorded auth/boot handshake and all
    backend reads on `localhost:4000/4100/5100` (tRPC, `/api`, `/keys`, and non-tRPC calls
    like did:web resolution) verbatim. Recorded once against real docker; refreshable.
-2. **A typed tRPC mock** (`trpc.ts`) layered on top — installed but empty by default; a
-   test can register per-procedure overrides on the returned mock (`mock.on(...)`).
+2. **A typed tRPC mock** (`trpc.ts`) layered on top — serves authentication challenge
+   refills for both services; a test can register per-procedure overrides on the
+   returned mock (`mock.on(...)`). The clients randomize refill sizes, so exact HAR
+   request-body matching cannot cover every bootstrap. The stub returns the requested
+   number of unique strings; recording mode still uses the real backend.
 
 On replay, any backend call that isn't in the HAR (and isn't overridden) is **aborted**
 (`notFound: 'abort'`) — missing coverage fails loudly instead of hanging.
@@ -44,6 +47,11 @@ When `profileId` is supplied, developer sign-in creates the profile and resets i
 queries before returning. The helper does not wait for the legacy profile-setup
 modal, which is absent in this flow. Tests still assert their authenticated page
 content. Keep explicit reloads when persistence or recovery is the behavior under test.
+
+For mocked sign-in and persistence reloads, use `waitUntil: 'commit'` and then wait
+for the feature's visible authenticated content. The document's `load` event also
+waits for unrelated resources and frames, so it is not an app-readiness signal.
+`navigation.mocked.spec.ts` exercises sign-in while a document resource stays pending.
 
 ## Writing a mocked test
 
