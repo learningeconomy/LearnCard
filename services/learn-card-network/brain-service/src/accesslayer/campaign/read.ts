@@ -16,6 +16,7 @@ import {
     campaignTimeParams,
     liveCampaignPredicate,
     parseCampaign,
+    safeParseCampaign,
 } from './shared';
 
 export const getCampaign = async (campaignId: string): Promise<Campaign> => {
@@ -59,12 +60,19 @@ export const getLiveCampaignsForProfile = async (
          WHERE ${liveCampaignPredicate} AND ${campaignAgePredicate}
            AND (c.selfEnroll = true OR EXISTS { MATCH (p)-[:IN_CAMPAIGN_AUDIENCE]->(c) })
          OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
-         RETURN c.definition AS definition, properties(state) AS state ORDER BY c.id`,
+         RETURN c.id AS campaignId, c.definition AS definition, properties(state) AS state
+         ORDER BY c.id`,
             { profileId, ...campaignTimeParams(now) }
         )
     );
     return result.records.flatMap(record => {
-        const campaign = parseCampaign(record.get('definition'));
+        const campaign = safeParseCampaign(record.get('definition'));
+        if (!campaign) {
+            console.warn('campaign:getMyCampaigns skipped invalid stored definition', {
+                campaignId: record.get('campaignId'),
+            });
+            return [];
+        }
         if (!campaign.channels.includes('inApp') || !campaign.message.enabled) return [];
         const state = Object.fromEntries(
             Object.entries(record.get('state') ?? {}).map(([key, value]) => [

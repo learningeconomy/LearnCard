@@ -573,6 +573,28 @@ describe('campaign eligibility and engagement', () => {
         expect(await learner.getMyCampaigns()).toEqual([]);
     });
 
+    it.each(['not-json', JSON.stringify({ id: 'broken-campaign' })])(
+        'skips a malformed stored definition without breaking other campaign discovery',
+        async invalidDefinition => {
+            await admin.create(draft({ id: 'valid-campaign', status: 'live' }));
+            await admin.create(draft({ id: 'broken-campaign', status: 'live' }));
+            for (const campaignId of ['valid-campaign', 'broken-campaign']) {
+                await admin.addAudience({
+                    campaignId,
+                    source: { type: 'dids', dids: [did('learner')] },
+                });
+            }
+            await neogma.queryRunner.run(
+                `MATCH (c:Campaign {id: 'broken-campaign'}) SET c.definition = $definition`,
+                { definition: invalidDefinition }
+            );
+
+            expect((await learner.getMyCampaigns()).map(item => item.campaign.id)).toEqual([
+                'valid-campaign',
+            ]);
+        }
+    );
+
     it('supports self-enrollment only while live/enabled and never for known minors', async () => {
         await admin.create(draft({ status: 'live', selfEnroll: true, excludeMinors: false }));
         expect(await learner.getMyCampaigns()).toHaveLength(1);

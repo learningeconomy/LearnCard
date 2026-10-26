@@ -112,6 +112,8 @@ V2 targeting engine, evaluate those rules, or send decrypted credentials to the 
 
 `getMyCampaigns` returns live, in-window, enabled `inApp` campaigns for audience members,
 plus eligible campaigns with `selfEnroll: true`, joined to the caller's engagement state.
+Malformed legacy campaign definitions are logged and skipped per record so one bad campaign cannot
+break discovery for every profile.
 Discoverability is not enrollment: `recordEvent` is a no-op until membership exists.
 After a local match, the client can call `enroll({ campaignId })`. Enrollment requires a
 live, in-window, enabled `inApp` campaign with self-enrollment enabled and is idempotent.

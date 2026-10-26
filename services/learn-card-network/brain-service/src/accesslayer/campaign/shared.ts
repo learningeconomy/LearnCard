@@ -30,6 +30,16 @@ export const campaignTimeParams = (now = new Date()): { now: string; adultCutoff
 export const parseCampaign = (definition: string): Campaign =>
     CampaignValidator.parse(JSON.parse(definition));
 
+export const safeParseCampaign = (definition: unknown): Campaign | undefined => {
+    if (typeof definition !== 'string') return undefined;
+    try {
+        const result = CampaignValidator.safeParse(JSON.parse(definition));
+        return result.success ? result.data : undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 export const campaignProperties = (campaign: Campaign): Record<string, unknown> => ({
     id: campaign.id,
     name: campaign.name,
