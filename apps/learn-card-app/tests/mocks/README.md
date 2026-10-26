@@ -53,6 +53,11 @@ for the feature's visible authenticated content. The document's `load` event als
 waits for unrelated resources and frames, so it is not an app-readiness signal.
 `navigation.mocked.spec.ts` exercises sign-in while a document resource stays pending.
 
+For a complete Linux run before opening a PR, push the branch and run
+`gh workflow run mock-e2e.yml --ref <branch>`. Manual runs execute the full suite even
+when Nx finds no affected changes. Each manual run has its own concurrency group,
+so repeated runs can complete independently; PR updates still cancel superseded runs.
+
 ## Writing a mocked test
 
 Create `tests/<name>.mocked.spec.ts` (the `.mocked.spec.ts` suffix + a `@mocked` tag in
