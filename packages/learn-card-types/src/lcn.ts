@@ -104,6 +104,7 @@ export const LCNPublicProfileValidator = LCNProfileValidator.pick({
     type: true,
     isServiceProfile: true,
     display: true,
+    highlightedCredentials: true,
 });
 export type LCNPublicProfile = z.infer<typeof LCNPublicProfileValidator>;
 
@@ -152,7 +153,6 @@ export const LCNAuthedProfileValidator = LCNPublicProfileValidator.extend({
     bio: LCNProfileValidator.shape.bio,
     websiteLink: LCNProfileValidator.shape.websiteLink,
     role: LCNProfileValidator.shape.role,
-    highlightedCredentials: LCNProfileValidator.shape.highlightedCredentials,
     did: LCNProfileValidator.shape.did,
 });
 export type LCNAuthedProfile = z.infer<typeof LCNAuthedProfileValidator>;

@@ -133,7 +133,7 @@ const UpdateProfileInputValidator = z.object({
             }
         )
         .optional(),
-    highlightedCredentials: z.array(z.string()).optional(),
+    highlightedCredentials: LCNProfileValidator.shape.highlightedCredentials,
     approved: z.boolean().optional(),
 });
 
