@@ -5,7 +5,7 @@
  * side of the flow can be proven without the app UI. It does not exercise the app's screens.
  *
  *   bun run prove:demo-learner -- --register   # create the `demo-learner` profile
- *   bun run prove:demo-learner -- --claim      # accept, decrypt and verify the credential
+ *   bun run prove:demo-learner -- --claim [--issuer <did>]  # accept, decrypt and verify
  *
  * Standalone wallet: does not import Brain's database environment.
  */
@@ -18,7 +18,9 @@ const network = process.env.LCN_NETWORK ?? 'http://localhost:4000/trpc';
 const profileId = process.env.DEMO_LEARNER_PROFILE_ID ?? 'demo-learner';
 // Dev-only fixed seed so the learner identity is stable across runs.
 const seed = process.env.DEMO_LEARNER_SEED ?? 'd'.repeat(64);
-const expectedIssuer = `did:web:localhost%3A4000:users:${process.env.DEMO_ISSUER_PROFILE_ID ?? 'demo-district-issuer'}`;
+const issuerArg = process.argv.indexOf('--issuer');
+// The district's issuing identity DID, as printed by seed:demo-lms.
+const expectedIssuer = issuerArg >= 0 ? process.argv[issuerArg + 1] : undefined;
 
 const log = (message: string): void => console.log(`${new Date().toISOString()} ${message}`);
 
@@ -49,7 +51,8 @@ const main = async (): Promise<void> => {
     const incoming = await wallet.invoke.getIncomingCredentials();
     const pending = incoming.filter(entry => entry.metadata?.educationOsRecordId);
     log(`INCOMING ${incoming.length} credential(s), ${pending.length} from Platform Issuance`);
-    const offer = pending.at(-1);
+    // Newest first: earlier unclaimed offers (e.g. from a previous issuer) must not be picked.
+    const offer = [...pending].sort((a, b) => Date.parse(b.sent) - Date.parse(a.sent))[0];
     if (!offer) throw new Error('No Platform Issuance credential is waiting for this learner.');
 
     await wallet.invoke.acceptCredential(offer.uri);
@@ -64,13 +67,15 @@ const main = async (): Promise<void> => {
             Array.isArray(vc.credentialSubject) ? vc.credentialSubject[0] : vc.credentialSubject
         );
     log(`DECRYPTED ${vc.type.join(',')} name="${String(vc.name ?? '')}"`);
-    log(`ISSUER ${issuer} ${issuer === expectedIssuer ? '(district identity)' : '(UNEXPECTED)'}`);
+    log(
+        `ISSUER ${issuer} ${!expectedIssuer ? '(not checked; pass --issuer)' : issuer === expectedIssuer ? '(district identity)' : '(UNEXPECTED)'}`
+    );
     log(`SUBJECT ${subject.id}`);
 
     const verification = await wallet.invoke.verifyCredential(vc, {}, true);
     const failures = verification.filter(item => item.status === 'Failed');
     log(`VERIFY ${failures.length ? `FAILED: ${JSON.stringify(failures)}` : 'all checks passed'}`);
-    if (issuer !== expectedIssuer || failures.length) process.exitCode = 1;
+    if ((expectedIssuer && issuer !== expectedIssuer) || failures.length) process.exitCode = 1;
 };
 
 main().catch(error => {

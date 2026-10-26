@@ -113,13 +113,11 @@ const main = async (): Promise<void> => {
         e => e.slug === 'demo-district'
     );
     if (!district) throw new Error('Run seed:demo-lms first.');
-    const issuer = await neogma.queryRunner.run(
-        `MATCH (g:Group {slug: 'demo-district-issuer', ownerEcosystemId: $ecosystemId})
-         RETURN g.id AS groupId, g.identityProfileId AS profileId`,
-        { ecosystemId: district.id }
-    );
-    const issuerGroupId = String(issuer.records[0]?.get('groupId'));
-    const issuerIdentityProfileId = String(issuer.records[0]?.get('profileId'));
+    const { getEcosystemIssuingIdentity } = await import('@accesslayer/ecosystem/issuing-identity');
+    const identity = await getEcosystemIssuingIdentity(district.id, 'localhost%3A4000');
+    if (!identity?.signingReady) throw new Error('Run seed:demo-lms first (no issuing identity).');
+    const issuerGroupId = identity.groupId;
+    const issuerIdentityProfileId = identity.profileId;
 
     await login();
     log('CONSOLE login as dev operator');
@@ -301,16 +299,37 @@ const main = async (): Promise<void> => {
                 bindingId: z.string(),
                 status: z.string(),
                 capability: z.string(),
+                revision: z.number(),
                 provider: z.object({ resourceId: z.string() }),
+                capabilityMetadata: z
+                    .object({
+                        issuance: z.object({ issuerIdentityProfileId: z.string() }).optional(),
+                    })
+                    .passthrough()
+                    .optional(),
             })
         )
         .parse(await rpc('bindings.list', { ecosystemId: district.id }));
-    let active = bindings.find(
+    let active: { bindingId: string; status: string } | undefined = bindings.find(
         binding =>
             binding.capability === 'record-provisioning' &&
             binding.provider.resourceId === installId &&
             binding.status === 'ACTIVE'
     );
+    const pinned = bindings.find(binding => binding.bindingId === active?.bindingId);
+    // A Binding pinned to a different issuing identity is revoked and re-proposed.
+    if (
+        pinned &&
+        pinned.capabilityMetadata?.issuance?.issuerIdentityProfileId !== issuerIdentityProfileId
+    ) {
+        await rpc(
+            'bindings.revoke',
+            { bindingId: pinned.bindingId, expectedRevision: pinned.revision },
+            true
+        );
+        log(`REVOKED binding ${pinned.bindingId} (pinned a previous issuing identity)`);
+        active = undefined;
+    }
     if (!active) {
         const proposed = z.object({ bindingId: z.string() }).parse(
             await rpc(

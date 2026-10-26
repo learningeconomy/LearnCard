@@ -11,8 +11,8 @@
  * Seeds, idempotently:
  * - the state (eco_dev_root) enabling the Demo LMS for its descendants (inherited, ADR-010);
  * - a district ecosystem under the state, owned by the state's owner;
- * - an ADR-001 identity-bearing issuer Group in the district, with an LCA-managed signing
- *   authority (needs the local `api` service; the key never leaves LCA);
+ * - the district's managed issuing identity (ADR-001 identity Group, LCA-managed key;
+ *   needs the local `api` service);
  * - the district's institutional data-sharing agreement, accepted by its owner;
  * - the learner's district membership.
  *
@@ -26,8 +26,6 @@ dotenv.config();
 
 const STATE_ID = 'eco_dev_root';
 const DISTRICT_SLUG = 'demo-district';
-const ISSUER_PROFILE_ID = 'demo-district-issuer';
-const ISSUER_GROUP_SLUG = 'demo-district-issuer';
 const CONTRACT_ID = 'synthetic-dev-demo-district-data-sharing';
 
 const arg = (name: string): string | undefined => {
@@ -52,11 +50,9 @@ const main = async (): Promise<void> => {
     const { updateEcosystemSettings } = await import('@accesslayer/ecosystem/update');
     const { grantEcosystemMembership } = await import('@accesslayer/ecosystem/membership');
     const { readAppStoreListingBySlug } = await import('@accesslayer/app-store-listing/read');
-    const { createProfile } = await import('@accesslayer/profile/create');
     const { getProfileByProfileId } = await import('@accesslayer/profile/read');
-    const { createGroup } = await import('@accesslayer/group/write');
-    const { ensureManagedSigningAuthorityForProfile } =
-        await import('@helpers/inline-template.helpers');
+    const { provisionEcosystemIssuingIdentity } =
+        await import('@accesslayer/ecosystem/issuing-identity');
     const { governConsentContract, acceptGovernanceConsentContract } =
         await import('@accesslayer/consentflowcontract/governance');
 
@@ -114,61 +110,14 @@ const main = async (): Promise<void> => {
     });
     console.log(`  District ${DISTRICT_ID}: owner ${ownerProfileId}, learner ${learnerId}`);
 
-    // ADR-001 identity-bearing Group; managed Profiles use the :users: did:web form.
-    if (!(await getProfileByProfileId(ISSUER_PROFILE_ID))) {
-        await createProfile({
-            profileId: ISSUER_PROFILE_ID,
-            did: `did:web:${domain}:users:${ISSUER_PROFILE_ID}`,
-            displayName: 'Demo District',
-        } as Parameters<typeof createProfile>[0]);
-    }
-    const issuerProfile = await getProfileByProfileId(ISSUER_PROFILE_ID);
-    if (!issuerProfile) throw new Error('Issuer profile could not be read back.');
-    const existingGroup = await neogma.queryRunner.run(
-        'MATCH (g:Group {slug: $slug, ownerEcosystemId: $ecosystemId}) RETURN g.id AS id',
-        { slug: ISSUER_GROUP_SLUG, ecosystemId: DISTRICT_ID }
-    );
-    let issuerGroupId: string | undefined = existingGroup.records[0]?.get('id');
-    if (!issuerGroupId) {
-        const group = await createGroup(
-            {
-                name: 'Demo District',
-                slug: ISSUER_GROUP_SLUG,
-                type: 'administrative',
-                ownerEcosystemId: DISTRICT_ID,
-                parentGroupId: null,
-                identityProfileId: ISSUER_PROFILE_ID,
-                identityIssuanceEnabled: true,
-                membershipMode: 'EXPLICIT',
-                status: 'ACTIVE',
-            } as Parameters<typeof createGroup>[0],
-            { actorProfileId: ownerProfileId }
-        );
-        issuerGroupId = String(group.id);
-    }
-    // KNOWN GAP (ADR-001 identity Groups): requireManagedIdentityProfile demands a stored
-    // `did:web …:users:` DID, but /users/:id/did.json resolves the stored DID, so that form
-    // makes the document resolve itself and hang. Like createManagedProfile, the Profile must
-    // store an underlying did:key. Created with the accepted form above, then rotated here.
-    if (issuerProfile.did.includes(':users:')) {
-        const { randomBytes } = await import('node:crypto');
-        const { getLearnCard } = await import('@helpers/learnCard.helpers');
-        const { deleteDidDocForProfile } = await import('@cache/did-docs');
-        const keyDid = (await getLearnCard(randomBytes(32).toString('hex'))).id.did();
-        await neogma.queryRunner.run('MATCH (p:Profile {profileId: $id}) SET p.did = $did', {
-            id: ISSUER_PROFILE_ID,
-            did: keyDid,
-        });
-        await deleteDidDocForProfile(ISSUER_PROFILE_ID);
-        console.log(`  Issuer identity: stored DID rotated to a did:key (see KNOWN GAP)`);
-    }
-    const signingAuthority = await ensureManagedSigningAuthorityForProfile(
-        (await getProfileByProfileId(ISSUER_PROFILE_ID)) ?? issuerProfile,
-        domain
-    );
-    console.log(
-        `  Issuer Group ${issuerGroupId} → ${ISSUER_PROFILE_ID} (SA ${signingAuthority.relationship.name})`
-    );
+    // The district's managed issuing identity, via the product path (RFC decision 4).
+    const identity = await provisionEcosystemIssuingIdentity({
+        ecosystemId: DISTRICT_ID,
+        name: 'Demo District',
+        actorProfileId: ownerProfileId,
+        domain,
+    });
+    console.log(`  Issuing identity ${identity.did} (group ${identity.groupId}, signing ready)`);
 
     // District data-sharing agreement. Governance acceptance is NOT learner consent.
     const grant = {
@@ -243,8 +192,7 @@ const main = async (): Promise<void> => {
     console.log(`
 Next: bun run prove:demo-lms -- --learner ${learnerId}
   district:        ${DISTRICT_ID}
-  issuer group:    ${issuerGroupId}
-  issuer identity: ${ISSUER_PROFILE_ID}
+  issuer:          ${identity.did}
 `);
     await neogma.driver.close();
 };
