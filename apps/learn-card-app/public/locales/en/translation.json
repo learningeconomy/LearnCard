@@ -3875,7 +3875,8 @@
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "awardedOn": "Awarded on {{date}}"
         }
     },
     "skills": {

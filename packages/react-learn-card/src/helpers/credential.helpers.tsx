@@ -1,5 +1,5 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 import {
     Image,
@@ -43,7 +43,9 @@ export const getImageFromProfile = (profile: Profile): string => {
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
     dateFormat: string = 'dd MMM yyyy',
-    options: { uppercaseDate?: boolean } = { uppercaseDate: true }
+    options: { uppercaseDate?: boolean; dateType?: 'issuance' | 'awarded' } = {
+        uppercaseDate: true,
+    }
 ): CredentialInfo => {
     const { issuer, issuanceDate, validFrom } = credential;
 
@@ -57,12 +59,22 @@ export const getInfoFromCredential = (
 
     // Support both VC 2.0 (validFrom) and VC 1.0 (issuanceDate)
     // Gracefully handle missing dates
-    const dateValue = validFrom || issuanceDate;
+    const awardedDate =
+        options.dateType === 'awarded' && typeof credential.awardedDate === 'string'
+            ? parseISO(credential.awardedDate)
+            : undefined;
+    const hasAwardedDate = awardedDate && isValid(awardedDate);
+    const dateValue = hasAwardedDate ? credential.awardedDate : validFrom || issuanceDate;
     let createdAt = '';
 
     if (dateValue) {
         try {
-            createdAt = format(new Date(dateValue), dateFormat);
+            const date = new Date(dateValue);
+            // Match the UTC date shown by the spreadsheet award-date editor.
+            const displayDate = hasAwardedDate
+                ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+                : date;
+            createdAt = format(displayDate, dateFormat);
             if (options.uppercaseDate) {
                 createdAt = createdAt.toUpperCase();
             }

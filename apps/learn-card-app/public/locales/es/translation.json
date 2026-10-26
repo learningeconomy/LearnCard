@@ -3824,7 +3824,8 @@
             "lifecycle": {
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
-            }
+            },
+            "awardedOn": "Otorgada el {{date}}"
         }
     },
     "skills": {

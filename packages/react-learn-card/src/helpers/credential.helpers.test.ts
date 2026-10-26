@@ -106,3 +106,52 @@ describe('Credential Helpers', () => {
         });
     });
 });
+
+describe('award-date formatting', () => {
+    it('uses the standard award date only when requested and retains issuance metadata', () => {
+        const credential = { ...VC2CredentialWithValidFrom, awardedDate: '2027-10-01T00:00:00Z' };
+        expect(
+            getInfoFromCredential(credential as never, 'MMM dd, yyyy', {
+                uppercaseDate: false,
+                dateType: 'awarded',
+            }).createdAt
+        ).toBe('Oct 01, 2027');
+        expect(getInfoFromCredential(credential as never).createdAt).toBe('15 JAN 2024');
+    });
+    it('falls back for missing or invalid award dates without inventing a date for an undated draft', () => {
+        expect(
+            getInfoFromCredential(
+                { ...VC2CredentialWithValidFrom, awardedDate: 'not-a-date' } as never,
+                'MMM dd, yyyy',
+                { uppercaseDate: false, dateType: 'awarded' }
+            ).createdAt
+        ).toBe('Jan 15, 2024');
+        expect(
+            getInfoFromCredential(VC2CredentialNoDate as never, 'MMM dd, yyyy', {
+                dateType: 'awarded',
+            }).createdAt
+        ).toBe('');
+    });
+    it('keeps the UTC award day stable at a timezone boundary', () => {
+        expect(
+            getInfoFromCredential(
+                {
+                    ...VC2CredentialWithValidFrom,
+                    awardedDate: '2027-10-01T23:30:00-02:00',
+                } as never,
+                'MMM dd, yyyy',
+                { uppercaseDate: false, dateType: 'awarded' }
+            ).createdAt
+        ).toBe('Oct 02, 2027');
+    });
+});
+
+it('treats a date-only award as a UTC calendar day', () => {
+    expect(
+        getInfoFromCredential(
+            { ...VC2CredentialWithValidFrom, awardedDate: '2027-10-01' } as never,
+            'MMM dd, yyyy',
+            { uppercaseDate: false, dateType: 'awarded' }
+        ).createdAt
+    ).toBe('Oct 01, 2027');
+});

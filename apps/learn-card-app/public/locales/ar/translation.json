@@ -3821,7 +3821,8 @@
             "lifecycle": {
                 "revoked": "ملغاة",
                 "suspended": "معلقة"
-            }
+            },
+            "awardedOn": "مُنحت في {{date}}"
         }
     },
     "skills": {
