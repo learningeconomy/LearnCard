@@ -126,6 +126,12 @@ export type UnifiedAuthState =
            * The app must prompt for a new PIN, then call `acknowledgeEscrowPinAutoClear`.
            */
           escrowPinAutoCleared?: true;
+          /**
+           * The signed authority still has a PIN that lca-api cannot carry (e.g. after an
+           * identity-recovery rebind), so automatic repair stopped without signing
+           * anything. The app should ask the user to set a new PIN (`setEscrowPin`).
+           */
+          escrowPinResetRequired?: true;
           authUser?: AuthUser;
           did: string;
           privateKey: string;

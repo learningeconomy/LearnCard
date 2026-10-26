@@ -388,7 +388,9 @@ export class AuthCoordinator {
                     if (
                         repairingRecovery &&
                         (enrollmentResult?.enrolled ||
-                            (enrollmentResult && enrollmentResult.reason === 'not-enrolled')) &&
+                            (enrollmentResult &&
+                                (enrollmentResult.reason === 'not-enrolled' ||
+                                    enrollmentResult.reason === 'pin-reset-required'))) &&
                         isCurrentAccount() &&
                         this.recoveredEscrowAccount === recovered
                     ) {
@@ -404,6 +406,23 @@ export class AuthCoordinator {
                         this.state.status === 'ready'
                     ) {
                         this.setState({ ...this.state, escrowPinAutoCleared: true });
+                    }
+                    // Only a user-chosen PIN can resolve this; the strategy signed nothing,
+                    // so later refreshes stay read-only until the user acts.
+                    const pinResetRequired =
+                        !!enrollmentResult &&
+                        !enrollmentResult.enrolled &&
+                        enrollmentResult.reason === 'pin-reset-required';
+                    if (
+                        enrollmentResult &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready' &&
+                        pinResetRequired !== (this.state.escrowPinResetRequired === true)
+                    ) {
+                        this.setState({
+                            ...this.state,
+                            escrowPinResetRequired: pinResetRequired ? true : undefined,
+                        });
                     }
                     if (
                         enrollmentResult &&
@@ -638,6 +657,7 @@ export class AuthCoordinator {
             escrowPin: undefined,
             escrowEnrollment: undefined,
             escrowPinAutoCleared: undefined,
+            escrowPinResetRequired: undefined,
         });
         try {
             await this.runEscrowOperation(async () =>
@@ -684,6 +704,7 @@ export class AuthCoordinator {
             escrowPin: undefined,
             escrowEnrollment: undefined,
             escrowPinAutoCleared: undefined,
+            escrowPinResetRequired: undefined,
         });
         try {
             await this.runEscrowOperation(async () =>

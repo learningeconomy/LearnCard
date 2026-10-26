@@ -87,7 +87,7 @@ export type EscrowRecoveryKind = 'pin' | 'hold';
 export type PinPromptAfterReady =
     | { kind: 'after-recovery' }
     | { kind: 'after-hold-recovery' }
-    | { kind: 'after-pin-cleared' }
+    | { kind: 'pin-reset-required' }
     | { kind: 'reset-banner' }
     | { kind: 'none' };
 
@@ -100,17 +100,17 @@ export const decidePinPromptAfterReady = ({
     pinEnabled,
     enrollment,
     promptFlag,
-    pinAutoCleared = false,
+    pinResetRequired = false,
 }: {
     recoveredVia: EscrowRecoveryKind | null;
     pinEnabled: boolean | undefined;
     enrollment: string | undefined;
     promptFlag: string | null | undefined;
-    /** The strategy cleared the retired PIN without a user action; always tell the user. */
-    pinAutoCleared?: boolean;
+    /** Repair stopped because only a new user-chosen PIN can restore automatic recovery. */
+    pinResetRequired?: boolean;
 }): PinPromptAfterReady => {
     if (pinEnabled !== false) return { kind: 'none' };
-    if (pinAutoCleared && enrollment === 'enrolled') return { kind: 'after-pin-cleared' };
+    if (pinResetRequired) return { kind: 'pin-reset-required' };
     if (recoveredVia === 'pin') return { kind: 'after-recovery' };
     if (recoveredVia === 'hold') {
         return enrollment === 'enrolled' ? { kind: 'after-hold-recovery' } : { kind: 'none' };

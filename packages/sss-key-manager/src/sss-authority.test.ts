@@ -195,6 +195,10 @@ const setup = async (legacyEnrolled = false) => {
         releaseDid?: string;
         failEnrollment?: boolean;
         missingPinMetadata?: boolean;
+        /** Server predating `priorEscrowEnrollment` on /keys/auth-share. */
+        oldServer?: boolean;
+        /** A compromised lca-api forging post-rebind status for a healthy account. */
+        forgedRebindStatus?: boolean;
     } = {};
     const signHold = async (record: EscrowHoldRecordLike): Promise<EscrowHoldRecordLike> => {
         const h = record.hold;
@@ -234,10 +238,21 @@ const setup = async (legacyEnrolled = false) => {
                     enrolled = false;
                     return response({ shareVersion: version, expectedShareVersionChecked: true });
                 }
+                if (faults.forgedRebindStatus)
+                    return response({
+                        primaryDid: owner.intent.did,
+                        shareVersion: version + 1,
+                        authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                        recoveryMethods: [],
+                        priorEscrowEnrollment: true,
+                        escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+                    });
                 return response({
                     primaryDid: owner.intent.did,
                     shareVersion: version,
                     authShare: { encryptedData: authShare, encryptedDek: '', iv: '' },
+                    // Mirror lca-api: only confirmed methods are listed; the rebind's
+                    // `pending` escrow method surfaces only as priorEscrowEnrollment.
                     recoveryMethods: enrolled
                         ? [
                               {
@@ -246,16 +261,10 @@ const setup = async (legacyEnrolled = false) => {
                                   confirmedAt: new Date().toISOString(),
                               },
                           ]
-                        : faults.missingPinMetadata
-                          ? // Mirror the rebind: methods reset to pending, Mongo PIN unset.
-                            [
-                                {
-                                    type: 'escrow',
-                                    shareVersion: version,
-                                    confirmationStatus: 'pending',
-                                },
-                            ]
-                          : [],
+                        : [],
+                    ...(faults.oldServer
+                        ? {}
+                        : { priorEscrowEnrollment: !enrolled && !!faults.missingPinMetadata }),
                     ...(faults.missingPinMetadata
                         ? { escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 } }
                         : {}),
@@ -686,14 +695,80 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
         return f;
     };
+    const writes = (f: { calls: string[] }) =>
+        f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
     it.each([false, true])(
-        'after a reload, repairs a recovered PIN account by signing a clear (outside rollout: %s)',
+        'after a reload, asks for a new PIN instead of rotating or signing (outside rollout: %s)',
+        async requirePriorEnrollment => {
+            const f = await recoverWithFailedDirectEnrollment();
+            const intents = f.intents.length;
+            const before = writes(f);
+            await expect(
+                f.reload().ensureEscrowEnrollment!({
+                    ...f.params,
+                    options: {
+                        ...f.params.options,
+                        ...(requirePriorEnrollment ? { requirePriorEnrollment } : {}),
+                    },
+                })
+            ).resolves.toEqual({ enrolled: false, reason: 'pin-reset-required' });
+            expect(f.intents).toHaveLength(intents);
+            expect(writes(f)).toBe(before);
+            expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+        }
+    );
+    it('lets the user set a new PIN after a rebind left the old one uncarryable', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        const intents = f.intents.length;
+        await f.reload().setEscrowPin!({ ...f.params, pin: '246813' });
+        expect(f.intents.slice(intents).map(signed => signed.intent)).toEqual([
+            // The authority still has the old PIN, so the user's new PIN is a `change`:
+            // a replace with fresh PIN material that needs no carry source in lca-api.
+            expect.objectContaining({ action: 'replace', pinAction: 'change' }),
+        ]);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+    });
+    it('signs nothing for a healthy PIN account when lca-api forges rebind status', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+        const intents = f.intents.length;
+        const before = writes(f);
+        f.faults.forgedRebindStatus = true;
+        await expect(f.reload().ensureEscrowEnrollment!(f.params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'pin-reset-required',
+        });
+        expect(f.intents).toHaveLength(intents);
+        expect(writes(f)).toBe(before);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: true });
+    });
+    it('still clears on forged status when auto-clear is explicitly enabled (needs security sign-off)', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.faults.forgedRebindStatus = true;
+        await expect(
+            createSSSStrategy({ ...f.config, autoClearUncarryablePin: true })
+                .ensureEscrowEnrollment!(f.params)
+        ).resolves.toMatchObject({ enrolled: true, pinCleared: 'automatic' });
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'replace', pinAction: 'clear' });
+        expect(f.state()).toMatchObject({ hasPin: false });
+    });
+    it.each([false, true])(
+        'with auto-clear opted in, repairs a recovered PIN account by signing a clear (outside rollout: %s)',
         async requirePriorEnrollment => {
             const f = await recoverWithFailedDirectEnrollment();
             const intents = f.intents.length;
             // Fresh instance: no unenrolledRotation and no clear-PIN intent from the coordinator.
             await expect(
-                f.reload().ensureEscrowEnrollment!({
+                createSSSStrategy({ ...f.config, autoClearUncarryablePin: true })
+                    .ensureEscrowEnrollment!({
                     ...f.params,
                     options: {
                         ...f.params.options,
@@ -711,9 +786,11 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         const f = await recoverWithFailedDirectEnrollment();
         const onEscrowPinAutoCleared = vi.fn();
         await expect(
-            createSSSStrategy({ ...f.config, onEscrowPinAutoCleared }).ensureEscrowEnrollment!(
-                f.params
-            )
+            createSSSStrategy({
+                ...f.config,
+                autoClearUncarryablePin: true,
+                onEscrowPinAutoCleared,
+            }).ensureEscrowEnrollment!(f.params)
         ).resolves.toEqual({
             enrolled: true,
             changed: true,
@@ -752,23 +829,14 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             await f.reload().fetchServerKeyStatus(f.params.token, f.params.providerType)
         ).shareVersion;
         await expect(
-            createSSSStrategy({ ...f.config, onEscrowPinAutoCleared }).ensureEscrowEnrollment!(
-                f.params
-            )
-        ).rejects.toThrow();
-        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
-        expect(f.intents).toHaveLength(intents + 1);
+            createSSSStrategy({
+                ...f.config,
+                autoClearUncarryablePin: true,
+                onEscrowPinAutoCleared,
+            }).ensureEscrowEnrollment!(f.params)
+        ).resolves.toEqual({ enrolled: false, reason: 'pin-reset-required' });
+        expect(f.intents).toHaveLength(intents);
         expect(onEscrowPinAutoCleared).not.toHaveBeenCalled();
-    });
-    it('keeps the old carry when automatic PIN clear is disabled', async () => {
-        const f = await recoverWithFailedDirectEnrollment();
-        const intents = f.intents.length;
-        await expect(
-            createSSSStrategy({ ...f.config, autoClearUncarryablePin: false })
-                .ensureEscrowEnrollment!(f.params)
-        ).rejects.toThrow();
-        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
-        expect(f.intents).toHaveLength(intents + 1);
     });
     it('does not burn a share version after a reload when the authority read fails', async () => {
         const f = await recoverWithFailedDirectEnrollment();
@@ -785,6 +853,13 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             state: 'not-enrolled',
             priorEscrowMethod: true,
         });
+    });
+    it('falls back to the confirmed method list on servers without priorEscrowEnrollment', async () => {
+        const f = await recoverWithFailedDirectEnrollment();
+        f.faults.oldServer = true;
+        const state = await f.reload().getEscrowEnrollmentState!(f.params);
+        expect(state).toMatchObject({ state: 'not-enrolled' });
+        expect(state).not.toHaveProperty('priorEscrowMethod');
     });
     it('does not enroll a never-enrolled account through prior-enrollment repair', async () => {
         const f = await setup();

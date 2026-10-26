@@ -2325,9 +2325,9 @@
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             },
-            "afterPinCleared": {
+            "pinResetRequired": {
                 "title": "Set a new recovery PIN",
-                "body": "While restoring your account's automatic recovery, we removed your old recovery PIN. Set a new 6-digit PIN to keep instant recovery ready."
+                "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
             },
             "useInstead": "Use my recovery PIN instead"
         },

@@ -135,24 +135,21 @@ describe('decidePinPromptAfterReady', () => {
         });
     });
 
-    it('tells the user to set a new PIN after an automatic clear, once enrolled', () => {
+    it('asks for a new PIN when repair requires a PIN reset, even while unenrolled', () => {
         for (const recoveredVia of [null, 'hold', 'pin'] as const)
             expect(
-                decidePinPromptAfterReady({ ...base, recoveredVia, pinAutoCleared: true })
-            ).toEqual({ kind: 'after-pin-cleared' });
+                decidePinPromptAfterReady({
+                    ...base,
+                    recoveredVia,
+                    enrollment: 'not-enrolled',
+                    pinResetRequired: true,
+                })
+            ).toEqual({ kind: 'pin-reset-required' });
         expect(
             decidePinPromptAfterReady({
                 ...base,
                 recoveredVia: null,
-                pinAutoCleared: true,
-                enrollment: 'not-enrolled',
-            })
-        ).toEqual({ kind: 'none' });
-        expect(
-            decidePinPromptAfterReady({
-                ...base,
-                recoveredVia: null,
-                pinAutoCleared: true,
+                pinResetRequired: true,
                 pinEnabled: true,
             })
         ).toEqual({ kind: 'none' });

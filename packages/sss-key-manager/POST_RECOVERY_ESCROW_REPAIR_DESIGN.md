@@ -1,85 +1,81 @@
 # Persisting post-recovery escrow repair intent (design)
 
-**Status:** Option C implemented (client only; unit tests with mocked HTTP/crypto, not
-exercised on staging or a real enclave):
+**Status:** Option C implemented, with automatic PIN clear **off by default** after the
+PR #1815 review. Unit tests with mocked HTTP/crypto plus lca-api route tests against
+MongoMemoryServer; not exercised on staging or a real enclave.
 
-- Part 1: `getEscrowEnrollmentState` adds `priorEscrowMethod: true` to a `not-enrolled`
-  result when lca-api still lists an escrow method in any confirmation state.
-  `resolveEscrowEnrollmentGate` turns a rollout denial for such an account into a repair
-  with `requirePriorEnrollment`, so the signed authority (Nitro) still decides. Never-enrolled
-  accounts stay gated; opted-out/disabled paths are unchanged. The in-memory
-  `recoveredEscrowAccount` path is kept.
-- Part 2: in Nitro mode, `ensureEscrowEnrollmentUnguarded` signs `replace` / `clear` instead
-  of `carry` / `keep` when the authority is `active` with `hasPin`, no PIN is being set, the
-  account is not currently enrolled, and lca-api reports `escrowPin.state === 'none'`
-  (Mongo PIN absent, which alone guarantees the `escrow.ts` precondition fails). Controlled
-  by `SSSStrategyConfig.autoClearUncarryablePin`, default `DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN
-= true`, because with it off no user-facing PIN prompt is reachable while unenrolled.
+**PR #1815 review follow-up (forged-status finding, credit: Custard7's review):**
+every input to the uncarryable-PIN inference except the signed authority comes from
+lca-api: `recoveryMethods`, `shareVersion` and `escrowPin.state`. A compromised lca-api can
+report a missing/pending escrow method, a newer share version and PIN `none` for a healthy
+PIN-enrolled account. With auto-clear on, the client then rotates shares and signs
+`replace` / `clear` on an ordinary refresh, with no recovery and no user action, durably
+removing the PIN fast-release path. The later prompt and the repeated-clear alarm do not
+prevent the first loss. Changes:
+
+- `DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN = false`. `autoClearUncarryablePin: true` still
+  restores the old behaviour, and a regression documents that it still clears on forged
+  status. Enabling it needs an independently trustworthy recovery signal (for example a
+  signed rebind record the client can verify, not an lca-api claim) **and** security sign-off
+  on Q1.
+- **User-intent reset instead.** When the Nitro authority is `active` with `hasPin`, no new
+  PIN is supplied, the caller did not ask for a clear, the account is not currently
+  enrolled, and lca-api reports `escrowPin.state === 'none'`, `ensureEscrowEnrollment` now
+  returns `{ enrolled: false, reason: 'pin-reset-required' }`. The check runs right after the
+  authority read, before any auth-share `PUT` or intent, so nothing is rotated or signed and
+  no share version is burned. This also covers the gate-driven `requirePriorEnrollment`
+  path (gitStream finding: it never passes `clearPin`, so it used to sign a `carry` that
+  lca-api rejects on every refresh). `enableEscrowRecovery` throws instead, keeping its
+  public result type unchanged.
+- The coordinator publishes `ready.escrowPinResetRequired = true` (cleared when a later
+  repair returns anything else, and by `setEscrowPin` / `clearEscrowPin`). The strategy
+  signs no intent for this result, so later refreshes only re-read state.
+- learn-card-app shows `RecoveryPinSetupOverlay` with reason `pin-reset-required` (copy
+  `recovery.pin.pinResetRequired.*`, "set a new PIN to restore automatic recovery"). It
+  shows at most once per DID per app start; a dismissal records the usual `skipped` flag,
+  and the prompt returns on the next app start. Entering a PIN calls the existing
+  `setEscrowPin`, which signs `replace` with pinAction `change` (the authority still has
+  the old PIN). lca-api's carry precondition (`escrow.ts`, `preservePin`) only applies to
+  `keep`, and the enclave only requires `has_pin` for `change`, so no source blob or Mongo
+  PIN is needed (nitro fixture regression, not run against a real enclave). The en copy
+  replaces the auto-clear copy (`afterPinCleared`), which became dead in the app. **es, fr
+  and ar strings are machine-drafted and need native review.**
+- **lca-api signal for Part 1.** `/keys/auth-share` now returns
+  `priorEscrowEnrollment: boolean`: true when the account has an escrow recovery method in
+  any confirmation state but none confirmed at the current share version. A boolean was
+  chosen over listing unconfirmed methods with `confirmationStatus`: existing clients treat
+  any listed escrow method as evidence (for example the non-Nitro `requirePriorEnrollment`
+  check), so exposing pending methods would silently change their behaviour, while an extra
+  field is ignored by older clients. `getEscrowEnrollmentState` derives `priorEscrowMethod`
+  from it, falling back to the listed methods when the field is absent (older servers).
+  It is a hint only; Nitro repair still requires the signed authority to show prior
+  enrollment.
+- The coordinator-level automatic-clear flag (`escrowPinAutoCleared`,
+  `acknowledgeEscrowPinAutoClear`), `onEscrowPinAutoCleared` telemetry and the ledger
+  monitor alarm are unchanged; they only fire if auto-clear is enabled.
+
+**Earlier implementation notes (still accurate except where superseded above):**
+
+- Part 1: `resolveEscrowEnrollmentGate` turns a rollout denial for an account with
+  `priorEscrowMethod` into a repair with `requirePriorEnrollment`, so the signed authority
+  (Nitro) still decides. Never-enrolled accounts stay gated; opted-out/disabled paths are
+  unchanged. The in-memory `recoveredEscrowAccount` path is kept.
+- Part 2 (now opt-in): with `autoClearUncarryablePin: true`, Nitro repair signs `replace` /
+  `clear` instead of `carry` / `keep` for the uncarryable-PIN case above, and only with
+  rebind evidence: signed authority `shareVersion` < lca-api `shareVersion`, and lca-api
+  lists no confirmed escrow method at any share version. Without that evidence it returns
+  `pin-reset-required`. A committed automatic clear returns `pinCleared: 'automatic'`, calls
+  `onEscrowPinAutoCleared` once (no DID, email or PIN material) and sets
+  `ready.escrowPinAutoCleared`.
 - Q4: the authority read and attestation already run before rotation, so a failed read
-  burns no share version (now covered by a regression test).
+  burns no share version (covered by a regression test).
+- Monitor: `services/escrow-ledger-monitor` emits `AuthorityRepeatedPinClear` for at least
+  2 verified signed PIN clears per account in 30 days (alarm in
+  `infra/escrow-enclave/authority-audit.tf`). Signed records cannot tell automatic clears
+  from user-initiated ones.
 
-**Q1 guardrails (implemented; unit tests only, not run on staging or a real enclave):**
-
-1. **Narrowed trigger.** The automatic clear now also requires rebind evidence. Read from
-   source: `/keys/auth-share` (`lca-api/src/routes/keys.ts`, `getAuthShare`) returns only
-   recovery methods that pass `isRecoveryMethodConfirmed`, and exposes `confirmedAt` but not
-   `confirmationStatus`. The rebind's `pending` escrow method is therefore never visible to
-   the client. The exact condition is now all of:
-    - `autoClearUncarryablePin` is on (default) and the caller did not already ask for a
-      clear (`clearPin`, forced rotation, or explicit enable of a disabled authority);
-    - Nitro authority `status === 'active'` and `hasPin === true`;
-    - no new PIN is being set, and the account is not currently enrolled;
-    - lca-api `escrowPin.state === 'none'`;
-    - **new:** signed authority `shareVersion` < lca-api `shareVersion` (the rebind bumps the
-      server version and leaves the authority at the old one);
-    - **new:** lca-api lists no confirmed escrow method (`confirmedAt` or
-      `confirmationStatus === 'confirmed'`) at any share version.
-
-    If any condition fails, the strategy signs `carry` / `keep` exactly as before, which
-    lca-api rejects. Nothing was broadened.
-
-2. **User is always told.** A committed automatic clear returns
-   `{ enrolled: true, changed: true, shareVersion, pinCleared: 'automatic' }`. The
-   coordinator sets `ready.escrowPinAutoCleared = true`. Later enrollment publishes keep the
-   flag; `setEscrowPin` and `clearEscrowPin` drop it. Once enrollment is `enrolled` with no
-   PIN, the app's `decidePinPromptAfterReady` returns `after-pin-cleared`. The provider then
-   calls `acknowledgeEscrowPinAutoClear()` and opens `RecoveryPinSetupOverlay`, the same
-   overlay used after hold recovery, with new copy (`recovery.pin.afterPinCleared.*`, in
-   en/es/fr/ar). The prompt shows once. Explicit user clears never set the flag.
-   Limitation: the flag is in memory only. If the app reloads after the clear commits but
-   before the prompt shows, the prompt is lost. The PIN stays cleared, and the next repair
-   does not clear again because the authority no longer has a PIN.
-
-3. **Abuse is visible.**
-    - Client: every committed automatic clear calls
-      `SSSStrategyConfig.onEscrowPinAutoCleared` once with
-      `{ type: 'escrow.pin.auto_cleared', shareVersion, authorityShareVersion }`. It carries
-      no DID, email, or PIN material and defaults to `console.warn`. learn-card-app logs it as
-      `escrow.pin.auto_cleared`. ScoutPass uses the default.
-    - Monitor: `services/escrow-ledger-monitor` counts committed PIN clears per account
-      from verified signed authority events (`previous_pin.configured && !pin.configured`).
-      When there are at least 2 clears with signed `hi_ms` in the last 30 days, it emits
-      `AuthorityRepeatedPinClear` (metric only). Terraform alarm
-      `<prefix>-AuthorityRepeatedPinClear` (`infra/escrow-enclave/authority-audit.tf`) sends
-      it to the monitor SNS topic. Signed records cannot tell automatic clears from
-      user-initiated ones, so the alarm counts both.
-
-**Proposed security sign-off wording (Q1):** "The client may complete a recovery-intended
-PIN clear without a user prompt, only when the Nitro-signed authority is active with a PIN
-at a share version older than lca-api's current share version, lca-api reports no escrow
-PIN and lists no confirmed escrow recovery method, the account is not currently enrolled,
-and the user is not setting or explicitly clearing a PIN, always followed by a prompt to
-set a new PIN, with automatic clears logged and alerted."
-
-**Part 1 caveat** (found while checking the server fields above; not verified end to end):
-`priorEscrowMethod` keys off any listed escrow method, but `/keys/auth-share` omits the
-rebind's `pending` methods. So the rollout-bypass half of Option C probably never triggers
-against the real lca-api. The unit-test fixture lists the pending method, which the real
-server does not. Repair outside the rollout after a reload likely still needs a
-server-exposed signal (see Q3).
-
-**Still open for security:** Q1 sign-off on the wording above, Q2, Q3, Q5, Q6. Staging test
-plan item 9 not run.
+**Still open for security:** Q1 (now: what independently trustworthy recovery evidence
+would justify an automatic clear), Q2, Q3, Q5, Q6. Staging test plan item 9 not run.
 
 **Original status:** Proposal. Follow-up to PR #1790 (review thread on
 `AuthCoordinator.ts`, "recovered account outside the rollout still ends up unenrolled if

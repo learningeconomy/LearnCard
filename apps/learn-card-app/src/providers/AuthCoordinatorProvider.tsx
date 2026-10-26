@@ -590,9 +590,10 @@ const AuthSessionManager: React.FC<{
         coordinator.state.status === 'ready' ? coordinator.state.escrowPin?.enabled : undefined;
     const readyEnrollment =
         coordinator.state.status === 'ready' ? coordinator.state.escrowEnrollment : undefined;
-    const readyPinAutoCleared =
-        coordinator.state.status === 'ready' && coordinator.state.escrowPinAutoCleared === true;
-    const { acknowledgeEscrowPinAutoClear } = coordinator;
+    const readyPinResetRequired =
+        coordinator.state.status === 'ready' && coordinator.state.escrowPinResetRequired === true;
+    // Once per DID per app start: a dismissal must not re-prompt on every refresh.
+    const pinResetPromptedRef = useRef<string | null>(null);
 
     // Identity recovery only completes through the escrow hold, and initialize()
     // re-derives this status after a reload, unlike the in-memory onRecover signal.
@@ -633,12 +634,11 @@ const AuthSessionManager: React.FC<{
                 pinEnabled: readyPinEnabled,
                 enrollment: readyEnrollment,
                 promptFlag: flag,
-                pinAutoCleared: readyPinAutoCleared,
+                pinResetRequired: readyPinResetRequired && pinResetPromptedRef.current !== did,
             });
-            if (prompt.kind === 'after-pin-cleared') {
-                // Acknowledge first so the automatic-clear prompt shows exactly once.
-                acknowledgeEscrowPinAutoClear();
-                setRecoveryPinSetupReason('after-pin-cleared');
+            if (prompt.kind === 'pin-reset-required') {
+                pinResetPromptedRef.current = did;
+                setRecoveryPinSetupReason('pin-reset-required');
                 recoveredViaEscrowRef.current = null;
             } else if (prompt.kind === 'after-recovery') {
                 writeRecoveryPinPromptFlag(did, 'set');
@@ -657,8 +657,7 @@ const AuthSessionManager: React.FC<{
         readyDid,
         readyPinEnabled,
         readyEnrollment,
-        readyPinAutoCleared,
-        acknowledgeEscrowPinAutoClear,
+        readyPinResetRequired,
     ]);
 
     // --- QR login device share pickup from sessionStorage ---
