@@ -32,10 +32,12 @@ export const FILE_EXTRACTION_CODES = [
 export const FILE_KINDS = ['resume', 'certificate', 'transcript', 'diploma'] as const;
 export const FILE_SIZE_BUCKETS = ['under_100kb', 'under_1mb', 'under_4mb', 'over_4mb'] as const;
 
+export const MAX_FILE_EXTRACTION_ATTEMPTS = 100;
+
 export const FileExtractionAttemptValidator = z.object({
     operationId: z.string().uuid(),
     attemptId: z.string().uuid(),
-    attempt: z.number().int().min(1).max(100),
+    attempt: z.number().int().min(1).max(MAX_FILE_EXTRACTION_ATTEMPTS),
 });
 export type FileExtractionAttempt = z.infer<typeof FileExtractionAttemptValidator>;
 
@@ -78,6 +80,7 @@ export const FileExtractionDiagnosticValidator = FileExtractionAttemptValidator.
             ...FILE_EXTRACTION_CODES,
             'RESPONSE_INVALID',
             'NETWORK_FAILED',
+            'UPLOAD_BUSY',
             'ARTIFACT_SAVE_FAILED',
             'CREDENTIAL_SAVE_FAILED',
         ])

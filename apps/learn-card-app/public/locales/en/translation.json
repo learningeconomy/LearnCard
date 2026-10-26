@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "This file is too large. Choose a file smaller than 4 MB.",
                 "errorReadFailed": "We could not read this file. Please try a different file.",
                 "errorContentRejected": "We could not identify a supported document in this file.",
+                "errorUploadBusy": "Uploads are still busy. Please try again shortly.",
                 "errorProcessingFailed": "We could not process this file right now. Please try again.",
                 "errorConsentDenied": "AI processing is not available for this account.",
                 "errorResponseInvalid": "We received an incomplete result. Please try again.",
@@ -475,6 +476,7 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
+                "waitingForCapacity": "Uploads are busy. Waiting for a turn…",
                 "notifyWhenReady": "Notify me when it's ready",
                 "quotes": {
                     "resume": {
