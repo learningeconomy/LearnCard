@@ -6,6 +6,8 @@ description: Evolve requested access without replacing the connection or silentl
 
 The owner can update a live contract at its existing URI. Each saved update creates an immutable version; `getContract(uri)` returns the current request with its `version`. Existing users keep their consent records and transaction history.
 
+When creating the initial request, **Preview Contract** shows the current unsaved draft. It does not require a saved URI or connect the account. Close the preview to keep editing, then select **Create Contract** to save.
+
 ## What happens to existing users
 
 Mixed updates use the strongest change kind in this table, from bottom to top.

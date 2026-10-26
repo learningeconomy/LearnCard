@@ -90,7 +90,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const { initWallet } = useWallet();
     const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
     const contractDetails =
-        refreshedContract?.uri === initialContractDetails?.uri
+        refreshedContract && refreshedContract.uri === initialContractDetails?.uri
             ? refreshedContract
             : initialContractDetails;
     const { presentToast } = useToast();
