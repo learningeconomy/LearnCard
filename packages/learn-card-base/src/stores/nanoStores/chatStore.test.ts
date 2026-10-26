@@ -178,7 +178,9 @@ const {
     sendMessage,
     sessionEnded,
     startInsightsSession,
+    startLearningPathway,
     startTopic,
+    startTopicWithUri,
     threads,
 } = await import('./chatStore');
 
@@ -293,6 +295,88 @@ describe('chat session startup', () => {
             { topic: 'Algebra', mode: AiSessionMode.insights },
             { topic: 'Geometry', mode: AiSessionMode.tutor },
         ]);
+    });
+
+    it('starts fresh after a disconnect instead of joining the stale start', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        // Mount, unmount (disconnect) and remount while auth is still negotiating.
+        const staleStart = startTopic('Algebra');
+        disconnectWebSocket();
+        const freshStart = startTopic('Algebra');
+
+        expect(freshStart).not.toBe(staleStart);
+
+        resolve();
+        const socket = await openLatestSocket();
+        await Promise.all([staleStart, freshStart]);
+
+        // The cancelled start bails out before sending, so only one session is created.
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toHaveLength(1);
+        expect(socket.sent.some(payload => JSON.parse(payload).action === 'start_topic')).toBe(
+            true
+        );
+    });
+
+    it.each([
+        ['startLearningPathway', () => startLearningPathway('topic:uri', 'pathway:uri')],
+        ['startInsightsSession', () => startInsightsSession('Algebra')],
+        ['startTopicWithUri', () => startTopicWithUri('topic:uri')],
+        ['resetChatStores', () => resetChatStores()],
+    ])('clears the in-flight start when %s runs', async (_name, takeOver) => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const staleStart = startTopic('Algebra');
+        void takeOver();
+        const retry = startTopic('Algebra');
+
+        expect(retry).not.toBe(staleStart);
+
+        resolve();
+        await openLatestSocket();
+        await Promise.all([staleStart, retry]);
+
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toHaveLength(1);
+    });
+
+    it('starts fresh instead of joining a start stuck past the join window', async () => {
+        mocks.authMode = undefined;
+        const { promise, resolve } = Promise.withResolvers<void>();
+
+        mocks.ensureGate = promise;
+
+        const stuckStart = startTopic('Algebra');
+
+        expect(startTopic('Algebra')).toBe(stuckStart);
+
+        vi.advanceTimersByTime(10_000);
+        const retry = startTopic('Algebra');
+
+        expect(retry).not.toBe(stuckStart);
+
+        resolve();
+        await openLatestSocket();
+        await Promise.all([stuckStart, retry]);
+
+        expect(
+            FakeWebSocket.instances.flatMap(target =>
+                target.sent.filter(payload => JSON.parse(payload).action === 'start_topic')
+            )
+        ).toHaveLength(1);
     });
 
     it('disconnects the previous socket before waiting for auth negotiation', async () => {
