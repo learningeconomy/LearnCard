@@ -3153,7 +3153,8 @@
             "preview": {
                 "criteria": "Criteria",
                 "certificate": "Certificate",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Awarded on {{date}}"
             },
             "loading": {
                 "issuing": "Issuing boost...",
@@ -9443,7 +9444,8 @@
         },
         "preview": {
             "willLook": "This is how your credential will look.",
-            "pickToStart": "Pick a type to start designing your credential."
+            "pickToStart": "Pick a type to start designing your credential.",
+            "verificationPending": "Verification runs after you issue it."
         },
         "err": {
             "network": "Connection issue. Check your internet and try again.",

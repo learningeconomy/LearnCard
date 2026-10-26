@@ -9,6 +9,7 @@ import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
+import PreviewCredentialFooter from './PreviewCredentialFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import BoostMediaPreview from './BoostMediaPreview';
@@ -348,12 +349,19 @@ const NonBoostPreview: React.FC<NonBoostPreviewProps> = ({
                 issuerOverride={issuerOverride}
                 issueHistory={issueHistory}
                 categoryType={categoryType}
-                verificationItems={verifications}
+                skipVerification={isPreview}
+                verificationItems={isPreview ? [] : verifications}
                 lifecycleStatus={lifecycleStatus}
                 customThumbComponent={customThumbComponent}
                 customBodyCardComponent={customBodyCardComponent}
                 customFooterComponent={
-                    isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                    isPreview ? (
+                        <PreviewCredentialFooter />
+                    ) : isClrChildCredential ? (
+                        <VerifiedChildCLRFooter />
+                    ) : (
+                        customFooterComponent
+                    )
                 }
                 subjectDID={subjectDID}
                 subjectImageComponent={subjectImageComponent}

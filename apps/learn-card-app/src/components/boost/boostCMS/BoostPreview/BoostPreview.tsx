@@ -14,6 +14,7 @@ import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
+import PreviewCredentialFooter from './PreviewCredentialFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
@@ -223,7 +224,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
 
-    const vcVerifications = useVerification(credential, !sharedOriginal);
+    const vcVerifications = useVerification(
+        credential,
+        !sharedOriginal && !isPreview && !skipVerification
+    );
     const [isFront, setIsFront] = useState(true);
     const viewedCredentialIdRef = useRef<string | undefined>(undefined);
 
@@ -360,7 +364,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     issuerOverride={issuerOverride}
                     subjectImageComponent={subjectImageComponent}
                     issuerImageComponent={issuerImageComponent}
-                    customFooterComponent={customFooterComponent}
+                    customFooterComponent={
+                        isPreview ? <PreviewCredentialFooter /> : customFooterComponent
+                    }
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     hideNavButtons
                     hideQRCode={hideQRCode}
@@ -378,7 +384,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     customThumbComponent={customThumbComponent}
                     customBodyCardComponent={customBodyCardComponent}
                     customFooterComponent={
-                        isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                        isPreview ? (
+                            <PreviewCredentialFooter />
+                        ) : isClrChildCredential ? (
+                            <VerifiedChildCLRFooter />
+                        ) : (
+                            customFooterComponent
+                        )
                     }
                     subjectDID={subjectDID}
                     subjectImageComponent={subjectImageComponent}

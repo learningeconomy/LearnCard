@@ -27,6 +27,9 @@ import {
     resolveSharedCredential,
     getDefaultCategoryForCredential,
     getAllSortedCredentials,
+    formatCredentialAwardedDate,
+    getEvidenceAttachmentType,
+    getEvidenceAttachments,
 } from './credentialHelpers';
 import {
     getNotificationType,
@@ -477,5 +480,98 @@ describe('Qualifications notifications', () => {
         expect(getNotificationType('ext:LCA_CUSTOM:Qualifications:Continuing_Education')).toBe(
             NotificationTypeEnum.Qualifications
         );
+    });
+});
+
+describe('credential award date display', () => {
+    it('prefers the standard top-level awardedDate without changing the credential', () => {
+        const credential = {
+            awardedDate: '2027-10-01T00:00:00.000Z',
+            validFrom: '2026-10-26T12:00:00.000Z',
+            credentialSubject: { id: 'did:example:learner' },
+        } as never;
+        expect(formatCredentialAwardedDate(credential)).toBe('October 01, 2027');
+        expect(credential).toHaveProperty('validFrom', '2026-10-26T12:00:00.000Z');
+    });
+
+    it.each([
+        [{ issuanceDate: '2026-10-26' }, 'October 26, 2026'],
+        [{ validFrom: '2026-10-26' }, 'October 26, 2026'],
+        [{ awardedDate: 'invalid', validFrom: '2026-10-26' }, 'October 26, 2026'],
+        [{ awardedDate: '' }, ''],
+        [{}, ''],
+        [{ validFrom: 'invalid' }, ''],
+        [undefined, ''],
+        [
+            { boostCredential: { awardedDate: '2027-10-01', validFrom: '2026-10-26' } },
+            'October 01, 2027',
+        ],
+    ])('handles legacy, wrapped, missing and invalid dates: %j', (credential, expected) => {
+        expect(formatCredentialAwardedDate(credential as never)).toBe(expected);
+    });
+
+    it('keeps the award day aligned with UTC spreadsheet editing across timezones', () => {
+        expect(formatCredentialAwardedDate({ awardedDate: '2027-10-01T00:00:00Z' } as never)).toBe(
+            'October 01, 2027'
+        );
+        expect(
+            formatCredentialAwardedDate({ awardedDate: '2027-10-01T23:30:00-02:00' } as never)
+        ).toBe('October 02, 2027');
+    });
+});
+
+describe('evidence attachment classification', () => {
+    it.each([
+        ['https://evidence.example.test/course/12', 'link'],
+        ['https://portfolio.example.test/ada', 'link'],
+        ['https://drive.google.com/file/d/example/view', 'link'],
+        ['https://docs.google.com/document/d/example/edit', 'link'],
+        ['https://example.test/report.pdf?download=1', 'document'],
+        ['data:application/pdf;base64,AAAA', 'document'],
+        ['An explanation with no link', 'text'],
+        ['', 'text'],
+    ])('classifies %s as %s', async (url, expected) => {
+        const fetch = vi
+            .spyOn(globalThis, 'fetch')
+            .mockRejectedValue(new Error('No network in test'));
+        try {
+            expect(await getEvidenceAttachmentType(url)).toBe(expected);
+        } finally {
+            fetch.mockRestore();
+        }
+    });
+
+    it('still recognizes known video hosts even if optional metadata is unavailable', async () => {
+        const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline'));
+        try {
+            for (const url of [
+                'https://youtu.be/abc123',
+                'https://vimeo.com/12345',
+                'https://www.loom.com/share/abc123',
+            ]) {
+                expect(await getEvidenceAttachmentType(url)).toBe('video');
+            }
+        } finally {
+            fetch.mockRestore();
+        }
+    });
+
+    it('keeps two independently mapped plain evidence URLs as clickable links', async () => {
+        const attachments = await getEvidenceAttachments([
+            { id: 'https://evidence.example.test/course', type: ['Evidence'], name: 'Evidence' },
+            { id: 'https://portfolio.example.test/ada', type: ['Evidence'], name: 'Portfolio' },
+        ] as never);
+        expect(attachments).toEqual([
+            expect.objectContaining({
+                title: 'Evidence',
+                type: 'link',
+                url: 'https://evidence.example.test/course',
+            }),
+            expect.objectContaining({
+                title: 'Portfolio',
+                type: 'link',
+                url: 'https://portfolio.example.test/ada',
+            }),
+        ]);
     });
 });

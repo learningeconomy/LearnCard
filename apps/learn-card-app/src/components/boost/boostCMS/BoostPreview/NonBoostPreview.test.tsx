@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
     newModal: vi.fn(),
     verify: vi.fn(),
     fullPage: vi.fn(),
+    displayCard: vi.fn(),
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -72,13 +73,17 @@ vi.mock('learn-card-base/components/vcmodal/VCDisplayCardWrapper2', () => ({
     default: ({
         onDotsClick,
         customFooterComponent,
-    }: MenuProps & { customFooterComponent?: React.ReactNode }) => (
-        <div>
-            <span>Generic credential preview</span>
-            {customFooterComponent}
-            {onDotsClick && <button type="button">Embedded options</button>}
-        </div>
-    ),
+        ...props
+    }: MenuProps & { customFooterComponent?: React.ReactNode; skipVerification?: boolean }) => {
+        mocks.displayCard(props);
+        return (
+            <div>
+                <span>Generic credential preview</span>
+                {customFooterComponent}
+                {onDotsClick && <button type="button">Embedded options</button>}
+            </div>
+        );
+    },
 }));
 vi.mock('../../../accessibility/AccessibleBoostFooterLayout', () => ({
     default: ({ children, footerProps }: FooterLayoutProps) => (
@@ -322,7 +327,8 @@ describe('NonBoostPreview', () => {
         );
 
         expect(screen.getByText('Generic credential preview')).toBeTruthy();
-        expect(screen.getByText('Verified child CLR')).toBeTruthy();
+        expect(screen.getByText('Preview')).toBeTruthy();
+        expect(screen.queryByText('Verified child CLR')).toBeNull();
         expect(screen.queryByText('CLR course detail')).toBeNull();
     });
 
@@ -349,4 +355,27 @@ describe('NonBoostPreview', () => {
         expect(screen.getByText('Generic credential preview')).toBeTruthy();
         expect(screen.queryByText('CLR course detail')).toBeNull();
     });
+});
+
+it('shows a neutral footer and prevents nested proof verification for an unsigned preview', () => {
+    mocks.verify.mockClear();
+    render(
+        <NonBoostPreview
+            credential={credential}
+            verificationItems={[{ check: 'proof', status: VerificationStatusEnum.Failed }]}
+            categoryType={BoostCategoryOptionsEnum.achievement}
+            customThumbComponent={null}
+            customBodyCardComponent={null}
+            customFooterComponent={<span>Verified Credential Failed</span>}
+            customIssueHistoryComponent={null}
+            handleCloseModal={vi.fn()}
+            isPreview
+        />
+    );
+    expect(screen.getByText('Preview')).toBeTruthy();
+    expect(screen.getByText('Verification runs after you issue it.')).toBeTruthy();
+    expect(screen.queryByText('Verified Credential Failed')).toBeNull();
+    expect(mocks.verify).not.toHaveBeenCalled();
+    expect(mocks.displayCard.mock.lastCall?.[0].skipVerification).toBe(true);
+    expect(mocks.displayCard.mock.lastCall?.[0].verificationItems).toEqual([]);
 });

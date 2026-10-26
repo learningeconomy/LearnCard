@@ -116,3 +116,23 @@ describe('VCDisplayCardWrapper2', () => {
         expect(displayProps.subjectImageComponent).toBe(issuerImage);
     });
 });
+
+it('does not reverify when the authoring preview supplies its own verification presentation', () => {
+    mocks.verifyCredential.mockClear();
+    render(
+        <VCDisplayCardWrapper2
+            credential={endorsement}
+            categoryType="Social Badge"
+            skipVerification
+            verificationItems={[]}
+            customFooterComponent={<span>Preview</span>}
+        />
+    );
+    expect(mocks.verifyCredential).not.toHaveBeenCalled();
+    expect(mocks.displayCard.mock.calls.at(-1)?.[0]).toEqual(
+        expect.objectContaining({
+            verificationItems: [],
+            customFooterComponent: expect.anything(),
+        })
+    );
+});

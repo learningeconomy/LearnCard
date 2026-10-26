@@ -2807,7 +2807,8 @@
             "preview": {
                 "criteria": "Criterios",
                 "certificate": "Certificado",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Otorgada el {{date}}"
             },
             "loading": {
                 "issuing": "Emitiendo Boost...",
@@ -9392,7 +9393,8 @@
         },
         "preview": {
             "willLook": "Así se verá tu credencial.",
-            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial."
+            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial.",
+            "verificationPending": "La verificación se realiza después de emitirla."
         },
         "err": {
             "network": "Problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",

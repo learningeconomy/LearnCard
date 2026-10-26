@@ -2807,7 +2807,8 @@
             "preview": {
                 "criteria": "Critères",
                 "certificate": "Certificat",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Décernée le {{date}}"
             },
             "loading": {
                 "issuing": "Émission du Boost...",
@@ -9392,7 +9393,8 @@
         },
         "preview": {
             "willLook": "Voici à quoi ressemblera votre justificatif.",
-            "pickToStart": "Choisissez un type pour commencer à concevoir votre justificatif."
+            "pickToStart": "Choisissez un type pour commencer à concevoir votre justificatif.",
+            "verificationPending": "La vérification a lieu après l’émission."
         },
         "err": {
             "network": "Problème de connexion. Vérifiez votre connexion Internet et réessayez.",
