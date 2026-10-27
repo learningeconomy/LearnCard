@@ -36,6 +36,12 @@ export const sharingFeature: FeatureDefinition = {
             await page.getByRole('button', { name: 'Share', exact: true }).click();
             const enable = page.getByRole('button', { name: 'Enable Public Preview', exact: true });
             await expect(enable).toBeEnabled({ timeout: UI_TIMEOUT });
+            await expect(
+                page.getByRole('button', { name: 'Post to LinkedIn', exact: true })
+            ).toBeDisabled();
+            await expect(
+                page.getByRole('link', { name: 'Post to LinkedIn', exact: true })
+            ).toHaveCount(0);
             await enable.click();
             const post = page.getByRole('link', { name: 'Post to LinkedIn', exact: true });
             await expect(post).toHaveAttribute('href', /preview%3D/i, { timeout: UI_TIMEOUT });

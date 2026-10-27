@@ -48,7 +48,7 @@ export const createShareBoostHandler =
         )
             return fallback();
         try {
-            const tenant = dependencies.resolveTenantConfig(new URL(request.url).hostname);
+            const tenant = dependencies.resolveTenantConfig(requestUrl.hostname);
             if (typeof tenant.apis?.brainServiceApi !== 'string') return fallback();
             const api = new URL(tenant.apis.brainServiceApi);
             if (api.protocol !== 'https:' && api.hostname !== 'localhost') return fallback();

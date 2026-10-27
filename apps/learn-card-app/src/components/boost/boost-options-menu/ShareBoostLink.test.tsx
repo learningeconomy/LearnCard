@@ -29,9 +29,13 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getCredentialName: () => 'Course completion',
     getCredentialSubject: (credential: { credentialSubject: object }) =>
         credential.credentialSubject,
-    getImageUrlFromCredential: () => undefined,
+    getImageUrlFromCredential: (credential: {
+        image?: string;
+        credentialSubject?: { image?: string };
+    }) => credential.image ?? credential.credentialSubject?.image,
     getIssuerNameNonBoost: () => 'Example school',
-    getUrlFromImage: () => undefined,
+    getUrlFromImage: (image: string | { id?: string }) =>
+        typeof image === 'string' ? image : image?.id,
     isBoostCredential: () => false,
     unwrapBoostCredential: (credential: object) => credential,
 }));
@@ -309,17 +313,19 @@ describe('ShareBoostLink error recovery', () => {
         });
         await waitFor(() => expect(enable).toBeEnabled());
         expect(createLink.mock.calls[0][0]).not.toHaveProperty('publicPreview');
-        const privatePost = new URL(
-            screen
-                .getByRole('link', { name: m['credentialShare.postToLinkedIn']() })
-                .getAttribute('href')!
-        );
-        expect(privatePost.searchParams.get('url')).toBe(privateLink);
+        const privatePost = screen.getByRole('button', {
+            name: m['credentialShare.postToLinkedIn'](),
+        });
+        expect(privatePost).toBeDisabled();
+        fireEvent.click(privatePost);
+        expect(createLink).toHaveBeenCalledOnce();
+        expect(screen.getByRole('button', { name: m['credentialShare.copyLink']() })).toBeEnabled();
         expect(screen.getByText(m['credentialShare.publicPreviewPrivate']())).toBeInTheDocument();
         fireEvent.click(enable);
         expect(
             screen.queryByRole('link', { name: m['credentialShare.postToLinkedIn']() })
         ).not.toBeInTheDocument();
+        expect(screen.getByText(m['credentialShare.publishingPreview']())).toBeInTheDocument();
         await act(async () => publishing.resolve({ link: publicLink }));
         expect(
             screen.getByText(m['credentialShare.publicPreviewPersistent']())
@@ -434,9 +440,8 @@ describe('ShareBoostLink error recovery', () => {
                 <ShareBoostLink {...props} />
             </QueryClientProvider>
         );
-        expect(
-            await screen.findByRole('link', { name: m['credentialShare.addToLinkedIn']() })
-        ).toBeInTheDocument();
+        const add = await screen.findByRole('link', { name: m['credentialShare.addToLinkedIn']() });
+        expect(new URL(add.getAttribute('href')!).searchParams.get('organizationName')).toBe('');
         expect(screen.getByRole('button', { name: m['credentialShare.copyLink']() })).toBeEnabled();
         expect(
             screen.getByRole('button', { name: m['credentialShare.enablePreview']() })
@@ -456,6 +461,148 @@ describe('ShareBoostLink error recovery', () => {
         expect(
             screen.getByRole('button', { name: m['credentialShare.enablePreview']() })
         ).toBeEnabled();
+        client.clear();
+    });
+
+    it.each([
+        {
+            image: 'https://cdn.example/credential.png',
+            subjectImage: 'https://cdn.example/portrait.png',
+            expected: 'https://cdn.example/credential.png',
+        },
+        {
+            image: 'https://cdn.example/credential.png',
+            subjectImage: 'http://cdn.example/portrait.png',
+            expected: 'https://cdn.example/credential.png',
+        },
+        {
+            image: 'http://cdn.example/credential.png',
+            subjectImage: 'https://cdn.example/portrait.png',
+            expected: 'https://cdn.example/portrait.png',
+        },
+        {
+            image: 'http://cdn.example/credential.png',
+            subjectImage: 'http://cdn.example/portrait.png',
+            achievementImage: 'https://cdn.example/badge.png',
+            expected: 'https://cdn.example/badge.png',
+        },
+        {
+            image: `https://cdn.example/${'a'.repeat(2048)}`,
+            subjectImage: 'https://cdn.example/portrait.png',
+            expected: 'https://cdn.example/portrait.png',
+        },
+        {
+            image: 'https://',
+            subjectImage: 'https://cdn.example/portrait.png',
+            expected: 'https://cdn.example/portrait.png',
+        },
+        { image: undefined, subjectImage: undefined, expected: undefined },
+    ])(
+        'publishes eligible credential artwork with fallbacks: $expected',
+        async ({ image, subjectImage, achievementImage, expected }) => {
+            const privateLink =
+                'https://learncard.app/share-boost?uri=encrypted&seed=secret&pin=1234';
+            createLink
+                .mockResolvedValueOnce({ link: privateLink })
+                .mockResolvedValueOnce({ link: `${privateLink}&preview=public-id` });
+            const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+            render(
+                <QueryClientProvider client={client}>
+                    <ShareBoostLink
+                        boost={{
+                            ...credential,
+                            image,
+                            credentialSubject: {
+                                id: 'did:example:learner',
+                                image: subjectImage,
+                                ...(achievementImage
+                                    ? { achievement: { image: achievementImage } }
+                                    : {}),
+                            },
+                        }}
+                        categoryType={'Achievement' as never}
+                    />
+                </QueryClientProvider>
+            );
+            const enable = await screen.findByRole('button', {
+                name: m['credentialShare.enablePreview'](),
+            });
+            await waitFor(() => expect(enable).toBeEnabled());
+            fireEvent.click(enable);
+            await screen.findByRole('link', { name: m['credentialShare.postToLinkedIn']() });
+            expect(createLink.mock.calls[1][0].publicPreview).toEqual({
+                name: 'Course completion',
+                issuer: 'Example school',
+                ...(expected ? { image: expected } : {}),
+            });
+            client.clear();
+        }
+    );
+
+    it('keeps posting unavailable after failed publication and requires consent again on reopen', async () => {
+        const privateLink = 'https://learncard.app/share-boost?uri=encrypted&seed=secret&pin=1234';
+        const publicLink = `${privateLink}&preview=public-id`;
+        createLink
+            .mockResolvedValueOnce({ link: privateLink })
+            .mockRejectedValueOnce(new Error('Publishing failed'))
+            .mockResolvedValueOnce({ link: publicLink })
+            .mockResolvedValueOnce({ link: privateLink });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+        const surface = (
+            <QueryClientProvider client={client}>
+                <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
+            </QueryClientProvider>
+        );
+        const view = render(surface);
+        const enable = await screen.findByRole('button', {
+            name: m['credentialShare.enablePreview'](),
+        });
+        await waitFor(() => expect(enable).toBeEnabled());
+        fireEvent.click(enable);
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(
+            screen.queryByRole('link', { name: m['credentialShare.postToLinkedIn']() })
+        ).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: m['common.tryAgain']() }));
+        const post = await screen.findByRole('link', {
+            name: m['credentialShare.postToLinkedIn'](),
+        });
+        expect(new URL(post.getAttribute('href')!).searchParams.get('url')).toBe(publicLink);
+        view.unmount();
+        render(surface);
+        await waitFor(() =>
+            expect(
+                screen.getByRole('button', { name: m['credentialShare.copyLink']() })
+            ).toBeEnabled()
+        );
+        expect(
+            screen.getByRole('button', { name: m['credentialShare.postToLinkedIn']() })
+        ).toBeDisabled();
+        expect(createLink.mock.calls[3][0]).not.toHaveProperty('publicPreview');
+        client.clear();
+    });
+
+    it('treats a successful response without a public preview as a publication failure', async () => {
+        const privateLink = 'https://learncard.app/share-boost?uri=encrypted&seed=secret&pin=1234';
+        createLink.mockResolvedValue({ link: privateLink });
+        const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <ShareBoostLink boost={credential} categoryType={'Achievement' as never} />
+            </QueryClientProvider>
+        );
+        const enable = await screen.findByRole('button', {
+            name: m['credentialShare.enablePreview'](),
+        });
+        await waitFor(() => expect(enable).toBeEnabled());
+        fireEvent.click(enable);
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(
+            screen.queryByRole('link', {
+                name: m['credentialShare.postToLinkedIn'](),
+            })
+        ).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: m['common.tryAgain']() })).toBeEnabled();
         client.clear();
     });
 
