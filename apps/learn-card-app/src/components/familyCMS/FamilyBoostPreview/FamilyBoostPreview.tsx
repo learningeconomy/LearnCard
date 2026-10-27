@@ -1,20 +1,13 @@
 import React, { useState } from 'react';
 
-import { IonContent, IonPage, useIonModal } from '@ionic/react';
+import { IonContent, IonPage } from '@ionic/react';
 import FamilyBoostFooter from './FamilyBoostFooter/FamilyBoostFooter';
 import FamilyBoostPreviewFrontFace from './FamilyBoostPreviewFrontFace';
 import FamilyBoostPreviewBackFace from './FamilyBoostPreviewBackFace';
 import ShareBoostLink from '../../boost/boost-options-menu/ShareBoostLink';
-import FamilyInviteGuardian from './FamilyBoostInviteModal/FamilyInviteGuardian';
 
 import { VC } from '@learncard/types';
-import {
-    ModalTypes,
-    useModal,
-    BoostCategoryOptionsEnum,
-    CredentialCategoryEnum,
-    useGetCredentialList,
-} from 'learn-card-base';
+import { ModalTypes, useModal, BoostCategoryOptionsEnum } from 'learn-card-base';
 
 export const FamilyPreview: React.FC<{
     credential: VC;
@@ -25,12 +18,6 @@ export const FamilyPreview: React.FC<{
         mobile: ModalTypes.FullScreen,
         desktop: ModalTypes.FullScreen,
     });
-    const { data: familyRecords } = useGetCredentialList(CredentialCategoryEnum.family);
-    const credentialRecordUri = familyRecords?.pages.some(page =>
-        page.records?.some(record => record.uri === boostUri)
-    )
-        ? boostUri
-        : undefined;
 
     const [isFront, setIsFront] = useState<boolean>(true);
 
@@ -44,18 +31,12 @@ export const FamilyPreview: React.FC<{
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: boostUri,
-            credentialRecordUri,
+            credentialRecordUri: boostUri,
             categoryType: BoostCategoryOptionsEnum.family,
         };
 
         newModal(<ShareBoostLink {...shareBoostLinkModalProps} />);
     };
-
-    const [openInviteModal, dismissInviteModal] = useIonModal(FamilyInviteGuardian, {
-        boostUri: credential?.boostId,
-        credential: credential,
-        handleCloseModal: () => dismissInviteModal(),
-    });
 
     let backgroundStyles = {
         backgroundPosition: 'center',
@@ -118,7 +99,6 @@ export const FamilyPreview: React.FC<{
                 setIsFront={setIsFront}
                 handleCloseModal={handleCloseModal}
                 handleShareBoostLink={presentShareBoostLink}
-                handleInviteModal={openInviteModal}
             />
         </IonPage>
     );

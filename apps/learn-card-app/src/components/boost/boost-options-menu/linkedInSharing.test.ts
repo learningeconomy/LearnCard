@@ -49,6 +49,47 @@ describe('LinkedIn sharing URLs', () => {
         expect(second.searchParams.get('certId')).toBe('lc:credential:record-2');
     });
 
+    it.each(['credentialId', 'credentialRecordUri'] as const)(
+        'keeps deterministic IDs up to LinkedIn’s 80-character limit (%s)',
+        source => {
+            const value = 'x'.repeat(80);
+            const url = new URL(buildLinkedInCertificationUrl({ ...input, [source]: value }));
+            expect(url.searchParams.get('certId')).toBe(value);
+            expect(url.searchParams.get('certUrl')).toBe(input.shareLink);
+        }
+    );
+
+    it.each(['credentialId', 'credentialRecordUri'] as const)(
+        'omits overlong IDs instead of truncating them (%s)',
+        source => {
+            const value =
+                'lc:network:staging.network.learncard.com/trpc:credential:b4ea57d7-887a-4f45-b18a-7c7b6b52cede';
+            expect(value.length).toBeGreaterThan(80);
+            const params = { ...input, [source]: value };
+            const first = new URL(buildLinkedInCertificationUrl(params));
+            const second = new URL(buildLinkedInCertificationUrl(params));
+            expect(first.searchParams.has('certId')).toBe(false);
+            expect(second.searchParams.has('certId')).toBe(false);
+            expect(first.searchParams.get('certUrl')).toBe(input.shareLink);
+        }
+    );
+
+    it.each(['credentialId', 'credentialRecordUri'] as const)(
+        'omits an 81-character ID while retaining the complete viewing URL (%s)',
+        source => {
+            const link = `${input.shareLink}&preview=public-preview`;
+            const url = new URL(
+                buildLinkedInCertificationUrl({
+                    ...input,
+                    [source]: 'x'.repeat(81),
+                    shareLink: link,
+                })
+            );
+            expect(url.searchParams.has('certId')).toBe(false);
+            expect(url.searchParams.get('certUrl')).toBe(link);
+        }
+    );
+
     it('omits a missing credential ID and invalid or missing issuance dates', () => {
         const url = new URL(buildLinkedInCertificationUrl({ ...input, issuedAt: 'not-a-date' }));
         expect(url.searchParams.has('certId')).toBe(false);

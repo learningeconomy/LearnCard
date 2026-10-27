@@ -34,8 +34,12 @@ export const buildLinkedInCertificationUrl = ({
         }
     }
     url.searchParams.set('certUrl', shareLink);
-    const certId = credentialId || credentialRecordUri;
-    if (certId) url.searchParams.set('certId', certId);
+    const requestedCertId = credentialId || credentialRecordUri;
+    // LinkedIn limits certId to 80 characters. Preserve the complete identity rather than
+    // truncating it into a potentially colliding value.
+    if (requestedCertId && requestedCertId.length <= 80) {
+        url.searchParams.set('certId', requestedCertId);
+    }
     return url.toString();
 };
 
