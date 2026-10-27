@@ -39,7 +39,7 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
             <header className="relative z-20 min-h-[116px] px-16 pb-3 pt-4 text-center">
                 <QRCodeScannerCloseButton
                     ariaLabel={closeLabel}
-                    className="absolute start-4 top-4"
+                    className="absolute inset-s-4 top-4"
                 />
 
                 <h1 className="m-0 text-xl font-semibold leading-tight text-white">{title}</h1>
@@ -53,10 +53,10 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
                     className="qr-code-scanner-target relative aspect-square max-h-full max-w-full overflow-hidden rounded-[20px]"
                     style={{ width: 'min(78vw, 43vh, 340px)' }}
                 >
-                    <span className="pointer-events-none absolute left-0 top-0 h-12 w-12 rounded-tl-xl border-l-[6px] border-t-[6px] border-[var(--ion-color-tertiary)]" />
-                    <span className="pointer-events-none absolute right-0 top-0 h-12 w-12 rounded-tr-xl border-r-[6px] border-t-[6px] border-[var(--ion-color-tertiary)]" />
-                    <span className="pointer-events-none absolute bottom-0 left-0 h-12 w-12 rounded-bl-xl border-b-[6px] border-l-[6px] border-[var(--ion-color-tertiary)]" />
-                    <span className="pointer-events-none absolute bottom-0 right-0 h-12 w-12 rounded-br-xl border-b-[6px] border-r-[6px] border-[var(--ion-color-tertiary)]" />
+                    <span className="pointer-events-none absolute left-0 top-0 h-12 w-12 rounded-tl-xl border-l-[6px] border-t-[6px] border-(--ion-color-tertiary)" />
+                    <span className="pointer-events-none absolute right-0 top-0 h-12 w-12 rounded-tr-xl border-r-[6px] border-t-[6px] border-(--ion-color-tertiary)" />
+                    <span className="pointer-events-none absolute bottom-0 left-0 h-12 w-12 rounded-bl-xl border-b-[6px] border-l-[6px] border-(--ion-color-tertiary)" />
+                    <span className="pointer-events-none absolute bottom-0 right-0 h-12 w-12 rounded-br-xl border-b-[6px] border-r-[6px] border-(--ion-color-tertiary)" />
 
                     {!feedbackMessage && (
                         <span
@@ -65,7 +65,7 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
                         />
                     )}
 
-                    <span className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs font-medium text-white/90 shadow-sm backdrop-blur-sm">
+                    <span className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/10 bg-black/50 px-3 py-1.5 text-xs font-medium text-white/90 shadow-xs backdrop-blur-xs">
                         {frameLabel}
                     </span>
                 </div>
@@ -87,7 +87,7 @@ export const QRCodeScannerOverlay: React.FC<QRCodeScannerOverlayProps> = ({
                         />
                     ) : (
                         <span
-                            className="h-2.5 w-2.5 rounded-full bg-[var(--ion-color-tertiary)] shadow-[0_0_0_4px_rgba(var(--ion-color-tertiary-rgb),0.18)] motion-safe:animate-pulse"
+                            className="h-2.5 w-2.5 rounded-full bg-(--ion-color-tertiary) shadow-[0_0_0_4px_rgba(var(--ion-color-tertiary-rgb),0.18)] motion-safe:animate-pulse"
                             aria-hidden="true"
                         />
                     )}

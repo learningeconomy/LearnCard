@@ -73,7 +73,7 @@ export const ChapiPrompt: React.FC<ChapiPromptProps> = ({ onBack }) => {
                         {m['chapi.title']()}
                     </h4>
 
-                    <div className="text-center space-y-4 text-[15px] text-grayscale-600 leading-relaxed mb-8">
+                    <div className="text-center space-y-v3-4 text-[15px] text-grayscale-600 leading-relaxed mb-8">
                         <p>{m['chapi.p1']()}</p>
                         <p>{m['chapi.p2']()}</p>
                         <p>{m['chapi.p3']()}</p>

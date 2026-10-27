@@ -36,10 +36,12 @@ const QUOTE_COUNT: Record<UploadTypesEnum, number> = {
     [UploadTypesEnum.RawVC]: 9,
 };
 
-export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: () => void }> = ({
-    fileType,
-    onDismiss,
-}) => {
+export const ChecklistLoader: React.FC<{
+    fileType: UploadTypesEnum;
+    onDismiss?: () => void;
+    waitingForCapacity?: boolean;
+    onCancelWait?: () => void;
+}> = ({ fileType, onDismiss, waitingForCapacity = false, onCancelWait }) => {
     const { closeModal } = useModal();
     const activeType = fileType ?? UploadTypesEnum.Resume;
     // Resolve quotes at render time so they reflect the current locale
@@ -53,7 +55,7 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
     const primaryColor = colors?.defaults?.primaryColor;
 
     return (
-        <div className="h-[100vh] w-full flex items-center justify-center absolute top-0 left-0 z-9999 bg-black/50">
+        <div className="h-screen w-full flex items-center justify-center absolute top-0 left-0 z-9999 bg-black/50">
             <div className="w-full flex flex-col justify-center items-center gap-[60px] bg-white rounded-[24px] px-[30px] pt-[60px] pb-[40px] max-w-[340px] mx-auto min-h-[400px] shadow-box-bottom">
                 <div className="relative w-full flex items-center justify-center">
                     <ProfilePicture
@@ -69,30 +71,48 @@ export const ChecklistLoader: React.FC<{ fileType: UploadTypesEnum; onDismiss?: 
                 </div>
 
                 <div className="w-full text-center">
-                    <Swiper
-                        modules={[Autoplay]}
-                        autoplay={{ delay: 3000, disableOnInteraction: false }}
-                        loop
-                        allowTouchMove={false}
-                        slidesPerView={1}
-                        className="w-full h-[50px]"
-                    >
-                        {activeQuotes.map((quote, index) => (
-                            <SwiperSlide key={index}>
-                                <span className="block font-notoSans text-grayscale-900 text-[17px] font-[600] leading-[24px] tracking-[0.25px]">
-                                    {quote}
-                                </span>
-                            </SwiperSlide>
-                        ))}
-                    </Swiper>
+                    {waitingForCapacity ? (
+                        <p
+                            role="status"
+                            className="min-h-[50px] text-sm text-grayscale-700 leading-relaxed"
+                        >
+                            {m['passport.buildMyLearnCard.loader.waitingForCapacity']()}
+                        </p>
+                    ) : (
+                        <Swiper
+                            modules={[Autoplay]}
+                            autoplay={{ delay: 3000, disableOnInteraction: false }}
+                            loop
+                            allowTouchMove={false}
+                            slidesPerView={1}
+                            className="w-full h-[50px]"
+                        >
+                            {activeQuotes.map((quote, index) => (
+                                <SwiperSlide key={index}>
+                                    <span className="block font-notoSans text-grayscale-900 text-[17px] font-semibold leading-[24px] tracking-[0.25px]">
+                                        {quote}
+                                    </span>
+                                </SwiperSlide>
+                            ))}
+                        </Swiper>
+                    )}
                 </div>
 
                 <div className="w-full flex items-center justify-center">
                     <button
-                        onClick={() => (onDismiss ? onDismiss() : closeModal())}
+                        onClick={() => {
+                            if (waitingForCapacity) {
+                                onCancelWait?.();
+                                return;
+                            }
+                            if (onDismiss) onDismiss();
+                            else closeModal();
+                        }}
                         className={`px-6 py-2 rounded-full text-white font-semibold bg-${primaryColor}`}
                     >
-                        {m['passport.buildMyLearnCard.loader.notifyWhenReady']()}
+                        {waitingForCapacity
+                            ? m['common.cancel']()
+                            : m['passport.buildMyLearnCard.loader.notifyWhenReady']()}
                     </button>
                 </div>
             </div>

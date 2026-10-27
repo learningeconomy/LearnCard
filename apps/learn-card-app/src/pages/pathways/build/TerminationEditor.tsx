@@ -64,8 +64,8 @@ const TerminationEditor: React.FC<TerminationEditorProps> = ({
     }>;
 
     return (
-        <div className="space-y-3">
-            <div className="space-y-1.5">
+        <div className="space-y-v3-3">
+            <div className="space-y-v3-1.5">
                 {!nested && (
                     <label className={LABEL} htmlFor="term-kind">
                         Finish this step when…

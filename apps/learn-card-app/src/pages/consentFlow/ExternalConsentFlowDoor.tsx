@@ -149,6 +149,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         contractUri: uri,
                         domain,
                         ownerDid,
+                        registeredRedirectUrl: consentedContract?.contract?.redirectUrl,
                         returnTo,
                         wallet,
                     });
@@ -274,7 +275,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         </>
                     ) : (
                         <>
-                            <h1 className="text-grayscale-900 text-[20px] font-[600] leading-[160%] text-center">
+                            <h1 className="text-grayscale-900 text-[20px] font-semibold leading-[160%] text-center">
                                 {contractDetails?.name}
                             </h1>
                             <div className="text-grayscale-800 text-[17px] text-center">
@@ -358,7 +359,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             <button
                                 type="button"
                                 onClick={handleLogout}
-                                className={`text-${primaryColor} font-[600]`}
+                                className={`text-${primaryColor} font-semibold`}
                             >
                                 Logout
                             </button>
@@ -380,7 +381,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             <button
                                 type="button"
                                 onClick={redirectToLogin}
-                                className={`text-${primaryColor} font-[600]`}
+                                className={`text-${primaryColor} font-semibold`}
                             >
                                 Login
                             </button>
@@ -388,8 +389,8 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                     </div>
                 )}
 
-                <div className="pt-[20px] border-solid border-t-[1px] border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
-                    <span className="text-grayscale-900 text-[14px] font-montserrat normal font-[700] tracking-[7px] uppercase">
+                <div className="pt-[20px] border-solid border-t border-grayscale-200 w-full flex flex-col items-center gap-[10px]">
+                    <span className="text-grayscale-900 text-[14px] font-montserrat normal font-bold tracking-[7px] uppercase">
                         {brandingConfig?.name}
                     </span>
                     <span className="text-grayscale-700 text-[14px]">
@@ -399,7 +400,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                         <IonCol className="flex items-center justify-center">
                             <button
                                 onClick={openPP}
-                                className={`text-${primaryColor} font-[600] text-[12px]`}
+                                className={`text-${primaryColor} font-semibold text-[12px]`}
                             >
                                 {m['legal.privacyPolicy']()}
                             </button>
@@ -408,7 +409,7 @@ const ExternalConsentFlowDoor: React.FC<{ login: boolean }> = ({ login = false }
                             </span>
                             <button
                                 onClick={openToS}
-                                className={`text-${primaryColor} font-[600] text-[12px]`}
+                                className={`text-${primaryColor} font-semibold text-[12px]`}
                             >
                                 {m['legal.termsOfService']()}
                             </button>

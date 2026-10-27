@@ -238,10 +238,10 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
                                             ? `bg-${color}`
                                             : 'bg-grayscale-200'
                                     } ${
-                                    index === 0 || (isDisplayMode && index === 1)
-                                        ? 'rounded-l-[20px]'
-                                        : ''
-                                } ${index === LEVELS.length - 1 ? 'rounded-r-[20px]' : ''}
+                                        index === 0 || (isDisplayMode && index === 1)
+                                            ? 'rounded-l-[20px]'
+                                            : ''
+                                    } ${index === LEVELS.length - 1 ? 'rounded-r-[20px]' : ''}
                                 `}
                             ></div>
                         </div>
@@ -252,7 +252,7 @@ const SkillProficiencyBar: React.FC<SkillProficiencyBarProps> = ({
                     <>
                         <div
                             ref={thumbRef}
-                            className={`rounded-[20px] bg-white text-${color} border-solid border-[2px] border-${color} px-[12px] py-[6px] absolute top-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom select-none z-10 ${
+                            className={`rounded-[20px] bg-white text-${color} border-solid border-2 border-${color} px-[12px] py-[6px] absolute top-[50%] translate-x-[-50%] translate-y-[-50%] shadow-soft-bottom select-none z-10 ${
                                 isDragging
                                     ? 'cursor-grabbing'
                                     : 'cursor-grab transition-[left] duration-150 ease-out'

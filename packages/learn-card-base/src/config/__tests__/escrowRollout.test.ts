@@ -54,6 +54,7 @@ describe('isEscrowRolloutEnabledFor', () => {
         expect(new Set(results).size).toBe(2);
     });
 
+    // This statistical batch performs 10,000 sequential hashes; it is not a latency benchmark.
     it('is roughly uniform across 10k synthetic ids at 25%', async () => {
         const percent = 25;
         const total = 10_000;
@@ -75,7 +76,7 @@ describe('isEscrowRolloutEnabledFor', () => {
         const rate = (included / total) * 100;
         expect(rate).toBeGreaterThanOrEqual(23);
         expect(rate).toBeLessThanOrEqual(27);
-    });
+    }, 30_000);
 
     it('allows an allowlisted user regardless of percent', async () => {
         const userKey = 'did:key:zInternalTester';

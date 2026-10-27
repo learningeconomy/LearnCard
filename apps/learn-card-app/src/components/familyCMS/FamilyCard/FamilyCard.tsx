@@ -166,7 +166,7 @@ export const FamilyCard: React.FC<FamilyCardProps> = ({ showSkeleton, credential
                                 />
                             );
                         }}
-                        className="absolute top-2 end-2"
+                        className="absolute top-2 inset-e-2"
                     >
                         <ThreeDots className="w-[20px] h-auto" />
                     </button>

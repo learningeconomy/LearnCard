@@ -63,7 +63,7 @@ const ClrProgramDetailPanel: React.FC<{
     };
 
     return (
-        <div className="space-y-5 pb-[100px] h-full bg-grayscale-100 overflow-y-scroll">
+        <div className="space-y-v3-5 pb-[100px] h-full bg-grayscale-100 overflow-y-scroll">
             {/* Header */}
             <div className="bg-white rounded-b-[30px] overflow-hidden shadow-md px-6 py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -74,7 +74,7 @@ const ClrProgramDetailPanel: React.FC<{
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             <span className="text-base leading-none text-grayscale-600">
                                 <FlatIcon>
-                                    <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-400" />
+                                    <CertificateDisplayIcon className="w-4 h-4 text-grayscale-400!" />
                                 </FlatIcon>
                             </span>
                             <p className="text-sm text-grayscale-600">
@@ -84,14 +84,14 @@ const ClrProgramDetailPanel: React.FC<{
                     </div>
                     <button
                         onClick={closeModal}
-                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-[2px] mt-0.5"
+                        className="shrink-0 w-[50px] h-[50px] flex items-center justify-center rounded-full text-grayscale-600 bg-white border-solid border-grayscale-100 border-2 mt-0.5"
                     >
                         <X className="w-6 h-6" />
                     </button>
                 </div>
             </div>
 
-            <div className="px-5 space-y-5">
+            <div className="px-5 space-y-v3-5">
                 {program.description?.value && (
                     <div className="bg-white shadow-box-bottom rounded-2xl overflow-hidden w-full p-4">
                         <div>
@@ -144,7 +144,7 @@ const ClrProgramDetailPanel: React.FC<{
                 )}
 
                 {childCourses.length > 0 && (
-                    <div className="space-y-3 rounded-2xl border border-grayscale-200 bg-white p-4">
+                    <div className="space-y-v3-3 rounded-2xl border border-grayscale-200 bg-white p-4">
                         <p className="text-xs font-semibold uppercase tracking-wide text-grayscale-600">
                             Courses in this program
                         </p>
@@ -189,12 +189,12 @@ const ClrProgramDetailPanel: React.FC<{
 
                 {/* Competencies linked to this program */}
                 {programCompetencies.length > 0 && (
-                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-4">
+                    <div className="bg-white border border-grayscale-200 rounded-2xl p-4 space-y-v3-4">
                         <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                             {programCompetencies.length} Competenc
                             {programCompetencies.length === 1 ? 'y' : 'ies'}
                         </p>
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {programCompetencies.map(c => (
                                 <ClrCompetencyBlock
                                     key={c.sourceCredentialId}
@@ -243,7 +243,7 @@ const ClrProgramDetailPanel: React.FC<{
                 {adminMode && (
                     <>
                         <div className="border-t border-grayscale-200" />
-                        <div className="space-y-1">
+                        <div className="space-y-v3-1">
                             <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                                 Provenance
                             </p>

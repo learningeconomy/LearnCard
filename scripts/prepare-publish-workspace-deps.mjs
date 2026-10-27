@@ -26,6 +26,13 @@ const IGNORED_DIRECTORIES = new Set([
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run');
+// Discover all workspace versions, but validate and rewrite only the packages
+// this publish job built. Omit --package to prepare the full registry release.
+const selectedPackages = new Set(
+    [...args]
+        .filter(arg => arg.startsWith('--package='))
+        .map(arg => arg.slice('--package='.length))
+);
 const rootArg = process.argv.find(arg => arg.startsWith('--root='));
 const root = path.resolve(
     rootArg?.slice('--root='.length) ??
@@ -67,6 +74,15 @@ for (const packageJsonPath of packageJsonPaths) {
             private: Boolean(packageJson.private),
             packageJsonPath,
         });
+    }
+}
+
+for (const name of selectedPackages) {
+    const pkg = workspacePackages.get(name);
+    if (!name.startsWith('@learncard/') || !pkg || pkg.private) {
+        throw new Error(
+            'Publish scope must name a public workspace package: ' + JSON.stringify(name)
+        );
     }
 }
 
@@ -259,6 +275,7 @@ const verifyBundledDependency = (packageJsonPath, dependencyName) => {
 };
 
 for (const [packageJsonPath, packageJson] of packageJsonByPath.entries()) {
+    if (selectedPackages.size > 0 && !selectedPackages.has(packageJson.name)) continue;
     if (packageJson.private) continue;
     if (typeof packageJson.name !== 'string' || !packageJson.name.startsWith('@learncard/'))
         continue;

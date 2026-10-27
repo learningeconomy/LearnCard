@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../i18n';
 import { getCategoryDarkColor, getInfoFromCredential } from '../../helpers/credential.helpers';
 import { VC, VerificationItem } from '@learncard/types';
 import {
@@ -44,8 +45,10 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     handleViewFrontFace,
     customLinkedCredentialsComponent,
 }) => {
+    const t = useT();
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
+        dateType: 'awarded',
     });
 
     const { description } = credentialSubject?.achievement ?? {};
@@ -83,15 +86,17 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
             )}
 
             <TruncateTextBox headerText="About" text={description}>
-                <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
-                        description
-                            ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
-                            : ''
-                    }`}
-                >
-                    Awarded on {createdAt}
-                </span>
+                {createdAt && (
+                    <span
+                        className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                            description
+                                ? 'pt-[10px] border-t border-solid border-grayscale-200'
+                                : ''
+                        }`}
+                    >
+                        {t('credential.awardedOn', { date: createdAt })}
+                    </span>
+                )}
             </TruncateTextBox>
 
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}

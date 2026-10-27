@@ -272,6 +272,7 @@ vi.mock('../../theme/hooks/useTheme', () => ({
 
 // Import after mocks
 import { useHistory, useLocation } from 'react-router-dom';
+import queryString from 'query-string';
 import ExternalConsentFlowDoor from './ExternalConsentFlowDoor';
 
 const mockUseHistory = useHistory as Mock;
@@ -523,6 +524,79 @@ describe('ExternalConsentFlowDoor', () => {
             expect(mockPush).toHaveBeenCalledWith(
                 expect.stringContaining('consent-flow-sync-data')
             );
+        });
+    });
+
+    describe('already consented with a challenged callback', () => {
+        const taylorBot = 'https://taylorbot.example.test';
+        const query = (domain: string) => ({
+            uri: contractUri,
+            returnTo: `${taylorBot}/auth/callback?challenge=backend-challenge&response_mode=fragment`,
+            challenge: 'backend-challenge',
+            domain,
+            recipientToken: undefined,
+        });
+        const consentedWith = (redirectUrl?: string) =>
+            mockFns.useConsentedContracts.mockReturnValue({
+                data: [
+                    {
+                        contract: {
+                            uri: contractUri,
+                            owner: { did: 'did:example:owner' },
+                            redirectUrl,
+                        },
+                    },
+                ],
+                isLoading: false,
+            });
+        let issuePresentation: Mock;
+
+        beforeEach(() => {
+            // Stop before navigation; the proof request is what matters here.
+            issuePresentation = vi.fn().mockRejectedValue(new Error('stop'));
+            mockFns.initWallet.mockResolvedValue({
+                id: { did: () => 'did:key:holder' },
+                invoke: {
+                    getAvailableProfiles: mockFns.getAvailableProfiles,
+                    issuePresentation,
+                },
+            });
+        });
+        afterEach(() => {
+            vi.mocked(queryString.parse).mockReturnValue({
+                uri: contractUri,
+                returnTo,
+                recipientToken: undefined,
+            } as never);
+        });
+
+        it('signs for the contract redirect origin', async () => {
+            vi.mocked(queryString.parse).mockReturnValue(query(taylorBot) as never);
+            consentedWith(`${taylorBot}/auth/callback`);
+            renderDoor();
+            fireEvent.click(screen.getByRole('button', { name: /continue as/i }));
+            await waitFor(() => expect(issuePresentation).toHaveBeenCalledOnce());
+            expect(issuePresentation).toHaveBeenCalledWith(
+                expect.any(Object),
+                expect.objectContaining({ challenge: 'backend-challenge', domain: taylorBot })
+            );
+        });
+
+        it.each([
+            ['a mismatched domain', 'https://attacker.example', `${taylorBot}/auth/callback`],
+            ['no contract redirect', taylorBot, undefined],
+        ])('refuses to sign with %s', async (_case, domain, redirectUrl) => {
+            vi.mocked(queryString.parse).mockReturnValue(query(domain) as never);
+            consentedWith(redirectUrl);
+            renderDoor();
+            fireEvent.click(screen.getByRole('button', { name: /continue as/i }));
+            await waitFor(() =>
+                expect(mockFns.presentToast).toHaveBeenCalledWith(
+                    'Unable to complete sign in. Please try again.',
+                    expect.objectContaining({ type: 'error' })
+                )
+            );
+            expect(issuePresentation).not.toHaveBeenCalled();
         });
     });
 });

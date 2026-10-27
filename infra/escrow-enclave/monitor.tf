@@ -163,25 +163,48 @@ resource "aws_lambda_function_event_invoke_config" "monitor" {
   maximum_retry_attempts       = 2
 }
 
-# Requires an independently managed, enabled CloudTrail management-event trail.
-# Alarm even on denied attempts. Match both accepted key-ID representations.
+# Requires the enabled management-event trail owned by escrow-enclave-bootstrap.
+# Match both accepted key-ID representations of the escrow CMK and, when the
+# enrollment authority is enabled, the credentials CMK (2026-10-23 drill: one
+# roll changed both key policies but only the escrow change paged this alarm).
+# With count = 0 the credentials list is empty: escrow-only, as before.
+# authority-monitor.tf's credential_key rule also watches the credentials CMK,
+# so its accepted changes page under both alarm names.
+#
+# Denied attempts: an SCP/IAM deny can log `requestParameters: null` (observed
+# for CloudTrail, see trail-monitor.tf), so a keyId-scoped branch can miss
+# them. The sibling branch keys on errorCode prefix "AccessDenied" for these
+# KMS event names only, account-wide: a denied call on ANY key in this account
+# pages -- the same accepted false-positive tradeoff as trail_tamper.
+locals {
+  kms_governance_events  = ["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "DisableKey"]
+  kms_governance_key_ids = concat([aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn], flatten([for key in aws_kms_key.credentials : [key.key_id, key.arn]]))
+}
+
 resource "aws_cloudwatch_event_rule" "escrow_kms_changes" {
   name = "${local.name_prefix}-kms-governance"
   event_pattern = jsonencode({
     source        = ["aws.kms"]
     "detail-type" = ["AWS API Call via CloudTrail"]
-    detail = {
-      eventSource       = ["kms.amazonaws.com"]
-      eventName         = ["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "DisableKey"]
-      requestParameters = { keyId = [aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn] }
-    }
+    "$or" = [
+      { detail = {
+        eventSource       = ["kms.amazonaws.com"]
+        eventName         = local.kms_governance_events
+        requestParameters = { keyId = local.kms_governance_key_ids }
+      } },
+      { detail = {
+        eventSource = ["kms.amazonaws.com"]
+        eventName   = local.kms_governance_events
+        errorCode   = [{ prefix = "AccessDenied" }]
+      } },
+    ]
   })
 }
 
 resource "aws_cloudwatch_event_target" "escrow_kms_changes" {
   rule  = aws_cloudwatch_event_rule.escrow_kms_changes.name
   arn   = aws_sns_topic.monitor.arn
-  input = jsonencode({ alarm = "EscrowKmsGovernanceChange", response = "Review CloudTrail in the security account immediately." })
+  input = jsonencode({ alarm = "EscrowKmsGovernanceChange", response = "Review the bootstrap-owned escrow-account CloudTrail logs immediately." })
   dead_letter_config {
     arn = aws_sqs_queue.monitor_dlq.arn
   }
@@ -194,7 +217,7 @@ resource "aws_sqs_queue_policy" "monitor_dlq" {
     Statement = [{
       Effect    = "Allow", Principal = { Service = "events.amazonaws.com" }, Action = "sqs:SendMessage",
       Resource  = aws_sqs_queue.monitor_dlq.arn,
-      Condition = { ArnEquals = { "aws:SourceArn" = concat([aws_cloudwatch_event_rule.monitor_sweep.arn, aws_cloudwatch_event_rule.escrow_kms_changes.arn], [for rule in aws_cloudwatch_event_rule.authority_governance : rule.arn]) } }
+      Condition = { ArnEquals = { "aws:SourceArn" = concat([aws_cloudwatch_event_rule.monitor_sweep.arn, aws_cloudwatch_event_rule.escrow_kms_changes.arn, aws_cloudwatch_event_rule.trail_tamper.arn], [for rule in aws_cloudwatch_event_rule.authority_governance : rule.arn]) } }
     }]
   })
 }

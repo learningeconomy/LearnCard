@@ -66,7 +66,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
                     type="button"
                     onClick={onClose}
                     aria-label={m['common.close']()}
-                    className="shrink-0 w-8 h-8 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-600 hover:text-grayscale-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    className="shrink-0 w-8 h-8 rounded-full hover:bg-grayscale-100 transition-colors flex items-center justify-center text-grayscale-600 hover:text-grayscale-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -89,7 +89,7 @@ const SkillProfileModal: React.FC<SkillProfileModalProps> = ({ onClose }) => {
                     <button
                         type="button"
                         onClick={() => setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS))}
-                        className="ml-auto text-grayscale-600 font-poppins font-bold text-[14px] leading-[18px] hover:text-grayscale-900 transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        className="ml-auto text-grayscale-600 font-poppins font-bold text-[14px] leading-[18px] hover:text-grayscale-900 transition-colors rounded-xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                     >
                         {m['dashboard.skillProfile.skip']()}
                     </button>

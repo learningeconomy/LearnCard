@@ -2,6 +2,7 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { flattenObject } from '@helpers/objects.helpers';
 import { Profile } from '@models';
 import { ProfileType } from 'types/profile';
+import { syncProfileDisplayNameLower } from './search-fields';
 
 export const updateProfile = async (profile: ProfileType, updates: Partial<ProfileType>) => {
     const currentDisplay = profile.display;
@@ -14,7 +15,12 @@ export const updateProfile = async (profile: ProfileType, updates: Partial<Profi
 
     const query = new QueryBuilder(new BindParam({ params: newUpdates }))
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
-        .set('profile += $params');
+        .set(
+            // Keep the lowercased search copy in sync whenever displayName changes
+            'displayName' in newUpdates
+                ? `profile += $params, ${syncProfileDisplayNameLower('profile')}`
+                : 'profile += $params'
+        );
 
     const result = await query.run();
 

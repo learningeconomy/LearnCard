@@ -131,7 +131,7 @@ export const SocialLoginsButtons: React.FC<{
                                 return (
                                     <button
                                         type="button"
-                                        className={`${socialLoginStyles} flex items-center justify-center border-solid border-[1px] border-${primaryColor} bg-white rounded-full py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden transition-opacity disabled:opacity-40 disabled:cursor-not-allowed`}
+                                        className={`${socialLoginStyles} flex items-center justify-center border-solid border border-${primaryColor} bg-white rounded-full py-1 min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden transition-opacity disabled:opacity-40 disabled:cursor-not-allowed`}
                                         disabled={activeSocialLogin !== null}
                                         aria-busy={isActiveSocialLogin}
                                         onClick={e => {
@@ -166,7 +166,7 @@ export const SocialLoginsButtons: React.FC<{
                                             ? m['login.email.button']()
                                             : m['login.phone.button']()
                                     }
-                                    className={`flex items-center justify-center border-solid border-[1px] border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
+                                    className={`flex items-center justify-center border-solid border border-white/30 ${activeLoginTypeStyles} rounded-full min-w-[60px] min-h-[60px] max-w-[60px] max-h-[60px] overflow-hidden`}
                                     onClick={e => {
                                         e.stopPropagation();
                                         handleActiveLoginType();
@@ -177,7 +177,7 @@ export const SocialLoginsButtons: React.FC<{
                             )}
                         </div>
                         {showSocialLogins && (
-                            <p className="border-b-[1px] border-solid border-white leading-[0.1em] w-full text-center my-[40px]">
+                            <p className="border-b border-solid border-white leading-[0.1em] w-full text-center my-[40px]">
                                 <span
                                     className="py-0 px-[10px] text-white"
                                     style={{ backgroundColor: loginBgColor }}

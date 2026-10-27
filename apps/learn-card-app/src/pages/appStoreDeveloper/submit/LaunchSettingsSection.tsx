@@ -65,12 +65,12 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
         <div
             ref={sectionRef}
             tabIndex={-1}
-            className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden outline-none mb-6"
+            className="bg-white rounded-[20px] border border-grayscale-200 overflow-hidden outline-hidden mb-6"
         >
             <div className="p-6 flex items-start justify-between gap-4">
                 <div className="min-w-0">
                     <h2 className="text-base font-semibold text-grayscale-900">How it opens</h2>
-                    <p className="text-sm text-grayscale-600 mt-0.5 break-words">
+                    <p className="text-sm text-grayscale-600 mt-0.5 wrap-break-word">
                         {getLaunchSummary(value.type, config)}
                     </p>
                     {error && !open && <p className="mt-1.5 text-xs text-red-600">{error}</p>}
@@ -86,7 +86,7 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
             </div>
 
             {open && (
-                <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-5">
+                <div className="px-6 pb-6 pt-5 border-t border-grayscale-100 space-y-v3-5">
                     {managedByApp && typeChange !== 'unlocked' && (
                         <div>
                             <label
@@ -110,7 +110,7 @@ export const LaunchSettingsSection: React.FC<LaunchSettingsSectionProps> = ({
                                     });
                                 }}
                                 placeholder="https://myapp.com"
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             />
                             <p className="mt-2 text-xs text-grayscale-500">
                                 Permissions and features are set by your app. Publish again from

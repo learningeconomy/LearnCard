@@ -127,7 +127,15 @@ export interface EscrowEnclave {
         input: RewrapEscrowBlobInput
     ): Promise<{ envelope: EscrowEnvelope; authority?: AuthorityMutationResult }>;
     releaseEscrow(input: ReleaseRequest): Promise<ReleaseResult>;
-    createHold(input: EnclaveCreateHoldInput): Promise<{ holdRecord: EscrowHoldRecord }>;
+    createHold(input: EnclaveCreateHoldInput): Promise<{
+        holdRecord: EscrowHoldRecord;
+        delivery?: { codeSent: boolean; proof: AuthorityHoldReceipt };
+    }>;
+    getHoldState?(input: {
+        expectedDid: string;
+        hold: EscrowHoldRecord;
+        nonce: string;
+    }): Promise<{ proof: AuthorityRecord }>;
     cancelHold(input: CancelHoldRequest): Promise<void | { receipt: AuthorityRecord }>;
     /** P9.1 (attack C): authority (nitro) mode only — software mode never
      * produces an awaiting-confirmation hold, so it has nothing to confirm.
@@ -150,6 +158,12 @@ export class EscrowPolicyError extends Error {
         this.name = 'EscrowPolicyError';
     }
 }
+export class EscrowCodeError extends Error {
+    constructor(public readonly reason: 'codeMismatch' | 'codeExpired' | 'codeLocked') {
+        super(reason);
+        this.name = 'EscrowCodeError';
+    }
+}
 export class EscrowPinMismatchError extends Error {
     constructor() {
         super('Incorrect PIN.');
@@ -163,7 +177,17 @@ export class EscrowBlobError extends Error {
     }
 }
 export class EscrowUnavailableError extends Error {
-    constructor() {
+    constructor(
+        readonly reason:
+            | 'unavailable'
+            | 'ledger'
+            | 'time'
+            | 'transport'
+            | 'invalid_response'
+            | 'invalid_hold'
+            | 'http_refusal'
+            | 'rate_limit' = 'unavailable'
+    ) {
         super('Escrow recovery is not available.');
         this.name = 'EscrowUnavailableError';
     }

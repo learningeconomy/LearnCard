@@ -38,7 +38,7 @@ const ClaimLoginPage: React.FC<{
             )}
             <IonContent
                 fullscreen
-                className="flex flex-col flex-grow"
+                className="flex flex-col grow"
                 style={{ '--background': loginBgColor } as React.CSSProperties}
             >
                 <IonGrid

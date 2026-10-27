@@ -10,6 +10,16 @@ Available on:
 
 ---
 
+## Supported browsers and devices
+
+Tailwind 4 requires Safari 16.4+, Chrome 111+, or Firefox 128+. The iOS app
+requires iOS 16.4 or later. On Android, keep Android System WebView or Chrome
+updated to version 111 or later; the Android OS version alone does not determine
+support. Native builds check the standard Android WebView minimum and show a
+standalone notice if the browser cannot open the app. Update Android System
+WebView or Chrome through the device's app store, then reopen the app.
+See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility).
+
 ## Key Features
 
 | Feature               | Description                                                            |
@@ -95,6 +105,80 @@ History displays at most 500 entries from the last 90 days. Cleanup runs when hi
 If history cannot be loaded, **Clear history** remains available to reset recording to off when its settings are missing or unreadable. A cleanup warning means some records could not be removed; try Clear again. An unreadable encrypted document also prevents recording until recovery. A confirmed entry remains saved even when cleanup is incomplete.
 
 If your account changes after an OID4VP send completes, the success screen says so and hides the earlier account’s details. It does not redirect to the verifier under the new account; return to the requesting application to finish its session.
+
+### Uploading an Original Document
+
+Open **Build My LearnCard**, then choose Resume, Certificates, Transcripts or Diplomas.
+Select a supported file. Review any extracted credentials and choose which ones to save.
+
+If uploads are busy, the app shows **Waiting for a turn…** and automatically tries again
+for up to two minutes, respecting the service's retry delay. Select **Cancel** or close the
+upload step to stop waiting. Closing the app stops retries; there is no background queue.
+If capacity remains unavailable, the file stays unsaved and you can try again shortly.
+Only requests explicitly rejected before processing are retried automatically.
+Once extraction has started, the existing **Notify me when it's ready** behavior still applies.
+
+```mermaid
+flowchart LR
+    A[Choose document] --> B{Extraction result}
+    B -->|Credentials found| C[Review and select]
+    C --> D[Save original and selection]
+    B -->|Empty or no readable text| J[Show feedback without creating a credential]
+    B -->|Processing failed| E[Save original only]
+    B -->|Settings pending or request rejected| I[Leave the saved document unchanged]
+    D --> F{Save confirmed?}
+    E --> F
+    F -->|Yes| G[Open original by selecting its filename]
+    F -->|No| H[Retry saving]
+```
+
+The saved original appears in one document card. Select its filename to open it.
+When credentials are added, the card shows the confirmed count; there is no separate
+success banner or action box.
+Preview uses a supported filename extension when a device supplies no specific file type.
+It never overrides an explicit HTML or SVG type.
+
+An empty result or a file with no readable text does not create a credential or save a new
+original. While the upload step is open, select its filename to preview the uploaded file,
+choose another file, or retry extraction.
+In a mixed batch, saving the review only stores originals that produced review candidates;
+empty files are not saved alongside them.
+Pending AI settings, invalid or rejected input, oversized files, and incompatible service
+responses do not add a new saved original or replace a résumé. Feedback explains the reason
+and omits extraction retry for non-retryable rejections.
+With AI disabled, uploads still save the original without sending it for AI processing or
+offering extraction retry. A file already known to be empty remains unsaved.
+Transient processing failures still keep the original when its save succeeds. A failed save
+does not claim that the file is saved; retry saving without running extraction again.
+The extraction overlay closes when the original starts saving. An inline message explains
+that extraction failed and saving is in progress; it only says the original is saved after
+the save is confirmed.
+
+Review can be closed and reopened within the same app session. Selecting none still saves
+the original, but does not mean extraction found nothing. Saved counts include only confirmed
+selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
+For résumés, going Back clears the save-error message without discarding the pending review.
+Starting another upload clears the previous error message immediately.
+
+Confirmed saves trigger one background sharing sync instead of waiting for sharing on every
+credential. Insights refresh only after that sync succeeds; a sharing failure does not
+undo confirmed saves, change their counts, or request an insight from incomplete server data.
+
+Use **Update** for another résumé or **Add More** for other documents. These actions sit
+below the saved document cards. Failed extraction and storage still have their own retry
+feedback. Reopening a manager shows saved originals without inventing a credential count.
+An unreadable original remains listed as unavailable and can still be deleted. It does
+not hide other documents; readable legacy originals remain accessible.
+Uploaded originals are hidden from **Recently Added** and **See all**. Extracted
+credentials and published résumés remain visible.
+
+Deleting an original immediately removes its row and upload feedback together. If deletion
+fails, both return with an error. Other documents and their feedback remain unchanged.
+If a résumé has already been replaced when deletion starts, the newer upload is kept.
+
+**Deployment prerequisite:** deploy AI Passport's versioned extraction metadata before this
+app release. An incompatible response leaves saved documents unchanged; retry after the
+compatible backend is available.
 
 ### Publishing a Résumé
 

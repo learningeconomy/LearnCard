@@ -306,7 +306,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 type="button"
                                 onClick={generateShareLink}
                                 title={m['toasts.boost.shareLinkGenerationFailed']()}
-                                className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="flex h-[50px] w-[50px] flex-col items-center justify-center rounded-[20px] text-red-700 hover:bg-red-50 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 <IonIcon icon={alertCircleOutline} aria-hidden="true" />
                                 <span className="text-[10px] font-medium leading-tight text-center">
@@ -403,7 +403,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     <button
                                         type="button"
                                         onClick={generateShareLink}
-                                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                        className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                     >
                                         {m['common.tryAgain']()}
                                     </button>
@@ -413,7 +413,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                 <button
                                     type="button"
                                     onClick={onShareWithOtherCredentials}
-                                    className="w-full rounded-[20px] !bg-grayscale-900 !text-white px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
+                                    className="w-full rounded-[20px] bg-grayscale-900! text-white! px-5 py-3 text-sm font-medium hover:opacity-90 transition-opacity"
                                 >
                                     {m['shareLinks.shareWithOthers']()}
                                 </button>
@@ -451,7 +451,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
                         {!isLinkLoading && shareLink && shareLink?.length > 0 && (
                             <div className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-grayscale-100">
-                                <p className="w-full text-left text-grayscale-700 font-medium text-sm line-clamp-1 overflow-ellipsis">
+                                <p className="w-full text-left text-grayscale-700 font-medium text-sm line-clamp-1 text-ellipsis">
                                     {shareLink}
                                 </p>
 
@@ -540,7 +540,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                     fallbackCircleText={title}
                                     boostType={categoryType as BoostCategoryOptionsEnum}
                                     badgeThumbnail={badgeThumbnail}
-                                    badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                    badgeContainerCustomClass="mt-0 mb-[8px]"
                                     badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
                                     badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
                                     badgeRibbonCustomClass="w-[26px]"
@@ -554,7 +554,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                             <div className="absolute top-[-50px] left-[50%] translate-x-[-50%] w-full">
                                 <div className="w-full">
                                     <FamilyCrest
-                                        ribbonClassName="!bottom-[45px]"
+                                        ribbonClassName="bottom-[45px]!"
                                         containerClassName="z-9999"
                                         imageClassName="w-[90px]"
                                         familyName={title}

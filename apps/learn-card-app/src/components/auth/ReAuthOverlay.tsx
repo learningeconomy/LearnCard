@@ -160,7 +160,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
     // --- Refreshing state ---
     if (state === 'refreshing') {
         return (
-            <div className="p-8 text-center space-y-5 bg-white rounded-[20px] font-poppins">
+            <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
                 <div className="flex justify-center">
                     <span className="w-8 h-8 border-2 border-grayscale-200 border-t-emerald-600 rounded-full animate-spin" />
                 </div>
@@ -173,7 +173,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
     // --- Success state ---
     if (state === 'success') {
         return (
-            <div className="p-8 text-center space-y-5 bg-white rounded-[20px] font-poppins">
+            <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
                 <div className="flex justify-center">
                     <IonIcon icon={checkmarkCircleOutline} className="text-emerald-500 text-4xl" />
                 </div>
@@ -202,7 +202,7 @@ const ReAuthOverlay: React.FC<ReAuthOverlayProps> = ({
     const hasSocialReAuth = isGoogle || isApple;
 
     return (
-        <div className="p-8 text-center space-y-5 bg-white rounded-[20px] font-poppins">
+        <div className="p-8 text-center space-y-v3-5 bg-white rounded-[20px] font-poppins">
             <div className="flex justify-center">
                 <IonIcon icon={alertCircleOutline} className="text-amber-500 text-4xl" />
             </div>

@@ -76,7 +76,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
         newModal(
             <ForgotPinConfirmation />,
             {
-                sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+                sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
             },
             { mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel }
         );
@@ -229,7 +229,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                                             setErrors({});
                                             handleSetPinNumber(number);
                                         }}
-                                        className="text-grayscale-900 flex items-center justify-center h-[70px] w-[70px] rounded-full bg-grayscale-100 mx-2 mb-3 text-[20px] border-solid border-[1px] border-grayscale-200 font-poppins focus:border-lightBlue-500 focus:bg-lightBlue-50 xs:h-[60px] xs:w-[60px] pin-number-btn"
+                                        className="text-grayscale-900 flex items-center justify-center h-[70px] w-[70px] rounded-full bg-grayscale-100 mx-2 mb-3 text-[20px] border-solid border border-grayscale-200 font-poppins focus:border-light-blue-500 focus:bg-lightBlue-50 xs:h-[60px] xs:w-[60px] pin-number-btn"
                                     >
                                         {number}
                                     </button>
@@ -240,7 +240,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                                     setErrors({});
                                     handleBackSpace();
                                 }}
-                                className="absolute bottom-[-3px] right-[19px] flex items-center justify-center h-[70px] w-[70px] rounded-full bg-grayscale-100 mx-2 mb-4 text-[36px] border-solid border-[1px] border-grayscale-200 font-poppins focus:border-lightBlue-500 focus:bg-lightBlue-50 xs:h-[65px] xs:w-[65px] xs:right-[32px] pin-number-btn"
+                                className="absolute bottom-[-3px] right-[19px] flex items-center justify-center h-[70px] w-[70px] rounded-full bg-grayscale-100 mx-2 mb-4 text-[36px] border-solid border border-grayscale-200 font-poppins focus:border-light-blue-500 focus:bg-lightBlue-50 xs:h-[65px] xs:w-[65px] xs:right-[32px] pin-number-btn"
                             >
                                 <Backspace className="text-grayscale-900 mr-1 w-[50px] h-[25px]" />
                             </button>
@@ -251,7 +251,7 @@ export const FamilyPinModal: React.FC<FamilyPinModalProps> = ({
                         <div className="w-full flex items-center justify-center ion-padding-bottom">
                             <button
                                 onClick={handleForgotPin}
-                                className="text-lightBlue-500 font-poppins text-[17px] font-semibold forgot-pin-btn mb-[-5px]"
+                                className="text-light-blue-500 font-poppins text-[17px] font-semibold forgot-pin-btn mb-[-5px]"
                             >
                                 {m['family.pinModal.forgotShort']()}
                             </button>

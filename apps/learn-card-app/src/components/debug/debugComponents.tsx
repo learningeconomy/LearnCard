@@ -88,7 +88,7 @@ export const KVRow: React.FC<{
 
                 <button
                     onClick={() => onCopy(label, value)}
-                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-gray-600 transition-all shrink-0"
+                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded-sm hover:bg-gray-600 transition-all shrink-0"
                     title="Copy"
                 >
                     {copied === label ? (
@@ -236,7 +236,7 @@ export const EventTimeline: React.FC<{
                     <div className="flex items-center gap-0.5">
                         <button
                             onClick={onExport}
-                            className="p-1 rounded hover:bg-gray-600 transition-colors"
+                            className="p-1 rounded-sm hover:bg-gray-600 transition-colors"
                             title={exportCopied ? 'Copied!' : 'Export events'}
                         >
                             {exportCopied ? (
@@ -248,7 +248,7 @@ export const EventTimeline: React.FC<{
 
                         <button
                             onClick={onClear}
-                            className="p-1 rounded hover:bg-gray-600 transition-colors"
+                            className="p-1 rounded-sm hover:bg-gray-600 transition-colors"
                             title="Clear events"
                         >
                             <Trash2 className="w-3 h-3 text-gray-500" />
@@ -261,14 +261,14 @@ export const EventTimeline: React.FC<{
                 {events.length === 0 ? (
                     <p className="text-[10px] text-gray-600 text-center py-3">{emptyMessage}</p>
                 ) : (
-                    <div className="space-y-0.5">
+                    <div className="space-y-v3-0.5">
                         {events.map(event => {
                             const isExpanded = expandedEvents.has(event.id);
 
                             return (
                                 <div
                                     key={event.id}
-                                    className="rounded bg-gray-900/50 hover:bg-gray-900/80 transition-colors overflow-hidden"
+                                    className="rounded-sm bg-gray-900/50 hover:bg-gray-900/80 transition-colors overflow-hidden"
                                 >
                                     <button
                                         onClick={() => toggleEventExpanded(event.id)}
@@ -291,7 +291,7 @@ export const EventTimeline: React.FC<{
                                             </div>
 
                                             <p
-                                                className={`text-[9px] text-gray-400 ${isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'}`}
+                                                className={`text-[9px] text-gray-400 ${isExpanded ? 'whitespace-pre-wrap wrap-break-word' : 'truncate'}`}
                                             >
                                                 {event.message}
                                             </p>
@@ -304,7 +304,7 @@ export const EventTimeline: React.FC<{
 
                                     {isExpanded && event.data && (
                                         <div className="px-2 pb-1.5 ml-4">
-                                            <pre className="text-[8px] text-gray-500 bg-gray-950 rounded p-1.5 overflow-x-auto whitespace-pre-wrap break-words">
+                                            <pre className="text-[8px] text-gray-500 bg-gray-950 rounded-sm p-1.5 overflow-x-auto whitespace-pre-wrap wrap-break-word">
                                                 {JSON.stringify(event.data, null, 2)}
                                             </pre>
 

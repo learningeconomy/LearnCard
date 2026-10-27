@@ -39,6 +39,9 @@ on:
                 required: false
                 default: ''
 
+permissions:
+    contents: read
+
 jobs:
     interop:
         name: Interop (walt.id + Sphereon + EUDI)${{ github.event_name == 'schedule' && ' — canary vs latest' || '' }}

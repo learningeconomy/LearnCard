@@ -163,8 +163,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         try {
             const wallet = await initWallet();
             const fetched = (await wallet.invoke.getBoost(record.uri)) as
-                | { boost?: Record<string, unknown> }
-                | undefined;
+                { boost?: Record<string, unknown> } | undefined;
             const vc = fetched?.boost;
             if (!vc) throw new Error('empty');
             setSelected({ record, vc });
@@ -251,7 +250,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
     };
 
     const previewType = selected
-        ? getTypeByObv3(achievementTypeOf(selected.vc) ?? '')?.baseSimpleType ?? 'badge'
+        ? (getTypeByObv3(achievementTypeOf(selected.vc) ?? '')?.baseSimpleType ?? 'badge')
         : null;
     const selectedName =
         selected?.record.name?.trim() ||
@@ -286,10 +285,10 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
         step === 'preview'
             ? m['issueFlow.sendThisCred']()
             : step === 'recipient'
-            ? m['issueFlow.whosItFor']()
-            : step === 'success'
-            ? m['passport.activity.status.sent']()
-            : m['issueFlow.reuseTitle']();
+              ? m['issueFlow.whosItFor']()
+              : step === 'success'
+                ? m['passport.activity.status.sent']()
+                : m['issueFlow.reuseTitle']();
 
     const onBack =
         step === 'preview' ? resetToList : step === 'recipient' ? () => setStep('preview') : null;
@@ -335,7 +334,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 placeholder={m['issueFlow.searchCreds']()}
-                                className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 pl-10 pr-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             />
                         </div>
                     </>
@@ -371,7 +370,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                             </div>
                         ) : (
                             <>
-                                <div className="space-y-5">
+                                <div className="space-y-v3-5">
                                     {groups.map(({ label, items }) => (
                                         <div key={label}>
                                             <div className="flex items-center gap-2 mb-2">
@@ -413,7 +412,7 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                 )}
 
                 {step === 'preview' && selected && (
-                    <div className="space-y-5 animate-fade-in-up">
+                    <div className="space-y-v3-5 animate-fade-in-up">
                         <p className="text-sm text-grayscale-600 -mt-1">
                             {m['issueFlow.previewDesc']()}
                         </p>
@@ -459,11 +458,11 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                 )}
 
                 {step === 'success' && (
-                    <div className="text-center py-6 space-y-5 animate-fade-in-up">
+                    <div className="text-center py-6 space-y-v3-5 animate-fade-in-up">
                         <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto">
                             <Check className="w-7 h-7 text-emerald-500" />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-v3-1">
                             <h3 className="text-lg font-semibold text-grayscale-900">
                                 {claimLink ? m['issueFlow.linkReady']() : m['issueFlow.credSent']()}
                             </h3>
@@ -538,8 +537,8 @@ export const ReuseExisting: React.FC<ReuseExistingProps> = ({ onUse, handleClose
                                 {recipientMode === 'link'
                                     ? m['issueFlow.createLink']()
                                     : recipientMode === 'self'
-                                    ? m['issueFlow.sendToSelf']()
-                                    : m['issueFlow.sendCred']()}
+                                      ? m['issueFlow.sendToSelf']()
+                                      : m['issueFlow.sendCred']()}
                             </>
                         )}
                     </button>

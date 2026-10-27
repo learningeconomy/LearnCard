@@ -395,7 +395,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                                         //         isLoading={isLoading}
                                         //         collectionPropName={collectionPropName}
                                         //     />,
-                                        //     { sectionClassName: '!max-w-[500px]' },
+                                        //     { sectionClassName: 'max-w-[500px]!' },
                                         //     {
                                         //         desktop: ModalTypes.Center,
                                         //         mobile: ModalTypes.Center,
@@ -489,7 +489,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
 
                             <IonList
                                 lines="none"
-                                className="flex flex-col items-center justify-center w-[100%]"
+                                className="flex flex-col items-center justify-center w-full"
                             >
                                 {recipients?.map(recipient => {
                                     return (

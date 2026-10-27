@@ -148,16 +148,16 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                 ? m['common.searchResults.managedCountOne']({ count: searchResultsCount })
                 : m['common.searchResults.managedCountOther']({ count: searchResultsCount })
             : noSearchResults
-            ? m['common.searchResults.noManaged']({ query: searchString })
-            : searchResultsCount === 1
-            ? m['common.searchResults.foundOne']({
-                  count: searchResultsCount,
-                  query: searchString,
-              })
-            : m['common.searchResults.foundOther']({
-                  count: searchResultsCount,
-                  query: searchString,
-              });
+              ? m['common.searchResults.noManaged']({ query: searchString })
+              : searchResultsCount === 1
+                ? m['common.searchResults.foundOne']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  })
+                : m['common.searchResults.foundOther']({
+                      count: searchResultsCount,
+                      query: searchString,
+                  });
 
     const searchResultsElement = (
         <div className={`flex flex-col gap-[10px] mt-[6px] ${isCardView ? 'px-[12px]' : ''}`}>
@@ -243,7 +243,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                             </div>
                         )}
                         <div
-                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] z-[-50] ${bgFillerColor}`}
+                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
                     </IonCol>
                 </>

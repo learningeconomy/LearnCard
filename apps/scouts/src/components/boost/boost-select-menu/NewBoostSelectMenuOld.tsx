@@ -210,7 +210,7 @@ const NewBoostSelectMenu: React.FC<NewBoostSelectMenuProps> = ({
                                 value={search}
                                 placeholder={m['boost.searchPlaceholder']()}
                                 autocapitalize="on"
-                                className="bg-grayscale-100 text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
+                                className="bg-grayscale-100 text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
                                 onIonInput={e => setSearch(e.detail.value?.trim() || '')}
                                 clearInput
                             />

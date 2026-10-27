@@ -74,6 +74,11 @@ fn fixtures() -> Vec<(&'static str, Value, Value)> {
     let resend_code_request = json!({"envelope":envelope(),"hold":hold(),"requestId":"request-6","clientEphemeralPublicKey":"AA==","expectedDid":"did:example:alice"});
     vec![
         (
+            "holdState",
+            json!({"expectedDid":"did:example:alice","hold":hold(),"nonce":"ab".repeat(32)}),
+            json!({"proof":snapshot_record}),
+        ),
+        (
             "applyEnrollment",
             json!({"signedIntent":{"intent":vector["intent"],"signature":vector["signature"]},"sourceEnvelope":envelope(),"targetEnvelope":envelope()}),
             json!({"result":mutation}),
@@ -197,6 +202,7 @@ fn path(method: &str) -> &str {
         "applyEnrollment" => "/v1/apply-enrollment",
         "authorityRewrap" => "/v1/authority-rewrap",
         "enrollmentState" => "/v1/enrollment-state",
+        "holdState" => "/v1/hold-state",
         "attest" => "/v1/attest",
         "verifyBlob" => "/v1/verify-blob",
         "carryPinVerifier" => "/v1/carry-pin-verifier",
@@ -270,11 +276,52 @@ async fn auth_and_every_endpoint_translate_exactly_once() {
         assert_eq!(*fake.seen.lock().await, vec![expected]);
     }
 }
+
+#[tokio::test]
+async fn delivery_evidence_is_opt_in_to_keep_old_api_hold_records_strictly_compatible() {
+    let (_, request, _) = fixtures()
+        .into_iter()
+        .find(|(method, _, _)| *method == "createHold")
+        .unwrap();
+    let delivery = json!({"codeSent":false,"proof":{"kind":"snapshot"}});
+    for opted_in in [false, true] {
+        let fake = Arc::new(Fake {
+            reply: json!({"method":"createHold","hold":hold(),"delivery":delivery}),
+            seen: Default::default(),
+        });
+        let router = api::router(Arc::new(Api::new(TOKEN, fake, 2, Duration::from_secs(1))));
+        let mut req = Request::builder()
+            .method("POST")
+            .uri("/v1/create-hold")
+            .header("authorization", format!("Bearer {TOKEN}"));
+        if opted_in {
+            req = req.header("x-escrow-delivery-evidence", "1");
+        }
+        let response = router
+            .oneshot(
+                req.body(Body::from(serde_json::to_vec(&request).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let mut body: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), MAX_FRAME).await.unwrap())
+                .unwrap();
+        assert_eq!(body.get("delivery"), opted_in.then_some(&delivery));
+        body.as_object_mut().unwrap().remove("delivery");
+        // Frozen strict shape used by pre-roll images; no response metadata enters it.
+        let _: policy::SignedHoldRecord = serde_json::from_value(body).unwrap();
+    }
+}
 #[tokio::test]
 async fn errors_are_sanitized_and_oversized_bodies_never_forward() {
     for code in [
         "policy",
         "pinMismatch",
+        "codeMismatch",
+        "codeExpired",
+        "codeLocked",
         "blob",
         "unavailable",
         "ledger",

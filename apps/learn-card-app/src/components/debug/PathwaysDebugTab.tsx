@@ -82,8 +82,7 @@ import type { PathwaysDevGlobals } from '../../pages/pathways/dev/pathwaysDevGlo
 const getDev = (): PathwaysDevGlobals | null => {
     if (typeof window === 'undefined') return null;
 
-    return (window as unknown as { __pathwaysDev?: PathwaysDevGlobals }).__pathwaysDev
-        ?? null;
+    return (window as unknown as { __pathwaysDev?: PathwaysDevGlobals }).__pathwaysDev ?? null;
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +151,7 @@ const NodeRow: React.FC<{
     const termination = node.stage.termination;
 
     return (
-        <div className="bg-gray-900/60 rounded overflow-hidden">
+        <div className="bg-gray-900/60 rounded-sm overflow-hidden">
             <button
                 type="button"
                 onClick={() => setExpanded(e => !e)}
@@ -177,13 +176,13 @@ const NodeRow: React.FC<{
             </button>
 
             {expanded && (
-                <div className="px-2 pb-2 space-y-1.5">
+                <div className="px-2 pb-2 space-y-v3-1.5">
                     <div>
                         <p className="text-[9px] text-gray-600 uppercase tracking-wider">
                             Termination
                         </p>
 
-                        <pre className="text-[9px] text-gray-400 bg-gray-950 rounded p-1.5 mt-0.5 overflow-x-auto">
+                        <pre className="text-[9px] text-gray-400 bg-gray-950 rounded-sm p-1.5 mt-0.5 overflow-x-auto">
                             {JSON.stringify(termination, null, 2)}
                         </pre>
 
@@ -194,7 +193,7 @@ const NodeRow: React.FC<{
                                 e.stopPropagation();
                                 onCopy(
                                     `termination-${node.id}`,
-                                    JSON.stringify(termination, null, 2),
+                                    JSON.stringify(termination, null, 2)
                                 );
                             }}
                         >
@@ -230,11 +229,11 @@ const NodeRow: React.FC<{
                                     Evidence
                                 </p>
 
-                                <pre className="text-[9px] text-gray-400 bg-gray-950 rounded p-1.5 mt-0.5 overflow-x-auto">
+                                <pre className="text-[9px] text-gray-400 bg-gray-950 rounded-sm p-1.5 mt-0.5 overflow-x-auto">
                                     {JSON.stringify(
                                         progressWithEvidence.terminationEvidence,
                                         null,
-                                        2,
+                                        2
                                     )}
                                 </pre>
                             </div>
@@ -258,8 +257,8 @@ const PathwaySnapshot: React.FC<{
     if (!pathway) {
         return (
             <p className="text-[10px] text-gray-600 italic py-2">
-                No active pathway. Run <code className="text-cyan-400">seedAws(did)</code> or
-                pick one from the pathways shell.
+                No active pathway. Run <code className="text-cyan-400">seedAws(did)</code> or pick
+                one from the pathways shell.
             </p>
         );
     }
@@ -269,7 +268,7 @@ const PathwaySnapshot: React.FC<{
     const totalOutcomes = pathway.outcomes?.length ?? 0;
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <div className="text-[10px] text-gray-400">
                 <span className="text-gray-200 font-medium">{pathway.title}</span>{' '}
                 <span className="text-gray-600">
@@ -277,7 +276,7 @@ const PathwaySnapshot: React.FC<{
                 </span>
             </div>
 
-            <div className="space-y-0.5">
+            <div className="space-y-v3-0.5">
                 {pathway.nodes.map(node => (
                     <NodeRow key={node.id} node={node} copied={copied} onCopy={onCopy} />
                 ))}
@@ -287,7 +286,10 @@ const PathwaySnapshot: React.FC<{
                 <div className="pt-1 mt-1 border-t border-gray-800">
                     <p className="text-[10px] text-gray-500">
                         <Target className="w-2.5 h-2.5 inline-block mr-1 text-gray-600" />
-                        Outcomes: <span className="text-gray-300">{bound} / {totalOutcomes}</span>{' '}
+                        Outcomes:{' '}
+                        <span className="text-gray-300">
+                            {bound} / {totalOutcomes}
+                        </span>{' '}
                         bound
                     </p>
                 </div>
@@ -333,7 +335,7 @@ const CustomClaimForm: React.FC<{
     }
 
     return (
-        <div className="space-y-1.5 bg-gray-900/40 rounded p-2">
+        <div className="space-y-v3-1.5 bg-gray-900/40 rounded-sm p-2">
             <div className="flex items-center justify-between">
                 <span className="text-[10px] text-gray-400 font-medium">Custom claim</span>
 
@@ -363,7 +365,7 @@ const CustomClaimForm: React.FC<{
                                     ? 'boost:aws-ccp-credential'
                                     : 'IAM,security (comma-separated)'
                         }
-                        className="flex-1 text-[10px] font-mono bg-gray-950 border border-gray-800 rounded px-1.5 py-0.5 text-gray-200 placeholder:text-gray-700 focus:outline-none focus:border-sky-700"
+                        className="flex-1 text-[10px] font-mono bg-gray-950 border border-gray-800 rounded-sm px-1.5 py-0.5 text-gray-200 placeholder:text-gray-700 focus:outline-hidden focus:border-sky-700"
                     />
                 </div>
             ))}
@@ -373,7 +375,7 @@ const CustomClaimForm: React.FC<{
                     type="button"
                     onClick={() => onFire(form)}
                     disabled={!form.type && !form.boostUri && !form.tags}
-                    className="text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-0.5 rounded"
+                    className="text-[10px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white px-2 py-0.5 rounded-sm"
                 >
                     Fire event
                 </button>
@@ -409,9 +411,7 @@ export const PathwaysDebugTab: React.FC = () => {
     // Event timeline state
     // -----------------------------------------------------------------
 
-    const [events, setEvents] = useState<PathwayDebugEvent[]>(() =>
-        getPathwayDebugEvents(),
-    );
+    const [events, setEvents] = useState<PathwayDebugEvent[]>(() => getPathwayDebugEvents());
 
     useEffect(() => {
         // Seed with any pre-existing buffered events on mount — the
@@ -439,7 +439,7 @@ export const PathwaysDebugTab: React.FC = () => {
                 level: e.level,
                 data: e.data,
             })),
-        [events],
+        [events]
     );
 
     // -----------------------------------------------------------------
@@ -452,7 +452,7 @@ export const PathwaysDebugTab: React.FC = () => {
 
     const openProposalCount = useMemo(
         () => Object.values(proposals).filter(p => p.status === 'open').length,
-        [proposals],
+        [proposals]
     );
 
     const lastEvent = events.length > 0 ? events[0] : null;
@@ -470,17 +470,16 @@ export const PathwaysDebugTab: React.FC = () => {
             emitPathwayDebugEvent(
                 'pathway:simulator-fired',
                 'Dev globals not available — are you on /pathways?',
-                { level: 'warning' },
+                { level: 'warning' }
             );
 
             return;
         }
 
-        emitPathwayDebugEvent(
-            'pathway:simulator-fired',
-            'Preset: AWS CCP claim',
-            { level: 'info', data: { type: 'AWSCertifiedCloudPractitioner' } },
-        );
+        emitPathwayDebugEvent('pathway:simulator-fired', 'Preset: AWS CCP claim', {
+            level: 'info',
+            data: { type: 'AWSCertifiedCloudPractitioner' },
+        });
 
         d.simulateCredentialClaim({
             type: 'AWSCertifiedCloudPractitioner',
@@ -493,11 +492,10 @@ export const PathwaysDebugTab: React.FC = () => {
 
         if (!d) return;
 
-        emitPathwayDebugEvent(
-            'pathway:simulator-fired',
-            'Preset: IAM tutor finish',
-            { level: 'info', data: { topicUri: 'boost:aws-iam-deep-dive' } },
-        );
+        emitPathwayDebugEvent('pathway:simulator-fired', 'Preset: IAM tutor finish', {
+            level: 'info',
+            data: { topicUri: 'boost:aws-iam-deep-dive' },
+        });
 
         d.simulateAiSessionFinish({
             topicUri: 'boost:aws-iam-deep-dive',
@@ -513,7 +511,7 @@ export const PathwaysDebugTab: React.FC = () => {
         emitPathwayDebugEvent(
             'pathway:simulator-fired',
             'Preset: non-matching credential (control)',
-            { level: 'info', data: { type: 'UnrelatedCourseCertificate' } },
+            { level: 'info', data: { type: 'UnrelatedCourseCertificate' } }
         );
 
         d.simulateCredentialClaim({
@@ -545,7 +543,7 @@ export const PathwaysDebugTab: React.FC = () => {
             emitPathwayDebugEvent(
                 'pathway:simulator-fired',
                 'Trigger celebration: dev globals not available',
-                { level: 'warning' },
+                { level: 'warning' }
             );
 
             return;
@@ -555,7 +553,7 @@ export const PathwaysDebugTab: React.FC = () => {
             emitPathwayDebugEvent(
                 'pathway:simulator-fired',
                 'Trigger celebration: no active pathway',
-                { level: 'warning' },
+                { level: 'warning' }
             );
 
             return;
@@ -563,12 +561,13 @@ export const PathwaysDebugTab: React.FC = () => {
 
         const active = pathwayStore.get.pathways()[activeId];
         const tier =
-            active && Object.values(pathwayStore.get.pathways()).some(p =>
+            active &&
+            Object.values(pathwayStore.get.pathways()).some(p =>
                 p.nodes.some(
                     n =>
-                        n.stage.policy.kind === 'composite'
-                        && n.stage.policy.pathwayRef === activeId,
-                ),
+                        n.stage.policy.kind === 'composite' &&
+                        n.stage.policy.pathwayRef === activeId
+                )
             )
                 ? 'sub-pathway (Tier 1)'
                 : 'pathway (Tier 2)';
@@ -576,7 +575,7 @@ export const PathwaysDebugTab: React.FC = () => {
         emitPathwayDebugEvent(
             'pathway:simulator-fired',
             `Triggered ${tier} ceremony for "${active?.title ?? activeId}"`,
-            { level: 'success', data: { pathwayId: activeId, tier } },
+            { level: 'success', data: { pathwayId: activeId, tier } }
         );
 
         d.triggerCelebration();
@@ -653,7 +652,7 @@ export const PathwaysDebugTab: React.FC = () => {
                 timestamp: e.timestamp.toISOString(),
             })),
             null,
-            2,
+            2
         );
 
         try {
@@ -670,7 +669,7 @@ export const PathwaysDebugTab: React.FC = () => {
     // -----------------------------------------------------------------
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             {/* ─── Section 1: Reactor status ─── */}
             <Section
                 title="Reactor"
@@ -682,7 +681,7 @@ export const PathwaysDebugTab: React.FC = () => {
                     </span>
                 }
             >
-                <div className="space-y-0.5">
+                <div className="space-y-v3-0.5">
                     <KVRow
                         label="Dev globals"
                         value={dev ? 'attached' : 'not available'}
@@ -738,11 +737,7 @@ export const PathwaysDebugTab: React.FC = () => {
                     ) : undefined
                 }
             >
-                <PathwaySnapshot
-                    pathway={activePathway}
-                    copied={copied}
-                    onCopy={copyToClipboard}
-                />
+                <PathwaySnapshot pathway={activePathway} copied={copied} onCopy={copyToClipboard} />
             </Section>
 
             {/* ─── Section 3: Event timeline ─── */}
@@ -758,18 +753,14 @@ export const PathwaysDebugTab: React.FC = () => {
             />
 
             {/* ─── Section 4: Simulator ─── */}
-            <Section
-                title="Simulator"
-                icon={<Zap className="w-3 h-3 text-gray-500" />}
-                defaultOpen
-            >
-                <div className="space-y-2">
+            <Section title="Simulator" icon={<Zap className="w-3 h-3 text-gray-500" />} defaultOpen>
+                <div className="space-y-v3-2">
                     <div className="grid grid-cols-1 gap-1">
                         <button
                             type="button"
                             onClick={handleAwsClaim}
                             disabled={!dev}
-                            className="flex items-center gap-1.5 text-[11px] bg-emerald-700 hover:bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] bg-emerald-700 hover:bg-emerald-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded-sm transition-colors"
                         >
                             <Award className="w-3 h-3" />
                             Claim AWS CCP credential
@@ -779,7 +770,7 @@ export const PathwaysDebugTab: React.FC = () => {
                             type="button"
                             onClick={handleIamSession}
                             disabled={!dev}
-                            className="flex items-center gap-1.5 text-[11px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] bg-sky-700 hover:bg-sky-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded-sm transition-colors"
                         >
                             <Play className="w-3 h-3" />
                             Finish IAM tutor session
@@ -789,7 +780,7 @@ export const PathwaysDebugTab: React.FC = () => {
                             type="button"
                             onClick={handleNonMatching}
                             disabled={!dev}
-                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 text-gray-300 px-2 py-1 rounded transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 text-gray-300 px-2 py-1 rounded-sm transition-colors"
                         >
                             <Package className="w-3 h-3" />
                             Non-matching credential (control)
@@ -807,7 +798,7 @@ export const PathwaysDebugTab: React.FC = () => {
                             type="button"
                             onClick={handleTriggerCelebration}
                             disabled={!dev}
-                            className="flex items-center gap-1.5 text-[11px] bg-amber-700 hover:bg-amber-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] bg-amber-700 hover:bg-amber-600 disabled:bg-gray-800 disabled:text-gray-600 text-white px-2 py-1 rounded-sm transition-colors"
                         >
                             <Sparkles className="w-3 h-3" />
                             Trigger completion ceremony
@@ -830,16 +821,13 @@ export const PathwaysDebugTab: React.FC = () => {
             </Section>
 
             {/* ─── Section 5: Danger zone ─── */}
-            <Section
-                title="Danger zone"
-                icon={<Hammer className="w-3 h-3 text-red-500" />}
-            >
-                <div className="space-y-1">
+            <Section title="Danger zone" icon={<Hammer className="w-3 h-3 text-red-500" />}>
+                <div className="space-y-v3-1">
                     <button
                         type="button"
                         onClick={handleSeedAws}
                         disabled={!dev}
-                        className="w-full flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 text-gray-200 px-2 py-1 rounded transition-colors"
+                        className="w-full flex items-center gap-1.5 text-[11px] bg-gray-800 hover:bg-gray-700 disabled:text-gray-600 text-gray-200 px-2 py-1 rounded-sm transition-colors"
                     >
                         <RefreshCw className="w-3 h-3" />
                         Seed AWS demo pathway
@@ -849,7 +837,7 @@ export const PathwaysDebugTab: React.FC = () => {
                         type="button"
                         onClick={handleResetAll}
                         disabled={!dev}
-                        className="w-full flex items-center gap-1.5 text-[11px] bg-red-900/60 hover:bg-red-800/80 disabled:bg-gray-800 disabled:text-gray-600 text-red-200 px-2 py-1 rounded transition-colors"
+                        className="w-full flex items-center gap-1.5 text-[11px] bg-red-900/60 hover:bg-red-800/80 disabled:bg-gray-800 disabled:text-gray-600 text-red-200 px-2 py-1 rounded-sm transition-colors"
                     >
                         <AlertTriangle className="w-3 h-3" />
                         Reset all (pathways + proposals + timeline)

@@ -393,7 +393,7 @@ export const sidemenuLinks: Record<BrandingEnum, SideMenuLinks[]> = {
 
 export const sideMenuLearnCardBrandingStyles = {
     mainBg: 'grayscale-100',
-    brandingTextColor: '!text-emerald-700',
+    brandingTextColor: 'text-emerald-700!',
     bradingSpanColor: '',
     defaultListStyles: 'learn-card-side-menu-list',
     defaultLinkStyles: 'learn-card-side-menu-list-item-link',
@@ -405,8 +405,8 @@ export const sideMenuLearnCardBrandingStyles = {
 
 export const sideMenuMetaversityBrandingStyles = {
     mainBg: 'metaversity-primary-blue',
-    brandingTextColor: '!text-white',
-    bradingSpanColor: '!text-white',
+    brandingTextColor: 'text-white!',
+    bradingSpanColor: 'text-white!',
     defaultListStyles: 'mv-side-menu-list',
     defaultLinkStyles: 'mv-side-menu-list-item-link',
     activeLinkStyles: 'mv-side-menu-list-item-link-active',
@@ -415,7 +415,7 @@ export const sideMenuMetaversityBrandingStyles = {
 
 export const sideMenuScoutPassStyles = {
     mainBg: 'grayscale-100',
-    brandingTextColor: '!text-white',
+    brandingTextColor: 'text-white!',
     bradingSpanColor: '',
     defaultListStyles: 'scout-pass-side-menu-list',
     defaultLinkStyles: 'scout-pass-side-menu-list-item-link',

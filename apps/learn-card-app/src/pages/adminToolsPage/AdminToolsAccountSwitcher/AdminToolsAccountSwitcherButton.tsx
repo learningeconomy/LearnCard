@@ -43,12 +43,12 @@ export const AdminToolsAccountSwitcherButton: React.FC<{ showServiceProfilesOnly
                     />,
                     {
                         sectionClassName:
-                            '!bg-transparent !border-none !shadow-none !max-w-[400px]',
+                            'bg-transparent! border-none! shadow-none! max-w-[400px]!',
                         hideButton: true,
                     }
                 );
             }}
-            className="w-full rounded-full pl-[2px] pr-4 py-[6px] flex items-center justify-between border-[1px] border-solid border-grayscale-100 bg-grayscale-100 mt-4 mb-4"
+            className="w-full rounded-full pl-[2px] pr-4 py-[6px] flex items-center justify-between border border-solid border-grayscale-100 bg-grayscale-100 mt-4 mb-4"
         >
             <div className="flex items-center justify-start">
                 <div className="w-[40px] h-[40px] rounded-full bg-grayscale-100 mr-2 overflow-hidden">

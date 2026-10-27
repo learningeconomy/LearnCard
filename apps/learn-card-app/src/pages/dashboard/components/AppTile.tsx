@@ -44,7 +44,7 @@ const AppTile: React.FC<AppTileProps> = ({
         <button
             type="button"
             onClick={() => launch()}
-            className={`group ${visibilityClass} flex-col items-center gap-1.5 text-center w-[80px] rounded-[18px] active:scale-[0.95] transition-transform animate-fade-in-up focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500`}
+            className={`group ${visibilityClass} flex-col items-center gap-1.5 text-center w-[80px] rounded-[18px] active:scale-[0.95] transition-transform animate-fade-in-up focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500`}
             style={{ animationDelay: `${animationDelayMs}ms` }}
             aria-label={
                 suggested
@@ -66,7 +66,7 @@ const AppTile: React.FC<AppTileProps> = ({
                 <img
                     src={listing.icon_url || FALLBACK_ICON}
                     alt=""
-                    className="w-[72px] h-[72px] rounded-[18px] object-cover bg-grayscale-100 border border-grayscale-200 shadow-sm group-hover:shadow-md group-hover:-translate-y-[1px] transition-all"
+                    className="w-[72px] h-[72px] rounded-[18px] object-cover bg-grayscale-100 border border-grayscale-200 shadow-xs group-hover:shadow-md group-hover:-translate-y-px transition-all"
                     onError={e => {
                         (e.currentTarget as HTMLImageElement).src = FALLBACK_ICON;
                     }}

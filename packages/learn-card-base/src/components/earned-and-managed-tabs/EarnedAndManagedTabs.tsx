@@ -115,7 +115,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             onClick={() => credentialSearchStore.set.toggleIsSearchActive()}
                             className={`bg-white mr-[6px] shrink-0 flex items-center justify-center w-[40px] h-[40px] rounded-full shadow-bottom-2-3 left-[2px] top-[2px] z-10 ${iconColor} ${
                                 isSearchActive
-                                    ? 'absolute left-[0px] top-[0px] w-[40px] h-[40px]'
+                                    ? 'absolute left-0 top-[0px] w-[40px] h-[40px]'
                                     : 'normal'
                             }`}
                         >
@@ -137,10 +137,10 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                                             ? 'earned'
                                             : 'managed'
                                     }...`}
-                                    className={`rounded-[40px] w-full h-[44px] pl-[50px] pr-[34px] font-notoSans text-[14px] outline-none placeholder-opacity-100 ${
+                                    className={`rounded-[40px] w-full h-[44px] pl-[50px] pr-[34px] font-notoSans text-[14px] outline-hidden ${
                                         lightSearchInput
-                                            ? 'bg-white bg-opacity-25 text-grayscale-900 placeholder-grayscale-900'
-                                            : 'bg-black bg-opacity-25 text-white placeholder-white'
+                                            ? 'bg-white/25  text-grayscale-900 placeholder:text-grayscale-900'
+                                            : 'bg-black/25  text-white placeholder:text-white'
                                     }`}
                                 />
                                 {searchString && (
@@ -170,7 +170,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                             inverseColors ? 'inverse-colors' : ''
                         } ${showListViewToggle ? 'rounded-l-full' : ' rounded-full'} ${
                             !showManaged ? 'max-w-[150px]' : ''
-                        } ${className} bg-white bg-opacity-25`}
+                        } ${className} bg-white/25 `}
                     >
                         <IonSegmentButton
                             mode="ios"
@@ -210,7 +210,7 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
                     <div
                         className={`rounded-r-full fix-ripple flex w-fit items-center pr-[5px] py-[4.5px] shrink-0 ${
                             !showEarnedManaged ? 'rounded-l-full pl-[5px] mx-auto min-w-[82px]' : ''
-                        } ${className} bg-white bg-opacity-25`}
+                        } ${className} bg-white/25 `}
                     >
                         {showEarnedManaged && (
                             <div className={`bg-${dividerLineColor} w-[1px] h-[36px] mr-[10px]`} />

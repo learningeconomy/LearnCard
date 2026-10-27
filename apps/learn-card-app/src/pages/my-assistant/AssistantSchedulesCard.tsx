@@ -155,7 +155,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
 
     if (!autonomyEnabled)
         return (
-            <section className="bg-white border border-grayscale-200 rounded-[20px] p-6 shadow-bottom-2-4 space-y-5 font-poppins">
+            <section className="bg-white border border-grayscale-200 rounded-[20px] p-6 shadow-bottom-2-4 space-y-v3-5 font-poppins">
                 <div>
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Schedules</h2>
                     <p className="text-sm text-grayscale-600 leading-relaxed">
@@ -181,7 +181,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
         );
 
     return (
-        <section className="bg-white border border-grayscale-200 rounded-[20px] p-6 shadow-bottom-2-4 space-y-5 font-poppins">
+        <section className="bg-white border border-grayscale-200 rounded-[20px] p-6 shadow-bottom-2-4 space-y-v3-5 font-poppins">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h2 className="text-xl font-semibold text-grayscale-900 mb-1">Schedules</h2>
@@ -215,7 +215,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
 
             {draft && (
                 <form
-                    className="border border-grayscale-200 rounded-[20px] p-5 space-y-4"
+                    className="border border-grayscale-200 rounded-[20px] p-5 space-y-v3-4"
                     onSubmit={event => {
                         event.preventDefault();
                         saveMutation.mutate(draft);
@@ -236,7 +236,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                             onChange={event => setDraft({ ...draft, name: event.target.value })}
                             placeholder="Morning briefing"
                             required
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                         />
                     </div>
 
@@ -255,7 +255,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                             onChange={event => setDraft({ ...draft, prompt: event.target.value })}
                             placeholder={MORNING_BRIEFING_PLACEHOLDER}
                             required
-                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
+                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white resize-y"
                         />
                         <p className="text-xs text-grayscale-400 mt-1.5">
                             Describe the task itself. Your Assistant Profile controls tone and
@@ -279,7 +279,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                                     setDraft({ ...draft, timeOfDay: event.target.value })
                                 }
                                 required
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             />
                         </div>
                         <div>
@@ -295,7 +295,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                                 onChange={event =>
                                     setDraft({ ...draft, timezone: event.target.value })
                                 }
-                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                             >
                                 {timezoneOptions.map(timezone => (
                                     <option key={timezone} value={timezone}>
@@ -375,7 +375,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
             )}
 
             {isLoading ? (
-                <div className="space-y-3 animate-pulse">
+                <div className="space-y-v3-3 animate-pulse">
                     {[0, 1].map(index => (
                         <div key={index} className="h-28 rounded-[20px] bg-grayscale-100" />
                     ))}
@@ -388,16 +388,16 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                     </p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {schedules.map(schedule => (
                         <article
                             key={schedule.id}
-                            className="border border-grayscale-200 rounded-[20px] p-5 space-y-3"
+                            className="border border-grayscale-200 rounded-[20px] p-5 space-y-v3-3"
                         >
                             <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="text-base font-semibold text-grayscale-900 break-words">
+                                        <h3 className="text-base font-semibold text-grayscale-900 wrap-break-word">
                                             {schedule.name}
                                         </h3>
                                         <span
@@ -431,7 +431,7 @@ const AssistantSchedulesCard: React.FC<AssistantSchedulesCardProps> = ({
                                 </button>
                             </div>
 
-                            <p className="text-sm text-grayscale-600 leading-relaxed break-words">
+                            <p className="text-sm text-grayscale-600 leading-relaxed wrap-break-word">
                                 {schedule.prompt}
                             </p>
 

@@ -19,7 +19,7 @@ export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
         let id: string | null = null;
 
         // YouTube
-        if (host === 'youtu.be' || host.includes('youtube.com')) {
+        if (host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com')) {
             if (host === 'youtu.be') {
                 id = parsed.pathname.slice(1);
             } else {
@@ -60,7 +60,7 @@ export const getVideoMetadata = async (url: string): Promise<VideoMetadata> => {
         }
 
         // Vimeo
-        if (host.includes('vimeo.com')) {
+        if (host === 'vimeo.com' || host.endsWith('.vimeo.com')) {
             const match = url.match(/vimeo\.com\/(\d+)/);
             id = match?.[1] ?? null;
             if (id) {

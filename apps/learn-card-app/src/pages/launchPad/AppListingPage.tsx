@@ -26,6 +26,7 @@ import { ThreeDotVertical } from '@learncard/react';
 import TrashBin from '../../components/svgs/TrashBin';
 
 import useAppStore from './useAppStore';
+import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
 import { EmbedIframeModal } from './EmbedIframeModal';
 import AppScreenshotsSlider from '../../components/ai-passport-apps/helpers/AppScreenshotSlider';
 import StaticStarRating from '../../components/ai-passport-apps/helpers/StaticStarRating';
@@ -70,12 +71,21 @@ interface AppListingParams {
 interface LocationState {
     listing?: ExtendedAppStoreListing;
     isPreview?: boolean;
+    embedUrl?: string;
+    appName?: string;
+    launchConfig?: Record<string, unknown>;
+    isInstalled?: boolean;
+    path?: string;
 }
 
 const AppListingPage: React.FC = () => {
     const { listingId } = useParams<AppListingParams>();
     const history = useHistory<LocationState>();
     const location = history.location;
+    const launchQuery = new URLSearchParams(location.search);
+    const launchRequested = launchQuery.get('launch') === '1';
+    const initialPath = launchQuery.get('path') ?? undefined;
+    const launchedRef = useRef<string | null>(null);
     const isLoggedIn = useIsLoggedIn();
     const { newModal, closeModal, replaceModal } = useModal();
     const { presentToast } = useToast();
@@ -245,6 +255,13 @@ const AppListingPage: React.FC = () => {
         try {
             await installMutation.mutateAsync(listing.listing_id);
 
+            if (launchRequested) {
+                // Installation may finish after the learner has left this listing.
+                if (history.location.key !== location.key) return;
+                await handleLaunch();
+                return;
+            }
+
             // Show success modal asking if user wants to open the app
             newModal(
                 <div className="p-6 text-center max-w-sm mx-auto">
@@ -280,13 +297,17 @@ const AppListingPage: React.FC = () => {
                     </div>
                 </div>,
                 {
-                    sectionClassName: '!max-w-[400px]',
+                    sectionClassName: 'max-w-[400px]!',
                     hideButton: true,
                 },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         } catch (error) {
             log.error('Failed to install app:', error);
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
         } finally {
             setIsProcessing(false);
         }
@@ -296,6 +317,8 @@ const AppListingPage: React.FC = () => {
         if (!listing) return;
 
         if (!isLoggedIn) {
+            if (launchRequested)
+                redirectStore.set.authRedirect(location.pathname + location.search);
             redirectStore.set.installIntent({
                 listingId,
                 appName: listing.display_name,
@@ -324,7 +347,7 @@ const AppListingPage: React.FC = () => {
                         onReject={closeModal}
                     />,
                     {
-                        sectionClassName: '!max-w-[500px]',
+                        sectionClassName: 'max-w-[500px]!',
                         hideButton: true,
                     },
                     { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -427,13 +450,33 @@ const AppListingPage: React.FC = () => {
                     </button>
                 </li>
             </ul>,
-            { sectionClassName: '!max-w-[400px]' },
+            { sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
         );
     };
 
-    const handleLaunch = async () => {
+    const proceedWithLaunch = async () => {
         if (!listing) return;
+
+        if (launchRequested) {
+            const key = `${listingId}:${location.search}`;
+            if (launchedRef.current === key) return;
+            if (
+                listing.launch_type !== 'EMBEDDED_IFRAME' ||
+                !buildEmbedUrlWithPath(launchConfig.url, initialPath, window.location.origin)
+            ) {
+                throw new Error('Invalid embedded app destination');
+            }
+            launchedRef.current = key;
+            history.replace(`/apps/${encodeURIComponent(listing.slug || listing.listing_id)}`, {
+                embedUrl: launchConfig.url,
+                appName: listing.display_name,
+                launchConfig,
+                isInstalled: true,
+                path: initialPath,
+            });
+            return;
+        }
 
         // For consent flow apps, redirect with did and delegate VP
         if (hasConsented && contract) {
@@ -448,7 +491,7 @@ const AppListingPage: React.FC = () => {
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -532,6 +575,46 @@ const AppListingPage: React.FC = () => {
         }
     };
 
+    const handleLaunch = async (): Promise<void> => {
+        setIsProcessing(true);
+        try {
+            await proceedWithLaunch();
+        } catch {
+            presentToast(m['error.generic'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleLaunchRef = useRef(handleLaunch);
+    handleLaunchRef.current = handleLaunch;
+
+    // An installed listing is a transient entry page. Installation still requires consent.
+    useEffect(() => {
+        if (
+            !launchRequested ||
+            !isLoggedIn ||
+            isCheckingInstalled ||
+            !isInstalled ||
+            !listing ||
+            isOnboardingOpen
+        )
+            return;
+        void handleLaunchRef.current();
+    }, [
+        launchRequested,
+        listingId,
+        location.search,
+        isLoggedIn,
+        isCheckingInstalled,
+        isInstalled,
+        listing,
+        isOnboardingOpen,
+    ]);
+
     const launchType = listing?.launch_type as string;
     const canLaunch =
         launchType === 'EMBEDDED_IFRAME' ||
@@ -545,7 +628,7 @@ const AppListingPage: React.FC = () => {
         return (
             <IonPage>
                 <IonContent fullscreen className="ion-padding">
-                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
+                    <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-indigo-50 via-white to-emerald-50">
                         <div className="flex flex-col items-center gap-4">
                             <IonSpinner name="crescent" className="w-12 h-12 text-indigo-600" />
                             <p className="text-grayscale-600 font-medium">Loading app...</p>
@@ -561,7 +644,7 @@ const AppListingPage: React.FC = () => {
         return (
             <IonPage>
                 <IonContent fullscreen>
-                    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-gray-50">
+                    <div className="min-h-screen flex items-center justify-center bg-linear-to-br/srgb from-red-50 via-white to-gray-50">
                         <div className="text-center p-8 max-w-md">
                             <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
                                 <svg
@@ -621,11 +704,11 @@ const AppListingPage: React.FC = () => {
                     </div>
                 )}
 
-                <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50">
+                <div className="min-h-screen bg-linear-to-br/srgb from-indigo-50 via-white to-emerald-50">
                     {/* Hero Section */}
                     <div className="relative overflow-hidden">
                         {/* Background decoration */}
-                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-600/5 to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-b/srgb from-indigo-600/5 to-transparent" />
 
                         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-400/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
@@ -634,7 +717,7 @@ const AppListingPage: React.FC = () => {
                         <div className="relative max-w-4xl mx-auto px-4 pt-12 pb-8">
                             {/* App Header */}
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 safe-area-top-margin">
-                                <div className="w-28 h-28 rounded-[28px] overflow-hidden bg-white shadow-xl flex-shrink-0 border border-grayscale-100">
+                                <div className="w-28 h-28 rounded-[28px] overflow-hidden bg-white shadow-xl shrink-0 border border-grayscale-100">
                                     <img
                                         src={listing.icon_url}
                                         alt={listing.display_name}
@@ -680,9 +763,14 @@ const AppListingPage: React.FC = () => {
                                             {canLaunch && (
                                                 <button
                                                     onClick={handleLaunch}
-                                                    className="flex-1 sm:flex-none px-8 py-3 bg-indigo-600 text-white rounded-full font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+                                                    disabled={isProcessing}
+                                                    className="flex-1 sm:flex-none px-8 py-3 bg-grayscale-900 text-white rounded-[20px] font-semibold hover:opacity-90 disabled:opacity-40"
                                                 >
-                                                    {m['common.open']()}
+                                                    {isProcessing ? (
+                                                        <IonSpinner name="dots" />
+                                                    ) : (
+                                                        m['common.open']()
+                                                    )}
                                                 </button>
                                             )}
 
@@ -731,7 +819,7 @@ const AppListingPage: React.FC = () => {
                         {/* iOS App Store Metadata Section */}
                         {iosMetadata && (
                             <div className="max-w-4xl mx-auto px-4 mt-6">
-                                <div className="bg-white rounded-2xl shadow-sm p-4">
+                                <div className="bg-white rounded-2xl shadow-xs p-4">
                                     <div className="flex items-center justify-evenly divide-x divide-grayscale-200">
                                         <div className="flex flex-col items-center justify-center px-4">
                                             <p className="text-xs text-grayscale-400 uppercase tracking-wide mb-1">
@@ -805,7 +893,7 @@ const AppListingPage: React.FC = () => {
                         )}
 
                         {/* About Section */}
-                        <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+                        <section className="bg-white rounded-2xl p-6 shadow-xs mb-6">
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-4">About</h2>
 
                             <p className="text-grayscale-700 leading-relaxed whitespace-pre-wrap">
@@ -815,16 +903,16 @@ const AppListingPage: React.FC = () => {
 
                         {/* Highlights Section */}
                         {extendedListing?.highlights && extendedListing.highlights.length > 0 && (
-                            <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+                            <section className="bg-white rounded-2xl p-6 shadow-xs mb-6">
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
                                     Why Use This App?
                                 </h2>
 
-                                <div className="space-y-3">
+                                <div className="space-y-v3-3">
                                     {extendedListing.highlights.map(
                                         (highlight: string, index: number) => (
                                             <div key={index} className="flex items-start gap-3">
-                                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
+                                                <div className="shrink-0 w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5">
                                                     <Checkmark className="w-4 h-4 text-emerald-600" />
                                                 </div>
 
@@ -839,7 +927,7 @@ const AppListingPage: React.FC = () => {
                         {/* Promo Video Section */}
                         {extendedListing?.promo_video_url &&
                             getEmbedUrl(extendedListing.promo_video_url) && (
-                                <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+                                <section className="bg-white rounded-2xl p-6 shadow-xs mb-6">
                                     <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
                                         Watch
                                     </h2>
@@ -861,7 +949,7 @@ const AppListingPage: React.FC = () => {
 
                         {/* Screenshots Section */}
                         {screenshots.length > 0 && (
-                            <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+                            <section className="bg-white rounded-2xl p-6 shadow-xs mb-6">
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
                                     Preview
                                 </h2>
@@ -872,7 +960,7 @@ const AppListingPage: React.FC = () => {
 
                         {/* Links Section */}
                         {(listing.privacy_policy_url || listing.terms_url) && (
-                            <section className="bg-white rounded-2xl p-6 shadow-sm mb-6">
+                            <section className="bg-white rounded-2xl p-6 shadow-xs mb-6">
                                 <h2 className="text-xl font-semibold text-grayscale-900 mb-4">
                                     Legal
                                 </h2>
@@ -963,7 +1051,7 @@ const AppListingPage: React.FC = () => {
                     color="success"
                 />
                 {showSignInModal && (
-                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs animate-fade-in">
                         <div className="bg-white rounded-2xl shadow-2xl p-6 mx-4 max-w-sm w-full text-center">
                             {listing?.icon_url && (
                                 <img

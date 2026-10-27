@@ -137,6 +137,26 @@ impl Service<'_> {
     }
     async fn handle(&mut self, request: Request) -> Result<Response, ErrorCode> {
         match request {
+            Request::HoldState {
+                expected_did,
+                hold,
+                nonce,
+            } => {
+                #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
+                {
+                    Ok(Response::HoldState {
+                        proof: self
+                            .policy
+                            .authority_read_hold(&expected_did, &hold, &nonce)
+                            .await?,
+                    })
+                }
+                #[cfg(not(any(test, feature = "kms", feature = "fake-authority")))]
+                {
+                    let _ = (expected_did, hold, nonce);
+                    Err(ErrorCode::Unavailable)
+                }
+            }
             Request::EnrollmentState {
                 expected_did,
                 nonce,
@@ -221,7 +241,7 @@ impl Service<'_> {
                         public_key: Some(
                             self.policy
                                 .ledger_public_key()
-                                .to_encoded_point(false)
+                                .to_sec1_point(false)
                                 .as_bytes()
                                 .to_vec(),
                         ),
@@ -322,9 +342,9 @@ impl Service<'_> {
                 release_policy,
                 client_ephemeral_public_key,
             } => {
-                let hold = self
+                let (hold, delivery) = self
                     .policy
-                    .create_hold(CreateHoldRequest {
+                    .create_hold_with_delivery(CreateHoldRequest {
                         envelope: &envelope,
                         hold_id: &hold_id,
                         request_id: &request_id,
@@ -335,7 +355,7 @@ impl Service<'_> {
                         client_ephemeral_public_key: &client_ephemeral_public_key,
                     })
                     .await?;
-                Ok(Response::CreateHold { hold })
+                Ok(Response::CreateHold { hold, delivery })
             }
             Request::Release {
                 envelope,

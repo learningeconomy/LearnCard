@@ -666,7 +666,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
         <div className="p-6 max-w-md mx-auto bg-white min-h-full relative">
             {showLeaveGuard && (
                 <div
-                    className="absolute inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
+                    className="absolute inset-0 z-50 bg-white/80 backdrop-blur-xs flex items-center justify-center p-6 animate-fade-in-up motion-reduce:animate-none"
                     role="alertdialog"
                     aria-labelledby="leave-guard-title"
                     aria-describedby="leave-guard-desc"
@@ -685,11 +685,11 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         <p id="leave-guard-desc" className="text-sm text-grayscale-600 mb-6">
                             {m['recovery.guard.body']()}
                         </p>
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <button
                                 autoFocus
                                 onClick={() => setShowLeaveGuard(false)}
-                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                             >
                                 {m['recovery.guard.finish']()}
                             </button>
@@ -791,7 +791,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
             {/* ── Passkey Tab ───────────────────────────────────── */}
             {activeTab === 'passkey' && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {!webAuthnSupported ? (
                         <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
                             <p className="text-sm text-amber-800 leading-relaxed">
@@ -817,7 +817,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </div>
 
                             <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-2xl">
-                                <div className="space-y-2.5 text-sm text-emerald-800">
+                                <div className="space-y-v3-2.5 text-sm text-emerald-800">
                                     <div className="flex items-start gap-2.5">
                                         <IonIcon
                                             icon={fingerPrint}
@@ -857,7 +857,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
             {/* ── Phrase Tab ────────────────────────────────────── */}
             {activeTab === 'phrase' && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {isConfigured('phrase') && !showUpdateForm && !recoveryPhrase ? (
                         configuredRow(m['recovery.setup.phrase.savedRow'](), () =>
                             setShowUpdateForm(true)
@@ -910,7 +910,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                 disabled={isWrong || loading || correctTap !== null}
                                                 className={`
                                                     min-h-[44px] px-3 py-2 rounded-[20px] text-sm font-medium transition-all
-                                                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+                                                    focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500
                                                     ${
                                                         isCorrect
                                                             ? 'bg-emerald-500 text-white border border-transparent'
@@ -1002,7 +1002,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                                     )
                                                 )
                                             }
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                     </div>
                                 ))}
@@ -1028,7 +1028,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     {m['recovery.setup.phrase.keepSafe']()}
                                 </p>
 
-                                <ul className="text-sm text-amber-700 space-y-1.5">
+                                <ul className="text-sm text-amber-700 space-y-v3-1.5">
                                     <li className="flex items-start gap-2">
                                         <span className="text-amber-500 mt-0.5">•</span>
                                         <span>
@@ -1068,7 +1068,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     {m['recovery.setup.phrase.yourPhrase']()}
                                 </p>
 
-                                <p className="font-mono text-sm text-white leading-relaxed break-words">
+                                <p className="font-mono text-sm text-white leading-relaxed wrap-break-word">
                                     {recoveryPhrase}
                                 </p>
                             </div>
@@ -1099,7 +1099,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
             {/* ── Backup Tab ──────────────────────────────────── */}
             {activeTab === 'backup' && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {isConfigured('backup') && !showUpdateForm && !backupFileJson ? (
                         configuredRow(m['recovery.setup.backup.createdRow'](), () =>
                             setShowUpdateForm(true)
@@ -1122,7 +1122,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     value={backupPassword}
                                     onChange={e => setBackupPassword(e.target.value)}
                                     placeholder={m['recovery.setup.backup.passPlaceholder']()}
-                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                 />
                             </div>
 
@@ -1136,7 +1136,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                     value={confirmBackupPassword}
                                     onChange={e => setConfirmBackupPassword(e.target.value)}
                                     placeholder={m['recovery.setup.backup.confirmPlaceholder']()}
-                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                 />
                             </div>
 
@@ -1192,7 +1192,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                             </button>
 
                             {backupDownloaded && !backupConfirmed && (
-                                <div className="space-y-4">
+                                <div className="space-y-v3-4">
                                     <p className="text-xs text-grayscale-600">
                                         {m['recovery.setup.backup.oneMoreStep']()}
                                     </p>
@@ -1209,7 +1209,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             placeholder={m[
                                                 'recovery.setup.backup.confirmPlaceholder'
                                             ]()}
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                         <p className="mt-1.5 text-xs text-grayscale-500">
                                             {m['recovery.setup.backup.verifyDesc']()}
@@ -1231,7 +1231,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
 
             {/* ── Email Tab ─────────────────────────────────── */}
             {activeTab === 'email' && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     {isConfigured('email') && !showUpdateForm ? (
                         configuredRow(
                             emailMasked
@@ -1278,7 +1278,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             placeholder={m[
                                                 'recovery.setup.email.emailPlaceholder'
                                             ]()}
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                                         />
                                     </div>
 
@@ -1326,7 +1326,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                             placeholder={m[
                                                 'recovery.setup.email.codePlaceholder'
                                             ]()}
-                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
+                                            className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                         />
                                     </div>
 
@@ -1416,7 +1416,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                                         )
                                     }
                                     placeholder={m['recovery.setup.email.codePlaceholder']()}
-                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
+                                    className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white text-center tracking-[0.3em] font-mono"
                                 />
                             </div>
 
