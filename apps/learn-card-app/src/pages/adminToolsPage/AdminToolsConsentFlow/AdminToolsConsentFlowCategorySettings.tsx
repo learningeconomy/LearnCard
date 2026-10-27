@@ -71,7 +71,7 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
     const value = values[category];
 
     const isRequired = value?.required ?? false;
-    const isDefaultEnabled = value?.defaultEnabled ?? false;
+    const isDefaultEnabled = isRequired || Boolean(value?.defaultEnabled);
 
     const [settings, setSettings] = React.useState<{
         required: boolean;

@@ -17,6 +17,7 @@ import {
     applyContractUpdateScopeChoices,
     getEnabledOptionalUpdateScopeKeys,
     getUnchangedAccessScopes,
+    isContractUpdateScopeEnabled,
 } from './contractUpdateReview.helpers';
 import { walletStore } from 'learn-card-base/stores/walletStore';
 import { mDynamic } from '../../i18n/mDynamic';
@@ -76,6 +77,17 @@ const ContractUpdateReviewRoute: React.FC = () => {
         }).rows;
         return localizedRows.map(row => ({ area: row.scope.area, label: row.label }));
     }, [contract, latestUpdate, record?.terms, locale]);
+    const hasExistingAccess = useMemo(() => {
+        const terms = record?.terms;
+        if (!contract || !terms) return false;
+        return (
+            getUnchangedAccessScopes(contract, { added: [], removed: [], changed: [] }, terms)
+                .length > 0 ||
+            Boolean(
+                latestUpdate?.diff.removed.some(scope => isContractUpdateScopeEnabled(terms, scope))
+            )
+        );
+    }, [contract, record?.terms, latestUpdate]);
 
     if (statusQuery.isError && !waitingForWallet) {
         return (
@@ -194,6 +206,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
             needsGuardianConsent={isChildProfile}
             alreadyHandled={alreadyHandled}
             unchangedRows={unchangedRows}
+            hasExistingAccess={hasExistingAccess}
             initialEnabledOptionalKeys={initialEnabledOptionalKeys}
             onAccept={accept}
             onDecline={decline}

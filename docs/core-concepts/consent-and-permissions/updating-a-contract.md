@@ -67,9 +67,23 @@ Changed rows use shared canonical category labels and descriptions, not tenant-s
 
 Update notifications identify the connected app using the request's public `contractName`, not the owner's profile name.
 
-In the App Store developer dashboard's Testing tab, paste the proposed `changes` JSON, enter the reason when requesting additional access, and select **Preview update**. It opens the same review sheet using the API's returned copy. Its buttons only dismiss the preview; publishing still requires `updateContract` without `dryRun`.
+### Update from the developer dashboard
 
-To save the update, set `APPLY_UPDATE=true` in your private `.env` and run the same command. The reason is required for `requires_consent` and is limited to 140 characters. Missing it produces `A reason is required when asking users for more access`.
+No SDK script or JSON is needed to publish an update:
+
+1. Open your project's **Testing** tab and find **Update this request**. The form loads the saved request using the same controls as request creation.
+2. Edit its details, read/write categories, personal fields, required/default choices, or per-item reasons. Use a category's settings button to choose **Required**, **Opt-in**, or **Opt-out**. Unedited settings stay unchanged.
+3. Add an explanation under **Why are you making this update?** Approval-requiring changes need a reason of at most 140 characters.
+4. Check **Your changes**, then select **Preview Update**. The preview does not save anything. Its help icon explains the connection; its access disclosure lists unchanged defaults from the current request, not a person's saved permissions. An empty disclosure explains that no default access stays unchanged.
+5. Close the preview and select **Publish Update**. A success message shows the saved version. Reload the page to see the persisted request.
+
+If the request changed elsewhere, reload it before publishing. A failed publication keeps your draft; a failed refresh after successful publication offers a reload rather than publishing the same draft again.
+
+In a person's actual update review, the disclosure uses accepted choices, not defaults. If no access is enabled, it says so; if all existing access is already described in the changed rows, it explains that instead.
+
+### SDK alternative
+
+To save with the SDK instead, set `APPLY_UPDATE=true` in your private `.env` and run the same command. The reason is required for `requires_consent` and is limited to 140 characters. Missing it produces `A reason is required when asking users for more access`.
 
 `changes` accepts creation metadata and a `contract` object; the SDK also accepts `read` and `write` directly, as above. Category and personal-field maps merge with the current request: omitted entries stay unchanged, and an empty map does not remove existing access. Set an individual entry to `null` to remove it, for example `{ read: { credentials: { categories: { Transcript: null } } } }`. AutoBoost and writer arrays still describe the complete next configuration. Use `updateContract` instead of the removed SDK `addAutoBoostsToContract` and `removeAutoBoostsFromContract` methods.
 

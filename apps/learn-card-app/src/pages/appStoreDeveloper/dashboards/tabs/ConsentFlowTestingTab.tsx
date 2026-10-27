@@ -1,6 +1,4 @@
 import * as m from '../../../../paraglide/messages.js';
-import { useLocale } from '../../../../i18n';
-import { mDynamic } from '../../../../i18n/mDynamic';
 import { TransP } from '../../../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-testing-tab');
@@ -28,13 +26,7 @@ import {
     Link2,
     Code,
 } from 'lucide-react';
-import type {
-    ConsentFlowContractChanges,
-    ConsentFlowContractDetails,
-    ConsentFlowContractUpdateResult,
-    LCNIntegration,
-} from '@learncard/types';
-import { buildContractUpdatePreview } from '@learncard/helpers';
+import type { LCNIntegration } from '@learncard/types';
 import type { CredentialTemplate } from '../types';
 import type { GuideState } from '../../guides/types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
@@ -42,7 +34,7 @@ import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
 
 import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import ContractUpdateReview from '../../../consentFlow/ContractUpdateReview';
+import ContractUpdateEditor from '../../components/ContractUpdateEditor';
 
 interface ConsentFlowTestingTabProps {
     integration: LCNIntegration;
@@ -57,27 +49,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
-    const [contractUpdatePreview, setContractUpdatePreview] = useState<{
-        contract: ConsentFlowContractDetails;
-        result: ConsentFlowContractUpdateResult;
-        reason?: string;
-    } | null>(null);
-    const locale = useLocale();
-    const localizedContractUpdatePreview = useMemo(() => {
-        if (!contractUpdatePreview) return undefined;
-        const { result, contract } = contractUpdatePreview;
-        const rows = result.preview.rows;
-        return buildContractUpdatePreview({
-            name: contract.name,
-            kind: result.kind,
-            diff: {
-                added: rows.filter(row => row.change === 'added').map(row => row.scope),
-                removed: rows.filter(row => row.change === 'removed').map(row => row.scope),
-                changed: rows.filter(row => row.change === 'changed').map(row => row.scope),
-            },
-            translate: mDynamic,
-        });
-    }, [contractUpdatePreview, locale]);
 
     const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
         integration.id,
@@ -92,10 +63,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     } | null>(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-    const [contractUpdatePreviewLoading, setContractUpdatePreviewLoading] = useState(false);
-    const [contractUpdatePreviewError, setContractUpdatePreviewError] = useState('');
-    const [contractUpdateChanges, setContractUpdateChanges] = useState('');
-    const [contractUpdateReason, setContractUpdateReason] = useState('');
 
     // Pull saved config from integration's guide state
     const guideState = integration?.guideState as GuideState | undefined;
@@ -169,45 +136,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                               'developerPortal.dashboards.tabs.consentFlowTesting.sendFailedFallback'
                           ](),
             });
-        }
-    };
-    const handlePreviewContractUpdate = async () => {
-        setContractUpdatePreviewLoading(true);
-        setContractUpdatePreviewError('');
-        try {
-            if (!contractUri) throw new Error('Choose a contract before creating a preview.');
-            const changes = JSON.parse(contractUpdateChanges) as ConsentFlowContractChanges &
-                NonNullable<ConsentFlowContractChanges['contract']>;
-            if (!changes || typeof changes !== 'object' || Array.isArray(changes)) {
-                throw new SyntaxError('Expected a changes object');
-            }
-            const wallet = await initWallet();
-            const contract = await wallet.invoke.getContract(contractUri);
-            if (!contract) throw new Error('Could not load the current contract.');
-            const reason = contractUpdateReason.trim() || undefined;
-            const result = await wallet.invoke.updateContract(contractUri, changes, {
-                dryRun: true,
-                reason,
-            });
-            setContractUpdatePreview({
-                contract: {
-                    ...contract,
-                    name: changes.name ?? contract.name,
-                    image: changes.image ?? contract.image,
-                },
-                result,
-                reason,
-            });
-        } catch (error) {
-            setContractUpdatePreviewError(
-                error instanceof SyntaxError
-                    ? 'Enter a JSON object with valid changes.'
-                    : error instanceof Error && error.message.includes('A reason is required')
-                      ? 'Add a short reason for the additional access.'
-                      : 'Could not create a preview. Check your changes and try again.'
-            );
-        } finally {
-            setContractUpdatePreviewLoading(false);
         }
     };
 
@@ -286,76 +214,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </div>
                 )}
             </div>
-            <section className="space-y-4 rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins">
-                <div>
-                    <h3 className="text-sm font-medium text-grayscale-900">Preview an update</h3>
-                    <p className="mt-1 text-xs text-grayscale-600">
-                        Preview your proposed changes. Nothing will be saved.
-                    </p>
-                </div>
-                <div>
-                    <label
-                        htmlFor="contract-update-changes"
-                        className="mb-1.5 block text-xs font-medium text-grayscale-700"
-                    >
-                        Changes (JSON)
-                    </label>
-                    <textarea
-                        id="contract-update-changes"
-                        value={contractUpdateChanges}
-                        onChange={event => setContractUpdateChanges(event.target.value)}
-                        disabled={contractUpdatePreviewLoading}
-                        rows={6}
-                        placeholder={'{"subtitle":"Updated app information"}'}
-                        className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 font-mono text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                    <p className="mt-1 text-xs text-grayscale-500">
-                        Category lists replace their current section. Include existing entries you
-                        want to keep.
-                    </p>
-                </div>
-                <div>
-                    <label
-                        htmlFor="contract-update-reason"
-                        className="mb-1.5 block text-xs font-medium text-grayscale-700"
-                    >
-                        Reason for additional access
-                    </label>
-                    <input
-                        id="contract-update-reason"
-                        value={contractUpdateReason}
-                        onChange={event => setContractUpdateReason(event.target.value)}
-                        maxLength={140}
-                        disabled={contractUpdatePreviewLoading}
-                        placeholder="Explain what changes for your users"
-                        className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
-                </div>
-                <button
-                    type="button"
-                    disabled={
-                        !contractUri ||
-                        !contractUpdateChanges.trim() ||
-                        contractUpdatePreviewLoading
-                    }
-                    onClick={() => void handlePreviewContractUpdate()}
-                    className="inline-flex items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    {contractUpdatePreviewLoading ? (
-                        <>
-                            <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
-                            Preparing preview...
-                        </>
-                    ) : (
-                        'Preview update'
-                    )}
-                </button>
-                {contractUpdatePreviewError && (
-                    <p role="alert" className="text-sm text-red-700">
-                        {contractUpdatePreviewError}
-                    </p>
-                )}
-            </section>
+            <ContractUpdateEditor contractUri={contractUri} />
 
             {/* Step 2: Verify Callback */}
             <div className="border border-gray-200 rounded-xl p-5 space-y-v3-4">
@@ -657,18 +516,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </li>
                 </ul>
             </div>
-            {contractUpdatePreview && localizedContractUpdatePreview && (
-                <ContractUpdateReview
-                    open
-                    name={contractUpdatePreview.contract.name}
-                    image={contractUpdatePreview.contract.image}
-                    reason={contractUpdatePreview.reason}
-                    preview={localizedContractUpdatePreview}
-                    unchangedRows={[]}
-                    readOnly
-                    onClose={() => setContractUpdatePreview(null)}
-                />
-            )}
         </div>
     );
 };

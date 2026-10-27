@@ -189,3 +189,36 @@ export const getUnchangedAccessScopes = (
 
     return unchanged;
 };
+
+/** Returns baseline access implied by a contract's initial-consent defaults, not user grants. */
+export const getUnchangedDefaultAccessScopes = (
+    contract: ConsentFlowContractDetails,
+    diff: ConsentFlowContractDiff
+): ConsentFlowContractScope[] => {
+    const changed = new Set(
+        [...diff.added, ...diff.removed, ...diff.changed].map(getContractUpdateScopeKey)
+    );
+    const defaults: ConsentFlowContractScope[] = [];
+    for (const area of ['read', 'write'] as const) {
+        const areaContract = contract.contract[area];
+        for (const [key, config] of Object.entries(areaContract.credentials?.categories ?? {})) {
+            const scope = { area, type: 'credential' as const, key, required: config.required };
+            if (
+                (config.required || config.defaultEnabled) &&
+                !changed.has(getContractUpdateScopeKey(scope))
+            ) {
+                defaults.push(scope);
+            }
+        }
+        for (const [key, config] of Object.entries(areaContract.personal ?? {})) {
+            const scope = { area, type: 'personal' as const, key, required: config.required };
+            if (
+                (config.required || config.defaultEnabled) &&
+                !changed.has(getContractUpdateScopeKey(scope))
+            ) {
+                defaults.push(scope);
+            }
+        }
+    }
+    return defaults;
+};

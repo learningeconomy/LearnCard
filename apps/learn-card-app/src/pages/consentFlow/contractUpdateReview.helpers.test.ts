@@ -10,8 +10,9 @@ import {
     applyContractUpdateScopeChoice,
     applyContractUpdateScopeChoices,
     getContractUpdateScopeKey,
-    getUnchangedAccessScopes,
     isContractUpdateScopeEnabled,
+    getUnchangedDefaultAccessScopes,
+    getUnchangedAccessScopes,
     getEnabledOptionalUpdateScopeKeys,
 } from './contractUpdateReview.helpers';
 
@@ -238,5 +239,74 @@ describe('contract update scope choices', () => {
             { area: 'write', type: 'credential', key: 'Certificate', required: false },
             { area: 'write', type: 'personal', key: 'Email', required: false },
         ]);
+    });
+    it('computes initial-consent defaults and excludes every changed scope', () => {
+        const contract = {
+            contract: {
+                read: {
+                    credentials: {
+                        categories: {
+                            RequiredRead: { required: true, defaultEnabled: false },
+                            DefaultRead: { required: false, defaultEnabled: true },
+                            OptInRead: { required: false, defaultEnabled: false },
+                            ChangedRead: { required: false, defaultEnabled: true },
+                        },
+                    },
+                    personal: {
+                        RequiredPersonal: { required: true },
+                        OptOutPersonal: { required: false, defaultEnabled: false },
+                    },
+                },
+                write: {
+                    credentials: {
+                        categories: {
+                            RequiredWrite: { required: true },
+                            DefaultWrite: { required: false, defaultEnabled: true },
+                            OptInWrite: { required: false, defaultEnabled: false },
+                        },
+                    },
+                    personal: {},
+                },
+            },
+        } as unknown as ConsentFlowContractDetails;
+        const diff = {
+            added: [],
+            removed: [],
+            changed: [{ area: 'read', type: 'credential', key: 'ChangedRead' }],
+        } as unknown as ConsentFlowContractDiff;
+
+        expect(getUnchangedDefaultAccessScopes(contract, diff)).toEqual([
+            { area: 'read', type: 'credential', key: 'RequiredRead', required: true },
+            { area: 'read', type: 'credential', key: 'DefaultRead', required: false },
+            { area: 'read', type: 'personal', key: 'RequiredPersonal', required: true },
+            { area: 'write', type: 'credential', key: 'RequiredWrite', required: true },
+            { area: 'write', type: 'credential', key: 'DefaultWrite', required: false },
+        ]);
+    });
+
+    it('does not infer accepted grants from default-enabled contract scopes', () => {
+        const contract = {
+            contract: {
+                read: {
+                    credentials: {
+                        categories: { DefaultRead: { required: false, defaultEnabled: true } },
+                    },
+                    personal: {},
+                },
+                write: {
+                    credentials: {
+                        categories: { DefaultWrite: { required: false, defaultEnabled: true } },
+                    },
+                    personal: {},
+                },
+            },
+        } as unknown as ConsentFlowContractDetails;
+        expect(
+            getUnchangedAccessScopes(contract, {
+                added: [],
+                removed: [],
+                changed: [],
+            } as ConsentFlowContractDiff)
+        ).toEqual([]);
     });
 });

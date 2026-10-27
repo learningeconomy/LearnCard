@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, ChevronUp, LockKeyhole, Plus, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, CircleHelp, LockKeyhole, Plus, X } from 'lucide-react';
 import { IonSpinner } from '@ionic/react';
 import type {
     ConsentFlowContractDetails,
@@ -22,6 +22,8 @@ export type ContractUpdateReviewProps = {
     guardianContract?: ConsentFlowContractDetails;
     unchangedRows: { area: 'read' | 'write'; label: string }[];
     initialEnabledOptionalKeys?: string[];
+    accessContext?: 'accepted' | 'defaults';
+    hasExistingAccess?: boolean;
     readOnly?: boolean;
     alreadyHandled?: boolean;
     onAccept?: (enabledOptionalKeys: string[]) => Promise<void>;
@@ -42,6 +44,8 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
     unchangedRows,
     initialEnabledOptionalKeys = [],
     readOnly = false,
+    accessContext = 'accepted',
+    hasExistingAccess = unchangedRows.length > 0,
     alreadyHandled = false,
     onAccept,
     onDecline,
@@ -78,17 +82,20 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
         style: 'long',
         type: 'conjunction',
     });
-    const existingSummary = existingReadLabels.length
-        ? mDynamic('consentUpdate.ui.unchangedRead', {
-              name,
-              items: listFormatter.format(existingReadLabels),
-          })
-        : existingWriteLabels.length
-          ? mDynamic('consentUpdate.ui.unchangedWrite', {
-                name,
-                items: listFormatter.format(existingWriteLabels),
-            })
-          : mDynamic('consentUpdate.ui.unchangedDefault');
+    const existingSummary =
+        accessContext === 'defaults'
+            ? mDynamic('consentUpdate.ui.defaultAccess')
+            : existingReadLabels.length
+              ? mDynamic('consentUpdate.ui.unchangedRead', {
+                    name,
+                    items: listFormatter.format(existingReadLabels),
+                })
+              : existingWriteLabels.length
+                ? mDynamic('consentUpdate.ui.unchangedWrite', {
+                      name,
+                      items: listFormatter.format(existingWriteLabels),
+                  })
+                : mDynamic('consentUpdate.ui.unchangedDefault');
 
     const toggle = (key: string) =>
         setEnabled(current =>
@@ -156,21 +163,23 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                     />
                 ) : (
                     <div>
-                        <p className="text-sm text-grayscale-700">{name}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                            <p className="text-sm text-grayscale-700">{name}</p>
+                            <button
+                                type="button"
+                                aria-expanded={showContext}
+                                onClick={() => setShowContext(value => !value)}
+                                aria-label={mDynamic('consentUpdate.ui.whySeeing')}
+                                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-grayscale-700 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                            >
+                                <CircleHelp aria-hidden size={18} />
+                            </button>
+                        </div>
                         {reason && (
                             <blockquote className="mt-3 border-s-2 border-grayscale-300 ps-3 text-sm italic text-grayscale-700">
                                 “{reason}”
                             </blockquote>
                         )}
-                        <button
-                            type="button"
-                            aria-expanded={showContext}
-                            onClick={() => setShowContext(value => !value)}
-                            aria-label={mDynamic('consentUpdate.ui.whySeeing')}
-                            className="mt-3 flex h-8 w-8 items-center justify-center rounded-full border border-grayscale-400 text-sm font-semibold text-grayscale-700"
-                        >
-                            ?
-                        </button>
                         {showContext && (
                             <p className="mt-2 rounded-xl bg-grayscale-100 p-3 text-sm text-grayscale-700">
                                 {mDynamic('consentUpdate.ui.appContext', {
@@ -265,12 +274,38 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                         </button>
                         {showUnchanged && (
                             <div className="mt-2 rounded-xl bg-grayscale-100 p-3 text-sm text-grayscale-600">
-                                {unchangedRows.length > 0 && (
+                                {accessContext === 'defaults' && (
+                                    <p className="mb-2 text-xs">
+                                        {mDynamic('consentUpdate.ui.defaultAccessDescription')}
+                                    </p>
+                                )}
+                                {unchangedRows.length > 0 ? (
                                     <ul className="space-y-1">
                                         {unchangedRows.map(row => (
-                                            <li key={`${row.area}:${row.label}`}>{row.label}</li>
+                                            <li key={`${row.area}:${row.label}`}>
+                                                {row.label}{' '}
+                                                <span className="text-xs">
+                                                    (
+                                                    {mDynamic(
+                                                        row.area === 'read'
+                                                            ? 'consentUpdate.ui.readAccess'
+                                                            : 'consentUpdate.ui.writeAccess'
+                                                    )}
+                                                    )
+                                                </span>
+                                            </li>
                                         ))}
                                     </ul>
+                                ) : (
+                                    <p>
+                                        {mDynamic(
+                                            accessContext === 'defaults'
+                                                ? 'consentUpdate.ui.noDefaultAccess'
+                                                : hasExistingAccess
+                                                  ? 'consentUpdate.ui.allAccessChanged'
+                                                  : 'consentUpdate.ui.noExistingAccess'
+                                        )}
+                                    </p>
                                 )}
                             </div>
                         )}

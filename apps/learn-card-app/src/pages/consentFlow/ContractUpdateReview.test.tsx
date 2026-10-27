@@ -1,10 +1,11 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ConsentFlowContractUpdatePreview } from '@learncard/types';
 import ContractUpdateReview from './ContractUpdateReview';
 import { TenantConfigProvider } from 'learn-card-base/config/TenantConfigProvider';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/config/tenantDefaults';
+import { setLocale } from '../../paraglide/runtime.js';
 vi.mock('./ConsentFlowGetAnAdult', () => ({
     default: ({ handleNextStep }: { handleNextStep: () => void }) => (
         <button type="button" onClick={handleNextStep}>
@@ -13,29 +14,6 @@ vi.mock('./ConsentFlowGetAnAdult', () => ({
     ),
 }));
 vi.mock('../../i18n', () => ({ useLocale: () => 'en' }));
-vi.mock('../../i18n/mDynamic', () => ({
-    mDynamic: (key: string, values?: Record<string, string>) => {
-        const messages: Record<string, (values?: Record<string, string>) => string> = {
-            'consentUpdate.ui.unchangedRead': values =>
-                `${values?.name} already sees ${values?.items}. That doesn't change.`,
-            'consentUpdate.ui.unchangedWrite': values =>
-                `${values?.name} can already add ${values?.items}. That doesn't change.`,
-            'consentUpdate.ui.unchangedDefault': () => 'Your existing choices stay the same.',
-            'consentUpdate.action.saveChoices': () => 'Save choices',
-            'consentUpdate.action.done': () => 'Done',
-            'consentUpdate.ui.askParent': () => 'Ask a parent',
-            'consentUpdate.ui.turnOnOption': () => 'Turn on this option',
-            'consentUpdate.ui.stopSharing': () => 'Stop sharing',
-            'consentUpdate.ui.keepSharing': () => 'Keep sharing',
-            'consentUpdate.ui.stopSharingWith': values => `Stop sharing with ${values?.name}`,
-            'consentUpdate.ui.stopSharingWarning': values =>
-                `${values?.name} will lose access to everything you've shared. You can reconnect later.`,
-            'consentUpdate.ui.respondBy': values => `Respond by ${values?.date} to keep sharing`,
-            'consentUpdate.ui.saveError': () => 'Something went wrong. Please try again.',
-        };
-        return messages[key]?.(values) ?? key;
-    },
-}));
 
 const preview: ConsentFlowContractUpdatePreview = {
     headline: 'Acme has a new option',
@@ -79,6 +57,7 @@ const renderReview = (
 };
 
 describe('ContractUpdateReview', () => {
+    beforeEach(() => setLocale('en', { reload: false }));
     it('expands structured existing access without mixing it into the change rows', () => {
         renderReview({
             unchangedRows: [
@@ -89,16 +68,63 @@ describe('ContractUpdateReview', () => {
         expect(screen.queryByText('Transcripts')).toBeNull();
         fireEvent.click(
             screen.getByRole('button', {
-                name: "Acme already sees Achievements. That doesn't change.",
+                name: /Acme already sees Achievements/,
             })
         );
         expect(screen.getByText('Transcripts')).toBeVisible();
         fireEvent.click(
             screen.getByRole('button', {
-                name: "Acme already sees Achievements. That doesn't change.",
+                name: /Acme already sees Achievements/,
             })
         );
         expect(screen.queryByText('Transcripts')).toBeNull();
+    });
+    it('shows explicit no-grants feedback for accepted users, and labels preview defaults separately', () => {
+        const props = renderReview();
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Your existing choices stay the same.' })
+        );
+        expect(screen.getByText('No access is currently enabled for this app.')).toBeVisible();
+        props.unmount();
+
+        renderReview({ accessContext: 'defaults', readOnly: true });
+        fireEvent.click(screen.getByRole('button', { name: 'Current request’s default access' }));
+        expect(screen.getByText('No default access stays unchanged.')).toBeVisible();
+        expect(screen.getByText(/not a person’s saved permissions/)).toBeVisible();
+    });
+
+    it('does not claim access is absent when existing grants are included in the changed rows', () => {
+        renderReview({ hasExistingAccess: true, unchangedRows: [] });
+        fireEvent.click(
+            screen.getByRole('button', { name: 'Your existing choices stay the same.' })
+        );
+        expect(
+            screen.getByText('Your existing access is included in the changes above.')
+        ).toBeVisible();
+        expect(screen.queryByText('No access is currently enabled for this app.')).toBeNull();
+    });
+
+    it('discloses read and write access with their areas', () => {
+        renderReview({
+            unchangedRows: [
+                { area: 'read', label: 'Achievements' },
+                { area: 'write', label: 'Transcripts' },
+            ],
+        });
+        fireEvent.click(screen.getByRole('button', { name: /already sees/ }));
+        expect(screen.getByText('Achievements')).toBeVisible();
+        expect(screen.getByText('(Read access)')).toBeVisible();
+        expect(screen.getByText('(Write access)')).toBeVisible();
+        expect(screen.queryByText('No access is currently enabled for this app.')).toBeNull();
+    });
+
+    it('exposes accessible help context next to the app identity', () => {
+        renderReview();
+        const button = screen.getByRole('button', { name: 'Why am I seeing this?' });
+        expect(button).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(button);
+        expect(button).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByText(/Acme is an app you connected to/)).toBeVisible();
     });
 
     it('does not dismiss another screen when an in-flight save finishes after unmount', async () => {
