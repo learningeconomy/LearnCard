@@ -119,10 +119,13 @@ export const waitForDidkitRegistry = async ({
             } catch (error) {
                 // Retrying transport failures must not swallow invalid metadata,
                 // malformed JSON, TLS validation errors, or programming mistakes.
-                remaining();
                 const code = error?.cause?.code ?? error?.code;
-                if (!signal.aborted && !TRANSIENT_NETWORK_CODES.has(code)) throw error;
-                reason = signal.aborted ? 'request timeout' : code;
+                const requestAborted =
+                    signal.aborted && (error === signal.reason || error?.cause === signal.reason);
+                // An elapsed timer alone does not make a consume/validation error transient.
+                if (!requestAborted && !TRANSIENT_NETWORK_CODES.has(code)) throw error;
+                remaining();
+                reason = requestAborted ? 'request timeout' : code;
             }
             const delay = Math.min(
                 Math.max(pollIntervalMs, retryAfterMilliseconds(retryAfter)),

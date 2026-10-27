@@ -371,6 +371,99 @@ test('malformed JSON, certificate errors, and unexpected exceptions do not retry
     }
 });
 
+const abortRequestDuring = t => {
+    const controller = new AbortController();
+    t.mock.method(AbortSignal, 'timeout', () => controller.signal);
+    return () => controller.abort(new DOMException('Request timed out', 'TimeoutError'));
+};
+
+test('does not retry a metadata parsing error when the request timer also expires', async t => {
+    const abortRequest = abortRequestDuring(t);
+    const failure = new SyntaxError('Malformed registry metadata');
+    const f = fixture(url => {
+        if (url !== metadataUrl(name)) return undefined;
+        const response = Response.json(metadata(name));
+        response.json = async () => {
+            abortRequest();
+            throw failure;
+        };
+        return response;
+    });
+    await assert.rejects(waitForDidkitRegistry(f.options), error => error === failure);
+    assert.equal(f.calls.length, 1);
+    assert.deepEqual(f.waits, []);
+});
+
+test('does not retry an empty tarball when the request timer also expires', async t => {
+    const abortRequest = abortRequestDuring(t);
+    const f = fixture(url =>
+        url === tarballUrl(name)
+            ? new Response(
+                  new ReadableStream({
+                      pull(controller) {
+                          abortRequest();
+                          controller.close();
+                      },
+                  })
+              )
+            : undefined
+    );
+    await assert.rejects(waitForDidkitRegistry(f.options), /Empty tarball/);
+    assert.equal(f.calls.length, 2);
+    assert.deepEqual(f.waits, []);
+});
+
+test('does not retry permanent HTTP errors when the request timer expires during cleanup', async t => {
+    const abortRequest = abortRequestDuring(t);
+    for (const status of [401, 403]) {
+        const f = fixture(() => {
+            const response = new Response('', { status });
+            const cancel = response.body.cancel.bind(response.body);
+            response.body.cancel = async () => {
+                abortRequest();
+                await cancel();
+            };
+            return response;
+        });
+        await assert.rejects(waitForDidkitRegistry(f.options), new RegExp(`HTTP ${status}`));
+        assert.equal(f.calls.length, 1);
+        assert.deepEqual(f.waits, []);
+    }
+});
+
+test('does not retry certificate errors when an unrelated request timeout fires', async t => {
+    const abortRequest = abortRequestDuring(t);
+    const failure = new TypeError('fetch failed', { cause: { code: 'CERT_HAS_EXPIRED' } });
+    const f = fixture(() => {
+        abortRequest();
+        throw failure;
+    });
+    await assert.rejects(waitForDidkitRegistry(f.options), error => error === failure);
+    assert.equal(f.calls.length, 1);
+    assert.deepEqual(f.waits, []);
+});
+
+test('still retries genuine request abort reasons and transport wrappers', async t => {
+    let controller;
+    t.mock.method(AbortSignal, 'timeout', () => {
+        controller = new AbortController();
+        return controller.signal;
+    });
+    for (const wrap of [false, true]) {
+        const f = fixture((url, attempt) => {
+            if (url === metadataUrl(name) && attempt === 1) {
+                controller.abort(new DOMException('Request timed out', 'TimeoutError'));
+                throw wrap
+                    ? new TypeError('fetch failed', { cause: controller.signal.reason })
+                    : controller.signal.reason;
+            }
+        });
+        await waitForDidkitRegistry(f.options);
+        assert.equal(f.calls.filter(url => url === metadataUrl(name)).length, 2);
+        assert.deepEqual(f.waits, [10]);
+    }
+});
+
 test('reports the package for missing or non-string tarball URLs before downloading', async () => {
     for (const dist of [
         undefined,
