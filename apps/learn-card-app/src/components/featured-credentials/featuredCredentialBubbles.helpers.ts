@@ -49,7 +49,10 @@ export const getFeaturedCredentialDisplay = (credential: VC): FeaturedCredential
 
     return {
         title: getCredentialName(unwrapped),
-        imageUrl: getImageUrlFromCredential(unwrapped) || undefined,
+        imageUrl:
+            getImageUrlFromCredential(credential) ||
+            getImageUrlFromCredential(unwrapped) ||
+            undefined,
         categoryType:
             (category as BoostCategoryOptionsEnum) || BoostCategoryOptionsEnum.achievement,
         FallbackIcon: metadata.IconWithShape ?? metadata.IconComponent,

@@ -57,6 +57,18 @@ describe('getFeaturedCredentialDisplay', () => {
         );
     });
 
+    it('prefers an image carried by the resolved credential wrapper', () => {
+        const credential = {
+            category: BoostCategoryOptionsEnum.socialBadge,
+            image: 'https://example.test/issued-badge.png',
+            boostCredential: { name: 'Team Player', image: 'https://example.test/template.png' },
+        } as unknown as VC;
+
+        expect(getFeaturedCredentialDisplay(credential).imageUrl).toBe(
+            'https://example.test/issued-badge.png'
+        );
+    });
+
     it('falls back to the achievement category when the credential category is unknown', () => {
         const credential = { name: 'Mystery', image: '' } as unknown as VC;
 
