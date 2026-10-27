@@ -45,6 +45,8 @@ export const EN_DEFAULTS: Record<string, string> = {
     'credential.close': 'Close',
     'credential.by': 'By',
     'credential.verified': 'Verified Credential',
+    'credential.awardedOn': 'Awarded on {date}',
+    'credential.awardedOnBy': 'Awarded on {date} by',
     'verification.title': 'Credential Verifications',
     'verification.infoText':
         'Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy.',

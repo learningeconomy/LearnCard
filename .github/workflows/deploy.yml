@@ -517,6 +517,7 @@ jobs:
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  CAMPAIGN_ADMIN_PROFILE_IDS: ${{ vars.CAMPAIGN_ADMIN_PROFILE_IDS }}
                   # Optional per-stage runtime-secrets bundle id. When set, the bundle
                   # supplies the credentials below and serverless.function-env.cjs omits the
                   # GitHub fallbacks. Non-secret per-stage config (DOMAIN_NAME, SENTRY_ENV,
@@ -1449,6 +1450,12 @@ jobs:
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
                   '
 
+            # Native artifacts publish in a separate workflow. Hold dependent
+            # packages until the exact wrapper and every supported binding are public.
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
             - name: Publish Registry Packages
               run: bunx changeset publish
     # ============================================================================
@@ -1730,7 +1737,13 @@ jobs:
 
             # The native prebuild workflow publishes independently of Deploy.
             # Trigger installs this external package from npm, not the checkout.
-            - name: Wait for Trigger native package publication
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
+            # Publication waiting has its own budget; keep the fresh Linux install
+            # and runtime verification after all native artifacts are available.
+            - name: Verify Trigger native package installation
               timeout-minutes: 16
               run: node scripts/wait-for-trigger-native-package.mjs
 

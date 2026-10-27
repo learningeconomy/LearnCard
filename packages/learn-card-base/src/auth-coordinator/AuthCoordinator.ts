@@ -279,7 +279,11 @@ export class AuthCoordinator {
     private async resolveEscrowEnrollmentGate(
         userKey: string,
         credentials: { token: string; providerType: string }
-    ): Promise<{ allowed: boolean; prefetched?: EscrowEnrollmentState }> {
+    ): Promise<{
+        allowed: boolean;
+        prefetched?: EscrowEnrollmentState;
+        requirePriorEnrollment?: boolean;
+    }> {
         if (!this.config.isEscrowEnrollmentAllowed) return { allowed: true };
 
         if (!this.keyDerivation.getEscrowEnrollmentState) {
@@ -306,7 +310,13 @@ export class AuthCoordinator {
             return { allowed: true, prefetched };
         }
 
-        return { allowed: await this.isEscrowEnrollmentAllowed(userKey), prefetched };
+        if (await this.isEscrowEnrollmentAllowed(userKey)) return { allowed: true, prefetched };
+        // A leftover (e.g. post-rebind `pending`) escrow method survives a reload where the
+        // in-memory recovery marker does not. Repair it as maintenance, but only if the
+        // strategy can prove prior enrollment (signed authority in Nitro mode).
+        return prefetched.priorEscrowMethod
+            ? { allowed: false, prefetched, requirePriorEnrollment: true }
+            : { allowed: false, prefetched };
     }
 
     /** Best-effort repair and hold discovery must never block account access. */
@@ -342,7 +352,10 @@ export class AuthCoordinator {
                         ? { allowed: true }
                         : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
                 // Outside rollout, a non-escrow recovery may only repair a verified prior enrollment.
-                const requirePriorEnrollment = repairingRecovery && !gate.allowed;
+                const requirePriorEnrollment =
+                    !gate.allowed &&
+                    (repairingRecovery ||
+                        ('requirePriorEnrollment' in gate && gate.requirePriorEnrollment === true));
                 if (gate.allowed || requirePriorEnrollment) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
@@ -358,7 +371,12 @@ export class AuthCoordinator {
                                                 ? { requirePriorEnrollment: true }
                                                 : {}),
                                         }
-                                      : this.recoveryContactOptions(ready),
+                                      : requirePriorEnrollment
+                                        ? {
+                                              ...this.recoveryContactOptions(ready),
+                                              requirePriorEnrollment: true,
+                                          }
+                                        : this.recoveryContactOptions(ready),
                               })
                             : undefined
                     ).catch(err => {
@@ -370,11 +388,41 @@ export class AuthCoordinator {
                     if (
                         repairingRecovery &&
                         (enrollmentResult?.enrolled ||
-                            (enrollmentResult && enrollmentResult.reason === 'not-enrolled')) &&
+                            (enrollmentResult &&
+                                (enrollmentResult.reason === 'not-enrolled' ||
+                                    enrollmentResult.reason === 'pin-reset-required'))) &&
                         isCurrentAccount() &&
                         this.recoveredEscrowAccount === recovered
                     ) {
                         this.recoveredEscrowAccount = undefined;
+                    }
+                    // The strategy cleared the retired PIN without being asked; the user
+                    // must be told and offered a new PIN (design doc Q1).
+                    if (
+                        enrollmentResult?.enrolled &&
+                        enrollmentResult.changed &&
+                        enrollmentResult.pinCleared === 'automatic' &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready'
+                    ) {
+                        this.setState({ ...this.state, escrowPinAutoCleared: true });
+                    }
+                    // Only a user-chosen PIN can resolve this; the strategy signed nothing,
+                    // so later refreshes stay read-only until the user acts.
+                    const pinResetRequired =
+                        !!enrollmentResult &&
+                        !enrollmentResult.enrolled &&
+                        enrollmentResult.reason === 'pin-reset-required';
+                    if (
+                        enrollmentResult &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready' &&
+                        pinResetRequired !== (this.state.escrowPinResetRequired === true)
+                    ) {
+                        this.setState({
+                            ...this.state,
+                            escrowPinResetRequired: pinResetRequired ? true : undefined,
+                        });
                     }
                     if (
                         enrollmentResult &&
@@ -604,7 +652,13 @@ export class AuthCoordinator {
             recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
         // An explicit new PIN supersedes recovery's intent to clear the retired PIN.
         if (supersedesRecovery) this.recoveredEscrowAccount = undefined;
-        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        this.setState({
+            ...ready,
+            escrowPin: undefined,
+            escrowEnrollment: undefined,
+            escrowPinAutoCleared: undefined,
+            escrowPinResetRequired: undefined,
+        });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.setEscrowPin!({
@@ -628,6 +682,12 @@ export class AuthCoordinator {
         }
     }
 
+    /** Mark the post-automatic-clear "set a new PIN" prompt as shown, so it shows once. */
+    acknowledgeEscrowPinAutoClear(): void {
+        if (this.state.status === 'ready' && this.state.escrowPinAutoCleared)
+            this.setState({ ...this.state, escrowPinAutoCleared: undefined });
+    }
+
     /** Remove a PIN by rotating escrow material with an owner proof. */
     async clearEscrowPin(): Promise<void> {
         const ready = this.state;
@@ -639,7 +699,13 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        this.setState({
+            ...ready,
+            escrowPin: undefined,
+            escrowEnrollment: undefined,
+            escrowPinAutoCleared: undefined,
+            escrowPinResetRequired: undefined,
+        });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.clearEscrowPin!({

@@ -19,6 +19,13 @@ mock_provider "aws" {
   mock_resource "aws_ses_domain_dkim" { defaults = { dkim_tokens = ["one", "two", "three"] } }
   mock_resource "aws_route53_zone" { defaults = { name_servers = ["ns1.example.org", "ns2.example.org"], zone_id = "Z123456789" } }
 }
+
+# All mocked CMKs share one id; give the storage CMK its own so governance
+# assertions can tell its branch from the escrow/credentials branch.
+override_resource {
+  target = aws_kms_key.s3
+  values = { arn = "arn:aws:kms:us-east-1:123456789012:key/55555555-6666-7777-8888-999999999999", key_id = "55555555-6666-7777-8888-999999999999" }
+}
 mock_provider "aws" {
   alias = "governance"
   mock_resource "aws_sqs_queue" { defaults = { arn = "arn:aws:sqs:us-east-1:123456789012:global-dlq", id = "https://sqs.us-east-1.amazonaws.com/123456789012/global-dlq" } }
@@ -87,6 +94,26 @@ run "disabled_is_structurally_a_noop" {
     error_message = "Always-on tamper monitoring must cover the exact trail/bucket APIs, both CloudTrail parameter names, the denied-call errorCode fallback branches (null requestParameters), and fixed SNS/DLQ delivery."
   }
   assert {
+    condition = (
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId) == jsonencode([{ suffix = aws_kms_key.escrow.key_id }]) &&
+      length(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"]) == 5 &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) == jsonencode([{ suffix = "55555555-6666-7777-8888-999999999999" }]) &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.eventName) == toset(["PutKeyPolicy", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.eventName == ["CreateGrant"] &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.keyId) == jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail["$or"]) == jsonencode([{ userIdentity = { invokedBy = [{ exists = false }] } }, { userIdentity = { invokedBy = [{ "anything-but" = "dynamodb.amazonaws.com" }] } }, { requestParameters = { granteePrincipal = [{ "anything-but" = { prefix = "dynamodb." } }] } }, { requestParameters = { granteeServicePrincipal = [{ exists = true }] } }]) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][1]) == "{\"errorCode\":[{\"prefix\":\"AccessDenied\"}],\"requestParameters\":[null]}" &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][0].requestParameters.aliasName == [aws_kms_alias.escrow.name, aws_kms_alias.s3.name] &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail.eventName) == toset(["CreateAlias", "UpdateAlias", "DeleteAlias"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.errorCode[0].prefix == "AccessDenied" &&
+      !contains(keys(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail), "requestParameters") &&
+      jsondecode(aws_cloudwatch_event_target.escrow_kms_changes.input).alarm == "EscrowKmsGovernanceChange"
+    )
+    error_message = "Disabled KMS governance must match the escrow and storage CMKs and their aliases, plus denied calls without requestParameters."
+  }
+  assert {
     condition     = var.host_ami_id == null && length(data.aws_ssm_parameter.al2023_ami) == 1 && aws_launch_template.enclave_host.image_id == data.aws_ssm_parameter.al2023_ami[0].value
     error_message = "Default staging must retain the same latest-AL2023 lookup and launch-template image."
   }
@@ -109,6 +136,7 @@ run "disabled_is_structurally_a_noop" {
       length(aws_iam_role_policy.authority_monitor) == 0,
       length(aws_cloudwatch_metric_alarm.authority_integrity) == 0,
       length(aws_cloudwatch_metric_alarm.authority_heartbeat) == 0,
+      length(aws_cloudwatch_metric_alarm.authority_repeated_pin_clear) == 0,
       output.authority_monitor_trust_parameter_name == null,
       !contains(keys(aws_lambda_function.monitor.environment[0].variables), "AUTHORITY_TABLE"),
       length(aws_ses_domain_identity.enclave) == 0, length(aws_ses_domain_dkim.enclave) == 0,
@@ -194,7 +222,7 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Observer grants and fixed table/generation/trust wiring must be read-only."
   }
   assert {
-    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].metric_name == "AuthorityRepeatedPinClear" && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
     error_message = "Monitor must have no write/control escape and must alarm on failures or missing coverage."
   }
 }
@@ -217,6 +245,26 @@ run "credential_cmk_pins_complete_tuples_and_context" {
   assert {
     condition     = alltrue([for sid in ["DenyUnattestedDecrypt", "DenyDebugPCR0", "DenyDebugPCR1", "DenyDebugPCR2", "DenyDebugImageSha384", "DenyRootPolicyChangeWithoutMfa", "DenyGrantsAndAlternativeCrypto", "DenyEncryptExceptProvisioner", "DenyDecryptExceptHost"] : anytrue([for s in local.credential_key_policy.Statement : s.Sid == sid && s.Effect == "Deny"])]) && length([for s in local.credential_key_policy.Statement : s if startswith(s.Sid, "DenyMissingContext")]) == 5 && aws_kms_key.credentials[0].enable_key_rotation && aws_kms_key.credentials[0].deletion_window_in_days == 30
     error_message = "Credential CMK must deny grants, missing/debug attestation, missing context and non-MFA root policy changes."
+  }
+  assert {
+    condition = (
+      # The mock gives both CMKs the same ids, so assert the ordered list.
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId) == jsonencode([{ suffix = aws_kms_key.escrow.key_id }, { suffix = aws_kms_key.credentials[0].key_id }]) &&
+      length(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"]) == 5 &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) == jsonencode([{ suffix = "55555555-6666-7777-8888-999999999999" }]) &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.eventName) == toset(["PutKeyPolicy", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.eventName == ["CreateGrant"] &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.keyId) == jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail["$or"]) == jsonencode([{ userIdentity = { invokedBy = [{ exists = false }] } }, { userIdentity = { invokedBy = [{ "anything-but" = "dynamodb.amazonaws.com" }] } }, { requestParameters = { granteePrincipal = [{ "anything-but" = { prefix = "dynamodb." } }] } }, { requestParameters = { granteeServicePrincipal = [{ exists = true }] } }]) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][1]) == "{\"errorCode\":[{\"prefix\":\"AccessDenied\"}],\"requestParameters\":[null]}" &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.errorCode[0].prefix == "AccessDenied" &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][0].requestParameters.aliasName == [aws_kms_alias.escrow.name, aws_kms_alias.credentials[0].name, aws_kms_alias.s3.name] &&
+      toset(jsondecode(aws_cloudwatch_event_rule.authority_governance["credential_key"].event_pattern).detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      # Stay well inside EventBridge's event pattern size limit.
+      length(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern) <= 2048
+    )
+    error_message = "KMS governance must match the escrow, credentials and storage CMKs by key ID, ARN and alias, rotation/deletion-cancel changes, plus denied calls."
   }
   assert {
     condition     = length(local.bucket_extra_policy_documents.artifacts) == 2 && alltrue([for sid in ["DenyCredentialWritesExceptProvisioner", "DenyNonCreateOnlyCredentials", "DenyCredentialDeletion"] : anytrue([for s in jsondecode(local.bucket_extra_policy_documents.artifacts[1]).Statement : s.Sid == sid && s.Effect == "Deny"])]) && alltrue([for s in local.credential_object_policy.Statement : !strcontains(s.Sid, "NonCreateOnly") || try(s.Condition.StringNotEqualsIfExists["s3:if-none-match"], "") == "*"])

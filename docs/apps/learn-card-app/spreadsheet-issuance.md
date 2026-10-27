@@ -14,6 +14,8 @@ Use **Issue Credentials** to send one credential template to several people with
 
 Evidence links and uploaded files become standard Open Badges Evidence entries. Importing a link does not fetch its contents.
 
+Open a person’s credential preview to check the mapped values before issuing. Unsigned previews show **Preview** rather than a verification result. Ordinary evidence URLs appear as links; recognized video links keep their video presentation. **Awarded on** uses the mapped awarded date, falling back to the issuance date for credentials without one.
+
 ```mermaid
 flowchart LR
     Upload[Upload or paste] --> Review[Review and fix rows]

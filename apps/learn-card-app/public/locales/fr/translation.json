@@ -2001,6 +2001,10 @@
                 "body": "Le PIN que vous venez d’utiliser a été retiré : chaque PIN ne sert qu’une fois pour garder votre compte protégé. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
+            "pinResetRequired": {
+                "title": "Définissez un nouveau PIN de récupération",
+                "body": "Votre ancien PIN de récupération ne peut plus être utilisé depuis la récupération de votre compte. Définissez un nouveau PIN à 6 chiffres pour rétablir la récupération automatique."
+            },
             "useInstead": "Utiliser mon code PIN de récupération"
         },
         "confirmCode": {
@@ -2807,7 +2811,8 @@
             "preview": {
                 "criteria": "Critères",
                 "certificate": "Certificat",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Décernée le {{date}}"
             },
             "loading": {
                 "issuing": "Émission du Boost...",
@@ -3842,7 +3847,9 @@
             "lifecycle": {
                 "revoked": "Révoqué",
                 "suspended": "Suspendu"
-            }
+            },
+            "awardedOn": "Décernée le {{date}}",
+            "awardedOnBy": "Décernée le {{date}} par"
         }
     },
     "skills": {
@@ -9411,7 +9418,8 @@
         },
         "preview": {
             "willLook": "Voici à quoi ressemblera votre justificatif.",
-            "pickToStart": "Choisissez un type pour commencer à concevoir votre justificatif."
+            "pickToStart": "Choisissez un type pour commencer à concevoir votre justificatif.",
+            "verificationPending": "La vérification a lieu après l’émission."
         },
         "err": {
             "network": "Problème de connexion. Vérifiez votre connexion Internet et réessayez.",

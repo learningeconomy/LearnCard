@@ -159,6 +159,7 @@ jobs:
               env:
                   USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
               run: |
+                  # Message navigation, the catalog, and campaign authorization share this owned stack.
                   verify_args=(up --json --dir "$STACK_DIR")
                   if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
                     verify_args+=(--docker-builder lc-verification)
@@ -175,6 +176,13 @@ jobs:
               id: catalog
               run: |
                   bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
+
+            - name: Verify campaign SDK authorization boundaries
+              id: campaigns
+              run: |
+                  bun run --cwd apps/learn-card-app lc verify script \
+                    services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
+                    > "$PRIVATE_LOG_DIR/campaigns.log" 2>&1
 
             # Public proof handoff: selected media and sanitized rendering data only.
             - name: Stage proof media
@@ -217,7 +225,7 @@ jobs:
               if: ${{ always() }}
               env:
                   STARTUP_OUTCOME: ${{ steps.stack.outcome }}
-                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome }}
+                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}
                   VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
               run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"

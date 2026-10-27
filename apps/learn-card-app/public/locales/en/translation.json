@@ -2325,6 +2325,10 @@
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             },
+            "pinResetRequired": {
+                "title": "Set a new recovery PIN",
+                "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
+            },
             "useInstead": "Use my recovery PIN instead"
         },
         "confirmCode": {
@@ -3153,7 +3157,8 @@
             "preview": {
                 "criteria": "Criteria",
                 "certificate": "Certificate",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Awarded on {{date}}"
             },
             "loading": {
                 "issuing": "Issuing boost...",
@@ -3893,7 +3898,9 @@
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "awardedOn": "Awarded on {{date}}",
+            "awardedOnBy": "Awarded on {{date}} by"
         }
     },
     "skills": {
@@ -9462,7 +9469,8 @@
         },
         "preview": {
             "willLook": "This is how your credential will look.",
-            "pickToStart": "Pick a type to start designing your credential."
+            "pickToStart": "Pick a type to start designing your credential.",
+            "verificationPending": "Verification runs after you issue it."
         },
         "err": {
             "network": "Connection issue. Check your internet and try again.",
