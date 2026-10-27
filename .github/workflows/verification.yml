@@ -20,6 +20,11 @@ on:
             - '.nvmrc'
     workflow_dispatch:
         inputs:
+            message_navigation_runs:
+                description: 'Serial navigation attempts for intermittent-failure investigation'
+                type: choice
+                options: ['1', '3', '5']
+                default: '1'
             use_docker_cache:
                 description: 'Experiment with Docker dependency caching (no measured speedup yet)'
                 type: boolean
@@ -169,8 +174,16 @@ jobs:
 
             - name: Verify message navigation on the owned stack
               id: navigation
+              env:
+                  MESSAGE_NAVIGATION_RUNS: ${{ inputs.message_navigation_runs || '1' }}
               run: |
-                  bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation.log" 2>&1
+                  case "$MESSAGE_NAVIGATION_RUNS" in
+                    1|3|5) ;;
+                    *) echo 'Invalid navigation attempt count'; exit 1 ;;
+                  esac
+                  for ((attempt = 1; attempt <= MESSAGE_NAVIGATION_RUNS; attempt++)); do
+                    bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation-$attempt.log" 2>&1
+                  done
 
             - name: Run serial catalog on the owned stack
               id: catalog
