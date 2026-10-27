@@ -116,6 +116,9 @@ coverage counts and validated numeric durations. Raw timestamps and error text a
 Message-navigation script summaries also retain fixed step and failed-operation names with statuses and durations,
 including listing setup and sign-in before the first browser step. Use this table to locate a
 failure without publishing raw action records, URLs, actor data or assertion messages.
+For intermittent failures, manual dispatch accepts `message_navigation_runs` (`1`, `3`, or `5`).
+Attempts run serially with fresh actors and browser contexts, stop at the first failure, and
+retain separate sanitized step tables. The default is one attempt; the full catalog still follows.
 
 ### Sharing a live stack between agents
 
