@@ -6,6 +6,29 @@ import { pathToFileURL } from 'node:url';
 
 const PACKAGE = '@learncard/didkit-plugin-node';
 const REGISTRY = 'https://registry.npmjs.org/';
+const TRANSIENT_NETWORK_CODES = new Set([
+    'ECONNRESET',
+    'ECONNREFUSED',
+    'ETIMEDOUT',
+    'EAI_AGAIN',
+    'ENOTFOUND',
+    'EHOSTUNREACH',
+    'ENETUNREACH',
+    'EPIPE',
+    'UND_ERR_CONNECT_TIMEOUT',
+    'UND_ERR_HEADERS_TIMEOUT',
+    'UND_ERR_BODY_TIMEOUT',
+    'UND_ERR_SOCKET',
+    'UND_ERR_RES_CONTENT_LENGTH_MISMATCH',
+]);
+
+const retryAfterMilliseconds = value => {
+    if (!value) return 0;
+    if (/^\d+$/.test(value.trim())) return Number(value) * 1000;
+    const date = Date.parse(value);
+    return Number.isFinite(date) ? Math.max(0, date - Date.now()) : 0;
+};
+
 const PLATFORMS = {
     'x86_64-unknown-linux-gnu': 'linux-x64-gnu',
     'aarch64-unknown-linux-gnu': 'linux-arm64-gnu',
@@ -65,22 +88,49 @@ export const waitForDidkitRegistry = async ({
         return milliseconds;
     };
     const request = async (url, consume) => {
-        const response = await fetchRegistry(url, {
-            cache: 'no-store',
-            headers: { 'Cache-Control': 'no-cache' },
-            signal: AbortSignal.timeout(Math.min(30_000, remaining())),
-        });
-        if (response.status === 404) {
-            await response.body?.cancel();
-            return undefined;
+        for (;;) {
+            const signal = AbortSignal.timeout(Math.min(30_000, remaining()));
+            let retryAfter;
+            let reason;
+            try {
+                const response = await fetchRegistry(url, {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache' },
+                    signal,
+                });
+                if (response.status === 404) {
+                    await response.body?.cancel();
+                    return undefined;
+                }
+                if (response.status === 429 || response.status >= 500) {
+                    retryAfter = response.headers.get('retry-after');
+                    await response.body?.cancel();
+                    reason = `HTTP ${response.status}`;
+                } else if (!response.ok) {
+                    await response.body?.cancel().catch(() => {
+                        // A cleanup failure must not make a permanent HTTP error retryable.
+                    });
+                    throw new Error(`Registry request failed: HTTP ${response.status} for ${url}`);
+                } else {
+                    const result = await consume(response);
+                    remaining();
+                    return result;
+                }
+            } catch (error) {
+                // Retrying transport failures must not swallow invalid metadata,
+                // malformed JSON, TLS validation errors, or programming mistakes.
+                remaining();
+                const code = error?.cause?.code ?? error?.code;
+                if (!signal.aborted && !TRANSIENT_NETWORK_CODES.has(code)) throw error;
+                reason = signal.aborted ? 'request timeout' : code;
+            }
+            const delay = Math.min(
+                Math.max(pollIntervalMs, retryAfterMilliseconds(retryAfter)),
+                remaining()
+            );
+            log(`Retrying registry request after ${reason} in ${delay}ms: ${url}`);
+            await wait(delay);
         }
-        if (!response.ok) {
-            await response.body?.cancel();
-            throw new Error(`Registry request failed: HTTP ${response.status} for ${url}`);
-        }
-        const result = await consume(response);
-        remaining();
-        return result;
     };
 
     for (let attempt = 1; ; attempt += 1) {

@@ -44,12 +44,14 @@ const fixture = (respond = () => undefined) => {
     let time = 0;
     const calls = [];
     const logs = [];
+    const waits = [];
     const options = {
         manifest,
         timeoutMs: 100,
         pollIntervalMs: 10,
         now: () => time,
         wait: async milliseconds => {
+            waits.push(milliseconds);
             time += milliseconds;
         },
         log: message => logs.push(message),
@@ -72,6 +74,7 @@ const fixture = (respond = () => undefined) => {
     return {
         calls,
         logs,
+        waits,
         options,
         advance: milliseconds => {
             time += milliseconds;
@@ -216,11 +219,155 @@ test('rejects a wrapper with missing or mismatched optional binding dependencies
     }
 });
 
-test('authentication and other non-publication failures fail immediately', async () => {
-    for (const status of [401, 403, 500]) {
+test('authentication and other permanent HTTP failures fail immediately', async () => {
+    for (const status of [400, 401, 403, 422]) {
         const f = fixture(() => new Response('E404 is not the status', { status }));
         await assert.rejects(waitForDidkitRegistry(f.options), new RegExp(`HTTP ${status}`));
         assert.equal(f.calls.length, 1);
+    }
+});
+
+test('authentication failures do not retry even if canceling the response body fails', async () => {
+    for (const status of [401, 403]) {
+        const f = fixture(
+            () =>
+                new Response(
+                    new ReadableStream({
+                        cancel() {
+                            throw Object.assign(new Error('socket closed'), { code: 'ECONNRESET' });
+                        },
+                    }),
+                    { status }
+                )
+        );
+        await assert.rejects(waitForDidkitRegistry(f.options), new RegExp(`HTTP ${status}`));
+        assert.equal(f.calls.length, 1);
+        assert.deepEqual(f.waits, []);
+    }
+});
+
+for (const resource of ['metadata', 'tarball']) {
+    test(`retries transient HTTP failures for ${resource} without re-downloading ready packages`, async () => {
+        const url = resource === 'metadata' ? metadataUrl(packages[4]) : tarballUrl(packages[4]);
+        for (const status of [429, 500, 502, 503, 504]) {
+            const f = fixture((requested, attempt) =>
+                requested === url && attempt === 1 ? new Response('', { status }) : undefined
+            );
+            await waitForDidkitRegistry(f.options);
+            assert.equal(f.calls.filter(requested => requested === url).length, 2);
+            assert.equal(f.calls.filter(requested => requested === tarballUrl(name)).length, 1);
+            assert.deepEqual(f.waits, [10]);
+            assert.ok(f.logs.some(message => message.includes(`HTTP ${status}`)));
+        }
+    });
+
+    test(`retries transport failures for ${resource}`, async () => {
+        const url = resource === 'metadata' ? metadataUrl(name) : tarballUrl(name);
+        for (const code of [
+            'ECONNRESET',
+            'EAI_AGAIN',
+            'UND_ERR_CONNECT_TIMEOUT',
+            'UND_ERR_SOCKET',
+            'UND_ERR_RES_CONTENT_LENGTH_MISMATCH',
+        ]) {
+            const f = fixture((requested, attempt) => {
+                if (requested === url && attempt === 1) {
+                    throw new TypeError('fetch failed', {
+                        cause: Object.assign(new Error(), { code }),
+                    });
+                }
+            });
+            await waitForDidkitRegistry(f.options);
+            assert.equal(f.calls.filter(requested => requested === url).length, 2);
+            assert.deepEqual(f.waits, [10]);
+        }
+    });
+}
+
+test('retries an interrupted tarball from the beginning instead of accepting partial bytes', async () => {
+    let chunks = 0;
+    const f = fixture((url, attempt) =>
+        url === tarballUrl(name) && attempt === 1
+            ? new Response(
+                  new ReadableStream(
+                      {
+                          pull(controller) {
+                              if (chunks++ === 0) controller.enqueue(new Uint8Array([1]));
+                              else
+                                  controller.error(
+                                      new TypeError('terminated', {
+                                          cause: Object.assign(new Error(), {
+                                              code: 'UND_ERR_SOCKET',
+                                          }),
+                                      })
+                                  );
+                          },
+                      },
+                      { highWaterMark: 0 }
+                  )
+              )
+            : undefined
+    );
+    await waitForDidkitRegistry(f.options);
+    assert.equal(f.calls.filter(url => url === tarballUrl(name)).length, 2);
+    assert.equal(f.logs.filter(message => message.startsWith(`Ready: ${name}@`)).length, 1);
+});
+
+test('honors Retry-After seconds for rate limiting and server errors', async () => {
+    for (const status of [429, 503]) {
+        const f = fixture((url, attempt) =>
+            url === metadataUrl(name) && attempt === 1
+                ? new Response('', { status, headers: { 'Retry-After': '2' } })
+                : undefined
+        );
+        await waitForDidkitRegistry({ ...f.options, timeoutMs: 3000 });
+        assert.deepEqual(f.waits, [2000]);
+    }
+});
+
+test('caps a Retry-After date at the original overall deadline', async () => {
+    const f = fixture(
+        () =>
+            new Response('', {
+                status: 429,
+                headers: { 'Retry-After': new Date(Date.now() + 60_000).toUTCString() },
+            })
+    );
+    await assert.rejects(waitForDidkitRegistry(f.options), /Timed out waiting/);
+    assert.deepEqual(f.waits, [100]);
+    assert.equal(f.calls.length, 1);
+});
+
+test('persistent transport failures exhaust the shared deadline without resetting it', async () => {
+    const f = fixture(() => {
+        throw Object.assign(new Error('connection reset'), { code: 'ECONNRESET' });
+    });
+    await assert.rejects(waitForDidkitRegistry(f.options), error => {
+        assert.match(error.message, /Timed out waiting/);
+        assert.ok(error.message.includes(`${name}@${version}`));
+        return true;
+    });
+    assert.equal(f.calls.length, 10);
+    assert.equal(
+        f.waits.reduce((sum, delay) => sum + delay, 0),
+        100
+    );
+});
+
+test('malformed JSON, certificate errors, and unexpected exceptions do not retry', async () => {
+    for (const failure of [
+        () => new Response('{'),
+        () => {
+            throw new TypeError('fetch failed', { cause: { code: 'CERT_HAS_EXPIRED' } });
+        },
+        () => {
+            throw new TypeError('implementation bug');
+        },
+    ]) {
+        const f = fixture(failure);
+        await assert.rejects(waitForDidkitRegistry(f.options));
+        assert.equal(f.calls.length, 1);
+        assert.deepEqual(f.waits, []);
     }
 });
 
@@ -311,7 +458,7 @@ for (const stalled of ['metadata', 'tarball']) {
                         ? Promise.resolve(Response.json(metadata(name)))
                         : fetch(`http://127.0.0.1:${server.address().port}`, options),
             }),
-            /timeout|aborted/i
+            /Timed out waiting for native registry publication/
         );
     });
 }
