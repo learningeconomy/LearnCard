@@ -13,6 +13,7 @@ import type {
     PageCampaignAudienceInput,
     PaginatedCampaigns,
     PaginatedCampaignAudience,
+    PublishCredentialSharePreview,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -227,6 +228,15 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
+    /**
+     * Publish opted-in, publisher-supplied metadata bound to an encrypted presentation URI.
+     * Provide an owned preview ID and the same URI to refresh it; its URI cannot be rebound.
+     * A missing or mismatched refresh returns NOT_FOUND. This does not verify the credential or issuer.
+     * Returns an opaque UUID; public lookup also requires the matching share URI.
+     */
+    publishCredentialSharePreview: (preview: PublishCredentialSharePreview) => Promise<string>;
+    /** Remove an owned preview; returns false if absent/unowned. Social copies may persist. */
+    deleteCredentialSharePreview: (id: string) => Promise<boolean>;
     createProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'> & { authToken?: string }
     ) => Promise<string>;
