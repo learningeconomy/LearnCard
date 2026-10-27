@@ -17,6 +17,7 @@ import { CredentialActivity } from './CredentialActivity';
 import { CredentialRefresh } from './CredentialRefresh';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
+import { Campaign } from './Campaign';
 import { ensureCredentialRefreshConstraints } from './credential-refresh-constraints';
 
 // Ensure CredentialActivity model is registered by referencing it
@@ -139,10 +140,17 @@ ContactMethod.addRelationships({
     profile: { model: Profile, direction: 'in', name: 'HAS_CONTACT_METHOD' },
 });
 
+Campaign.addRelationships({
+    audience: { model: Profile, direction: 'in', name: 'IN_CAMPAIGN_AUDIENCE' },
+    state: { model: Profile, direction: 'in', name: 'CAMPAIGN_STATE' },
+});
+
 const shouldCreateIndices =
     environment.NODE_ENV === 'production' || !environment.NEO4J_SKIP_INDICES;
 
 const indexQueries = [
+    'CREATE CONSTRAINT campaign_id_unique IF NOT EXISTS FOR (c:Campaign) REQUIRE c.id IS UNIQUE',
+    'CREATE INDEX campaign_status_idx IF NOT EXISTS FOR (c:Campaign) ON (c.status)',
     'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
     ...contractEventMaintenanceSchema,
@@ -293,3 +301,4 @@ export * from './CredentialActivity';
 export * from './CredentialRefresh';
 export * from './ShareLink';
 export * from './StatusList';
+export * from './Campaign';

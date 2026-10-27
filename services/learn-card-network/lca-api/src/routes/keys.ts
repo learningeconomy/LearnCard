@@ -643,6 +643,13 @@ export const keysRouter = t.router({
                     escrowOptedOut: z.boolean(),
                     escrowPin: EscrowPinStatusValidator,
                     escrowStale: z.enum(['mode-mismatch', 'key-rotated']).optional(),
+                    /**
+                     * The account has an escrow recovery method (any confirmation state)
+                     * but none confirmed at the current share version, e.g. `pending`
+                     * after an identity-recovery rebind. A hint only; the client still
+                     * proves prior enrollment against the signed escrow authority.
+                     */
+                    priorEscrowEnrollment: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
                 })
                 .nullable()
@@ -702,6 +709,10 @@ export const keysRouter = t.router({
                           }
                         : {}),
                 }));
+            const currentVersion = userKey.shareVersion ?? 1;
+            const escrowMethods = (userKey.recoveryMethods ?? []).filter(
+                rm => rm?.type === 'escrow'
+            );
 
             return {
                 authShare,
@@ -720,6 +731,13 @@ export const keysRouter = t.router({
                 escrowStale: userKey.escrowBlob
                     ? await getEscrowBlobStaleReason(userKey.escrowBlob)
                     : undefined,
+                priorEscrowEnrollment:
+                    escrowMethods.length > 0 &&
+                    !escrowMethods.some(
+                        rm =>
+                            rm.shareVersion === currentVersion &&
+                            isRecoveryMethodConfirmed(userKey, rm)
+                    ),
             };
         }),
 

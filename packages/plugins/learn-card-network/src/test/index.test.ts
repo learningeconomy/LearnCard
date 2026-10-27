@@ -757,3 +757,80 @@ describe.skip('LearnCard Network Plugin', () => {
         });
     });
 });
+
+it('recovers valid deliveries despite decryption and validation failures on the page', async () => {
+    const client = {
+        ...getMockClient(),
+        inbox: {
+            getMyInboxDeliveries: {
+                query: vi.fn().mockResolvedValue({
+                    records: [
+                        { id: 'bad-decrypt', credential: 'broken' },
+                        { id: 'bad-vc', credential: {} },
+                        { id: 'good', credential: { type: ['VerifiableCredential'] } },
+                    ],
+                    hasMore: true,
+                    cursor: 'good',
+                }),
+            },
+        },
+    };
+    vi.mocked(getBrainClient).mockResolvedValue(client as any);
+    const wallet = getMockLearnCard();
+    wallet.id.keypair = () => ({ publicKey: 'key' });
+    wallet.invoke.decryptDagJwe = vi.fn(async (credential: any) => {
+        if (credential === 'broken') throw new Error('Cannot decrypt');
+        return credential;
+    });
+    const plugin = await getLearnCardNetworkPlugin(wallet, 'https://network.example');
+    expect(await plugin.methods?.recoverInboxCredentials(wallet, {})).toEqual({
+        records: [{ id: 'good', credential: { type: ['VerifiableCredential'] } }],
+        failed: 2,
+        hasMore: true,
+        cursor: 'good',
+    });
+});
+
+describe('concurrent profile reads', () => {
+    beforeEach(() => vi.clearAllMocks());
+    it('deduplicates in-flight reads but fetches again after completion', async () => {
+        let resolve!: (profile: typeof PROFILE) => void;
+        const query = vi.fn(
+            () =>
+                new Promise<typeof PROFILE>(r => {
+                    resolve = r;
+                })
+        );
+        const client = getMockClient();
+        const profileClient = { ...client.profile, getOtherProfile: { query } };
+        vi.mocked(getBrainClient).mockResolvedValue({ ...client, profile: profileClient } as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        const requests = Array.from({ length: 5 }, () =>
+            plugin.methods!.getProfile(learnCard, 'userb')
+        );
+        await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(1));
+        resolve(PROFILE);
+        expect(await Promise.all(requests)).toEqual(Array(5).fill(PROFILE));
+        const fresh = plugin.methods!.getProfile(learnCard, 'userb');
+        await vi.waitFor(() => expect(query).toHaveBeenCalledTimes(2));
+        resolve({ ...PROFILE, displayName: 'Updated' });
+        await expect(fresh).resolves.toMatchObject({ displayName: 'Updated' });
+    });
+    it('clears rejected lookups so subsequent calls can retry', async () => {
+        const query = vi
+            .fn()
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockResolvedValue(PROFILE);
+        const client = getMockClient();
+        vi.mocked(getBrainClient).mockResolvedValue({
+            ...client,
+            profile: { ...client.profile, getOtherProfile: { query } },
+        } as never);
+        const learnCard = getMockLearnCard();
+        const plugin = await getLearnCardNetworkPlugin(learnCard, 'https://network.example/trpc');
+        await expect(plugin.methods!.getProfile(learnCard, 'userb')).rejects.toThrow('offline');
+        await expect(plugin.methods!.getProfile(learnCard, 'userb')).resolves.toEqual(PROFILE);
+        expect(query).toHaveBeenCalledTimes(2);
+    });
+});

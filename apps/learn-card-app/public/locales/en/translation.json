@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "This file is too large. Choose a file smaller than 4 MB.",
                 "errorReadFailed": "We could not read this file. Please try a different file.",
                 "errorContentRejected": "We could not identify a supported document in this file.",
+                "errorUploadBusy": "Uploads are still busy. Please try again shortly.",
                 "errorProcessingFailed": "We could not process this file right now. Please try again.",
                 "errorConsentDenied": "AI processing is not available for this account.",
                 "errorResponseInvalid": "We received an incomplete result. Please try again.",
@@ -475,6 +476,7 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
+                "waitingForCapacity": "Uploads are busy. Waiting for a turn…",
                 "notifyWhenReady": "Notify me when it's ready",
                 "quotes": {
                     "resume": {
@@ -1128,7 +1130,8 @@
                 "error": "Unable to verify code. Please try again."
             },
             "error": {
-                "invalidEmail": "Missing or Invalid Email"
+                "invalidEmail": "Missing or Invalid Email",
+                "sendFailed": "Unable to send code. Please try again."
             },
             "label": "Email"
         },
@@ -1168,7 +1171,14 @@
             "button": "Sign in with SMS",
             "smsSent": "A verification code has been sent",
             "error": {
-                "invalidPhone": "Phone is required!"
+                "invalidPhone": "Phone is required!",
+                "invalidPhoneNumber": "Please enter a valid phone number.",
+                "invalidCode": "Invalid or expired code.",
+                "tooManyAttempts": "Too many attempts. Please resend code.",
+                "tooManyRequests": "Too many attempts from this phone number. For your security, please wait 10–15 minutes before trying again, or sign in with email instead.",
+                "quotaExceeded": "We can't send a text message right now. Please try again later or sign in with email.",
+                "network": "Connection issue. Please check your internet and try again.",
+                "generic": "Something went wrong. Please try again."
             }
         },
         "qrApproved": {
@@ -1216,7 +1226,9 @@
             "notDeveloper": "Not a developer? ",
             "signInNormally": "Sign in normally",
             "securityWarning": "Keep your seed private. Anyone with it controls this account.",
-            "pasteHint": "Paste it into the field below."
+            "pasteHint": "Paste it into the field below.",
+            "showSeed": "Show seed",
+            "hideSeed": "Hide seed"
         },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
@@ -2313,6 +2325,10 @@
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             },
+            "pinResetRequired": {
+                "title": "Set a new recovery PIN",
+                "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
+            },
             "useInstead": "Use my recovery PIN instead"
         },
         "confirmCode": {
@@ -3141,7 +3157,8 @@
             "preview": {
                 "criteria": "Criteria",
                 "certificate": "Certificate",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Awarded on {{date}}"
             },
             "loading": {
                 "issuing": "Issuing boost...",
@@ -3767,6 +3784,20 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Next",
+            "previous": "Previous",
+            "done": "Done",
+            "progress": "Story progress",
+            "error": "Something went wrong. Please try again.",
+            "retry": "Try Again",
+            "loading": "Loading…",
+            "opening": "Opening…",
+            "checking": "Checking…",
+            "downloading": "Downloading… {{progress}}%",
+            "installing": "Installing…",
+            "upToDate": "You're on the latest version."
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -3848,7 +3879,9 @@
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "awardedOn": "Awarded on {{date}}",
+            "awardedOnBy": "Awarded on {{date}} by"
         }
     },
     "skills": {
@@ -9417,7 +9450,8 @@
         },
         "preview": {
             "willLook": "This is how your credential will look.",
-            "pickToStart": "Pick a type to start designing your credential."
+            "pickToStart": "Pick a type to start designing your credential.",
+            "verificationPending": "Verification runs after you issue it."
         },
         "err": {
             "network": "Connection issue. Check your internet and try again.",
@@ -9743,7 +9777,8 @@
         "savedToLearnCard": "Saved to LearnCard",
         "saveError": "Could not save these credentials. Please try again.",
         "signInToSave": "Sign in to save",
-        "saveHint": "Keep this signed collection with your received items."
+        "saveHint": "Keep this signed collection with your received items.",
+        "viewCredential": "View credential"
     },
     "resumePublishing": {
         "linkReady": "Your private link is ready.",

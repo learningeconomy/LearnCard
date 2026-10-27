@@ -101,6 +101,34 @@ jobs:
             - name: Install Chromium and Linux libraries
               run: bunx playwright install --with-deps chromium
 
+            - name: Build and test message schemas
+              working-directory: packages/learn-card-types
+              run: |
+                  bun run build
+                  bun run test -- src/inAppMessagePresentations.test.ts src/inAppMessagePath.test.ts src/inAppMessages.test.ts
+
+            - name: Test shared messages and modal ownership
+              working-directory: packages/learn-card-base
+              run: bun run test -- src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
+
+            - name: Test message authoring and analytics
+              working-directory: apps/learn-card-app
+              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx src/pages/launchPad/buildEmbedUrlWithPath.test.ts src/pages/launchPad/AppListingPage.navigation.test.tsx src/components/app-url-listener/AppUrlListener.test.tsx
+
+            - name: Typecheck hosted iframe example test
+              run: bunx tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom packages/learn-card-base/src/in-app-messages/__tests__/iframeExample.test.ts
+
+            - name: Lint and format message sources
+              shell: bash
+              run: |
+                  mapfile -t message_files < <(git ls-files -- \
+                    'packages/learn-card-base/src/in-app-messages/*' \
+                    'packages/learn-card-types/src/inAppMessage*.ts' \
+                    'apps/learn-card-app/src/components/debug/*nAppMessage*.ts*')
+                  bun scripts/lint-workspace.ts --files "${message_files[@]}"
+                  bunx prettier --check "${message_files[@]}"
+                  node scripts/check-safe-area.mjs
+
             - name: Check catalog documentation contract
               run: bun scripts/check-verification-map.ts
 
@@ -120,23 +148,41 @@ jobs:
 
             - name: Check lifecycle, resolver and persistence boundaries
               run: |
-                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
+                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/command-timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
                   bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
 
             - name: Check sanitized timing summaries
               run: node --test scripts/summarize-verification.test.mjs
 
-            - name: Run fresh serial catalog
-              id: catalog
+            - name: Start owned stack and bootstrap sessions
+              id: stack
               env:
                   USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
               run: |
-                  verify_args=(run all --fresh --json --dir "$STACK_DIR")
+                  # Message navigation, the catalog, and campaign authorization share this owned stack.
+                  verify_args=(up --json --dir "$STACK_DIR")
                   if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
                     verify_args+=(--docker-builder lc-verification)
                   fi
                   bun run --cwd apps/learn-card-app lc verify "${verify_args[@]}" \
-                    > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
+                    > "$PRIVATE_LOG_DIR/startup.jsonl" 2> "$PRIVATE_LOG_DIR/startup.log"
+
+            - name: Verify message navigation on the owned stack
+              id: navigation
+              run: |
+                  bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation.log" 2>&1
+
+            - name: Run serial catalog on the owned stack
+              id: catalog
+              run: |
+                  bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
+
+            - name: Verify campaign SDK authorization boundaries
+              id: campaigns
+              run: |
+                  bun run --cwd apps/learn-card-app lc verify script \
+                    services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
+                    > "$PRIVATE_LOG_DIR/campaigns.log" 2>&1
 
             # Public proof handoff: selected media and sanitized rendering data only.
             - name: Stage proof media
@@ -178,6 +224,8 @@ jobs:
             - name: Write sanitized status summary
               if: ${{ always() }}
               env:
+                  STARTUP_OUTCOME: ${{ steps.stack.outcome }}
+                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}
                   VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
               run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"

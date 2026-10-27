@@ -410,6 +410,7 @@
                 "errorFileTooLarge": "El archivo es demasiado grande. Elige uno de menos de 4 MB.",
                 "errorReadFailed": "No pudimos leer este archivo. Prueba con otro.",
                 "errorContentRejected": "No pudimos identificar un documento compatible en este archivo.",
+                "errorUploadBusy": "Las cargas siguen ocupadas. Inténtalo de nuevo en breve.",
                 "errorProcessingFailed": "No pudimos procesar este archivo ahora. Inténtalo de nuevo.",
                 "errorConsentDenied": "El procesamiento con IA no está disponible para esta cuenta.",
                 "errorResponseInvalid": "Recibimos un resultado incompleto. Inténtalo de nuevo.",
@@ -475,6 +476,7 @@
                 "noMatches": "No se encontraron tipos coincidentes"
             },
             "loader": {
+                "waitingForCapacity": "Hay muchas cargas en curso. Esperando un turno…",
                 "notifyWhenReady": "Avísame cuando esté listo",
                 "quotes": {
                     "resume": {
@@ -1161,7 +1163,8 @@
                 "error": "No se pudo verificar el código. Intenta de nuevo."
             },
             "error": {
-                "invalidEmail": "Correo faltante o inválido"
+                "invalidEmail": "Correo faltante o inválido",
+                "sendFailed": "No se pudo enviar el código. Inténtalo de nuevo."
             },
             "label": "Correo electrónico"
         },
@@ -1170,7 +1173,14 @@
             "button": "Iniciar sesión con SMS",
             "smsSent": "Se ha enviado un código de verificación",
             "error": {
-                "invalidPhone": "¡Se requiere teléfono!"
+                "invalidPhone": "¡Se requiere teléfono!",
+                "invalidPhoneNumber": "Introduce un número de teléfono válido.",
+                "invalidCode": "Código no válido o caducado.",
+                "tooManyAttempts": "Demasiados intentos. Vuelve a enviar el código.",
+                "tooManyRequests": "Demasiados intentos desde este número de teléfono. Por tu seguridad, espera de 10 a 15 minutos antes de volver a intentarlo o inicia sesión con tu correo electrónico.",
+                "quotaExceeded": "No podemos enviar un mensaje de texto en este momento. Inténtalo más tarde o inicia sesión con tu correo electrónico.",
+                "network": "Problema de conexión. Comprueba tu conexión a internet e inténtalo de nuevo.",
+                "generic": "Algo salió mal. Inténtalo de nuevo."
             }
         },
         "social": {
@@ -1224,7 +1234,9 @@
             "notDeveloper": "¿No eres desarrollador? ",
             "signInNormally": "Iniciar sesión normalmente",
             "securityWarning": "Mantén tu semilla en privado. Cualquiera que la tenga controla esta cuenta.",
-            "pasteHint": "Pégala en el campo de abajo."
+            "pasteHint": "Pégala en el campo de abajo.",
+            "showSeed": "Mostrar semilla",
+            "hideSeed": "Ocultar semilla"
         },
         "loader": {
             "messages": {
@@ -1988,6 +2000,10 @@
                 "title": "Configura un nuevo PIN de recuperación",
                 "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
                 "hint": "Las mismas reglas: 6 dígitos, nada obvio."
+            },
+            "pinResetRequired": {
+                "title": "Configura un nuevo PIN de recuperación",
+                "body": "Tu PIN de recuperación anterior ya no se puede usar desde que se recuperó tu cuenta. Configura un nuevo PIN de 6 dígitos para restaurar la recuperación automática."
             },
             "useInstead": "Usar mi PIN de recuperación"
         },
@@ -2795,7 +2811,8 @@
             "preview": {
                 "criteria": "Criterios",
                 "certificate": "Certificado",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Otorgada el {{date}}"
             },
             "loading": {
                 "issuing": "Emitiendo Boost...",
@@ -3716,6 +3733,20 @@
         "skillsHub": "Centro de habilidades"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Siguiente",
+            "previous": "Anterior",
+            "done": "Listo",
+            "progress": "Progreso de la historia",
+            "error": "Algo salió mal. Inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "loading": "Cargando…",
+            "opening": "Abriendo…",
+            "checking": "Comprobando…",
+            "downloading": "Descargando… {{progress}}%",
+            "installing": "Instalando…",
+            "upToDate": "Tienes la última versión."
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",
@@ -3797,7 +3828,9 @@
             "lifecycle": {
                 "revoked": "Revocada",
                 "suspended": "Suspendida"
-            }
+            },
+            "awardedOn": "Otorgada el {{date}}",
+            "awardedOnBy": "Otorgada el {{date}} por"
         }
     },
     "skills": {
@@ -9366,7 +9399,8 @@
         },
         "preview": {
             "willLook": "Así se verá tu credencial.",
-            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial."
+            "pickToStart": "Elige un tipo para empezar a diseñar tu credencial.",
+            "verificationPending": "La verificación se realiza después de emitirla."
         },
         "err": {
             "network": "Problema de conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
@@ -9692,7 +9726,8 @@
         "savedToLearnCard": "Guardado en LearnCard",
         "saveError": "No se pudieron guardar estas credenciales. Inténtalo de nuevo.",
         "signInToSave": "Inicia sesión para guardar",
-        "saveHint": "Guarda esta colección firmada con tus elementos recibidos."
+        "saveHint": "Guarda esta colección firmada con tus elementos recibidos.",
+        "viewCredential": "Ver credencial"
     },
     "resumePublishing": {
         "linkReady": "Tu enlace privado está listo.",

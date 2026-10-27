@@ -259,6 +259,9 @@ export const useSyncConsentContractsMutation = () => {
                 } catch {}
             }
         },
+        // Sync may update terms before a later operation fails. Mark cached consent
+        // records stale on settlement so active and imperative consumers stay current.
+        onSettled: () => queryClient.invalidateQueries({ queryKey: ['useConsentedContracts'] }),
     });
 };
 
@@ -320,7 +323,7 @@ const rollBackIndexedRecord = async (
  */
 export const useAcceptAndStoreCredentialsMutation = () => {
     const acceptCredential = useAcceptCredentialMutation();
-    const { addVCtoWallet, initWallet } = useWallet();
+    const { addVCtoWallet, initWallet, recordAcceptedCredentialClaim } = useWallet();
     const queryClient = useQueryClient();
 
     return useMutation<
@@ -358,6 +361,7 @@ export const useAcceptAndStoreCredentialsMutation = () => {
                             uri,
                             contractUri: r.contractUri,
                             skipSync: true,
+                            deferClaim: true,
                         });
                     }
 
@@ -375,6 +379,7 @@ export const useAcceptAndStoreCredentialsMutation = () => {
                         throw new LifecycleRejectedError(rejection, Boolean(recordId));
                     }
                     clearConsentFlowRecordMarker(profileDid, uri);
+                    void recordAcceptedCredentialClaim(learnCard, uri);
                 })
             );
 

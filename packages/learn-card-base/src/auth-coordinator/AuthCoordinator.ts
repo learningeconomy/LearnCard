@@ -104,6 +104,13 @@ export class AuthCoordinator {
     private recoveryGeneration = 0;
     private escrowRecoveryInFlight = false;
     private escrowStatusGeneration = 0;
+    private recoveredEscrowAccount?: {
+        did: string;
+        userId: string;
+        clearPin: true;
+        /** Only recovery from an existing escrow enrollment skips the rollout gate. */
+        bypassRolloutGate: boolean;
+    };
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
@@ -149,6 +156,7 @@ export class AuthCoordinator {
     }
 
     private setState(newState: UnifiedAuthState): void {
+        if (newState.status === 'idle') this.recoveredEscrowAccount = undefined;
         if (newState.status !== 'ready') this.escrowStatusGeneration++;
         const enteringReady =
             newState.status === 'ready' &&
@@ -271,7 +279,11 @@ export class AuthCoordinator {
     private async resolveEscrowEnrollmentGate(
         userKey: string,
         credentials: { token: string; providerType: string }
-    ): Promise<{ allowed: boolean; prefetched?: EscrowEnrollmentState }> {
+    ): Promise<{
+        allowed: boolean;
+        prefetched?: EscrowEnrollmentState;
+        requirePriorEnrollment?: boolean;
+    }> {
         if (!this.config.isEscrowEnrollmentAllowed) return { allowed: true };
 
         if (!this.keyDerivation.getEscrowEnrollmentState) {
@@ -298,7 +310,13 @@ export class AuthCoordinator {
             return { allowed: true, prefetched };
         }
 
-        return { allowed: await this.isEscrowEnrollmentAllowed(userKey), prefetched };
+        if (await this.isEscrowEnrollmentAllowed(userKey)) return { allowed: true, prefetched };
+        // A leftover (e.g. post-rebind `pending`) escrow method survives a reload where the
+        // in-memory recovery marker does not. Repair it as maintenance, but only if the
+        // strategy can prove prior enrollment (signed authority in Nitro mode).
+        return prefetched.priorEscrowMethod
+            ? { allowed: false, prefetched, requirePriorEnrollment: true }
+            : { allowed: false, prefetched };
     }
 
     /** Best-effort repair and hold discovery must never block account access. */
@@ -325,21 +343,87 @@ export class AuthCoordinator {
             let publishedEnrollment = false;
             let enrollmentVerificationFailed = false;
             if (signDidAuthVp && this.keyDerivation.ensureEscrowEnrollment) {
-                const gate = await this.resolveEscrowEnrollmentGate(ready.did, credentials);
-                if (gate.allowed) {
+                // Recovery rotates away the old enrollment; repairing it is maintenance, not rollout.
+                const recovered = this.recoveredEscrowAccount;
+                const repairingRecovery =
+                    recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
+                const gate =
+                    repairingRecovery && recovered.bypassRolloutGate
+                        ? { allowed: true }
+                        : await this.resolveEscrowEnrollmentGate(ready.did, credentials);
+                // Outside rollout, a non-escrow recovery may only repair a verified prior enrollment.
+                const requirePriorEnrollment =
+                    !gate.allowed &&
+                    (repairingRecovery ||
+                        ('requirePriorEnrollment' in gate && gate.requirePriorEnrollment === true));
+                if (gate.allowed || requirePriorEnrollment) {
                     const enrollmentResult = await this.runEscrowOperation(async () =>
                         isCurrentAccount()
                             ? this.keyDerivation.ensureEscrowEnrollment?.({
                                   ...credentials,
                                   privateKey: ready.privateKey,
                                   signDidAuthVp,
-                                  options: this.recoveryContactOptions(ready),
+                                  options: repairingRecovery
+                                      ? {
+                                            ...this.recoveryContactOptions(ready),
+                                            clearPin: recovered.clearPin,
+                                            ...(requirePriorEnrollment
+                                                ? { requirePriorEnrollment: true }
+                                                : {}),
+                                        }
+                                      : requirePriorEnrollment
+                                        ? {
+                                              ...this.recoveryContactOptions(ready),
+                                              requirePriorEnrollment: true,
+                                          }
+                                        : this.recoveryContactOptions(ready),
                               })
                             : undefined
                     ).catch(err => {
                         enrollmentVerificationFailed = true;
                         log.warn('escrow.enrollment.failed', err);
                     });
+                    // Keep the scoped intent through transient failures for the next refresh;
+                    // drop it once repaired or once there is no prior enrollment to repair.
+                    if (
+                        repairingRecovery &&
+                        (enrollmentResult?.enrolled ||
+                            (enrollmentResult &&
+                                (enrollmentResult.reason === 'not-enrolled' ||
+                                    enrollmentResult.reason === 'pin-reset-required'))) &&
+                        isCurrentAccount() &&
+                        this.recoveredEscrowAccount === recovered
+                    ) {
+                        this.recoveredEscrowAccount = undefined;
+                    }
+                    // The strategy cleared the retired PIN without being asked; the user
+                    // must be told and offered a new PIN (design doc Q1).
+                    if (
+                        enrollmentResult?.enrolled &&
+                        enrollmentResult.changed &&
+                        enrollmentResult.pinCleared === 'automatic' &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready'
+                    ) {
+                        this.setState({ ...this.state, escrowPinAutoCleared: true });
+                    }
+                    // Only a user-chosen PIN can resolve this; the strategy signed nothing,
+                    // so later refreshes stay read-only until the user acts.
+                    const pinResetRequired =
+                        !!enrollmentResult &&
+                        !enrollmentResult.enrolled &&
+                        enrollmentResult.reason === 'pin-reset-required';
+                    if (
+                        enrollmentResult &&
+                        isCurrentAccount() &&
+                        this.state.status === 'ready' &&
+                        pinResetRequired !== (this.state.escrowPinResetRequired === true)
+                    ) {
+                        this.setState({
+                            ...this.state,
+                            escrowPinResetRequired: pinResetRequired ? true : undefined,
+                        });
+                    }
                     if (
                         enrollmentResult &&
                         !enrollmentResult.enrolled &&
@@ -563,7 +647,18 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        const recovered = this.recoveredEscrowAccount;
+        const supersedesRecovery =
+            recovered?.did === ready.did && recovered?.userId === ready.authUser?.id;
+        // An explicit new PIN supersedes recovery's intent to clear the retired PIN.
+        if (supersedesRecovery) this.recoveredEscrowAccount = undefined;
+        this.setState({
+            ...ready,
+            escrowPin: undefined,
+            escrowEnrollment: undefined,
+            escrowPinAutoCleared: undefined,
+            escrowPinResetRequired: undefined,
+        });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.setEscrowPin!({
@@ -574,9 +669,23 @@ export class AuthCoordinator {
                     options: this.recoveryContactOptions(ready),
                 })
             );
+        } catch (err) {
+            if (
+                supersedesRecovery &&
+                generation === this.escrowStatusGeneration &&
+                !this.recoveredEscrowAccount
+            )
+                this.recoveredEscrowAccount = recovered;
+            throw err;
         } finally {
             await this.refreshEscrowPinStatus(ready, generation);
         }
+    }
+
+    /** Mark the post-automatic-clear "set a new PIN" prompt as shown, so it shows once. */
+    acknowledgeEscrowPinAutoClear(): void {
+        if (this.state.status === 'ready' && this.state.escrowPinAutoCleared)
+            this.setState({ ...this.state, escrowPinAutoCleared: undefined });
     }
 
     /** Remove a PIN by rotating escrow material with an owner proof. */
@@ -590,7 +699,13 @@ export class AuthCoordinator {
             throw new Error('Sign in on a trusted device to manage recovery');
         }
         const generation = ++this.escrowStatusGeneration;
-        this.setState({ ...ready, escrowPin: undefined, escrowEnrollment: undefined });
+        this.setState({
+            ...ready,
+            escrowPin: undefined,
+            escrowEnrollment: undefined,
+            escrowPinAutoCleared: undefined,
+            escrowPinResetRequired: undefined,
+        });
         try {
             await this.runEscrowOperation(async () =>
                 this.keyDerivation.clearEscrowPin!({
@@ -641,9 +756,9 @@ export class AuthCoordinator {
      * enclave fail closed for nitro/authority-mode enroll/replace rather
      * than silently default a jargon-adjacent placeholder.
      */
-    private recoveryContactOptions(
-        ready: Extract<UnifiedAuthState, { status: 'ready' }>
-    ): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
+    private recoveryContactOptions(ready: {
+        authUser?: AuthUser;
+    }): { recoveryEmail?: string; recoveryLanguage?: string } | undefined {
         const recoveryEmail = ready.authUser?.email;
         const recoveryLanguage = this.config.getRecoveryLanguage?.();
         if (!recoveryEmail && !recoveryLanguage) return undefined;
@@ -824,7 +939,17 @@ export class AuthCoordinator {
                     token,
                     providerType,
                     signDidAuthVp: this.config.signDidAuthVp,
+                    options: this.recoveryContactOptions({ authUser }),
                 });
+                // Only a failed or deferred direct enrollment needs the scoped repair.
+                if (!result.escrowEnrolled) {
+                    this.recoveredEscrowAccount = {
+                        did: result.did,
+                        userId: authUser.id,
+                        clearPin: true,
+                        bypassRolloutGate: result.escrowRecovery === true,
+                    };
+                }
 
                 // Rebinding can require fresh recovery enrollment. Honor older servers that
                 // report active, but do not skip enrollment if the status refresh fails.
@@ -1293,8 +1418,9 @@ export class AuthCoordinator {
                     : input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
+                options: this.recoveryContactOptions({ authUser }),
             };
-            const { privateKey, did } =
+            const { privateKey, did, escrowEnrolled, escrowRecovery } =
                 isEscrow &&
                 this.keyDerivation.hasPendingIdentityRecovery?.() &&
                 this.keyDerivation.completeIdentityRecovery
@@ -1305,6 +1431,13 @@ export class AuthCoordinator {
                 throw new Error('This recovery request was cancelled.');
             }
 
+            if (isEscrow && !escrowEnrolled)
+                this.recoveredEscrowAccount = {
+                    did,
+                    userId: authUser.id,
+                    clearPin: true,
+                    bypassRolloutGate: escrowRecovery ?? true,
+                };
             this.setState({
                 status: 'ready',
                 authUser,

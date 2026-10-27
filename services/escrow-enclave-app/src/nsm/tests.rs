@@ -1,8 +1,8 @@
 use super::*;
 use base64::{engine::general_purpose::STANDARD, Engine};
-use der::{Decode, Encode};
 use p384::ecdsa::{signature::Verifier, Signature, VerifyingKey};
 use sha2::{Digest, Sha256};
+use x509_cert::der::{Decode, Encode};
 use x509_cert::Certificate;
 
 const TIMESTAMP: u64 = 1_790_294_400_000;
@@ -29,8 +29,8 @@ fn verify(bytes: &[u8]) {
     assert_eq!(parts[1], Value::Map(vec![]));
     let cert = Certificate::from_der(&doc.certificate).unwrap();
     let key = VerifyingKey::from_sec1_bytes(
-        cert.tbs_certificate
-            .subject_public_key_info
+        cert.tbs_certificate()
+            .subject_public_key_info()
             .subject_public_key
             .as_bytes()
             .unwrap(),
@@ -50,19 +50,22 @@ fn verify(bytes: &[u8]) {
     chain.push(cert);
     for (index, cert) in chain.iter().enumerate() {
         let issuer = &chain[index.saturating_sub(1)];
-        assert_eq!(cert.tbs_certificate.issuer, issuer.tbs_certificate.subject);
+        assert_eq!(
+            cert.tbs_certificate().issuer(),
+            issuer.tbs_certificate().subject()
+        );
         let key = VerifyingKey::from_sec1_bytes(
             issuer
-                .tbs_certificate
-                .subject_public_key_info
+                .tbs_certificate()
+                .subject_public_key_info()
                 .subject_public_key
                 .as_bytes()
                 .unwrap(),
         )
         .unwrap();
         key.verify(
-            &cert.tbs_certificate.to_der().unwrap(),
-            &Signature::from_der(cert.signature.as_bytes().unwrap()).unwrap(),
+            &cert.tbs_certificate().to_der().unwrap(),
+            &Signature::from_der(cert.signature().as_bytes().unwrap()).unwrap(),
         )
         .unwrap();
     }

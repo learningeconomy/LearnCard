@@ -517,6 +517,7 @@ jobs:
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  CAMPAIGN_ADMIN_PROFILE_IDS: ${{ vars.CAMPAIGN_ADMIN_PROFILE_IDS }}
                   # Optional per-stage runtime-secrets bundle id. When set, the bundle
                   # supplies the credentials below and serverless.function-env.cjs omits the
                   # GitHub fallbacks. Non-secret per-stage config (DOMAIN_NAME, SENTRY_ENV,

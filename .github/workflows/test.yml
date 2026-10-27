@@ -234,6 +234,28 @@ jobs:
             - name: Test boost recipient lists, counts and pagination with Neo4j
               run: bunx nx run network-brain-service:test:boost-recipients
 
+    campaigns:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
+                  fetch-depth: 0
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+            - uses: ./.github/actions/setup
+            - name: Authenticate Docker Hub pulls
+              uses: ./.github/actions/dockerhub-login
+              with:
+                  username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                  token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
+            - name: Test campaign permissions, audiences and concurrent engagement with Neo4j
+              run: bunx nx run network-brain-service:test:campaigns
+              env:
+                  TESTCONTAINERS_REUSE_ENABLE: 'false'
+
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.
     e2e-tests:

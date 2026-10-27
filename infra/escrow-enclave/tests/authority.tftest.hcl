@@ -68,13 +68,33 @@ run "disabled_is_structurally_a_noop" {
       toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.eventName) == toset(["StopLogging", "DeleteTrail", "UpdateTrail", "PutEventSelectors", "PutInsightSelectors"]) &&
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][0].detail.requestParameters.name[0] == "escrow-enclave-staging-audit" &&
       jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][1].detail.requestParameters.trailName[0] == "escrow-enclave-staging-audit" &&
-      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.requestParameters.bucketName == ["learncard-escrow-cloudtrail-staging-123456789012"] &&
-      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName, name)]) &&
+      # Denied-call fallback (LC incident 2026-10-23): requestParameters is
+      # null once an SCP/IAM deny short-circuits the call, so these two
+      # branches key off errorCode instead and must NOT also require
+      # requestParameters, or they'd go right back to matching nothing.
+      toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.eventName) == toset(["StopLogging", "DeleteTrail", "UpdateTrail", "PutEventSelectors", "PutInsightSelectors"]) &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail.errorCode[0].prefix == "AccessDenied" &&
+      !contains(keys(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][2].detail), "requestParameters") &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][3].detail.requestParameters.bucketName == ["learncard-escrow-cloudtrail-staging-123456789012"] &&
+      alltrue([for name in ["PutBucketPolicy", "DeleteBucketPolicy", "PutObjectLockConfiguration", "DeleteBucketEncryption", "DeleteBucketLifecycle", "DeleteBucketReplication", "PutBucketPublicAccessBlock", "DeleteBucketPublicAccessBlock", "PutBucketOwnershipControls", "DeleteBucketOwnershipControls", "PutBucketAcl", "PutObjectAcl"] : contains(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][3].detail.eventName, name)]) &&
+      toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][4].detail.eventName) == toset(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][3].detail.eventName) &&
+      jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][4].detail.errorCode[0].prefix == "AccessDenied" &&
+      !contains(keys(jsondecode(aws_cloudwatch_event_rule.trail_tamper.event_pattern)["$or"][4].detail), "requestParameters") &&
       jsondecode(aws_cloudwatch_event_target.trail_tamper.input).alarm == "EscrowCloudTrailTamper" &&
       aws_cloudwatch_event_target.trail_tamper.arn == aws_sns_topic.monitor.arn &&
       aws_cloudwatch_event_target.trail_tamper.dead_letter_config[0].arn == aws_sqs_queue.monitor_dlq.arn
     )
-    error_message = "Always-on tamper monitoring must cover the exact trail/bucket APIs, both CloudTrail parameter names, and fixed SNS/DLQ delivery."
+    error_message = "Always-on tamper monitoring must cover the exact trail/bucket APIs, both CloudTrail parameter names, the denied-call errorCode fallback branches (null requestParameters), and fixed SNS/DLQ delivery."
+  }
+  assert {
+    condition = (
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId == [aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn] &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "DisableKey"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.errorCode[0].prefix == "AccessDenied" &&
+      !contains(keys(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail), "requestParameters") &&
+      jsondecode(aws_cloudwatch_event_target.escrow_kms_changes.input).alarm == "EscrowKmsGovernanceChange"
+    )
+    error_message = "Disabled KMS governance must match only the escrow CMK, plus denied calls without requestParameters."
   }
   assert {
     condition     = var.host_ami_id == null && length(data.aws_ssm_parameter.al2023_ami) == 1 && aws_launch_template.enclave_host.image_id == data.aws_ssm_parameter.al2023_ami[0].value
@@ -99,6 +119,7 @@ run "disabled_is_structurally_a_noop" {
       length(aws_iam_role_policy.authority_monitor) == 0,
       length(aws_cloudwatch_metric_alarm.authority_integrity) == 0,
       length(aws_cloudwatch_metric_alarm.authority_heartbeat) == 0,
+      length(aws_cloudwatch_metric_alarm.authority_repeated_pin_clear) == 0,
       output.authority_monitor_trust_parameter_name == null,
       !contains(keys(aws_lambda_function.monitor.environment[0].variables), "AUTHORITY_TABLE"),
       length(aws_ses_domain_identity.enclave) == 0, length(aws_ses_domain_dkim.enclave) == 0,
@@ -184,7 +205,7 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Observer grants and fixed table/generation/trust wiring must be read-only."
   }
   assert {
-    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].metric_name == "AuthorityRepeatedPinClear" && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
     error_message = "Monitor must have no write/control escape and must alarm on failures or missing coverage."
   }
 }
@@ -207,6 +228,15 @@ run "credential_cmk_pins_complete_tuples_and_context" {
   assert {
     condition     = alltrue([for sid in ["DenyUnattestedDecrypt", "DenyDebugPCR0", "DenyDebugPCR1", "DenyDebugPCR2", "DenyDebugImageSha384", "DenyRootPolicyChangeWithoutMfa", "DenyGrantsAndAlternativeCrypto", "DenyEncryptExceptProvisioner", "DenyDecryptExceptHost"] : anytrue([for s in local.credential_key_policy.Statement : s.Sid == sid && s.Effect == "Deny"])]) && length([for s in local.credential_key_policy.Statement : s if startswith(s.Sid, "DenyMissingContext")]) == 5 && aws_kms_key.credentials[0].enable_key_rotation && aws_kms_key.credentials[0].deletion_window_in_days == 30
     error_message = "Credential CMK must deny grants, missing/debug attestation, missing context and non-MFA root policy changes."
+  }
+  assert {
+    condition = (
+      # The mock gives both CMKs the same ids, so assert the ordered list.
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId == [aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn, aws_kms_key.credentials[0].key_id, aws_kms_key.credentials[0].arn] &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "DisableKey"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.errorCode[0].prefix == "AccessDenied"
+    )
+    error_message = "KMS governance must match the escrow and credentials CMKs by key ID and ARN, plus denied calls."
   }
   assert {
     condition     = length(local.bucket_extra_policy_documents.artifacts) == 2 && alltrue([for sid in ["DenyCredentialWritesExceptProvisioner", "DenyNonCreateOnlyCredentials", "DenyCredentialDeletion"] : anytrue([for s in jsondecode(local.bucket_extra_policy_documents.artifacts[1]).Statement : s.Sid == sid && s.Effect == "Deny"])]) && alltrue([for s in local.credential_object_policy.Statement : !strcontains(s.Sid, "NonCreateOnly") || try(s.Condition.StringNotEqualsIfExists["s3:if-none-match"], "") == "*"])

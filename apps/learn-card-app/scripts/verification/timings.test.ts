@@ -69,3 +69,28 @@ it('does not hide an action error when the final timing write fails', async () =
         await rm(directory, { recursive: true, force: true });
     }
 });
+
+it('keeps inclusive command totals running across nested phases and records interruption', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'lc-command-timings-'));
+    const path = join(directory, 'timings.json');
+    const measure = createTimings(path);
+    try {
+        const finish = await measure.start('command-total');
+        await measure('bootstrap', () =>
+            measure('bootstrap-learner-sign-in', async () => 'signed in')
+        );
+        let records = JSON.parse(await readFile(path, 'utf8'));
+        expect(records[0]).toEqual({ phase: 'command-total', status: 'running', durationMs: null });
+        expect(records.slice(1).map((record: { status: string }) => record.status)).toEqual([
+            'passed',
+            'passed',
+        ]);
+        await finish('interrupted');
+        records = JSON.parse(await readFile(path, 'utf8'));
+        expect(records[0].status).toBe('interrupted');
+        expect(records[0].durationMs).toBeGreaterThanOrEqual(records[1].durationMs);
+        expect(records[1].durationMs).toBeGreaterThanOrEqual(records[2].durationMs);
+    } finally {
+        await rm(directory, { recursive: true, force: true });
+    }
+});
