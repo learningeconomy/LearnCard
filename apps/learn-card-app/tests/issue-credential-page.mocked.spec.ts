@@ -526,6 +526,15 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 .getByRole('button', { name: 'Restore Saved Run', exact: true })
                 .click({ timeout: 30000 });
             await page.getByRole('button', { name: 'Retry Failed', exact: true }).click();
+            const completion = page.locator('#center-modal.issue-spreadsheet-completion');
+            await expect(
+                completion.getByRole('heading', { name: 'All credentials sent', exact: true })
+            ).toBeVisible({ timeout: 30000 });
+            await expect(
+                completion.getByText('250 of 250 sent successfully.', { exact: true })
+            ).toBeVisible();
+            await completion.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(completion).toBeHidden();
             await expect(
                 card.getByRole('heading', { name: 'All credentials sent', exact: true })
             ).toBeVisible({ timeout: 30000 });

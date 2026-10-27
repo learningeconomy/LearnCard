@@ -1073,20 +1073,15 @@ const IssueCredentialPage: React.FC = () => {
                             }}
                             checking={roster.checking}
                             onComplete={({ sent, failed, confirming, total }) => {
+                                // All-sent runs have a dedicated completion dialog.
+                                if (!failed && !confirming) return;
                                 presentToast(
-                                    failed || confirming
-                                        ? m['issueFlow.sheet.reviewWorkspace.attentionToast']({
-                                              sent,
-                                              total,
-                                          })
-                                        : m['issueFlow.sheet.reviewWorkspace.successToast']({
-                                              count: sent,
-                                          }),
+                                    m['issueFlow.sheet.reviewWorkspace.attentionToast']({
+                                        sent,
+                                        total,
+                                    }),
                                     {
-                                        type:
-                                            failed || confirming
-                                                ? ToastTypeEnum.Error
-                                                : ToastTypeEnum.Success,
+                                        type: ToastTypeEnum.Error,
                                         hasDismissButton: true,
                                     }
                                 );

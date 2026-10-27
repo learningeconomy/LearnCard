@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from '@storybook/test';
 import { RosterEditor, type RosterDetailsProps } from './RosterDetails';
@@ -144,6 +144,64 @@ const Outcome = ({ state }: { state: 'sent' | 'failed' | 'confirming' }) => {
     );
 };
 
+// A visual interaction fixture, not an issuance transport: no credentials are sent.
+const CompletionWalkthrough = () => {
+    const [run, setRun] = useState(() => makeRun(3));
+    const [busy, setBusy] = useState(false);
+    useEffect(() => {
+        if (!busy) return;
+        const timers = [1, 2, 3].map((count, index) =>
+            window.setTimeout(
+                () => {
+                    setRun(previous => ({
+                        ...previous,
+                        outcomes: Object.fromEntries(
+                            previous.draft.recipients.map((row, rowIndex) => [
+                                row.rowId!,
+                                {
+                                    state:
+                                        rowIndex < count ? ('sent' as const) : ('queued' as const),
+                                },
+                            ])
+                        ),
+                    }));
+                    if (count === 3) setBusy(false);
+                },
+                1600 * (index + 1)
+            )
+        );
+        return () => timers.forEach(window.clearTimeout);
+    }, [busy]);
+    return (
+        <main className="min-h-dvh bg-grayscale-100 p-4 font-poppins sm:p-10">
+            <div className="mx-auto max-w-3xl space-y-5">
+                <p className="text-sm text-grayscale-600">
+                    UI demonstration with sample recipients. No credentials are sent.
+                </p>
+                <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                        setRun(makeRun(3));
+                        setBusy(true);
+                    }}
+                    className="rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white disabled:opacity-40"
+                >
+                    Send sample credentials
+                </button>
+                <IssuanceResults
+                    run={run}
+                    busy={busy}
+                    onResume={noop}
+                    onRetry={noop}
+                    onDownload={noop}
+                    onNew={noop}
+                />
+            </div>
+        </main>
+    );
+};
+
 const meta: Meta = {
     title: 'Issue/Recipient review',
     parameters: { layout: 'fullscreen', chromatic: { viewports: [390, 1440] } },
@@ -151,6 +209,22 @@ const meta: Meta = {
 };
 export default meta;
 type Story = StoryObj;
+
+export const ActiveCompletion: Story = {
+    render: () => <CompletionWalkthrough />,
+    play: async ({ canvasElement }) => {
+        await userEvent.click(
+            within(canvasElement).getByRole('button', { name: 'Send sample credentials' })
+        );
+        const body = within(document.body);
+        await expect(
+            await body.findByRole('heading', { name: 'All credentials sent' }, { timeout: 10000 })
+        ).toBeVisible();
+        await userEvent.click(body.getByRole('button', { name: 'View delivery status' }));
+        await expect(await body.findByRole('heading', { name: 'Delivery status' })).toBeVisible();
+        await userEvent.click(body.getByRole('button', { name: 'Close', exact: true }));
+    },
+};
 
 export const People: Story = {
     render: () => <ReviewWorkspace />,

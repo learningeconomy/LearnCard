@@ -20,7 +20,7 @@ In **Review people**, personalized descriptions use a multiline editor. Expand a
 
 **Evidence for everyone** shows the shared files and links from the main editor. They remain included for every recipient. **Extra evidence for this person** adds evidence only for that row; it does not replace the shared evidence.
 
-After sending, a green **All credentials sent** summary confirms successful sends. Failed or unconfirmed deliveries instead show **Delivery needs attention** with the appropriate review actions. A run started on this page produces a notification after its queued deliveries finish; if only unconfirmed deliveries remain, the notification waits until their status is known. Definite failures can produce an attention notification. Reopening a previously completed saved run does not announce a new send. Unconfirmed deliveries must be checked before retrying.
+When every delivery is confirmed, a run started on this page opens a compact **All credentials sent** dialog with a brief celebration and the successful count. Choose **View delivery status** to inspect each recipient or **Done** to dismiss it; the green summary and saved run remain on the page. Failed or unconfirmed deliveries instead show **Delivery needs attention** with the appropriate review actions. Queued work waits for completion, and unconfirmed deliveries must be checked before retrying. Reopening a completed saved run keeps its summary without replaying the celebration. Definite failures can produce an attention notification.
 
 ```mermaid
 flowchart LR

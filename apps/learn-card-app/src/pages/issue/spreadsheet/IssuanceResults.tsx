@@ -7,6 +7,7 @@ import { useSpreadsheetDialog } from './SpreadsheetDialog';
 import { DeliveryStatus } from './DeliveryStatus';
 import { BatchDeliveryAnimation } from './BatchDeliveryAnimation';
 import { canCheckIssuanceStatus } from './issuance';
+import { IssuanceComplete } from './IssuanceComplete';
 
 export interface IssuanceCompletionSummary {
     sent: number;
@@ -50,6 +51,24 @@ export const IssuanceResults: React.FC<{
     const allSent =
         !busy && total > 0 && sent === total && failed === 0 && confirming === 0 && waiting === 0;
     const needsAttention = !busy && !ready && (failed > 0 || confirming > 0);
+    const openStatus = useSpreadsheetDialog(close => <DeliveryStatus run={run} onClose={close} />);
+    const openIssues = useSpreadsheetDialog(close => (
+        <DeliveryStatus run={run} initialFilter="issues" onClose={close} />
+    ));
+    const openComplete = useSpreadsheetDialog(
+        close => (
+            <IssuanceComplete
+                sent={sent}
+                total={total}
+                onClose={close}
+                onViewStatus={() => {
+                    close();
+                    openStatus();
+                }}
+            />
+        ),
+        'compact'
+    );
     const activeRun = useRef<string>();
     useEffect(() => {
         if (busy) {
@@ -68,11 +87,8 @@ export const IssuanceResults: React.FC<{
             return;
         activeRun.current = undefined;
         onComplete?.({ sent, failed, confirming, total });
-    }, [busy, run.id, waiting, sent, failed, confirming, total, onComplete]);
-    const openStatus = useSpreadsheetDialog(close => <DeliveryStatus run={run} onClose={close} />);
-    const openIssues = useSpreadsheetDialog(close => (
-        <DeliveryStatus run={run} initialFilter="issues" onClose={close} />
-    ));
+        if (allSent) openComplete();
+    }, [busy, run.id, waiting, sent, failed, confirming, total, allSent, onComplete, openComplete]);
     const BUTTON =
         'py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 disabled:opacity-40';
     return (
