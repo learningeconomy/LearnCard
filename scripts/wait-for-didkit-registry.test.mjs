@@ -224,14 +224,58 @@ test('authentication and other non-publication failures fail immediately', async
     }
 });
 
-test('rejects missing, external, or empty tarballs', async () => {
-    for (const tarball of [undefined, 'https://private.invalid/native.tgz']) {
+test('reports the package for missing or non-string tarball URLs before downloading', async () => {
+    for (const dist of [
+        undefined,
+        {},
+        { tarball: null },
+        { tarball: '' },
+        { tarball: '  ' },
+        { tarball: 123 },
+    ]) {
+        const f = fixture(url =>
+            url === metadataUrl(name) ? Response.json({ ...metadata(name), dist }) : undefined
+        );
+        await assert.rejects(waitForDidkitRegistry(f.options), error => {
+            assert.equal(
+                error.message,
+                `Missing tarball URL in registry metadata for ${name}@${version}.`
+            );
+            return true;
+        });
+        assert.equal(f.calls.length, 1);
+    }
+});
+
+test('reports the package for malformed tarball URLs before downloading', async () => {
+    for (const tarball of ['not a URL', '/relative.tgz', 'https://']) {
         const f = fixture(url =>
             url === metadataUrl(name)
                 ? Response.json({ ...metadata(name), dist: { tarball } })
                 : undefined
         );
-        await assert.rejects(waitForDidkitRegistry(f.options));
+        await assert.rejects(waitForDidkitRegistry(f.options), error => {
+            assert.equal(
+                error.message,
+                `Invalid tarball URL in registry metadata for ${name}@${version}.`
+            );
+            return true;
+        });
+        assert.equal(f.calls.length, 1);
+    }
+});
+
+test('rejects external or empty tarballs', async () => {
+    for (const tarball of [
+        'https://private.invalid/native.tgz',
+        'http://registry.npmjs.org/native.tgz',
+    ]) {
+        const f = fixture(url =>
+            url === metadataUrl(name)
+                ? Response.json({ ...metadata(name), dist: { tarball } })
+                : undefined
+        );
+        await assert.rejects(waitForDidkitRegistry(f.options), /Expected a public npm tarball/);
         assert.equal(f.calls.length, 1);
     }
     const f = fixture(url => (url === tarballUrl(name) ? new Response('') : undefined));

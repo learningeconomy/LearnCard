@@ -108,7 +108,16 @@ export const waitForDidkitRegistry = async ({
                     }
                 }
             }
-            const tarball = new URL(published.dist?.tarball);
+            const rawTarball = published.dist?.tarball;
+            if (typeof rawTarball !== 'string' || !rawTarball.trim()) {
+                throw new Error(`Missing tarball URL in registry metadata for ${specification}.`);
+            }
+            let tarball;
+            try {
+                tarball = new URL(rawTarball);
+            } catch {
+                throw new Error(`Invalid tarball URL in registry metadata for ${specification}.`);
+            }
             if (tarball.origin !== new URL(REGISTRY).origin) {
                 throw new Error(`Expected a public npm tarball for ${specification}.`);
             }
