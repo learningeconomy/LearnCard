@@ -58,7 +58,7 @@ describe('roster review workspace', () => {
             const description = screen.getByRole('textbox', { name: 'Person0 Description' });
             expect(description.tagName).toBe('TEXTAREA');
             expect(description).toHaveAttribute('rows', '3');
-            expect(description).toHaveAttribute('maxlength', '5000');
+            expect(description).not.toHaveAttribute('maxlength');
             expect(description).toHaveAccessibleDescription('22 / 5,000 characters');
             fireEvent.click(screen.getByRole('button', { name: 'Expand Person0 Description' }));
             expect(description).toHaveAttribute('rows', '7');
@@ -95,8 +95,42 @@ describe('roster review workspace', () => {
         expect(shared.tagName).toBe('TEXTAREA');
         expect(shared).toHaveValue('x'.repeat(5001));
         expect(shared).toHaveAttribute('aria-invalid', 'true');
-        expect(screen.getByText('Use at most 5000 characters for this field.')).toBeVisible();
+        expect(screen.getByText('Use at most 5,000 characters for this field.')).toBeVisible();
         expect(screen.getByRole('textbox', { name: 'Person0 Description' })).toBeDisabled();
+    });
+    it('preserves an oversized paste and identifies the field to shorten', () => {
+        const data: RosterDetailsProps = {
+            ...props(1),
+            variables: ['description'],
+            longTextVariables: ['description'],
+            scopes: { description: 'perRecipient' },
+        };
+        const view = render(<RosterEditor {...data} onClose={vi.fn()} />);
+        const text = 'Full paragraph\n'.repeat(400);
+        fireEvent.change(screen.getByRole('textbox', { name: 'Person0 Description' }), {
+            target: { value: text },
+        });
+        expect(data.onChange).toHaveBeenCalledWith('row-0', 'description', text);
+        view.rerender(
+            <RosterEditor
+                {...data}
+                onClose={vi.fn()}
+                values={{ 'row-0': { description: text } }}
+                problems={{ 'row-0': ['length'] }}
+                fieldProblems={{
+                    'row-0': {
+                        recipient: [],
+                        evidence: [],
+                        variables: { description: ['length'] },
+                    },
+                }}
+            />
+        );
+        const field = screen.getByRole('textbox', { name: 'Person0 Description' });
+        expect(field).toHaveValue(text);
+        expect(field).toHaveAttribute('aria-invalid', 'true');
+        expect(field).toHaveAccessibleDescription(/Use at most 5,000 characters/);
+        expect(screen.getByText('6,000 / 5,000 characters')).toHaveClass('text-red-700');
     });
     it('separates evidence for everyone from each person’s extra evidence', () => {
         const data: RosterDetailsProps = {

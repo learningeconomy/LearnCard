@@ -34,6 +34,7 @@ export const getSharedEvidenceForReview = (
         const item =
             entry && typeof entry === 'object' ? (entry as Record<string, unknown>) : undefined;
         const url = typeof entry === 'string' ? entry : (item?.id ?? item?.url);
+        // A templated URL varies by person, so it belongs outside the shared summary.
         if (typeof url !== 'string' || !url || url.includes('{{')) return [];
         const genre = item?.genre;
         const type: SimpleMediaType =

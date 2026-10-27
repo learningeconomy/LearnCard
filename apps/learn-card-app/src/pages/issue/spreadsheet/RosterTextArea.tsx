@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react';
+import React, { useId, useMemo, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { expandOutline, contractOutline } from 'ionicons/icons';
 import * as m from '../../../paraglide/messages.js';
@@ -11,7 +11,7 @@ export const RosterTextArea: React.FC<
     const [expanded, setExpanded] = useState(false);
     const counterId = useId();
     const locale = useLocale();
-    const format = new Intl.NumberFormat(locale);
+    const format = useMemo(() => new Intl.NumberFormat(locale), [locale]);
     return (
         <div className="space-y-v3-1.5">
             <textarea
@@ -19,7 +19,7 @@ export const RosterTextArea: React.FC<
                 value={value}
                 disabled={disabled}
                 rows={expanded ? 7 : 3}
-                maxLength={ROSTER_LONG_TEXT_LIMIT}
+                // Preserve pasted text too; validation blocks sends above the limit.
                 aria-describedby={[describedBy, counterId].filter(Boolean).join(' ')}
                 className={`${className} block min-h-[80px] max-h-[240px] resize-y leading-relaxed`}
             />

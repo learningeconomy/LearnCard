@@ -471,81 +471,67 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                             {m['issueFlow.sheet.design.fieldSettings']({ count: variables.length })}
                         </summary>
                         <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                            {variables.map(name => (
-                                <div key={name} className="space-y-v3-2">
-                                    <label
-                                        htmlFor={`scope-${name}`}
-                                        className="block text-xs font-medium text-grayscale-700"
-                                    >
-                                        {fieldLabel(name)}
-                                    </label>
-                                    <select
-                                        id={`scope-${name}`}
-                                        disabled={disabled}
-                                        value={scopes[name] ?? 'shared'}
-                                        onChange={event =>
-                                            props.onScopeChange(
-                                                name,
-                                                event.target.value as 'shared' | 'perRecipient'
-                                            )
-                                        }
-                                        className={INPUT}
-                                    >
-                                        <option value="shared">
-                                            {m['issueFlow.fields.sameForAll']()}
-                                        </option>
-                                        <option value="perRecipient">
-                                            {m['issueFlow.fields.perRecipient']()}
-                                        </option>
-                                    </select>
-                                    {scopes[name] !== 'perRecipient' && (
-                                        <>
-                                            {props.longTextVariables?.includes(name) ? (
-                                                <RosterTextArea
-                                                    aria-label={fieldLabel(name)}
-                                                    {...errorAttributes(
-                                                        'shared',
-                                                        `shared:${name}`,
-                                                        sharedProblems[name] ?? []
-                                                    )}
-                                                    className={INPUT}
-                                                    value={shared[name] ?? ''}
-                                                    disabled={disabled}
-                                                    onChange={event =>
-                                                        props.onSharedChange(
-                                                            name,
-                                                            event.target.value
-                                                        )
-                                                    }
-                                                />
-                                            ) : (
-                                                <input
-                                                    aria-label={fieldLabel(name)}
-                                                    {...errorAttributes(
-                                                        'shared',
-                                                        `shared:${name}`,
-                                                        sharedProblems[name] ?? []
-                                                    )}
-                                                    className={INPUT}
-                                                    value={shared[name] ?? ''}
-                                                    disabled={disabled}
-                                                    onChange={event =>
-                                                        props.onSharedChange(
-                                                            name,
-                                                            event.target.value
-                                                        )
-                                                    }
-                                                />
-                                            )}
-                                            {errorMessage(
-                                                'shared',
-                                                `shared:${name}`,
-                                                sharedProblems[name] ?? []
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            ))}
+                            {variables.map(name => {
+                                const sharedInputProps = {
+                                    'aria-label': fieldLabel(name),
+                                    ...errorAttributes(
+                                        'shared',
+                                        `shared:${name}`,
+                                        sharedProblems[name] ?? []
+                                    ),
+                                    className: INPUT,
+                                    value: shared[name] ?? '',
+                                    disabled,
+                                    onChange: (
+                                        event: React.ChangeEvent<
+                                            HTMLInputElement | HTMLTextAreaElement
+                                        >
+                                    ) => props.onSharedChange(name, event.target.value),
+                                };
+                                return (
+                                    <div key={name} className="space-y-v3-2">
+                                        <label
+                                            htmlFor={`scope-${name}`}
+                                            className="block text-xs font-medium text-grayscale-700"
+                                        >
+                                            {fieldLabel(name)}
+                                        </label>
+                                        <select
+                                            id={`scope-${name}`}
+                                            disabled={disabled}
+                                            value={scopes[name] ?? 'shared'}
+                                            onChange={event =>
+                                                props.onScopeChange(
+                                                    name,
+                                                    event.target.value as 'shared' | 'perRecipient'
+                                                )
+                                            }
+                                            className={INPUT}
+                                        >
+                                            <option value="shared">
+                                                {m['issueFlow.fields.sameForAll']()}
+                                            </option>
+                                            <option value="perRecipient">
+                                                {m['issueFlow.fields.perRecipient']()}
+                                            </option>
+                                        </select>
+                                        {scopes[name] !== 'perRecipient' && (
+                                            <>
+                                                {props.longTextVariables?.includes(name) ? (
+                                                    <RosterTextArea {...sharedInputProps} />
+                                                ) : (
+                                                    <input {...sharedInputProps} />
+                                                )}
+                                                {errorMessage(
+                                                    'shared',
+                                                    `shared:${name}`,
+                                                    sharedProblems[name] ?? []
+                                                )}
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </details>
                 )}

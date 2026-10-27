@@ -895,6 +895,26 @@ describe('roster autosave and sending', () => {
             expect(options.initWallet).not.toHaveBeenCalled();
         }
     );
+    it.each([false, true])(
+        'explains an overlong description before resume/retry (retry=%s)',
+        async retryFailed => {
+            const run = makeRun();
+            run.template.credentialSubject.achievement.description = dynamicField('description');
+            run.scopes = { description: 'perRecipient' };
+            run.draft.values = { 'row-0': { description: 'x'.repeat(5001) } };
+            run.outcomes['row-0'] = { state: retryFailed ? 'failed' : 'ready' };
+            store.list.mockResolvedValue([]);
+            store.read.mockResolvedValue(run);
+            const options = emptyOptions(run);
+            const { result } = renderHook(() => useIssueRoster(options));
+            await act(async () => {
+                await result.current.execute(retryFailed, run);
+            });
+            expect(result.current.error).toBe('Use at most 5,000 characters for this field.');
+            expect(options.initWallet).not.toHaveBeenCalled();
+            expect(run.draft.values['row-0'].description).toHaveLength(5001);
+        }
+    );
     it.each([0, 100])('permits the Percent boundary %s on resume', async percent => {
         const run = makeRun();
         run.template = writeResult(run.template, {

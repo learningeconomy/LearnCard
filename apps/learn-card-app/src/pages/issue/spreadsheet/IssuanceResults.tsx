@@ -56,10 +56,12 @@ export const IssuanceResults: React.FC<{
             activeRun.current = run.id;
             return;
         }
-        // Announce the end of an active send, not a restored completed run or a poll.
+        // Keep tracking an active send through queue/status polls. Unconfirmed-only
+        // outcomes are not failures: announce once they resolve, never on restoration.
         if (
             activeRun.current !== run.id ||
             waiting > 0 ||
+            (confirming > 0 && failed === 0) ||
             sent + failed + confirming !== total ||
             !total
         )
@@ -79,7 +81,7 @@ export const IssuanceResults: React.FC<{
             data-testid="issuance-progress"
             className={`font-poppins border rounded-[20px] p-4 sm:p-5 space-y-3 ${allSent ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-grayscale-200'}`}
         >
-            {!allSent && !needsAttention && (
+            {!allSent && (!needsAttention || waiting > 0) && (
                 <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
             )}
             <div className="flex items-center gap-3">

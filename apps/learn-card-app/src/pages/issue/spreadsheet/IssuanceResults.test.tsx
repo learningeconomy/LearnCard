@@ -83,10 +83,14 @@ describe('delivery status review', () => {
             view.rerender(<IssuanceResults {...callbacks} run={final} busy={false} />);
             expect(screen.queryByRole('heading', { name: 'All credentials sent' })).toBeNull();
             expect(screen.getByRole('heading', { name: 'Delivery needs attention' })).toBeVisible();
+            if (state === 'confirming') {
+                expect(onComplete).not.toHaveBeenCalled();
+                return;
+            }
             expect(onComplete).toHaveBeenCalledExactlyOnceWith({
                 sent: 1,
-                failed: state === 'failed' ? 1 : 0,
-                confirming: state === 'confirming' ? 1 : 0,
+                failed: 1,
+                confirming: 0,
                 total: 2,
             });
         }
@@ -114,6 +118,99 @@ describe('delivery status review', () => {
         );
         expect(onComplete).not.toHaveBeenCalled();
         expect(screen.queryByRole('heading', { name: 'All credentials sent' })).toBeNull();
+        view.rerender(
+            <IssuanceResults
+                {...callbacks}
+                run={{
+                    ...run,
+                    outcomes: { 'row-0': { state: 'sent' }, 'row-1': { state: 'sent' } },
+                }}
+                busy={false}
+            />
+        );
+        expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+            sent: 2,
+            failed: 0,
+            confirming: 0,
+            total: 2,
+        });
+        view.rerender(
+            <IssuanceResults
+                {...callbacks}
+                run={{
+                    ...run,
+                    outcomes: { 'row-0': { state: 'sent' }, 'row-1': { state: 'sent' } },
+                }}
+                busy={false}
+            />
+        );
+        expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+    it.each(['sent', 'failed'] as const)(
+        'waits for an unconfirmed-only result to resolve to %s',
+        state => {
+            const run = makeRun(1);
+            const onComplete = vi.fn();
+            const callbacks = {
+                onResume: vi.fn(),
+                onRetry: vi.fn(),
+                onDownload: vi.fn(),
+                onNew: vi.fn(),
+                onComplete,
+            };
+            const view = render(<IssuanceResults {...callbacks} run={run} busy />);
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state: 'confirming' } } }}
+                    busy={false}
+                />
+            );
+            expect(onComplete).not.toHaveBeenCalled();
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state } } }}
+                    busy={false}
+                />
+            );
+            expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+                sent: state === 'sent' ? 1 : 0,
+                failed: state === 'failed' ? 1 : 0,
+                confirming: 0,
+                total: 1,
+            });
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state } } }}
+                    busy={false}
+                />
+            );
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        }
+    );
+    it('keeps progress visible alongside definite failures while other rows are queued', () => {
+        const run = makeRun(2);
+        run.outcomes = { 'row-0': { state: 'failed' }, 'row-1': { state: 'queued' } };
+        const onComplete = vi.fn();
+        const view = render(
+            <IssuanceResults
+                run={run}
+                busy={false}
+                onResume={vi.fn()}
+                onRetry={vi.fn()}
+                onDownload={vi.fn()}
+                onNew={vi.fn()}
+                onComplete={onComplete}
+            />
+        );
+        expect(screen.getByRole('heading', { name: 'Delivery needs attention' })).toBeVisible();
+        expect(screen.getByText('1 waiting')).toBeVisible();
+        expect(
+            view.container.querySelector('.batch-delivery-illustration--active')
+        ).toBeInTheDocument();
+        expect(onComplete).not.toHaveBeenCalled();
     });
     it('keeps Resume off a draft that has never submitted', () => {
         const run = makeRun();

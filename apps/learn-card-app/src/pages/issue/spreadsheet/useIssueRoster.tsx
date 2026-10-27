@@ -628,23 +628,21 @@ export const useIssueRoster = (options: RosterOptions) => {
                     saved.draft.evidence,
                     saved.draft.formulaCells
                 );
-                if (
-                    candidates.some(
-                        row =>
-                            issues[recipientKey(row)]?.length ||
-                            credentialRowProblems(
-                                saved.template,
-                                effectiveRowValues(
-                                    row,
-                                    variables,
-                                    saved.scopes,
-                                    saved.shared,
-                                    saved.draft.values
-                                )
-                            ).length
-                    )
-                )
-                    throw new SpreadsheetError('mapping');
+                for (const row of candidates) {
+                    const fieldProblems = credentialRowProblems(
+                        saved.template,
+                        effectiveRowValues(
+                            row,
+                            variables,
+                            saved.scopes,
+                            saved.shared,
+                            saved.draft.values
+                        )
+                    );
+                    if (fieldProblems.includes('length')) throw new SpreadsheetError('textLength');
+                    if (issues[recipientKey(row)]?.length || fieldProblems.length)
+                        throw new SpreadsheetError('mapping');
+                }
                 const checked = new Set<string>();
                 for (const row of candidates) {
                     const filled = materializeCredentialFields(

@@ -158,7 +158,7 @@ export const People: Story = {
         const canvas = within(canvasElement);
         const description = canvas.getByRole('textbox', { name: 'Ada Rivera Description' });
         await expect(description.tagName).toBe('TEXTAREA');
-        await expect(description).toHaveAttribute('maxlength', '5000');
+        await expect(description).not.toHaveAttribute('maxlength');
         await userEvent.click(
             canvas.getByRole('button', { name: 'Expand Ada Rivera Description' })
         );
@@ -167,6 +167,14 @@ export const People: Story = {
             canvas.getByRole('button', { name: 'Collapse Ada Rivera Description' })
         );
         await expect(canvas.getByRole('region', { name: 'Evidence for everyone' })).toBeVisible();
+        const original = (description as HTMLTextAreaElement).value;
+        const oversized = 'Full paragraph\n'.repeat(400);
+        await userEvent.clear(description);
+        await userEvent.paste(oversized);
+        await expect(description).toHaveValue(oversized);
+        await expect(canvas.getByText('6,000 / 5,000 characters')).toBeVisible();
+        await userEvent.clear(description);
+        await userEvent.paste(original);
     },
 };
 export const AllSent: Story = {

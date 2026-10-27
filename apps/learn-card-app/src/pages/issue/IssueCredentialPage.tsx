@@ -224,6 +224,8 @@ const IssueCredentialPage: React.FC = () => {
         () => (template ? extractVariablesByType(template).dynamic : []),
         [template]
     );
+    const longTextVariables = useMemo(() => getLongTextVariables(template), [template]);
+    const sharedEvidenceForReview = useMemo(() => getSharedEvidenceForReview(template), [template]);
 
     const roster = useIssueRoster({
         issuer: currentLCNUser?.profileId ?? '',
@@ -947,8 +949,8 @@ const IssueCredentialPage: React.FC = () => {
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}
                 variables={dynamicVars}
-                longTextVariables={getLongTextVariables(template)}
-                sharedEvidence={getSharedEvidenceForReview(template)}
+                longTextVariables={longTextVariables}
+                sharedEvidence={sharedEvidenceForReview}
                 dateVariables={[
                     template?.validFrom,
                     template?.validUntil,

@@ -156,7 +156,7 @@ describe('durable roster issuance', () => {
             const api = transport();
             await expect(
                 executeIssuance(run, api, { ...options(run), retryFailed })
-            ).rejects.toThrow('mapping');
+            ).rejects.toThrow('textLength');
             expect(api.createTemplate).not.toHaveBeenCalled();
             expect(api.submit).not.toHaveBeenCalled();
             expect(run.draft.values['row-0'].description).toHaveLength(5001);

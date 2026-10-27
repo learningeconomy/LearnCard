@@ -129,7 +129,7 @@ const validateSubmissionResults = (run: IssuanceRun, retryFailed = false): void 
             run.draft.values
         );
         if (getOverlongTextVariables(run.template, values).length)
-            throw new SpreadsheetError('mapping');
+            throw new SpreadsheetError('textLength');
         if (
             getResultValidationError(
                 run.template,
