@@ -437,6 +437,11 @@ Create a production lca-api interface endpoint for the module's endpoint-service
 output, allow only the reviewed endpoint creator, and manually accept the exact
 connection. Configure private DNS/TLS hostname and endpoint SG access from the
 production Lambda ENIs. An allowed principal does not create/accept the endpoint.
+Expected pages to reconcile with the change record: the apply that adds the
+connection notification (`EscrowPrivateLinkChange` for
+`CreateVpcEndpointConnectionNotification`), the endpoint's `Connect` notification,
+and your acceptance (`Accept` plus `EscrowPrivateLinkChange`). Accept only the exact
+endpoint ID from lca-api's stack in the expected owner account.
 
 ```sh
 aws cloudwatch describe-alarms --alarm-name-prefix escrow-enclave-production

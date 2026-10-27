@@ -261,7 +261,7 @@ resource "aws_sqs_queue_policy" "monitor_dlq" {
     Statement = [{
       Effect    = "Allow", Principal = { Service = "events.amazonaws.com" }, Action = "sqs:SendMessage",
       Resource  = aws_sqs_queue.monitor_dlq.arn,
-      Condition = { ArnEquals = { "aws:SourceArn" = concat([aws_cloudwatch_event_rule.monitor_sweep.arn, aws_cloudwatch_event_rule.escrow_kms_changes.arn, aws_cloudwatch_event_rule.trail_tamper.arn], [for rule in aws_cloudwatch_event_rule.authority_governance : rule.arn]) } }
+      Condition = { ArnEquals = { "aws:SourceArn" = concat([aws_cloudwatch_event_rule.monitor_sweep.arn, aws_cloudwatch_event_rule.escrow_kms_changes.arn, aws_cloudwatch_event_rule.trail_tamper.arn, aws_cloudwatch_event_rule.privatelink_governance.arn], [for rule in aws_cloudwatch_event_rule.authority_governance : rule.arn]) } }
     }]
   })
 }
@@ -285,7 +285,10 @@ resource "aws_sns_topic_policy" "monitor" {
           ArnLike      = { "aws:SourceArn" = "arn:${data.aws_partition.current.partition}:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.name_prefix}-*" }
         }
       }
-      ], local.email_enabled ? [{
+      ], [for service in aws_vpc_endpoint_service.enclave_host : {
+        Sid       = "AllowEndpointServiceConnectionNotifications", Effect = "Allow", Principal = { Service = "vpce.amazonaws.com" }, Action = "sns:Publish", Resource = aws_sns_topic.monitor.arn,
+        Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }, ArnEquals = { "aws:SourceArn" = service.arn } }
+        }], local.email_enabled ? [{
         Sid       = "AllowEnclaveSesFeedback", Effect = "Allow", Principal = { Service = "ses.amazonaws.com" }, Action = "sns:Publish", Resource = aws_sns_topic.monitor.arn,
         Condition = { StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }, ArnEquals = { "aws:SourceArn" = [local.email_identity_arn, local.email_configuration_set_arn] } }
     }] : [])

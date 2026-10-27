@@ -718,3 +718,16 @@ run "storage_key_reserves_destructive_administration" {
     error_message = "The storage CMK must keep IAM-delegated use: S3 SSE, DynamoDB SSE grants, host, monitor and publisher rely on it"
   }
 }
+override_resource {
+  target = aws_vpc_endpoint_connection_notification.enclave_host
+}
+override_resource {
+  target = aws_cloudwatch_event_rule.privatelink_governance
+  values = { arn = "arn:aws:events:us-east-1:123456789012:rule/privatelink-governance" }
+}
+override_resource {
+  target = aws_cloudwatch_event_target.privatelink_governance
+}
+override_resource {
+  target = aws_cloudwatch_metric_alarm.nlb_healthy_hosts
+}

@@ -162,8 +162,8 @@ run "disabled_is_structurally_a_noop" {
     error_message = "Disabled user-data must remain byte-identical to the baseline."
   }
   assert {
-    condition     = length(local.bucket_extra_policy_documents.artifacts) == 1 && length(jsondecode(aws_sns_topic_policy.monitor.policy).Statement) == 2 && length(jsondecode(aws_sqs_queue_policy.monitor_dlq.policy).Statement[0].Condition.ArnEquals["aws:SourceArn"]) == 3 && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
-    error_message = "Disabled authority must retain bucket/SNS/host settings; DLQ also admits the always-on trail tamper rule."
+    condition     = length(local.bucket_extra_policy_documents.artifacts) == 1 && length(jsondecode(aws_sns_topic_policy.monitor.policy).Statement) == 2 && length(jsondecode(aws_sqs_queue_policy.monitor_dlq.policy).Statement[0].Condition.ArnEquals["aws:SourceArn"]) == 4 && !strcontains(base64decode(aws_launch_template.enclave_host.user_data), "CREDENTIAL_OBJECT")
+    error_message = "Disabled authority must retain bucket/SNS/host settings; DLQ also admits the always-on trail tamper and PrivateLink governance rules."
   }
 }
 run "authority_writer_is_only_data_principal" {
@@ -372,5 +372,76 @@ run "delegated_sending_zone_and_cross_region_global_events" {
   assert {
     condition     = length(aws_sqs_queue.authority_global_dlq) == 1 && aws_cloudwatch_event_target.authority_global[0].dead_letter_config[0].arn == aws_sqs_queue.authority_global_dlq[0].arn && length(aws_cloudwatch_metric_alarm.authority_global_failures) == 1 && !strcontains(aws_cloudwatch_event_rule.authority_governance["access_keys"].event_pattern, "userName")
     error_message = "Global delivery failures must have an independent DLQ/alarm, and implicit-username key operations must be monitored."
+  }
+}
+
+run "privatelink_admission_and_capacity_page" {
+  command = apply
+
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:root"]
+  }
+
+  override_resource {
+    target = aws_vpc_endpoint_service.enclave_host
+    values = { arn = "arn:aws:ec2:us-east-1:123456789012:vpc-endpoint-service/vpce-svc-0123456789abcdef0", id = "vpce-svc-0123456789abcdef0" }
+  }
+
+  assert {
+    condition = (
+      length(aws_vpc_endpoint_connection_notification.enclave_host) == 1 &&
+      aws_vpc_endpoint_connection_notification.enclave_host[0].vpc_endpoint_service_id == "vpce-svc-0123456789abcdef0" &&
+      aws_vpc_endpoint_connection_notification.enclave_host[0].connection_notification_arn == aws_sns_topic.monitor.arn &&
+      toset(aws_vpc_endpoint_connection_notification.enclave_host[0].connection_events) == toset(["Connect", "Accept", "Reject", "Delete"])
+    )
+    error_message = "Every endpoint connection request, acceptance, rejection and deletion must page the monitor topic."
+  }
+  assert {
+    condition = length([
+      for s in jsondecode(aws_sns_topic_policy.monitor.policy).Statement : s
+      if s.Sid == "AllowEndpointServiceConnectionNotifications" && s.Principal.Service == "vpce.amazonaws.com" && s.Action == "sns:Publish" &&
+      s.Condition.ArnEquals["aws:SourceArn"] == "arn:aws:ec2:us-east-1:123456789012:vpc-endpoint-service/vpce-svc-0123456789abcdef0" &&
+      s.Condition.StringEquals["aws:SourceAccount"] == "123456789012"
+    ]) == 1
+    error_message = "The monitor topic must accept connection notifications only from this account's endpoint service."
+  }
+  assert {
+    condition = (
+      toset(jsondecode(aws_cloudwatch_event_rule.privatelink_governance.event_pattern).detail.eventName) == toset([
+        "CreateVpcEndpointServiceConfiguration", "ModifyVpcEndpointServiceConfiguration", "DeleteVpcEndpointServiceConfigurations",
+        "ModifyVpcEndpointServicePermissions", "ModifyVpcEndpointServicePayerResponsibility", "StartVpcEndpointServicePrivateDnsVerification",
+        "AcceptVpcEndpointConnections", "RejectVpcEndpointConnections", "CreateVpcEndpointConnectionNotification",
+        "ModifyVpcEndpointConnectionNotification", "DeleteVpcEndpointConnectionNotifications",
+      ]) &&
+      strcontains(aws_cloudwatch_event_target.privatelink_governance.input_transformer[0].input_template, "\"alarm\":\"EscrowPrivateLinkChange\"") &&
+      aws_cloudwatch_event_target.privatelink_governance.input_transformer[0].input_paths.eventName == "$.detail.eventName" &&
+      aws_cloudwatch_event_target.privatelink_governance.arn == aws_sns_topic.monitor.arn &&
+      aws_cloudwatch_event_target.privatelink_governance.dead_letter_config[0].arn == aws_sqs_queue.monitor_dlq.arn &&
+      contains(jsondecode(aws_sqs_queue_policy.monitor_dlq.policy).Statement[0].Condition.ArnEquals["aws:SourceArn"], aws_cloudwatch_event_rule.privatelink_governance.arn)
+    )
+    error_message = "Endpoint-service permission, configuration, notification and acceptance changes must page with DLQ delivery."
+  }
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.namespace == "AWS/NetworkELB" &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.metric_name == "HealthyHostCount" &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.statistic == "Maximum" &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.ok_actions == toset([aws_sns_topic.monitor.arn]) &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.threshold == var.asg_min_size &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.comparison_operator == "LessThanThreshold" &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.treat_missing_data == "breaching" &&
+      aws_cloudwatch_metric_alarm.nlb_healthy_hosts.alarm_actions == toset([aws_sns_topic.monitor.arn])
+    )
+    error_message = "Fewer healthy NLB targets than the ASG minimum (or missing metrics) must page."
+  }
+}
+
+run "same_vpc_mode_has_no_connection_notification" {
+  command = plan
+
+  assert {
+    condition     = length(aws_vpc_endpoint_connection_notification.enclave_host) == 0 && length([for s in jsondecode(aws_sns_topic_policy.monitor.policy).Statement : s if s.Sid == "AllowEndpointServiceConnectionNotifications"]) == 0
+    error_message = "Same-VPC mode has no endpoint service, so no connection notification or vpce publish grant."
   }
 }
