@@ -251,6 +251,7 @@ export const reconsentTerms = async (
         await Promise.all(
             autoBoostsResult.map(async boostRel => {
                 let claimId: string | undefined;
+                let sendStarted = false;
                 try {
                     const boost = boostRel.target;
 
@@ -293,7 +294,8 @@ export const reconsentTerms = async (
                         (await claimAutoBoostTransaction(
                             relationship.contract.id,
                             relationship.terms.id,
-                            String(boost.dataValues.id)
+                            String(boost.dataValues.id),
+                            Boolean(oneTime)
                         )) ?? undefined;
                     if (!claimId) return;
                     // Get boost instance
@@ -335,13 +337,15 @@ export const reconsentTerms = async (
                     if (
                         !(await isAutoBoostConsentCurrent(
                             relationship.contract.id,
-                            relationship.terms.id
+                            relationship.terms.id,
+                            Boolean(oneTime)
                         ))
                     ) {
                         await releaseAutoBoostClaim(claimId);
                         claimId = undefined;
                         return;
                     }
+                    sendStarted = true;
                     await sendBoost({
                         from: { type: 'profile', profile: relationship.contractOwner },
                         to: relationship.consenter,
@@ -350,9 +354,11 @@ export const reconsentTerms = async (
                         domain,
                         skipNotification: true,
                         autoAcceptCredential: false,
+                        allowConsumedOneTime: Boolean(oneTime),
                         contractTerms: {
                             ...relationship.terms,
                             terms,
+                            oneTime: oneTime ?? relationship.terms.oneTime,
                             consentedVersion: version,
                             status: oneTime ? 'consumed' : 'live',
                         },
@@ -365,7 +371,7 @@ export const reconsentTerms = async (
                     );
                     claimId = undefined;
                 } catch (error) {
-                    if (claimId) await releaseAutoBoostClaim(claimId);
+                    if (claimId && !sendStarted) await releaseAutoBoostClaim(claimId);
                     console.error('Error processing auto-boost:', error);
                 }
             })
@@ -513,6 +519,7 @@ export const updateTerms = async (
         await Promise.all(
             autoBoosts.map(async boost => {
                 let claimId: string | undefined;
+                let sendStarted = false;
                 try {
                     const config = configuredAutoBoosts.get(boost.target.id)!;
                     const signingAuthorityEndpoint = config.signingAuthorityEndpoint || 'default';
@@ -552,7 +559,8 @@ export const updateTerms = async (
                         (await claimAutoBoostTransaction(
                             relationship.contract.id,
                             relationship.terms.id,
-                            String(boost.target.id)
+                            String(boost.target.id),
+                            Boolean(oneTime)
                         )) ?? undefined;
                     if (!claimId) return;
 
@@ -594,13 +602,15 @@ export const updateTerms = async (
                     if (
                         !(await isAutoBoostConsentCurrent(
                             relationship.contract.id,
-                            relationship.terms.id
+                            relationship.terms.id,
+                            Boolean(oneTime)
                         ))
                     ) {
                         await releaseAutoBoostClaim(claimId);
                         claimId = undefined;
                         return;
                     }
+                    sendStarted = true;
                     await sendBoost({
                         from: { type: 'profile', profile: relationship.contractOwner },
                         to: relationship.consenter,
@@ -609,7 +619,14 @@ export const updateTerms = async (
                         domain,
                         skipNotification: true,
                         autoAcceptCredential: false,
-                        contractTerms: relationship.terms,
+                        allowConsumedOneTime: Boolean(oneTime),
+                        contractTerms: {
+                            ...relationship.terms,
+                            terms,
+                            oneTime: oneTime ?? relationship.terms.oneTime,
+                            consentedVersion: latestVersion,
+                            status: oneTime ? 'consumed' : 'live',
+                        },
                         contractWriterProfileId: issuer.profileId,
                     });
                     await completeAutoBoostTransaction(
@@ -619,7 +636,7 @@ export const updateTerms = async (
                     );
                     claimId = undefined;
                 } catch (error) {
-                    if (claimId) await releaseAutoBoostClaim(claimId);
+                    if (claimId && !sendStarted) await releaseAutoBoostClaim(claimId);
                     console.error('Error processing auto-boost:', error);
                 }
             })

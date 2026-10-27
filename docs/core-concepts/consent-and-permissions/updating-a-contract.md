@@ -108,3 +108,9 @@ Docker startup and Lambda application bootstrap await the same idempotent backfi
 Drain old request writers during the deployment cutover so they cannot create unversioned requests after a new process completes its readiness gate. The `migrate:consent-flow-versions` service command remains available for an explicit pre-deployment backfill; it is no longer the only migration path for Lambda.
 
 A malformed legacy request is logged by ID and skipped so healthy requests can start. Its missing snapshot remains fail-closed; the service does not invent grants from an unaccepted request. A database failure still rejects startup rather than serving before migration finishes.
+
+## One-time delivery and interrupted sends
+
+An explicit one-time consent, re-consent, or live terms update can deliver a newly enabled AutoBoost while recording the connection as `consumed`. Repeating a consumed terms update is rejected; explicitly consenting again does not issue the same Boost twice for that connection.
+
+AutoBoost claims are indexed by connection and Boost identity. Failures before sending begins release the claim. Once sending starts, an ambiguous failure or process crash leaves the claim in place: expiring it blindly could deliver a duplicate. Inspect the existing credential and write transaction before reconciling a retained claim. This deliberately favors avoiding duplicates over automatically retrying a delivery whose outcome is unknown.

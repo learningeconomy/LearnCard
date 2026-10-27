@@ -2,7 +2,8 @@ import { Boost, Credential, Profile } from '@models';
 import { createContractCredentialRelationships } from '@accesslayer/credential/relationships/create';
 import type { DbTermsType } from 'types/consentflowcontract';
 import type { ProfileType } from 'types/profile';
-import { minimalContract, minimalTerms } from './helpers/contract';
+import { minimalContract, minimalTerms, normalContract, normalFullTerms } from './helpers/contract';
+import { testUnsignedBoost } from './helpers/send';
 import { getUser } from './helpers/getClient';
 import {
     getContractTermsByUri,
@@ -14,7 +15,7 @@ import {
 } from '@accesslayer/consentflowcontract/versions';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { afterEach, describe, expect, it } from 'vitest';
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { neogma } from '@instance';
 import {
     claimAutoBoostTransaction,
@@ -25,6 +26,7 @@ describe('consent autoboost transaction claims', () => {
     const contractIds: string[] = [];
     const profileIds: string[] = [];
     const termsIds: string[] = [];
+    const boostIds: string[] = [];
 
     afterEach(async () => {
         await neogma.queryRunner.run(
@@ -53,10 +55,10 @@ describe('consent autoboost transaction claims', () => {
             { ids: profileIds.splice(0) }
         );
         await neogma.queryRunner.run(
-            `MATCH (boost:Boost {id:'boost-identity'})
+            `MATCH (boost:Boost) WHERE boost.id IN $ids
              OPTIONAL MATCH (credential:Credential)-[:INSTANCE_OF]->(boost)
              DETACH DELETE credential, boost`,
-            {}
+            { ids: ['boost-identity', ...boostIds.splice(0)] }
         );
     });
 
@@ -126,12 +128,84 @@ describe('consent autoboost transaction claims', () => {
             ).resolves.toBeNull();
         }
     );
-    it('allows an initial consumed one-time consent to claim an autoboost', async () => {
-        const { contractId, termsId } = await createConsent('consumed', 1, 1, true);
-        await expect(
-            claimAutoBoostTransaction(contractId, termsId, 'boost-identity', true)
-        ).resolves.toBeTruthy();
-    });
+    it.each(['update', 'reconsent'] as const)(
+        'delivers a newly enabled one-time AutoBoost once through explicit %s',
+        async path => {
+            const owner = await getUser(randomBytes(32).toString('hex'));
+            const learner = await getUser(randomBytes(32).toString('hex'));
+            const ownerId = `autoboost-owner-${randomBytes(5).toString('hex')}`;
+            const learnerId = `autoboost-user-${randomBytes(5).toString('hex')}`;
+            profileIds.push(ownerId, learnerId);
+            await owner.clients.fullAuth.profile.createProfile({ profileId: ownerId });
+            await learner.clients.fullAuth.profile.createProfile({ profileId: learnerId });
+            await owner.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+            const boostUri = await owner.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'One-time QA',
+            });
+            boostIds.push(getIdFromUri(boostUri));
+            const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+                name: 'One-time access QA',
+                contract: normalContract,
+                autoboosts: [
+                    {
+                        boostUri,
+                        signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'mysa' },
+                    },
+                ],
+            });
+            contractIds.push(getIdFromUri(uri));
+            const initialTerms = structuredClone(normalFullTerms);
+            initialTerms.write.credentials.categories.Achievement = false;
+            const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
+                contractUri: uri,
+                terms: initialTerms,
+                oneTime: path === 'reconsent',
+            });
+            termsIds.push(getIdFromUri(termsUri));
+            expect(
+                (await learner.clients.fullAuth.contracts.getCredentialsForContract({ termsUri }))
+                    .records
+            ).toEqual([]);
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+                if (path === 'update') {
+                    const update = learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                        uri: termsUri,
+                        terms: normalFullTerms,
+                        oneTime: true,
+                    });
+                    if (attempt === 0) await update;
+                    else await expect(update).rejects.toMatchObject({ code: 'FORBIDDEN' });
+                } else {
+                    const response = await learner.clients.fullAuth.contracts.consentToContract({
+                        contractUri: uri,
+                        terms: normalFullTerms,
+                        oneTime: true,
+                    });
+                    expect(response.termsUri).toBe(termsUri);
+                }
+                const received = await learner.clients.fullAuth.contracts.getCredentialsForContract(
+                    { termsUri }
+                );
+                expect(received.records.map(record => getIdFromUri(record.boostUri))).toEqual([
+                    getIdFromUri(boostUri),
+                ]);
+                expect((await getContractTermsByUri(termsUri))?.terms.status).toBe('consumed');
+            }
+            const transactions =
+                await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+                    uri: termsUri,
+                });
+            expect(
+                transactions.records.filter(transaction => transaction.action === 'write')
+            ).toHaveLength(1);
+        }
+    );
 
     it('does not deliver a credential signed for v1 after consent becomes pending at v2', async () => {
         const marker = randomUUID();

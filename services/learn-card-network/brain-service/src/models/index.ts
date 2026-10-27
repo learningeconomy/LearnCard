@@ -169,6 +169,7 @@ const indexQueries = [
     'CREATE INDEX contract_updated_idx IF NOT EXISTS FOR (c:ConsentFlowContract) ON (c.updatedAt)',
     'CREATE INDEX terms_updated_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.updatedAt)',
     'CREATE INDEX terms_status_idx IF NOT EXISTS FOR (t:ConsentFlowTerms) ON (t.status)',
+    'CREATE INDEX consent_autoboost_claim_identity_idx IF NOT EXISTS FOR (c:ConsentFlowAutoBoostClaim) ON (c.termsId, c.boostId)',
     'CREATE INDEX claim_hook_updated_idx IF NOT EXISTS FOR (c:ClaimHook) ON (c.updatedAt)',
     'CREATE INDEX integration_id_idx IF NOT EXISTS FOR (i:Integration) ON (i.id)',
     'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)',
