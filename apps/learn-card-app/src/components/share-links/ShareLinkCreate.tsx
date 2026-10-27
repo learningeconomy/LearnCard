@@ -342,6 +342,10 @@ export const ShareLinkCreate = ({
         try {
             if (!guardBase()) return;
             const wallet = shareWallet(await walletRef.current());
+            // Preserve missing snapshots as null so recipients can infer categories for legacy credentials.
+            const credentialCategories = selected.map(
+                uri => choices.find(choice => choice.uri === uri)?.category || null
+            );
             prepared.current =
                 editShare && assetEdit
                     ? await prepareShareMetadataUpdate(
@@ -374,6 +378,7 @@ export const ShareLinkCreate = ({
                                         : {}
                                     : { passcode: null }),
                                 notifyOnView,
+                                credentialCategories,
                             }
                         )
                       : await prepareShare(
@@ -385,6 +390,7 @@ export const ShareLinkCreate = ({
                             {
                                 ...(passcodeEnabled ? { passcode } : {}),
                                 notifyOnView,
+                                credentialCategories,
                             }
                         );
             if (!alive.current) return;
