@@ -485,8 +485,11 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             });
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await expect(
-                page.getByRole('heading', { name: '249 sent · 1 failed', exact: true })
+                card.getByRole('heading', { name: 'Delivery needs attention', exact: true })
             ).toBeVisible({ timeout: 30000 });
+            await expect(
+                card.getByText('249 of 250 sent successfully.', { exact: true })
+            ).toBeVisible();
             expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
             expect(templateCount).toBe(1);
             await page
@@ -524,8 +527,14 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 .click({ timeout: 30000 });
             await page.getByRole('button', { name: 'Retry Failed', exact: true }).click();
             await expect(
-                page.getByRole('heading', { name: '250 sent · 0 failed', exact: true })
+                card.getByRole('heading', { name: 'All credentials sent', exact: true })
             ).toBeVisible({ timeout: 30000 });
+            await expect(
+                card.getByText('250 of 250 sent successfully.', { exact: true })
+            ).toBeVisible();
+            await expect(
+                card.getByRole('button', { name: 'Retry Failed', exact: true })
+            ).toHaveCount(0);
             expect(submissions[3].items).toHaveLength(1);
             expect(submissions[3].items[0].idempotencyKey).toBe(
                 submissions[0].items[7].idempotencyKey
