@@ -113,7 +113,13 @@ export const waitForDidkitRegistry = async ({
                 throw new Error(`Expected a public npm tarball for ${specification}.`);
             }
             const downloaded = await request(tarball.href, async response => {
-                if ((await response.arrayBuffer()).byteLength === 0) {
+                // Drain the complete GET to catch transfer failures without retaining
+                // the archive in memory. HEAD/Content-Length alone cannot prove this.
+                let hasBytes = false;
+                for await (const chunk of response.body ?? []) {
+                    if (chunk.byteLength > 0) hasBytes = true;
+                }
+                if (!hasBytes) {
                     throw new Error(`Empty tarball for ${specification}.`);
                 }
                 return true;

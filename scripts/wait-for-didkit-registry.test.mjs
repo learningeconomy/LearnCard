@@ -124,6 +124,61 @@ test('retries a tarball 404 even after its exact metadata is public', async () =
     assert.match(f.logs.join('\n'), /Waiting for .* tarball/);
 });
 
+test('streams each full tarball without buffering it or requiring Content-Length', async () => {
+    const downloads = [];
+    const f = fixture(url => {
+        if (!packages.some(pkg => url === tarballUrl(pkg))) return undefined;
+        const download = { chunks: 0, complete: false };
+        downloads.push(download);
+        const response = new Response(
+            new ReadableStream(
+                {
+                    pull(controller) {
+                        // An initial empty chunk must not be mistaken for an empty file.
+                        if (download.chunks < 4) {
+                            controller.enqueue(new Uint8Array(download.chunks++));
+                        } else {
+                            download.complete = true;
+                            controller.close();
+                        }
+                    },
+                },
+                { highWaterMark: 0 }
+            )
+        );
+        assert.equal(response.headers.get('content-length'), null);
+        response.arrayBuffer = () => assert.fail('Tarballs must not be buffered in memory');
+        return response;
+    });
+    await waitForDidkitRegistry(f.options);
+    assert.equal(downloads.length, packages.length);
+    assert.ok(downloads.every(download => download.chunks === 4 && download.complete));
+});
+
+test('rejects a tarball stream that fails after delivering non-empty bytes', async () => {
+    let chunks = 0;
+    const f = fixture(url =>
+        url === tarballUrl(name)
+            ? new Response(
+                  new ReadableStream(
+                      {
+                          pull(controller) {
+                              if (chunks++ === 0) controller.enqueue(new Uint8Array([1]));
+                              else controller.error(new Error('Interrupted tarball download'));
+                          },
+                      },
+                      { highWaterMark: 0 }
+                  )
+              )
+            : undefined
+    );
+    await assert.rejects(waitForDidkitRegistry(f.options), /Interrupted tarball download/);
+    assert.equal(
+        f.logs.some(message => message.startsWith('Ready:')),
+        false
+    );
+});
+
 test('fails closed at the deadline and names the missing platform', async () => {
     const missing = packages[3];
     const f = fixture(url =>
@@ -190,28 +245,32 @@ test('does not accept success returned after the overall deadline', async () => 
     await assert.rejects(waitForDidkitRegistry(f.options), /Timed out/);
 });
 
-test('bounds a stalled response body by the overall deadline', async t => {
-    const server = createServer((_request, response) => {
-        response.writeHead(200, { 'Content-Type': 'application/json' });
-        response.write('{');
+for (const stalled of ['metadata', 'tarball']) {
+    test(`bounds a stalled ${stalled} response body by the overall deadline`, async t => {
+        const server = createServer((_request, response) => {
+            response.writeHead(200, { 'Content-Type': 'application/json' });
+            response.write('{');
+        });
+        server.listen(0, '127.0.0.1');
+        await once(server, 'listening');
+        t.after(() => {
+            server.closeAllConnections();
+            server.close();
+        });
+        await assert.rejects(
+            waitForDidkitRegistry({
+                manifest,
+                timeoutMs: 100,
+                log: () => {},
+                fetchRegistry: (url, options) =>
+                    stalled === 'tarball' && url === metadataUrl(name)
+                        ? Promise.resolve(Response.json(metadata(name)))
+                        : fetch(`http://127.0.0.1:${server.address().port}`, options),
+            }),
+            /timeout|aborted/i
+        );
     });
-    server.listen(0, '127.0.0.1');
-    await once(server, 'listening');
-    t.after(() => {
-        server.closeAllConnections();
-        server.close();
-    });
-    await assert.rejects(
-        waitForDidkitRegistry({
-            manifest,
-            timeoutMs: 100,
-            log: () => {},
-            fetchRegistry: (_url, options) =>
-                fetch(`http://127.0.0.1:${server.address().port}`, options),
-        }),
-        /timeout|aborted/i
-    );
-});
+}
 
 test('rejects tags, implicit platforms, unknown targets, and invalid deadlines before requesting', async () => {
     for (const invalid of [
