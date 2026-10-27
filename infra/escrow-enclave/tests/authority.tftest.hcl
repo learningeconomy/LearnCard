@@ -95,15 +95,17 @@ run "disabled_is_structurally_a_noop" {
   }
   assert {
     condition = (
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId == [aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn] &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId == ["55555555-6666-7777-8888-999999999999", "arn:aws:kms:us-east-1:123456789012:key/55555555-6666-7777-8888-999999999999"] &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId) == jsonencode([{ suffix = aws_kms_key.escrow.key_id }]) &&
+      length(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"]) == 5 &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) == jsonencode([{ suffix = "55555555-6666-7777-8888-999999999999" }]) &&
       toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.eventName) == toset(["PutKeyPolicy", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
       jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.eventName == ["CreateGrant"] &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.keyId == jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.granteePrincipal == [{ "anything-but" = { prefix = "dynamodb." } }] &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.keyId) == jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail["$or"]) == jsonencode([{ userIdentity = { invokedBy = [{ exists = false }] } }, { userIdentity = { invokedBy = [{ "anything-but" = "dynamodb.amazonaws.com" }] } }, { requestParameters = { granteePrincipal = [{ "anything-but" = { prefix = "dynamodb." } }] } }, { requestParameters = { granteeServicePrincipal = [{ exists = true }] } }]) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][1]) == "{\"errorCode\":[{\"prefix\":\"AccessDenied\"}],\"requestParameters\":[null]}" &&
       toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
-      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation", "CreateAlias", "UpdateAlias", "DeleteAlias"]) &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail.requestParameters.aliasName == [aws_kms_alias.escrow.name, aws_kms_alias.s3.name] &&
+      toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][0].requestParameters.aliasName == [aws_kms_alias.escrow.name, aws_kms_alias.s3.name] &&
       toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail.eventName) == toset(["CreateAlias", "UpdateAlias", "DeleteAlias"]) &&
       jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.errorCode[0].prefix == "AccessDenied" &&
       !contains(keys(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail), "requestParameters") &&
@@ -247,15 +249,17 @@ run "credential_cmk_pins_complete_tuples_and_context" {
   assert {
     condition = (
       # The mock gives both CMKs the same ids, so assert the ordered list.
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId == [aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn, aws_kms_key.credentials[0].key_id, aws_kms_key.credentials[0].arn] &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId == ["55555555-6666-7777-8888-999999999999", "arn:aws:kms:us-east-1:123456789012:key/55555555-6666-7777-8888-999999999999"] &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.requestParameters.keyId) == jsonencode([{ suffix = aws_kms_key.escrow.key_id }, { suffix = aws_kms_key.credentials[0].key_id }]) &&
+      length(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"]) == 5 &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) == jsonencode([{ suffix = "55555555-6666-7777-8888-999999999999" }]) &&
       toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.eventName) == toset(["PutKeyPolicy", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
       jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.eventName == ["CreateGrant"] &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.keyId == jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.granteePrincipal == [{ "anything-but" = { prefix = "dynamodb." } }] &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail.requestParameters.keyId) == jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][3].detail.requestParameters.keyId) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][4].detail["$or"]) == jsonencode([{ userIdentity = { invokedBy = [{ exists = false }] } }, { userIdentity = { invokedBy = [{ "anything-but" = "dynamodb.amazonaws.com" }] } }, { requestParameters = { granteePrincipal = [{ "anything-but" = { prefix = "dynamodb." } }] } }, { requestParameters = { granteeServicePrincipal = [{ exists = true }] } }]) &&
+      jsonencode(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][1]) == "{\"errorCode\":[{\"prefix\":\"AccessDenied\"}],\"requestParameters\":[null]}" &&
       toset(jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][0].detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
       jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][1].detail.errorCode[0].prefix == "AccessDenied" &&
-      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail.requestParameters.aliasName == [aws_kms_alias.escrow.name, aws_kms_alias.credentials[0].name, aws_kms_alias.s3.name] &&
+      jsondecode(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern)["$or"][2].detail["$or"][0].requestParameters.aliasName == [aws_kms_alias.escrow.name, aws_kms_alias.credentials[0].name, aws_kms_alias.s3.name] &&
       toset(jsondecode(aws_cloudwatch_event_rule.authority_governance["credential_key"].event_pattern).detail.eventName) == toset(["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]) &&
       # Stay well inside EventBridge's event pattern size limit.
       length(aws_cloudwatch_event_rule.escrow_kms_changes.event_pattern) <= 2048
