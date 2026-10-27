@@ -19,18 +19,11 @@ import unittest
 # pip is available in the SDK CI environment; reuse its PEP 508 parser without
 # requiring a network install just to run this offline regression suite.
 from pip._vendor.packaging.requirements import Requirement
-from pip._vendor.packaging.specifiers import SpecifierSet
 
 ROOT = pathlib.Path(sys.argv.pop())
 SCRIPT = ROOT / "packages/open-api-lcn-clients/apply-security-floors.sh"
-FILELOCK_REQUIREMENTS = [
-    'filelock>=4.2.1; python_version >= "3.11"',
-    'filelock==3.20.3; python_version < "3.11"',
-]
-FILELOCK_POETRY = [
-    {"version": ">= 4.2.1", "python": ">=3.11"},
-    {"version": "== 3.20.3", "python": "<3.11"},
-]
+FILELOCK_REQUIREMENTS = ['filelock>=4.2.1']
+FILELOCK_POETRY = ">= 4.2.1"
 
 
 class SecurityFloorsTest(unittest.TestCase):
@@ -57,7 +50,9 @@ dev = [
 ]
 '''
         else:
-            dev = f'''[tool.poetry.group.dev.dependencies]
+            dev = f'''[tool.poetry.dependencies]
+python = ">=3.10"
+[tool.poetry.group.dev.dependencies]
 pytest = ">= {pytest_version}"
 pytest-cov = ">= 2.8.1"
 virtualenv = ">= 21.14.13"
@@ -70,11 +65,13 @@ name = "security-floor-fixture"
 requires-python = ">=3.9"
 dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
 ''' + dev,
-            "setup.py": 'PYTHON_REQUIRES = ">= 3.9"\nREQUIRES = ["urllib3 >= 2.1.0, < 3.0.0"]\n',
+            "setup.py": 'PYTHON_REQUIRES = ">= 3.9"\nREQUIRES = ["urllib3 >= 2.1.0, < 3.0.0"]\ndef setup(**kwargs):\n    pass\nsetup(\n    install_requires=REQUIRES,\n)\n',
             "requirements.txt": "urllib3 >= 2.1.0, < 3.0.0\n",
             "test-requirements.txt": "pytest >= 7.2.1\npytest-cov >= 2.8.1\nvirtualenv >= 21.14.13\ntox >= 3.9.0\n",
-            ".travis.yml": 'python:\n  - "3.9"\n  - "3.10"\n',
-            ".gitlab-ci.yml": "pytest-3.9:\n  image: python:3.9-alpine\npytest-3.10:\n  image: python:3.10-alpine\n",
+            ".travis.yml": 'python:\n  - "3.9"\n  - "3.10"\n  - "3.11"\n  - "3.12"\n',
+            ".gitlab-ci.yml": "pytest-3.9:\n  image: python:3.9-alpine\npytest-3.10:\n  image: python:3.10-alpine\npytest-3.11:\n  image: python:3.11-alpine\npytest-3.12:\n  image: python:3.12-alpine\n",
+            "README.md": "## Requirements\nPython 3.9+\n",
+            "tox.ini": "[tox]\nenvlist = py3\n",
         }
         for name, content in files.items():
             (self.client / name).write_text(content)
@@ -108,17 +105,21 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                         self.assertEqual(deps["filelock"], FILELOCK_POETRY)
                         for name, version in {"pytest": "9.0.3", "virtualenv": "21.14.13", "tox": "4.11.0", "mypy": "1.5"}.items():
                             self.assertEqual(deps[name], f">= {version}")
-                    self.assertEqual(data["project"]["requires-python"], ">=3.10")
+                        self.assertEqual(data["tool"]["poetry"]["dependencies"]["python"], ">=3.11")
+                    self.assertEqual(data["project"]["requires-python"], ">=3.11")
                     self.assertEqual(data["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
                     setup = {}
                     exec((self.client / "setup.py").read_text(), setup)
-                    self.assertEqual(setup["PYTHON_REQUIRES"], ">= 3.10")
+                    self.assertEqual(setup["PYTHON_REQUIRES"], ">= 3.11")
+                    self.assertIn("python_requires=PYTHON_REQUIRES,", (self.client / "setup.py").read_text())
                     self.assertEqual(setup["REQUIRES"], ["urllib3 >= 2.7.0, < 3.0.0"])
                     self.assertEqual((self.client / "requirements.txt").read_text(), "urllib3 >= 2.7.0, < 3.0.0\n")
                     requirements = (self.client / "test-requirements.txt").read_text().splitlines()
-                    self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "virtualenv >= 21.14.13", "tox >= 4.11.0", 'filelock >= 4.2.1; python_version >= "3.11"', 'filelock == 3.20.3; python_version < "3.11"'])
-                    self.assertEqual((self.client / ".travis.yml").read_text(), 'python:\n  - "3.10"\n')
-                    self.assertEqual((self.client / ".gitlab-ci.yml").read_text(), "pytest-3.10:\n  image: python:3.10-alpine\n")
+                    self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "virtualenv >= 21.14.13", "tox >= 4.11.0", "filelock >= 4.2.1"])
+                    self.assertEqual((self.client / ".travis.yml").read_text(), 'python:\n  - "3.11"\n  - "3.12"\n')
+                    self.assertEqual((self.client / ".gitlab-ci.yml").read_text(), "pytest-3.11:\n  image: python:3.11-alpine\npytest-3.12:\n  image: python:3.12-alpine\n")
+                    self.assertIn("Python 3.11+", (self.client / "README.md").read_text())
+                    self.assertIn("envlist = py311,py312", (self.client / "tox.ini").read_text())
                     before = {str(p.relative_to(self.client)): p.read_bytes() for p in self.client.rglob("*") if p.is_file()}
                     result = self.run_script()
                     self.assertEqual(result.returncode, 0, result.stderr)
@@ -160,92 +161,106 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                 path.write_text(text)
                 result = self.run_script()
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("FAIL: 'filelock pin'", result.stderr)
+                self.assertIn("FAIL: 'filelock floor'", result.stderr)
 
     def test_missing_required_file_is_rejected(self):
         self.fixture(True)
         (self.client / "setup.py").unlink()
         self.assertNotEqual(self.run_script().returncode, 0)
 
-    def assert_resolvable_floors(self, requirements, python_version):
-        # Frozen PyPI Requires-Python metadata for known-safe release witnesses.
-        # 4.2.1 cannot run on 3.10; 3.20.3 predates all three affected ranges.
-        releases = {
-            "filelock": {"3.20.3": ">=3.10", "4.2.1": ">=3.11"},
-            "virtualenv": {"21.14.13": ">=3.9"},
-        }
-        selected = {name: [] for name in releases}
-        environment = {"python_version": python_version, "python_full_version": python_version + ".0"}
-        for line in requirements:
-            requirement = Requirement(line)
-            if requirement.name in selected and (
-                requirement.marker is None or requirement.marker.evaluate(environment)
-            ):
-                selected[requirement.name].append(requirement)
-        for name, requirements in selected.items():
-            self.assertEqual(len(requirements), 1, (python_version, name, requirements))
-            requirement = requirements[0]
-            candidates = [
-                version for version, requires_python in releases[name].items()
-                if version in requirement.specifier
-                and python_version in SpecifierSet(requires_python)
-            ]
-            self.assertTrue(candidates, (python_version, str(requirement)))
-            if name == "filelock":
-                self.assertEqual(candidates, ["3.20.3" if python_version == "3.10" else "4.2.1"])
-                for unsafe in ("3.20.4", "3.22.0", "4.2.0"):
-                    self.assertNotIn(unsafe, requirement.specifier)
-            else:
-                self.assertNotIn("21.14.12", requirement.specifier)
-
-    def assert_client_resolvable(self, client):
+    def assert_client_floors(self, client):
+        # These are offline metadata assertions, NOT resolver evidence. The CI
+        # resolution job resolves runtime + test dependencies together with pip.
         data = tomllib.loads((client / "pyproject.toml").read_text())
+        self.assertEqual(data["project"]["requires-python"], ">=3.11")
         if "dependency-groups" in data:
             dev = data["dependency-groups"]["dev"]
         else:
-            dev = []
-            for name, constraint in data["tool"]["poetry"]["group"]["dev"]["dependencies"].items():
-                if isinstance(constraint, str):
-                    dev.append(name + constraint)
-                else:
-                    for entry in constraint:
-                        # Poetry's multiple constraints use Python specifiers,
-                        # rather than PEP 508 marker strings.
-                        operator = ">=" if entry["python"].startswith(">=") else "<"
-                        version = entry["python"][len(operator):]
-                        dev.append(f'{name}{entry["version"]}; python_version {operator} "{version}"')
+            dev = [name + constraint for name, constraint in data["tool"]["poetry"]["group"]["dev"]["dependencies"].items()]
         test = (client / "test-requirements.txt").read_text().splitlines()
-        for python_version in ("3.10", "3.11", "3.12"):
-            for source, requirements in (("dev", dev), ("test", test)):
-                with self.subTest(client=str(client), python=python_version, source=source):
-                    self.assert_resolvable_floors(requirements, python_version)
+        for requirements in (dev, test):
+            parsed = [Requirement(line) for line in requirements if line and not line.startswith("#")]
+            for name, floor in (("filelock", "4.2.1"), ("virtualenv", "21.14.13")):
+                matches = [req for req in parsed if req.name == name]
+                self.assertEqual(len(matches), 1)
+                self.assertIsNone(matches[0].marker)
+                self.assertEqual(str(matches[0].specifier), ">=" + floor)
 
-    def test_minimum_python_and_newer_resolvability(self):
-        self.assert_client_resolvable(SCRIPT.parent / "python-client")
+    def test_checked_in_and_generated_floors(self):
+        self.assert_client_floors(SCRIPT.parent / "python-client")
         for modern in (False, True):
             self.fixture(modern)
             result = self.run_script()
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assert_client_resolvable(self.client)
+            self.assert_client_floors(self.client)
 
-    def test_resolvability_check_catches_unconditional_filelock(self):
-        with self.assertRaises(AssertionError):
-            self.assert_resolvable_floors(["filelock>=4.2.1", "virtualenv>=21.14.13"], "3.10")
-
-    def test_incomplete_filelock_markers_are_rejected(self):
+    def test_conditional_or_unsafe_floors_are_rejected(self):
         for modern in (False, True):
             for filename in ("pyproject.toml", "test-requirements.txt"):
-                for version in ("3.20.3", "4.2.1"):
-                    with self.subTest(modern=modern, filename=filename, version=version):
+                for replacement in ("3.0.0", '4.2.1; python_version >= \\\"3.11\\\"'):
+                    with self.subTest(modern=modern, filename=filename, replacement=replacement):
                         self.fixture(modern)
                         self.assertEqual(self.run_script().returncode, 0)
                         path = self.client / filename
-                        # Preserve an existing entry while corrupting either arm;
-                        # the insertion guard must not hide the missing safe pin.
-                        path.write_text(path.read_text().replace(version, "3.0.0"))
+                        path.write_text(path.read_text().replace("4.2.1", replacement))
                         result = self.run_script()
                         self.assertNotEqual(result.returncode, 0)
-                        self.assertIn("FAIL: 'filelock pin'", result.stderr)
+                        self.assertIn("FAIL: 'filelock floor'", result.stderr)
+
+    def test_formatted_ci_and_python_metadata(self):
+        self.fixture()
+        for name in (".travis.yml", ".gitlab-ci.yml"):
+            path = self.client / name
+            path.write_text(path.read_text().replace('"', "'").replace("  ", "    "))
+        gitlab = self.client / ".gitlab-ci.yml"
+        gitlab.write_text(gitlab.read_text().replace("pytest-3.10:", "pytest-3.10: # legacy job"))
+        project = self.client / "pyproject.toml"
+        project.write_text(project.read_text().replace(">=3.9", ">=3.10").replace(
+            "[project]\n", '[project]\nclassifiers = [\n  "Programming Language :: Python :: 3.10",\n  "Programming Language :: Python :: 3.11",\n]\n'))
+        (self.client / "setup.cfg").write_text("[options]\npython_requires = >=3.10\n")
+        workflow = self.client / ".github/workflows/python.yml"
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text('python-version: ["3.9", "3.10", "3.11", "3.12"]\n')
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(tomllib.loads(project.read_text())["project"]["classifiers"], ["Programming Language :: Python :: 3.11"])
+        self.assertIn("python_requires = >=3.11", (self.client / "setup.cfg").read_text())
+        for name in (".travis.yml", ".gitlab-ci.yml", ".github/workflows/python.yml"):
+            text = (self.client / name).read_text()
+            self.assertNotIn("3.9", text)
+            self.assertNotIn("3.10", text)
+            self.assertIn("3.11", text)
+        for value in ('3.10', '\n  - "3.9"\n  - "3.10"'):
+            workflow.write_text(f'python-version: {value}\nnode-version: "3.9"\n')
+            result = self.run_script()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("3.10", workflow.read_text())
+            self.assertIn('node-version: "3.9"', workflow.read_text())
+
+    def test_workflow_parent_symlinks_are_rejected(self):
+        for name in (".github", ".github/workflows"):
+            with self.subTest(name=name):
+                self.fixture()
+                github = self.client / ".github"
+                if github.is_symlink():
+                    github.unlink()
+                elif github.exists():
+                    shutil.rmtree(github)
+                outside = self.root / "outside"
+                outside.mkdir(exist_ok=True)
+                (outside / "workflows").mkdir(exist_ok=True)
+                sentinel = outside / "ci.yml"
+                sentinel.write_text('python-version: ["3.10"]\n')
+                nested = outside / "workflows/ci.yml"
+                nested.write_text(sentinel.read_text())
+                alias = self.client / name
+                alias.parent.mkdir(exist_ok=True)
+                alias.symlink_to(outside, target_is_directory=True)
+                result = self.run_script()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Unsafe generated directory", result.stderr)
+                self.assertEqual(sentinel.read_text(), 'python-version: ["3.10"]\n')
+                self.assertEqual(nested.read_text(), sentinel.read_text())
 
     def test_generator_is_pinned(self):
         self.fixture(True)
@@ -309,7 +324,7 @@ elif "/workspace/node_modules/prettier/bin/prettier.cjs" not in args:
             # Prove successful pin checks reached real floor processing and
             # promotion rather than passing on image inspection alone.
             metadata = tomllib.loads((output / "pyproject.toml").read_text())
-            self.assertEqual(metadata["project"]["requires-python"], ">=3.10")
+            self.assertEqual(metadata["project"]["requires-python"], ">=3.11")
             self.assertEqual(metadata["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
             for requirement in FILELOCK_REQUIREMENTS:
                 self.assertIn(requirement, metadata["dependency-groups"]["dev"])
