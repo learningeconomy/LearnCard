@@ -1,0 +1,233 @@
+{
+    "_comment": "CloudTrail-shaped events for the escrow_kms_changes rule (monitor.tf). `match` is whether EscrowKmsGovernanceChange must page. {placeholders} are filled by check-kms-governance-pattern.py.",
+    "cases": [
+        {
+            "name": "escrow CMK policy change",
+            "match": true,
+            "detail": {
+                "eventName": "PutKeyPolicy",
+                "requestParameters": { "keyId": "{escrow_key_id}", "policyName": "default" }
+            }
+        },
+        {
+            "name": "escrow CMK deletion cancelled (ARN form)",
+            "match": true,
+            "detail": {
+                "eventName": "CancelKeyDeletion",
+                "requestParameters": { "keyId": "{escrow_key_arn}" }
+            }
+        },
+        {
+            "name": "storage CMK policy change",
+            "match": true,
+            "detail": {
+                "eventName": "PutKeyPolicy",
+                "requestParameters": { "keyId": "{storage_key_id}", "policyName": "default" }
+            }
+        },
+        {
+            "name": "storage CMK rotation disabled (ARN form)",
+            "match": true,
+            "detail": {
+                "eventName": "DisableKeyRotation",
+                "requestParameters": { "keyId": "{storage_key_arn}" }
+            }
+        },
+        {
+            "name": "storage alias repointed",
+            "match": true,
+            "detail": {
+                "eventName": "UpdateAlias",
+                "requestParameters": {
+                    "aliasName": "{storage_alias}",
+                    "targetKeyId": "11111111-2222-3333-4444-555555555555"
+                }
+            }
+        },
+        {
+            "name": "escrow alias deleted",
+            "match": true,
+            "detail": {
+                "eventName": "DeleteAlias",
+                "requestParameters": { "aliasName": "{escrow_alias}" }
+            }
+        },
+        {
+            "name": "storage grant by a human to a role",
+            "match": true,
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_id}",
+                    "granteePrincipal": "arn:aws:iam::{account}:role/attacker",
+                    "operations": ["Decrypt"]
+                }
+            }
+        },
+        {
+            "name": "storage grant by a human using the service-principal form",
+            "match": true,
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_arn}",
+                    "granteeServicePrincipal": "s3.amazonaws.com",
+                    "operations": ["Decrypt"]
+                }
+            }
+        },
+        {
+            "name": "storage grant by a human naming DynamoDB as grantee",
+            "match": true,
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_id}",
+                    "granteePrincipal": "dynamodb.{region}.amazonaws.com",
+                    "operations": ["Decrypt"]
+                }
+            }
+        },
+        {
+            "name": "storage grant made through another service",
+            "match": true,
+            "invokedBy": "s3.amazonaws.com",
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_arn}",
+                    "granteePrincipal": "s3.{region}.amazonaws.com",
+                    "operations": ["Decrypt"]
+                }
+            }
+        },
+        {
+            "name": "DynamoDB-invoked storage grant to another grantee",
+            "match": true,
+            "invokedBy": "dynamodb.amazonaws.com",
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_arn}",
+                    "granteePrincipal": "arn:aws:iam::{account}:role/attacker",
+                    "operations": ["Decrypt"]
+                }
+            }
+        },
+        {
+            "name": "DynamoDB-invoked storage grant using the service-principal form",
+            "match": true,
+            "invokedBy": "dynamodb.amazonaws.com",
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_arn}",
+                    "granteeServicePrincipal": "dynamodb.amazonaws.com",
+                    "operations": ["Decrypt"]
+                }
+            }
+        },
+        {
+            "name": "denied policy change logged with null requestParameters",
+            "match": true,
+            "detail": {
+                "eventName": "PutKeyPolicy",
+                "errorCode": "AccessDenied",
+                "requestParameters": null
+            }
+        },
+        {
+            "name": "denied escrow alias change",
+            "match": true,
+            "detail": {
+                "eventName": "UpdateAlias",
+                "errorCode": "AccessDenied",
+                "requestParameters": {
+                    "aliasName": "{escrow_alias}",
+                    "targetKeyId": "11111111-2222-3333-4444-555555555555"
+                }
+            }
+        },
+        {
+            "name": "denied alias change logged with null requestParameters",
+            "match": true,
+            "detail": {
+                "eventName": "DeleteAlias",
+                "errorCode": "AccessDeniedException",
+                "requestParameters": null
+            }
+        },
+        {
+            "name": "DynamoDB SSE grant on the storage CMK (observed at authority table creation)",
+            "match": false,
+            "invokedBy": "dynamodb.amazonaws.com",
+            "detail": {
+                "eventName": "CreateGrant",
+                "requestParameters": {
+                    "keyId": "{storage_key_arn}",
+                    "granteePrincipal": "dynamodb.{region}.amazonaws.com",
+                    "retiringPrincipal": "dynamodb.{region}.amazonaws.com",
+                    "operations": [
+                        "Decrypt",
+                        "Encrypt",
+                        "GenerateDataKey",
+                        "ReEncryptFrom",
+                        "ReEncryptTo",
+                        "RetireGrant",
+                        "DescribeKey"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "routine storage CMK decrypt",
+            "match": false,
+            "detail": {
+                "eventName": "Decrypt",
+                "requestParameters": { "keyId": "{storage_key_arn}" }
+            }
+        },
+        {
+            "name": "storage CMK rotation enabled",
+            "match": false,
+            "detail": {
+                "eventName": "EnableKeyRotation",
+                "requestParameters": { "keyId": "{storage_key_id}" }
+            }
+        },
+        {
+            "name": "unrelated key policy change",
+            "match": false,
+            "detail": {
+                "eventName": "PutKeyPolicy",
+                "requestParameters": {
+                    "keyId": "11111111-2222-3333-4444-555555555555",
+                    "policyName": "default"
+                }
+            }
+        },
+        {
+            "name": "unrelated alias change",
+            "match": false,
+            "detail": {
+                "eventName": "UpdateAlias",
+                "requestParameters": {
+                    "aliasName": "alias/unrelated",
+                    "targetKeyId": "11111111-2222-3333-4444-555555555555"
+                }
+            }
+        },
+        {
+            "name": "denied unrelated alias change",
+            "match": false,
+            "detail": {
+                "eventName": "CreateAlias",
+                "errorCode": "AccessDenied",
+                "requestParameters": {
+                    "aliasName": "alias/unrelated",
+                    "targetKeyId": "11111111-2222-3333-4444-555555555555"
+                }
+            }
+        }
+    ]
+}

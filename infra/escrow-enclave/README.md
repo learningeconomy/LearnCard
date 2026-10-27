@@ -234,7 +234,11 @@ kms:RecipientAttestation:PCR0/1/2` all matching simultaneously
 - `storage.tf` — two S3 buckets encrypted with their own (non-escrow) CMK:
   `...-audit` (Object Lock COMPLIANCE mode, `var.audit_retention_days`
   default retention, audit-only) and `...-artifacts` (versioned, not
-  locked, holds built `.eif` files). Both deny non-TLS requests.
+  locked, holds built `.eif` files). Both deny non-TLS requests. The
+  storage CMK delegates use to IAM but reserves `PutKeyPolicy`,
+  `ScheduleKeyDeletion`, `DisableKey` and `DisableKeyRotation` for
+  `escrow-kms-admin` and MFA root: it also encrypts the sealed escrow key
+  object and the authority table.
 - `ledger.tf` — DynamoDB `escrow-ledger-records-<environment>` (append-only
   chain records, PITR, stream `NEW_IMAGE`, deletion protection) and
   `escrow-ledger-heads-<environment>` (mutable head pointer, PITR, deletion
@@ -389,7 +393,8 @@ that the one human who ran `terraform apply` had an MFA-authenticated
 session. The second person is enforced entirely by process:
 
 1. **Open a PR** changing `enclave_measurements`, `kms_admin_role_arn`, or
-   any other input that changes `kms.tf`'s rendered policy. The diff must
+   any other input that changes the rendered policy in `kms.tf`,
+   `credential-kms.tf` or `storage.tf` (`s3_kms_key_policy`). The diff must
    be reviewable directly in the PR (this is why the policy is built from
    `aws_iam_policy_document`, not an opaque `jsonencode` blob).
 2. **CODEOWNERS-required security-team review and approval.** The security
@@ -442,12 +447,15 @@ Mitigations, layered (none of them eliminate the risk on their own):
   session" to "an MFA-authenticated admin session", closing the most
   common accidental- or leaked-non-MFA-credential path. Does not stop a
   deliberate insider with a working MFA device.
-- **CloudTrail alarm on `PutKeyPolicy`, `CreateGrant`, and
-  `ScheduleKeyDeletion`** against this key, so a policy rewrite is
+- **CloudTrail alarm `EscrowKmsGovernanceChange`** (`monitor.tf`'s
+  `escrow_kms_changes` rule) on `PutKeyPolicy`, `CreateGrant`,
+  `ScheduleKeyDeletion`, `CancelKeyDeletion`, `DisableKey` and
+  `DisableKeyRotation` against the escrow, credentials and storage CMKs
+  (storage-key grants to DynamoDB's own SSE grantee excepted), on
+  `Create/Update/DeleteAlias` for their aliases, and on `AccessDenied`
+  attempts at any of these events account-wide. A policy rewrite is
   detected even if it bypassed (or was never subject to) the PR review
-  above. **Not implemented by this module** — TODO, tracked as P7.1
-  (`escrow-ledger-monitor`'s alarm wiring; see
-  `services/escrow-enclave-app/SECURITY.md#design-decisions`).
+  above.
 
 **Alternative not adopted here (requires explicit sign-off): an immutable
 key policy.** Remove `kms:PutKeyPolicy` for every principal, including
