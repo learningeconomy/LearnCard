@@ -264,8 +264,10 @@ Create **`escrow-production`** (build/sign only) and
   the storage CMK and require regional S3 plus the artifact object encryption
   context (or bucket ARN for S3 Bucket Keys). Null omits all KMS grants for an
   SSE-S3 bucket, but the current core bucket/workflow require SSE-KMS. Never pass
-  the escrow/credential CMK. The core storage key delegates to IAM; its policy
-  does not need changing. Bucket-Key context is bucket-wide, while S3 access
+  the escrow/credential CMK. The core storage key delegates use to IAM, so its
+  policy needs no publisher change (it reserves only `PutKeyPolicy`,
+  `ScheduleKeyDeletion`, `DisableKey` and `DisableKeyRotation` for
+  `escrow-kms-admin` and MFA root). Bucket-Key context is bucket-wide, while S3 access
   remains prefix-restricted.
 - Both authority-guardrail SCPs were inspected: neither denies these object/KMS
   operations; bucket reconfiguration, authority and monitor takeover remain
@@ -291,6 +293,12 @@ workflow's use of the publish environment. Protect this workflow with required
 security review; environment reviewers must inspect workflow/ref and artifact
 evidence before approving the separate upload job. Test build-token rejection and
 publish-token success before enabling uploads; never retain raw tokens as evidence.
+Every production build job first attempts `AssumeRoleWithWebIdentity` on
+`ESCROW_PUBLISH_ROLE_ARN` with its own token and fails unless AWS returns
+`AccessDenied`. STS also denies nonexistent roles, so the publish job asserts the
+build checked the exact role it then assumes; its successful assumption is the
+success half (CloudTrail evidence). Set `ESCROW_PUBLISH_ROLE_ARN` in **both**
+production environments.
 
 **Claim compatibility:** AWS does not expose arbitrary GitHub JWT claims as IAM
 condition keys; `token.actions.githubusercontent.com:job_workflow_ref` and

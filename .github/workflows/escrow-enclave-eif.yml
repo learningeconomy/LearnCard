@@ -231,6 +231,9 @@ jobs:
         # Measured config differs per deployment; each environment holds its
         # own vars and requires an approver before the build runs.
         environment: ${{ inputs.deployment == 'production' && 'escrow-production' || 'escrow-staging' }}
+        outputs:
+            # publish-production asserts this equals the role it assumes.
+            rejected_publisher_role_arn: ${{ steps.reject_build_token.outputs.role_arn }}
         env:
             # No parent environment is inherited by an EIF. Both builds bake the
             # same reviewed public configuration; missing required vars fail closed.
@@ -259,6 +262,37 @@ jobs:
             contents: read
             id-token: write # cosign keyless signing (GitHub OIDC -> Fulcio/Rekor); granted on this job only.
         steps:
+            # PRODUCTION.md requires proof that this build job's OIDC token (subject
+            # environment:escrow-production) cannot assume the artifact publisher,
+            # which trusts only environment:escrow-production-publish. Fails the
+            # build unless the attempt is AccessDenied; no token is printed.
+            # STS also denies nonexistent roles, so the checked ARN is exported and
+            # publish-production asserts it is the role it then assumes.
+            - name: Prove build token cannot assume the production publisher
+              id: reject_build_token
+              if: inputs.deployment == 'production'
+              env:
+                  PUBLISHER_ROLE_ARN: ${{ vars.ESCROW_PUBLISH_ROLE_ARN }}
+                  AWS_REGION: ${{ vars.ESCROW_KMS_REGION }}
+              run: |
+                  set -euo pipefail
+                  [[ "$PUBLISHER_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$ ]] || { echo "::error::Set ESCROW_PUBLISH_ROLE_ARN on escrow-production"; exit 1; }
+                  [[ -n "$AWS_REGION" ]] || { echo "::error::Set ESCROW_KMS_REGION"; exit 1; }
+                  token="$(curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+                    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -er '.value | select(type == "string" and length > 0)')" \
+                    || { echo "::error::GitHub returned no OIDC token"; exit 1; }
+                  echo "::add-mask::${token}"
+                  if result="$(aws sts assume-role-with-web-identity --role-arn "$PUBLISHER_ROLE_ARN" \
+                    --role-session-name build-token-rejection --duration-seconds 900 \
+                    --web-identity-token "$token" 2>&1)"; then
+                    echo "::error::The build token assumed the production publisher role"
+                    exit 1
+                  fi
+                  # STS errors do not echo the web identity token.
+                  grep -q 'AccessDenied' <<<"$result" || { echo "::error::Assumption failed without AccessDenied: ${result}"; exit 1; }
+                  echo "Build token rejected by ${PUBLISHER_ROLE_ARN} (AccessDenied)."
+                  echo "role_arn=${PUBLISHER_ROLE_ARN}" >> "$GITHUB_OUTPUT"
+
             - name: Checkout
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -497,6 +531,17 @@ jobs:
                     "$(jq -r .hostSha256 manifest.json)" host-a/escrow-enclave-host | sha256sum -c -
                   jq -e --slurpfile measurements escrow-measurements.json \
                     '.config == $measurements[0].config' manifest.json
+
+            - name: Confirm the build job proved rejection for this exact role
+              env:
+                  REJECTED_ROLE_ARN: ${{ needs.eif.outputs.rejected_publisher_role_arn }}
+                  PUBLISHER_ROLE_ARN: ${{ vars.ESCROW_PUBLISH_ROLE_ARN }}
+              run: |
+                  set -euo pipefail
+                  [[ -n "$PUBLISHER_ROLE_ARN" && "$REJECTED_ROLE_ARN" == "$PUBLISHER_ROLE_ARN" ]] || {
+                    echo "::error::Build-token rejection was proved for '${REJECTED_ROLE_ARN}', not '${PUBLISHER_ROLE_ARN}'"
+                    exit 1
+                  }
 
             - name: Assume production artifact publisher (no Terraform or escrow-key access)
               uses: aws-actions/configure-aws-credentials@61815dcd50bd041e203e49132bacad1fd04d2708 # v5.1.1

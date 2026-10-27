@@ -77,6 +77,10 @@ flowchart LR
 
 For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
 
+When creating a private link from **Privacy & Data**, your Passport categories—including manual changes—are saved with the signed collection. The creation preview, **Your shared links** preview, and recipient view use that category snapshot. Recognized categories include both credential types and saved index categories such as Work Experience, Resume, and Professional Title; missing or unrecognized hints fall back to the original credential type. These labels describe the sender's organization; they do not change the original issuer-signed credentials. Older apps can still open the links but ignore the category snapshot.
+
+For a link created before category snapshots, open it under **Your shared links**, choose **Update contents** → **Choose credentials**, keep the same credentials selected, then continue through **Preview** and **Update private link**. This saves the current categories without changing the URL. Later category changes in your Passport also require updating the link; published snapshots do not change automatically.
+
 ### Sharing to LinkedIn
 
 Issuers can link their organization in **Developer Portal → Build → an issuance project → Branding**. Enter the numeric **LinkedIn organization ID** from the organization's LinkedIn admin-page URL, not its public page name. Leave it blank to use the issuer name without an organization link. Saving a blank value removes a previous ID.
