@@ -1,0 +1,244 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/Layout.astro";
+import ChatHeader from "../components/ChatHeader.astro";
+import ThreadListSidebar from "../components/ThreadListSidebar.astro";
+
+// Default topics in case we can't fetch in time
+const defaultTopics = [
+  "Machine Learning",
+  "Web Development",
+  "Data Science",
+  "Climate Change",
+  "Quantum Computing",
+];
+
+// Flag to indicate if we're still loading topics
+const isLoading = true;
+---
+
+<BaseLayout>
+  <div class="flex h-full bg-gray-100 w-full">
+    <ThreadListSidebar
+      initialThreadId={undefined}
+      initialThreadList={[]}
+      isMobile={false}
+    />
+
+    <div id="topics-container" class="hidden w-full">
+      <div class="flex flex-col h-screen">
+        <ChatHeader />
+
+        <main
+          class="flex flex-col items-center justify-center flex-1 bg-white p-6"
+        >
+          <div class="max-w-2xl w-full px-8 rounded-lg">
+            <h2
+              class="text-2xl font-poppins text-grayscale-900 font-bold text-center mb-[20px]"
+            >
+              What would you like to learn about today?
+            </h2>
+
+            <div id="topics-section" class="mb-8">
+              <h3
+                class="text-xl font-semibold mb-4 text-center text-grayscale-600"
+              >
+                Suggested topics based on your credentials
+              </h3>
+              {
+                isLoading ? (
+                  <div
+                    id="topics-loading"
+                    class="flex flex-col justify-center items-center py-8"
+                  >
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-grayscale-900 text-grayscale-900" />
+                    <span>Coming up with some suggestions for you...</span>
+                  </div>
+                ) : (
+                  <div
+                    id="topics-grid"
+                    class="grid grid-cols-1 md:grid-cols-2 gap-3"
+                  >
+                    {suggestedTopics.length > 0
+                      ? suggestedTopics.map((topic) => (
+                          <a
+                            href={`/chats?topic=${encodeURIComponent(topic)}`}
+                            class="px-4 py-3 bg-grayscale-900 hover:bg-grayscale-800 rounded-[15px] text-[17px] font-medium transition-colors text-center"
+                          >
+                            {topic}
+                          </a>
+                        ))
+                      : defaultTopics.map((topic) => (
+                          <a
+                            href={`/chats?topic=${encodeURIComponent(topic)}`}
+                            class="px-4 py-3 bg-grayscale-900 hover:bg-grayscale-800 rounded-[15px] text-[17px] font-medium transition-colors text-center"
+                          >
+                            {topic}
+                          </a>
+                        ))}
+                  </div>
+                )
+              }
+            </div>
+
+            <div class="border-t border-gray-600 pt-5 mt-5">
+              <form id="topic-form" class="space-y-4">
+                <div class="space-y-2">
+                  <label
+                    for="topic-input"
+                    class="block text-[16px] font-medium text-grayscale-900"
+                  >
+                    Or enter your own topic of interest
+                  </label>
+                  <div class="flex">
+                    <input
+                      id="topic-input"
+                      type="text"
+                      name="topic"
+                      class="flex-1 w-full font-notoSans placeholder-grayscale-60 text-grayscale-900 text-[17px] bg-grayscale-100 px-[15px] py-[10px] border border-grayscale-200 rounded-l-[15px] focus:outline-none focus:ring-1 focus:ring-grayscale-30"
+                      placeholder="e.g., Quantum computing, Climate science, Philosophy..."
+                    />
+                    <button
+                      type="submit"
+                      class="py-3 px-6 bg-grayscale-900 hover:bg-grayscale-800 rounded-r-[15px] font-medium transition-colors"
+                    >
+                      Start Learning
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <ThreadListSidebar
+      initialThreadId={undefined}
+      initialThreadList={[]}
+      isMobile={true}
+    />
+  </div>
+</BaseLayout>
+
+<script>
+  import { authenticatedFetch, refreshAuth, logout } from "../stores/authStore";
+  import { suggestedTopics as suggestedTopicsAtom } from "../stores/chatStore";
+
+  const loadingIndicator = document.getElementById("topics-loading");
+  const isLoading = Boolean(loadingIndicator);
+
+  // Function to fetch topics on the client side
+  async function fetchTopics() {
+    try {
+      await authenticatedFetch("/credentials/ingestion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "app_open" }),
+      });
+
+      const response = await authenticatedFetch("/topics");
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data.topics || [];
+    } catch (error) {
+      console.error("Error fetching topics on client side:", error);
+      return null;
+    }
+  }
+
+  // Update the UI with topics
+  function updateTopicsUI(topics: string[]) {
+    const topicsGrid = document.getElementById("topics-grid");
+
+    if (!topicsGrid) {
+      // Create topics grid if it doesn't exist
+      const topicsSection = document.getElementById("topics-section");
+      if (topicsSection && loadingIndicator) {
+        // Remove loading indicator
+        loadingIndicator.remove();
+
+        // Create new grid
+        const newGrid = document.createElement("div");
+        newGrid.id = "topics-grid";
+        newGrid.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
+        topicsSection.appendChild(newGrid);
+
+        // Update the reference
+        updateTopicsUI(topics);
+        return;
+      }
+    }
+
+    if (topicsGrid) {
+      // Clear existing topics
+      topicsGrid.innerHTML = "";
+
+      // Add new topics
+      topics.forEach((topic) => {
+        const topicElement = document.createElement("a");
+        topicElement.href = `/chats?topic=${encodeURIComponent(topic)}`;
+        topicElement.className =
+          "px-4 py-3 bg-grayscale-900 hover:bg-grayscale-800 rounded-[15px] text-[17px] font-medium transition-colors text-center";
+        topicElement.textContent = topic;
+        topicsGrid.appendChild(topicElement);
+      });
+    }
+  }
+
+  // Load topics on client-side if they weren't loaded during SSR
+  async function initTopics() {
+    if (!isLoading) return;
+
+    const topics = await fetchTopics();
+
+    if (topics && topics.length > 0) {
+      updateTopicsUI(topics);
+    } else {
+      updateTopicsUI([
+        "Machine Learning",
+        "Web Development",
+        "Data Science",
+        "Climate Change",
+        "Quantum Computing",
+      ]);
+    }
+  }
+
+  async function initialize() {
+    const topicsContainer = document.getElementById("topics-container");
+
+    if (!(await refreshAuth())) {
+      window.location.href = "/login";
+      return;
+    }
+
+    topicsContainer?.classList.remove("hidden");
+    await initTopics();
+
+    suggestedTopicsAtom.subscribe((topics) => {
+      if (topics && topics.length > 0) updateTopicsUI([...topics]);
+    });
+  }
+
+  void initialize();
+
+  // Handle the form submission
+  const form = document.getElementById("topic-form");
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("topic-input") as HTMLInputElement;
+    const topic = input?.value?.trim();
+
+    if (topic) {
+      window.location.href = `/chats?topic=${encodeURIComponent(topic)}`;
+    }
+  });
+
+  document.getElementById("logout")?.addEventListener("click", async () => {
+    await logout();
+    window.location.href = "/login";
+  });
+</script>

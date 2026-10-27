@@ -1,0 +1,87 @@
+services:
+    backend:
+        build:
+            context: ../../ # Build context is the monorepo root
+            dockerfile: services/ai-passport-backend/Dockerfile # Path to Dockerfile relative to context
+        ports:
+            - '${PORT:-3001}:${PORT:-3001}' # Expose the backend port
+        volumes:
+            # Mount the entire monorepo for hot-reloading during development
+            # Use :delegated for performance on macOS/Windows
+            - ../../:/app:delegated
+        env_file:
+            - .env # Load environment variables from .env file
+        environment:
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+            QDRANT_HTTPS: false
+            QDRANT_HOST: qdrant
+            QDRANT_PORT: 6333
+            PORT: ${PORT:-3001} # You can add other necessary env vars here or keep them in .env
+            MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0
+            MONGO_DB: consent_flow_chat
+        depends_on:
+            redis:
+                condition: service_started
+            qdrant:
+                condition: service_started
+            mongo:
+                condition: service_healthy
+        networks:
+            - app-network
+
+    redis:
+        image: 'redis:alpine' # Use official Redis image
+        ports:
+            - '6384:6379' # Expose Redis port if needed for direct access (optional)
+        volumes:
+            - redis-data:/data # Persist Redis data (optional for dev)
+        networks:
+            - app-network
+
+    qdrant:
+        image: qdrant/qdrant:v1.17.0
+        ports:
+            - '6333:6333' # REST API and dashboard
+            - '6334:6334' # gRPC API
+        volumes:
+            - qdrant_storage:/qdrant/storage
+        restart: always
+        ulimits:
+            nofile:
+                soft: 262144
+                hard: 262144
+        networks:
+            - app-network
+
+    mongo:
+        image: mongo:6
+        command: ['mongod', '--replSet', 'rs0', '--bind_ip_all']
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - >-
+                    mongosh --quiet --eval 'try { rs.status(); } catch (error) {
+                    if (error.code !== 94) throw error;
+                    rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}); }
+                    quit(db.hello().isWritablePrimary ? 0 : 1);'
+            interval: 2s
+            timeout: 5s
+            retries: 30
+        ports:
+            - '27018:27017'
+        volumes:
+            - mongo-data:/data/db
+        environment:
+            MONGO_INITDB_DATABASE: consent_flow_chat
+        networks:
+            - app-network
+
+volumes:
+    qdrant_storage:
+    redis-data:
+    mongo-data:
+
+networks:
+    app-network:
+        driver: bridge

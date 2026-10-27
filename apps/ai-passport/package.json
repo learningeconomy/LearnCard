@@ -1,0 +1,41 @@
+{
+    "name": "ai-passport",
+    "type": "module",
+    "version": "0.0.1",
+    "scripts": {
+        "dev": "astro dev",
+        "build": "astro build",
+        "typecheck": "tsc --noEmit -p tsconfig.json",
+        "preview": "astro preview",
+        "test:e2e": "playwright test --config playwright.config.ts",
+        "astro": "astro"
+    },
+    "dependencies": {
+        "@astrojs/netlify": "^8.1.2",
+        "@astrojs/react": "^7.1.1",
+        "@nanostores/react": "^0.8.4",
+        "@learncard/types": "workspace:*",
+        "@tailwindcss/typography": "^0.5.16",
+        "@tailwindcss/vite": "^4.0.6",
+        "@types/react": "^19.0.8",
+        "@types/react-dom": "^19.0.3",
+        "astro": "^7.1.0",
+        "cookie": "^2.0.1",
+        "katex": "^0.16.9",
+        "lucide-react": "^0.475.0",
+        "nanostores": "^0.11.3",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+        "react-markdown": "^9.0.3",
+        "react-shiki": "^0.5.3",
+        "rehype-katex": "^7.0.1",
+        "remark-gfm": "^4.0.1",
+        "remark-math": "^6.0.0",
+        "tailwindcss": "^4.0.6"
+    },
+    "devDependencies": {
+        "@learncard/didkit-plugin": "1.10.0",
+        "@learncard/init": "2.4.16",
+        "@playwright/test": "^1.51.1"
+    }
+}

@@ -1,0 +1,29 @@
+---
+import BaseLayout from "../layouts/Layout.astro";
+
+// Import React components with client:load for hydration
+import LoginColumn from "../components/LoginColumn";
+import ExampleChatColumn from "../components/ExampleChatColumn";
+---
+
+<BaseLayout>
+  <div
+    class="px-[20px] lg:px-[100px] py-[30px] sm:py-[50px] w-full h-fit min-h-screen flex justify-evenly gap-[100px]"
+    style={{
+      background: "linear-gradient(116deg, #CFFAFE 9.49%, #C7D2FE 89.62%)",
+    }}
+  >
+    <div class="flex-1">
+      <LoginColumn client:load />
+    </div>
+    <div class="flex-1 hidden xl:flex items-center justify-center">
+      <ExampleChatColumn client:load />
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { refreshAuth } from "../stores/authStore";
+
+  if (await refreshAuth()) window.location.href = "/";
+</script>

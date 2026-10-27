@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+
+@theme {
+    --default-font-family: 'Noto Sans', 'Poppins', sans-serif;
+    --font-poppins: 'Poppins', sans-serif;
+    --font-notoSans: 'Noto Sans', sans-serif;
+
+    /* --color-grayscale-100: #18224E; */
+    --color-grayscale-100: #eff0f5;
+    --color-grayscale-90: #353e64;
+    --color-grayscale-80: #52597a;
+    --color-grayscale-70: #6f7590;
+    --color-grayscale-60: #8b91a7;
+    --color-grayscale-50: #a8acbd;
+    --color-grayscale-40: #c5c8d3;
+    --color-grayscale-30: #e2e3e9;
+    --color-grayscale-20: #eff0f5;
+    --color-grayscale-10: #fbfbfc;
+
+    --color-grayscale-100-primary-dark: #18224e;
+    --color-grayscale-900: #18224e;
+    --color-grayscale-700: #52597a;
+    --color-grayscale-600: #6f7590;
+    --color-grayscale-400: #a8acbd;
+    --color-grayscale-200: #e2e3e9;
+
+    --color-grayscale-50-off-white: #fbfbfc;
+
+    --color-white-semi-transparent: #ffffff80;
+
+    --color-cyan-50: #ecfeff;
+
+    --color-indigo-100: #e0e7ff;
+    --color-indigo-500: #6366f1;
+}
+
+.topic-card {
+    @apply bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 ease-in-out;
+}
+
+button,
+div[role='button'] {
+    cursor: pointer;
+}

@@ -1,0 +1,87 @@
+---
+export const prerender = false;
+
+import { Image } from "astro:assets";
+import Icon from "../assets/chatgptbot.webp";
+import BaseLayout from "../layouts/Layout.astro";
+import ChatPage from "../components/Chat.astro";
+
+// Get the topic or topic URI from URL query parameters
+const topic = Astro.url.searchParams.get("topic") || undefined;
+const topicUri = Astro.url.searchParams.get("topicUri") || undefined;
+const threadId = Astro.url.searchParams.get("threadId") || undefined;
+
+const threadMessages = [];
+---
+
+<BaseLayout>
+  <div id="chat-container" class="hidden">
+    <div class="flex flex-col h-screen">
+      <!-- <header
+        class="bg-gray-800 p-4 shadow-md flex justify-between items-center"
+      >
+        <section class="flex gap-3 items-center">
+          <Image src={Icon} alt="Icon" height={30} width={30} />
+          <h1 class="text-xl font-bold text-white">Consent Flow Chatbot</h1>
+        </section>
+        <div class="flex gap-4">
+          <a
+            href="/topics"
+            class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            New Topic
+          </a>
+          <a
+            href="/chats"
+            class="px-4 py-2 text-sm bg-gray-700 text-white rounded hover:bg-gray-600"
+          >
+            View Previous Chats
+          </a>
+          <button
+            id="logout"
+            class="px-4 py-2 text-sm text-gray-300 hover:text-white"
+          >
+            Logout
+          </button>
+        </div>
+      </header> -->
+
+      <main class="flex-1 overflow-hidden">
+        <ChatPage
+          showThreadList={false}
+          initialTopic={topic}
+          initialTopicUri={topicUri}
+          initialThreadId={threadId}
+          initialMessages={threadMessages}
+        />
+      </main>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { connectWebSocket, loadThread } from "@/stores/chatStore";
+  import { refreshAuth, logout } from "../stores/authStore";
+
+  async function checkAuth() {
+    const chatContainer = document.getElementById("chat-container");
+
+    if (!(await refreshAuth())) {
+      window.location.href = "/login";
+      return;
+    }
+
+    chatContainer?.classList.remove("hidden");
+    connectWebSocket();
+
+    const threadId = new URL(window.location.href).searchParams.get("threadId");
+    if (threadId) await loadThread(threadId);
+  }
+
+  void checkAuth();
+
+  document.getElementById("logout")?.addEventListener("click", async () => {
+    await logout();
+    window.location.href = "/login";
+  });
+</script>

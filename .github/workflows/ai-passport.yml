@@ -1,0 +1,123 @@
+name: AI Passport
+
+# Service-backed checks for apps/ai-passport and services/ai-passport-backend, carried over
+# from the AI-Passport repo's CI. The backend suite needs Mongo (replica set), Redis, Qdrant
+# and the local privacy runtime, so it is not wired to the nx `test` target.
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths:
+            - 'apps/ai-passport/**'
+            - 'services/ai-passport-backend/**'
+            - 'packages/learn-card-types/src/aiPassport.ts'
+            - 'bun.lock'
+            - '.github/workflows/ai-passport.yml'
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ai-passport-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    backend:
+        name: Backend unit and privacy runtime
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        env:
+            JWT_SECRET: ci-test-secret-key
+            MONGO_URI: mongodb://localhost:27017/?replicaSet=rs0
+            MONGO_DB: consent_flow_chat
+            REDIS_HOST: localhost
+            REDIS_PORT: 6379
+            QDRANT_HOST: localhost
+            QDRANT_PORT: 6333
+            AI_PRIVACY_PYTHON: /opt/ai-privacy/bin/python
+            AWS_REGION: us-east-1
+            AI_PRIVACY_ASSET_DIR: /opt/ai-privacy/assets
+        services:
+            redis:
+                image: redis:alpine
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+            qdrant:
+                image: qdrant/qdrant:v1.17.0
+                ports:
+                    - 6333:6333
+                    - 6334:6334
+                options: >-
+                    --health-cmd "timeout 5 bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 10
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: ./.github/actions/setup
+
+            # Bun links the npm @learncard/init tree to these workspace packages wherever their
+            # versions satisfy, so they need a dist before the backend can load them.
+            - name: Build linked LearnCard libraries
+              run: bunx nx run-many -t build --projects=core,didkit-plugin,helpers,types,vc-plugin
+
+            - name: Start transactional MongoDB
+              run: |
+                  docker run -d --name mongo-ci -p 127.0.0.1:27017:27017 mongo:6 --replSet rs0 --bind_ip_all
+                  timeout 60 bash -c 'until docker exec mongo-ci mongosh --quiet --eval "quit(db.adminCommand({ping:1}).ok ? 0 : 1)"; do sleep 1; done'
+                  docker exec mongo-ci mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+                  timeout 60 bash -c 'until docker exec mongo-ci mongosh --quiet --eval "quit(db.hello().isWritablePrimary ? 0 : 1)"; do sleep 1; done'
+
+            - name: Provision local extraction runtime
+              run: |
+                  AI_PRIVACY_KEY="$(openssl rand -base64 32)"
+                  echo "::add-mask::$AI_PRIVACY_KEY"
+                  echo "AI_PRIVACY_KEY=$AI_PRIVACY_KEY" >> "$GITHUB_ENV"
+                  sudo sh services/ai-passport-backend/privacy/install.sh services/ai-passport-backend/privacy
+                  sudo cp services/ai-passport-backend/privacy/processor.py /opt/ai-privacy/assets/processor.py
+
+            - name: Run backend unit tests
+              working-directory: services/ai-passport-backend
+              env:
+                  CI: true
+              run: bun run test:unit
+
+            - name: Verify local OCR and document extraction
+              working-directory: services/ai-passport-backend
+              run: bun run test:privacy-runtime
+
+            - name: Build backend
+              working-directory: services/ai-passport-backend
+              run: bun run build
+
+    app:
+        name: App build and unit tests
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        steps:
+            - uses: actions/checkout@v7
+
+            # Astro 7 needs Node >= 22.12.
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+                  package-manager-cache: false
+
+            - uses: ./.github/actions/setup
+
+            - name: Build @learncard/types
+              run: bunx nx run types:build
+
+            - name: Run app unit tests
+              working-directory: apps/ai-passport
+              run: bun test src
+
+            - name: Build app
+              working-directory: apps/ai-passport
+              run: bun run build
