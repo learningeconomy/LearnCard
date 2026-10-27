@@ -100,3 +100,11 @@ await userLearnCard.invoke.acceptContractUpdate(termsUri, {
 Here `termsUri` and `selectedTerms` come from the user's existing consent record and review selections. Pass the `audienceVersion` from the current contract whose data recipients the user reviewed; approval rejects a changed audience. Required items must be granted; optional items remain off unless the user selects them. Parent approval is still required where applicable. Acceptance records a `reconsent` transaction and restores `live` access. Declining uses `withdrawConsent(termsUri)`.
 
 An update requiring approval defaults to a deadline 30 days after it is saved. Pass an ISO `reconsentDeadline` in `updateContract` options to choose another date. When the deadline passes, the scheduled job moves unanswered requests to `suspended`. The user can still review and approve the latest request to reconnect.
+
+## Rolling out versioned access
+
+Docker startup and Lambda application bootstrap await the same idempotent backfill before serving version-aware requests. It creates version 1 for legacy requests, records the accepted version on existing connections, and renames consumed one-time connections.
+
+Drain old request writers during the deployment cutover so they cannot create unversioned requests after a new process completes its readiness gate. The `migrate:consent-flow-versions` service command remains available for an explicit pre-deployment backfill; it is no longer the only migration path for Lambda.
+
+A malformed legacy request is logged by ID and skipped so healthy requests can start. Its missing snapshot remains fail-closed; the service does not invent grants from an unaccepted request. A database failure still rejects startup rather than serving before migration finishes.

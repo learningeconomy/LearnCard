@@ -1,8 +1,9 @@
 import { bootstrapLambda } from '@learncard/service-config';
+import type * as LambdaApplication from './lambdaApp';
 
 import { base, stages } from './src/config/stageConfig';
 
-type LambdaApp = typeof import('./lambdaApp');
+type LambdaApp = typeof LambdaApplication;
 
 const getApplication = bootstrapLambda<LambdaApp>({
     base,
@@ -10,7 +11,15 @@ const getApplication = bootstrapLambda<LambdaApp>({
     stage: process.env.AWS_LAMBDA_FUNCTION_NAME
         ? process.env.LAMBDA_STAGE
         : process.env.CONFIG_STAGE,
-    importApp: () => import('./lambdaApp'),
+    // Stage configuration must be installed before importing database-bound modules.
+    importApp: async () => {
+        const application = await import('./lambdaApp');
+        const { migrateLegacyConsentFlowContracts } =
+            await import('./src/helpers/consentflow-legacy-migration.helpers');
+        // All handlers await this readiness gate before serving version-aware requests.
+        await migrateLegacyConsentFlowContracts();
+        return application;
+    },
 });
 
 export const trpcHandler = async (...args: Parameters<LambdaApp['trpcHandler']>) =>

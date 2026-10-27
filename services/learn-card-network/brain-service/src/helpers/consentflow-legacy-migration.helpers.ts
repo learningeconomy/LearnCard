@@ -2,6 +2,7 @@ import { neogma } from '@instance';
 import { inflateObject } from '@helpers/objects.helpers';
 import { v4 as uuid } from 'uuid';
 import { ConsentFlowContractValidator } from '@learncard/types';
+import type { ConsentFlowContract } from '@learncard/types';
 /** Backfills v1 snapshots and legacy consent markers idempotently. */
 export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
     const legacy = await neogma.queryRunner.run(`
@@ -27,9 +28,18 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
                 .filter(([key]) => key.startsWith('contract.'))
                 .map(([key, value]) => [key.slice('contract.'.length), value])
         );
-        const contract = ConsentFlowContractValidator.parse(
-            inflateObject<Record<string, unknown>>(contractProps)
-        );
+        let contract: ConsentFlowContract;
+        try {
+            contract = ConsentFlowContractValidator.parse(
+                inflateObject<Record<string, unknown>>(contractProps)
+            );
+        } catch {
+            // Bad historical input must not prevent healthy requests from starting.
+            console.warn('Skipping malformed legacy ConsentFlow contract', {
+                contractId: String(properties.id),
+            });
+            continue;
+        }
         const autoboosts = record.get('autoboosts') as StoredAutoBoost[];
         const writers = (record.get('writers') as (string | null)[]).filter(
             (writer): writer is string => !!writer
