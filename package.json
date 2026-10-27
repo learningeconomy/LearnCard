@@ -110,7 +110,7 @@
         "react-router-dom": "5.3.3",
         "regenerator-runtime": "0.13.7",
         "tslib": "^2.4.0",
-        "zod": "4.4.3",
+        "zod": "4.6.6",
         "zod-openapi": "5.4.5"
     },
     "overrides": {
@@ -125,7 +125,7 @@
         "typescript": "5.9.3",
         "uint8arrays": "^3.0.0",
         "serverless": "3.40.0",
-        "zod": "4.4.3",
+        "zod": "4.6.6",
         "zod-openapi": "5.4.5",
         "trpc-to-openapi": "3.3.0",
         "@ceramicnetwork/streamid": "2.7.0",

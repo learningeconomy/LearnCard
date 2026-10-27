@@ -24,7 +24,7 @@
         "react-router-dom": "5.3.3",
         "regenerator-runtime": "0.13.7",
         "tslib": "^2.4.0",
-        "zod": "4.4.3",
+        "zod": "4.6.6",
         "zod-openapi": "5.4.5",
       },
       "devDependencies": {
@@ -1613,7 +1613,7 @@
         "express-rate-limit": "^8.0.1",
         "mongodb": "^6.2.0",
         "openai": "^4.55.7",
-        "zod": "4.1.13",
+        "zod": "4.6.6",
       },
       "devDependencies": {
         "@trigger.dev/build": "4.5.9",
@@ -2067,7 +2067,7 @@
     "uint8arrays": "^3.0.0",
     "vitest": "4.1.11",
     "webpack": "5.105.4",
-    "zod": "4.4.3",
+    "zod": "4.6.6",
     "zod-openapi": "5.4.5",
   },
   "packages": {
@@ -9915,7 +9915,7 @@
 
     "zip-stream": ["zip-stream@4.1.1", "", { "dependencies": { "archiver-utils": "^3.0.4", "compress-commons": "^4.1.2", "readable-stream": "^3.6.0" } }, "sha512-9qv4rlDiopXg4E69k+vMHjNN63YFMe9sZMrdlvKnCjlCRWeCBswPPMPUfx+ipsAWq1LXHe70RcbaHdJJpS6hyQ=="],
 
-    "zod": ["zod@4.4.3", "", {}, "sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ=="],
+    "zod": ["zod@4.6.6", "", {}, "sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA=="],
 
     "zod-error": ["zod-error@1.5.0", "", { "dependencies": { "zod": "^3.20.2" } }, "sha512-zzopKZ/skI9iXpqCEPj+iLCKl9b88E43ehcU+sbRoHuwGd9F1IDVGQ70TyO6kmfiRL1g4IXkjsXK+g1gLYl4WQ=="],
 
