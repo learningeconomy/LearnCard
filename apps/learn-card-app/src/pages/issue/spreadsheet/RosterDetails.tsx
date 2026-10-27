@@ -20,6 +20,8 @@ import { humanizeVariable } from '../components/variableSubstitution';
 import { spreadsheetProblem } from './messages';
 import type { ColumnScopes } from './roster';
 import { RosterDateInput } from './RosterDateInput';
+import { RosterTextArea } from './RosterTextArea';
+import { SharedEvidenceSummary } from './SharedEvidenceSummary';
 import type { RowFieldProblems, RowProblem } from './types';
 
 const INPUT =
@@ -31,6 +33,8 @@ export interface RosterDetailsProps {
     variables: string[];
     labels?: Record<string, string>;
     dateVariables?: string[];
+    longTextVariables?: string[];
+    sharedEvidence?: SimpleMediaAttachment[];
     scopes: ColumnScopes;
     shared: Record<string, string>;
     values: Record<string, Record<string, string>>;
@@ -200,6 +204,11 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         showValidation={showValidation}
                         onChange={next => props.onChange(rowId, name, next)}
                     />
+                ) : props.longTextVariables?.includes(name) ? (
+                    <RosterTextArea
+                        {...fieldProps}
+                        onChange={event => props.onChange(rowId, name, event.target.value)}
+                    />
                 ) : (
                     <input
                         {...fieldProps}
@@ -279,7 +288,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
             <div className="space-y-v3-2">
                 <input
                     type="url"
-                    aria-label={m['issueFlow.sheet.design.additionalEvidenceFor']({
+                    aria-label={m['issueFlow.sheet.reviewWorkspace.personalEvidenceFor']({
                         name: recipientDisplayName(recipient),
                     })}
                     placeholder="https://"
@@ -299,6 +308,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                     onClick={() =>
                         newModal(
                             <RowAttachments
+                                name={recipientDisplayName(recipient)}
                                 initial={props.attachments[recipientKey(recipient)] ?? []}
                                 onChange={attachments =>
                                     props.onAttachmentsChange(recipientKey(recipient), attachments)
@@ -310,8 +320,9 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         )
                     }
                 >
-                    {m['issueFlow.media.title']()} (
-                    {props.attachments[recipientKey(recipient)]?.length ?? 0})
+                    {m['issueFlow.sheet.reviewWorkspace.personalAttachments']({
+                        count: props.attachments[recipientKey(recipient)]?.length ?? 0,
+                    })}
                 </button>
             </div>
         );
@@ -489,20 +500,43 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                     </select>
                                     {scopes[name] !== 'perRecipient' && (
                                         <>
-                                            <input
-                                                aria-label={fieldLabel(name)}
-                                                {...errorAttributes(
-                                                    'shared',
-                                                    `shared:${name}`,
-                                                    sharedProblems[name] ?? []
-                                                )}
-                                                className={INPUT}
-                                                value={shared[name] ?? ''}
-                                                disabled={disabled}
-                                                onChange={event =>
-                                                    props.onSharedChange(name, event.target.value)
-                                                }
-                                            />
+                                            {props.longTextVariables?.includes(name) ? (
+                                                <RosterTextArea
+                                                    aria-label={fieldLabel(name)}
+                                                    {...errorAttributes(
+                                                        'shared',
+                                                        `shared:${name}`,
+                                                        sharedProblems[name] ?? []
+                                                    )}
+                                                    className={INPUT}
+                                                    value={shared[name] ?? ''}
+                                                    disabled={disabled}
+                                                    onChange={event =>
+                                                        props.onSharedChange(
+                                                            name,
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                />
+                                            ) : (
+                                                <input
+                                                    aria-label={fieldLabel(name)}
+                                                    {...errorAttributes(
+                                                        'shared',
+                                                        `shared:${name}`,
+                                                        sharedProblems[name] ?? []
+                                                    )}
+                                                    className={INPUT}
+                                                    value={shared[name] ?? ''}
+                                                    disabled={disabled}
+                                                    onChange={event =>
+                                                        props.onSharedChange(
+                                                            name,
+                                                            event.target.value
+                                                        )
+                                                    }
+                                                />
+                                            )}
                                             {errorMessage(
                                                 'shared',
                                                 `shared:${name}`,
@@ -515,6 +549,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                         </div>
                     </details>
                 )}
+                <SharedEvidenceSummary attachments={props.sharedEvidence ?? []} />
                 {!visible.length ? (
                     <div className="rounded-2xl border border-dashed border-grayscale-300 p-10 text-center text-sm text-grayscale-600">
                         {m['issueFlow.sheet.design.noMatches']()}
@@ -534,7 +569,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                     {[
                                         m['issueFlow.sheet.recipient'](),
                                         ...variables.map(fieldLabel),
-                                        m['issueFlow.sheet.design.additionalEvidence'](),
+                                        m['issueFlow.sheet.reviewWorkspace.personalEvidence'](),
                                         '',
                                     ].map((label, index) => (
                                         <th
@@ -563,7 +598,7 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                         {variables.map(name => (
                                             <td
                                                 key={name}
-                                                className="min-w-[220px] border-b border-grayscale-100 px-4 pb-4 pt-11 align-top"
+                                                className={`${props.longTextVariables?.includes(name) ? 'min-w-[320px]' : 'min-w-[220px]'} border-b border-grayscale-100 px-4 pb-4 pt-11 align-top`}
                                             >
                                                 {input(recipient, name)}
                                             </td>
@@ -598,7 +633,9 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
                                     </label>
                                 ))}
                                 <label className="block space-y-v3-1.5 text-xs font-medium text-grayscale-700">
-                                    <span>{m['issueFlow.sheet.design.additionalEvidence']()}</span>
+                                    <span>
+                                        {m['issueFlow.sheet.reviewWorkspace.personalEvidence']()}
+                                    </span>
                                     {evidenceInput(recipient)}
                                 </label>
                                 <div className="flex justify-end">{remove(recipient)}</div>
@@ -612,13 +649,22 @@ export const RosterEditor: React.FC<RosterDetailsProps & { onClose: () => void }
 };
 
 const RowAttachments: React.FC<{
+    name: string;
     initial: SimpleMediaAttachment[];
     onChange: (next: SimpleMediaAttachment[]) => void;
     onClose: () => void;
-}> = ({ initial, onChange, onClose }) => {
+}> = ({ name, initial, onChange, onClose }) => {
     const [attachments, setAttachments] = useState(initial);
     return (
         <div className="font-poppins bg-white p-6 space-y-v3-4">
+            <div>
+                <h3 className="text-xl font-semibold text-grayscale-900">
+                    {m['issueFlow.sheet.reviewWorkspace.evidenceFor']({ name })}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-grayscale-600">
+                    {m['issueFlow.sheet.reviewWorkspace.rowEvidenceHelp']()}
+                </p>
+            </div>
             <MediaAttachments
                 attachments={attachments}
                 onChange={next => {

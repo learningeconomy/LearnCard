@@ -26,6 +26,7 @@ import {
     type SpreadsheetColumn,
 } from './types';
 import { SpreadsheetError } from './parseSpreadsheet';
+import { getOverlongTextVariables } from './longText';
 
 export const suggestMapping = (
     column: SpreadsheetColumn,
@@ -233,6 +234,10 @@ export const credentialRowProblems = (
     reportProblem?: (problem: RowProblem, variable: string) => void
 ): RowProblem[] => {
     const problems = new Set<RowProblem>();
+    for (const variable of getOverlongTextVariables(template, values)) {
+        problems.add('length');
+        reportProblem?.('length', variable);
+    }
     const report = (problem: RowProblem, field: TemplateFieldValue | undefined): void => {
         if (field?.isDynamic && !field.isSystem) reportProblem?.(problem, field.variableName);
     };

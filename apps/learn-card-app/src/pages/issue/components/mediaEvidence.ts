@@ -1,5 +1,8 @@
 import { staticField } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
-import type { EvidenceTemplate } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
+import type {
+    EvidenceTemplate,
+    OBv3CredentialTemplate,
+} from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import type { SimpleMediaAttachment, SimpleMediaType } from './MediaAttachments';
 
 /** Only static entries can be edited by the shared attachment controls. */
@@ -17,6 +20,34 @@ export const evidenceToMediaAttachments = (entries: EvidenceTemplate[]): SimpleM
         url: entry.evidenceUrl!.value,
         title: entry.name?.value ?? '',
     }));
+
+/** Read-only review summary, including standard evidence in custom JSON credentials. */
+export const getSharedEvidenceForReview = (
+    template?: OBv3CredentialTemplate | null
+): SimpleMediaAttachment[] => {
+    if (!template) return [];
+    if (template.schemaType !== 'custom' || !template.rawJson) {
+        return evidenceToMediaAttachments(template.credentialSubject.evidence ?? []);
+    }
+    const raw = template.rawJson.evidence;
+    return (Array.isArray(raw) ? raw : raw ? [raw] : []).flatMap((entry, index) => {
+        const item =
+            entry && typeof entry === 'object' ? (entry as Record<string, unknown>) : undefined;
+        const url = typeof entry === 'string' ? entry : (item?.id ?? item?.url);
+        if (typeof url !== 'string' || !url || url.includes('{{')) return [];
+        const genre = item?.genre;
+        const type: SimpleMediaType =
+            genre === 'photo' || genre === 'document' || genre === 'video' ? genre : 'link';
+        return [
+            {
+                id: `shared-${index}`,
+                type,
+                url,
+                title: typeof item?.name === 'string' ? item.name : url,
+            },
+        ];
+    });
+};
 
 export const mediaToEvidenceTemplates = (
     attachments: SimpleMediaAttachment[],

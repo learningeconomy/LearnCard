@@ -1,12 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
-import { alertCircleOutline, chevronForwardOutline } from 'ionicons/icons';
+import { alertCircleOutline, checkmarkCircleOutline, chevronForwardOutline } from 'ionicons/icons';
 import * as m from '../../../paraglide/messages.js';
 import type { IssuanceRun } from './issuanceTypes';
 import { useSpreadsheetDialog } from './SpreadsheetDialog';
 import { DeliveryStatus } from './DeliveryStatus';
 import { BatchDeliveryAnimation } from './BatchDeliveryAnimation';
 import { canCheckIssuanceStatus } from './issuance';
+
+export interface IssuanceCompletionSummary {
+    sent: number;
+    failed: number;
+    confirming: number;
+    total: number;
+}
 
 export const IssuanceResults: React.FC<{
     run: IssuanceRun;
@@ -17,7 +24,8 @@ export const IssuanceResults: React.FC<{
     onNew: () => void;
     onCheckStatus?: () => void;
     checking?: boolean;
-}> = ({ run, busy, onResume, onRetry, onDownload, onNew, onCheckStatus, checking }) => {
+    onComplete?: (summary: IssuanceCompletionSummary) => void;
+}> = ({ run, busy, onResume, onRetry, onDownload, onNew, onCheckStatus, checking, onComplete }) => {
     const progress = useRef<HTMLElement>(null);
     const revealedRun = useRef<string | undefined>(undefined);
     useEffect(() => {
@@ -38,6 +46,27 @@ export const IssuanceResults: React.FC<{
     const confirming = outcomes.filter(row => row.state === 'confirming').length;
     const waiting = outcomes.filter(row => row.state === 'queued' || row.state === 'ready').length;
     const ready = !run.attempts.length && !outcomes.some(row => row.state !== 'ready');
+    const total = run.draft.recipients.length;
+    const allSent =
+        !busy && total > 0 && sent === total && failed === 0 && confirming === 0 && waiting === 0;
+    const needsAttention = !busy && !ready && (failed > 0 || confirming > 0);
+    const activeRun = useRef<string>();
+    useEffect(() => {
+        if (busy) {
+            activeRun.current = run.id;
+            return;
+        }
+        // Announce the end of an active send, not a restored completed run or a poll.
+        if (
+            activeRun.current !== run.id ||
+            waiting > 0 ||
+            sent + failed + confirming !== total ||
+            !total
+        )
+            return;
+        activeRun.current = undefined;
+        onComplete?.({ sent, failed, confirming, total });
+    }, [busy, run.id, waiting, sent, failed, confirming, total, onComplete]);
     const openStatus = useSpreadsheetDialog(close => <DeliveryStatus run={run} onClose={close} />);
     const openIssues = useSpreadsheetDialog(close => (
         <DeliveryStatus run={run} initialFilter="issues" onClose={close} />
@@ -48,11 +77,24 @@ export const IssuanceResults: React.FC<{
         <section
             ref={progress}
             data-testid="issuance-progress"
-            className="font-poppins bg-white border border-grayscale-200 rounded-[20px] p-4 sm:p-5 space-y-3"
+            className={`font-poppins border rounded-[20px] p-4 sm:p-5 space-y-3 ${allSent ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-grayscale-200'}`}
         >
-            <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
+            {!allSent && !needsAttention && (
+                <BatchDeliveryAnimation active={busy || (!ready && waiting > 0)} />
+            )}
             <div className="flex items-center gap-3">
-                <div className="min-w-0 flex-1" aria-live="polite" role="status">
+                {(allSent || needsAttention) && (
+                    <span
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${allSent ? 'bg-white text-emerald-700' : 'bg-red-50 text-red-600'}`}
+                    >
+                        <IonIcon
+                            icon={allSent ? checkmarkCircleOutline : alertCircleOutline}
+                            className="h-7 w-7"
+                            aria-hidden="true"
+                        />
+                    </span>
+                )}
+                <div className="min-w-0 flex-1" aria-live="polite" aria-atomic="true" role="status">
                     <h3 className="text-base font-semibold text-grayscale-900">
                         {checking
                             ? m['issueFlow.sheet.checking']()
@@ -63,8 +105,29 @@ export const IssuanceResults: React.FC<{
                                 })
                               : ready
                                 ? m['issueFlow.sheet.savedDraft']()
-                                : m['issueFlow.sheet.results']({ sent, failed })}
+                                : allSent
+                                  ? m['issueFlow.sheet.reviewWorkspace.allSent']()
+                                  : needsAttention
+                                    ? m['issueFlow.sheet.reviewWorkspace.attention']()
+                                    : m['issueFlow.sheet.results']({ sent, failed })}
                     </h3>
+                    {(allSent || needsAttention) && (
+                        <p className="mt-1 text-sm leading-relaxed text-grayscale-700">
+                            {m['issueFlow.sheet.reviewWorkspace.completionCount']({ sent, total })}
+                        </p>
+                    )}
+                    {allSent && (
+                        <p className="mt-1 text-xs leading-relaxed text-emerald-800">
+                            {m['issueFlow.sheet.reviewWorkspace.completionHelp']()}
+                        </p>
+                    )}
+                    {needsAttention && (
+                        <p className="mt-1 text-xs leading-relaxed text-grayscale-600">
+                            {confirming > 0
+                                ? m['issueFlow.sheet.reviewWorkspace.confirmationHelp']()
+                                : m['issueFlow.sheet.reviewWorkspace.failureHelp']()}
+                        </p>
+                    )}
                     {confirming > 0 && (
                         <p className="text-sm text-grayscale-700">
                             {m['issueFlow.sheet.confirming']({ count: confirming })}

@@ -52,7 +52,8 @@ import type { CredentialCategoryEnum } from 'learn-card-base';
 
 import { type VariableScope } from './components/DynamicFieldsSection';
 import { applyVariableValues } from './components/variableSubstitution';
-import { attachmentsToEvidence } from './components/mediaEvidence';
+import { attachmentsToEvidence, getSharedEvidenceForReview } from './components/mediaEvidence';
+import { getLongTextVariables } from './spreadsheet/longText';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
@@ -946,6 +947,8 @@ const IssueCredentialPage: React.FC = () => {
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}
                 variables={dynamicVars}
+                longTextVariables={getLongTextVariables(template)}
+                sharedEvidence={getSharedEvidenceForReview(template)}
                 dateVariables={[
                     template?.validFrom,
                     template?.validUntil,
@@ -1067,6 +1070,25 @@ const IssueCredentialPage: React.FC = () => {
                                 void roster.checkStatus();
                             }}
                             checking={roster.checking}
+                            onComplete={({ sent, failed, confirming, total }) => {
+                                presentToast(
+                                    failed || confirming
+                                        ? m['issueFlow.sheet.reviewWorkspace.attentionToast']({
+                                              sent,
+                                              total,
+                                          })
+                                        : m['issueFlow.sheet.reviewWorkspace.successToast']({
+                                              count: sent,
+                                          }),
+                                    {
+                                        type:
+                                            failed || confirming
+                                                ? ToastTypeEnum.Error
+                                                : ToastTypeEnum.Success,
+                                        hasDismissButton: true,
+                                    }
+                                );
+                            }}
                         />
                     </div>
                 )}

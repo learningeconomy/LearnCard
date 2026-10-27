@@ -9641,7 +9641,32 @@
                 "evidence": "رابط الدليل",
                 "awardedDate": "تاريخ المنح"
             },
-            "numberFormatConflict": "يحتوي هذا العمود على تنسيقات أرقام مختلفة. اختر التنسيق الصحيح أو صحح الجدول."
+            "numberFormatConflict": "يحتوي هذا العمود على تنسيقات أرقام مختلفة. اختر التنسيق الصحيح أو صحح الجدول.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} حرف",
+                "expand": "توسيع",
+                "collapse": "طي",
+                "expandField": "توسيع {{field}}",
+                "collapseField": "طي {{field}}",
+                "descriptionTooLong": "استخدم {{limit}} حرفًا كحد أقصى لهذا الحقل.",
+                "sharedEvidence": "أدلة للجميع",
+                "sharedEvidenceHelp": "تُضمّن لكل شخص. عدّل هذه العناصر في قسم الأدلة والوسائط.",
+                "noSharedEvidence": "لم تُضف أدلة للجميع بعد.",
+                "personalEvidenceHelp": "تُرسل الأدلة المضافة في الصف إلى ذلك الشخص فقط.",
+                "personalEvidence": "أدلة إضافية لهذا الشخص",
+                "personalEvidenceFor": "رابط دليل إضافي لـ {{name}}",
+                "personalAttachments": "ملفات وروابط لهذا الشخص ({{count}})",
+                "evidenceFor": "أدلة لـ {{name}}",
+                "rowEvidenceHelp": "لهذا الشخص فقط؛ وتبقى الأدلة المشتركة مضمّنة.",
+                "allSent": "تم إرسال جميع بيانات الاعتماد",
+                "attention": "الإرسال يحتاج إلى مراجعة",
+                "completionCount": "تم إرسال {{sent}} من {{total}} بنجاح.",
+                "completionHelp": "راجع حالة الإرسال أو ابدأ بيانات اعتماد أخرى.",
+                "confirmationHelp": "بعض عمليات الإرسال غير مؤكدة. تحقق من حالتها قبل المحاولة مجددًا.",
+                "failureHelp": "راجع عمليات الإرسال الفاشلة، ثم أعد محاولة تلك العمليات فقط.",
+                "attentionToast": "تم إرسال {{sent}} من {{total}}. راجع عمليات الإرسال المتبقية.",
+                "successToast": "اكتمل الإرسال: تم إرسال {{count}}."
+            }
         },
         "importOptions": {
             "uploadTitle": "رفع ملف",

@@ -9552,7 +9552,32 @@
                 "evidence": "Enlace de evidencia",
                 "awardedDate": "Fecha de concesión"
             },
-            "numberFormatConflict": "Esta columna mezcla formatos numéricos. Elige el formato correcto o corrige la hoja."
+            "numberFormatConflict": "Esta columna mezcla formatos numéricos. Elige el formato correcto o corrige la hoja.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} caracteres",
+                "expand": "Ampliar",
+                "collapse": "Contraer",
+                "expandField": "Ampliar {{field}}",
+                "collapseField": "Contraer {{field}}",
+                "descriptionTooLong": "Usa un máximo de {{limit}} caracteres en este campo.",
+                "sharedEvidence": "Evidencias para todos",
+                "sharedEvidenceHelp": "Se incluyen para todas las personas. Edita estos elementos en Evidencias y archivos.",
+                "noSharedEvidence": "No se han añadido evidencias para todos.",
+                "personalEvidenceHelp": "Las evidencias de una fila solo se envían a esa persona.",
+                "personalEvidence": "Evidencias adicionales para esta persona",
+                "personalEvidenceFor": "Enlace de evidencia adicional para {{name}}",
+                "personalAttachments": "Archivos y enlaces para esta persona ({{count}})",
+                "evidenceFor": "Evidencias para {{name}}",
+                "rowEvidenceHelp": "Solo para esta persona; las evidencias para todos también se incluyen.",
+                "allSent": "Todas las credenciales enviadas",
+                "attention": "El envío requiere atención",
+                "completionCount": "{{sent}} de {{total}} enviados correctamente.",
+                "completionHelp": "Revisa el estado de los envíos o inicia otra credencial.",
+                "confirmationHelp": "Algunos envíos no están confirmados. Comprueba su estado antes de volver a intentarlo.",
+                "failureHelp": "Revisa los envíos fallidos y vuelve a intentar solo esos envíos.",
+                "attentionToast": "{{sent}} de {{total}} enviados. Revisa los envíos restantes.",
+                "successToast": "Envío completado: {{count}} enviados."
+            }
         },
         "importOptions": {
             "uploadTitle": "Subir un archivo",

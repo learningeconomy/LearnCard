@@ -16,6 +16,12 @@ Evidence links and uploaded files become standard Open Badges Evidence entries. 
 
 Open a person’s credential preview to check the mapped values before issuing. Unsigned previews show **Preview** rather than a verification result. Ordinary evidence URLs appear as links; recognized video links keep their video presentation. **Awarded on** uses the mapped awarded date, falling back to the issuance date for credentials without one.
 
+In **Review people**, personalized descriptions use a multiline editor. Expand an individual field for more room; the counter shows its 5,000-character authoring limit. Oversized imported values remain intact and must be corrected before sending or retrying. This is an editor limit, not an Open Badges specification limit.
+
+**Evidence for everyone** shows the shared files and links from the main editor. They remain included for every recipient. **Extra evidence for this person** adds evidence only for that row; it does not replace the shared evidence.
+
+After sending, a green **All credentials sent** summary confirms successful sends. Failed or unconfirmed deliveries instead show **Delivery needs attention** with the appropriate review actions. An active run also produces a completion notification; reopening a previously completed saved run does not announce a new send. Unconfirmed deliveries must be checked before retrying.
+
 ```mermaid
 flowchart LR
     Upload[Upload or paste] --> Review[Review and fix rows]

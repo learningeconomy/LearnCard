@@ -1,5 +1,6 @@
 import * as m from '../../../paraglide/messages.js';
 import type { RowProblem } from './types';
+import { ROSTER_LONG_TEXT_LIMIT } from './longText';
 import { SpreadsheetError } from './parseSpreadsheet';
 import { IssuanceRecoveryError } from './issuanceTypes';
 
@@ -11,6 +12,10 @@ export const spreadsheetProblem = (problem: RowProblem): string => {
             return m['issueFlow.sheet.duplicateEmail']();
         case 'required':
             return m['issueFlow.sheet.required']();
+        case 'length':
+            return m['issueFlow.sheet.reviewWorkspace.descriptionTooLong']({
+                limit: ROSTER_LONG_TEXT_LIMIT,
+            });
         case 'evidence':
             return m['issueFlow.sheet.invalidEvidence']();
         case 'number':
