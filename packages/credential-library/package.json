@@ -40,7 +40,7 @@
         "@learncard/sd-jwt-vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@sd-jwt/sd-jwt-vc": "^0.19.0",
-        "zod": "4.1.13"
+        "zod": "4.6.6"
     },
     "types": "./dist/index.d.ts",
     "sideEffects": false,
