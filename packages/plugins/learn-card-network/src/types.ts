@@ -13,6 +13,7 @@ import type {
     PageCampaignAudienceInput,
     PaginatedCampaigns,
     PaginatedCampaignAudience,
+    PublishCredentialSharePreview,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -155,7 +156,6 @@ import {
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
     GetCredentialRefreshHistoryResult,
-    PublishCredentialSharePreview,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
