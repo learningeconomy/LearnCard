@@ -568,6 +568,32 @@ run "rejects_neither_access_mode" {
   expect_failures = [var.privatelink_allowed_principals]
 }
 
+run "privatelink_accepts_the_named_deploy_user" {
+  command = plan
+
+  # lca-api's endpoint is created by CloudFormation as its IAM deploy user.
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:user/lcn"]
+  }
+
+  assert {
+    condition     = aws_vpc_endpoint_service.enclave_host[0].allowed_principals == toset(["arn:aws:iam::206533012615:user/lcn"])
+    error_message = "PrivateLink mode must allow exactly the named endpoint creator"
+  }
+}
+
+run "rejects_user_wildcards" {
+  command = plan
+
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:user/*"]
+  }
+
+  expect_failures = [var.privatelink_allowed_principals]
+}
+
 run "rejects_wildcard_principals" {
   command = plan
 
