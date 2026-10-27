@@ -81,6 +81,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const [hasLinkGenerationError, setHasLinkGenerationError] = useState(false);
     const [includePublicPreview, setIncludePublicPreview] = useState(false);
     const [publicPreviewReady, setPublicPreviewReady] = useState(false);
+    const previewDisclosureId = React.useId();
 
     const { track } = useAnalytics();
     const qrTrackedRef = React.useRef(false);
@@ -116,8 +117,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
     const publicPreviewImage = [
         getUrlFromImage(cred?.image),
         getUrlFromImage(achievement?.image),
-        credentialImage,
-        credImg,
+        getUrlFromImage(cred?.legacyAssertion?.image),
     ].find(image => {
         if (!image || image.length > 2048) return false;
         try {
@@ -504,7 +504,10 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
 
                         {!isEndorsementRequest && !compact && (
                             <div className="w-full px-4 py-3 font-poppins">
-                                <p className="text-xs text-grayscale-600 leading-relaxed mb-3">
+                                <p
+                                    id={previewDisclosureId}
+                                    className="text-xs text-grayscale-600 leading-relaxed mb-3"
+                                >
                                     {publicPreviewReady && !isLinkLoading
                                         ? m['credentialShare.publicPreviewPersistent']()
                                         : m['credentialShare.publicPreviewPrivate']()}
@@ -586,6 +589,7 @@ const ShareBoostLink: React.FC<ShareBoostLinkProps> = ({
                                         <button
                                             type="button"
                                             disabled
+                                            aria-describedby={previewDisclosureId}
                                             className="mt-3 flex items-center justify-center w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm opacity-40 cursor-not-allowed"
                                         >
                                             {m['credentialShare.postToLinkedIn']()}

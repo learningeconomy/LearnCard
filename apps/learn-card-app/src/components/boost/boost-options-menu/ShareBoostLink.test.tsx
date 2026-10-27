@@ -317,6 +317,9 @@ describe('ShareBoostLink error recovery', () => {
             name: m['credentialShare.postToLinkedIn'](),
         });
         expect(privatePost).toBeDisabled();
+        expect(privatePost).toHaveAccessibleDescription(
+            m['credentialShare.publicPreviewPrivate']()
+        );
         fireEvent.click(privatePost);
         expect(createLink).toHaveBeenCalledOnce();
         expect(screen.getByRole('button', { name: m['credentialShare.copyLink']() })).toBeEnabled();
@@ -478,7 +481,7 @@ describe('ShareBoostLink error recovery', () => {
         {
             image: 'http://cdn.example/credential.png',
             subjectImage: 'https://cdn.example/portrait.png',
-            expected: 'https://cdn.example/portrait.png',
+            expected: undefined,
         },
         {
             image: 'http://cdn.example/credential.png',
@@ -489,17 +492,31 @@ describe('ShareBoostLink error recovery', () => {
         {
             image: `https://cdn.example/${'a'.repeat(2048)}`,
             subjectImage: 'https://cdn.example/portrait.png',
-            expected: 'https://cdn.example/portrait.png',
+            expected: undefined,
         },
         {
             image: 'https://',
             subjectImage: 'https://cdn.example/portrait.png',
-            expected: 'https://cdn.example/portrait.png',
+            expected: undefined,
+        },
+        {
+            subjectImage: 'https://cdn.example/portrait.png',
+            achievementImage: 'https://cdn.example/badge.png',
+            expected: 'https://cdn.example/badge.png',
+        },
+        {
+            subjectImage: 'https://cdn.example/portrait.png',
+            legacyImage: 'https://cdn.example/legacy-badge.png',
+            expected: 'https://cdn.example/legacy-badge.png',
+        },
+        {
+            subjectImage: 'https://cdn.example/portrait.png',
+            expected: undefined,
         },
         { image: undefined, subjectImage: undefined, expected: undefined },
     ])(
         'publishes eligible credential artwork with fallbacks: $expected',
-        async ({ image, subjectImage, achievementImage, expected }) => {
+        async ({ image, subjectImage, achievementImage, legacyImage, expected }) => {
             const privateLink =
                 'https://learncard.app/share-boost?uri=encrypted&seed=secret&pin=1234';
             createLink
@@ -512,6 +529,7 @@ describe('ShareBoostLink error recovery', () => {
                         boost={{
                             ...credential,
                             image,
+                            ...(legacyImage ? { legacyAssertion: { image: legacyImage } } : {}),
                             credentialSubject: {
                                 id: 'did:example:learner',
                                 image: subjectImage,

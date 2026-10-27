@@ -35,10 +35,14 @@ export const buildLinkedInCertificationUrl = ({
     }
     url.searchParams.set('certUrl', shareLink);
     const requestedCertId = credentialId || credentialRecordUri;
-    // LinkedIn limits certId to 80 characters. Preserve the complete identity rather than
-    // truncating it into a potentially colliding value.
-    if (requestedCertId && requestedCertId.length <= 80) {
-        url.searchParams.set('certId', requestedCertId);
+    // LearnCard credential addresses carry a stable UUID independently of the service host.
+    const certId =
+        requestedCertId?.match(
+            /^lc:(?:network|cloud):[^:\s?#]+:credential:([0-9a-fA-F]{8}-(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12})$/
+        )?.[1] ?? requestedCertId;
+    // Keep other complete IDs only when they fit LinkedIn's field; never truncate them.
+    if (certId && certId.length <= 80) {
+        url.searchParams.set('certId', certId);
     }
     return url.toString();
 };

@@ -60,19 +60,49 @@ describe('LinkedIn sharing URLs', () => {
     );
 
     it.each(['credentialId', 'credentialRecordUri'] as const)(
-        'omits overlong IDs instead of truncating them (%s)',
+        'uses the UUID from a recognized LearnCard credential address (%s)',
         source => {
-            const value =
-                'lc:network:staging.network.learncard.com/trpc:credential:b4ea57d7-887a-4f45-b18a-7c7b6b52cede';
-            expect(value.length).toBeGreaterThan(80);
+            const uuid = 'b4ea57d7-887a-4f45-b18a-7c7b6b52cede';
+            const value = `lc:network:staging.network.learncard.com/trpc:credential:${uuid}`;
             const params = { ...input, [source]: value };
             const first = new URL(buildLinkedInCertificationUrl(params));
             const second = new URL(buildLinkedInCertificationUrl(params));
-            expect(first.searchParams.has('certId')).toBe(false);
-            expect(second.searchParams.has('certId')).toBe(false);
+            expect(first.searchParams.get('certId')).toBe(uuid);
+            expect(second.searchParams.get('certId')).toBe(uuid);
             expect(first.searchParams.get('certUrl')).toBe(input.shareLink);
         }
     );
+
+    it.each([
+        'lc:network:example/trpc:credential:',
+        'lc:network:localhost%3A4000/trpc:credential:',
+        'lc:cloud:cloud.example/trpc:credential:',
+    ])('extracts the same credential UUID independently of the host (%s)', prefix => {
+        const uuid = 'b4ea57d7-887a-4f45-b18a-7c7b6b52cede';
+        const first = new URL(
+            buildLinkedInCertificationUrl({ ...input, credentialId: `${prefix}${uuid}` })
+        );
+        const secondUuid = 'c52e3a95-efbc-408a-9d75-e1d4c3c98b76';
+        const second = new URL(
+            buildLinkedInCertificationUrl({ ...input, credentialId: `${prefix}${secondUuid}` })
+        );
+        expect(first.searchParams.get('certId')).toBe(uuid);
+        expect(second.searchParams.get('certId')).toBe(secondUuid);
+    });
+
+    it.each([
+        'lc:unknown:staging.network.learncard.com/trpc:credential:b4ea57d7-887a-4f45-b18a-7c7b6b52cede',
+        'lc:network:staging.network.learncard.com/trpc:boost:b4ea57d7-887a-4f45-b18a-7c7b6b52cede',
+        'lc:network::credential:b4ea57d7-887a-4f45-b18a-7c7b6b52cede',
+        'lc:network:staging.network.learncard.com/trpc:credential:not-a-uuid',
+        'lc:network:staging.network.learncard.com/trpc:credential:b4ea57d7-887a-4f45-b18a-7c7b6b52cede?other=1',
+        'https://example.test/credentials/b4ea57d7-887a-4f45-b18a-7c7b6b52cede',
+    ])('does not extract a UUID from an unrecognized address (%s)', credentialId => {
+        const url = new URL(buildLinkedInCertificationUrl({ ...input, credentialId }));
+        expect(url.searchParams.get('certId')).toBe(
+            credentialId.length <= 80 ? credentialId : null
+        );
+    });
 
     it.each(['credentialId', 'credentialRecordUri'] as const)(
         'omits an 81-character ID while retaining the complete viewing URL (%s)',
