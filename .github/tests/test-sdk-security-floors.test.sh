@@ -16,8 +16,21 @@ import tempfile
 import tomllib
 import unittest
 
+# pip is available in the SDK CI environment; reuse its PEP 508 parser without
+# requiring a network install just to run this offline regression suite.
+from pip._vendor.packaging.requirements import Requirement
+from pip._vendor.packaging.specifiers import SpecifierSet
+
 ROOT = pathlib.Path(sys.argv.pop())
 SCRIPT = ROOT / "packages/open-api-lcn-clients/apply-security-floors.sh"
+FILELOCK_REQUIREMENTS = [
+    'filelock>=4.2.1; python_version >= "3.11"',
+    'filelock==3.20.3; python_version < "3.11"',
+]
+FILELOCK_POETRY = [
+    {"version": ">= 4.2.1", "python": ">=3.11"},
+    {"version": "== 3.20.3", "python": "<3.11"},
+]
 
 
 class SecurityFloorsTest(unittest.TestCase):
@@ -38,7 +51,7 @@ class SecurityFloorsTest(unittest.TestCase):
 dev = [
   "pytest>={pytest_version}",
   "pytest-cov>=2.8.1",
-  "virtualenv>=21.14.9",
+  "virtualenv>=21.14.13",
   "tox>=3.9.0",
   "mypy>=1.5",
 ]
@@ -47,7 +60,7 @@ dev = [
             dev = f'''[tool.poetry.group.dev.dependencies]
 pytest = ">= {pytest_version}"
 pytest-cov = ">= 2.8.1"
-virtualenv = ">= 21.14.9"
+virtualenv = ">= 21.14.13"
 tox = ">= 3.9.0"
 mypy = ">= 1.5"
 '''
@@ -59,7 +72,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
 ''' + dev,
             "setup.py": 'PYTHON_REQUIRES = ">= 3.9"\nREQUIRES = ["urllib3 >= 2.1.0, < 3.0.0"]\n',
             "requirements.txt": "urllib3 >= 2.1.0, < 3.0.0\n",
-            "test-requirements.txt": "pytest >= 7.2.1\npytest-cov >= 2.8.1\nvirtualenv >= 21.14.9\ntox >= 3.9.0\n",
+            "test-requirements.txt": "pytest >= 7.2.1\npytest-cov >= 2.8.1\nvirtualenv >= 21.14.13\ntox >= 3.9.0\n",
             ".travis.yml": 'python:\n  - "3.9"\n  - "3.10"\n',
             ".gitlab-ci.yml": "pytest-3.9:\n  image: python:3.9-alpine\npytest-3.10:\n  image: python:3.10-alpine\n",
         }
@@ -84,14 +97,16 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     data = tomllib.loads((self.client / "pyproject.toml").read_text())
                     if modern:
                         deps = data["dependency-groups"]["dev"]
-                        self.assertEqual(deps.count("filelock>=4.2.1"), 1)
-                        expected = ["pytest>=9.0.3", "virtualenv>=21.14.9", "tox>=4.11.0", "mypy>=1.5"]
+                        for requirement in FILELOCK_REQUIREMENTS:
+                            self.assertEqual(deps.count(requirement), 1)
+                        expected = ["pytest>=9.0.3", "virtualenv>=21.14.13", "tox>=4.11.0", "mypy>=1.5"]
                         for requirement in expected:
                             self.assertIn(requirement, deps)
                         self.assertNotIn("tox>=3.9.0", deps)
                     else:
                         deps = data["tool"]["poetry"]["group"]["dev"]["dependencies"]
-                        for name, version in {"pytest": "9.0.3", "virtualenv": "21.14.9", "tox": "4.11.0", "filelock": "4.2.1", "mypy": "1.5"}.items():
+                        self.assertEqual(deps["filelock"], FILELOCK_POETRY)
+                        for name, version in {"pytest": "9.0.3", "virtualenv": "21.14.13", "tox": "4.11.0", "mypy": "1.5"}.items():
                             self.assertEqual(deps[name], f">= {version}")
                     self.assertEqual(data["project"]["requires-python"], ">=3.10")
                     self.assertEqual(data["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
@@ -101,7 +116,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     self.assertEqual(setup["REQUIRES"], ["urllib3 >= 2.7.0, < 3.0.0"])
                     self.assertEqual((self.client / "requirements.txt").read_text(), "urllib3 >= 2.7.0, < 3.0.0\n")
                     requirements = (self.client / "test-requirements.txt").read_text().splitlines()
-                    self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "virtualenv >= 21.14.9", "tox >= 4.11.0", "filelock >= 4.2.1"])
+                    self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "virtualenv >= 21.14.13", "tox >= 4.11.0", 'filelock >= 4.2.1; python_version >= "3.11"', 'filelock == 3.20.3; python_version < "3.11"'])
                     self.assertEqual((self.client / ".travis.yml").read_text(), 'python:\n  - "3.10"\n')
                     self.assertEqual((self.client / ".gitlab-ci.yml").read_text(), "pytest-3.10:\n  image: python:3.10-alpine\n")
                     before = {str(p.relative_to(self.client)): p.read_bytes() for p in self.client.rglob("*") if p.is_file()}
@@ -125,7 +140,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     elif dependency == "tox":
                         text = text.replace("3.9.0", "3.10.0")
                     else:
-                        text = text.replace("21.14.9", "20.0.0")
+                        text = text.replace("21.14.13", "20.0.0")
                     path.write_text(text)
                     result = self.run_script()
                     self.assertNotEqual(result.returncode, 0)
@@ -151,6 +166,86 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
         self.fixture(True)
         (self.client / "setup.py").unlink()
         self.assertNotEqual(self.run_script().returncode, 0)
+
+    def assert_resolvable_floors(self, requirements, python_version):
+        # Frozen PyPI Requires-Python metadata for known-safe release witnesses.
+        # 4.2.1 cannot run on 3.10; 3.20.3 predates all three affected ranges.
+        releases = {
+            "filelock": {"3.20.3": ">=3.10", "4.2.1": ">=3.11"},
+            "virtualenv": {"21.14.13": ">=3.9"},
+        }
+        selected = {name: [] for name in releases}
+        environment = {"python_version": python_version, "python_full_version": python_version + ".0"}
+        for line in requirements:
+            requirement = Requirement(line)
+            if requirement.name in selected and (
+                requirement.marker is None or requirement.marker.evaluate(environment)
+            ):
+                selected[requirement.name].append(requirement)
+        for name, requirements in selected.items():
+            self.assertEqual(len(requirements), 1, (python_version, name, requirements))
+            requirement = requirements[0]
+            candidates = [
+                version for version, requires_python in releases[name].items()
+                if version in requirement.specifier
+                and python_version in SpecifierSet(requires_python)
+            ]
+            self.assertTrue(candidates, (python_version, str(requirement)))
+            if name == "filelock":
+                self.assertEqual(candidates, ["3.20.3" if python_version == "3.10" else "4.2.1"])
+                for unsafe in ("3.20.4", "3.22.0", "4.2.0"):
+                    self.assertNotIn(unsafe, requirement.specifier)
+            else:
+                self.assertNotIn("21.14.12", requirement.specifier)
+
+    def assert_client_resolvable(self, client):
+        data = tomllib.loads((client / "pyproject.toml").read_text())
+        if "dependency-groups" in data:
+            dev = data["dependency-groups"]["dev"]
+        else:
+            dev = []
+            for name, constraint in data["tool"]["poetry"]["group"]["dev"]["dependencies"].items():
+                if isinstance(constraint, str):
+                    dev.append(name + constraint)
+                else:
+                    for entry in constraint:
+                        # Poetry's multiple constraints use Python specifiers,
+                        # rather than PEP 508 marker strings.
+                        operator = ">=" if entry["python"].startswith(">=") else "<"
+                        version = entry["python"][len(operator):]
+                        dev.append(f'{name}{entry["version"]}; python_version {operator} "{version}"')
+        test = (client / "test-requirements.txt").read_text().splitlines()
+        for python_version in ("3.10", "3.11", "3.12"):
+            for source, requirements in (("dev", dev), ("test", test)):
+                with self.subTest(client=str(client), python=python_version, source=source):
+                    self.assert_resolvable_floors(requirements, python_version)
+
+    def test_minimum_python_and_newer_resolvability(self):
+        self.assert_client_resolvable(SCRIPT.parent / "python-client")
+        for modern in (False, True):
+            self.fixture(modern)
+            result = self.run_script()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assert_client_resolvable(self.client)
+
+    def test_resolvability_check_catches_unconditional_filelock(self):
+        with self.assertRaises(AssertionError):
+            self.assert_resolvable_floors(["filelock>=4.2.1", "virtualenv>=21.14.13"], "3.10")
+
+    def test_incomplete_filelock_markers_are_rejected(self):
+        for modern in (False, True):
+            for filename in ("pyproject.toml", "test-requirements.txt"):
+                for version in ("3.20.3", "4.2.1"):
+                    with self.subTest(modern=modern, filename=filename, version=version):
+                        self.fixture(modern)
+                        self.assertEqual(self.run_script().returncode, 0)
+                        path = self.client / filename
+                        # Preserve an existing entry while corrupting either arm;
+                        # the insertion guard must not hide the missing safe pin.
+                        path.write_text(path.read_text().replace(version, "3.0.0"))
+                        result = self.run_script()
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn("FAIL: 'filelock pin'", result.stderr)
 
     def test_generator_is_pinned(self):
         self.fixture(True)
@@ -216,7 +311,8 @@ elif "/workspace/node_modules/prettier/bin/prettier.cjs" not in args:
             metadata = tomllib.loads((output / "pyproject.toml").read_text())
             self.assertEqual(metadata["project"]["requires-python"], ">=3.10")
             self.assertEqual(metadata["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
-            self.assertIn("filelock>=4.2.1", metadata["dependency-groups"]["dev"])
+            for requirement in FILELOCK_REQUIREMENTS:
+                self.assertIn(requirement, metadata["dependency-groups"]["dev"])
             self.assertFalse((output / ".github").exists())
 
 
