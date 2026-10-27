@@ -38,7 +38,7 @@ class SecurityFloorsTest(unittest.TestCase):
 dev = [
   "pytest>={pytest_version}",
   "pytest-cov>=2.8.1",
-  "virtualenv>=21.14.7",
+  "virtualenv>=21.14.9",
   "tox>=3.9.0",
   "mypy>=1.5",
 ]
@@ -47,7 +47,7 @@ dev = [
             dev = f'''[tool.poetry.group.dev.dependencies]
 pytest = ">= {pytest_version}"
 pytest-cov = ">= 2.8.1"
-virtualenv = ">= 21.14.7"
+virtualenv = ">= 21.14.9"
 tox = ">= 3.9.0"
 mypy = ">= 1.5"
 '''
@@ -59,7 +59,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
 ''' + dev,
             "setup.py": 'PYTHON_REQUIRES = ">= 3.9"\nREQUIRES = ["urllib3 >= 2.1.0, < 3.0.0"]\n',
             "requirements.txt": "urllib3 >= 2.1.0, < 3.0.0\n",
-            "test-requirements.txt": "pytest >= 7.2.1\npytest-cov >= 2.8.1\nvirtualenv >= 21.14.7\ntox >= 3.9.0\n",
+            "test-requirements.txt": "pytest >= 7.2.1\npytest-cov >= 2.8.1\nvirtualenv >= 21.14.9\ntox >= 3.9.0\n",
             ".travis.yml": 'python:\n  - "3.9"\n  - "3.10"\n',
             ".gitlab-ci.yml": "pytest-3.9:\n  image: python:3.9-alpine\npytest-3.10:\n  image: python:3.10-alpine\n",
         }
@@ -84,14 +84,14 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     data = tomllib.loads((self.client / "pyproject.toml").read_text())
                     if modern:
                         deps = data["dependency-groups"]["dev"]
-                        self.assertEqual(deps.count("filelock>=3.20.3"), 1)
-                        expected = ["pytest>=9.0.3", "virtualenv>=21.14.7", "tox>=4.11.0", "mypy>=1.5"]
+                        self.assertEqual(deps.count("filelock>=4.2.1"), 1)
+                        expected = ["pytest>=9.0.3", "virtualenv>=21.14.9", "tox>=4.11.0", "mypy>=1.5"]
                         for requirement in expected:
                             self.assertIn(requirement, deps)
                         self.assertNotIn("tox>=3.9.0", deps)
                     else:
                         deps = data["tool"]["poetry"]["group"]["dev"]["dependencies"]
-                        for name, version in {"pytest": "9.0.3", "virtualenv": "21.14.7", "tox": "4.11.0", "filelock": "3.20.3", "mypy": "1.5"}.items():
+                        for name, version in {"pytest": "9.0.3", "virtualenv": "21.14.9", "tox": "4.11.0", "filelock": "4.2.1", "mypy": "1.5"}.items():
                             self.assertEqual(deps[name], f">= {version}")
                     self.assertEqual(data["project"]["requires-python"], ">=3.10")
                     self.assertEqual(data["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
@@ -101,7 +101,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     self.assertEqual(setup["REQUIRES"], ["urllib3 >= 2.7.0, < 3.0.0"])
                     self.assertEqual((self.client / "requirements.txt").read_text(), "urllib3 >= 2.7.0, < 3.0.0\n")
                     requirements = (self.client / "test-requirements.txt").read_text().splitlines()
-                    self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "virtualenv >= 21.14.7", "tox >= 4.11.0", "filelock >= 3.20.3"])
+                    self.assertEqual(requirements, ["pytest >= 9.0.3", "pytest-cov >= 2.8.1", "virtualenv >= 21.14.9", "tox >= 4.11.0", "filelock >= 4.2.1"])
                     self.assertEqual((self.client / ".travis.yml").read_text(), 'python:\n  - "3.10"\n')
                     self.assertEqual((self.client / ".gitlab-ci.yml").read_text(), "pytest-3.10:\n  image: python:3.10-alpine\n")
                     before = {str(p.relative_to(self.client)): p.read_bytes() for p in self.client.rglob("*") if p.is_file()}
@@ -125,7 +125,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     elif dependency == "tox":
                         text = text.replace("3.9.0", "3.10.0")
                     else:
-                        text = text.replace("21.14.7", "20.0.0")
+                        text = text.replace("21.14.9", "20.0.0")
                     path.write_text(text)
                     result = self.run_script()
                     self.assertNotEqual(result.returncode, 0)
@@ -216,7 +216,7 @@ elif "/workspace/node_modules/prettier/bin/prettier.cjs" not in args:
             metadata = tomllib.loads((output / "pyproject.toml").read_text())
             self.assertEqual(metadata["project"]["requires-python"], ">=3.10")
             self.assertEqual(metadata["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
-            self.assertIn("filelock>=3.20.3", metadata["dependency-groups"]["dev"])
+            self.assertIn("filelock>=4.2.1", metadata["dependency-groups"]["dev"])
             self.assertFalse((output / ".github").exists())
 
 
