@@ -39,7 +39,7 @@ AI Passport moved out of `WeLibraryOS/AI-Passport` and into LearnCard as a file 
 ## Leftovers for Taylor
 
 - **Qdrant key rotation.** A Qdrant key lives in AIP's Git history. None of that history was imported, but rotating the key is still an ops item.
-- **npm `@learncard/init` pin.** The backend pins npm `@learncard/init@2.4.16`. Bun links its `core`/`helpers`/`types`/`vc-plugin`/`didkit-plugin` dependencies to the workspace packages whenever the versions match, so the pin doesn't fully freeze verifier provenance.
+- **`@learncard/init` / `didkit-plugin` now come from the workspace.** AIP pinned npm `@learncard/init@2.4.16` and `@learncard/didkit-plugin@1.10.0`. In the monorepo, Bun linked that npm tree's inner `@learncard/*` deps to the workspace packages anyway, and a clean `bun install --frozen-lockfile` failed with `EEXIST` on those links. So the backend uses `workspace:*` like the other LearnCard services, and verifier provenance now records the workspace versions (`@learncard/init-2.5.5;@learncard/didkit-plugin-1.10.5` today, instead of `2.4.16;1.10.0`). Stored records keep their old provenance string, and the real signing/verification tests pass on the workspace build.
 - **ChatGPT-flavored copy.** Some UI copy in `apps/ai-passport` still says ChatGPT, because that was the default branding. Renaming it is a product call.
 - **Cookie CSRF/Origin hardening.** This Phase A item is still open.
 - **Fly cutover.** The Dockerfiles now use Bun `1.4.2` and the full-workspace install, but the Fly apps still build from the AIP repo. Moving deploys here is a follow-up and nothing in this PR deploys.

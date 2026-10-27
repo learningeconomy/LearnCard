@@ -4,9 +4,12 @@ import { createHash } from 'crypto';
 import { LearnCardTimeoutError } from '../learncard/errors';
 import { VCValidator, VerificationCheckValidator } from '@learncard/types';
 import type { CredentialVerificationMetadata, VC } from '@learncard/types';
-import { dependencies } from '../../package.json';
+// Both libraries are workspace packages in the monorepo, so provenance records the versions
+// actually built from this tree rather than the `workspace:*` range in our manifest.
+import { version as learnCardInitVersion } from '../../../../packages/learn-card-init/package.json';
+import { version as didkitPluginVersion } from '../../../../packages/plugins/didkit/package.json';
 
-export const CREDENTIAL_VERIFIER_VERSION = `@learncard/init-${dependencies['@learncard/init']};@learncard/didkit-plugin-${dependencies['@learncard/didkit-plugin']}`;
+export const CREDENTIAL_VERIFIER_VERSION = `@learncard/init-${learnCardInitVersion};@learncard/didkit-plugin-${didkitPluginVersion}`;
 
 export type CredentialConsentReceipt = CredentialVerificationMetadata['consent'];
 

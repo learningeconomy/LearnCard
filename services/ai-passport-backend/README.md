@@ -259,17 +259,18 @@ test:privacy-runtime` exercises actual offline extraction/OCR, not AWS detection
 See [managed privacy data handling](../../docs/managed-privacy.md) for trust,
 cost, language, staging validation and rollout requirements.
 
-The SDK, DIDKit WASM, and shared upstream credential types must stay aligned:
-`@learncard/init` 2.4.16, `@learncard/didkit-plugin` 1.10.0, and upstream
-`@learncard/types` 5.20.0. DIDKit 1.7.5 could not parse current Data Integrity
+The SDK, DIDKit WASM, and shared credential types come from the LearnCard
+workspace (`@learncard/init`, `@learncard/didkit-plugin`, and `@learncard/types`
+are all `workspace:*`). Before the monorepo move they were pinned to npm
+`@learncard/init` 2.4.16 and `@learncard/didkit-plugin` 1.10.0. DIDKit 1.7.5 could not parse current Data Integrity
 proofs; the previously pinned 1.9.12 WASM also failed the fresh JWE ephemeral-key
 regression. The shipped 1.10.0 artifact passes real signing, verification,
 recipient isolation, and per-recipient/per-ciphertext ephemeral-key checks in
 `src/credentials/verification.test.ts`. Updating the library does not repair
 previously published ciphertexts. Generated Boost credentials include the
 published Boost context so strict signing does not discard undefined JSON-LD terms.
-Persisted verifier provenance derives both SDK and DIDKit versions from the
-package manifest.
+Persisted verifier provenance records the SDK and DIDKit versions from the
+workspace package manifests.
 
 AI insight input selection and background ingestion exclude whole credentials
 that cannot be fully verified or bound to the current subject. This includes

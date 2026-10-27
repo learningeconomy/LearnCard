@@ -34,8 +34,8 @@
         "tailwindcss": "^4.0.6"
     },
     "devDependencies": {
-        "@learncard/didkit-plugin": "1.10.0",
-        "@learncard/init": "2.4.16",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
         "@playwright/test": "^1.51.1"
     }
 }

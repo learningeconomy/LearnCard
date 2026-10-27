@@ -94,8 +94,8 @@
         "tailwindcss": "^4.0.6",
       },
       "devDependencies": {
-        "@learncard/didkit-plugin": "1.10.0",
-        "@learncard/init": "2.4.16",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
         "@playwright/test": "^1.51.1",
       },
     },
@@ -1601,8 +1601,8 @@
         "@aws/bedrock-token-generator": "1.1.0",
         "@googleapis/youtube": "^31.0.0",
         "@launchdarkly/node-server-sdk": "9.14.1",
-        "@learncard/didkit-plugin": "1.10.0",
-        "@learncard/init": "2.4.16",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.20.2",
         "@qdrant/js-client-rest": "1.17.0",
@@ -3615,14 +3615,6 @@
     "@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
 
     "@learncard/didkit-plugin-node": ["@learncard/didkit-plugin-node@workspace:packages/plugins/didkit-plugin-node"],
-
-    "@learncard/didkit-plugin-node-darwin-arm64": ["@learncard/didkit-plugin-node-darwin-arm64@0.3.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-AfIwRIho5vXbBYAibXmgB5aUMSeupQZwEzlDNdSgNn9VujqHYpkmxWL19W33Q6YaiVY6/N/OYg6HUwsXD2YgWg=="],
-
-    "@learncard/didkit-plugin-node-darwin-x64": ["@learncard/didkit-plugin-node-darwin-x64@0.3.0", "", { "os": "darwin", "cpu": "x64" }, "sha512-UQeyaGO8fQj79oWiSs8XyDoUAZY2TTD1DsoKFs1J702J1DLv5OcVniJAZYTHNct62CqZ3kuu5RzZhAPCYZnKew=="],
-
-    "@learncard/didkit-plugin-node-linux-arm64-gnu": ["@learncard/didkit-plugin-node-linux-arm64-gnu@0.3.0", "", { "os": "linux", "cpu": "arm64" }, "sha512-T2goi8Qm4r/zk+m9SeiTI6sRvx+/vmjVEW2C7dfNdk9YOAKSNV5iVD6btqt03Zlbe/MBoXIMqo6Mn+0Tn9ekCw=="],
-
-    "@learncard/didkit-plugin-node-linux-x64-gnu": ["@learncard/didkit-plugin-node-linux-x64-gnu@0.3.0", "", { "os": "linux", "cpu": "x64" }, "sha512-abQOKE8aXp9MLEmsv5fEXlnfr/R4ES7uTt77iaJlkzpue0x89poIp+Z9b9ikoT55wcxMyxwEPolTESRxzGeBrA=="],
 
     "@learncard/dynamic-loader-plugin": ["@learncard/dynamic-loader-plugin@workspace:packages/plugins/dynamic-loader"],
 
@@ -11776,10 +11768,6 @@
 
     "@xyflow/react/zustand": ["zustand@4.5.7", "", { "dependencies": { "use-sync-external-store": "^1.2.2" }, "peerDependencies": { "@types/react": ">=16.8", "immer": ">=9.0.6", "react": ">=16.8" }, "optionalPeers": ["@types/react", "immer", "react"] }, "sha512-CHOUy7mu3lbD6o6LJLfllpjkzhHXSBlX8B9+qPddUsIfeF5S/UZ5q0kmCsnRqT1UHFQZchNFDDzMbQsuesHWlw=="],
 
-    "ai-passport/@learncard/didkit-plugin": ["@learncard/didkit-plugin@1.10.0", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-ORyi5v1qNOa4Gvjh7UGB23+/zNUOfIKNdiUXaRKbTZUTU3j+aPUxVNMVxT+hAVzn71cuQt65vVapuPJ1QRbOMw=="],
-
-    "ai-passport/@learncard/init": ["@learncard/init@2.4.16", "", { "dependencies": { "@learncard/chapi-plugin": "1.1.35", "@learncard/core": "9.4.35", "@learncard/crypto-plugin": "1.1.35", "@learncard/did-web-plugin": "1.1.35", "@learncard/didkey-plugin": "1.1.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/dynamic-loader-plugin": "1.1.35", "@learncard/encryption-plugin": "1.1.35", "@learncard/ethereum-plugin": "1.1.36", "@learncard/expiration-plugin": "1.2.35", "@learncard/helpers": "1.5.1", "@learncard/learn-card-plugin": "1.2.35", "@learncard/learn-cloud-plugin": "2.3.41", "@learncard/network-plugin": "^2.14.1", "@learncard/openid4vc-plugin": "0.3.8", "@learncard/sd-jwt-vc-plugin": "0.2.13", "@learncard/types": "5.20.0", "@learncard/vc-api-plugin": "1.1.35", "@learncard/vc-plugin": "1.6.1", "@learncard/vc-templates-plugin": "1.1.35", "@learncard/vpqr-plugin": "1.1.35" }, "optionalDependencies": { "@learncard/didkit-plugin-node": "0.3.0" } }, "sha512-zl3GQv2h6Mdt82LYWZ3tBX6UAZgjZD7fcaBGjq7RdBhQ8S/KmRE59PoPu7yxl7yX8flQP6UdV30RRleDICLzwQ=="],
-
     "ai-passport/@types/react": ["@types/react@19.3.0", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg=="],
 
     "ai-passport/@types/react-dom": ["@types/react-dom@19.3.0", "", { "peerDependencies": { "@types/react": "^19.3.0" } }, "sha512-ZI7bU42mZXXKHn/qNLEw2IrbiINU7X5+vfgdixBHkCNpYWXjKgfQ/P+uyGb5CjOLB9UcnTeg3rylQtV2hym44Q=="],
@@ -11791,10 +11779,6 @@
     "ai-passport/react-dom": ["react-dom@19.2.4", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ=="],
 
     "ai-passport-backend/@launchdarkly/node-server-sdk": ["@launchdarkly/node-server-sdk@9.14.1", "", { "dependencies": { "@launchdarkly/js-server-sdk-common": "2.23.0", "https-proxy-agent": "^7.0.6", "launchdarkly-eventsource": "2.3.0" } }, "sha512-kZE3N47JlgLLkgDf/2LQZ7Zv0agDPu/ibpmq3bw9NjEW0s+411lp7VxzcKxEKtEEU2gTJ8jV55vN0fBAsEaHUg=="],
-
-    "ai-passport-backend/@learncard/didkit-plugin": ["@learncard/didkit-plugin@1.10.0", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-ORyi5v1qNOa4Gvjh7UGB23+/zNUOfIKNdiUXaRKbTZUTU3j+aPUxVNMVxT+hAVzn71cuQt65vVapuPJ1QRbOMw=="],
-
-    "ai-passport-backend/@learncard/init": ["@learncard/init@2.4.16", "", { "dependencies": { "@learncard/chapi-plugin": "1.1.35", "@learncard/core": "9.4.35", "@learncard/crypto-plugin": "1.1.35", "@learncard/did-web-plugin": "1.1.35", "@learncard/didkey-plugin": "1.1.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/dynamic-loader-plugin": "1.1.35", "@learncard/encryption-plugin": "1.1.35", "@learncard/ethereum-plugin": "1.1.36", "@learncard/expiration-plugin": "1.2.35", "@learncard/helpers": "1.5.1", "@learncard/learn-card-plugin": "1.2.35", "@learncard/learn-cloud-plugin": "2.3.41", "@learncard/network-plugin": "^2.14.1", "@learncard/openid4vc-plugin": "0.3.8", "@learncard/sd-jwt-vc-plugin": "0.2.13", "@learncard/types": "5.20.0", "@learncard/vc-api-plugin": "1.1.35", "@learncard/vc-plugin": "1.6.1", "@learncard/vc-templates-plugin": "1.1.35", "@learncard/vpqr-plugin": "1.1.35" }, "optionalDependencies": { "@learncard/didkit-plugin-node": "0.3.0" } }, "sha512-zl3GQv2h6Mdt82LYWZ3tBX6UAZgjZD7fcaBGjq7RdBhQ8S/KmRE59PoPu7yxl7yX8flQP6UdV30RRleDICLzwQ=="],
 
     "ai-passport-backend/@sentry/node": ["@sentry/node@9.47.2", "", { "dependencies": { "@opentelemetry/api": "^1.9.0", "@opentelemetry/context-async-hooks": "^1.30.1", "@opentelemetry/core": "^1.30.1", "@opentelemetry/instrumentation": "^0.57.2", "@opentelemetry/instrumentation-amqplib": "^0.46.1", "@opentelemetry/instrumentation-connect": "0.43.1", "@opentelemetry/instrumentation-dataloader": "0.16.1", "@opentelemetry/instrumentation-express": "0.47.1", "@opentelemetry/instrumentation-fs": "0.19.1", "@opentelemetry/instrumentation-generic-pool": "0.43.1", "@opentelemetry/instrumentation-graphql": "0.47.1", "@opentelemetry/instrumentation-hapi": "0.45.2", "@opentelemetry/instrumentation-http": "0.57.2", "@opentelemetry/instrumentation-ioredis": "0.47.1", "@opentelemetry/instrumentation-kafkajs": "0.7.1", "@opentelemetry/instrumentation-knex": "0.44.1", "@opentelemetry/instrumentation-koa": "0.47.1", "@opentelemetry/instrumentation-lru-memoizer": "0.44.1", "@opentelemetry/instrumentation-mongodb": "0.52.0", "@opentelemetry/instrumentation-mongoose": "0.46.1", "@opentelemetry/instrumentation-mysql": "0.45.1", "@opentelemetry/instrumentation-mysql2": "0.45.2", "@opentelemetry/instrumentation-pg": "0.51.1", "@opentelemetry/instrumentation-redis-4": "0.46.1", "@opentelemetry/instrumentation-tedious": "0.18.1", "@opentelemetry/instrumentation-undici": "0.10.1", "@opentelemetry/resources": "^1.30.1", "@opentelemetry/sdk-trace-base": "^1.30.1", "@opentelemetry/semantic-conventions": "^1.34.0", "@prisma/instrumentation": "6.11.1", "@sentry/core": "9.47.2", "@sentry/node-core": "9.47.2", "@sentry/opentelemetry": "9.47.2", "import-in-the-middle": "^1.14.2", "minimatch": "^9.0.0" } }, "sha512-faHzAQh6Tp4L4u/fvY0gMRIdA5OQdWciiIuk/urTRXKox2DwIO7OeutFZE48Be4aXdnRiMSBcpHEp7GygAIwqg=="],
 
@@ -15030,52 +15014,6 @@
 
     "ai-passport-backend/@launchdarkly/node-server-sdk/launchdarkly-eventsource": ["launchdarkly-eventsource@2.3.0", "", {}, "sha512-q0uiciHQVFJLhVwE0/mJzBCiuw6mkBv9kB414IlHTZE1VEoU8pkwt9P2n6w6vyT7rDlA6xZm2LSTjdMBigqbjQ=="],
 
-    "ai-passport-backend/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@9.4.35", "", { "dependencies": { "@learncard/helpers": "1.5.1", "abort-controller": "^3.0.0", "core-js": "^3.25.5", "isomorphic-webcrypto": "^2.3.8" } }, "sha512-cZhBu/AVMATs+pAGVDSoHDARzXeuU/L4sOFNqfN0tlCNUyxe00Z02XIVjbvEpiP7sWLDleQfqKcdjdjnemB1Lw=="],
-
-    "ai-passport-backend/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@5.20.0", "", { "dependencies": { "zod": "^4.1.13" } }, "sha512-bMVbCvKi1GMPVKHR4KlXB2nNgGsEii42ESiMT/BoL8xhPJj5L8Hr6A8UPf/ogOcQD9VeLlcqNtZr1A5oxxbmNA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin": ["@learncard/chapi-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "credential-handler-polyfill": "^3.2.1", "web-credential-handler": "^2.0.0" } }, "sha512-Th84pS2vqGoESYow+hP6X4toOspQjfKV37jUeGqAcqL+CElWNpnXrH2D/UXKxJ6RUhzRkGgIzwHI6PSuLRi6Fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/core": ["@learncard/core@9.4.35", "", { "dependencies": { "@learncard/helpers": "1.5.1", "abort-controller": "^3.0.0", "core-js": "^3.25.5", "isomorphic-webcrypto": "^2.3.8" } }, "sha512-cZhBu/AVMATs+pAGVDSoHDARzXeuU/L4sOFNqfN0tlCNUyxe00Z02XIVjbvEpiP7sWLDleQfqKcdjdjnemB1Lw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/crypto-plugin": ["@learncard/crypto-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "isomorphic-webcrypto": "^2.3.8" } }, "sha512-Bo+VX4igN8w/0Vdf2bwNbaIyRDFgrDpwgfPzLCT7dr6V9mAroCTTblLozbui6K5ZrIwOgMmX+No4beQWWtq2xQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/did-web-plugin": ["@learncard/did-web-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35" } }, "sha512-1lHEkteP/QhZfDwqSYxb7XHsqTGXmiUAEoQDfd/uwRhAAjF+qSRm7vvtHVtBy/KZKTmsxHqw6pCeFIMwoszKGQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin": ["@learncard/didkey-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/helpers": "^1.5.1", "hex-lite": "^1.5.0" } }, "sha512-ppPbw4JYnysupT7ESEPsexqTp/5gMvG/gRmHvl2nZ6Z162rre2itexQ6FZ4EqYB+MNJyLVYPFVp7z/7mkCm4ug=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkit-plugin-node": ["@learncard/didkit-plugin-node@0.3.0", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/types": "5.20.0" }, "optionalDependencies": { "@learncard/didkit-plugin-node-darwin-arm64": "0.3.0", "@learncard/didkit-plugin-node-darwin-x64": "0.3.0", "@learncard/didkit-plugin-node-linux-arm64-gnu": "0.3.0", "@learncard/didkit-plugin-node-linux-x64-gnu": "0.3.0" } }, "sha512-mLChEcl3SsRiv4NdROxL6fk6caax43sSaNHhaxgXhOLHtx5QaJZXPy617yenpml2hdgWxCByi5hClP0tAe6NrA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/dynamic-loader-plugin": ["@learncard/dynamic-loader-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35" } }, "sha512-1f5nHkNwO3+QYHV5/iBuK2sPQm4vnVlN5RAG+7ZDsCt/BRp01SyryHc7CZvZ7uadD1fei9TdJohODHHSzspWAQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/encryption-plugin": ["@learncard/encryption-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-A0FztJW4ZwVUqVF46hFDZmXmL+U2CKUIounsWY3W9PZq22SHjs8zlL+kyM/BObPKGVTeA4NI/Ikdov1a+Pc2Nw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/ethereum-plugin": ["@learncard/ethereum-plugin@1.1.36", "", { "dependencies": { "@learncard/core": "9.4.35", "@uniswap/default-token-list": "^4.1.0", "ethers": "^5.6.9" } }, "sha512-gY1n5GRMoBrWr+r98Rnk1aEQJFXev+eg+jXYG5dfvh2Xz4AaTzo4QoVIEKXATabUHsBLUrFGaNDo71sUCKlYDQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin": ["@learncard/expiration-plugin@1.2.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/vc-plugin": "^1.6.1", "why-is-node-running": "^2.2.2" } }, "sha512-gkRtGIKddwcKnjmwLVQMVTmCgc1WLhyTUrKRNl1srmY328moFGfROi2iixFSJIitokcT1V8uwmZxLh42MUUolA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/helpers": ["@learncard/helpers@1.5.1", "", { "dependencies": { "@learncard/types": "5.20.0", "@noble/hashes": "^1.8.0", "@sd-jwt/decode": "^0.19.0", "@trpc/server": "11.8.0", "immer": "^10.0.3", "use-immer": "^0.9.0", "zod": "4.1.13" } }, "sha512-LefnXlbc4JUlN2ZHcxOxDh7IYc+blWa8HM4LkwkdeZrFBDUZARGYy8UfjhO9maeHgmVMGqKeZMQM4cMylLFT/Q=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin": ["@learncard/learn-card-plugin@1.2.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/types": "5.20.0", "date-fns": "^2.28.0" } }, "sha512-lXuJ+Hh9cicUC66Ef76ojtR7e9DXdvAxwvqxn4ldqq5z4QvUzBDtLZuhFtQEInfd/IN1V8NatTABDu15qA4aSg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin": ["@learncard/learn-cloud-plugin@2.3.41", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/helpers": "^1.5.1", "@learncard/learn-cloud-client": "1.6.41", "json-stringify-deterministic": "^1.0.8", "lodash": "^4.17.21", "pbkdf2-hmac": "^1.2.1" } }, "sha512-9RUp/4HeupXJIpxy/5aicLIZpT9eLKO2BATf1EWZzuu8TBvkuqiFOcNrxwBD4WKZ7YjmcDGgA3R/is1+EWhXyw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin": ["@learncard/network-plugin@2.14.1", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/helpers": "1.5.1", "@learncard/network-brain-client": "2.5.56", "mustache": "^4.2.0" } }, "sha512-0YlOutKnNHo2nM21zOYCWwUtRytOV+/17fAOasRZ91pGReZHXnIzaR0g0I7Jf8KYHg0iCyvKqgqDkJCAxzAg7w=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin": ["@learncard/openid4vc-plugin@0.3.8", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/vc-plugin": "^1.6.1", "@peculiar/x509": "^1.12.0", "dcql": "^3.0.0", "jose": "^5.9.6", "safe-regex": "^2.1.1" } }, "sha512-Viv+lxRR+EE5BKQYVbrZUfUnU35ZKwzawwJOblZ1AsBpMiQlBYqBDNeJbBagRf99qTWCIy5Q+UFd3s2DJH38zA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin": ["@learncard/sd-jwt-vc-plugin@0.2.13", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/vc-plugin": "^1.6.1", "@sd-jwt/core": "^0.19.0", "@sd-jwt/decode": "^0.19.0", "@sd-jwt/sd-jwt-vc": "^0.19.0", "jose": "^5.9.6" } }, "sha512-ajQtSpzKCNZp4eac2JF9n4MenxaFL4YRwUJ/ldEt+ns+7wVDgnT1GwoDOntczT5prSH1KcwANbRwHME8GRzwoQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/types": ["@learncard/types@5.20.0", "", { "dependencies": { "zod": "^4.1.13" } }, "sha512-bMVbCvKi1GMPVKHR4KlXB2nNgGsEii42ESiMT/BoL8xhPJj5L8Hr6A8UPf/ogOcQD9VeLlcqNtZr1A5oxxbmNA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-api-plugin": ["@learncard/vc-api-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-DnMr7FdnZUU0yiH+zz3LIVEoQMubowcyuzp/jre5DROTuDjs4ozQVlU/jR8JPCvP8SacbXxznKzdAYwA5z2YBw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin": ["@learncard/vc-plugin@1.6.1", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/helpers": "1.5.1", "@learncard/types": "5.20.0", "multiformats": "^11.0.1" } }, "sha512-l+QcrA+3IjJng1a3jze2wyzGXlhOAWOzfrAakVyBYJN8Mu5OBJ+a/K1F6ZQPZhJUw1Z9ieW+hUPg+vuOQ0iW/w=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-templates-plugin": ["@learncard/vc-templates-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-vXcsNxG6czMeYJj+DUO6tDjBy3ORJKOc9S2IbNzQ+vp2WN84C/2PEPAG9InzIj7l/87GsYSchMi2fg3ZpdG78Q=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vpqr-plugin": ["@learncard/vpqr-plugin@1.1.35", "", { "dependencies": { "@digitalbazaar/vpqr": "^3.0.0", "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-bg/gYWMdYx6cUvjC3j78PWnSXY/EcnpdlhQcsXgqHxColZH/xP9ctGYbn/s0S4hdMRfBX057L3RNQb0Q5BiayQ=="],
-
     "ai-passport-backend/@sentry/node/@opentelemetry/instrumentation": ["@opentelemetry/instrumentation@0.57.2", "", { "dependencies": { "@opentelemetry/api-logs": "0.57.2", "@types/shimmer": "^1.2.0", "import-in-the-middle": "^1.8.1", "require-in-the-middle": "^7.1.1", "semver": "^7.5.2", "shimmer": "^1.2.1" }, "peerDependencies": { "@opentelemetry/api": "^1.3.0" } }, "sha512-BdBGhQBh8IjZ2oIIX6F2/Q3LKm/FDDKi6ccYKcBTeilh6SNdNKveDOLk73BkSJjQLJk6qe4Yh+hHw1UPhCDdrg=="],
 
     "ai-passport-backend/@sentry/node/@opentelemetry/resources": ["@opentelemetry/resources@1.30.1", "", { "dependencies": { "@opentelemetry/core": "1.30.1", "@opentelemetry/semantic-conventions": "1.28.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.0.0 <1.10.0" } }, "sha512-5UxZqiAgLYGFjS4s9qm5mBVo433u+dSPUFWVWXmLAD4wB65oMCoXaJP1KJa9DIYYMeHu3z4BZcStG3LC593cWA=="],
@@ -15091,52 +15029,6 @@
     "ai-passport-backend/axios/https-proxy-agent": ["https-proxy-agent@5.0.1", "", { "dependencies": { "agent-base": "6", "debug": "4" } }, "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA=="],
 
     "ai-passport-backend/react-dom/scheduler": ["scheduler@0.27.0", "", {}, "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="],
-
-    "ai-passport/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@9.4.35", "", { "dependencies": { "@learncard/helpers": "1.5.1", "abort-controller": "^3.0.0", "core-js": "^3.25.5", "isomorphic-webcrypto": "^2.3.8" } }, "sha512-cZhBu/AVMATs+pAGVDSoHDARzXeuU/L4sOFNqfN0tlCNUyxe00Z02XIVjbvEpiP7sWLDleQfqKcdjdjnemB1Lw=="],
-
-    "ai-passport/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@5.20.0", "", { "dependencies": { "zod": "^4.1.13" } }, "sha512-bMVbCvKi1GMPVKHR4KlXB2nNgGsEii42ESiMT/BoL8xhPJj5L8Hr6A8UPf/ogOcQD9VeLlcqNtZr1A5oxxbmNA=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin": ["@learncard/chapi-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "credential-handler-polyfill": "^3.2.1", "web-credential-handler": "^2.0.0" } }, "sha512-Th84pS2vqGoESYow+hP6X4toOspQjfKV37jUeGqAcqL+CElWNpnXrH2D/UXKxJ6RUhzRkGgIzwHI6PSuLRi6Fg=="],
-
-    "ai-passport/@learncard/init/@learncard/core": ["@learncard/core@9.4.35", "", { "dependencies": { "@learncard/helpers": "1.5.1", "abort-controller": "^3.0.0", "core-js": "^3.25.5", "isomorphic-webcrypto": "^2.3.8" } }, "sha512-cZhBu/AVMATs+pAGVDSoHDARzXeuU/L4sOFNqfN0tlCNUyxe00Z02XIVjbvEpiP7sWLDleQfqKcdjdjnemB1Lw=="],
-
-    "ai-passport/@learncard/init/@learncard/crypto-plugin": ["@learncard/crypto-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "isomorphic-webcrypto": "^2.3.8" } }, "sha512-Bo+VX4igN8w/0Vdf2bwNbaIyRDFgrDpwgfPzLCT7dr6V9mAroCTTblLozbui6K5ZrIwOgMmX+No4beQWWtq2xQ=="],
-
-    "ai-passport/@learncard/init/@learncard/did-web-plugin": ["@learncard/did-web-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35" } }, "sha512-1lHEkteP/QhZfDwqSYxb7XHsqTGXmiUAEoQDfd/uwRhAAjF+qSRm7vvtHVtBy/KZKTmsxHqw6pCeFIMwoszKGQ=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin": ["@learncard/didkey-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/helpers": "^1.5.1", "hex-lite": "^1.5.0" } }, "sha512-ppPbw4JYnysupT7ESEPsexqTp/5gMvG/gRmHvl2nZ6Z162rre2itexQ6FZ4EqYB+MNJyLVYPFVp7z/7mkCm4ug=="],
-
-    "ai-passport/@learncard/init/@learncard/didkit-plugin-node": ["@learncard/didkit-plugin-node@0.3.0", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/types": "5.20.0" }, "optionalDependencies": { "@learncard/didkit-plugin-node-darwin-arm64": "0.3.0", "@learncard/didkit-plugin-node-darwin-x64": "0.3.0", "@learncard/didkit-plugin-node-linux-arm64-gnu": "0.3.0", "@learncard/didkit-plugin-node-linux-x64-gnu": "0.3.0" } }, "sha512-mLChEcl3SsRiv4NdROxL6fk6caax43sSaNHhaxgXhOLHtx5QaJZXPy617yenpml2hdgWxCByi5hClP0tAe6NrA=="],
-
-    "ai-passport/@learncard/init/@learncard/dynamic-loader-plugin": ["@learncard/dynamic-loader-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35" } }, "sha512-1f5nHkNwO3+QYHV5/iBuK2sPQm4vnVlN5RAG+7ZDsCt/BRp01SyryHc7CZvZ7uadD1fei9TdJohODHHSzspWAQ=="],
-
-    "ai-passport/@learncard/init/@learncard/encryption-plugin": ["@learncard/encryption-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-A0FztJW4ZwVUqVF46hFDZmXmL+U2CKUIounsWY3W9PZq22SHjs8zlL+kyM/BObPKGVTeA4NI/Ikdov1a+Pc2Nw=="],
-
-    "ai-passport/@learncard/init/@learncard/ethereum-plugin": ["@learncard/ethereum-plugin@1.1.36", "", { "dependencies": { "@learncard/core": "9.4.35", "@uniswap/default-token-list": "^4.1.0", "ethers": "^5.6.9" } }, "sha512-gY1n5GRMoBrWr+r98Rnk1aEQJFXev+eg+jXYG5dfvh2Xz4AaTzo4QoVIEKXATabUHsBLUrFGaNDo71sUCKlYDQ=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin": ["@learncard/expiration-plugin@1.2.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/vc-plugin": "^1.6.1", "why-is-node-running": "^2.2.2" } }, "sha512-gkRtGIKddwcKnjmwLVQMVTmCgc1WLhyTUrKRNl1srmY328moFGfROi2iixFSJIitokcT1V8uwmZxLh42MUUolA=="],
-
-    "ai-passport/@learncard/init/@learncard/helpers": ["@learncard/helpers@1.5.1", "", { "dependencies": { "@learncard/types": "5.20.0", "@noble/hashes": "^1.8.0", "@sd-jwt/decode": "^0.19.0", "@trpc/server": "11.8.0", "immer": "^10.0.3", "use-immer": "^0.9.0", "zod": "4.1.13" } }, "sha512-LefnXlbc4JUlN2ZHcxOxDh7IYc+blWa8HM4LkwkdeZrFBDUZARGYy8UfjhO9maeHgmVMGqKeZMQM4cMylLFT/Q=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin": ["@learncard/learn-card-plugin@1.2.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/types": "5.20.0", "date-fns": "^2.28.0" } }, "sha512-lXuJ+Hh9cicUC66Ef76ojtR7e9DXdvAxwvqxn4ldqq5z4QvUzBDtLZuhFtQEInfd/IN1V8NatTABDu15qA4aSg=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin": ["@learncard/learn-cloud-plugin@2.3.41", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/helpers": "^1.5.1", "@learncard/learn-cloud-client": "1.6.41", "json-stringify-deterministic": "^1.0.8", "lodash": "^4.17.21", "pbkdf2-hmac": "^1.2.1" } }, "sha512-9RUp/4HeupXJIpxy/5aicLIZpT9eLKO2BATf1EWZzuu8TBvkuqiFOcNrxwBD4WKZ7YjmcDGgA3R/is1+EWhXyw=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin": ["@learncard/network-plugin@2.14.1", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/helpers": "1.5.1", "@learncard/network-brain-client": "2.5.56", "mustache": "^4.2.0" } }, "sha512-0YlOutKnNHo2nM21zOYCWwUtRytOV+/17fAOasRZ91pGReZHXnIzaR0g0I7Jf8KYHg0iCyvKqgqDkJCAxzAg7w=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin": ["@learncard/openid4vc-plugin@0.3.8", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/vc-plugin": "^1.6.1", "@peculiar/x509": "^1.12.0", "dcql": "^3.0.0", "jose": "^5.9.6", "safe-regex": "^2.1.1" } }, "sha512-Viv+lxRR+EE5BKQYVbrZUfUnU35ZKwzawwJOblZ1AsBpMiQlBYqBDNeJbBagRf99qTWCIy5Q+UFd3s2DJH38zA=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin": ["@learncard/sd-jwt-vc-plugin@0.2.13", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/vc-plugin": "^1.6.1", "@sd-jwt/core": "^0.19.0", "@sd-jwt/decode": "^0.19.0", "@sd-jwt/sd-jwt-vc": "^0.19.0", "jose": "^5.9.6" } }, "sha512-ajQtSpzKCNZp4eac2JF9n4MenxaFL4YRwUJ/ldEt+ns+7wVDgnT1GwoDOntczT5prSH1KcwANbRwHME8GRzwoQ=="],
-
-    "ai-passport/@learncard/init/@learncard/types": ["@learncard/types@5.20.0", "", { "dependencies": { "zod": "^4.1.13" } }, "sha512-bMVbCvKi1GMPVKHR4KlXB2nNgGsEii42ESiMT/BoL8xhPJj5L8Hr6A8UPf/ogOcQD9VeLlcqNtZr1A5oxxbmNA=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-api-plugin": ["@learncard/vc-api-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-DnMr7FdnZUU0yiH+zz3LIVEoQMubowcyuzp/jre5DROTuDjs4ozQVlU/jR8JPCvP8SacbXxznKzdAYwA5z2YBw=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin": ["@learncard/vc-plugin@1.6.1", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/helpers": "1.5.1", "@learncard/types": "5.20.0", "multiformats": "^11.0.1" } }, "sha512-l+QcrA+3IjJng1a3jze2wyzGXlhOAWOzfrAakVyBYJN8Mu5OBJ+a/K1F6ZQPZhJUw1Z9ieW+hUPg+vuOQ0iW/w=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-templates-plugin": ["@learncard/vc-templates-plugin@1.1.35", "", { "dependencies": { "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-vXcsNxG6czMeYJj+DUO6tDjBy3ORJKOc9S2IbNzQ+vp2WN84C/2PEPAG9InzIj7l/87GsYSchMi2fg3ZpdG78Q=="],
-
-    "ai-passport/@learncard/init/@learncard/vpqr-plugin": ["@learncard/vpqr-plugin@1.1.35", "", { "dependencies": { "@digitalbazaar/vpqr": "^3.0.0", "@learncard/core": "9.4.35", "@learncard/types": "5.20.0" } }, "sha512-bg/gYWMdYx6cUvjC3j78PWnSXY/EcnpdlhQcsXgqHxColZH/xP9ctGYbn/s0S4hdMRfBX057L3RNQb0Q5BiayQ=="],
 
     "ai-passport/react-dom/scheduler": ["scheduler@0.27.0", "", {}, "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="],
 
@@ -17212,36 +17104,6 @@
 
     "ai-passport-backend/@launchdarkly/node-server-sdk/@launchdarkly/js-server-sdk-common/semver": ["semver@7.5.4", "", { "dependencies": { "lru-cache": "^6.0.0" }, "bin": { "semver": "bin/semver.js" } }, "sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA=="],
 
-    "ai-passport-backend/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@1.5.1", "", { "dependencies": { "@learncard/types": "5.20.0", "@noble/hashes": "^1.8.0", "@sd-jwt/decode": "^0.19.0", "@trpc/server": "11.8.0", "immer": "^10.0.3", "use-immer": "^0.9.0", "zod": "4.1.13" } }, "sha512-LefnXlbc4JUlN2ZHcxOxDh7IYc+blWa8HM4LkwkdeZrFBDUZARGYy8UfjhO9maeHgmVMGqKeZMQM4cMylLFT/Q=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin": ["@learncard/vc-plugin@workspace:packages/plugins/vc"],
-
-    "ai-passport-backend/@learncard/init/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client": ["@learncard/learn-cloud-client@1.6.41", "", { "dependencies": { "@learncard/learn-cloud-service": "2.5.33", "@trpc/client": "11.8.0" } }, "sha512-olONt4zlpxe+CPoZEQoe9+ykvHLMMAkGmnlr7RW8dU54Qe08yw6htyZjJXWYJ7AaR4N79Ta9lePHZpJwSjIisA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client": ["@learncard/network-brain-client@2.5.56", "", { "dependencies": { "@learncard/network-brain-service": "3.18.0", "@trpc/client": "11.8.0" } }, "sha512-IpKtvZug1ovmeAm5zvCuAEW4O29vzZiqt+jw0OcPqKGwNmFDtuMSSMfJoBD64AOdsOCQfCyqzBdeuDH+6QUvXA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin": ["@learncard/vc-plugin@workspace:packages/plugins/vc"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin": ["@learncard/vc-plugin@workspace:packages/plugins/vc"],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
     "ai-passport-backend/@sentry/node/@opentelemetry/instrumentation/@opentelemetry/api-logs": ["@opentelemetry/api-logs@0.57.2", "", { "dependencies": { "@opentelemetry/api": "^1.3.0" } }, "sha512-uIX52NnTM0iBh84MShlpouI7UKqkZ7MrUszTmaypHBu4r7NofznSnQRfJ+uUeDtQDj6w8eFGg5KBLDAwAPz1+A=="],
 
     "ai-passport-backend/@sentry/node/@opentelemetry/instrumentation/require-in-the-middle": ["require-in-the-middle@7.5.2", "", { "dependencies": { "debug": "^4.3.5", "module-details-from-path": "^1.0.3", "resolve": "^1.22.8" } }, "sha512-gAZ+kLqBdHarXB64XpAe2VCjB7rIRv+mU8tfRWziHRJ5umKsIHN2tLLv6EtMw7WCdP19S0ERVMldNvxYCHnhSQ=="],
@@ -17249,36 +17111,6 @@
     "ai-passport-backend/@sentry/node/@opentelemetry/resources/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.28.0", "", {}, "sha512-lp4qAiMTD4sNWW4DbKLBkfiMZ4jbAboJIGOQr5DvciMRI494OapieI9qiODpOt0XBr1LjIDy1xAGAnVs5supTA=="],
 
     "ai-passport-backend/@sentry/node/minimatch/brace-expansion": ["brace-expansion@2.1.4", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-hGfVzPxthbf3+2yjg/RBs60cB0FhqBS/zvdV/4wn4/BmN0bNMMHPc4V/BbFieqf1TKAGGAHnY4eSjajCl0f2Xg=="],
-
-    "ai-passport/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@1.5.1", "", { "dependencies": { "@learncard/types": "5.20.0", "@noble/hashes": "^1.8.0", "@sd-jwt/decode": "^0.19.0", "@trpc/server": "11.8.0", "immer": "^10.0.3", "use-immer": "^0.9.0", "zod": "4.1.13" } }, "sha512-LefnXlbc4JUlN2ZHcxOxDh7IYc+blWa8HM4LkwkdeZrFBDUZARGYy8UfjhO9maeHgmVMGqKeZMQM4cMylLFT/Q=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin": ["@learncard/vc-plugin@workspace:packages/plugins/vc"],
-
-    "ai-passport/@learncard/init/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client": ["@learncard/learn-cloud-client@1.6.41", "", { "dependencies": { "@learncard/learn-cloud-service": "2.5.33", "@trpc/client": "11.8.0" } }, "sha512-olONt4zlpxe+CPoZEQoe9+ykvHLMMAkGmnlr7RW8dU54Qe08yw6htyZjJXWYJ7AaR4N79Ta9lePHZpJwSjIisA=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client": ["@learncard/network-brain-client@2.5.56", "", { "dependencies": { "@learncard/network-brain-service": "3.18.0", "@trpc/client": "11.8.0" } }, "sha512-IpKtvZug1ovmeAm5zvCuAEW4O29vzZiqt+jw0OcPqKGwNmFDtuMSSMfJoBD64AOdsOCQfCyqzBdeuDH+6QUvXA=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin": ["@learncard/vc-plugin@workspace:packages/plugins/vc"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin": ["@learncard/vc-plugin@workspace:packages/plugins/vc"],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
 
     "aqu/@typescript-eslint/eslint-plugin/@typescript-eslint/scope-manager/@typescript-eslint/types": ["@typescript-eslint/types@5.62.0", "", {}, "sha512-87NVngcbVXUahrRTqIK27gD2t5Cu1yuCXxbLcFtCzZGlfyVWWh8mLHkoxzjsB6DDNnvdL+fW8MiwPEJyGJQDgQ=="],
 
@@ -17816,173 +17648,9 @@
 
     "@web3auth/ws-embed/@web3auth/auth/color/color-string/color-name": ["color-name@2.1.1", "", {}, "sha512-p2FdgwVx1a9yWBHP2wI0VgShkDpgN4kZISkxdNipGBJWpa5G6b04OINlVWCyJj0JmfvcPrgqt95E9k8yvaOJFg=="],
 
-    "ai-passport-backend/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service": ["@learncard/learn-cloud-service@2.5.33", "", { "dependencies": { "@fastify/cors": "^11.2.0", "@fastify/rate-limit": "^10.2.0", "@fastify/static": "^10.1.1", "@learncard/core": "9.4.35", "@learncard/crypto-plugin": "1.1.35", "@learncard/did-web-plugin": "1.1.35", "@learncard/didkey-plugin": "1.1.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/didkit-plugin-node": "0.3.0", "@learncard/encryption-plugin": "1.1.35", "@learncard/expiration-plugin": "1.2.35", "@learncard/helpers": "1.5.1", "@learncard/learn-card-plugin": "1.2.35", "@learncard/types": "5.20.0", "@learncard/vc-plugin": "1.6.1", "@learncard/vc-templates-plugin": "1.1.35", "@sentry/serverless": "7.61.0", "@trpc/server": "11.8.0", "@types/lodash": "^4.14.191", "@xapi/xapi": "^3.0.0", "async": "^3.2.6", "bson": "^4.7.2", "cors": "^2.8.5", "dotenv": "^16.0.3", "express": "^4.18.2", "fastify": "^5.8.5", "ioredis": "^5.2.2", "ioredis-mock": "^8.2.2", "json-stringify-deterministic": "^1.0.8", "jsonwebtoken": "^9.0.2", "jwt-decode": "^3.1.2", "libsodium-wrappers": "^0.7.11", "lodash": "^4.17.21", "mongodb": "^6.2.0", "multiformats": "^11.0.1", "neo4j-driver": "^4.3.0", "neogma": "^1.11.1", "simple-redis-mutex": "^1.3.1", "trpc-to-openapi": "^3.1.0", "tsc-alias": "^1.8.10", "uuid": "^14.0.0", "zod": "4.4.3", "zod-openapi": "^5.0.1" } }, "sha512-uSCOHf7lfoQh3OCZ7HKQTUnFSj264oiR5veMA4T8PfMrpJmw+XxvLCApbgz38q0Vi1riL5g7qhCHnmJCkfnkMQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service": ["@learncard/network-brain-service@3.18.0", "", { "dependencies": { "@aws-sdk/client-sqs": "^3.379.1", "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5", "@fastify/cors": "^11.2.0", "@google/genai": "^1.27.0", "@learncard/core": "9.4.35", "@learncard/crypto-plugin": "1.1.35", "@learncard/did-web-plugin": "1.1.35", "@learncard/didkey-plugin": "1.1.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/didkit-plugin-node": "0.3.0", "@learncard/dynamic-loader-plugin": "1.1.35", "@learncard/email-templates": "1.0.6", "@learncard/encryption-plugin": "1.1.35", "@learncard/expiration-plugin": "1.2.35", "@learncard/helpers": "1.5.1", "@learncard/learn-card-plugin": "1.2.35", "@learncard/types": "5.20.0", "@learncard/vc-plugin": "1.6.1", "@learncard/vc-templates-plugin": "1.1.35", "@sentry/serverless": "7.61.0", "@trpc/server": "11.8.0", "@types/lodash": "^4.14.191", "base64url": "^3.0.1", "cors": "^2.8.5", "dotenv": "^16.0.3", "express": "^4.18.2", "fastify": "^5.8.5", "fastify-plugin": "^5.1.0", "ioredis": "^5.2.2", "ioredis-mock": "^8.2.2", "jose": "^5.9.6", "jwt-decode": "^3.1.2", "libsodium-wrappers": "^0.7.11", "lodash": "^4.17.21", "messagebird": "^4.0.1", "multiformats": "^11.0.1", "mustache": "^4.2.0", "neo4j-driver": "5.18.0", "neogma": "1.13.0", "posthog-node": "^4.0.0", "postmark": "^4.0.5", "sift": "^17.0.1", "trpc-to-openapi": "^3.1.0", "tsc-alias": "^1.8.10", "twilio": "^5.7.1", "undici": "^6", "uuid": "^14.0.0", "zod": "4.4.3", "zod-openapi": "^5.0.1" } }, "sha512-sxXnILYoHz+GaOs7GexuIk801MbkgjiZ/pZYv3EeRWx2zehluCF9sJyEJeNYBB7k/4OXJMZIMlutR2TPxQBYTA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
     "ai-passport-backend/@sentry/node/@opentelemetry/instrumentation/require-in-the-middle/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
 
     "ai-passport-backend/@sentry/node/minimatch/brace-expansion/balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
-
-    "ai-passport/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service": ["@learncard/learn-cloud-service@2.5.33", "", { "dependencies": { "@fastify/cors": "^11.2.0", "@fastify/rate-limit": "^10.2.0", "@fastify/static": "^10.1.1", "@learncard/core": "9.4.35", "@learncard/crypto-plugin": "1.1.35", "@learncard/did-web-plugin": "1.1.35", "@learncard/didkey-plugin": "1.1.35", "@learncard/didkit-plugin": "^1.10.0", "@learncard/didkit-plugin-node": "0.3.0", "@learncard/encryption-plugin": "1.1.35", "@learncard/expiration-plugin": "1.2.35", "@learncard/helpers": "1.5.1", "@learncard/learn-card-plugin": "1.2.35", "@learncard/types": "5.20.0", "@learncard/vc-plugin": "1.6.1", "@learncard/vc-templates-plugin": "1.1.35", "@sentry/serverless": "7.61.0", "@trpc/server": "11.8.0", "@types/lodash": "^4.14.191", "@xapi/xapi": "^3.0.0", "async": "^3.2.6", "bson": "^4.7.2", "cors": "^2.8.5", "dotenv": "^16.0.3", "express": "^4.18.2", "fastify": "^5.8.5", "ioredis": "^5.2.2", "ioredis-mock": "^8.2.2", "json-stringify-deterministic": "^1.0.8", "jsonwebtoken": "^9.0.2", "jwt-decode": "^3.1.2", "libsodium-wrappers": "^0.7.11", "lodash": "^4.17.21", "mongodb": "^6.2.0", "multiformats": "^11.0.1", "neo4j-driver": "^4.3.0", "neogma": "^1.11.1", "simple-redis-mutex": "^1.3.1", "trpc-to-openapi": "^3.1.0", "tsc-alias": "^1.8.10", "uuid": "^14.0.0", "zod": "4.4.3", "zod-openapi": "^5.0.1" } }, "sha512-uSCOHf7lfoQh3OCZ7HKQTUnFSj264oiR5veMA4T8PfMrpJmw+XxvLCApbgz38q0Vi1riL5g7qhCHnmJCkfnkMQ=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service": ["@learncard/network-brain-service@3.18.0", "", { "dependencies": { "@aws-sdk/client-sqs": "^3.379.1", "@digitalcredentials/issuer-registry-client": "^3.2.0-beta.5", "@fastify/cors": "^11.2.0", "@google/genai": "^1.27.0", "@learncard/core": "9.4.35", "@learncard/crypto-plugin": "1.1.35", "@learncard/did-web-plugin": "1.1.35", "@learncard/didkey-plugin": "1.1.35", "@learncard/didkit-plugin": "1.10.0", "@learncard/didkit-plugin-node": "0.3.0", "@learncard/dynamic-loader-plugin": "1.1.35", "@learncard/email-templates": "1.0.6", "@learncard/encryption-plugin": "1.1.35", "@learncard/expiration-plugin": "1.2.35", "@learncard/helpers": "1.5.1", "@learncard/learn-card-plugin": "1.2.35", "@learncard/types": "5.20.0", "@learncard/vc-plugin": "1.6.1", "@learncard/vc-templates-plugin": "1.1.35", "@sentry/serverless": "7.61.0", "@trpc/server": "11.8.0", "@types/lodash": "^4.14.191", "base64url": "^3.0.1", "cors": "^2.8.5", "dotenv": "^16.0.3", "express": "^4.18.2", "fastify": "^5.8.5", "fastify-plugin": "^5.1.0", "ioredis": "^5.2.2", "ioredis-mock": "^8.2.2", "jose": "^5.9.6", "jwt-decode": "^3.1.2", "libsodium-wrappers": "^0.7.11", "lodash": "^4.17.21", "messagebird": "^4.0.1", "multiformats": "^11.0.1", "mustache": "^4.2.0", "neo4j-driver": "5.18.0", "neogma": "1.13.0", "posthog-node": "^4.0.0", "postmark": "^4.0.5", "sift": "^17.0.1", "trpc-to-openapi": "^3.1.0", "tsc-alias": "^1.8.10", "twilio": "^5.7.1", "undici": "^6", "uuid": "^14.0.0", "zod": "4.4.3", "zod-openapi": "^5.0.1" } }, "sha512-sxXnILYoHz+GaOs7GexuIk801MbkgjiZ/pZYv3EeRWx2zehluCF9sJyEJeNYBB7k/4OXJMZIMlutR2TPxQBYTA=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
 
     "aqu/@typescript-eslint/eslint-plugin/@typescript-eslint/scope-manager/@typescript-eslint/visitor-keys/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
 
@@ -18140,170 +17808,6 @@
 
     "@web3auth/ws-embed/@toruslabs/base-controllers/@toruslabs/broadcast-channel/socket.io-client/engine.io-client/xmlhttprequest-ssl": ["xmlhttprequest-ssl@2.1.2", "", {}, "sha512-TEU+nJVUUnA4CYJFLvK5X9AOeH4KvDvhIfm0vV1GaQRtchnG0hgK5p8hw/xjv8cunWYCsiPCSDzObPyhEwq3KQ=="],
 
-    "ai-passport-backend/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers": ["@learncard/helpers@1.5.1", "", { "dependencies": { "@learncard/types": "5.20.0", "@noble/hashes": "^1.8.0", "@sd-jwt/decode": "^0.19.0", "@trpc/server": "11.8.0", "immer": "^10.0.3", "use-immer": "^0.9.0", "zod": "4.1.13" } }, "sha512-LefnXlbc4JUlN2ZHcxOxDh7IYc+blWa8HM4LkwkdeZrFBDUZARGYy8UfjhO9maeHgmVMGqKeZMQM4cMylLFT/Q=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@sentry/serverless": ["@sentry/serverless@7.61.0", "", { "dependencies": { "@sentry/core": "7.61.0", "@sentry/node": "7.61.0", "@sentry/types": "7.61.0", "@sentry/utils": "7.61.0", "@types/aws-lambda": "^8.10.62", "@types/express": "^4.17.14", "tslib": "^2.4.1 || ^1.9.3" } }, "sha512-8nxvazvhX8bkYcALUR1mdHZs9QZeElek35AYJo1mKtp3e9MN5EpK8KjTMo3hLNqL2zkjPXwVIqZ5mJwRoSoc4Q=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/uuid": ["uuid@14.0.2", "", { "bin": { "uuid": "dist-node/bin/uuid" } }, "sha512-xZe/16rV4aa+HGSOCiY2YeLT1OybRLrrkL/Rqaq7p7GMVXjFh+6wN4oMYgjFmnSnhY8t6Xpdl2l9qmnHYuMHwQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@digitalcredentials/issuer-registry-client": ["@digitalcredentials/issuer-registry-client@3.2.0-beta.5", "", { "dependencies": { "@digitalcredentials/http-client": "^5.0.2", "core-js": "^3.42.0", "jwt-decode": "^4.0.0" } }, "sha512-uwL7xkRpeANAtJ5Cgn6FDcVCjjEA959+HPokHB4IzV/gabnBBN1y8r3uCFwMTF6qCq30pA6+RZAhKsqMCI1SDw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@learncard/email-templates": ["@learncard/email-templates@1.0.6", "", { "dependencies": { "@react-email/components": "^0.0.36", "@react-email/render": "^1.0.5", "react": "^18.3.1" } }, "sha512-+iVa/8DAdZDWgoHOP+YztwcYYPc/XfPaIg9XiwjzeLWzZz/LVim8tl+lPNiBNNcKThWJPKcTrYUoXu317G35PQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@sentry/serverless": ["@sentry/serverless@7.61.0", "", { "dependencies": { "@sentry/core": "7.61.0", "@sentry/node": "7.61.0", "@sentry/types": "7.61.0", "@sentry/utils": "7.61.0", "@types/aws-lambda": "^8.10.62", "@types/express": "^4.17.14", "tslib": "^2.4.1 || ^1.9.3" } }, "sha512-8nxvazvhX8bkYcALUR1mdHZs9QZeElek35AYJo1mKtp3e9MN5EpK8KjTMo3hLNqL2zkjPXwVIqZ5mJwRoSoc4Q=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neo4j-driver": ["neo4j-driver@5.18.0", "", { "dependencies": { "neo4j-driver-bolt-connection": "5.18.0", "neo4j-driver-core": "5.18.0", "rxjs": "^7.8.1" } }, "sha512-lDDoj45SN/FNZIYa9cTesHTAVMrcPeWmgkrYiYGTVBfJ3yKk2m2G7+lpmfip6NN8H+A0C4NIqfmMHtcC4eflyw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neogma": ["neogma@1.13.0", "", { "dependencies": { "@types/revalidator": "^0.3.12", "clone": "^2.1.2", "dotenv": "^16.3.1", "neo4j-driver": "^5.16.0", "revalidator": "^0.3.1", "uuid": "^9.0.1" } }, "sha512-VPr5XUiQlsDaBJyCdfAWkEG6mN0Z6F5govb/H7h16FXSARC7pVubzZ8CioTmJ/jXCto5Jz9J1l6cifoZhi9/Aw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/uuid": ["uuid@14.0.2", "", { "bin": { "uuid": "dist-node/bin/uuid" } }, "sha512-xZe/16rV4aa+HGSOCiY2YeLT1OybRLrrkL/Rqaq7p7GMVXjFh+6wN4oMYgjFmnSnhY8t6Xpdl2l9qmnHYuMHwQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin": ["@learncard/didkit-plugin@workspace:packages/plugins/didkit"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers": ["@learncard/helpers@1.5.1", "", { "dependencies": { "@learncard/types": "5.20.0", "@noble/hashes": "^1.8.0", "@sd-jwt/decode": "^0.19.0", "@trpc/server": "11.8.0", "immer": "^10.0.3", "use-immer": "^0.9.0", "zod": "4.1.13" } }, "sha512-LefnXlbc4JUlN2ZHcxOxDh7IYc+blWa8HM4LkwkdeZrFBDUZARGYy8UfjhO9maeHgmVMGqKeZMQM4cMylLFT/Q=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@sentry/serverless": ["@sentry/serverless@7.61.0", "", { "dependencies": { "@sentry/core": "7.61.0", "@sentry/node": "7.61.0", "@sentry/types": "7.61.0", "@sentry/utils": "7.61.0", "@types/aws-lambda": "^8.10.62", "@types/express": "^4.17.14", "tslib": "^2.4.1 || ^1.9.3" } }, "sha512-8nxvazvhX8bkYcALUR1mdHZs9QZeElek35AYJo1mKtp3e9MN5EpK8KjTMo3hLNqL2zkjPXwVIqZ5mJwRoSoc4Q=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@digitalcredentials/issuer-registry-client": ["@digitalcredentials/issuer-registry-client@3.2.0-beta.5", "", { "dependencies": { "@digitalcredentials/http-client": "^5.0.2", "core-js": "^3.42.0", "jwt-decode": "^4.0.0" } }, "sha512-uwL7xkRpeANAtJ5Cgn6FDcVCjjEA959+HPokHB4IzV/gabnBBN1y8r3uCFwMTF6qCq30pA6+RZAhKsqMCI1SDw=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@learncard/email-templates": ["@learncard/email-templates@1.0.6", "", { "dependencies": { "@react-email/components": "^0.0.36", "@react-email/render": "^1.0.5", "react": "^18.3.1" } }, "sha512-+iVa/8DAdZDWgoHOP+YztwcYYPc/XfPaIg9XiwjzeLWzZz/LVim8tl+lPNiBNNcKThWJPKcTrYUoXu317G35PQ=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@sentry/serverless": ["@sentry/serverless@7.61.0", "", { "dependencies": { "@sentry/core": "7.61.0", "@sentry/node": "7.61.0", "@sentry/types": "7.61.0", "@sentry/utils": "7.61.0", "@types/aws-lambda": "^8.10.62", "@types/express": "^4.17.14", "tslib": "^2.4.1 || ^1.9.3" } }, "sha512-8nxvazvhX8bkYcALUR1mdHZs9QZeElek35AYJo1mKtp3e9MN5EpK8KjTMo3hLNqL2zkjPXwVIqZ5mJwRoSoc4Q=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neo4j-driver": ["neo4j-driver@5.18.0", "", { "dependencies": { "neo4j-driver-bolt-connection": "5.18.0", "neo4j-driver-core": "5.18.0", "rxjs": "^7.8.1" } }, "sha512-lDDoj45SN/FNZIYa9cTesHTAVMrcPeWmgkrYiYGTVBfJ3yKk2m2G7+lpmfip6NN8H+A0C4NIqfmMHtcC4eflyw=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neogma": ["neogma@1.13.0", "", { "dependencies": { "@types/revalidator": "^0.3.12", "clone": "^2.1.2", "dotenv": "^16.3.1", "neo4j-driver": "^5.16.0", "revalidator": "^0.3.1", "uuid": "^9.0.1" } }, "sha512-VPr5XUiQlsDaBJyCdfAWkEG6mN0Z6F5govb/H7h16FXSARC7pVubzZ8CioTmJ/jXCto5Jz9J1l6cifoZhi9/Aw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
     "aqu/@typescript-eslint/eslint-plugin/@typescript-eslint/type-utils/@typescript-eslint/typescript-estree/@typescript-eslint/visitor-keys/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
 
     "aqu/@typescript-eslint/eslint-plugin/@typescript-eslint/utils/@typescript-eslint/typescript-estree/@typescript-eslint/visitor-keys/eslint-visitor-keys": ["eslint-visitor-keys@3.4.3", "", {}, "sha512-wpc+LXeiyiisxPlEkUzU6svyS1frIO3Mgxj1fdy7Pm8Ygzguax2N3Fa/D/ag1WqbOprdI+uY6wMUl8/a2G+iag=="],
@@ -18352,226 +17856,6 @@
 
     "@web3auth/openlogin-adapter/@web3auth/base-provider/@toruslabs/base-controllers/@toruslabs/broadcast-channel/socket.io-client/engine.io-client/xmlhttprequest-ssl": ["xmlhttprequest-ssl@2.1.2", "", {}, "sha512-TEU+nJVUUnA4CYJFLvK5X9AOeH4KvDvhIfm0vV1GaQRtchnG0hgK5p8hw/xjv8cunWYCsiPCSDzObPyhEwq3KQ=="],
 
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@sentry/serverless/@sentry/node": ["@sentry/node@7.61.0", "", { "dependencies": { "@sentry-internal/tracing": "7.61.0", "@sentry/core": "7.61.0", "@sentry/types": "7.61.0", "@sentry/utils": "7.61.0", "cookie": "^0.4.1", "https-proxy-agent": "^5.0.0", "lru_map": "^0.3.3", "tslib": "^2.4.1 || ^1.9.3" } }, "sha512-oTCqD/h92uvbRCrtCdiAqN6Mfe3vF7ywVHZ8Nq3hHmJp6XadUT+fCBwNQ7rjMyqJAOYAnx/vp6iN9n8C5qcYZQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@digitalcredentials/issuer-registry-client/jwt-decode": ["jwt-decode@4.0.0", "", {}, "sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@learncard/email-templates/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@sentry/serverless/@sentry/node": ["@sentry/node@7.61.0", "", { "dependencies": { "@sentry-internal/tracing": "7.61.0", "@sentry/core": "7.61.0", "@sentry/types": "7.61.0", "@sentry/utils": "7.61.0", "cookie": "^0.4.1", "https-proxy-agent": "^5.0.0", "lru_map": "^0.3.3", "tslib": "^2.4.1 || ^1.9.3" } }, "sha512-oTCqD/h92uvbRCrtCdiAqN6Mfe3vF7ywVHZ8Nq3hHmJp6XadUT+fCBwNQ7rjMyqJAOYAnx/vp6iN9n8C5qcYZQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neo4j-driver/neo4j-driver-bolt-connection": ["neo4j-driver-bolt-connection@5.18.0", "", { "dependencies": { "buffer": "^6.0.3", "neo4j-driver-core": "5.18.0", "string_decoder": "^1.3.0" } }, "sha512-Oc0w4V1sFzy6b1Mvsojz2mcDI0Caqv/jsb61DY7s9i0BHMglkNfMR1GJHjRzC6HaeDU85EFw1RLNF0NJmCSzpg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neo4j-driver/neo4j-driver-core": ["neo4j-driver-core@5.18.0", "", {}, "sha512-naq5zT5tYazh81CO28L5YrcL/Wy4NoppqawkE5zyfFFVEs3bhmGn7G170FL0Fs8h7Dab1aZ5hlOBwlXXVWSDng=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neogma/clone": ["clone@2.1.2", "", {}, "sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neogma/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/didkey-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/expiration-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/helpers/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core": ["@learncard/core@workspace:packages/learn-card-core"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types": ["@learncard/types@workspace:packages/learn-card-types"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@types/node": ["@types/node@17.0.45", "", {}, "sha512-w+tIMs3rq2afQdsPJlODhoUEKzFP1ayaoyl1CcnwtIlsVe7K7bA1NGm4s3PraqTLlXnbIN84zuBlxBWo1u9BLw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@digitalcredentials/issuer-registry-client/jwt-decode": ["jwt-decode@4.0.0", "", {}, "sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@learncard/email-templates/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neo4j-driver/neo4j-driver-bolt-connection": ["neo4j-driver-bolt-connection@5.18.0", "", { "dependencies": { "buffer": "^6.0.3", "neo4j-driver-core": "5.18.0", "string_decoder": "^1.3.0" } }, "sha512-Oc0w4V1sFzy6b1Mvsojz2mcDI0Caqv/jsb61DY7s9i0BHMglkNfMR1GJHjRzC6HaeDU85EFw1RLNF0NJmCSzpg=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neo4j-driver/neo4j-driver-core": ["neo4j-driver-core@5.18.0", "", {}, "sha512-naq5zT5tYazh81CO28L5YrcL/Wy4NoppqawkE5zyfFFVEs3bhmGn7G170FL0Fs8h7Dab1aZ5hlOBwlXXVWSDng=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neogma/clone": ["clone@2.1.2", "", {}, "sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w=="],
-
-    "ai-passport/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/neogma/uuid": ["uuid@9.0.1", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/vc-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
     "bestzip/archiver/archiver-utils/glob/minimatch/brace-expansion/balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
 
     "conventional-changelog-core/read-pkg-up/find-up/locate-path/p-locate/p-limit/p-try": ["p-try@1.0.0", "", {}, "sha512-U1etNYuMJoIz3ZXSrrySFjsXQTWOx2/jdi86L+2pRvph/qMKL6sbcCYdH23fqsbm8TH2Gn0OybpT4eSFlCVHww=="],
@@ -18581,73 +17865,5 @@
     "scoutpass-app/@testing-library/react/@testing-library/dom/pretty-format/@jest/types/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "@testcontainers/neo4j/testcontainers/archiver/archiver-utils/glob/minimatch/brace-expansion/balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@sentry/serverless/@sentry/node/cookie": ["cookie@0.4.2", "", {}, "sha512-aSWTXFzaKWkvHO1Ny/s+ePFpvKsPnjc551iI41v3ny/ow6tBG5Vd+FuqGNhh1LxOmVzOlGUriIlOaokOvhaStA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@sentry/serverless/@sentry/node/https-proxy-agent": ["https-proxy-agent@5.0.1", "", { "dependencies": { "agent-base": "6", "debug": "4" } }, "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@sentry/serverless/@sentry/node/cookie": ["cookie@0.4.2", "", {}, "sha512-aSWTXFzaKWkvHO1Ny/s+ePFpvKsPnjc551iI41v3ny/ow6tBG5Vd+FuqGNhh1LxOmVzOlGUriIlOaokOvhaStA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/network-plugin/@learncard/network-brain-client/@learncard/network-brain-service/@sentry/serverless/@sentry/node/https-proxy-agent": ["https-proxy-agent@5.0.1", "", { "dependencies": { "agent-base": "6", "debug": "4" } }, "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/chapi-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-card-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers": ["@learncard/helpers@workspace:packages/learn-card-helpers"],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve": ["@esbuild-plugins/node-resolve@0.2.2", "", { "dependencies": { "@types/resolve": "^1.17.1", "debug": "^4.3.1", "escape-string-regexp": "^4.0.0", "resolve": "^1.19.0" }, "peerDependencies": { "esbuild": "*" } }, "sha512-+t5FdX3ATQlb53UFDBRb4nqjYBz492bIrnVWvpQHpzZlu9BQL5HasMZhqc409ygUwOWCXZhrWr6NyZ6T6Y+cxw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/openid4vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/sd-jwt-vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/vc-plugin/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/node": ["@types/node@18.19.130", "", { "dependencies": { "undici-types": "~5.26.4" } }, "sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/@types/react": ["@types/react@18.3.31", "", { "dependencies": { "@types/prop-types": "*", "csstype": "^3.2.2" } }, "sha512-vfEqpXTvwT91yhmwdfouStN2hSKwTvyRs8qpLfADyrq/kxDw0hZM7Wk9Ug1FELj8hIby+S/+kQCSRFF32nv2Qw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/immer": ["immer@10.2.0", "", {}, "sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer": ["use-immer@0.9.0", "", { "peerDependencies": { "immer": ">=2.0.0", "react": "^16.8.0 || ^17.0.1 || ^18.0.0" } }, "sha512-/L+enLi0nvuZ6j4WlyK0US9/ECUtV5v9RUbtxnn5+WbtaXYUaOBoKHDNL9I5AETdurQ4rIFIj/s+Z5X80ATyKw=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/@types/resolve": ["@types/resolve@1.20.6", "", {}, "sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/types/@esbuild-plugins/node-resolve/resolve": ["resolve@1.22.12", "", { "dependencies": { "es-errors": "^1.3.0", "is-core-module": "^2.16.1", "path-parse": "^1.0.7", "supports-preserve-symlinks-flag": "^1.0.0" }, "bin": { "resolve": "bin/resolve" } }, "sha512-TyeJ1zif53BPfHootBGwPRYT1RUt6oGWsaQr8UyZW/eAm9bKoijtvruSDEmZHm92CwS9nj7/fWttqPCgzep8CA=="],
-
-    "ai-passport-backend/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
-
-    "ai-passport/@learncard/init/@learncard/learn-cloud-plugin/@learncard/learn-cloud-client/@learncard/learn-cloud-service/@learncard/didkit-plugin/@learncard/core/@learncard/helpers/use-immer/react": ["react@18.3.1", "", { "dependencies": { "loose-envify": "^1.1.0" } }, "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ=="],
   }
 }
