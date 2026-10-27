@@ -10,7 +10,7 @@ import {
     applyContractUpdateScopeChoice,
     applyContractUpdateScopeChoices,
     getContractUpdateScopeKey,
-    getUnchangedAccessSummary,
+    getUnchangedAccessScopes,
     isContractUpdateScopeEnabled,
     getEnabledOptionalUpdateScopeKeys,
 } from './contractUpdateReview.helpers';
@@ -232,11 +232,11 @@ describe('contract update scope choices', () => {
         } as unknown as ConsentFlowContractDetails;
         const diff: ConsentFlowContractDiff = { added: [], removed: [], changed: [] };
 
-        expect(getUnchangedAccessSummary(contract, diff, terms)).toEqual([
-            'Can see Achievement',
-            'Can see Name',
-            'Can add Certificate',
-            'Can add Email',
+        expect(getUnchangedAccessScopes(contract, diff, terms)).toEqual([
+            { area: 'read', type: 'credential', key: 'Achievement', required: false },
+            { area: 'read', type: 'personal', key: 'Name', required: false },
+            { area: 'write', type: 'credential', key: 'Certificate', required: false },
+            { area: 'write', type: 'personal', key: 'Email', required: false },
         ]);
     });
 });

@@ -1,4 +1,126 @@
 {
+    "consentUpdate": {
+        "dismissing": "Dismissing…",
+        "dismissError": "Couldn’t dismiss this update. Please try again.",
+        "approvedUpdate": "Approved update",
+        "approvedUpdateDescription": "You approved the updated request from {{appName}}.",
+        "headline": {
+            "paused": "{{name}}'s access is paused",
+            "read": "{{name}} is asking to see your {{label}}",
+            "write": "{{name}} is asking to add {{label}} to your account",
+            "multiple": "{{name}} is asking for more access",
+            "changed": "{{name}} changed its request",
+            "optional": "{{name}} has a new option",
+            "removed": "{{name}} now sees less"
+        },
+        "subhead": {
+            "reconnect": "Approve the update to reconnect.",
+            "newItems": "{{count}} new items",
+            "review": "Review what's different.",
+            "optional": "Turn it on if you want. Nothing changes unless you do.",
+            "removed": "Stopped asking for {{label}}.",
+            "changed": "Its request has changed."
+        },
+        "action": {
+            "reconnect": "Reconnect",
+            "allow": "Allow",
+            "allowAccess": "Allow access",
+            "continue": "Continue",
+            "done": "Done",
+            "saveChoices": "Save choices"
+        },
+        "ui": {
+            "close": "Close",
+            "saving": "Saving…",
+            "stopSharing": "Stop sharing",
+            "askParent": "Ask a parent",
+            "saveError": "Something went wrong. Please try again.",
+            "new": "New",
+            "removed": "Removed",
+            "nowRequired": "Now required",
+            "updated": "Updated",
+            "turnOnOption": "Turn on this option",
+            "required": "Required",
+            "whySeeing": "Why am I seeing this?",
+            "appContext": "{{name}} is an app you connected to {{brand}}. You decide what it can see and what it can add to your account. You can change this any time.",
+            "parentNeeded": "A parent is needed to continue.",
+            "stopSharingWarning": "{{name}} will lose access to everything you’ve shared. You can reconnect later.",
+            "keepSharing": "Keep sharing",
+            "stopSharingWith": "Stop sharing with {{name}}",
+            "respondBy": "Respond by {{date}} to keep sharing",
+            "loadError": "We couldn’t load this update. Please try again.",
+            "tryAgain": "Try again",
+            "noLongerAvailable": "This update is no longer available.",
+            "unchangedRead": "{{name}} already sees {{items}}. That doesn’t change.",
+            "unchangedWrite": "{{name}} can already add {{items}}. That doesn’t change.",
+            "unchangedDefault": "Your existing choices stay the same.",
+            "saved": "Saved",
+            "changes": "Changes"
+        },
+        "review": "Review this update",
+        "dismiss": "Dismiss",
+        "needsReview": "Needs your review",
+        "newOption": "New option · added within the last 14 days",
+        "appUpdatedTerms": "App update",
+        "appUpdatedTermsDescription": "{{appName}} updated its access request.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} stopped asking for your {{removed}}",
+            "changed": "{{appName}} changed its request",
+            "review": "{{appName}} needs your review",
+            "option": "{{appName}} has a new option"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Transcripts",
+                "description": "Records of completed courses and learning."
+            },
+            "certificates": {
+                "label": "Certificates",
+                "description": "Credentials recognizing qualifications or completed learning."
+            },
+            "achievements": {
+                "label": "Achievements",
+                "description": "Milestones earned through effort, skill, or perseverance."
+            },
+            "skills": {
+                "label": "Skills",
+                "description": "Abilities developed through training, practice, or experience."
+            },
+            "work_history": {
+                "label": "Work History",
+                "description": "Professional roles and activities over time."
+            },
+            "learning_history": {
+                "label": "Learning History",
+                "description": "Structured programs of learning."
+            },
+            "ids": { "label": "IDs", "description": "Credentials used to verify identity." },
+            "social_badges": {
+                "label": "Social Badges",
+                "description": "Digital labels recognizing participation or group membership."
+            },
+            "memberships": { "label": "Memberships", "description": "Records of memberships." },
+            "accomplishments": {
+                "label": "Accomplishments",
+                "description": "Collections of work that showcase skills and experience."
+            },
+            "experiences": {
+                "label": "Experiences",
+                "description": "Knowledge and skills gained through professional roles and activities."
+            },
+            "accommodations": {
+                "label": "Accommodations",
+                "description": "Adjustments made to support accessibility."
+            },
+            "family": {
+                "label": "Family",
+                "description": "Family profiles connected through shared learning journeys."
+            },
+            "name": { "label": "Name", "description": "Your name." },
+            "email": { "label": "Email", "description": "Your email address." },
+            "profile_photo": { "label": "Profile photo", "description": "Your profile photo." }
+        }
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Earned credits not supplied",

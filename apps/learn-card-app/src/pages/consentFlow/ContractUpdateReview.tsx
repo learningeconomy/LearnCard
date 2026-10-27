@@ -7,14 +7,10 @@ import type {
 } from '@learncard/types';
 import AppModal from 'learn-card-base/components/modals/surfaces/AppModal';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
+import { useLocale } from '../../i18n';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
+import { mDynamic } from '../../i18n/mDynamic';
 import './ContractUpdateReview.scss';
-
-const accessListFormatter = new Intl.ListFormat('en', {
-    style: 'long',
-    type: 'conjunction',
-});
-
 export type ContractUpdateReviewProps = {
     open: boolean;
     name: string;
@@ -24,9 +20,10 @@ export type ContractUpdateReviewProps = {
     preview: ConsentFlowContractUpdatePreview;
     needsGuardianConsent?: boolean;
     guardianContract?: ConsentFlowContractDetails;
-    unchangedRows: string[];
+    unchangedRows: { area: 'read' | 'write'; label: string }[];
     initialEnabledOptionalKeys?: string[];
     readOnly?: boolean;
+    alreadyHandled?: boolean;
     onAccept?: (enabledOptionalKeys: string[]) => Promise<void>;
     onDecline?: () => Promise<void>;
     onClose: () => void;
@@ -45,11 +42,13 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
     unchangedRows,
     initialEnabledOptionalKeys = [],
     readOnly = false,
+    alreadyHandled = false,
     onAccept,
     onDecline,
     onClose,
 }) => {
     const brandingConfig = useBrandingConfig();
+    const locale = useLocale();
     const [enabled, setEnabled] = useState<string[]>(initialEnabledOptionalKeys);
     const [showUnchanged, setShowUnchanged] = useState(false);
     const [showContext, setShowContext] = useState(false);
@@ -60,6 +59,8 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
     const [askParent, setAskParent] = useState(false);
     const closeTimer = useRef<number | undefined>(undefined);
     const mounted = useRef(true);
+    const doneOnly =
+        alreadyHandled && !preview.rows.some(row => row.change === 'added' && !row.scope.required);
     useEffect(() => {
         mounted.current = true;
         return () => {
@@ -68,23 +69,33 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
         };
     }, []);
     const existingReadLabels = unchangedRows
-        .filter(row => row.startsWith('Can see '))
-        .map(row => row.slice('Can see '.length));
+        .filter(row => row.area === 'read')
+        .map(row => row.label);
     const existingWriteLabels = unchangedRows
-        .filter(row => row.startsWith('Can add '))
-        .map(row => row.slice('Can add '.length));
+        .filter(row => row.area === 'write')
+        .map(row => row.label);
+    const listFormatter = new Intl.ListFormat(locale, {
+        style: 'long',
+        type: 'conjunction',
+    });
     const existingSummary = existingReadLabels.length
-        ? `${name} already sees ${accessListFormatter.format(existingReadLabels)}. That doesn't change.`
+        ? mDynamic('consentUpdate.ui.unchangedRead', {
+              name,
+              items: listFormatter.format(existingReadLabels),
+          })
         : existingWriteLabels.length
-          ? `${name} can already add ${accessListFormatter.format(existingWriteLabels)}. That doesn't change.`
-          : 'Your existing choices stay the same.';
+          ? mDynamic('consentUpdate.ui.unchangedWrite', {
+                name,
+                items: listFormatter.format(existingWriteLabels),
+            })
+          : mDynamic('consentUpdate.ui.unchangedDefault');
 
     const toggle = (key: string) =>
         setEnabled(current =>
             current.includes(key) ? current.filter(value => value !== key) : [...current, key]
         );
     const submit = async (guardianConfirmed = false) => {
-        if (readOnly) {
+        if (readOnly || (doneOnly && !confirmDecline)) {
             onClose();
             return;
         }
@@ -101,7 +112,7 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
             setComplete(true);
             closeTimer.current = window.setTimeout(onClose, 400);
         } catch {
-            if (mounted.current) setError('Something went wrong. Please try again.');
+            if (mounted.current) setError(mDynamic('consentUpdate.ui.saveError'));
         } finally {
             if (mounted.current) setBusy(false);
         }
@@ -128,7 +139,7 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                 <button
                     type="button"
                     onClick={onClose}
-                    aria-label="Close"
+                    aria-label={mDynamic('consentUpdate.ui.close')}
                     className="rounded-full p-2 focus-visible:outline focus-visible:outline-2"
                 >
                     <X aria-hidden />
@@ -155,20 +166,21 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                             type="button"
                             aria-expanded={showContext}
                             onClick={() => setShowContext(value => !value)}
-                            aria-label="Why am I seeing this?"
+                            aria-label={mDynamic('consentUpdate.ui.whySeeing')}
                             className="mt-3 flex h-8 w-8 items-center justify-center rounded-full border border-grayscale-400 text-sm font-semibold text-grayscale-700"
                         >
                             ?
                         </button>
                         {showContext && (
                             <p className="mt-2 rounded-xl bg-grayscale-100 p-3 text-sm text-grayscale-700">
-                                {name} is an app you connected to {brandingConfig.name}. You decide
-                                what it can see and what it can add to your account. You can change
-                                this any time.
+                                {mDynamic('consentUpdate.ui.appContext', {
+                                    name,
+                                    brand: brandingConfig.name,
+                                })}
                             </p>
                         )}
                         <section
-                            aria-label="Changes"
+                            aria-label={mDynamic('consentUpdate.ui.changes')}
                             className="contract-update-changes mt-5 rounded-2xl border border-grayscale-200 divide-y divide-grayscale-100"
                         >
                             {preview.rows.map((row, index) => {
@@ -202,13 +214,15 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                                                 <span
                                                     className={`rounded-full px-2 py-0.5 text-xs ${row.change === 'added' ? 'bg-emerald-50 text-emerald-700' : row.change === 'removed' ? 'bg-grayscale-100 text-grayscale-700' : row.scope.required ? 'bg-amber-50 text-amber-700' : 'bg-grayscale-100 text-grayscale-700'}`}
                                                 >
-                                                    {row.change === 'added'
-                                                        ? 'New'
-                                                        : row.change === 'removed'
-                                                          ? 'Removed'
-                                                          : row.scope.required
-                                                            ? 'Now required'
-                                                            : 'Updated'}
+                                                    {mDynamic(
+                                                        row.change === 'added'
+                                                            ? 'consentUpdate.ui.new'
+                                                            : row.change === 'removed'
+                                                              ? 'consentUpdate.ui.removed'
+                                                              : row.scope.required
+                                                                ? 'consentUpdate.ui.nowRequired'
+                                                                : 'consentUpdate.ui.updated'
+                                                    )}
                                                 </span>
                                             </div>
                                             <p className="mt-1 text-sm text-grayscale-600">
@@ -222,13 +236,13 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                                                         checked={isEnabled}
                                                         onChange={() => toggle(scopeKey)}
                                                     />
-                                                    Turn on this option
+                                                    {mDynamic('consentUpdate.ui.turnOnOption')}
                                                 </label>
                                             )}
                                             {row.change !== 'removed' && row.scope.required && (
                                                 <p className="mt-2 flex items-center gap-1 text-xs text-grayscale-600">
                                                     <LockKeyhole size={13} />
-                                                    Required
+                                                    {mDynamic('consentUpdate.ui.required')}
                                                 </p>
                                             )}
                                         </div>
@@ -240,7 +254,7 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                             type="button"
                             aria-expanded={showUnchanged}
                             onClick={() => setShowUnchanged(value => !value)}
-                            className="mt-4 flex items-start gap-2 text-left text-sm text-grayscale-700"
+                            className="mt-4 flex items-start gap-2 text-start text-sm text-grayscale-700"
                         >
                             {existingSummary}{' '}
                             {showUnchanged ? (
@@ -254,7 +268,7 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                                 {unchangedRows.length > 0 && (
                                     <ul className="space-y-1">
                                         {unchangedRows.map(row => (
-                                            <li key={row}>{row}</li>
+                                            <li key={`${row.area}:${row.label}`}>{row.label}</li>
                                         ))}
                                     </ul>
                                 )}
@@ -268,22 +282,21 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                     </div>
                 )}
                 {askParent && !guardianContract && (
-                    <p role="alert">A parent is needed to continue.</p>
+                    <p role="alert">{mDynamic('consentUpdate.ui.parentNeeded')}</p>
                 )}
             </main>
             {!askParent && (
                 <footer className="shrink-0 border-t border-grayscale-200 px-5 py-4">
                     {confirmDecline && (
                         <p className="mb-3 text-sm leading-relaxed text-grayscale-700">
-                            {name} will lose access to everything you've shared. You can reconnect
-                            later.
+                            {mDynamic('consentUpdate.ui.stopSharingWarning', { name })}
                         </p>
                     )}
                     <button
                         type="button"
                         disabled={busy || complete}
                         onClick={() => void submit()}
-                        aria-label={complete ? 'Saved' : undefined}
+                        aria-label={complete ? mDynamic('consentUpdate.ui.saved') : undefined}
                         className={`flex w-full items-center justify-center gap-2 rounded-[20px] px-5 py-3 text-sm font-medium disabled:opacity-40 ${confirmDecline ? 'border border-red-200 text-red-700' : 'bg-grayscale-900 text-white'}`}
                     >
                         {complete ? (
@@ -291,12 +304,16 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                         ) : busy ? (
                             <>
                                 <IonSpinner name="crescent" />
-                                Saving...
+                                {mDynamic('consentUpdate.ui.saving')}
                             </>
                         ) : confirmDecline ? (
-                            'Stop sharing'
+                            mDynamic('consentUpdate.ui.stopSharing')
+                        ) : doneOnly ? (
+                            mDynamic('consentUpdate.action.done')
                         ) : needsGuardianConsent ? (
-                            'Ask a parent'
+                            mDynamic('consentUpdate.ui.askParent')
+                        ) : alreadyHandled ? (
+                            mDynamic('consentUpdate.action.saveChoices')
                         ) : (
                             preview.primaryLabel
                         )}
@@ -308,7 +325,7 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                             onClick={() => setConfirmDecline(false)}
                             className="mt-3 w-full text-center text-sm text-grayscale-700"
                         >
-                            Keep sharing
+                            {mDynamic('consentUpdate.ui.keepSharing')}
                         </button>
                     ) : (
                         <button
@@ -317,17 +334,17 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                             onClick={() => setConfirmDecline(true)}
                             className="mt-3 w-full text-center text-sm text-grayscale-700 underline"
                         >
-                            Stop sharing with {name}
+                            {mDynamic('consentUpdate.ui.stopSharingWith', { name })}
                         </button>
                     )}
                     {deadline && (
                         <p className="mt-3 text-center text-xs text-grayscale-500">
-                            Respond by{' '}
-                            {new Date(deadline).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                            })}{' '}
-                            to keep sharing
+                            {mDynamic('consentUpdate.ui.respondBy', {
+                                date: new Date(deadline).toLocaleDateString(locale, {
+                                    month: 'short',
+                                    day: 'numeric',
+                                }),
+                            })}
                         </p>
                     )}
                 </footer>

@@ -197,4 +197,19 @@ describe('guardian-approved actions', () => {
         expect(action).not.toHaveBeenCalled();
         expect(state.sign).not.toHaveBeenCalled();
     });
+
+    it('settles guarded actions when the guardian PIN modal is cancelled', async () => {
+        state.hasPin.mockResolvedValue(true);
+        const onCancel = vi.fn();
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate({ onCancel }));
+        const pending = result.current.guardedAction(action);
+        await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());
+        const modal = state.newModal.mock.calls[0][0];
+        act(() => modal.props.onCancel());
+        await expect(pending).rejects.toThrow('Guardian verification was cancelled');
+        await act(() => modal.props.handleOnSubmit());
+        expect(onCancel).toHaveBeenCalledOnce();
+        expect(action).not.toHaveBeenCalled();
+    });
 });

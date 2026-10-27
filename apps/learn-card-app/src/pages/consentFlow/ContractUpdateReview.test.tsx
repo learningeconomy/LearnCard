@@ -12,6 +12,30 @@ vi.mock('./ConsentFlowGetAnAdult', () => ({
         </button>
     ),
 }));
+vi.mock('../../i18n', () => ({ useLocale: () => 'en' }));
+vi.mock('../../i18n/mDynamic', () => ({
+    mDynamic: (key: string, values?: Record<string, string>) => {
+        const messages: Record<string, (values?: Record<string, string>) => string> = {
+            'consentUpdate.ui.unchangedRead': values =>
+                `${values?.name} already sees ${values?.items}. That doesn't change.`,
+            'consentUpdate.ui.unchangedWrite': values =>
+                `${values?.name} can already add ${values?.items}. That doesn't change.`,
+            'consentUpdate.ui.unchangedDefault': () => 'Your existing choices stay the same.',
+            'consentUpdate.action.saveChoices': () => 'Save choices',
+            'consentUpdate.action.done': () => 'Done',
+            'consentUpdate.ui.askParent': () => 'Ask a parent',
+            'consentUpdate.ui.turnOnOption': () => 'Turn on this option',
+            'consentUpdate.ui.stopSharing': () => 'Stop sharing',
+            'consentUpdate.ui.keepSharing': () => 'Keep sharing',
+            'consentUpdate.ui.stopSharingWith': values => `Stop sharing with ${values?.name}`,
+            'consentUpdate.ui.stopSharingWarning': values =>
+                `${values?.name} will lose access to everything you've shared. You can reconnect later.`,
+            'consentUpdate.ui.respondBy': values => `Respond by ${values?.date} to keep sharing`,
+            'consentUpdate.ui.saveError': () => 'Something went wrong. Please try again.',
+        };
+        return messages[key]?.(values) ?? key;
+    },
+}));
 
 const preview: ConsentFlowContractUpdatePreview = {
     headline: 'Acme has a new option',
@@ -55,21 +79,26 @@ const renderReview = (
 };
 
 describe('ContractUpdateReview', () => {
-    it('expands existing access in place without mixing it into the change rows', () => {
-        renderReview({ unchangedRows: ['Can see Achievements', 'Can add Transcripts'] });
-        expect(screen.queryByText('Can add Transcripts')).toBeNull();
+    it('expands structured existing access without mixing it into the change rows', () => {
+        renderReview({
+            unchangedRows: [
+                { area: 'read', label: 'Achievements' },
+                { area: 'write', label: 'Transcripts' },
+            ],
+        });
+        expect(screen.queryByText('Transcripts')).toBeNull();
         fireEvent.click(
             screen.getByRole('button', {
                 name: "Acme already sees Achievements. That doesn't change.",
             })
         );
-        expect(screen.getByText('Can add Transcripts')).toBeVisible();
+        expect(screen.getByText('Transcripts')).toBeVisible();
         fireEvent.click(
             screen.getByRole('button', {
                 name: "Acme already sees Achievements. That doesn't change.",
             })
         );
-        expect(screen.queryByText('Can add Transcripts')).toBeNull();
+        expect(screen.queryByText('Transcripts')).toBeNull();
     });
 
     it('does not dismiss another screen when an in-flight save finishes after unmount', async () => {
@@ -142,5 +171,44 @@ describe('ContractUpdateReview', () => {
         expect(props.onAccept).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Parent has reviewed' }));
         await waitFor(() => expect(props.onAccept).toHaveBeenCalledWith([]));
+    });
+    it('does not offer approval again for an already handled version', async () => {
+        const props = renderReview({
+            alreadyHandled: true,
+            preview: { ...preview, rows: [] },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+        await waitFor(() => expect(props.onClose).toHaveBeenCalledOnce());
+        expect(props.onAccept).not.toHaveBeenCalled();
+    });
+
+    it('still allows withdrawing consent after the update was handled', async () => {
+        const props = renderReview({
+            alreadyHandled: true,
+            preview: { ...preview, rows: [] },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Stop sharing with Acme' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Stop sharing' }));
+        await waitFor(() => expect(props.onDecline).toHaveBeenCalledOnce());
+        expect(props.onAccept).not.toHaveBeenCalled();
+    });
+
+    it('settles the saving state when guardian approval is cancelled', async () => {
+        const props = renderReview({
+            needsGuardianConsent: true,
+            guardianContract: {} as React.ComponentProps<
+                typeof ContractUpdateReview
+            >['guardianContract'],
+            onAccept: vi.fn().mockRejectedValue(new Error('cancelled')),
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Ask a parent' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Parent has reviewed' }));
+        await waitFor(() =>
+            expect(screen.getByRole('alert').textContent).toBe(
+                'Something went wrong. Please try again.'
+            )
+        );
+        expect(screen.getByRole('button', { name: 'Ask a parent' })).toBeEnabled();
+        expect(props.onAccept).toHaveBeenCalledOnce();
     });
 });

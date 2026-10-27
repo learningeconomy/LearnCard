@@ -181,14 +181,25 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
             // Show verification modal using FamilyPinWrapper
             return new Promise<void>((resolve, reject) => {
+                let settled = false;
+                const handleCancel = () => {
+                    if (settled) return;
+                    settled = true;
+                    onCancel?.();
+                    reject(new Error('Guardian verification was cancelled'));
+                };
                 const handleSuccess = async () => {
+                    if (settled) return;
                     closeModal();
                     try {
                         await setVerified();
+                        if (settled) return;
                         onVerified?.();
                         await action();
+                        settled = true;
                         resolve();
                     } catch (error) {
+                        settled = true;
                         reject(error);
                     }
                 };
@@ -199,6 +210,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                         skipVerification={false}
                         existingPin={['', '', '', '', '']}
                         handleOnSubmit={handleSuccess}
+                        onCancel={handleCancel}
                         familyName=""
                         closeButtonText="Cancel"
                     />,

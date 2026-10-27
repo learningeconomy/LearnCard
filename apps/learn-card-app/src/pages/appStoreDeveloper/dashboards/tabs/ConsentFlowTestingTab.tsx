@@ -1,4 +1,6 @@
 import * as m from '../../../../paraglide/messages.js';
+import { useLocale } from '../../../../i18n';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import { TransP } from '../../../../i18n/TransP';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('consent-flow-testing-tab');
@@ -28,11 +30,11 @@ import {
 } from 'lucide-react';
 import type {
     ConsentFlowContractChanges,
-    ConsentFlowContractInput,
     ConsentFlowContractDetails,
     ConsentFlowContractUpdateResult,
     LCNIntegration,
 } from '@learncard/types';
+import { buildContractUpdatePreview } from '@learncard/helpers';
 import type { CredentialTemplate } from '../types';
 import type { GuideState } from '../../guides/types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
@@ -55,6 +57,27 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
+    const [contractUpdatePreview, setContractUpdatePreview] = useState<{
+        contract: ConsentFlowContractDetails;
+        result: ConsentFlowContractUpdateResult;
+        reason?: string;
+    } | null>(null);
+    const locale = useLocale();
+    const localizedContractUpdatePreview = useMemo(() => {
+        if (!contractUpdatePreview) return undefined;
+        const { result, contract } = contractUpdatePreview;
+        const rows = result.preview.rows;
+        return buildContractUpdatePreview({
+            name: contract.name,
+            kind: result.kind,
+            diff: {
+                added: rows.filter(row => row.change === 'added').map(row => row.scope),
+                removed: rows.filter(row => row.change === 'removed').map(row => row.scope),
+                changed: rows.filter(row => row.change === 'changed').map(row => row.scope),
+            },
+            translate: mDynamic,
+        });
+    }, [contractUpdatePreview, locale]);
 
     const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
         integration.id,
@@ -69,11 +92,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
     } | null>(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
-    const [contractUpdatePreview, setContractUpdatePreview] = useState<{
-        contract: ConsentFlowContractDetails;
-        result: ConsentFlowContractUpdateResult;
-        reason?: string;
-    } | null>(null);
     const [contractUpdatePreviewLoading, setContractUpdatePreviewLoading] = useState(false);
     const [contractUpdatePreviewError, setContractUpdatePreviewError] = useState('');
     const [contractUpdateChanges, setContractUpdateChanges] = useState('');
@@ -159,7 +177,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
         try {
             if (!contractUri) throw new Error('Choose a contract before creating a preview.');
             const changes = JSON.parse(contractUpdateChanges) as ConsentFlowContractChanges &
-                Partial<ConsentFlowContractInput>;
+                NonNullable<ConsentFlowContractChanges['contract']>;
             if (!changes || typeof changes !== 'object' || Array.isArray(changes)) {
                 throw new SyntaxError('Expected a changes object');
             }
@@ -639,13 +657,13 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </li>
                 </ul>
             </div>
-            {contractUpdatePreview && (
+            {contractUpdatePreview && localizedContractUpdatePreview && (
                 <ContractUpdateReview
                     open
                     name={contractUpdatePreview.contract.name}
                     image={contractUpdatePreview.contract.image}
                     reason={contractUpdatePreview.reason}
-                    preview={contractUpdatePreview.result.preview}
+                    preview={localizedContractUpdatePreview}
                     unchangedRows={[]}
                     readOnly
                     onClose={() => setContractUpdatePreview(null)}

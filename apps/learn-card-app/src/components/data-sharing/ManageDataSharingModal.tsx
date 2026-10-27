@@ -31,9 +31,9 @@ import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import ConsentFlowPrivacyAndData from '../../pages/consentFlow/ConsentFlowPrivacyAndData';
 import XApiDataFeedModal from './XApiDataFeedModal';
+import * as m from '../../paraglide/messages.js';
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
-import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import { buildPermissionText } from './consentSummary';
 
@@ -300,15 +300,15 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
                 >
                     {hasPendingUpdate && (
                         <span
-                            aria-label="Needs your review"
+                            aria-label={m['consentUpdate.needsReview']()}
                             className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
                         />
                     )}
                     {hasPendingUpdate
-                        ? 'Needs your review'
+                        ? m['consentUpdate.needsReview']()
                         : contract.newOptionsUntil &&
                             new Date(contract.newOptionsUntil).getTime() > Date.now()
-                          ? 'New option · added within the last 14 days'
+                          ? m['consentUpdate.newOption']()
                           : permissionText}
                 </p>
             </div>

@@ -57,7 +57,7 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
         isPending,
     } = useTermsTransactions(consentedContract?.uri);
 
-    const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
+    const onScreen = useOnScreen(infiniteScrollRef, '300px', [
         transactionsData?.pages?.[0]?.records?.length,
     ]);
 
@@ -122,6 +122,7 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
                       key={transaction.id}
                       transaction={transaction}
                       contractOwner={consentedContract?.contract.owner}
+                      contractName={consentedContract?.contract.name}
                   />
               ))
           );

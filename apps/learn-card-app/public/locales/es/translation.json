@@ -1,4 +1,135 @@
 {
+    "consentUpdate": {
+        "dismissing": "Descartando…",
+        "dismissError": "No pudimos descartar esta actualización. Inténtalo de nuevo.",
+        "approvedUpdate": "Actualización aprobada",
+        "approvedUpdateDescription": "Aprobaste la solicitud actualizada de {{appName}}.",
+        "headline": {
+            "paused": "El acceso de {{name}} está en pausa",
+            "read": "{{name}} solicita ver tus {{label}}",
+            "write": "{{name}} solicita añadir {{label}} a tu cuenta",
+            "multiple": "{{name}} solicita más acceso",
+            "changed": "{{name}} cambió su solicitud",
+            "optional": "{{name}} tiene una nueva opción",
+            "removed": "{{name}} ahora ve menos información"
+        },
+        "subhead": {
+            "reconnect": "Aprueba la actualización para volver a conectar.",
+            "newItems": "{{count}} elementos nuevos",
+            "review": "Revisa lo que cambió.",
+            "optional": "Actívala si quieres. Nada cambia a menos que lo hagas.",
+            "removed": "Ya no solicita {{label}}.",
+            "changed": "Su solicitud ha cambiado."
+        },
+        "action": {
+            "reconnect": "Volver a conectar",
+            "allow": "Permitir",
+            "allowAccess": "Permitir acceso",
+            "continue": "Continuar",
+            "done": "Listo",
+            "saveChoices": "Guardar opciones"
+        },
+        "ui": {
+            "close": "Cerrar",
+            "saving": "Guardando…",
+            "stopSharing": "Dejar de compartir",
+            "askParent": "Pedir a un adulto responsable",
+            "saveError": "Algo salió mal. Inténtalo de nuevo.",
+            "new": "Nuevo",
+            "removed": "Eliminado",
+            "nowRequired": "Ahora obligatorio",
+            "updated": "Actualizado",
+            "turnOnOption": "Activar esta opción",
+            "required": "Obligatorio",
+            "whySeeing": "¿Por qué veo esto?",
+            "appContext": "{{name}} es una aplicación que conectaste a {{brand}}. Tú decides qué puede ver y qué puede añadir a tu cuenta. Puedes cambiarlo en cualquier momento.",
+            "parentNeeded": "Se necesita un adulto responsable para continuar.",
+            "stopSharingWarning": "{{name}} perderá el acceso a todo lo que has compartido. Puedes volver a conectar más tarde.",
+            "keepSharing": "Seguir compartiendo",
+            "stopSharingWith": "Dejar de compartir con {{name}}",
+            "respondBy": "Responde antes del {{date}} para seguir compartiendo",
+            "loadError": "No pudimos cargar esta actualización. Inténtalo de nuevo.",
+            "tryAgain": "Intentar de nuevo",
+            "noLongerAvailable": "Esta actualización ya no está disponible.",
+            "unchangedRead": "{{name}} ya puede ver {{items}}. Eso no cambia.",
+            "unchangedWrite": "{{name}} ya puede añadir {{items}}. Eso no cambia.",
+            "unchangedDefault": "Tus opciones actuales siguen igual.",
+            "saved": "Guardado",
+            "changes": "Cambios"
+        },
+        "review": "Revisar esta actualización",
+        "dismiss": "Descartar",
+        "needsReview": "Necesita tu revisión",
+        "newOption": "Nueva opción · añadida en los últimos 14 días",
+        "appUpdatedTerms": "Actualización de la aplicación",
+        "appUpdatedTermsDescription": "{{appName}} actualizó su solicitud de acceso.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} ya no solicita tus {{removed}}",
+            "changed": "{{appName}} cambió su solicitud",
+            "review": "{{appName}} necesita tu revisión",
+            "option": "{{appName}} tiene una nueva opción"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Expedientes académicos",
+                "description": "Registros de cursos y aprendizajes completados."
+            },
+            "certificates": {
+                "label": "Certificados",
+                "description": "Credenciales que reconocen cualificaciones o aprendizajes completados."
+            },
+            "achievements": {
+                "label": "Logros",
+                "description": "Hitos alcanzados mediante el esfuerzo, las habilidades o la perseverancia."
+            },
+            "skills": {
+                "label": "Habilidades",
+                "description": "Capacidades desarrolladas mediante formación, práctica o experiencia."
+            },
+            "work_history": {
+                "label": "Historial laboral",
+                "description": "Funciones y actividades profesionales a lo largo del tiempo."
+            },
+            "learning_history": {
+                "label": "Historial de aprendizaje",
+                "description": "Programas de aprendizaje estructurados."
+            },
+            "ids": {
+                "label": "Identificaciones",
+                "description": "Credenciales utilizadas para verificar la identidad."
+            },
+            "social_badges": {
+                "label": "Insignias sociales",
+                "description": "Distintivos digitales que reconocen la participación o pertenencia a un grupo."
+            },
+            "memberships": {
+                "label": "Membresías",
+                "description": "Registros de pertenencia a organizaciones."
+            },
+            "accomplishments": {
+                "label": "Resultados",
+                "description": "Conjuntos de trabajos que muestran habilidades y experiencia."
+            },
+            "experiences": {
+                "label": "Experiencias",
+                "description": "Conocimientos y habilidades adquiridos en funciones y actividades profesionales."
+            },
+            "accommodations": {
+                "label": "Adaptaciones",
+                "description": "Ajustes para facilitar la accesibilidad."
+            },
+            "family": {
+                "label": "Familia",
+                "description": "Perfiles familiares conectados mediante experiencias de aprendizaje compartidas."
+            },
+            "name": { "label": "Nombre", "description": "Tu nombre." },
+            "email": {
+                "label": "Correo electrónico",
+                "description": "Tu dirección de correo electrónico."
+            },
+            "profile_photo": { "label": "Foto de perfil", "description": "Tu foto de perfil." }
+        }
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",

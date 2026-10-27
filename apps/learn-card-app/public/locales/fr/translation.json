@@ -1,4 +1,132 @@
 {
+    "consentUpdate": {
+        "dismissing": "Masquage…",
+        "dismissError": "Impossible de masquer cette mise à jour. Veuillez réessayer.",
+        "approvedUpdate": "Mise à jour approuvée",
+        "approvedUpdateDescription": "Vous avez approuvé la demande mise à jour de {{appName}}.",
+        "headline": {
+            "paused": "L’accès de {{name}} est suspendu",
+            "read": "{{name}} demande à voir vos {{label}}",
+            "write": "{{name}} demande à ajouter des {{label}} à votre compte",
+            "multiple": "{{name}} demande davantage d’accès",
+            "changed": "{{name}} a modifié sa demande",
+            "optional": "{{name}} propose une nouvelle option",
+            "removed": "{{name}} voit désormais moins d’informations"
+        },
+        "subhead": {
+            "reconnect": "Approuvez la mise à jour pour vous reconnecter.",
+            "newItems": "{{count}} nouveaux éléments",
+            "review": "Examinez ce qui a changé.",
+            "optional": "Activez-la si vous le souhaitez. Rien ne change sans votre accord.",
+            "removed": "Ne demande plus les informations suivantes : {{label}}.",
+            "changed": "Sa demande a changé."
+        },
+        "action": {
+            "reconnect": "Se reconnecter",
+            "allow": "Autoriser",
+            "allowAccess": "Autoriser l’accès",
+            "continue": "Continuer",
+            "done": "Terminé",
+            "saveChoices": "Enregistrer les choix"
+        },
+        "ui": {
+            "close": "Fermer",
+            "saving": "Enregistrement…",
+            "stopSharing": "Arrêter le partage",
+            "askParent": "Demander à un parent",
+            "saveError": "Un problème est survenu. Veuillez réessayer.",
+            "new": "Nouveau",
+            "removed": "Supprimé",
+            "nowRequired": "Désormais obligatoire",
+            "updated": "Mis à jour",
+            "turnOnOption": "Activer cette option",
+            "required": "Obligatoire",
+            "whySeeing": "Pourquoi est-ce que je vois cela ?",
+            "appContext": "{{name}} est une application que vous avez connectée à {{brand}}. Vous choisissez ce qu’elle peut voir et ajouter à votre compte. Vous pouvez modifier vos choix à tout moment.",
+            "parentNeeded": "Un parent est nécessaire pour continuer.",
+            "stopSharingWarning": "{{name}} n’aura plus accès à tout ce que vous avez partagé. Vous pourrez vous reconnecter plus tard.",
+            "keepSharing": "Continuer le partage",
+            "stopSharingWith": "Arrêter le partage avec {{name}}",
+            "respondBy": "Répondez avant le {{date}} pour continuer le partage",
+            "loadError": "Impossible de charger cette mise à jour. Veuillez réessayer.",
+            "tryAgain": "Réessayer",
+            "noLongerAvailable": "Cette mise à jour n’est plus disponible.",
+            "unchangedRead": "{{name}} peut déjà voir {{items}}. Cela ne change pas.",
+            "unchangedWrite": "{{name}} peut déjà ajouter {{items}}. Cela ne change pas.",
+            "unchangedDefault": "Vos choix actuels restent inchangés.",
+            "saved": "Enregistré",
+            "changes": "Modifications"
+        },
+        "review": "Examiner cette mise à jour",
+        "dismiss": "Masquer",
+        "needsReview": "À examiner",
+        "newOption": "Nouvelle option · ajoutée au cours des 14 derniers jours",
+        "appUpdatedTerms": "Mise à jour de l’application",
+        "appUpdatedTermsDescription": "{{appName}} a modifié sa demande d’accès.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} ne demande plus vos {{removed}}",
+            "changed": "{{appName}} a modifié sa demande",
+            "review": "{{appName}} vous demande d’examiner une mise à jour",
+            "option": "{{appName}} propose une nouvelle option"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Relevés de notes",
+                "description": "Documents récapitulant les cours et apprentissages terminés."
+            },
+            "certificates": {
+                "label": "Certificats",
+                "description": "Justificatifs reconnaissant des qualifications ou des apprentissages terminés."
+            },
+            "achievements": {
+                "label": "Réalisations",
+                "description": "Étapes franchies grâce aux efforts, aux compétences ou à la persévérance."
+            },
+            "skills": {
+                "label": "Compétences",
+                "description": "Aptitudes développées par la formation, la pratique ou l’expérience."
+            },
+            "work_history": {
+                "label": "Parcours professionnel",
+                "description": "Fonctions et activités professionnelles au fil du temps."
+            },
+            "learning_history": {
+                "label": "Parcours d’apprentissage",
+                "description": "Programmes d’apprentissage structurés."
+            },
+            "ids": {
+                "label": "Pièces d’identité",
+                "description": "Justificatifs utilisés pour vérifier l’identité."
+            },
+            "social_badges": {
+                "label": "Badges sociaux",
+                "description": "Distinctions numériques reconnaissant une participation ou l’appartenance à un groupe."
+            },
+            "memberships": {
+                "label": "Adhésions",
+                "description": "Informations sur les adhésions."
+            },
+            "accomplishments": {
+                "label": "Travaux réalisés",
+                "description": "Ensembles de travaux illustrant les compétences et l’expérience."
+            },
+            "experiences": {
+                "label": "Expériences",
+                "description": "Connaissances et compétences acquises au cours d’activités professionnelles."
+            },
+            "accommodations": {
+                "label": "Aménagements",
+                "description": "Adaptations favorisant l’accessibilité."
+            },
+            "family": {
+                "label": "Famille",
+                "description": "Profils familiaux liés par des parcours d’apprentissage partagés."
+            },
+            "name": { "label": "Nom", "description": "Votre nom." },
+            "email": { "label": "Adresse e-mail", "description": "Votre adresse e-mail." },
+            "profile_photo": { "label": "Photo de profil", "description": "Votre photo de profil." }
+        }
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Crédits obtenus non renseignés",

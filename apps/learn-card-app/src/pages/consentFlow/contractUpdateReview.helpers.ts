@@ -154,18 +154,11 @@ export const applyContractUpdateScopeChoices = (
     }
     return [...materialize].filter(key => credentials.categories[key]?.sharing);
 };
-const formatFieldName = (value: string) =>
-    value
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        .replace(/[_-]+/g, ' ')
-        .replace(/\b\w/g, character => character.toUpperCase());
-
-export const getUnchangedAccessSummary = (
+export const getUnchangedAccessScopes = (
     contract: ConsentFlowContractDetails,
     diff: ConsentFlowContractDiff,
-    terms?: ConsentFlowTerms,
-    getCategoryLabel?: (key: string) => string | undefined
-): string[] => {
+    terms?: ConsentFlowTerms
+): ConsentFlowContractScope[] => {
     const changed = new Set(
         [...diff.added, ...diff.removed, ...diff.changed].map(
             scope => `${scope.area}|${scope.type}|${scope.key}`
@@ -194,11 +187,5 @@ export const getUnchangedAccessSummary = (
         }
     }
 
-    return unchanged.map(scope => {
-        const label =
-            scope.type === 'credential'
-                ? (getCategoryLabel?.(scope.key) ?? formatFieldName(scope.key))
-                : formatFieldName(scope.key);
-        return `${scope.area === 'read' ? 'Can see' : 'Can add'} ${label}`;
-    });
+    return unchanged;
 };

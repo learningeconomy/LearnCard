@@ -99,6 +99,10 @@ await userLearnCard.invoke.acceptContractUpdate(termsUri, {
 
 Here `termsUri` and `selectedTerms` come from the user's existing consent record and review selections. Pass the `audienceVersion` from the current contract whose data recipients the user reviewed; approval rejects a changed audience. Required items must be granted; optional items remain off unless the user selects them. Parent approval is still required where applicable. Acceptance records a `reconsent` transaction and restores `live` access. Declining uses `withdrawConsent(termsUri)`.
 
+Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. A cancelled parent check leaves the review available to retry. A version conflict reloads the latest request before another approval attempt.
+
+The web review, notification card, and history labels use the active app language (English, Spanish, French, or Arabic). Notification navigation does not wait for the best-effort read receipt; dismissal errors stay visible with a retry action.
+
 An update requiring approval defaults to a deadline 30 days after it is saved. Pass an ISO `reconsentDeadline` in `updateContract` options to choose another date. When the deadline passes, the scheduled job moves unanswered requests to `suspended`. The user can still review and approve the latest request to reconnect.
 
 ## Rolling out versioned access
