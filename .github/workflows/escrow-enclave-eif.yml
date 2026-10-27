@@ -259,6 +259,30 @@ jobs:
             contents: read
             id-token: write # cosign keyless signing (GitHub OIDC -> Fulcio/Rekor); granted on this job only.
         steps:
+            # PRODUCTION.md requires proof that this build job's OIDC token (subject
+            # environment:escrow-production) cannot assume the artifact publisher,
+            # which trusts only environment:escrow-production-publish. Fails the
+            # build unless the attempt is AccessDenied; no token is printed.
+            - name: Prove build token cannot assume the production publisher
+              if: inputs.deployment == 'production'
+              env:
+                  PUBLISHER_ROLE_ARN: arn:aws:iam::${{ vars.ESCROW_AUTHORITY_ACCOUNT_ID }}:role/escrow-enclave-production-github-publisher
+                  AWS_REGION: ${{ vars.ESCROW_KMS_REGION }}
+              run: |
+                  set -euo pipefail
+                  [[ "$PUBLISHER_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/ ]] || { echo "::error::Set ESCROW_AUTHORITY_ACCOUNT_ID"; exit 1; }
+                  token="$(curl -fsS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+                    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com" | jq -r .value)"
+                  echo "::add-mask::${token}"
+                  if result="$(aws sts assume-role-with-web-identity --role-arn "$PUBLISHER_ROLE_ARN" \
+                    --role-session-name build-token-rejection --duration-seconds 900 \
+                    --web-identity-token "$token" 2>&1)"; then
+                    echo "::error::The build token assumed the production publisher role"
+                    exit 1
+                  fi
+                  grep -q 'AccessDenied' <<<"$result" || { echo "::error::Assumption failed without AccessDenied"; exit 1; }
+                  echo "Build token rejected by ${PUBLISHER_ROLE_ARN} (AccessDenied)."
+
             - name: Checkout
               uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
