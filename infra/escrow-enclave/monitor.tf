@@ -169,7 +169,14 @@ resource "aws_lambda_function_event_invoke_config" "monitor" {
 # roll changed both key policies but only the escrow change paged this alarm).
 # With count = 0 the credentials list is empty: escrow-only, as before.
 # authority-monitor.tf's credential_key rule also watches the credentials CMK,
-# so its accepted changes page under both alarm names.
+# so its accepted key changes page under both alarm names (alias changes only
+# under this one). The storage CMK is watched too: it encrypts the sealed
+# escrow key object and the authority table. DynamoDB creates its own SSE
+# grants on that key at table create/restore (invokedBy dynamodb, grantee
+# dynamodb.<region>), so only grants to any other grantee page there.
+#
+# Alias calls carry aliasName/targetKeyId, not keyId, so a separate branch
+# matches these keys' aliases by name.
 #
 # Denied attempts: an SCP/IAM deny can log `requestParameters: null` (observed
 # for CloudTrail, see trail-monitor.tf), so a keyId-scoped branch can miss
@@ -177,8 +184,11 @@ resource "aws_lambda_function_event_invoke_config" "monitor" {
 # KMS event names only, account-wide: a denied call on ANY key in this account
 # pages -- the same accepted false-positive tradeoff as trail_tamper.
 locals {
-  kms_governance_events  = ["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "DisableKey"]
-  kms_governance_key_ids = concat([aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn], flatten([for key in aws_kms_key.credentials : [key.key_id, key.arn]]))
+  kms_governance_events       = ["PutKeyPolicy", "CreateGrant", "ScheduleKeyDeletion", "CancelKeyDeletion", "DisableKey", "DisableKeyRotation"]
+  kms_governance_alias_events = ["CreateAlias", "UpdateAlias", "DeleteAlias"]
+  kms_governance_key_ids      = concat([aws_kms_key.escrow.key_id, aws_kms_key.escrow.arn], flatten([for key in aws_kms_key.credentials : [key.key_id, key.arn]]))
+  kms_storage_key_ids         = [aws_kms_key.s3.key_id, aws_kms_key.s3.arn]
+  kms_governance_alias_names  = concat([aws_kms_alias.escrow.name], [for alias in aws_kms_alias.credentials : alias.name], [aws_kms_alias.s3.name])
 }
 
 resource "aws_cloudwatch_event_rule" "escrow_kms_changes" {
@@ -194,8 +204,23 @@ resource "aws_cloudwatch_event_rule" "escrow_kms_changes" {
       } },
       { detail = {
         eventSource = ["kms.amazonaws.com"]
-        eventName   = local.kms_governance_events
+        eventName   = concat(local.kms_governance_events, local.kms_governance_alias_events)
         errorCode   = [{ prefix = "AccessDenied" }]
+      } },
+      { detail = {
+        eventSource       = ["kms.amazonaws.com"]
+        eventName         = local.kms_governance_alias_events
+        requestParameters = { aliasName = local.kms_governance_alias_names }
+      } },
+      { detail = {
+        eventSource       = ["kms.amazonaws.com"]
+        eventName         = [for event in local.kms_governance_events : event if event != "CreateGrant"]
+        requestParameters = { keyId = local.kms_storage_key_ids }
+      } },
+      { detail = {
+        eventSource       = ["kms.amazonaws.com"]
+        eventName         = ["CreateGrant"]
+        requestParameters = { keyId = local.kms_storage_key_ids, granteePrincipal = [{ "anything-but" = { prefix = "dynamodb." } }] }
       } },
     ]
   })
