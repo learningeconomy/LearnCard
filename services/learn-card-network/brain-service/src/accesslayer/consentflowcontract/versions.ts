@@ -1,4 +1,3 @@
-import { getContractById } from './read';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject } from '@helpers/objects.helpers';
 import {
@@ -17,6 +16,7 @@ import type {
     ConsentFlowContractChanges,
     ConsentFlowContractDetails,
     ConsentFlowTermsStatus,
+    ConsentFlowContractDiff,
 } from '@learncard/types';
 import { z } from 'zod';
 import { neogma } from '@instance';
@@ -84,6 +84,19 @@ const parseVersion = (raw: Record<string, unknown>): StoredContractVersion =>
         ...(raw.kind ? { kind: ConsentFlowContractChangeKindValidator.parse(raw.kind) } : {}),
     }) as StoredContractVersion;
 
+const mergeScopePatch = (
+    current: ConsentFlowContractType['read']['personal'],
+    patch?: Record<string, ConsentFlowContractType['read']['personal'][string] | null>
+) => {
+    if (!patch) return current;
+    const merged = { ...current };
+    for (const [key, config] of Object.entries(patch)) {
+        if (config === null) delete merged[key];
+        else merged[key] = { ...current[key], ...config };
+    }
+    return merged;
+};
+
 const mergeConsentFlowContractPatch = (
     current: ConsentFlowContractType,
     patch: ConsentFlowContractChanges['contract']
@@ -96,12 +109,13 @@ const mergeConsentFlowContractPatch = (
                   ? {
                         ...current.read.credentials,
                         ...patch.read.credentials,
-                        categories:
-                            patch.read.credentials.categories ??
+                        categories: mergeScopePatch(
                             current.read.credentials.categories,
+                            patch.read.credentials.categories
+                        ),
                     }
                   : current.read.credentials,
-              personal: patch.read.personal ?? current.read.personal,
+              personal: mergeScopePatch(current.read.personal, patch.read.personal),
           }
         : current.read;
     const write = patch?.write
@@ -112,12 +126,13 @@ const mergeConsentFlowContractPatch = (
                   ? {
                         ...current.write.credentials,
                         ...patch.write.credentials,
-                        categories:
-                            patch.write.credentials.categories ??
+                        categories: mergeScopePatch(
                             current.write.credentials.categories,
+                            patch.write.credentials.categories
+                        ),
                     }
                   : current.write.credentials,
-              personal: patch.write.personal ?? current.write.personal,
+              personal: mergeScopePatch(current.write.personal, patch.write.personal),
           }
         : current.write;
     return ConsentFlowContractValidator.parse({ ...current, read, write });
@@ -135,6 +150,28 @@ export const getConsentFlowContractVersionRecord = async (
     return raw ? parseVersion(raw) : null;
 };
 
+/** Loads accepted snapshots in one query per bounded page, not per consenter. */
+export const getConsentFlowContractVersionRecords = async (
+    requests: { contractId: string; version: number }[]
+): Promise<Map<string, StoredContractVersion>> => {
+    const unique = new Map(
+        requests.map(request => [`${request.contractId}:${request.version}`, request])
+    );
+    const versions = new Map<string, StoredContractVersion>();
+    if (!unique.size) return versions;
+    const result = await neogma.queryRunner.run(
+        `UNWIND $requests AS request
+         MATCH (:ConsentFlowContract {id:request.contractId})-[:HAS_VERSION]->(v:ConsentFlowContractVersion {version:request.version})
+         RETURN request.contractId AS contractId, properties(v) AS version`,
+        { requests: [...unique.values()] }
+    );
+    for (const record of result.records) {
+        const version = parseVersion(record.get('version') as Record<string, unknown>);
+        versions.set(`${record.get('contractId')}:${version.version}`, version);
+    }
+    return versions;
+};
+
 export const getConsentFlowContractVersion = getConsentFlowContractVersionRecord;
 
 export const getConsentFlowContractVersions = async (uri: string) => {
@@ -150,55 +187,129 @@ export const getConsentFlowContractVersions = async (uri: string) => {
 };
 
 export const getContractVersions = getConsentFlowContractVersions;
+type CumulativeContractUpdateRequest = {
+    key: string;
+    contractId: string;
+    acceptedVersion: number;
+    status?: ConsentFlowTermsStatus;
+    reconsentDeadline?: string;
+};
+
+/** Fetches each accepted/current pair once while retaining per-holder status and deadline. */
+export const getCumulativeContractUpdates = async (
+    requests: CumulativeContractUpdateRequest[]
+): Promise<Map<string, NonNullable<ConsentFlowContractDetails['latestUpdate']>>> => {
+    const updates = new Map<string, NonNullable<ConsentFlowContractDetails['latestUpdate']>>();
+    if (!requests.length) return updates;
+    const pairs = new Map(
+        requests.map(request => [
+            `${request.contractId}:${request.acceptedVersion}`,
+            {
+                key: `${request.contractId}:${request.acceptedVersion}`,
+                contractId: request.contractId,
+                acceptedVersion: request.acceptedVersion,
+            },
+        ])
+    );
+    const result = await neogma.queryRunner.run(
+        `UNWIND $requests AS request
+         OPTIONAL MATCH (c:ConsentFlowContract {id:request.contractId})
+         OPTIONAL MATCH (c)-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion {version:request.acceptedVersion})
+         OPTIONAL MATCH (c)-[:HAS_VERSION]->(current:ConsentFlowContractVersion {version:c.currentVersion})
+         OPTIONAL MATCH (c)-[:HAS_VERSION]->(intermediate:ConsentFlowContractVersion)
+         WHERE intermediate.version > request.acceptedVersion
+             AND intermediate.version <= c.currentVersion AND intermediate.kind='requires_consent'
+         WITH request, c, accepted, current, intermediate ORDER BY intermediate.version ASC
+         RETURN request.key AS key, c.id AS contractId, c.currentVersion AS currentVersion,
+             c.latestUpdate AS latestUpdate, properties(accepted) AS accepted, properties(current) AS current,
+             head(collect(CASE WHEN intermediate IS NULL THEN null ELSE {reason:intermediate.reason} END)) AS firstRequired`,
+        { requests: [...pairs.values()] }
+    );
+    const rows = new Map(result.records.map(record => [String(record.get('key')), record]));
+    const parsedPairs = new Map<
+        string,
+        {
+            current: StoredContractVersion;
+            diff: ConsentFlowContractDiff;
+            kind: ConsentFlowContractChangeKind;
+            reason?: string;
+            requiredReason?: string;
+            deadline?: string;
+        }
+    >();
+    for (const request of requests) {
+        const key = `${request.contractId}:${request.acceptedVersion}`;
+        const record = rows.get(key);
+        if (!record?.get('contractId'))
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+        if (request.acceptedVersion >= Number(record.get('currentVersion') ?? 1)) continue;
+        let pair = parsedPairs.get(key);
+        if (!pair) {
+            if (!record.get('accepted') || !record.get('current'))
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Contract version snapshot is missing',
+                });
+            const accepted = parseVersion(record.get('accepted') as Record<string, unknown>);
+            const current = parseVersion(record.get('current') as Record<string, unknown>);
+            const latest = record.get('latestUpdate')
+                ? parseJson(
+                      record.get('latestUpdate'),
+                      z.object({
+                          reason: z.string().optional(),
+                          reconsentDeadline: z.string().optional(),
+                      }),
+                      'latest update'
+                  )
+                : undefined;
+            const firstRequired = record.get('firstRequired') as { reason?: string } | null;
+            pair = {
+                current,
+                diff: diffContractChange(accepted, current),
+                kind: classifyContractChange(accepted, current),
+                reason: latest?.reason,
+                requiredReason: firstRequired?.reason ?? latest?.reason,
+                deadline: latest?.reconsentDeadline,
+            };
+            parsedPairs.set(key, pair);
+        }
+        const requiresApproval =
+            request.status === 'needs_reconsent' || request.status === 'suspended';
+        const kind = requiresApproval ? 'requires_consent' : pair.kind;
+        const reason = requiresApproval ? pair.requiredReason : pair.reason;
+        const deadline = requiresApproval
+            ? (request.reconsentDeadline ?? pair.deadline)
+            : undefined;
+        updates.set(request.key, {
+            fromVersion: request.acceptedVersion,
+            toVersion: pair.current.version,
+            kind,
+            ...(reason ? { reason } : {}),
+            diff: pair.diff,
+            ...(deadline ? { reconsentDeadline: deadline } : {}),
+            createdAt: pair.current.createdAt,
+            preview: buildContractUpdatePreview({
+                name: pair.current.name,
+                kind,
+                diff: pair.diff,
+                status: request.status,
+            }),
+        });
+    }
+    return updates;
+};
+
 export const getCumulativeContractUpdateById = async (
     contractId: string,
     acceptedVersion: number,
     status?: ConsentFlowTermsStatus,
     reconsentDeadline?: string
-): Promise<ConsentFlowContractDetails['latestUpdate']> => {
-    const contract = await getContractById(contractId);
-    if (!contract) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-    const currentVersion = contract.currentVersion ?? contract.version ?? 1;
-    if (acceptedVersion >= currentVersion) return undefined;
-    const [accepted, current] = await Promise.all([
-        getConsentFlowContractVersionRecord(contractId, acceptedVersion),
-        getConsentFlowContractVersionRecord(contractId, currentVersion),
-    ]);
-    if (!accepted || !current) {
-        throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'Contract version snapshot is missing',
-        });
-    }
-    const diff = diffContractChange(accepted, current);
-    const requiresApproval = status === 'needs_reconsent' || status === 'suspended';
-    const kind = requiresApproval ? 'requires_consent' : classifyContractChange(accepted, current);
-    const versions = await neogma.queryRunner.run(
-        `MATCH (c:ConsentFlowContract {id:$id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
-         WHERE version.version > $acceptedVersion AND version.version <= $currentVersion
-         RETURN properties(version) AS version ORDER BY version.version ASC`,
-        { id: contractId, acceptedVersion, currentVersion }
-    );
-    const firstRequiredVersion = versions.records
-        .map(record => parseVersion(record.get('version') as Record<string, unknown>))
-        .find(version => version.kind === 'requires_consent');
-    const reason = requiresApproval
-        ? (firstRequiredVersion?.reason ?? contract.latestUpdate?.reason)
-        : contract.latestUpdate?.reason;
-    const deadline = requiresApproval
-        ? (reconsentDeadline ?? contract.latestUpdate?.reconsentDeadline)
-        : undefined;
-    return {
-        fromVersion: acceptedVersion,
-        toVersion: currentVersion,
-        kind,
-        ...(reason ? { reason } : {}),
-        diff,
-        ...(deadline ? { reconsentDeadline: deadline } : {}),
-        createdAt: current.createdAt,
-        preview: buildContractUpdatePreview({ name: current.name, kind, diff, status }),
-    };
-};
+): Promise<ConsentFlowContractDetails['latestUpdate']> =>
+    (
+        await getCumulativeContractUpdates([
+            { key: contractId, contractId, acceptedVersion, status, reconsentDeadline },
+        ])
+    ).get(contractId);
 
 export const getCumulativeContractUpdate = async (
     uri: string,
@@ -218,7 +329,7 @@ type ContractChanges = {
     needsGuardianConsent?: boolean;
     redirectUrl?: string;
     frontDoorBoostUri?: string;
-    expiresAt?: string;
+    expiresAt?: string | null;
     autoboosts?: Omit<StoredContractVersion['autoboosts'][number], 'issuer'>[];
     writers?: string[];
     recipients?: string[];
@@ -306,6 +417,26 @@ export const updateConsentFlowContractVersion = async (
         }
         uniqueAutoBoosts.set(config.id, config);
     }
+    const requestedWriterIds = [...new Set(changes.writers ?? current.writers)];
+    const targets = await neogma.queryRunner.run(
+        `OPTIONAL MATCH (boost:Boost) WHERE boost.id IN $boostIds
+         WITH collect(DISTINCT boost.id) AS boostIds
+         OPTIONAL MATCH (writer:Profile) WHERE writer.profileId IN $writerIds
+         RETURN boostIds, collect(DISTINCT writer.profileId) AS writerIds`,
+        { boostIds: [...uniqueAutoBoosts.keys()], writerIds: requestedWriterIds }
+    );
+    const existingBoostIds = new Set((targets.records[0]?.get('boostIds') as string[]) ?? []);
+    const existingWriterIds = new Set((targets.records[0]?.get('writerIds') as string[]) ?? []);
+    const missingBoost = [...uniqueAutoBoosts.keys()].find(id => !existingBoostIds.has(id));
+    const missingWriter = requestedWriterIds.find(id => !existingWriterIds.has(id));
+    if (missingBoost || missingWriter) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: missingBoost
+                ? `Unknown AutoBoost: ${missingBoost}`
+                : `Unknown writer: ${missingWriter}`,
+        });
+    }
     const autoboosts = await Promise.all(
         [...uniqueAutoBoosts.values()].map(async config => {
             const existing = existingAutoBoosts.find(item => item.id === config.id);
@@ -342,18 +473,30 @@ export const updateConsentFlowContractVersion = async (
         ...current,
         ...Object.fromEntries(
             Object.entries(changes).filter(
-                ([key, value]) => key !== 'contract' && key !== 'recipients' && value !== undefined
+                ([key, value]) =>
+                    key !== 'contract' &&
+                    key !== 'recipients' &&
+                    key !== 'expiresAt' &&
+                    value !== undefined
             )
         ),
         contract: changes.contract
             ? mergeConsentFlowContractPatch(current.contract, changes.contract)
             : current.contract,
+        expiresAt:
+            changes.expiresAt === null ? undefined : (changes.expiresAt ?? current.expiresAt),
         autoboosts,
         writers: changes.writers ?? current.writers,
     };
     const kind = classifyContractChange(current, next);
     const diff = diffContractChange(current, next);
-    if (kind === 'requires_consent' && (!reason || reason.length > 140)) {
+    if (reason && reason.length > 140) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Reason must be at most 140 characters',
+        });
+    }
+    if (kind === 'requires_consent' && !reason) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'A reason is required when asking users for more access',
@@ -440,7 +583,8 @@ export const updateConsentFlowContractVersion = async (
     const contractProperties = flattenObject({
         ...Object.fromEntries(
             Object.entries(next).filter(
-                ([key]) =>
+                ([key, value]) =>
+                    value !== undefined &&
                     ![
                         'id',
                         'version',
@@ -481,9 +625,13 @@ export const updateConsentFlowContractVersion = async (
          WITH c, terms, owner, holderIds, oldAuto, collect(oldWriter) AS oldWriters
          OPTIONAL MATCH (boost:Boost) WHERE boost.id IN $boostIds
          WITH c, terms, owner, holderIds, oldAuto, oldWriters, collect(DISTINCT boost) AS boosts
+         FOREACH (_ IN CASE WHEN size(boosts) = size($boostIds) THEN [] ELSE [1] END | REMOVE c._contractVersionLock)
+         WITH c, terms, owner, holderIds, oldAuto, oldWriters, boosts
          WHERE size(boosts) = size($boostIds)
          OPTIONAL MATCH (writer:Profile) WHERE writer.profileId IN $writerIds
          WITH c, terms, owner, holderIds, oldAuto, oldWriters, boosts, collect(DISTINCT writer) AS writers
+         FOREACH (_ IN CASE WHEN size(writers) = size($writerIds) THEN [] ELSE [1] END | REMOVE c._contractVersionLock)
+         WITH c, terms, owner, holderIds, oldAuto, oldWriters, boosts, writers
          WHERE size(writers) = size($writerIds)
          CREATE (v:ConsentFlowContractVersion {id:$versionId, version:$nextVersion, createdAt:$createdAt,
              contract:$contract, autoboosts:$autoboostSnapshot, writers:$writerSnapshot, reason:$reason, kind:$kind,

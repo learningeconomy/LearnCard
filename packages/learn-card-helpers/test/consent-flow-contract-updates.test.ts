@@ -136,6 +136,37 @@ describe('classifyContractChange', () => {
     it.each(cases)('%s', (_name, prev, next, expected) => {
         expect(classifyContractChange(prev, next)).toBe(expected);
     });
+
+    it.each([
+        ['read', 'credential'],
+        ['write', 'credential'],
+        ['read', 'personal'],
+        ['write', 'personal'],
+    ] as const)('requires review when a required %s %s purpose changes', (area, type) => {
+        const previous = structuredClone(empty);
+        const current = structuredClone(empty);
+        const oldConfig = { required: true, reason: 'Verify enrollment' };
+        const newConfig = { required: true, reason: 'Share with partners' };
+        if (type === 'credential') {
+            previous[area].credentials.categories.Transcript = oldConfig;
+            current[area].credentials.categories.Transcript = newConfig;
+        } else {
+            previous[area].personal.email = oldConfig;
+            current[area].personal.email = newConfig;
+        }
+        expect(
+            classifyContractChange(
+                snapshot({ contract: previous }),
+                snapshot({ contract: current })
+            )
+        ).toBe('requires_consent');
+        expect(
+            classifyContractChange(
+                snapshot({ contract: previous }),
+                snapshot({ contract: previous })
+            )
+        ).toBe('relaxed');
+    });
 });
 
 describe('diffContractChange', () => {
@@ -167,15 +198,15 @@ describe('diffContractChange', () => {
 });
 
 describe('buildContractUpdatePreview headline grammar', () => {
-    const read = {
-        area: 'read' as const,
-        type: 'credential' as const,
+    const read: ConsentFlowContractScope = {
+        area: 'read',
+        type: 'credential',
         key: 'Transcripts',
         required: true,
     };
-    const write = {
-        area: 'write' as const,
-        type: 'credential' as const,
+    const write: ConsentFlowContractScope = {
+        area: 'write',
+        type: 'credential',
         key: 'Certificates',
         required: true,
     };
@@ -251,13 +282,21 @@ describe('buildContractUpdatePreview headline grammar', () => {
             'Approve the update to reconnect.',
             'Reconnect',
         ],
+        [
+            'relaxed without removal',
+            'relaxed',
+            diff(),
+            'Acme changed its request',
+            'Its request has changed.',
+            'Done',
+        ],
     ];
-    it.each(previewCases)('%s', (_label, kind, changes, headline, subhead, primaryLabel) => {
+    it.each(previewCases)('%s', (label, kind, changes, headline, subhead, primaryLabel) => {
         const preview = buildContractUpdatePreview({
             name: 'Acme',
             kind,
             diff: changes,
-            status: _label === 'suspended' ? 'suspended' : undefined,
+            status: label === 'suspended' ? 'suspended' : undefined,
         });
         expect(preview).toMatchObject({ headline, subhead, primaryLabel });
         expect(preview.rows).toHaveLength(
@@ -273,65 +312,25 @@ describe('canonical contract preview scope copy', () => {
             kind: 'expanded_optional',
             diff: { added: [scope], removed: [], changed: [] },
         }).rows[0];
-
-    it('uses canonical category labels and concise descriptions', () => {
+    it.each([
+        ['Transcript', 'Transcripts', 'Records of completed courses and learning.'],
+        [
+            'Certificate',
+            'Certificates',
+            'Credentials recognizing qualifications or completed learning.',
+        ],
+        [
+            'Achievement',
+            'Achievements',
+            'Milestones earned through effort, skill, or perseverance.',
+        ],
+        ['Skill', 'Skills', 'Abilities developed through training, practice, or experience.'],
+        ['Work History', 'Work History', 'Professional roles and activities over time.'],
+    ])('uses canonical category copy for %s', (key, label, subtitle) => {
         expect(
-            previewScope({
-                area: 'read',
-                type: 'credential',
-                key: 'Transcript',
-                required: false,
-            })
-        ).toMatchObject({
-            label: 'Transcripts',
-            subtitle: 'Records of completed courses and learning.',
-        });
-        expect(
-            previewScope({
-                area: 'write',
-                type: 'credential',
-                key: 'Certificate',
-                required: false,
-            })
-        ).toMatchObject({
-            label: 'Certificates',
-            subtitle: 'Credentials recognizing qualifications or completed learning.',
-        });
-        expect(
-            previewScope({
-                area: 'read',
-                type: 'credential',
-                key: 'Achievement',
-                required: false,
-            })
-        ).toMatchObject({
-            label: 'Achievements',
-            subtitle: 'Milestones earned through effort, skill, or perseverance.',
-        });
-        expect(
-            previewScope({
-                area: 'read',
-                type: 'credential',
-                key: 'Skill',
-                required: false,
-            })
-        ).toMatchObject({
-            label: 'Skills',
-            subtitle: 'Abilities developed through training, practice, or experience.',
-        });
-        expect(
-            previewScope({
-                area: 'read',
-                type: 'credential',
-                key: 'Work History',
-                required: false,
-            })
-        ).toMatchObject({
-            label: 'Work History',
-            subtitle: 'Professional roles and activities over time.',
-        });
+            previewScope({ area: 'read', type: 'credential', key: key!, required: false })
+        ).toMatchObject({ label, subtitle });
     });
-
     it('uses per-item reasons first, canonical personal copy otherwise, and no invented unknown copy', () => {
         expect(
             previewScope({
@@ -343,28 +342,13 @@ describe('canonical contract preview scope copy', () => {
             })
         ).toMatchObject({ label: 'Skills', subtitle: 'Your chosen reason.' });
         expect(
-            previewScope({
-                area: 'read',
-                type: 'personal',
-                key: 'Email',
-                required: false,
-            })
+            previewScope({ area: 'read', type: 'personal', key: 'Email', required: false })
         ).toMatchObject({ label: 'Email', subtitle: 'Your email address.' });
         expect(
-            previewScope({
-                area: 'read',
-                type: 'personal',
-                key: 'Image',
-                required: false,
-            })
+            previewScope({ area: 'read', type: 'personal', key: 'Image', required: false })
         ).toMatchObject({ label: 'Profile photo', subtitle: 'Your profile photo.' });
         expect(
-            previewScope({
-                area: 'read',
-                type: 'credential',
-                key: 'Custom Scope',
-                required: false,
-            })
+            previewScope({ area: 'read', type: 'credential', key: 'Custom Scope', required: false })
         ).toMatchObject({ label: 'Custom Scope', subtitle: '' });
     });
 });

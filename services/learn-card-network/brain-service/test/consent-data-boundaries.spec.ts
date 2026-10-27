@@ -328,6 +328,62 @@ describe('consented data boundaries', () => {
         }
     });
 
+    it('keeps accepted snapshots isolated across consenters, contracts, and versions', async () => {
+        const first = await consent({
+            terms: {
+                ...structuredClone(normalFullTerms),
+                read: { ...normalFullTerms.read, personal: { name: 'first-grant' } },
+            },
+        });
+        const changed = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: first.contractUri,
+            changes: { contract: { read: { personal: { email: { required: true } } } } },
+            reason: 'Verify enrolled learners',
+        });
+        const secondLearner = await getUser(randomBytes(32).toString('hex'));
+        await secondLearner.clients.fullAuth.profile.createProfile({
+            profileId: `boundary-third-${randomBytes(5).toString('hex')}`,
+        });
+        await secondLearner.clients.fullAuth.contracts.consentToContract({
+            contractUri: first.contractUri,
+            terms: {
+                ...structuredClone(normalFullTerms),
+                read: {
+                    ...normalFullTerms.read,
+                    personal: { name: 'second-grant', email: 'second@example.test' },
+                },
+            },
+        });
+        const otherContract = await consent({
+            terms: {
+                ...structuredClone(normalFullTerms),
+                read: { ...normalFullTerms.read, personal: { name: 'other-contract' } },
+            },
+        });
+
+        const response = await owner.clients.fullAuth.contracts.getConsentedData({ limit: 10 });
+        const names = response.records.map(record => record.personal?.name).sort();
+        expect(names).toEqual(['first-grant', 'other-contract', 'second-grant']);
+        expect(response.records).toHaveLength(3);
+
+        const firstContract = await owner.clients.fullAuth.contracts.getConsentedDataForContract({
+            uri: first.contractUri,
+            limit: 10,
+        });
+        expect(firstContract.records.map(record => record.personal?.name).sort()).toEqual([
+            'first-grant',
+            'second-grant',
+        ]);
+        expect(
+            firstContract.records.find(record => record.personal?.name === 'first-grant')?.personal
+        ).toEqual({ name: 'first-grant' });
+        expect(
+            firstContract.records.find(record => record.personal?.name === 'second-grant')?.personal
+        ).toEqual({ name: 'second-grant', email: 'second@example.test' });
+        expect(changed.version).toBe(2);
+        expect(otherContract.contractUri).not.toBe(first.contractUri);
+    });
+
     it('applies eligibility before pagination and accepts a cursor on every route', async () => {
         const { contractUri, termsUri } = await consent();
         const secondLearner = await getUser(randomBytes(32).toString('hex'));

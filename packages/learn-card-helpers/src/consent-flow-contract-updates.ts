@@ -121,7 +121,9 @@ export const classifyContractChange = (
         else expandedOptional = true;
     }
     for (const scope of diff.changed) {
-        if (scope.required && !before.get(scopeKey(scope))?.required) requiresConsent = true;
+        const previous = before.get(scopeKey(scope));
+        if (scope.required && (!previous?.required || previous.reason !== scope.reason))
+            requiresConsent = true;
     }
     const oldBoosts = set(prev.autoboosts);
     if ([...set(next.autoboosts)].some(boost => !oldBoosts.has(boost))) requiresConsent = true;
@@ -212,66 +214,102 @@ const PERSONAL_SCOPE_COPY: Record<string, { label: string; description: string }
     'PROFILE PHOTO': { label: 'Profile photo', description: 'Your profile photo.' },
 };
 
-const scopeCopy = (scope: ConsentFlowContractScope) =>
-    (scope.type === 'personal' ? PERSONAL_SCOPE_COPY : CANONICAL_SCOPE_COPY)[
+const scopeCopy = (
+    scope: ConsentFlowContractScope,
+    translate?: (key: string, values?: Record<string, unknown>) => string
+) => {
+    const copy = (scope.type === 'personal' ? PERSONAL_SCOPE_COPY : CANONICAL_SCOPE_COPY)[
         scope.key.toUpperCase()
-    ] ?? { label: scope.key, description: '' };
+    ];
+    if (!copy) return { label: scope.key, description: '' };
+    if (!translate) return copy;
+    const prefix = `consentUpdate.scope.${copy.label.toLowerCase().replace(/ /g, '_')}`;
+    return {
+        label: translate(`${prefix}.label`),
+        description: translate(`${prefix}.description`),
+    };
+};
 
 export const buildContractUpdatePreview = ({
     name,
     kind,
     diff,
     status,
+    translate,
 }: {
     name: string;
     kind: ConsentFlowContractChangeKind;
     diff: ConsentFlowContractDiff;
     status?: string;
+    /** Clients localize structured changes; the API retains canonical English copy. */
+    translate?: (key: string, values?: Record<string, unknown>) => string;
 }): ConsentFlowContractUpdatePreview => {
-    const label = (scope: ConsentFlowContractScope) => scopeCopy(scope).label;
+    const text = (key: string, fallback: string, values?: Record<string, unknown>) =>
+        translate?.(`consentUpdate.${key}`, values) ?? fallback;
+    const label = (scope: ConsentFlowContractScope) => scopeCopy(scope, translate).label;
     const consentChanges = [...diff.added, ...diff.changed];
     const consentChangeCount = consentChanges.length;
     let headline: string;
     let subhead: string;
     let primaryLabel: string;
     if (status === 'suspended') {
-        headline = `${name}'s access is paused`;
-        subhead = 'Approve the update to reconnect.';
-        primaryLabel = 'Reconnect';
+        headline = text('headline.paused', `${name}'s access is paused`, { name });
+        subhead = text('subhead.reconnect', 'Approve the update to reconnect.');
+        primaryLabel = text('action.reconnect', 'Reconnect');
     } else if (kind === 'requires_consent' && consentChangeCount === 1) {
         const scope = consentChanges[0]!;
+        const values = { name, label: label(scope) };
         headline =
             scope.area === 'read'
-                ? `${name} is asking to see your ${label(scope)}`
-                : `${name} is asking to add ${label(scope)} to your account`;
+                ? text('headline.read', `${name} is asking to see your ${values.label}`, values)
+                : text(
+                      'headline.write',
+                      `${name} is asking to add ${values.label} to your account`,
+                      values
+                  );
         subhead = '';
-        primaryLabel = 'Allow';
+        primaryLabel = text('action.allow', 'Allow');
     } else if (kind === 'requires_consent' && consentChangeCount > 1) {
-        headline = `${name} is asking for more access`;
-        subhead = `${consentChangeCount} new items`;
-        primaryLabel = 'Allow access';
+        headline = text('headline.multiple', `${name} is asking for more access`, { name });
+        subhead = text('subhead.newItems', `${consentChangeCount} new items`, {
+            count: consentChangeCount,
+        });
+        primaryLabel = text('action.allowAccess', 'Allow access');
     } else if (kind === 'requires_consent') {
-        headline = `${name} changed its request`;
-        subhead = "Review what's different.";
-        primaryLabel = 'Allow';
+        headline = text('headline.changed', `${name} changed its request`, { name });
+        subhead = text('subhead.review', "Review what's different.");
+        primaryLabel = text('action.allow', 'Allow');
     } else if (kind === 'expanded_optional') {
-        headline = `${name} has a new option`;
-        subhead = 'Turn it on if you want. Nothing changes unless you do.';
-        primaryLabel = 'Continue';
+        headline = text('headline.optional', `${name} has a new option`, { name });
+        subhead = text(
+            'subhead.optional',
+            'Turn it on if you want. Nothing changes unless you do.'
+        );
+        primaryLabel = text('action.continue', 'Continue');
     } else {
         const removed = diff.removed[0];
-        headline = `${name} now sees less`;
-        subhead = removed ? `Stopped asking for ${label(removed)}.` : 'Its request has changed.';
-        primaryLabel = 'Done';
+        headline = removed
+            ? text('headline.removed', `${name} now sees less`, { name })
+            : text('headline.changed', `${name} changed its request`, { name });
+        subhead = removed
+            ? text('subhead.removed', `Stopped asking for ${label(removed)}.`, {
+                  label: label(removed),
+              })
+            : text('subhead.changed', 'Its request has changed.');
+        primaryLabel = text('action.done', 'Done');
     }
     const row = (scope: ConsentFlowContractScope, change: 'added' | 'removed' | 'changed') => {
-        const copy = scopeCopy(scope);
+        const copy = scopeCopy(scope, translate);
         return { scope, change, label: copy.label, subtitle: scope.reason || copy.description };
     };
-    const rows = [
-        ...diff.added.map(scope => row(scope, 'added')),
-        ...diff.removed.map(scope => row(scope, 'removed')),
-        ...diff.changed.map(scope => row(scope, 'changed')),
-    ];
-    return { headline, subhead, rows, primaryLabel };
+    return {
+        headline,
+        subhead,
+        rows: [
+            ...diff.added.map(scope => row(scope, 'added')),
+            ...diff.removed.map(scope => row(scope, 'removed')),
+            ...diff.changed.map(scope => row(scope, 'changed')),
+        ],
+        primaryLabel,
+    };
 };

@@ -40,7 +40,6 @@ import {
     PaginatedLCNProfiles,
     PaginatedVisibleLCNProfiles,
     ConsentFlowContract,
-    ConsentFlowContractInput,
     ConsentFlowContractQuery,
     ConsentFlowTerms,
     ConsentFlowTermsQuery,
@@ -668,6 +667,8 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<string>;
     /**
      * Updates a live request at the same URI, or previews it without saving.
+     * Scope maps merge with the current request. Set an entry to null to remove it;
+     * expiresAt: null clears expiry. AutoBoost and writer arrays replace their lists.
      * @example
      * await learnCard.invoke.updateContract(uri, {
      *     read: { credentials: { categories: {
@@ -677,7 +678,7 @@ export type LearnCardNetworkPluginMethods = {
      */
     updateContract: (
         uri: string,
-        changes: ConsentFlowContractChanges & Partial<ConsentFlowContractInput>,
+        changes: ConsentFlowContractChanges & NonNullable<ConsentFlowContractChanges['contract']>,
         options?: { reason?: string; reconsentDeadline?: string; dryRun?: boolean }
     ) => Promise<ConsentFlowContractUpdateResult>;
     addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;

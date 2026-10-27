@@ -2,15 +2,11 @@ import { pathToFileURL } from 'node:url';
 import { initLearnCard } from '@learncard/init';
 
 export const updateTutorialContract = async (learnCard, contractUri, { apply = false } = {}) => {
-    const current = await learnCard.invoke.getContract(contractUri);
-    // Category maps replace the supplied section: preserve existing entries explicitly.
+    // Scope maps merge: this adds Transcripts without dropping existing choices.
     const changes = {
         read: {
-            ...current.contract.read,
             credentials: {
-                ...current.contract.read.credentials,
                 categories: {
-                    ...current.contract.read.credentials.categories,
                     Transcript: { required: true, reason: 'to calculate your GPA' },
                 },
             },

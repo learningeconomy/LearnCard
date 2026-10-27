@@ -12,11 +12,11 @@ When creating the initial request, **Preview Contract** shows the current unsave
 
 Mixed updates use the strongest change kind in this table, from bottom to top.
 
-| Kind                | Examples                                                                                                                                                     | Existing access                                                                                         | What users see                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `relaxed`           | Remove a category, make an item optional, extend expiry, remove an AutoBoost, or edit presentation text                                                      | Live terms move to the new version; removed grants are dropped                                          | A quiet history/feed entry; no push or unread badge                                           |
-| `expanded_optional` | Add an optional read **or write** category or personal field                                                                                                 | Live terms move forward with the new option **off**, even when `defaultEnabled` is `true`               | A quiet feed entry and a new-option card subtitle for 14 days; users can review and enable it |
-| `requires_consent`  | Add a required item, make an item required, add an AutoBoost or writer, shorten expiry, change the app name or access rationale, or begin requiring a parent | Existing live terms become `needs_reconsent`; their previously accepted version and grants are retained | One push notification, an unread feed entry, and “Needs your review” on the connected app     |
+| Kind                | Examples                                                                                                                                                                                      | Existing access                                                                                         | What users see                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `relaxed`           | Remove a category, make an item optional, extend expiry, remove an AutoBoost, or edit presentation text                                                                                       | Live terms move to the new version; removed grants are dropped                                          | A quiet history/feed entry; no push or unread badge                                           |
+| `expanded_optional` | Add an optional read **or write** category or personal field                                                                                                                                  | Live terms move forward with the new option **off**, even when `defaultEnabled` is `true`               | A quiet feed entry and a new-option card subtitle for 14 days; users can review and enable it |
+| `requires_consent`  | Add a required item, make an item required, change a required item's reason, add an AutoBoost or writer, shorten expiry, change the app name or access rationale, or begin requiring a parent | Existing live terms become `needs_reconsent`; their previously accepted version and grants are retained | One push notification, an unread feed entry, and “Needs your review” on the connected app     |
 
 Optional additions never enable themselves. An update also does not reactivate a withdrawn connection or a consumed one-time request.
 
@@ -31,15 +31,11 @@ import { pathToFileURL } from 'node:url';
 import { initLearnCard } from '@learncard/init';
 
 export const updateTutorialContract = async (learnCard, contractUri, { apply = false } = {}) => {
-    const current = await learnCard.invoke.getContract(contractUri);
-    // Category maps replace the supplied section: preserve existing entries explicitly.
+    // Scope maps merge: this adds Transcripts without dropping existing choices.
     const changes = {
         read: {
-            ...current.contract.read,
             credentials: {
-                ...current.contract.read.credentials,
                 categories: {
-                    ...current.contract.read.credentials.categories,
                     Transcript: { required: true, reason: 'to calculate your GPA' },
                 },
             },
@@ -67,7 +63,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
 
 Run `node --env-file=.env update-contract.mjs` to preview. The result contains `{ version, kind, affectedUsers, preview }`. `preview` includes the headline, subhead, change rows, and primary button label rendered by the user's review screen. A dry run writes no version, terms, transaction, or notification.
 
-Changed rows use shared canonical category labels and descriptions, not tenant-specific branding, so the API preview, developer preview, and user review display identical copy. A per-item `reason` takes precedence over the shared description.
+Changed rows use shared canonical category labels and descriptions, not tenant-specific branding. The API returns canonical English preview text and structured scopes; clients can localize the same headline, rows, and actions from that structure. A developer-authored per-item `reason` stays verbatim and takes precedence over the shared description.
 
 Update notifications identify the connected app using the request's public `contractName`, not the owner's profile name.
 
@@ -75,7 +71,11 @@ In the App Store developer dashboard's Testing tab, paste the proposed `changes`
 
 To save the update, set `APPLY_UPDATE=true` in your private `.env` and run the same command. The reason is required for `requires_consent` and is limited to 140 characters. Missing it produces `A reason is required when asking users for more access`.
 
-`changes` accepts creation metadata and a `contract` object; the SDK also accepts `read` and `write` directly, as above. Preserve existing entries in each supplied section when adding an item; omit entries deliberately when removing them. AutoBoost and writer arrays describe the complete next configuration. Use `updateContract` instead of the removed SDK `addAutoBoostsToContract` and `removeAutoBoostsFromContract` methods.
+`changes` accepts creation metadata and a `contract` object; the SDK also accepts `read` and `write` directly, as above. Category and personal-field maps merge with the current request: omitted entries stay unchanged, and an empty map does not remove existing access. Set an individual entry to `null` to remove it, for example `{ read: { credentials: { categories: { Transcript: null } } } }`. AutoBoost and writer arrays still describe the complete next configuration. Use `updateContract` instead of the removed SDK `addAutoBoostsToContract` and `removeAutoBoostsFromContract` methods.
+
+Set `expiresAt: null` to clear expiry. Extending or clearing expiry follows the ticket's quiet-update policy: this can extend how long an app can access existing data without another approval prompt.
+
+Unknown AutoBoost IDs and writer profiles are rejected as invalid input before committing a version. A concurrency conflict means the saved request changed while the update was being applied, not that the referenced items were missing.
 
 Use `getContractVersions(uri)` to list saved versions, their timestamps, change kinds, and reasons. Deleting a contract retires it and withdraws access; it does not erase users' terms or transactions from their holder export. Do not delete and recreate a connection to change requested access.
 

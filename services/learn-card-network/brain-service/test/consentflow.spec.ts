@@ -847,7 +847,9 @@ describe('Consent Flow Contracts', () => {
             ).toBe(false);
             const removal = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
                 uri: emptyUri,
-                changes: { contract: { write: { credentials: { categories: {} } } } },
+                changes: {
+                    contract: { write: { credentials: { categories: { Certificate: null } } } },
+                },
             });
             expect(removal.kind).toBe('relaxed');
             expect(
@@ -1016,16 +1018,7 @@ describe('Consent Flow Contracts', () => {
 
         it('migrates relaxed changes by pruning removed grants without requiring reapproval', async () => {
             const changedContract = {
-                ...normalContract,
-                read: {
-                    ...normalContract.read,
-                    credentials: {
-                        ...normalContract.read.credentials,
-                        categories: {
-                            Achievement: normalContract.read.credentials.categories.Achievement!,
-                        },
-                    },
-                },
+                read: { credentials: { categories: { ID: null } } },
             };
             const result = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
                 uri,

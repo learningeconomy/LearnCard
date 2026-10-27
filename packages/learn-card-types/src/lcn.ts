@@ -798,6 +798,14 @@ export const ConsentFlowContractValidator = z.object({
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
+const ConsentFlowContractScopePatchValidator = z
+    .object({
+        required: z.boolean(),
+        defaultEnabled: z.boolean().optional(),
+        reason: z.string().optional(),
+    })
+    .nullable();
+
 export const ConsentFlowContractChangesValidator = z.object({
     contract: z
         .object({
@@ -807,26 +815,12 @@ export const ConsentFlowContractChangesValidator = z.object({
                     credentials: z
                         .object({
                             categories: z
-                                .record(
-                                    z.string(),
-                                    z.object({
-                                        required: z.boolean(),
-                                        defaultEnabled: z.boolean().optional(),
-                                        reason: z.string().optional(),
-                                    })
-                                )
+                                .record(z.string(), ConsentFlowContractScopePatchValidator)
                                 .optional(),
                         })
                         .optional(),
                     personal: z
-                        .record(
-                            z.string(),
-                            z.object({
-                                required: z.boolean(),
-                                defaultEnabled: z.boolean().optional(),
-                                reason: z.string().optional(),
-                            })
-                        )
+                        .record(z.string(), ConsentFlowContractScopePatchValidator)
                         .optional(),
                 })
                 .optional(),
@@ -835,26 +829,12 @@ export const ConsentFlowContractChangesValidator = z.object({
                     credentials: z
                         .object({
                             categories: z
-                                .record(
-                                    z.string(),
-                                    z.object({
-                                        required: z.boolean(),
-                                        defaultEnabled: z.boolean().optional(),
-                                        reason: z.string().optional(),
-                                    })
-                                )
+                                .record(z.string(), ConsentFlowContractScopePatchValidator)
                                 .optional(),
                         })
                         .optional(),
                     personal: z
-                        .record(
-                            z.string(),
-                            z.object({
-                                required: z.boolean(),
-                                defaultEnabled: z.boolean().optional(),
-                                reason: z.string().optional(),
-                            })
-                        )
+                        .record(z.string(), ConsentFlowContractScopePatchValidator)
                         .optional(),
                 })
                 .optional(),
@@ -868,7 +848,7 @@ export const ConsentFlowContractChangesValidator = z.object({
     needsGuardianConsent: z.boolean().optional(),
     redirectUrl: z.string().optional(),
     frontDoorBoostUri: z.string().optional(),
-    expiresAt: z.string().optional(),
+    expiresAt: z.string().nullable().optional(),
     autoboosts: AutoBoostConfigValidator.array().optional(),
     writers: z.string().array().optional(),
     recipients: z.string().array().optional(),
@@ -1209,6 +1189,7 @@ export const ConsentFlowTransactionValidator = z.object({
     referral: ConsentFlowReferralValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
+    kind: ConsentFlowContractChangeKindValidator.optional(),
     date: z.string(),
     uris: z.string().array().optional(),
     consentedVersion: z.number().int().positive().optional(),
