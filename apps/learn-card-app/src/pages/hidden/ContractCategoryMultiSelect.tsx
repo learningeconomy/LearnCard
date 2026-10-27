@@ -7,28 +7,23 @@ import BulkImportWithPlusIcon from 'learn-card-base/svgs/BulkImportWithPlusIcon'
 import AdminToolsConsentFlowCategoryPickerModal from '../adminToolsPage/AdminToolsConsentFlow/AdminToolsConsentFlowCategoryPickerModal';
 import AdminToolsConsentFlowCategorySettings from '../adminToolsPage/AdminToolsConsentFlow/AdminToolsConsentFlowCategorySettings';
 
-import {
-    useModal,
-    ModalTypes,
-    CredentialCategoryEnum,
-    contractCategoryNameToCategoryMetadata,
-} from 'learn-card-base';
-import { ConsentFlowContract, ConsentFlowContractDetails } from '@learncard/types';
-import { SetState } from 'packages/shared-types/dist';
+import { useModal, ModalTypes, contractCategoryNameToCategoryMetadata } from 'learn-card-base';
+import type { ConsentFlowContract } from '@learncard/types';
 import {
     CONTRACT_CATEGORIES,
     isVerifiableDataContractCategory,
 } from '../../helpers/contract.helpers';
+import { mDynamic } from '../../i18n/mDynamic';
 
 type ContractCategoryMultiSelectProps = {
     values: ConsentFlowContract['read']['credentials']['categories'];
     onChange: (value: ConsentFlowContract['read']['credentials']['categories']) => void;
     label?: string;
     className?: string;
-    setContract?: SetState<ConsentFlowContractDetails>;
     mode?: 'read' | 'write';
     hideVerifiableDataOnWrite?: boolean;
-    categoryTitleOverrides?: Partial<Record<CredentialCategoryEnum, string>>;
+    categoryTitleOverrides?: Partial<Record<string, string>>;
+    availableCategories?: readonly string[];
 };
 
 const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = ({
@@ -36,15 +31,15 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
     onChange,
     label = '',
     className = '',
-    setContract = () => {},
     mode = 'read',
     hideVerifiableDataOnWrite = false,
     categoryTitleOverrides = {},
+    availableCategories = CONTRACT_CATEGORIES,
 }) => {
     const { newModal } = useModal();
 
     const shouldHideVerifiableDataCategories = mode === 'write' && hideVerifiableDataOnWrite;
-    const selectedCategories = Object.keys(values) as CredentialCategoryEnum[];
+    const selectedCategories = Object.keys(values);
 
     const visibleCategories = selectedCategories.filter(category => {
         if (shouldHideVerifiableDataCategories && isVerifiableDataContractCategory(category)) {
@@ -54,13 +49,13 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         return true;
     });
 
-    const allowedCategories = CONTRACT_CATEGORIES.filter(category => {
+    const allowedCategories = availableCategories.filter(category => {
         if (shouldHideVerifiableDataCategories && isVerifiableDataContractCategory(category)) {
             return false;
         }
 
         return true;
-    }) as CredentialCategoryEnum[];
+    });
 
     React.useEffect(() => {
         if (!shouldHideVerifiableDataCategories) return;
@@ -74,7 +69,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         onChange(
             produce(values, draft => {
                 hiddenCategories.forEach(category => {
-                    delete draft[category as CredentialCategoryEnum];
+                    delete draft[category];
                 });
             })
         );
@@ -84,8 +79,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         newModal(
             <AdminToolsConsentFlowCategoryPickerModal
                 selectedCategories={values}
-                setContract={setContract}
-                mode={mode}
+                onChange={onChange}
                 allowedCategories={allowedCategories}
                 titleOverrides={categoryTitleOverrides}
             />,
@@ -100,10 +94,9 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
         newModal(
             <AdminToolsConsentFlowCategorySettings
                 category={category}
-                setContract={setContract}
+                onChange={onChange}
                 values={values}
-                mode={mode}
-                titleOverride={categoryTitleOverrides[category as CredentialCategoryEnum]}
+                titleOverride={categoryTitleOverrides[category]}
             />,
             {
                 sectionClassName: 'max-w-[500px]!',
@@ -115,7 +108,7 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
     const inputs = visibleCategories.map((category, index) => {
         const metadata = contractCategoryNameToCategoryMetadata(category);
         const { title, IconWithShape } = metadata || {};
-        const displayTitle = categoryTitleOverrides[category as CredentialCategoryEnum] ?? title;
+        const displayTitle = categoryTitleOverrides[category] ?? title ?? category;
 
         const settings = values[category];
 
@@ -145,6 +138,9 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
                 <div className="flex flex-1 items-center gap-2">
                     <button
                         type="button"
+                        aria-label={mDynamic('consentUpdate.editor.removeAccess', {
+                            label: displayTitle,
+                        })}
                         onClick={e => {
                             e.stopPropagation();
                             onChange(
@@ -159,6 +155,9 @@ const ContractCategoryMultiSelect: React.FC<ContractCategoryMultiSelectProps> = 
 
                     <button
                         type="button"
+                        aria-label={mDynamic('consentUpdate.editor.accessSettings', {
+                            label: displayTitle,
+                        })}
                         onClick={e => {
                             e.stopPropagation();
                             handleOpenCategorySettings(category);

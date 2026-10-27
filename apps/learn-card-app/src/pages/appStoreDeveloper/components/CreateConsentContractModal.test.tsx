@@ -64,11 +64,13 @@ vi.mock('../../consentFlow/useConsentAccountIdentity', () => ({
     useConsentAccountIdentity: () => ({ isLoading: false }),
 }));
 vi.mock('../../../helpers/contract.helpers', () => ({
+    CONTRACT_CATEGORIES: [],
     getMinimumTermsForContract: () => ({
         read: { personal: {}, credentials: { categories: {} } },
         write: { personal: {}, credentials: { categories: {} } },
     }),
 }));
+vi.mock('../../../i18n', () => ({ useLocale: () => 'en' }));
 vi.mock('../../hidden/ContractCategoryMultiSelect', () => ({ default: () => null }));
 vi.mock('../../consentFlow/ConsentFlowPrivacyAndData', () => ({ default: () => null }));
 vi.mock('../../consentFlow/ContractPermissionsAndDetailsText', () => ({ default: () => null }));

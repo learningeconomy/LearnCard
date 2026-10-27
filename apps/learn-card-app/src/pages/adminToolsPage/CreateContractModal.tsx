@@ -666,7 +666,6 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.read.credentials.categories}
                                     onChange={updateReadCredentials('categories')}
-                                    setContract={setContract}
                                     mode="read"
                                     categoryTitleOverrides={categoryTitleOverrides}
                                 />
@@ -696,7 +695,6 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <h4>Credentials</h4>
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.write.credentials.categories}
-                                    setContract={setContract}
                                     onChange={updateWriteCredentials('categories')}
                                     mode="write"
                                     hideVerifiableDataOnWrite
