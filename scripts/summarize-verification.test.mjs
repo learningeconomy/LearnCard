@@ -204,6 +204,62 @@ test('includes startup and script subphases without exposing directory, script o
     });
 });
 
+test('retains fixed navigation steps while stripping raw errors, URLs and arbitrary labels', async () => {
+    await fixture(async ({ directory, json, summarize }) => {
+        const scriptRun = join(directory, 'scripts', 'private-script-name');
+        await mkdir(scriptRun, { recursive: true });
+        await json(join(scriptRun, 'actions.json'), [
+            {
+                label: 'message-listing-setup',
+                status: 'passed',
+                startedAt: '2026-10-27T00:00:00.000Z',
+                finishedAt: '2026-10-27T00:00:01.500Z',
+                url: 'https://private-token.example',
+                actor: 'private-seed',
+            },
+            {
+                label: 'message-sign-in',
+                status: 'failed',
+                durationMs: 120_000,
+                error: 'fill private-seed into https://private-token.example',
+                screenshot: '/private-evidence.png',
+            },
+            { label: 'private-seed', status: 'failed', durationMs: 1 },
+            { label: 'message-open-preview', status: 'private-token', durationMs: -1 },
+            null,
+        ]);
+        const { data, markdown, github } = await summarize();
+        assert.deepEqual(data.scriptCommands, [
+            {
+                timings: [],
+                messageNavigation: [
+                    { step: 'message-listing-setup', status: 'passed', durationMs: 1500 },
+                    { step: 'message-sign-in', status: 'failed', durationMs: 120_000 },
+                    { step: 'message-open-preview', status: 'unknown', durationMs: null },
+                ],
+            },
+        ]);
+        assert.match(markdown, /message-sign-in \| failed \| 2m 0.0s/);
+        assert.equal(github, markdown);
+        assert.doesNotMatch(
+            JSON.stringify(data) + markdown,
+            /private-seed|private-token|private-script-name|private-evidence|startedAt|finishedAt/
+        );
+    });
+});
+
+test('ignores malformed navigation evidence without inventing a passing step', async () => {
+    await fixture(async ({ directory, summarize }) => {
+        const scriptRun = join(directory, 'scripts', 'private-script-name');
+        await mkdir(scriptRun, { recursive: true });
+        for (const value of ['{', '{"label":"message-sign-in","status":"passed"}']) {
+            await writeFile(join(scriptRun, 'actions.json'), value);
+            const { data } = await summarize();
+            assert.deepEqual(data.scriptCommands, []);
+        }
+    });
+});
+
 test('preserves interrupted and malformed command timings with skipped downstream commands', async () => {
     await fixture(async ({ directory, summarize }) => {
         const startup = join(directory, 'startup', 'private-startup-id');

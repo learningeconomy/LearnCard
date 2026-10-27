@@ -65,6 +65,38 @@ const featureDuration = result => {
     if (!iso.test(result?.startedAt) || !iso.test(result?.finishedAt)) return null;
     return duration(Date.parse(result.finishedAt) - Date.parse(result.startedAt));
 };
+const messageNavigationSteps = new Set([
+    'message-listing-setup',
+    'message-sign-in',
+    'message-check-installation',
+    'message-open-preview',
+    'message-preview-action',
+    'message-install-and-open',
+    'message-back-skips-listing',
+    'message-installed-launch-after-reload',
+    'unknown-message-route-returns-home',
+]);
+const readMessageNavigation = async path => {
+    let actions;
+    try {
+        actions = JSON.parse(await readFile(path, 'utf8'));
+    } catch (error) {
+        if (error.code === 'ENOENT' || error instanceof SyntaxError) return [];
+        throw error;
+    }
+    if (!Array.isArray(actions)) return [];
+    return actions.flatMap(action =>
+        messageNavigationSteps.has(action?.label)
+            ? [
+                  {
+                      step: action.label,
+                      status: statuses.includes(action.status) ? action.status : 'unknown',
+                      durationMs: featureDuration(action),
+                  },
+              ]
+            : []
+    );
+};
 const readTimings = async path => {
     let records;
     try {
@@ -105,7 +137,15 @@ const commandTimings = async folder => {
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
         if (!entry.isDirectory()) continue;
         const timings = await readTimings(join(directory, folder, entry.name, 'timings.json'));
-        if (timings.length) commands.push({ timings });
+        const messageNavigation =
+            folder === 'scripts'
+                ? await readMessageNavigation(join(directory, folder, entry.name, 'actions.json'))
+                : [];
+        if (timings.length || messageNavigation.length)
+            commands.push({
+                timings,
+                ...(messageNavigation.length ? { messageNavigation } : {}),
+            });
     }
     return commands;
 };
@@ -181,7 +221,7 @@ const lines = [
     '',
     `Verification command sequence: **${summary.run}**. Teardown step: **${summary.teardown}**.`,
     '',
-    'Only allowlisted statuses, coverage counts and numeric durations are retained; raw authentication evidence is not uploaded.',
+    'Only allowlisted step names, statuses, coverage counts and numeric durations are retained; raw authentication evidence is not uploaded.',
     '',
     'Command totals and bootstrap totals include their nested subphases; do not add them together. GitHub step durations also include CLI loading. Dependency installation and preliminary checks are outside these command timings; use the full workflow duration as the overall baseline.',
     '',
@@ -206,6 +246,14 @@ for (const [label, commands] of [
     for (const [index, command] of commands.entries()) {
         lines.push(`## ${label} ${index + 1}`, '');
         timingTable(command.timings);
+        if (command.messageNavigation?.length) {
+            lines.push('| Message navigation step | Status | Duration |', '| --- | --- | --- |');
+            for (const step of command.messageNavigation)
+                lines.push(
+                    `| ${step.step} | ${step.status} | ${formatDuration(step.durationMs)} |`
+                );
+            lines.push('');
+        }
     }
 }
 for (const [index, report] of summary.reports.entries()) {

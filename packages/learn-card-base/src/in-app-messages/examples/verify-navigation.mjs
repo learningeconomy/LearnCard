@@ -2,19 +2,27 @@ import { startVerificationListing } from '../../../../../apps/learn-card-app/scr
 
 /** Real install/launch UI proof; known flag messages and OS handoff require staging/device QA. */
 export default async function verifyMessageNavigation(v) {
-    const listing = await startVerificationListing(v);
+    const listing = await v.step(null, 'message-listing-setup', () => startVerificationListing(v));
     try {
-        const page = await v.newPage('message-navigation', { signInAs: v.actors.learner });
-        const learner = await v.sdk(v.actors.learner);
-        v.expect(await learner.invoke.isAppInstalled(listing.listingId)).toBe(false);
+        const page = await v.step(null, 'message-sign-in', () =>
+            v.newPage('message-navigation', { signInAs: v.actors.learner })
+        );
+        const learner = await v.step(null, 'message-check-installation', async () => {
+            const wallet = await v.sdk(v.actors.learner);
+            v.expect(await wallet.invoke.isAppInstalled(listing.listingId)).toBe(false);
+            return wallet;
+        });
         const preview = async () => {
             const messages = page.getByRole('button', { name: 'Messages', exact: true });
-            if (!(await messages.isVisible()))
-                await page.getByRole('button', { name: /^Dev Debug/ }).click();
-            await messages.click();
-            const previewButton = page.getByRole('button', { name: 'Preview JSON', exact: true });
-            if (!(await previewButton.isVisible()))
-                await page.getByRole('button', { name: 'Preview', exact: true }).click();
+            const previewButton = await v.step(null, 'message-open-preview', async () => {
+                if (!(await messages.isVisible()))
+                    await page.getByRole('button', { name: /^Dev Debug/ }).click();
+                await messages.click();
+                const button = page.getByRole('button', { name: 'Preview JSON', exact: true });
+                if (!(await button.isVisible()))
+                    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+                return button;
+            });
             await page
                 .getByPlaceholder(
                     '{ "title": "Test", "actions": [{ "label": "OK", "style": "primary", "action": { "type": "dismiss" } }] }'
@@ -34,8 +42,10 @@ export default async function verifyMessageNavigation(v) {
                         ],
                     })
                 );
-            await previewButton.click();
-            await page.getByRole('button', { name: 'Continue in app', exact: true }).click();
+            await v.step(null, 'message-preview-action', async () => {
+                await previewButton.click();
+                await page.getByRole('button', { name: 'Continue in app', exact: true }).click();
+            });
             if (await messages.isVisible())
                 await page.getByRole('button', { name: /^Dev Debug/ }).click();
         };

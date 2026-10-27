@@ -113,6 +113,9 @@ startup or navigation command cannot appear successful merely because the catalo
 
 The hosted Markdown/JSON summaries retain only allowlisted phase/feature names, statuses,
 coverage counts and validated numeric durations. Raw timestamps and error text are excluded.
+Message-navigation script summaries also retain fixed step names with statuses and durations,
+including listing setup and sign-in before the first browser step. Use this table to locate a
+failure without publishing raw action records, URLs, actor data or assertion messages.
 
 ### Sharing a live stack between agents
 
