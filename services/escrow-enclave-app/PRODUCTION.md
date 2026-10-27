@@ -293,9 +293,12 @@ workflow's use of the publish environment. Protect this workflow with required
 security review; environment reviewers must inspect workflow/ref and artifact
 evidence before approving the separate upload job. Test build-token rejection and
 publish-token success before enabling uploads; never retain raw tokens as evidence.
-Every production build job first attempts `AssumeRoleWithWebIdentity` on the
-publisher with its own token and fails unless AWS returns `AccessDenied`; the
-publish job's successful assumption is the success half (CloudTrail evidence).
+Every production build job first attempts `AssumeRoleWithWebIdentity` on
+`ESCROW_PUBLISH_ROLE_ARN` with its own token and fails unless AWS returns
+`AccessDenied`. STS also denies nonexistent roles, so the publish job asserts the
+build checked the exact role it then assumes; its successful assumption is the
+success half (CloudTrail evidence). Set `ESCROW_PUBLISH_ROLE_ARN` in **both**
+production environments.
 
 **Claim compatibility:** AWS does not expose arbitrary GitHub JWT claims as IAM
 condition keys; `token.actions.githubusercontent.com:job_workflow_ref` and
