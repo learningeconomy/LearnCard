@@ -11,6 +11,7 @@
 #   - pytest >= 9.0.3     (vulnerable tmpdir handling)
 #   - filelock >= 3.20.3  (TOCTOU symlink attack; transitive via tox, pinned explicitly)
 #   - tox >= 4.11.0       (tox 3.x is EOL and incompatible with pytest 9)
+#   - virtualenv >= 21.14.7 (shell activation code injection; transitive via tox, pinned explicitly)
 #   - requires-python >= 3.10 (floor required by the deps above)
 
 set -euo pipefail
@@ -63,6 +64,18 @@ if ! grep -qE '^(filelock =|[[:space:]]*"filelock>=)' "$CLIENT_DIR/pyproject.tom
     TEMP_FILE=''
 fi
 
+if ! grep -qE '^(virtualenv =|[[:space:]]*"virtualenv>=)' "$CLIENT_DIR/pyproject.toml"; then
+    TEMP_FILE="$(mktemp "$CLIENT_DIR/.pyproject.XXXXXX")"
+    awk '
+        { print }
+        /^pytest-cov =/ { print "virtualenv = \">= 21.14.7\"" }
+        /^[[:space:]]*"pytest-cov>=/ { print "  \"virtualenv>=21.14.7\"," }
+    ' \
+        "$CLIENT_DIR/pyproject.toml" > "$TEMP_FILE" &&
+        mv "$TEMP_FILE" "$CLIENT_DIR/pyproject.toml"
+    TEMP_FILE=''
+fi
+
 sed_i \
     -e 's/PYTHON_REQUIRES = ">= 3\.9"/PYTHON_REQUIRES = ">= 3.10"/' \
     -e 's/"urllib3 >= 2\.1\.0, < 3\.0\.0"/"urllib3 >= 2.7.0, < 3.0.0"/' \
@@ -71,6 +84,11 @@ sed_i \
 sed_i 's/^urllib3 >= 2\.1\.0/urllib3 >= 2.7.0/' "$CLIENT_DIR/requirements.txt"
 
 sed_i -e 's/^pytest >= 7\.2\.1/pytest >= 9.0.3/' -e 's/^tox >= 3\.9\.0/tox >= 4.11.0/' "$CLIENT_DIR/test-requirements.txt"
+if ! grep -q '^virtualenv' "$CLIENT_DIR/test-requirements.txt"; then
+    sed_i '/^tox >=/i\
+virtualenv >= 21.14.7
+' "$CLIENT_DIR/test-requirements.txt"
+fi
 if ! grep -q '^filelock' "$CLIENT_DIR/test-requirements.txt"; then
     echo 'filelock >= 3.20.3' >> "$CLIENT_DIR/test-requirements.txt"
 fi
@@ -97,6 +115,7 @@ refute() {
 verify "$CLIENT_DIR/pyproject.toml" 'urllib3 \(>=2\.7\.0,<3\.0\.0\)' 'urllib3 floor'
 verify "$CLIENT_DIR/pyproject.toml" '^(pytest = ">= 9\.0\.3"|[[:space:]]*"pytest>=9\.0\.3",?)$' 'pytest floor'
 verify "$CLIENT_DIR/pyproject.toml" '^(filelock = ">= 3\.20\.3"|[[:space:]]*"filelock>=3\.20\.3",?)$' 'filelock pin'
+verify "$CLIENT_DIR/pyproject.toml" '^(virtualenv = ">= 21\.14\.7"|[[:space:]]*"virtualenv>=21\.14\.7",?)$' 'virtualenv floor'
 verify "$CLIENT_DIR/pyproject.toml" '^(tox = ">= 4\.11\.0"|[[:space:]]*"tox>=4\.11\.0",?)$' 'tox floor'
 verify "$CLIENT_DIR/pyproject.toml" '^requires-python = ">=3\.10"' 'requires-python floor'
 verify "$CLIENT_DIR/setup.py" 'PYTHON_REQUIRES = ">= 3\.10"' 'python floor'
@@ -104,6 +123,7 @@ verify "$CLIENT_DIR/setup.py" 'urllib3 >= 2\.7\.0, < 3\.0\.0' 'urllib3 floor'
 verify "$CLIENT_DIR/requirements.txt" '^urllib3 >= 2\.7\.0' 'urllib3 floor'
 verify "$CLIENT_DIR/test-requirements.txt" '^pytest >= 9\.0\.3' 'pytest floor'
 verify "$CLIENT_DIR/test-requirements.txt" '^tox >= 4\.11\.0' 'tox floor'
+verify "$CLIENT_DIR/test-requirements.txt" '^virtualenv >= 21\.14\.7' 'virtualenv floor'
 verify "$CLIENT_DIR/test-requirements.txt" '^filelock >= 3\.20\.3' 'filelock pin'
 refute "$CLIENT_DIR/.travis.yml" '^  - "3\.9"' 'python 3.9 removal'
 refute "$CLIENT_DIR/.gitlab-ci.yml" 'python:3\.9-alpine' 'python 3.9 job removal'
