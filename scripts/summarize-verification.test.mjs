@@ -221,7 +221,7 @@ test('retains fixed navigation steps while stripping raw errors, URLs and arbitr
                 label: 'message-sign-in',
                 status: 'failed',
                 durationMs: 120_000,
-                error: 'fill private-seed into https://private-token.example',
+                error: 'TimeoutError: page.goto: Timeout exceeded at https://private-token.example with private-seed',
                 screenshot: '/private-evidence.png',
             },
             { label: 'private-seed', status: 'failed', durationMs: 1 },
@@ -234,7 +234,12 @@ test('retains fixed navigation steps while stripping raw errors, URLs and arbitr
                 timings: [],
                 messageNavigation: [
                     { step: 'message-listing-setup', status: 'passed', durationMs: 1500 },
-                    { step: 'message-sign-in', status: 'failed', durationMs: 120_000 },
+                    {
+                        step: 'message-sign-in',
+                        status: 'failed',
+                        durationMs: 120_000,
+                        failedOperation: 'page.goto',
+                    },
                     { step: 'message-open-preview', status: 'unknown', durationMs: null },
                 ],
             },
@@ -245,6 +250,23 @@ test('retains fixed navigation steps while stripping raw errors, URLs and arbitr
             JSON.stringify(data) + markdown,
             /private-seed|private-token|private-script-name|private-evidence|startedAt|finishedAt/
         );
+    });
+});
+
+test('never copies an unknown failed operation or arbitrary assertion text', async () => {
+    await fixture(async ({ directory, json, summarize }) => {
+        const scriptRun = join(directory, 'scripts', 'private-script-name');
+        await mkdir(scriptRun, { recursive: true });
+        await json(join(scriptRun, 'actions.json'), [
+            {
+                label: 'message-install-and-open',
+                status: 'failed',
+                error: 'Error: private-token: locator.click: https://private-token.example',
+            },
+        ]);
+        const { data, markdown } = await summarize();
+        assert.equal(data.scriptCommands[0].messageNavigation[0].failedOperation, 'other');
+        assert.doesNotMatch(JSON.stringify(data) + markdown, /private-token|locator.click|https:/);
     });
 });
 

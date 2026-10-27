@@ -76,6 +76,14 @@ const messageNavigationSteps = new Set([
     'message-installed-launch-after-reload',
     'unknown-message-route-returns-home',
 ]);
+const failedOperation = error =>
+    typeof error === 'string'
+        ? (['page.goto', 'page.reload', 'page.goBack', 'locator.click', 'locator.fill'].find(
+              operation =>
+                  error.startsWith(`TimeoutError: ${operation}:`) ||
+                  error.startsWith(`Error: ${operation}:`)
+          ) ?? 'other')
+        : 'other';
 const readMessageNavigation = async path => {
     let actions;
     try {
@@ -92,6 +100,9 @@ const readMessageNavigation = async path => {
                       step: action.label,
                       status: statuses.includes(action.status) ? action.status : 'unknown',
                       durationMs: featureDuration(action),
+                      ...(action.status === 'failed'
+                          ? { failedOperation: failedOperation(action.error) }
+                          : {}),
                   },
               ]
             : []
@@ -221,7 +232,7 @@ const lines = [
     '',
     `Verification command sequence: **${summary.run}**. Teardown step: **${summary.teardown}**.`,
     '',
-    'Only allowlisted step names, statuses, coverage counts and numeric durations are retained; raw authentication evidence is not uploaded.',
+    'Only allowlisted step/operation names, statuses, coverage counts and numeric durations are retained; raw authentication evidence is not uploaded.',
     '',
     'Command totals and bootstrap totals include their nested subphases; do not add them together. GitHub step durations also include CLI loading. Dependency installation and preliminary checks are outside these command timings; use the full workflow duration as the overall baseline.',
     '',
@@ -247,10 +258,13 @@ for (const [label, commands] of [
         lines.push(`## ${label} ${index + 1}`, '');
         timingTable(command.timings);
         if (command.messageNavigation?.length) {
-            lines.push('| Message navigation step | Status | Duration |', '| --- | --- | --- |');
+            lines.push(
+                '| Message navigation step | Status | Duration | Failed operation |',
+                '| --- | --- | --- | --- |'
+            );
             for (const step of command.messageNavigation)
                 lines.push(
-                    `| ${step.step} | ${step.status} | ${formatDuration(step.durationMs)} |`
+                    `| ${step.step} | ${step.status} | ${formatDuration(step.durationMs)} | ${step.failedOperation ?? '—'} |`
                 );
             lines.push('');
         }
