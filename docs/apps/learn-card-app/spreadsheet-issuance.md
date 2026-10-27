@@ -16,7 +16,7 @@ Evidence links and uploaded files become standard Open Badges Evidence entries. 
 
 Open a person’s credential preview to check the mapped values before issuing. Unsigned previews show **Preview** rather than a verification result. Ordinary evidence URLs appear as links; recognized video links keep their video presentation. **Awarded on** uses the mapped awarded date, falling back to the issuance date for credentials without one.
 
-In **Review people**, personalized descriptions use a multiline editor. Expand an individual field for more room; the counter shows its 5,000-character authoring limit. Oversized imported or pasted values remain intact and must be corrected before sending or retrying. This is an editor limit, not an Open Badges specification limit.
+In **Review people**, personalized and imported description text uses a multiline editor, including columns added to an existing description. Expand an individual field for more room; the counter shows its 5,000-character authoring limit. Oversized imported or pasted values remain intact and must be corrected before sending or retrying. This is an editor limit, not an Open Badges specification limit.
 
 **Evidence for everyone** shows the shared files and links from the main editor. They remain included for every recipient. **Extra evidence for this person** adds evidence only for that row; it does not replace the shared evidence.
 
