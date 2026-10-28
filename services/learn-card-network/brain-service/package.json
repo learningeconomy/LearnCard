@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "4.0.3",
+    "version": "4.0.4",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -15,6 +15,7 @@
         "test:watch": "vitest --config vitest.config.ts",
         "test:coverage": "vitest run --coverage --config vitest.config.ts",
         "test:integration": "vitest run --config vitest.integration.config.ts",
+        "test:campaigns": "vitest run --config vitest.campaigns.config.ts",
         "test:inbox:e2e": "vitest run --config vitest.inbox-e2e.config.ts",
         "test:profile-search": "vitest run --config vitest.profile-search-neo4j.config.ts",
         "test:integration:watch": "vitest --config vitest.integration.config.ts",

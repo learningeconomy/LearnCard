@@ -24,6 +24,7 @@ import { CredentialClaimModal } from './CredentialClaimModal';
 import { AppCredentialDashboard } from './AppCredentialDashboard';
 import { useAppNotificationToast } from '../../hooks/useAppNotificationToast';
 import { toSafeFrameUrl } from './frameUrl';
+import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
 
 interface LaunchConfig {
     url?: string;
@@ -107,27 +108,8 @@ export const EmbedIframeModal: React.FC<EmbedIframeModalProps> = ({
         (actionPath: string) => {
             if (!iframeRef.current) return;
 
-            // Only allow relative paths — reject anything with a protocol (e.g. javascript:, data:)
-            if (/^[a-z][a-z0-9+.-]*:/i.test(actionPath)) return;
-
-            try {
-                const base = new URL(embedUrl);
-                const expectedOrigin = base.origin;
-                const safePath = actionPath.startsWith('/') ? actionPath : `/${actionPath}`;
-                base.pathname = base.pathname.replace(/\/$/, '') + safePath;
-
-                // Verify the constructed URL hasn't escaped to a different origin
-                if (base.origin !== expectedOrigin) return;
-
-                const next = toSafeFrameUrl(
-                    appendQueryParams(base.toString(), {
-                        lc_host_override: window.location.origin,
-                    })
-                );
-                if (next) iframeRef.current.src = next;
-            } catch {
-                // embedUrl is invalid — do not navigate
-            }
+            const next = buildEmbedUrlWithPath(embedUrl, actionPath, window.location.origin);
+            if (next) iframeRef.current.src = next;
         },
         [embedUrl]
     );

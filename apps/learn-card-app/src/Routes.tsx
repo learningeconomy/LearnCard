@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
+import type { RouteComponentProps, RouteProps } from 'react-router-dom';
 import { useFlags } from 'launchdarkly-react-client-sdk';
 import {
     DIDAuthModal,
@@ -7,6 +8,8 @@ import {
     useIsLoggedIn,
     lazyWithRetry,
     ChunkBoundary,
+    InAppMessageDeepLinkRoute,
+    getInAppMessageEntryPath,
 } from 'learn-card-base';
 
 import { usePathwaysEnabled } from './pages/pathways/hooks/usePathwaysEnabled';
@@ -169,14 +172,24 @@ const PrivacyPolicyPage = lazyWithRetry(() => import('./pages/legal/PrivacyPolic
 // https://docs.sentry.io/platforms/javascript/guides/react/configuration/integrations/react-router/#react-router-v4v5
 const SentryRoute = Sentry.withSentryRouting(Route);
 
-const PrivateRoute = ({ component: Component, ...rest }) => {
+const PrivateRoute = ({
+    component: Component,
+    ...rest
+}: Omit<RouteProps, 'component'> & { component: React.ComponentType<RouteComponentProps> }) => {
     const isLoggedIn = useIsLoggedIn();
+    const location = useLocation();
 
     return isLoggedIn ? (
         <SentryRoute {...rest} render={props => <Component {...props} {...rest} />} />
     ) : (
         <Redirect
-            to={rest.path === '/notifications' ? '/login?redirectTo=%2Fnotifications' : '/login'}
+            to={
+                rest.path === '/m/:messageId'
+                    ? `/login?redirectTo=${encodeURIComponent(getInAppMessageEntryPath(location.pathname))}`
+                    : rest.path === '/notifications'
+                      ? '/login?redirectTo=%2Fnotifications'
+                      : '/login'
+            }
         />
     );
 };
@@ -250,6 +263,11 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/launchpad" component={MyAppsLanding} />
                         <PrivateRoute exact path="/launchpad/browse" component={LaunchPad} />
                         <PrivateRoute exact path="/apps/:appId" component={EmbedAppFullScreen} />
+                        <PrivateRoute
+                            exact
+                            path="/m/:messageId"
+                            component={InAppMessageDeepLinkRoute}
+                        />
                         <SentryRoute exact path="/app/:listingId" component={AppListingPage} />
 
                         <SentryRoute

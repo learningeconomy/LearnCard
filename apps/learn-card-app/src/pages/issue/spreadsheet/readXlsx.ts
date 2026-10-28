@@ -1,13 +1,15 @@
 import { read, utils, SSF } from 'xlsx';
 import { checkMatrixLimits, SpreadsheetError, SPREADSHEET_LIMITS } from './parseSpreadsheet';
+import { boundedXlsxArchive } from './xlsxArchive';
 import type { SpreadsheetCell, SpreadsheetSource } from './types';
 
 /** Loaded only for XLSX uploads. Formulae are never evaluated by the importer. */
 export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource => {
     let workbook: ReturnType<typeof read>;
     try {
-        workbook = read(bytes, { cellNF: true, cellText: true });
-    } catch {
+        workbook = read(boundedXlsxArchive(bytes), { cellNF: true, cellText: true });
+    } catch (error) {
+        if (error instanceof SpreadsheetError) throw error;
         throw new SpreadsheetError('malformed');
     }
     const sheets: SpreadsheetSource['sheets'] = Object.create(null);
@@ -46,11 +48,14 @@ export const readXlsx = (bytes: ArrayBuffer, name: string): SpreadsheetSource =>
                     text: cell.w ?? String(cell.v ?? ''),
                     value:
                         typeof cell.v === 'string' ||
-                        typeof cell.v === 'number' ||
+                        (typeof cell.v === 'number' && Number.isFinite(cell.v)) ||
                         typeof cell.v === 'boolean'
                             ? cell.v
                             : undefined,
-                    ...(cell.f && (cell.v === undefined || cell.t === 'e')
+                    ...(cell.t === 'e' ||
+                    (cell.f &&
+                        (cell.v === undefined ||
+                            (typeof cell.v === 'number' && !Number.isFinite(cell.v))))
                         ? { problem: 'formula' }
                         : {}),
                     ...(cell.z?.includes('%') ? { percent: true } : {}),

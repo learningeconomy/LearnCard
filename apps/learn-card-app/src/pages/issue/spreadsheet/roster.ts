@@ -1,4 +1,7 @@
+import { normalizeMappedCell, assertMappingFormat } from './columnMapping';
 import Papa from 'papaparse';
+import { rosterCsvFieldNames } from './csvFields';
+export { rosterCsvFieldNames } from './csvFields';
 import { recipientKey, recipientDisplayName, type Recipient } from '../components/recipientTypes';
 import { isValidRosterEmail, SpreadsheetError } from './parseSpreadsheet';
 import {
@@ -10,6 +13,7 @@ import {
     normalizeEmail,
     type ParsedSpreadsheet,
     type RowProblem,
+    type RosterProblemField,
     type RosterDraft,
 } from './types';
 
@@ -43,6 +47,7 @@ export const effectiveRowValues = (
         ])
     );
 
+/** Keep aggregate send blockers and optionally report each affected input for inline correction. */
 export const getRowProblems = (
     recipients: Recipient[],
     variables: string[],
@@ -50,7 +55,8 @@ export const getRowProblems = (
     shared: Record<string, string>,
     perRow: RosterDraft['values'],
     evidence: Record<string, string>,
-    formulaCells: RosterDraft['formulaCells'] = {}
+    formulaCells: RosterDraft['formulaCells'] = {},
+    reportProblem?: (rowId: string, problem: RowProblem, field: RosterProblemField) => void
 ): Record<string, RowProblem[]> => {
     const counts = new Map<string, number>();
     for (const recipient of recipients) {
@@ -68,27 +74,37 @@ export const getRowProblems = (
                 recipient.kind === 'email'
                     ? `email:${normalizeEmail(recipient.email)}`
                     : `profile:${recipient.profileId}`;
-            if (recipient.kind === 'email' && !isValidRosterEmail(recipient.email))
+            if (recipient.kind === 'email' && !isValidRosterEmail(recipient.email)) {
                 problems.push('email');
-            if ((counts.get(identity) ?? 0) > 1) problems.push('duplicate');
-            if (
-                Object.values(
-                    effectiveRowValues(recipient, variables, scopes, shared, perRow)
-                ).some(value => !value.trim())
-            )
-                problems.push('required');
+                reportProblem?.(key, 'email', 'recipient');
+            }
+            if ((counts.get(identity) ?? 0) > 1) {
+                problems.push('duplicate');
+                reportProblem?.(key, 'duplicate', 'recipient');
+            }
+            const values = effectiveRowValues(recipient, variables, scopes, shared, perRow);
+            const missing = Object.entries(values).filter(([, value]) => !value.trim());
+            if (missing.length) problems.push('required');
+            for (const [variable] of missing) reportProblem?.(key, 'required', { variable });
             if (evidence[key]?.trim()) {
                 try {
                     const url = new URL(evidence[key]!.trim());
-                    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname)
+                    if (
+                        /\s/.test(evidence[key]!.trim()) ||
+                        !['http:', 'https:'].includes(url.protocol) ||
+                        !url.hostname
+                    ) {
                         problems.push('evidence');
+                        reportProblem?.(key, 'evidence', 'evidence');
+                    }
                 } catch {
                     problems.push('evidence');
+                    reportProblem?.(key, 'evidence', 'evidence');
                 }
             }
-            const values = effectiveRowValues(recipient, variables, scopes, shared, perRow);
-            if (
-                Object.entries(formulaCells[key] ?? {}).some(([name, raw]) =>
+            let formula = false;
+            for (const [name, raw] of Object.entries(formulaCells[key] ?? {})) {
+                if (
                     name === 'Evidence'
                         ? evidence[key] === raw
                         : name === 'Recipient Email'
@@ -96,9 +112,20 @@ export const getRowProblems = (
                           : variables.includes(name) &&
                             scopes[name] === 'perRecipient' &&
                             values[name] === raw
-                )
-            )
-                problems.push('formula');
+                ) {
+                    formula = true;
+                    reportProblem?.(
+                        key,
+                        'formula',
+                        name === 'Evidence'
+                            ? 'evidence'
+                            : name === 'Recipient Email'
+                              ? 'recipient'
+                              : { variable: name }
+                    );
+                }
+            }
+            if (formula) problems.push('formula');
             return [key, problems];
         })
     );
@@ -111,21 +138,50 @@ export const mergeSpreadsheet = (
     variables: string[]
 ): { draft: RosterDraft; mapped: string[] } => {
     if (sheet.emailColumn === undefined) throw new SpreadsheetError('emailColumn');
+    // Only verified same-run exports restore the table's standalone Evidence cell.
+    // Source Evidence/Portfolio columns remain independent, explicit mappings.
+    const canonical = sheet.rows.some(row => row.exportedRunId === draft.id);
+    const evidenceColumn = canonical
+        ? sheet.columns.find(column => normalizeColumn(column.label) === 'evidence')
+        : undefined;
+    const exportedNames = rosterCsvFieldNames(draft, variables);
     const matches = Object.fromEntries(
         variables.map(name => {
+            const binding = draft.mappings?.find(mapping => mapping.variable === name);
             const columns = sheet.columns.filter(
-                column => normalizeColumn(column.label) === normalizeColumn(name)
+                column =>
+                    column.id !== evidenceColumn?.id &&
+                    (canonical
+                        ? normalizeColumn(column.label) === normalizeColumn(exportedNames[name]!)
+                        : normalizeColumn(column.label) === normalizeColumn(name) ||
+                          (binding &&
+                              normalizeColumn(column.label) === normalizeColumn(binding.label)))
             );
+
             if (columns.length > 1) throw new SpreadsheetError('mapping');
             return [name, columns[0]];
         })
     );
+    // Positional IDs belong to this sheet only. Rebind selected fields by their
+    // source/export header before replacing the source; never reinterpret a missing one.
+    const mappings = draft.mappings
+        ?.filter(mapping => variables.includes(mapping.variable))
+        .map(mapping => {
+            const column = matches[mapping.variable];
+            if (!column) throw new SpreadsheetError('mappedColumnMissing');
+            return {
+                ...mapping,
+                columnId: column.id,
+                ...(canonical ? { numericFormat: 'dot' as const, dateFormat: 'iso' as const } : {}),
+            };
+        });
     const mapped = variables.filter(name => matches[name]);
     const values = { ...draft.values };
     const evidence = { ...draft.evidence };
     const formulaCells = { ...draft.formulaCells };
     const recipients = [...draft.recipients];
     const assigned = new Set<string>();
+    const sourceRows: ParsedSpreadsheet['rows'] = [];
     const encodingColumn = sheet.columns.find(column => column.label === EXPORT_ENCODING_COLUMN);
     const decodedRows = new WeakSet<ParsedSpreadsheet['rows'][number]>();
     // The versioned codec applies to every row from this run, including copied
@@ -170,10 +226,6 @@ export const mergeSpreadsheet = (
     });
     const incomingCounts = new Map<string, number>();
     for (const row of rows) incomingCounts.set(row.email, (incomingCounts.get(row.email) ?? 0) + 1);
-    const evidenceColumn = sheet.columns.find(column =>
-        /^(evidence|evidencelink|portfolio|portfoliolink)$/.test(normalizeColumn(column.label))
-    );
-    const sourceRows: ParsedSpreadsheet['rows'] = [];
     for (const row of rows) {
         if (row.example && row.email === 'person@example.com') continue;
         if (row.exportedRunId && row.exportedRunId !== draft.id) throw new SpreadsheetError('run');
@@ -215,7 +267,18 @@ export const mergeSpreadsheet = (
             delete cellProblems['Recipient Email'];
         const imported = Object.fromEntries(
             mapped.map(name => {
-                let value = row.cells[matches[name]!.id]?.text ?? '';
+                const cell = row.cells[matches[name]!.id] ?? { text: '' };
+                const binding = mappings?.find(mapping => mapping.variable === name);
+                const canonical = row.exportedRunId === draft.id;
+                if (binding && !canonical) assertMappingFormat(cell, binding);
+                let value = binding
+                    ? normalizeMappedCell(
+                          cell,
+                          canonical
+                              ? { ...binding, numericFormat: 'dot', dateFormat: 'iso' }
+                              : binding
+                      )
+                    : cell.text;
                 // Old exports have no reversible codec. Only the saved original
                 // can prove Papa added a quote; changed/unknown cells stay literal.
                 if (!decodedRows.has(row) && row.exportedRunId === draft.id)
@@ -237,12 +300,28 @@ export const mergeSpreadsheet = (
     return {
         draft: {
             ...draft,
+            mappings,
             sourceName: sheet.source.name,
             recipients,
             values,
             evidence,
             formulaCells,
-            source: { ...sheet, rows: sourceRows },
+            source: {
+                ...sheet,
+                rows: sourceRows,
+                rowEvidenceColumn: evidenceColumn?.id,
+                exportHeaders:
+                    canonical || draft.source?.exportHeaders
+                        ? {
+                              ...draft.source?.exportHeaders,
+                              ...(canonical
+                                  ? Object.fromEntries(
+                                        mapped.map(name => [name, matches[name]!.label])
+                                    )
+                                  : {}),
+                          }
+                        : undefined,
+            },
         },
         mapped,
     };
@@ -258,10 +337,16 @@ export const exportRosterCsv = (
     const recipients = problems
         ? draft.recipients.filter(recipient => recipientKey(recipient) in problems)
         : draft.recipients;
+    const labels = rosterCsvFieldNames(draft, variables);
+    const fieldLabel = (name: string): string => labels[name]!;
     const rows = recipients.map(recipient => ({
         'Recipient Email': recipient.kind === 'email' ? recipient.email : '',
         'Recipient Name': recipientDisplayName(recipient),
-        ...effectiveRowValues(recipient, variables, scopes, shared, draft.values),
+        ...Object.fromEntries(
+            Object.entries(
+                effectiveRowValues(recipient, variables, scopes, shared, draft.values)
+            ).map(([name, value]) => [fieldLabel(name), value])
+        ),
         Evidence: draft.evidence[recipientKey(recipient)] ?? '',
         [EXPORT_RUN_COLUMN]: draft.id,
         [EXPORT_ROW_COLUMN]: recipientKey(recipient),
@@ -273,7 +358,7 @@ export const exportRosterCsv = (
         rows.push({
             'Recipient Email': 'person@example.com',
             'Recipient Name': 'Example person',
-            ...Object.fromEntries(variables.map(name => [name, shared[name] ?? ''])),
+            ...Object.fromEntries(variables.map(name => [fieldLabel(name), shared[name] ?? ''])),
             Evidence: '',
             [EXPORT_RUN_COLUMN]: '',
             [EXPORT_ROW_COLUMN]: '',
@@ -285,7 +370,7 @@ export const exportRosterCsv = (
             fields: [
                 'Recipient Email',
                 'Recipient Name',
-                ...variables,
+                ...variables.map(fieldLabel),
                 'Evidence',
                 EXPORT_RUN_COLUMN,
                 EXPORT_ROW_COLUMN,

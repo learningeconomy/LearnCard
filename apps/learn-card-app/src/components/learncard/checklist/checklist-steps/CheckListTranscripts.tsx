@@ -2,14 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('check-list-transcripts');
 
-import TrashBin from '../../../svgs/TrashBin';
-import DocIcon from 'learn-card-base/svgs/DocIcon';
 import ChecklistLoader from '../loader/ChecklistLoader';
 import UploadIcon from 'learn-card-base/svgs/UploadIcon';
 import CheckListItemSkeleton from './CheckListItemSkeleton';
 import CheckListManagerFooter from '../CheckListManager/CheckListManagerFooter';
 import CheckListCredentialReviewStep from './CheckListCredentialReviewStep';
 import { getWalletCategory } from './AchievementTypeSelectorModal';
+import { getField } from './credentialEditFields';
 
 import { useUploadFile } from '../../../../hooks/useUploadFile';
 import {
@@ -23,25 +22,25 @@ import {
     UploadTypesEnum,
 } from 'learn-card-base';
 
-import { useTheme } from '../../../../theme/hooks/useTheme';
 import * as m from '../../../../paraglide/messages.js';
 import type { LCR } from 'learn-card-base/types/credential-records';
+import { readUploadedDocument } from './uploadedDocument.helpers';
+import type { UnsignedVC } from '@learncard/types';
+import { UploadedOriginalDocument } from './UploadedOriginalDocument';
+import { UploadFileOutcomeList } from './UploadFileOutcomeList';
+import { FileUploadPersistenceError } from '../../../../hooks/uploadFile.types';
+import { UploadFileOutcomePanel } from './UploadFileOutcomePanel';
 
 export type TranscriptType = {
     id: string;
+    uri: string;
+    artifactId: string;
     fileName: string;
     fileSize: string;
     fileType: string;
     type: string;
-};
-
-type TranscriptCredential = {
-    recordId: string;
-    rawArtifact?: {
-        fileName?: string;
-        fileSize?: string;
-        fileType?: string;
-    };
+    data: string;
+    unavailable?: boolean;
 };
 
 export const CheckListTranscripts: React.FC = () => {
@@ -52,78 +51,75 @@ export const CheckListTranscripts: React.FC = () => {
         getFiles,
         isUploading,
         isSaving,
+        isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
         parsedCredentials,
         setParsedCredentials,
         base64Datas,
         rawArtifactCredentials,
+        fileUploadOutcomes,
+        clearFileUploadOutcome,
+        retryFileExtraction,
+        retryFileSave,
     } = useUploadFile(UploadTypesEnum.Transcript);
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const confirm = useConfirmation();
     const { presentToast } = useToast();
     const { mutateAsync: deleteCredentialRecord } = useDeleteCredentialRecord();
 
-    const { colors } = useTheme();
-    const primaryColor = colors?.defaults?.primaryColor;
-
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showReview, setShowReview] = useState<boolean>(false);
     const [isSavingSelected, setIsSavingSelected] = useState<boolean>(false);
-    const [savedCredentialCount, setSavedCredentialCount] = useState<number>(0);
+    const [transcripts, setTranscripts] = useState<TranscriptType[]>([]);
+    const [reviewError, setReviewError] = useState<string | null>(null);
     const [loaderDismissed, setLoaderDismissed] = useState<boolean>(false);
 
-    const [transcripts, setTranscripts] = useState<TranscriptType[]>([]);
+    const busy = isSaving || isParsing || isSavingSelected;
 
-    // Restore pending review from store on mount
+    const pendingReview = checklistStore.useTracked.pendingReview().transcript;
     useEffect(() => {
-        const pending = checklistStore.get.pendingReview().transcript;
-        if (pending && pending.credentials.length > 0) {
-            setParsedCredentials(pending.credentials);
+        if (pendingReview?.credentials.length) {
+            setParsedCredentials(pendingReview.credentials);
             setShowReview(true);
         }
-        handleSetTranscripts();
+    }, [pendingReview]);
+    useEffect(() => {
+        void handleSetTranscripts();
     }, []);
+
+    const processFiles = async () => {
+        const vcs = await fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript);
+        const needed = new Set(vcs.map(entry => entry.artifactId).filter(Boolean));
+        const sources = rawArtifactCredentials.filter(source => needed.has(source.id));
+        if (vcs.length > 0) {
+            const [first, ...rest] = sources;
+            if (!first) {
+                await handleSetTranscripts();
+                return;
+            }
+            checklistStore.set.setPendingReview('transcript', {
+                credentials: vcs,
+                rawArtifact: first,
+                additionalRawArtifacts: rest.length > 0 ? rest : undefined,
+            });
+            setParsedCredentials(vcs);
+            setShowReview(true);
+        } else {
+            await handleSetTranscripts();
+        }
+    };
 
     useEffect(() => {
         if (base64Datas?.length > 0 && rawArtifactCredentials?.length > 0) {
-            fetchParsedCredentialsFromFiles(UploadTypesEnum.Transcript)
-                .then(vcs => {
-                    if (vcs.length > 0) {
-                        const [first, ...rest] = rawArtifactCredentials;
-                        checklistStore.set.setPendingReview('transcript', {
-                            credentials: vcs,
-                            rawArtifact: first,
-                            additionalRawArtifacts: rest.length > 0 ? rest : undefined,
-                        });
-                        setShowReview(true);
-                    } else {
-                        const [first, ...rest] = rawArtifactCredentials;
-                        storeSelectedCredentials(
-                            [],
-                            first,
-                            UploadTypesEnum.Transcript,
-                            rest
-                        ).finally(() => handleSetTranscripts());
-                    }
+            void processFiles().catch(() =>
+                presentToast(m['passport.buildMyLearnCard.managers.toastGenericError'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
                 })
-                .catch(error => {
-                    const msg =
-                        error?.message ||
-                        m['passport.buildMyLearnCard.managers.toastGenericError']();
-                    const cleanMsg = msg.replace(/^(Error:\s*)+/i, '');
-                    presentToast(cleanMsg, {
-                        title: m['passport.buildMyLearnCard.managers.toastExtractFailed'](),
-                        hasDismissButton: true,
-                        type: ToastTypeEnum.Error,
-                        hasX: true,
-                        duration: 7000,
-                    });
-                    const [first, ...rest] = rawArtifactCredentials;
-                    storeSelectedCredentials([], first, UploadTypesEnum.Transcript, rest).finally(
-                        () => handleSetTranscripts()
-                    );
-                });
+            );
         }
     }, [base64Datas, rawArtifactCredentials]);
 
@@ -132,9 +128,10 @@ export const CheckListTranscripts: React.FC = () => {
             setIsLoading(true);
             const wallet = await initWallet();
 
-            const records = await wallet.index.LearnCloud.get({
-                category: UploadTypesEnum.Transcript,
-            });
+            const records = await wallet.index.LearnCloud.get(
+                { category: UploadTypesEnum.Transcript },
+                { cache: 'skip-cache' }
+            );
 
             const recordUris =
                 records?.map(({ uri, id }: { uri: string; id: string }) => ({ uri, id })) ?? [];
@@ -145,28 +142,20 @@ export const CheckListTranscripts: React.FC = () => {
                 return;
             }
 
-            const transcriptsCredentials: TranscriptCredential[] = await Promise.all(
-                recordUris.map(async ({ uri, id }: { uri: string; id: string }) => {
-                    return {
-                        ...(await wallet.read.get(uri)),
-                        recordId: id,
-                    };
-                })
+            const documents = await Promise.all(
+                recordUris.map(record =>
+                    readUploadedDocument(
+                        record,
+                        uri => wallet.read.get(uri),
+                        UploadTypesEnum.Transcript
+                    )
+                )
             );
-
-            const _transcripts = transcriptsCredentials.map(({ recordId, rawArtifact }) => ({
-                id: recordId,
-                fileName: rawArtifact?.fileName ?? '',
-                fileSize: rawArtifact?.fileSize ?? '',
-                fileType: rawArtifact?.fileType ?? '',
-                type: UploadTypesEnum.Transcript,
-            }));
-
-            setTranscripts(_transcripts);
+            setTranscripts(documents);
             setIsLoading(false);
-        } catch (error) {
+        } catch {
             setIsLoading(false);
-            log.error('handleSetTranscripts::error', error);
+            log.error('file.list.failed');
         }
     };
 
@@ -176,12 +165,13 @@ export const CheckListTranscripts: React.FC = () => {
 
         // Optimistic synchronous UI update
         setTranscripts(prev => prev.filter(transcript => transcript?.id !== id));
+        const restoreOutcome = clearFileUploadOutcome(deleted.artifactId);
 
         // Fire-and-forget background work
         void (async () => {
             try {
                 const wallet = await initWallet();
-                const record = await wallet.index.LearnCloud.get({ id });
+                const record = await wallet.index.LearnCloud.get({ id }, { cache: 'skip-cache' });
                 const targetRecord = record?.[0] as unknown as LCR | undefined;
 
                 if (!targetRecord) return;
@@ -192,6 +182,7 @@ export const CheckListTranscripts: React.FC = () => {
                 log.error('handleDeleteTranscript::error', error);
                 // Re-insert only the failed item so concurrent deletions aren't clobbered
                 setTranscripts(prev => (prev.some(t => t?.id === id) ? prev : [...prev, deleted]));
+                restoreOutcome();
                 presentToast(m['passport.buildMyLearnCard.managers.toastDeleteFailed'](), {
                     title: m['passport.buildMyLearnCard.managers.toastDeleteFailedShort'](),
                     hasDismissButton: true,
@@ -219,51 +210,55 @@ export const CheckListTranscripts: React.FC = () => {
 
     const triggerFileInput = () => fileInputRef.current?.click();
 
-    const handleReviewConfirm = async (selectedVcs: any[]) => {
+    const handleReviewConfirm = async (selectedVcs: UnsignedVC[]) => {
         setIsSavingSelected(true);
+        setReviewError(null);
         const pending = checklistStore.get.pendingReview().transcript;
-        const first = rawArtifactCredentials?.[0] || pending?.rawArtifact;
-        const rest =
-            rawArtifactCredentials?.length > 1
-                ? rawArtifactCredentials.slice(1)
-                : pending?.additionalRawArtifacts || [];
-        await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Transcript, rest);
-        checklistStore.set.setPendingReview('transcript', null);
-        setSavedCredentialCount(selectedVcs.length);
-        setShowReview(false);
-        await handleSetTranscripts();
-        setIsSavingSelected(false);
+        const first = pending?.rawArtifact ?? rawArtifactCredentials[0];
+        const rest = pending?.additionalRawArtifacts ?? rawArtifactCredentials.slice(1);
+        try {
+            if (!first) throw new Error('Document unavailable');
+            await storeSelectedCredentials(selectedVcs, first, UploadTypesEnum.Transcript, rest);
+            checklistStore.set.setPendingReview('transcript', null);
+            setShowReview(false);
+            await handleSetTranscripts();
+        } catch (error) {
+            setReviewError(
+                error instanceof FileUploadPersistenceError
+                    ? error.message
+                    : m['passport.buildMyLearnCard.managers.saveOutcomeError']()
+            );
+        } finally {
+            setIsSavingSelected(false);
+        }
     };
 
-    const handleReviewBack = () => {
-        // Keep pending review in store so user can return to it via the checklist
-        setShowReview(false);
-    };
+    const handleReviewBack = () => setShowReview(false);
 
-    const handleEditCredential = (index: number, editedVc: any) => {
+    const handleEditCredential = (index: number, editedVc: UnsignedVC) => {
         setParsedCredentials(prev => {
             const updated = prev.map((cred, i) => {
                 if (i !== index) return cred;
-                const achievementType = editedVc?.credentialSubject?.achievement?.achievementType;
-                const type = Array.isArray(achievementType) ? achievementType[0] : achievementType;
+                const type = getField(editedVc, 'credentialSubject.achievement.achievementType');
                 const category = type ? getWalletCategory(type) || undefined : undefined;
                 return {
                     ...cred,
                     vc: editedVc,
                     metadata: {
                         ...cred.metadata,
-                        name: editedVc?.credentialSubject?.achievement?.name || cred.metadata?.name,
+                        name:
+                            getField(editedVc, 'credentialSubject.achievement.name') ||
+                            cred.metadata?.name,
                         ...(category ? { category } : {}),
                     },
                 };
             });
             const pending = checklistStore.get.pendingReview().transcript;
-            if (pending) {
+            if (pending)
                 checklistStore.set.setPendingReview('transcript', {
                     ...pending,
                     credentials: updated,
                 });
-            }
             return updated;
         });
     };
@@ -273,61 +268,55 @@ export const CheckListTranscripts: React.FC = () => {
             ? m['passport.buildMyLearnCard.managers.addMore']()
             : m['passport.buildMyLearnCard.managers.addButton']();
     buttonText = isUploading ? m['passport.buildMyLearnCard.managers.uploading']() : buttonText;
-    const buttonIcon = <UploadIcon className="w-[25px] h-[26px] text-white mr-2" />;
+    const buttonIcon = <UploadIcon className="w-[25px] h-[26px] mr-2" />;
 
     return (
         <>
             {showReview ? (
-                <CheckListCredentialReviewStep
-                    credentials={parsedCredentials}
-                    fileType={UploadTypesEnum.Transcript}
-                    onConfirm={handleReviewConfirm}
-                    onBack={handleReviewBack}
-                    isLoading={isSavingSelected}
-                    onEditCredential={handleEditCredential}
-                />
+                <>
+                    {reviewError && <UploadFileOutcomePanel message={reviewError} />}
+                    <CheckListCredentialReviewStep
+                        credentials={parsedCredentials}
+                        fileType={UploadTypesEnum.Transcript}
+                        onConfirm={handleReviewConfirm}
+                        onBack={handleReviewBack}
+                        isLoading={isSavingSelected}
+                        onEditCredential={handleEditCredential}
+                    />
+                </>
             ) : (
                 <>
-                    {(isSaving || checklistStore.get.isParsing().transcript) &&
-                        !loaderDismissed && (
-                            <ChecklistLoader
-                                fileType={UploadTypesEnum.Transcript}
-                                onDismiss={() => setLoaderDismissed(true)}
-                            />
-                        )}
-                    <div className="w-full bg-white items-center justify-center flex flex-col shadow-button-bottom px-6 pt-2 pb-4 mt-4 rounded-[15px]">
+                    {isParsing && !isSaving && !loaderDismissed && (
+                        <ChecklistLoader
+                            waitingForCapacity={isWaitingForCapacity}
+                            onCancelWait={cancelCapacityWait}
+                            fileType={UploadTypesEnum.Transcript}
+                            onDismiss={() => setLoaderDismissed(true)}
+                        />
+                    )}
+                    <div className="w-full rounded-[20px] bg-white p-6 mt-4 font-poppins shadow-button-bottom">
                         <div className="flex flex-col items-start justify-center py-2 w-full">
-                            <h4 className="text-lg text-grayscale-900 font-notoSans text-left mb-2">
+                            <h4 className="text-xl font-semibold text-grayscale-900 text-left mb-2">
                                 {m['passport.buildMyLearnCard.managers.transcripts.title']()}
                             </h4>
-                            <p className="text-sm text-grayscale-600 font-notoSans text-left mb-4">
+                            <p className="text-sm text-grayscale-600 text-left mb-4">
                                 {m['passport.buildMyLearnCard.managers.transcripts.description']()}
                             </p>
 
-                            {savedCredentialCount > 0 && (
-                                <div className="w-full flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5 mb-4">
-                                    <svg
-                                        className="w-4 h-4 text-emerald-600 shrink-0"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2.5}
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            d="M5 13l4 4L19 7"
-                                        />
-                                    </svg>
-                                    <p className="text-xs text-emerald-700 font-medium">
-                                        {m['passport.buildMyLearnCard.managers.credentialsSaved']({
-                                            count: savedCredentialCount,
-                                        })}
-                                    </p>
-                                </div>
-                            )}
+                            <UploadFileOutcomeList
+                                outcomes={fileUploadOutcomes}
+                                fileType={UploadTypesEnum.Transcript}
+                                retryExtraction={retryFileExtraction}
+                                retrySave={retryFileSave}
+                                onSettled={() => void handleSetTranscripts()}
+                                disabled={busy}
+                                onExtracted={credentials => {
+                                    setParsedCredentials(credentials);
+                                    setShowReview(true);
+                                }}
+                            />
 
-                            {loaderDismissed && checklistStore.get.isParsing().transcript && (
+                            {loaderDismissed && isParsing && (
                                 <div className="w-full flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2.5 mb-4">
                                     <svg
                                         className="w-4 h-4 text-indigo-500 shrink-0 animate-spin"
@@ -367,52 +356,48 @@ export const CheckListTranscripts: React.FC = () => {
                                 ref={fileInputRef}
                                 style={{ display: 'none' }}
                             />
-
-                            <button
-                                disabled={isUploading || isLoading}
-                                onClick={triggerFileInput}
-                                className={`w-full flex rounded-[30px] items-center justify-center  py-2 font-semibold text-[17px] bg-${primaryColor} text-white`}
-                            >
-                                {buttonIcon}
-                                {buttonText}
-                            </button>
                         </div>
 
                         {isLoading && <CheckListItemSkeleton />}
 
-                        {!isLoading &&
-                            transcripts?.length > 0 &&
-                            transcripts?.map?.((transcript: TranscriptType) => {
-                                return (
-                                    <div
-                                        key={transcript?.id}
-                                        className="flex items-center justify-between w-full mt-4 relative pb-4"
-                                    >
-                                        <div className="flex items-center justify-start">
-                                            <DocIcon className="text-[#FF3636] h-[55px] min-h-[55px] min-w-[55px] w-[55px] mr-2" />
-                                            <div className="flex items-start justify-center text-left flex-col pr-4">
-                                                <p className="text-grayscale-800 text-sm font-semibold text-left line-clamp-2 break-all">
-                                                    {transcript?.fileName}
-                                                </p>
-                                                <p className="w-full text-xs text-grayscale-600">
-                                                    {transcript?.fileType} • {transcript?.fileSize}
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <button
-                                            onClick={() => confirmDelete(transcript?.id)}
-                                            className="bg-white overflow-hidden rounded-full flex items-center justify-center shadow-bottom p-2 min-h-[35px] min-w-[35px] w-[35px] h-[35px]"
-                                        >
-                                            <TrashBin className="text-blue-950 h-[25px] w-[25px]" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
+                        {!isLoading && transcripts.length > 0 && (
+                            <div className="w-full space-y-3">
+                                {transcripts.map(transcript => (
+                                    <UploadedOriginalDocument
+                                        key={transcript.id}
+                                        fileName={transcript.fileName}
+                                        fileType={transcript.fileType}
+                                        fileSize={transcript.fileSize}
+                                        data={transcript.data}
+                                        unavailable={transcript.unavailable}
+                                        addedCredentialCount={
+                                            fileUploadOutcomes.find(
+                                                item =>
+                                                    item.artifact.id === transcript.artifactId &&
+                                                    item.status === 'stored'
+                                            )?.storedCount
+                                        }
+                                        onDelete={() => confirmDelete(transcript.id)}
+                                        disabled={busy}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                        <button
+                            type="button"
+                            disabled={isUploading || isLoading || busy}
+                            onClick={triggerFileInput}
+                            className={`mt-6 w-full flex min-h-[48px] rounded-[20px] items-center justify-center py-3 px-4 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                                transcripts.length
+                                    ? 'bg-grayscale-100 text-grayscale-700 hover:bg-grayscale-200'
+                                    : 'bg-grayscale-900 text-white hover:opacity-90'
+                            }`}
+                        >
+                            {buttonIcon}
+                            {buttonText}
+                        </button>
                     </div>
-                    <CheckListManagerFooter
-                        loading={isSaving || checklistStore.get.isParsing().transcript}
-                    />
+                    <CheckListManagerFooter loading={isSaving || isParsing} />
                 </>
             )}
         </>

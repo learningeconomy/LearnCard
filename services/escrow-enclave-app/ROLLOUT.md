@@ -41,18 +41,28 @@ without a single real user being auto-enrolled — this is the intended
 
 Per the open launch blockers in [SECURITY.md](SECURITY.md#open-items--launch-blockers), these items remain open:
 
+Decision records (options, risks, recommendations, owner/approver placeholders)
+for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISIONS.md).
+
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
    host. Remaining: the operators' availability and rate limits for production
-   traffic (time.txryan.com's operator has approved our use).
-2. **No authenticated enrollment authority.** The production enclave wires in
-   `UnavailableEnrollment`, so create hold, release and cancel fail closed with
-   `Unavailable` (carry and rewrap do not use it). The design is in
-   [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md). Nothing can be released in
-   production without it.
-3. **Hold path relies on lca-api for notification (attack C).** A compromised lca-api
-   could start a hold and suppress the warning emails. The chosen fix is
-   enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9).
+   traffic (time.txryan.com's operator, Tanner Ryan, approved our use on 2026-10-01).
+2. **Enrollment authority — verified on staging, not yet deployed to production.**
+   Without a configured authority the enclave wires in `UnavailableEnrollment`, so
+   create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
+   do not use it). The design is in [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md).
+   Staging runs it (generation `staging-g1`); a real 7-day hold released there
+   (jackson+pin2, operator-reported), and staging passed the live attack C run on image `v79ea1bd7`
+   ([SECURITY.md](SECURITY.md#staging-verification-2026-10-23)). Production
+   closes when the production stack is configured and verified the same way.
+3. **Attack C (hold notification) — verified on staging; soak and inbox check remain.**
+   Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
+   staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
+   refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
+   cancellation is signed. Remaining: an operator inbox confirmation of the code
+   email, and the 7-day-since-confirmation soak (jackson+wait3, releasing about
+   2026-10-30) on the new image.
 4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
@@ -143,14 +153,16 @@ runbook `services/escrow-ledger-monitor/README.md`). Check CloudWatch (or
 wait for the SNS alarm — an operator should be subscribed via
 `monitor_alarm_email`) before every stage advance:
 
-| Criterion                      | Alarm / metric                                                                                  | Threshold to ADVANCE                                                                                                                                                                                        |
-| ------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tamper detection               | `LedgerIntegrityFailure` (namespace `LearnCard/EscrowLedger`)                                   | `0` in the observation window (any nonzero value is a hard stop, not just a "watch it")                                                                                                                     |
-| Audit consistency              | `AuditMismatch`                                                                                 | `0` — DynamoDB and the S3 Object Lock audit trail must agree                                                                                                                                                |
-| Release rate                   | `Released`                                                                                      | Under `monitor_released_hourly_threshold` (default 100/hr) at every hour in the window                                                                                                                      |
-| PIN-failure rate               | `PinAttemptFailed`                                                                              | Under `monitor_pin_failed_hourly_threshold` (default 100/hr) at every hour in the window                                                                                                                    |
-| Enclave / monitor availability | `<prefix>-monitor-sweep-missing` (heartbeat), `<prefix>-monitor-errors`, `<prefix>-monitor-dlq` | No heartbeat gaps, no Lambda errors, empty DLQ for the whole window                                                                                                                                         |
-| KMS governance                 | `EscrowKmsGovernanceChange` (CloudTrail EventBridge rule)                                       | Zero unplanned firings (a firing tied to a reviewed, two-person-approved measurement rotation is fine; anything else is a hard stop — treat as a security incident, not a rollout blocker to just wait out) |
+| Criterion                      | Alarm / metric                                                                                  | Threshold to ADVANCE                                                                                                                                                                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tamper detection               | `LedgerIntegrityFailure` (namespace `LearnCard/EscrowLedger`)                                   | `0` in the observation window (any nonzero value is a hard stop, not just a "watch it")                                                                                                                                                            |
+| Audit consistency              | `AuditMismatch`                                                                                 | `0` — DynamoDB and the S3 Object Lock audit trail must agree                                                                                                                                                                                       |
+| Release rate                   | `Released`                                                                                      | Under `monitor_released_hourly_threshold` (default 100/hr) at every hour in the window                                                                                                                                                             |
+| PIN-failure rate               | `PinAttemptFailed`                                                                              | Under `monitor_pin_failed_hourly_threshold` (default 100/hr) at every hour in the window                                                                                                                                                           |
+| Enclave / monitor availability | `<prefix>-monitor-sweep-missing` (heartbeat), `<prefix>-monitor-errors`, `<prefix>-monitor-dlq` | No heartbeat gaps, no Lambda errors, empty DLQ for the whole window                                                                                                                                                                                |
+| KMS governance                 | `EscrowKmsGovernanceChange` (CloudTrail EventBridge rule)                                       | Zero unplanned firings (a firing tied to a reviewed, two-person-approved key-policy or alias change, such as a measurement rotation, is fine; anything else is a hard stop — treat as a security incident, not a rollout blocker to just wait out) |
+| PrivateLink governance         | `EscrowPrivateLinkChange`, endpoint connection notifications                                    | Zero unplanned firings (a reviewed acceptance or principal change in the change record is fine; an unexpected connection or principal change is a hard stop)                                                                                       |
+| Serving capacity               | `<prefix>-nlb-healthy-hosts`                                                                    | No ALARM outside a reviewed roll or replacement; production must hold the ASG minimum healthy                                                                                                                                                      |
 
 **No-go:** if any hard-stop criterion above is breached, do not advance —
 drop back to the previous stage's percent (see Rollback) and open an incident

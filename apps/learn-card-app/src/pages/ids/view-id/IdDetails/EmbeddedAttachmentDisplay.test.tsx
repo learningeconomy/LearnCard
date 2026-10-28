@@ -92,3 +92,37 @@ describe('embedded certificate attachment display', () => {
         });
     });
 });
+
+it('renders ordinary mapped evidence and portfolio URLs as links instead of videos', async () => {
+    const getVideoMetadata = vi.fn();
+    render(
+        <MediaAttachmentsBox
+            evidence={
+                [
+                    {
+                        id: 'https://evidence.example.test/12',
+                        type: ['Evidence'],
+                        name: 'Evidence',
+                    },
+                    {
+                        id: 'https://portfolio.example.test/ada',
+                        type: ['Evidence'],
+                        name: 'Portfolio',
+                    },
+                ] as never
+            }
+            getVideoMetadata={getVideoMetadata}
+        />
+    );
+    const evidence = await screen.findByRole('button', { name: /Evidence.*link/i });
+    expect(await screen.findByRole('button', { name: /Portfolio.*link/i })).toBeTruthy();
+    expect(screen.queryByText('video')).toBeNull();
+    expect(getVideoMetadata).not.toHaveBeenCalled();
+    fireEvent.click(evidence);
+    await waitFor(() =>
+        expect(openAttachmentUrlMock).toHaveBeenCalledWith(
+            'https://evidence.example.test/12',
+            expect.any(String)
+        )
+    );
+});

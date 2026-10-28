@@ -11,6 +11,9 @@ env:
     CI: true
     NODE_OPTIONS: '--max-old-space-size=8192'
 
+permissions:
+    contents: read
+
 jobs:
     visual:
         runs-on: ubuntu-latest

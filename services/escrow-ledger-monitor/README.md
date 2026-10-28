@@ -62,7 +62,8 @@ success: it raises coverage failure/missing heartbeat and requires capacity revi
 or a separately reviewed sharded/checkpoint design before further rollout.
 
 Fixed metrics/notifications are `AuthorityIntegrityFailure`,
-`AuthorityCoverageFailure`, and `AuthoritySweepCompleted`, with only operator-owned
+`AuthorityCoverageFailure`, `AuthoritySweepCompleted`, and (metric only)
+`AuthorityRepeatedPinClear`, with only operator-owned
 Tenant dimensions. A separate authority heartbeat alarm treats missing data as
 breaching. Integrity findings may accompany a completed sweep; completion is a
 coverage signal, not an assertion that every row is valid. No historical release
@@ -115,6 +116,18 @@ trusted-time lower bound. Either gap alarms `AuthorityIntegrityFailure` exactly
 like any other reconstructed-state violation; this mirrors (and independently
 re-checks, rather than trusts) the enclave's own `authority_release_with_receipt`
 gate.
+
+Repeated PIN clears: from a fully verified history, every committed event whose
+signed `previous_pin` was configured and whose `pin` is not is counted as a PIN clear
+(only an owner `Enroll`/`Replace` can change the PIN generation). When an account has
+at least 2 clears whose signed `time.interval.hi_ms` falls in the 30 days before the
+sweep, the sweep emits the metric `AuthorityRepeatedPinClear` (no SNS message; the
+`AuthorityRepeatedPinClear` CloudWatch alarm notifies). This is a rate signal, not an
+integrity finding: the clients may sign one clear automatically after an
+identity-recovery rebind (`packages/sss-key-manager/POST_RECOVERY_ESCROW_REPAIR_DESIGN.md`,
+Q1), so a second one within the window is unusual. Signed records cannot tell a
+user-initiated clear from an automatic one, and the metric has only the Tenant
+dimension; find the account from the authority table.
 
 Limits: 10,000 scan pages of at most 100 items, 50,000 distinct partitions,
 4,096 rows / 32 MiB per account, and the shared 900-second Lambda deadline.
@@ -275,14 +288,17 @@ rate alarm, DLQ path, timeout/heartbeat, email confirmation and KMS event delive
 
 ## Operator runbook
 
-| Signal                                       | Meaning / first response                                                                                                                                                                                                                                                                                                                                       |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LedgerIntegrityFailure                       | Mutation, invalid encoding/signature/link/transition, changed image, wrong tenant/key/chain, or head inconsistency. Page security immediately; preserve DynamoDB PITR, stream and CloudTrail evidence, compare immutable S3 versions. Treat as suspected tampering, not a retryable business failure.                                                          |
-| AuditMismatch                                | Missing or different exact signed S3 bytes. Check host AuditUnavailable, S3/KMS availability and commit/upload timing. Recheck next sweep; persistent absence or differing bytes needs security containment. Never repair by overwriting ledger history.                                                                                                       |
-| Released / PinAttemptFailed hourly threshold | Possible mass recovery/guessing or duplicate processing. Compare legitimate traffic and stream retries; investigate identities only in access-controlled evidence systems, not metric dimensions.                                                                                                                                                              |
-| Lambda errors / DLQ depth                    | Verification may not be running. Check permissions, SSM key format, service health, throttling and packaging. Restore detection promptly. Stream retries are capped at 5 with batch bisection; SQS retains failures 14 days, but stream records expire after 24 hours. DLQ metadata is not a durable full copy of the stream; preserve evidence before expiry. |
-| Missing SweepCompleted                       | No successful full sweep for two 30-minute periods. Check EventBridge delivery, Lambda duration/errors, and ledger growth; do not interpret absent integrity metrics as health.                                                                                                                                                                                |
-| EscrowKmsGovernanceChange                    | PutKeyPolicy, CreateGrant, ScheduleKeyDeletion or DisableKey on the escrow CMK, including denied attempts. Immediately reconcile CloudTrail actor/action with approved two-person change records. Unapproved policy/grant activity is a security incident (D10).                                                                                               |
+| Signal                                       | Meaning / first response                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LedgerIntegrityFailure                       | Mutation, invalid encoding/signature/link/transition, changed image, wrong tenant/key/chain, or head inconsistency. Page security immediately; preserve DynamoDB PITR, stream and CloudTrail evidence, compare immutable S3 versions. Treat as suspected tampering, not a retryable business failure.                                                                                           |
+| AuditMismatch                                | Missing or different exact signed S3 bytes. Check host AuditUnavailable, S3/KMS availability and commit/upload timing. Recheck next sweep; persistent absence or differing bytes needs security containment. Never repair by overwriting ledger history.                                                                                                                                        |
+| Released / PinAttemptFailed hourly threshold | Possible mass recovery/guessing or duplicate processing. Compare legitimate traffic and stream retries; investigate identities only in access-controlled evidence systems, not metric dimensions.                                                                                                                                                                                               |
+| Lambda errors / DLQ depth                    | Verification may not be running. Check permissions, SSM key format, service health, throttling and packaging. Restore detection promptly. Stream retries are capped at 5 with batch bisection; SQS retains failures 14 days, but stream records expire after 24 hours. DLQ metadata is not a durable full copy of the stream; preserve evidence before expiry.                                  |
+| Missing SweepCompleted                       | No successful full sweep for two 30-minute periods. Check EventBridge delivery, Lambda duration/errors, and ledger growth; do not interpret absent integrity metrics as health.                                                                                                                                                                                                                 |
+| EscrowKmsGovernanceChange                    | PutKeyPolicy, CreateGrant, ScheduleKeyDeletion or DisableKey on the escrow CMK, including denied attempts. Immediately reconcile CloudTrail actor/action with approved two-person change records. Unapproved policy/grant activity is a security incident (D10).                                                                                                                                |
+| EscrowPrivateLinkChange                      | Endpoint-service permission, configuration, notification or acceptance change (account-wide, including denied calls). The page carries eventName, eventID and eventTime; look up the eventID in CloudTrail for caller and request. Reconcile with the change record; an unexpected acceptance or principal change is a security incident: reject the connection and restore allowed principals. |
+| Endpoint connection notification             | Raw `vpce` notice (ServiceId, VpcEndpointId, VpcEndpointOwner, EndpointState) on Connect/Accept/Reject/Delete. Accept only the reviewed lca-api endpoint ID from the expected owner; reject anything else. An unplanned Delete means lca-api lost its path to the enclave.                                                                                                                      |
+| <prefix>-nlb-healthy-hosts                   | Fewer healthy NLB targets than the ASG minimum for 5 minutes (or no registered targets). Check ASG activity, instance refresh, target health and host/enclave logs. Expected during staging's single-host roll; in production it means lost redundancy or capacity. OK notifies recovery.                                                                                                       |
 
 1. Acknowledge/page the security incident owner. Preserve evidence before replaying
    failed batches; do not delete records, reset PIN budgets, regenerate keys, or

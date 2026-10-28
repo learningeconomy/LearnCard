@@ -16,6 +16,7 @@ export default createVitestConfig(brainServicePreset, {
             NEO4J_SKIP_INDICES: 'true',
         },
         include: [
+            'test/credential-share-previews.spec.ts',
             'test/share-link-*.unit.spec.ts',
             'test/share-content-client.*.spec.ts',
             'test/uri-helpers.spec.ts',
@@ -51,6 +52,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/status-list.helpers.test.ts',
             'src/helpers/boost-storage.helpers.test.ts',
             'src/accesslayer/credential/create.test.ts',
+            'src/accesslayer/inbox-batch/schema.test.ts',
             'src/helpers/inbox-encryption.helpers.test.ts',
             'src/helpers/send-inbox-config.helpers.test.ts',
             'src/helpers/contact-method.helpers.test.ts',

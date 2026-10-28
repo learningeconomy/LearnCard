@@ -77,6 +77,31 @@ flowchart LR
 
 For browser application requests (CHAPI or VC-API), use the credential list to search and filter by category. **View selected** shows the entire selected batch, even when search hides some items. **Deselect all** clears the selection. Open **Review** to check or remove items before sending; returning to selection sends nothing. Suggested credentials remain editable.
 
+When creating a private link from **Privacy & Data**, your Passport categories—including manual changes—are saved with the signed collection. The creation preview, **Your shared links** preview, and recipient view use that category snapshot. Recognized categories include both credential types and saved index categories such as Work Experience, Resume, and Professional Title; missing or unrecognized hints fall back to the original credential type. These labels describe the sender's organization; they do not change the original issuer-signed credentials. Older apps can still open the links but ignore the category snapshot.
+
+For a link created before category snapshots, open it under **Your shared links**, choose **Update contents** → **Choose credentials**, keep the same credentials selected, then continue through **Preview** and **Update private link**. This saves the current categories without changing the URL. Later category changes in your Passport also require updating the link; published snapshots do not change automatically.
+
+### Sharing to LinkedIn
+
+Issuers can link their organization in **Developer Portal → Build → an issuance project → Branding**. Enter the numeric **LinkedIn organization ID** from the organization's LinkedIn admin-page URL, not its public page name. Leave it blank to use the issuer name without an organization link. Saving a blank value removes a previous ID.
+
+1. Open an earned credential and choose **Share**.
+2. Choose **Add to LinkedIn** to add it under Licenses & certifications. LinkedIn uses the configured organization ID to find the issuer's page and logo. For a recognized LearnCard credential address, the certification ID uses its trailing UUID. Other credential IDs or individual saved addresses are kept only when they fit LinkedIn's 80-character limit; missing or unsuitable IDs are omitted, never truncated or generated from the current time. The full viewing link is preserved.
+3. To include a social preview, choose **Enable Public Preview**. This publishes only the credential name, issuer name, and available HTTPS credential or achievement artwork. A recipient photo is not used as a fallback; credentials without eligible artwork publish no preview image. Other credential fields remain encrypted; anyone with the complete share link can still open the credential.
+4. Once publication succeeds, **Post to LinkedIn** opens a post with the preview-enabled share link filled in. It stays disabled before consent or if publication fails, with the public-preview explanation exposed to assistive technology; private copying remains available without opting in.
+
+Public previews are optional. Reopening Share without enabling a preview produces a link without preview metadata, but does not erase an already published preview or copies cached by social apps. Enabling it again refreshes the owned preview for the same encrypted presentation. A new presentation gets its own preview, so sharing it does not replace an earlier card. If a saved preview was deleted, opting in creates and saves a replacement. LinkedIn's certification tile shows the organization's logo, not the credential image; the credential image belongs to the social preview.
+
+Preview details are supplied by the person sharing, not proof of the issuer's identity or claims. Matching a share address does not prove that the publisher owns the presentation. Open the full credential to inspect its verification. LearnCard records the publisher, creation time, and last refresh time, requires the matching encrypted-link address for public lookup, and removes owned server-side previews when that profile is deleted. The SDK's `deleteCredentialSharePreview(id)` can also remove an owned preview; copies held by social apps may remain.
+
+If the issuer's name cannot be loaded and is not included in the credential, public previews stay disabled rather than publishing an “Unknown” placeholder. The encrypted link remains available.
+
+LinkedIn sharing controls follow your app language.
+
+Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the matching public preview record, and returns Open Graph metadata to social crawlers. The canonical destination preserves the original link's decryption parameters so a card click can open the credential. Ordinary visitors continue to the app; unavailable or mismatched previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
+
+Developer verification: `lc verify run sdk` covers owner-only refresh/deletion, immutable URI binding, creation/update times, and profile cleanup; `lc verify run sharing` checks private-record isolation, deleted-preview recovery, and that earlier and newer cards both resolve after sharing an endorsed credential again.
+
 ### Private Verifier History
 
 Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.
@@ -105,6 +130,80 @@ History displays at most 500 entries from the last 90 days. Cleanup runs when hi
 If history cannot be loaded, **Clear history** remains available to reset recording to off when its settings are missing or unreadable. A cleanup warning means some records could not be removed; try Clear again. An unreadable encrypted document also prevents recording until recovery. A confirmed entry remains saved even when cleanup is incomplete.
 
 If your account changes after an OID4VP send completes, the success screen says so and hides the earlier account’s details. It does not redirect to the verifier under the new account; return to the requesting application to finish its session.
+
+### Uploading an Original Document
+
+Open **Build My LearnCard**, then choose Resume, Certificates, Transcripts or Diplomas.
+Select a supported file. Review any extracted credentials and choose which ones to save.
+
+If uploads are busy, the app shows **Waiting for a turn…** and automatically tries again
+for up to two minutes, respecting the service's retry delay. Select **Cancel** or close the
+upload step to stop waiting. Closing the app stops retries; there is no background queue.
+If capacity remains unavailable, the file stays unsaved and you can try again shortly.
+Only requests explicitly rejected before processing are retried automatically.
+Once extraction has started, the existing **Notify me when it's ready** behavior still applies.
+
+```mermaid
+flowchart LR
+    A[Choose document] --> B{Extraction result}
+    B -->|Credentials found| C[Review and select]
+    C --> D[Save original and selection]
+    B -->|Empty or no readable text| J[Show feedback without creating a credential]
+    B -->|Processing failed| E[Save original only]
+    B -->|Settings pending or request rejected| I[Leave the saved document unchanged]
+    D --> F{Save confirmed?}
+    E --> F
+    F -->|Yes| G[Open original by selecting its filename]
+    F -->|No| H[Retry saving]
+```
+
+The saved original appears in one document card. Select its filename to open it.
+When credentials are added, the card shows the confirmed count; there is no separate
+success banner or action box.
+Preview uses a supported filename extension when a device supplies no specific file type.
+It never overrides an explicit HTML or SVG type.
+
+An empty result or a file with no readable text does not create a credential or save a new
+original. While the upload step is open, select its filename to preview the uploaded file,
+choose another file, or retry extraction.
+In a mixed batch, saving the review only stores originals that produced review candidates;
+empty files are not saved alongside them.
+Pending AI settings, invalid or rejected input, oversized files, and incompatible service
+responses do not add a new saved original or replace a résumé. Feedback explains the reason
+and omits extraction retry for non-retryable rejections.
+With AI disabled, uploads still save the original without sending it for AI processing or
+offering extraction retry. A file already known to be empty remains unsaved.
+Transient processing failures still keep the original when its save succeeds. A failed save
+does not claim that the file is saved; retry saving without running extraction again.
+The extraction overlay closes when the original starts saving. An inline message explains
+that extraction failed and saving is in progress; it only says the original is saved after
+the save is confirmed.
+
+Review can be closed and reopened within the same app session. Selecting none still saves
+the original, but does not mean extraction found nothing. Saved counts include only confirmed
+selected credentials. Partial failures retain the review; retrying a save reuses confirmed writes.
+For résumés, going Back clears the save-error message without discarding the pending review.
+Starting another upload clears the previous error message immediately.
+
+Confirmed saves trigger one background sharing sync instead of waiting for sharing on every
+credential. Insights refresh only after that sync succeeds; a sharing failure does not
+undo confirmed saves, change their counts, or request an insight from incomplete server data.
+
+Use **Update** for another résumé or **Add More** for other documents. These actions sit
+below the saved document cards. Failed extraction and storage still have their own retry
+feedback. Reopening a manager shows saved originals without inventing a credential count.
+An unreadable original remains listed as unavailable and can still be deleted. It does
+not hide other documents; readable legacy originals remain accessible.
+Uploaded originals are hidden from **Recently Added** and **See all**. Extracted
+credentials and published résumés remain visible.
+
+Deleting an original immediately removes its row and upload feedback together. If deletion
+fails, both return with an error. Other documents and their feedback remain unchanged.
+If a résumé has already been replaced when deletion starts, the newer upload is kept.
+
+**Deployment prerequisite:** deploy AI Passport's versioned extraction metadata before this
+app release. An incompatible response leaves saved documents unchanged; retry after the
+compatible backend is available.
 
 ### Publishing a Résumé
 

@@ -239,7 +239,7 @@ impl Ledger {
             .signing_key
             .sign_prehash(&record.signing_hash()?)
             .map_err(|_| LedgerError::Signature)?;
-        record.signature = STANDARD.encode(signature.normalize_s().unwrap_or(signature).to_bytes());
+        record.signature = STANDARD.encode(signature.normalize_s().to_bytes());
         Ok(record)
     }
     #[cfg(any(test, feature = "kms", feature = "fake-authority"))]
@@ -358,7 +358,7 @@ impl Ledger {
             let hash = record.record_hash()?;
             let signature =
                 Signature::from_slice(&record.sig).map_err(|_| LedgerError::Signature)?;
-            if signature.normalize_s().is_some() {
+            if signature.normalize_s() != signature {
                 return Err(LedgerError::Signature);
             }
             keys.get(&record.key_id)
@@ -471,7 +471,7 @@ impl Ledger {
             .map_err(|_| LedgerError::Signature)?;
         record
             .sig
-            .copy_from_slice(&signature.normalize_s().unwrap_or(signature).to_bytes());
+            .copy_from_slice(&signature.normalize_s().to_bytes());
         let mut proposed = state.records.clone();
         proposed.push(record.clone());
         // Validate without advancing the committed high-water mark. Keep the

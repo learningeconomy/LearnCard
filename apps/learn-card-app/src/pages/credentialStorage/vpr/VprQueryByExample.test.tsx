@@ -41,6 +41,11 @@ vi.mock('../../../theme/hooks/useTheme', () => ({
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
+    getCredentialName: (credential: { name?: string }) => credential?.name,
+}));
+vi.mock('../../../components/share-links/CredentialPreviewButton', () => ({
+    CredentialPreviewButton: () => null,
+    default: () => null,
 }));
 vi.mock('learn-card-base/helpers/credentials/ids', () => ({ getUniqueId: (vc: VC) => vc.id }));
 vi.mock('learn-card-base/helpers/credentials/queries', () => ({

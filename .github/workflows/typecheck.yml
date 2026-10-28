@@ -10,11 +10,14 @@ concurrency:
     group: typecheck-${{ github.head_ref || github.ref }}
     cancel-in-progress: true
 
+permissions:
+    contents: read
+
 jobs:
     typecheck-ratchet:
         name: Typecheck ratchet
         runs-on: ubuntu-latest
-        timeout-minutes: 30
+        timeout-minutes: 45
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -28,7 +31,7 @@ jobs:
               uses: ./.github/actions/setup
 
             - name: Test the ratchet script
-              run: node --test scripts/typecheck-ratchet.test.mjs
+              run: node --test scripts/typecheck-ratchet.test.mjs scripts/typecheck-diagnostics.test.mjs
 
             # tsc resolves Node-resolution services against built dist, so every library is built
             # first. scripts/typecheck-baseline.json is generated in this same state.
@@ -44,4 +47,59 @@ jobs:
             # Fails when any project's tsc error count rises above scripts/typecheck-baseline.json.
             # Lower the baseline with `bun run typecheck:baseline` after fixing errors.
             - name: Run typecheck ratchet
-              run: bun run typecheck:ratchet
+              id: ratchet
+              continue-on-error: true
+              run: node scripts/typecheck-ratchet.mjs --report="$RUNNER_TEMP/typecheck-head.json"
+
+            # A count failure is retained. Only then prepare the PR base independently,
+            # and recheck the projects above allowance to explain which diagnostics differ.
+            - name: Select projects for base comparison
+              id: comparison
+              if: ${{ steps.ratchet.outcome == 'failure' && github.event_name == 'pull_request' }}
+              run: node scripts/typecheck-diagnostics.mjs select "$RUNNER_TEMP/typecheck-head.json"
+
+            # Keep the base outside the head workspace: TypeScript searches ancestor
+            # node_modules/@types directories even when the base has its own install.
+            - name: Checkout PR base outside the workspace
+              if: ${{ steps.comparison.outputs.needed == 'true' }}
+              env:
+                  TYPECHECK_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+              run: |
+                  git fetch --no-tags --depth=1 origin "$TYPECHECK_BASE_SHA"
+                  git worktree add --detach "$RUNNER_TEMP/typecheck-base" FETCH_HEAD
+
+            - name: Prepare base dependencies and libraries
+              if: ${{ steps.comparison.outputs.needed == 'true' }}
+              working-directory: ${{ runner.temp }}/typecheck-base
+              run: |
+                  bun install --frozen-lockfile
+                  bunx nx run-many -t build --projects="$(bunx nx show projects --type lib --with-target build | paste -sd, -)"
+                  bun run --cwd apps/learn-card-app i18n:compile
+                  bun run --cwd apps/scouts i18n:generate
+
+            - name: Check affected projects at base
+              if: ${{ steps.comparison.outputs.needed == 'true' }}
+              run: node scripts/typecheck-diagnostics.mjs base "$RUNNER_TEMP/typecheck-head.json" "$RUNNER_TEMP/typecheck-base" "$RUNNER_TEMP/typecheck-base.json"
+
+            - name: Explain ratchet failure
+              if: ${{ always() && steps.ratchet.outcome == 'failure' }}
+              run: node scripts/typecheck-diagnostics.mjs render "$RUNNER_TEMP/typecheck-head.json" "$RUNNER_TEMP/typecheck-base.json"
+
+            - name: Retain diagnostic reports
+              if: ${{ always() }}
+              continue-on-error: true
+              uses: actions/upload-artifact@v7
+              with:
+                  name: typecheck-diagnostics
+                  path: |
+                      ${{ runner.temp }}/typecheck-head.json
+                      ${{ runner.temp }}/typecheck-base.json
+                  if-no-files-found: ignore
+                  retention-days: 7
+
+            # continue-on-error permits explanation, not a passing count gate.
+            - name: Enforce ratchet result
+              if: ${{ always() && steps.ratchet.outcome != 'success' }}
+              run: |
+                  echo "The typecheck ratchet did not pass. See the diagnostic comparison above."
+                  exit 1

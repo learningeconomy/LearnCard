@@ -135,6 +135,26 @@ describe('decidePinPromptAfterReady', () => {
         });
     });
 
+    it('asks for a new PIN when repair requires a PIN reset, even while unenrolled', () => {
+        for (const recoveredVia of [null, 'hold', 'pin'] as const)
+            expect(
+                decidePinPromptAfterReady({
+                    ...base,
+                    recoveredVia,
+                    enrollment: 'not-enrolled',
+                    pinResetRequired: true,
+                })
+            ).toEqual({ kind: 'pin-reset-required' });
+        expect(
+            decidePinPromptAfterReady({
+                ...base,
+                recoveredVia: null,
+                pinResetRequired: true,
+                pinEnabled: true,
+            })
+        ).toEqual({ kind: 'none' });
+    });
+
     it('offers a PIN after waiting out the hold, even if a PIN was set before', () => {
         expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'hold' })).toEqual({
             kind: 'after-hold-recovery',
@@ -148,6 +168,20 @@ describe('decidePinPromptAfterReady', () => {
         expect(
             decidePinPromptAfterReady({ ...base, recoveredVia: 'hold', enrollment: 'not-enrolled' })
         ).toEqual({ kind: 'none' });
+    });
+
+    it('offers the hold prompt when asynchronous enrollment becomes known', () => {
+        const recovery = { recoveredVia: 'hold', promptFlag: null } as const;
+        expect(
+            decidePinPromptAfterReady({ ...recovery, enrollment: undefined, pinEnabled: undefined })
+        ).toEqual({ kind: 'none' });
+        // The provider consumes recoveredVia only when showing the prompt (or a working PIN).
+        expect(
+            decidePinPromptAfterReady({ ...recovery, enrollment: 'enrolled', pinEnabled: false })
+        ).toEqual({ kind: 'after-hold-recovery' });
+        expect(decidePinPromptAfterReady({ ...base, recoveredVia: null })).toEqual({
+            kind: 'none',
+        });
     });
 
     it('waits until PIN status is known and never prompts when a PIN works', () => {
