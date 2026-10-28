@@ -20,7 +20,7 @@ Dismiss Alerts when opening a contract-update review without waiting for read-st
 
 Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
 
-Separate Advanced Options from changes, published feedback, and actions. Keep the image's remove control inside its thumbnail so it cannot obscure the current version.
+Separate Advanced Options from changes, published feedback, and actions. Add space below the current version while keeping the image's remove control in its original outside corner.
 
 Show a clear unavailable state for networks that omit contract version metadata, including cached responses. Keep publishing disabled until a versioned response is available, and never assume an unversioned response is version 1.
 

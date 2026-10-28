@@ -83,7 +83,7 @@ const ConsentContractForm: React.FC<Props> = ({
                                     draft.image = '';
                                 })
                             }
-                            className="absolute end-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white"
+                            className="absolute -end-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white"
                         >
                             <X size={14} />
                         </button>
