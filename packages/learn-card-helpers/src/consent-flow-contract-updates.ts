@@ -204,6 +204,56 @@ const CANONICAL_SCOPE_COPY: Record<string, { label: string; description: string 
         label: 'Family',
         description: 'Family profiles connected through shared learning journeys.',
     },
+    QUALIFICATIONS: {
+        label: 'Qualifications',
+        description: 'Education, training, and professional qualifications.',
+    },
+    GOALS: { label: 'Goals', description: 'Learning and career goals you want to achieve.' },
+    'PROFESSIONAL TITLE': {
+        label: 'Professional title',
+        description: 'The title that describes your professional role.',
+    },
+    'ROLE EXPERIENCE': {
+        label: 'Role experience',
+        description: 'Experience gained in a particular professional role.',
+    },
+    'WORK EXPERIENCE': {
+        label: 'Work experience',
+        description: 'Your work activities, responsibilities, and experience.',
+    },
+    'PAY RATE': { label: 'Pay rate', description: 'Your pay amount and payment period.' },
+    'WORK LIFE BALANCE': {
+        label: 'Work-life balance',
+        description: 'Your preferences for balancing work and personal life.',
+    },
+    'JOB STABILITY': {
+        label: 'Job stability',
+        description: 'Your preferences for job security and stability.',
+    },
+    'SELF-ASSIGNED SKILLS': {
+        label: 'Self-assigned skills',
+        description: 'Skills you have added to your own profile.',
+    },
+    'AI-SUMMARY': {
+        label: 'AI summaries',
+        description: 'Summaries of your AI-assisted learning sessions.',
+    },
+    'AI-TOPIC': {
+        label: 'AI topics',
+        description: 'Topics explored in your AI-assisted learning.',
+    },
+    'AI-ASSESSMENT': {
+        label: 'AI assessments',
+        description: 'Assessments from your AI-assisted learning.',
+    },
+    'AI INSIGHT': {
+        label: 'AI insights',
+        description: 'Insights about your learning progress and skills.',
+    },
+    'LEARNING-PATHWAY': {
+        label: 'Learning pathways',
+        description: 'Plans and steps toward your learning goals.',
+    },
 };
 
 const PERSONAL_SCOPE_COPY: Record<string, { label: string; description: string }> = {
@@ -223,7 +273,10 @@ const scopeCopy = (
     ];
     if (!copy) return { label: scope.key, description: '' };
     if (!translate) return copy;
-    const prefix = `consentUpdate.scope.${copy.label.toLowerCase().replace(/ /g, '_')}`;
+    const messageName = copy.label
+        .toLowerCase()
+        .replace(/[\s-]+([a-z])/g, (_, letter: string) => letter.toUpperCase());
+    const prefix = `consentUpdate.scope.${messageName}`;
     return {
         label: translate(`${prefix}.label`),
         description: translate(`${prefix}.description`),

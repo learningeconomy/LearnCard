@@ -146,16 +146,16 @@
                 "label": "Skills",
                 "description": "Abilities developed through training, practice, or experience."
             },
-            "work_history": {
+            "workHistory": {
                 "label": "Work History",
                 "description": "Professional roles and activities over time."
             },
-            "learning_history": {
+            "learningHistory": {
                 "label": "Learning History",
                 "description": "Structured programs of learning."
             },
             "ids": { "label": "IDs", "description": "Credentials used to verify identity." },
-            "social_badges": {
+            "socialBadges": {
                 "label": "Social Badges",
                 "description": "Digital labels recognizing participation or group membership."
             },
@@ -178,7 +178,63 @@
             },
             "name": { "label": "Name", "description": "Your name." },
             "email": { "label": "Email", "description": "Your email address." },
-            "profile_photo": { "label": "Profile photo", "description": "Your profile photo." }
+            "profilePhoto": { "label": "Profile photo", "description": "Your profile photo." },
+            "qualifications": {
+                "label": "Qualifications",
+                "description": "Education, training, and professional qualifications."
+            },
+            "goals": {
+                "label": "Goals",
+                "description": "Learning and career goals you want to achieve."
+            },
+            "professionalTitle": {
+                "label": "Professional title",
+                "description": "The title that describes your professional role."
+            },
+            "roleExperience": {
+                "label": "Role experience",
+                "description": "Experience gained in a particular professional role."
+            },
+            "workExperience": {
+                "label": "Work experience",
+                "description": "Your work activities, responsibilities, and experience."
+            },
+            "payRate": {
+                "label": "Pay rate",
+                "description": "Your pay amount and payment period."
+            },
+            "workLifeBalance": {
+                "label": "Work-life balance",
+                "description": "Your preferences for balancing work and personal life."
+            },
+            "jobStability": {
+                "label": "Job stability",
+                "description": "Your preferences for job security and stability."
+            },
+            "selfAssignedSkills": {
+                "label": "Self-assigned skills",
+                "description": "Skills you have added to your own profile."
+            },
+            "aiSummaries": {
+                "label": "AI summaries",
+                "description": "Summaries of your AI-assisted learning sessions."
+            },
+            "aiTopics": {
+                "label": "AI topics",
+                "description": "Topics explored in your AI-assisted learning."
+            },
+            "aiAssessments": {
+                "label": "AI assessments",
+                "description": "Assessments from your AI-assisted learning."
+            },
+            "aiInsights": {
+                "label": "AI insights",
+                "description": "Insights about your learning progress and skills."
+            },
+            "learningPathways": {
+                "label": "Learning pathways",
+                "description": "Plans and steps toward your learning goals."
+            }
         }
     },
     "clrTranscript": {

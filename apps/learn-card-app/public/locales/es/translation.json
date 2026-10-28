@@ -146,11 +146,11 @@
                 "label": "Habilidades",
                 "description": "Capacidades desarrolladas mediante formación, práctica o experiencia."
             },
-            "work_history": {
+            "workHistory": {
                 "label": "Historial laboral",
                 "description": "Funciones y actividades profesionales a lo largo del tiempo."
             },
-            "learning_history": {
+            "learningHistory": {
                 "label": "Historial de aprendizaje",
                 "description": "Programas de aprendizaje estructurados."
             },
@@ -158,7 +158,7 @@
                 "label": "Identificaciones",
                 "description": "Credenciales utilizadas para verificar la identidad."
             },
-            "social_badges": {
+            "socialBadges": {
                 "label": "Insignias sociales",
                 "description": "Distintivos digitales que reconocen la participación o pertenencia a un grupo."
             },
@@ -187,7 +187,63 @@
                 "label": "Correo electrónico",
                 "description": "Tu dirección de correo electrónico."
             },
-            "profile_photo": { "label": "Foto de perfil", "description": "Tu foto de perfil." }
+            "profilePhoto": { "label": "Foto de perfil", "description": "Tu foto de perfil." },
+            "qualifications": {
+                "label": "Cualificaciones",
+                "description": "Estudios, formación y cualificaciones profesionales."
+            },
+            "goals": {
+                "label": "Objetivos",
+                "description": "Objetivos de aprendizaje y profesionales que quieres alcanzar."
+            },
+            "professionalTitle": {
+                "label": "Título profesional",
+                "description": "El título que describe tu función profesional."
+            },
+            "roleExperience": {
+                "label": "Experiencia en el puesto",
+                "description": "Experiencia adquirida en una función profesional concreta."
+            },
+            "workExperience": {
+                "label": "Experiencia laboral",
+                "description": "Tus actividades, responsabilidades y experiencia de trabajo."
+            },
+            "payRate": {
+                "label": "Remuneración",
+                "description": "El importe de tu remuneración y el período de pago."
+            },
+            "workLifeBalance": {
+                "label": "Equilibrio entre trabajo y vida personal",
+                "description": "Tus preferencias para equilibrar el trabajo y la vida personal."
+            },
+            "jobStability": {
+                "label": "Estabilidad laboral",
+                "description": "Tus preferencias sobre seguridad y estabilidad en el empleo."
+            },
+            "selfAssignedSkills": {
+                "label": "Habilidades autoasignadas",
+                "description": "Habilidades que has añadido a tu propio perfil."
+            },
+            "aiSummaries": {
+                "label": "Resúmenes de IA",
+                "description": "Resúmenes de tus sesiones de aprendizaje con IA."
+            },
+            "aiTopics": {
+                "label": "Temas de IA",
+                "description": "Temas explorados en tu aprendizaje con IA."
+            },
+            "aiAssessments": {
+                "label": "Evaluaciones de IA",
+                "description": "Evaluaciones de tu aprendizaje con IA."
+            },
+            "aiInsights": {
+                "label": "Observaciones de IA",
+                "description": "Observaciones sobre tu progreso de aprendizaje y tus habilidades."
+            },
+            "learningPathways": {
+                "label": "Itinerarios de aprendizaje",
+                "description": "Planes y pasos para alcanzar tus objetivos de aprendizaje."
+            }
         }
     },
     "clrTranscript": {

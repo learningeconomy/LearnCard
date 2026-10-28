@@ -146,11 +146,11 @@
                 "label": "Compétences",
                 "description": "Aptitudes développées par la formation, la pratique ou l’expérience."
             },
-            "work_history": {
+            "workHistory": {
                 "label": "Parcours professionnel",
                 "description": "Fonctions et activités professionnelles au fil du temps."
             },
-            "learning_history": {
+            "learningHistory": {
                 "label": "Parcours d’apprentissage",
                 "description": "Programmes d’apprentissage structurés."
             },
@@ -158,7 +158,7 @@
                 "label": "Pièces d’identité",
                 "description": "Justificatifs utilisés pour vérifier l’identité."
             },
-            "social_badges": {
+            "socialBadges": {
                 "label": "Badges sociaux",
                 "description": "Distinctions numériques reconnaissant une participation ou l’appartenance à un groupe."
             },
@@ -184,7 +184,63 @@
             },
             "name": { "label": "Nom", "description": "Votre nom." },
             "email": { "label": "Adresse e-mail", "description": "Votre adresse e-mail." },
-            "profile_photo": { "label": "Photo de profil", "description": "Votre photo de profil." }
+            "profilePhoto": { "label": "Photo de profil", "description": "Votre photo de profil." },
+            "qualifications": {
+                "label": "Qualifications",
+                "description": "Études, formations et qualifications professionnelles."
+            },
+            "goals": {
+                "label": "Objectifs",
+                "description": "Objectifs d’apprentissage et de carrière que vous souhaitez atteindre."
+            },
+            "professionalTitle": {
+                "label": "Titre professionnel",
+                "description": "Le titre qui décrit votre fonction professionnelle."
+            },
+            "roleExperience": {
+                "label": "Expérience dans une fonction",
+                "description": "Expérience acquise dans une fonction professionnelle précise."
+            },
+            "workExperience": {
+                "label": "Expérience professionnelle",
+                "description": "Vos activités, responsabilités et expériences professionnelles."
+            },
+            "payRate": {
+                "label": "Rémunération",
+                "description": "Le montant de votre rémunération et sa périodicité."
+            },
+            "workLifeBalance": {
+                "label": "Équilibre entre travail et vie personnelle",
+                "description": "Vos préférences pour concilier travail et vie personnelle."
+            },
+            "jobStability": {
+                "label": "Stabilité de l’emploi",
+                "description": "Vos préférences en matière de sécurité et de stabilité de l’emploi."
+            },
+            "selfAssignedSkills": {
+                "label": "Compétences autoévaluées",
+                "description": "Compétences que vous avez ajoutées à votre propre profil."
+            },
+            "aiSummaries": {
+                "label": "Résumés d’IA",
+                "description": "Résumés de vos séances d’apprentissage assisté par IA."
+            },
+            "aiTopics": {
+                "label": "Sujets d’IA",
+                "description": "Sujets explorés lors de votre apprentissage assisté par IA."
+            },
+            "aiAssessments": {
+                "label": "Évaluations d’IA",
+                "description": "Évaluations issues de votre apprentissage assisté par IA."
+            },
+            "aiInsights": {
+                "label": "Observations d’IA",
+                "description": "Observations sur vos progrès d’apprentissage et vos compétences."
+            },
+            "learningPathways": {
+                "label": "Parcours d’apprentissage",
+                "description": "Plans et étapes pour atteindre vos objectifs d’apprentissage."
+            }
         }
     },
     "clrTranscript": {

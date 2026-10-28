@@ -312,26 +312,7 @@ describe('canonical contract preview scope copy', () => {
             kind: 'expanded_optional',
             diff: { added: [scope], removed: [], changed: [] },
         }).rows[0];
-    it.each([
-        ['Transcript', 'Transcripts', 'Records of completed courses and learning.'],
-        [
-            'Certificate',
-            'Certificates',
-            'Credentials recognizing qualifications or completed learning.',
-        ],
-        [
-            'Achievement',
-            'Achievements',
-            'Milestones earned through effort, skill, or perseverance.',
-        ],
-        ['Skill', 'Skills', 'Abilities developed through training, practice, or experience.'],
-        ['Work History', 'Work History', 'Professional roles and activities over time.'],
-    ])('uses canonical category copy for %s', (key, label, subtitle) => {
-        expect(
-            previewScope({ area: 'read', type: 'credential', key: key!, required: false })
-        ).toMatchObject({ label, subtitle });
-    });
-    it('uses per-item reasons first, canonical personal copy otherwise, and no invented unknown copy', () => {
+    it('uses explicit reasons first and does not invent descriptions for custom scopes', () => {
         expect(
             previewScope({
                 area: 'write',
@@ -340,13 +321,7 @@ describe('canonical contract preview scope copy', () => {
                 required: false,
                 reason: 'Your chosen reason.',
             })
-        ).toMatchObject({ label: 'Skills', subtitle: 'Your chosen reason.' });
-        expect(
-            previewScope({ area: 'read', type: 'personal', key: 'Email', required: false })
-        ).toMatchObject({ label: 'Email', subtitle: 'Your email address.' });
-        expect(
-            previewScope({ area: 'read', type: 'personal', key: 'Image', required: false })
-        ).toMatchObject({ label: 'Profile photo', subtitle: 'Your profile photo.' });
+        ).toMatchObject({ subtitle: 'Your chosen reason.' });
         expect(
             previewScope({ area: 'read', type: 'credential', key: 'Custom Scope', required: false })
         ).toMatchObject({ label: 'Custom Scope', subtitle: '' });

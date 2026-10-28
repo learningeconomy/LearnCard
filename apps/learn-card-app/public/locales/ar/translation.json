@@ -146,13 +146,16 @@
                 "label": "المهارات",
                 "description": "قدرات تطورت بالتدريب أو الممارسة أو الخبرة."
             },
-            "work_history": {
+            "workHistory": {
                 "label": "السجل المهني",
                 "description": "الأدوار والأنشطة المهنية على مر الزمن."
             },
-            "learning_history": { "label": "سجل التعلّم", "description": "برامج تعلّم منظّمة." },
+            "learningHistory": {
+                "label": "سجل التعلّم",
+                "description": "برامج تعلّم منظّمة."
+            },
             "ids": { "label": "وثائق الهوية", "description": "وثائق تُستخدم للتحقق من الهوية." },
-            "social_badges": {
+            "socialBadges": {
                 "label": "الشارات الاجتماعية",
                 "description": "شارات رقمية تثبت المشاركة أو العضوية في مجموعة."
             },
@@ -172,7 +175,60 @@
             },
             "name": { "label": "الاسم", "description": "اسمك." },
             "email": { "label": "البريد الإلكتروني", "description": "عنوان بريدك الإلكتروني." },
-            "profile_photo": { "label": "صورة الملف الشخصي", "description": "صورة ملفك الشخصي." }
+            "profilePhoto": { "label": "صورة الملف الشخصي", "description": "صورة ملفك الشخصي." },
+            "qualifications": {
+                "label": "المؤهلات",
+                "description": "التعليم والتدريب والمؤهلات المهنية."
+            },
+            "goals": {
+                "label": "الأهداف",
+                "description": "أهداف التعلّم والعمل التي ترغب في تحقيقها."
+            },
+            "professionalTitle": {
+                "label": "المسمّى المهني",
+                "description": "المسمّى الذي يصف دورك المهني."
+            },
+            "roleExperience": {
+                "label": "الخبرة في الدور المهني",
+                "description": "الخبرة المكتسبة في دور مهني محدد."
+            },
+            "workExperience": {
+                "label": "الخبرة العملية",
+                "description": "أنشطتك ومسؤولياتك وخبراتك في العمل."
+            },
+            "payRate": { "label": "معدل الأجر", "description": "مبلغ أجرك وفترة الدفع." },
+            "workLifeBalance": {
+                "label": "التوازن بين العمل والحياة",
+                "description": "تفضيلاتك للموازنة بين العمل والحياة الشخصية."
+            },
+            "jobStability": {
+                "label": "الاستقرار الوظيفي",
+                "description": "تفضيلاتك بشأن الأمان والاستقرار الوظيفي."
+            },
+            "selfAssignedSkills": {
+                "label": "المهارات المضافة ذاتيًا",
+                "description": "المهارات التي أضفتها إلى ملفك الشخصي."
+            },
+            "aiSummaries": {
+                "label": "ملخّصات الذكاء الاصطناعي",
+                "description": "ملخّصات جلسات تعلّمك بمساعدة الذكاء الاصطناعي."
+            },
+            "aiTopics": {
+                "label": "مواضيع الذكاء الاصطناعي",
+                "description": "المواضيع التي استكشفتها أثناء التعلّم بمساعدة الذكاء الاصطناعي."
+            },
+            "aiAssessments": {
+                "label": "تقييمات الذكاء الاصطناعي",
+                "description": "تقييمات ناتجة عن تعلّمك بمساعدة الذكاء الاصطناعي."
+            },
+            "aiInsights": {
+                "label": "رؤى الذكاء الاصطناعي",
+                "description": "رؤى حول تقدمك في التعلّم ومهاراتك."
+            },
+            "learningPathways": {
+                "label": "مسارات التعلّم",
+                "description": "خطط وخطوات لتحقيق أهداف تعلّمك."
+            }
         }
     },
     "clrTranscript": {
