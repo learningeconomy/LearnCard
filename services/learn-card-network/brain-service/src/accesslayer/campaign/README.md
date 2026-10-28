@@ -165,7 +165,7 @@ does not read the developer's database. Docker is required. The suite covers all
 types, permissions, injection rejection, minor rules, paging, lifecycle, enrollment and
 concurrent shared state. Schema tests live in `@learncard/types`; SDK forwarding tests
 live in `@learncard/network-plugin`. Hosted CI runs the Neo4j suite separately from the
-service's default unit suite. No app UI, notification delivery or device QA is claimed.
+service's default unit suite. No app UI or device QA is claimed. Delivery coverage is described below.
 
 The hosted Linux verification workflow also runs `test/verification/campaigns.ts` via
 `lc verify script` after the full catalog: real signed SDK calls prove non-admin denial

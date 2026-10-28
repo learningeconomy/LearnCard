@@ -311,3 +311,32 @@ describe('LC-2206 skill embedding configuration', () => {
         }
     );
 });
+
+describe('campaign dispatch configuration', () => {
+    it('defaults to 1000 recipients and 60 seconds, accepting an explicit zero delay', () => {
+        expect(
+            parseBrainServiceEnvironment({ ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test' })
+        ).toMatchObject({
+            CAMPAIGN_DISPATCH_PAGE_SIZE: 1000,
+            CAMPAIGN_DISPATCH_DELAY_SECONDS: 60,
+        });
+        expect(
+            parseBrainServiceEnvironment({
+                ...REQUIRED_ENVIRONMENT,
+                NODE_ENV: 'test',
+                CAMPAIGN_DISPATCH_PAGE_SIZE: '25',
+                CAMPAIGN_DISPATCH_DELAY_SECONDS: '0',
+            })
+        ).toMatchObject({ CAMPAIGN_DISPATCH_PAGE_SIZE: 25, CAMPAIGN_DISPATCH_DELAY_SECONDS: 0 });
+    });
+    it.each([
+        { CAMPAIGN_DISPATCH_PAGE_SIZE: '0' },
+        { CAMPAIGN_DISPATCH_PAGE_SIZE: '1001' },
+        { CAMPAIGN_DISPATCH_DELAY_SECONDS: '901' },
+        { CAMPAIGN_DISPATCH_DELAY_SECONDS: '-1' },
+    ])('rejects unsupported queue settings %j', settings => {
+        expect(() =>
+            parseBrainServiceEnvironment({ ...REQUIRED_ENVIRONMENT, NODE_ENV: 'test', ...settings })
+        ).toThrow();
+    });
+});

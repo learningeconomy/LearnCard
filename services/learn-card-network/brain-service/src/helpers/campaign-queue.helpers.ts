@@ -2,8 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
-import { CampaignIdValidator } from '@learncard/types';
+import { CampaignDispatchJobValidator, type CampaignDispatchJob } from 'types/campaign';
 import { environment } from '@environment';
 import { getCampaign } from '@accesslayer/campaign/read';
 import { pageCampaignAudience } from '@accesslayer/campaign/audience';
@@ -14,17 +13,6 @@ import {
     canDispatchCampaign,
     enqueueCampaignNotification,
 } from './campaign-notifications.helpers';
-
-export const CampaignDispatchJobValidator = z
-    .object({
-        campaignId: CampaignIdValidator,
-        campaignCreatedAt: z.iso.datetime(),
-        afterProfileId: z.string().optional(),
-        dispatchId: z.uuid(),
-    })
-    .strict();
-
-export type CampaignDispatchJob = z.infer<typeof CampaignDispatchJobValidator>;
 
 const sqs = new SQSClient({ region: environment.AWS_REGION || 'us-east-1' });
 
