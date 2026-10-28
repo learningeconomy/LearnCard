@@ -81,6 +81,12 @@ jobs:
                     -w /workspace/services/learn-card-network/brain-service \
                     oven/bun@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4 \
                     bun --conditions=development scripts/export-openapi.ts /artifacts/openapi.json
+            - name: Verify full pinned regeneration before output promotion
+              # Keep the checked-in client for contract tests, but exercise the
+              # real generator metadata and post-processing on a fresh output.
+              run: |
+                  bash packages/open-api-lcn-clients/generate-python.sh \
+                    packages/open-api-lcn-clients/.python-client-regression
             - name: Exercise public APIs through loopback-only HTTP transport
               env:
                   OPENAPI_SCHEMA: ${{ runner.temp }}/openapi.json
