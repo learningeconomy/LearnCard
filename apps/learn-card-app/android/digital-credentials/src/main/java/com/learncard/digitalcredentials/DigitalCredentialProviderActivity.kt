@@ -28,23 +28,33 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         registry = RegistryState(this)
+        var stage = "enabled"
         try {
             require(resources.getBoolean(R.bool.lc_digital_credentials_enabled))
+            stage = "platform_request"
             val request = PendingIntentHandler.retrieveProviderGetCredentialRequest(intent) ?: error("Missing request")
+            stage = "selected_entry"
             val selected = request.selectedCredentialSet?.credentials?.map { it.credentialId }
                 ?: listOfNotNull(request.selectedEntryId)
             require(selected.size == 1 && registry.contains(selected.single()))
+            stage = "credential_options"
             val options = request.credentialOptions.filterIsInstance<GetDigitalCredentialOption>()
             require(options.size == 1)
+            stage = "protocol"
             val requests = JSONObject(options.single().requestJson).getJSONArray("requests")
             val supported = (0 until requests.length()).map { requests.getJSONObject(it) }
                 .filter { it.optString("protocol") == "openid4vp-v1-unsigned" }
             require(supported.size == 1)
             generation = registry.generation
+            stage = "caller_identity"
             pending = JSObject().put("requestId", UUID.randomUUID().toString())
                 .put("selectedEntryId", selected.single()).put("origin", CallerOrigin.resolve(this, request.callingAppInfo))
                 .put("request", supported.single()) as JSObject
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            if (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+                // Never log request data, credentials, keys or identifying caller details.
+                android.util.Log.w("LearnCardProvider", "Rejected at $stage (${error.javaClass.simpleName})")
+            }
             completed = true
             val result = Intent()
             PendingIntentHandler.setGetCredentialException(result, GetCredentialUnknownException("Request unavailable"))

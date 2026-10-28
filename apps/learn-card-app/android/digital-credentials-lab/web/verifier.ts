@@ -12,6 +12,7 @@ heading('Verify course completion');
 text('Request two fields through Android and verify the returned proof.');
 text('Synthetic credentials only.');
 button('Request Course Details', 'Waiting for approval...', async () => {
+    document.getElementById('result')?.remove();
     const nonce = crypto.randomUUID();
     status('Choose the sample in Android, then review the request in LearnCard.');
     try {
@@ -56,7 +57,9 @@ button('Request Course Details', 'Waiting for approval...', async () => {
         status(
             code === 'canceled'
                 ? 'Canceled. No credential was received.'
-                : 'Could not verify a credential. Please try again.',
+                : code === 'no_credentials'
+                  ? 'No matching credential is registered.'
+                  : 'Could not verify a credential. Please try again.',
             code !== 'canceled'
         );
     }

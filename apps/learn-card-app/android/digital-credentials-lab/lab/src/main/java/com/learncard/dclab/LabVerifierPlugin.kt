@@ -8,6 +8,7 @@ import androidx.credentials.ExperimentalDigitalCredentialApi
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetDigitalCredentialOption
 import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import com.getcapacitor.JSObject
 import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
@@ -38,6 +39,7 @@ class LabVerifierPlugin : Plugin() {
                 val origin = "android:apk-key-hash:" + Base64.encodeToString(MessageDigest.getInstance("SHA-256").digest(cert.toByteArray()), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
                 call.resolve(JSObject().put("responseJson", credential.credentialJson).put("origin", origin) as JSObject)
             } catch (_: GetCredentialCancellationException) { call.reject("Canceled", "canceled") }
+            catch (_: NoCredentialException) { call.reject("No matching credential", "no_credentials") }
             catch (error: Exception) { call.reject("Credential request failed: ${error.javaClass.simpleName}", "request_failed") }
             finally { requesting = false }
         }

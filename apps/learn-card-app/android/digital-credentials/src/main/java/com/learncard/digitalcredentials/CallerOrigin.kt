@@ -21,10 +21,13 @@ internal object CallerOrigin {
         val broker = pm.getApplicationInfo(launchedBy, 0)
         val systemBroker = broker.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
         require(systemBroker || launchedBy == caller.packageName) { "Caller mismatch" }
-        val actual = if (Build.VERSION.SDK_INT >= 28) {
+        // The system broker authenticates the requesting app. Android package visibility
+        // prevents a provider from independently looking up arbitrary requesters; do not
+        // request QUERY_ALL_PACKAGES just to repeat the broker's certificate lookup.
+        val claimed = caller.signingInfoCompat.signingCertificateHistory
+        val actual = if (systemBroker) claimed.toList() else if (Build.VERSION.SDK_INT >= 28) {
             pm.getPackageInfo(caller.packageName, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo!!.signingCertificateHistory.toList()
         } else pm.getPackageInfo(caller.packageName, PackageManager.GET_SIGNATURES).signatures!!.toList()
-        val claimed = caller.signingInfoCompat.signingCertificateHistory
         require(actual.map { it.toCharsString() }.toSet() == claimed.map { it.toCharsString() }.toSet()) { "Certificate mismatch" }
         if (caller.isOriginPopulated()) {
             val allowlist = activity.assets.open("digital_credentials_privileged_callers.json").bufferedReader().use { it.readText() }
