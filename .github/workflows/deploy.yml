@@ -694,6 +694,11 @@ jobs:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
+            - name: Set up LCA Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24.12.0
+
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
