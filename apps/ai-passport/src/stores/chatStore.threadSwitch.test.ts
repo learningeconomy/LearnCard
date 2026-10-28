@@ -6,6 +6,7 @@ import {
     connectWebSocket,
     currentThreadId,
     disconnectWebSocket,
+    finishSession,
     isTyping,
     loadThread,
     messages,
@@ -215,6 +216,40 @@ test("keeps the old thread's answer out of a question sent before it finished", 
 
     expect(currentThreadId.get()).toBe('thread-b');
     expect(isTyping.get()).toBe(false);
+});
+
+test('keeps the closing message after a summary out of the next thread', async () => {
+    const socketA = await openSocket();
+
+    await loadThread('thread-a');
+    await finishSession();
+
+    // The backend sends the summary while the closing message is still streaming.
+    socketA.receive({
+        event: 'conversation_summary',
+        threadId: 'thread-a',
+        credentialUri: 'lc:credential:summary-a',
+        summary: { title: 'Photosynthesis' },
+    });
+    socketA.receive('Congrats on ');
+
+    const socketB = nextSocket();
+    await loadThread('thread-b');
+    // A store that keeps A's socket open sends B's question on it too.
+    const socket = await Promise.race([socketB, Bun.sleep(50).then(() => socketA)]);
+
+    sendMessageWithQuestion('Question for B');
+    socketA.receive('finishing the session!');
+    socketA.receive({ done: true, threadId: 'thread-a' });
+    socket.receive('Answer for B.');
+
+    expect(currentThreadId.get()).toBe('thread-b');
+    expect(messages.get()).toEqual([
+        ...threadMessages['thread-b'],
+        { role: 'user', content: 'Question for B' },
+        { role: 'assistant', content: 'Answer for B.' },
+    ]);
+    expect(socket).not.toBe(socketA);
 });
 
 test('keeps the newest selection when thread loads finish out of order', async () => {

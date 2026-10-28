@@ -51,19 +51,19 @@ const cancelReadyListeners = (error: Error): void => {
 onAuthChange(() => disconnectWebSocket());
 
 // Streamed chunks carry no thread id, so a response is owned by the socket it
-// streams on plus the thread selection it started in. Switching threads starts a
-// new selection; if a response is still streaming, the switch also retires that
-// socket, so its leftover chunks and `done` can never be read as a reply to the
-// next thread's question, even after that thread starts its own response.
+// streams on plus the thread selection it started in. The backend can keep
+// streaming after a response looks finished (the closing message after a
+// conversation summary, for one), so switching threads retires any socket that
+// has carried a response, instead of guessing whether the stream is over. Its
+// leftover chunks and `done` then can't be read as a reply in the next thread.
 let threadSelection = 0;
 let responseSelection = 0;
-let responsePending = false;
+let socketCarriedResponse = false;
 
 const selectThread = (): number => {
     threadSelection += 1;
 
-    if (responsePending) {
-        responsePending = false;
+    if (socketCarriedResponse) {
         disconnectWebSocket();
         connectWebSocket();
     }
@@ -75,11 +75,7 @@ const selectThread = (): number => {
 
 const beginResponse = (): void => {
     responseSelection = threadSelection;
-    responsePending = true;
-};
-
-const endResponse = (): void => {
-    responsePending = false;
+    socketCarriedResponse = true;
 };
 
 const isStaleResponse = (socket: WebSocket): boolean =>
@@ -281,7 +277,7 @@ export function disconnectWebSocket(): void {
     socketConnection = null;
     socketDid = null;
     ws = null;
-    responsePending = false;
+    socketCarriedResponse = false;
     cancelReadyListeners(new Error('WebSocket connection cancelled'));
     credentialPreloadUnavailable.set(false);
     isTyping.set(false);
@@ -339,7 +335,6 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
             // Handle no conversation summary event
             if (data.event === 'no_conversation_summary') {
                 if (isStaleResponse(socket)) return;
-                endResponse();
                 isTyping.set(false);
                 sessionEnded.set(true);
                 // Optionally, we could surface a toast or UI note using data.reason
@@ -410,7 +405,6 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
             // Handle conversation summary event
             if (data.event === 'conversation_summary') {
                 if (!isStaleResponse(socket)) {
-                    endResponse();
                     isTyping.set(false);
                     sessionEnded.set(true);
                 }
@@ -475,7 +469,6 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
             // Handle session completed event
             if (data.event === 'session_completed') {
                 if (isStaleResponse(socket)) return;
-                endResponse();
                 console.log('Session already completed for this thread');
                 sessionEnded.set(true);
                 isTyping.set(false);
@@ -485,7 +478,6 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
             if (data.error) {
                 console.error('Error:', data.error);
                 if (isStaleResponse(socket)) return;
-                endResponse();
                 isTyping.set(false);
                 return;
             }
@@ -550,10 +542,7 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
             if (data.done) {
                 const stale = isStaleResponse(socket);
 
-                if (!stale) {
-                    endResponse();
-                    isTyping.set(false);
-                }
+                if (!stale) isTyping.set(false);
 
                 // Handle thread creation and title updates
                 if (data.threadId) {
