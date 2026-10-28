@@ -100,6 +100,30 @@ Install its two APKs on the explicitly selected owned serial, then run
 Only synthetic counts/durations are emitted. Keep raw device output private. Uninstall the two
 probe packages and stop only the owned emulator after collecting evidence.
 
+For protected-secret persistence across an Android instrumentation process restart, run the six-test
+suite first, then rerun only `MigrationTest#nativePluginUsesProtectedStoreAndEncryptedConnection`
+with instrumentation argument `-e sqlitePhase reopen`. That phase requires the existing encrypted
+fixture and must not seed or delete it.
+
+For the real iOS plugin/Keychain regression:
+
+```sh
+node scripts/verify-native-sqlite-ios.mjs --output /absolute/new/private/ios-evidence
+```
+
+Requires Xcode with the iOS 18.1 simulator runtime and Ruby's `xcodeproj` gem (tested with 1.27.0).
+The runner supplies the published package's declared-but-missing `ios/PluginTests` directory and
+generates an ad-hoc-signed, sandboxed probe app with its own Keychain entitlement. It creates its
+own iPhone 16/iOS 18.1 simulator, runs the hosted test, then shuts down/deletes only that simulator.
+It never adopts an existing device or needs a real signing account. Xcode logs/xcresult remain private. The test
+checks native conversion, a second plugin instance's stored-secret access, recovery-data reads,
+backup exclusion, and the exact Keychain accessibility policy.
+
+The hosted test passed on the task-owned iPhone 16/iOS 18.1 simulator. The patched production
+plugin also built for both arm64 and x86_64 Simulator. An initial unhosted SwiftPM runner could
+not access Keychain without an entitlement; the committed runner uses the sandboxed app above.
+These results do not establish physical-device lock/unlock or cross-device restore behavior.
+
 To regenerate the dependency patch, first use `bun patch @capacitor-community/sqlite@8.1.1`,
 extract the unmodified npm package to a disposable directory, then run
 `node scripts/sync-sqlite-encryption-patch.mjs /absolute/path/unmodified-package` followed by
@@ -109,19 +133,40 @@ dependency: it can collect generated build outputs into the patch.
 
 ## Initial performance observations (not a device baseline)
 
-Two macOS host trials on the same synthetic shape (1,000 × 1 KiB credential rows, 1 MiB snapshot,
+Three macOS host trials on the same synthetic shape (1,000 × 1 KiB credential rows, 1 MiB snapshot,
 SQLCipher default security settings) varied under concurrent host load:
 
-| Median                    | Trial 1 plain / encrypted | Trial 2 plain / encrypted |
-| ------------------------- | ------------------------- | ------------------------- |
-| Open + first read + close | 0.058 / 63.97 ms          | 0.081 / 123.61 ms         |
-| Warm point read           | 0.0052 / 0.0047 ms        | 0.0068 / 0.0116 ms        |
-| 1 MiB snapshot commit     | 5.14 / 9.74 ms            | 6.99 / 27.74 ms           |
+| Median                    | Trial 1 plain / encrypted | Trial 2 plain / encrypted | Final source plain / encrypted |
+| ------------------------- | ------------------------- | ------------------------- | ------------------------------ |
+| Open + first read + close | 0.058 / 63.97 ms          | 0.081 / 123.61 ms         | 0.282 / 146.59 ms              |
+| Warm point read           | 0.0052 / 0.0047 ms        | 0.0068 / 0.0116 ms        | 0.0124 / 0.0113 ms             |
+| 1 MiB snapshot commit     | 5.14 / 9.74 ms            | 6.99 / 27.74 ms           | 14.41 / 31.31 ms               |
 
-Conversion was 144–190 ms. Trial 2 encrypted snapshot p95 reached 98 ms, illustrating host-load
+Conversion was 144–390 ms. Trial 2 encrypted snapshot p95 reached 98 ms, illustrating host-load
 variance. These include native API/engine work but no Capacitor bridge, JavaScript, protected-store
 access or physical-device scheduling. The strong finding is repeated encrypted-open cost; keep
 the connection rather than weakening derivation/authentication settings. Warm read differences
 at these durations are too small/noisy for a production speed claim. Measure actual Android/iOS
 startup and large-cache commits before setting budgets. The Linux web catalog proves no native
 encryption behavior.
+
+## Android API 36 synthetic results
+
+The independently built probe app passed six instrumentation tests using the actual patched plugin
+and Android SQLCipher 4.17.0. A separate instrumentation invocation then passed the protected-store
+reopen test without reseeding the database. Only the task-owned probe packages/device were used;
+both packages were uninstalled and that emulator stopped afterward.
+
+| Operation                 | Plain p50 / p95    | Encrypted p50 / p95   |
+| ------------------------- | ------------------ | --------------------- |
+| Open + first read + close | 0.356 / 4.227 ms   | 874.091 / 2516.899 ms |
+| Warm account point read   | 0.0338 / 0.0875 ms | 0.0229 / 0.1221 ms    |
+| 1 MiB snapshot commit     | 24.105 / 54.870 ms | 148.546 / 253.783 ms  |
+
+Conversion took 1276 ms for the small account/recovery fixture. Open/write samples: ten each;
+warm reads: fifty. This API 36 arm64 emulator had two vCPUs and 2 GiB RAM, and host load was about 24. Measurements include native engine/API and cursor work, not the WebView/JavaScript bridge.
+The modes were measured in sequence and host load was uncontrolled; these are observed costs,
+not a quiet-device baseline, a precise overhead percentage, or a physical-phone startup budget.
+The Android fixture is smaller than the host fixture, so do not compare conversion times across
+platforms directly. The retained-connection unit tests prove sequential scopes open once and close
+only after explicit release; full-app account readiness and physical-device performance still need QA.

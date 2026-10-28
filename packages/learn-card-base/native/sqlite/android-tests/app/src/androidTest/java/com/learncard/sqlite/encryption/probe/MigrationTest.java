@@ -87,13 +87,16 @@ public class MigrationTest {
     }
     @Test public void nativePluginUsesProtectedStoreAndEncryptedConnection() throws Exception {
         // This path belongs to the probe applicationId, never com.learncard.app.
-        context.deleteDatabase("learncardDBSQLite.db");
-        File file = context.getDatabasePath("learncardDBSQLite.db"); seed(file);
+        boolean reopen = "reopen".equals(InstrumentationRegistry.getArguments().getString("sqlitePhase"));
+        if (!reopen) context.deleteDatabase("learncardDBSQLite.db");
+        File file = context.getDatabasePath("learncardDBSQLite.db");
+        if (!reopen) seed(file);
+        else assertTrue(file.isFile());
         SqliteConfig config = new SqliteConfig(); config.setIsEncryption(true);
         CapacitorSQLite plugin = new CapacitorSQLite(context, config);
-        assertTrue(plugin.prepareEncryptedDatabase("learncardDB"));
+        assertEquals(!reopen, plugin.prepareEncryptedDatabase("learncardDB"));
         assertTrue(plugin.isSecretStored());
-        plugin.createConnection("learncardDB", true, "secret", 1, false);
+        plugin.createConnection("learncardDB", true, "secret", 1, new java.util.Hashtable<>(), false);
         plugin.open("learncardDB", false);
         assertEquals("SYNTHETIC_PRIVATE_KEY", plugin.query("learncardDB", "SELECT privateKey FROM users", new JSArray(), false).getJSONObject(0).getString("privateKey"));
         plugin.closeConnection("learncardDB", false);
