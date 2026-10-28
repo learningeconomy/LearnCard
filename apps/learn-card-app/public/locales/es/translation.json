@@ -4718,6 +4718,19 @@
             "unlimited": "Ilimitado"
         }
     },
+    "credentialShare": {
+        "copyLink": "Copiar enlace",
+        "publicPreviewPersistent": "La vista previa pública está publicada y puede seguir disponible. Las redes sociales pueden conservar copias, aunque cambies la configuración de uso compartido.",
+        "publicPreviewPrivate": "La vista previa pública muestra el nombre, la entidad emisora y la imagen de la credencial. Puede seguir disponible tras publicarse, y las redes sociales pueden conservar copias. El resto permanece cifrado.",
+        "issuerUnavailable": "No hay datos de la entidad emisora. Aún puedes compartir el enlace cifrado.",
+        "enablePreview": "Activar vista previa pública",
+        "publishingPreview": "Publicando vista previa...",
+        "addToLinkedIn": "Añadir a LinkedIn",
+        "postToLinkedIn": "Publicar en LinkedIn",
+        "linkedInOrgId": "ID de organización de LinkedIn (opcional)",
+        "linkedInOrgIdHelp": "Busca el ID numérico en la URL de administración de LinkedIn. Introduce el número, no el nombre de la página. Déjalo en blanco para eliminarlo.",
+        "linkedInOrgIdError": "Introduce solo dígitos."
+    },
     "developerPortal": {
         "shell": {
             "title": "Portal de Desarrolladores",
@@ -9552,7 +9565,32 @@
                 "evidence": "Enlace de evidencia",
                 "awardedDate": "Fecha de concesión"
             },
-            "numberFormatConflict": "Esta columna mezcla formatos numéricos. Elige el formato correcto o corrige la hoja."
+            "numberFormatConflict": "Esta columna mezcla formatos numéricos. Elige el formato correcto o corrige la hoja.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} caracteres",
+                "expand": "Ampliar",
+                "collapse": "Contraer",
+                "expandField": "Ampliar {{field}}",
+                "collapseField": "Contraer {{field}}",
+                "descriptionTooLong": "Usa un máximo de {{limit}} caracteres en este campo.",
+                "sharedEvidence": "Evidencias para todos",
+                "sharedEvidenceHelp": "Se incluyen para todas las personas. Edita estos elementos en Evidencias y archivos.",
+                "noSharedEvidence": "No se han añadido evidencias para todos.",
+                "personalEvidenceHelp": "Las evidencias de una fila solo se envían a esa persona.",
+                "personalEvidence": "Evidencias adicionales para esta persona",
+                "personalEvidenceFor": "Enlace de evidencia adicional para {{name}}",
+                "personalAttachments": "Archivos y enlaces para esta persona ({{count}})",
+                "evidenceFor": "Evidencias para {{name}}",
+                "rowEvidenceHelp": "Solo para esta persona; las evidencias para todos también se incluyen.",
+                "allSent": "Todas las credenciales enviadas",
+                "attention": "El envío requiere atención",
+                "completionCount": "{{sent}} de {{total}} enviados correctamente.",
+                "completionHelp": "Revisa el estado de los envíos o inicia otra credencial.",
+                "confirmationHelp": "Algunos envíos no están confirmados. Comprueba su estado antes de volver a intentarlo.",
+                "failureHelp": "Revisa los envíos fallidos y vuelve a intentar solo esos envíos.",
+                "attentionToast": "{{sent}} de {{total}} enviados. Revisa los envíos restantes.",
+                "successToast": "Envío completado: {{count}} enviados."
+            }
         },
         "importOptions": {
             "uploadTitle": "Subir un archivo",

@@ -4718,6 +4718,19 @@
             "unlimited": "Illimité"
         }
     },
+    "credentialShare": {
+        "copyLink": "Copier le lien",
+        "publicPreviewPersistent": "L’aperçu public est publié et peut rester accessible. Les réseaux sociaux peuvent en conserver des copies, même si vous modifiez ensuite les paramètres de partage.",
+        "publicPreviewPrivate": "L’aperçu public affiche le nom, l’émetteur et l’image du justificatif. Il peut rester accessible après sa publication, et les réseaux sociaux peuvent en conserver des copies. Le reste demeure chiffré.",
+        "issuerUnavailable": "Les informations sur l’émetteur sont indisponibles. Vous pouvez toujours partager le lien chiffré.",
+        "enablePreview": "Activer l’aperçu public",
+        "publishingPreview": "Publication de l’aperçu...",
+        "addToLinkedIn": "Ajouter à LinkedIn",
+        "postToLinkedIn": "Publier sur LinkedIn",
+        "linkedInOrgId": "ID d’organisation LinkedIn (facultatif)",
+        "linkedInOrgIdHelp": "Trouvez l’ID numérique dans l’URL de votre page d’administration LinkedIn. Saisissez le numéro, pas le nom de la page. Laissez vide pour le supprimer.",
+        "linkedInOrgIdError": "Saisissez uniquement des chiffres."
+    },
     "developerPortal": {
         "shell": {
             "title": "Portail Développeur",
@@ -9552,7 +9565,32 @@
                 "evidence": "Lien de preuve",
                 "awardedDate": "Date d’attribution"
             },
-            "numberFormatConflict": "Cette colonne mélange les formats de nombres. Choisissez le bon format ou corrigez la feuille."
+            "numberFormatConflict": "Cette colonne mélange les formats de nombres. Choisissez le bon format ou corrigez la feuille.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} caractères",
+                "expand": "Agrandir",
+                "collapse": "Réduire",
+                "expandField": "Agrandir {{field}}",
+                "collapseField": "Réduire {{field}}",
+                "descriptionTooLong": "Utilisez au maximum {{limit}} caractères pour ce champ.",
+                "sharedEvidence": "Justificatifs pour tout le monde",
+                "sharedEvidenceHelp": "Inclus pour chaque personne. Modifiez ces éléments dans Justificatifs et médias.",
+                "noSharedEvidence": "Aucun justificatif commun n’a été ajouté.",
+                "personalEvidenceHelp": "Les justificatifs ajoutés dans une ligne sont envoyés uniquement à cette personne.",
+                "personalEvidence": "Justificatifs supplémentaires pour cette personne",
+                "personalEvidenceFor": "Lien justificatif supplémentaire pour {{name}}",
+                "personalAttachments": "Fichiers et liens pour cette personne ({{count}})",
+                "evidenceFor": "Justificatifs pour {{name}}",
+                "rowEvidenceHelp": "Uniquement pour cette personne ; les justificatifs communs restent inclus.",
+                "allSent": "Toutes les attestations ont été envoyées",
+                "attention": "Un envoi nécessite votre attention",
+                "completionCount": "{{sent}} sur {{total}} envoyés avec succès.",
+                "completionHelp": "Consultez l’état des envois ou commencez une autre attestation.",
+                "confirmationHelp": "Certains envois ne sont pas confirmés. Vérifiez leur état avant de réessayer.",
+                "failureHelp": "Consultez les envois échoués, puis réessayez uniquement ceux-ci.",
+                "attentionToast": "{{sent}} sur {{total}} envoyés. Consultez les envois restants.",
+                "successToast": "Envoi terminé : {{count}} envoyés."
+            }
         },
         "importOptions": {
             "uploadTitle": "Importer un fichier",

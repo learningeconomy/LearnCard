@@ -70,7 +70,8 @@ const LiveContent: React.FC<{ store: LiveContentStore }> = ({ store }) =>
 
 /** App modals snapshot their JSX at opening; keep edits, validation and callbacks live. */
 export const useSpreadsheetDialog = (
-    render: (close: () => void) => React.ReactNode
+    render: (close: () => void) => React.ReactNode,
+    presentation: 'workspace' | 'compact' = 'workspace'
 ): (() => void) => {
     const { newModalWithToken, forceCloseModalByToken } = useModal();
     const token = useRef<ReturnType<typeof newModalWithToken>>();
@@ -98,11 +99,18 @@ export const useSpreadsheetDialog = (
         store.listeners.forEach(listener => listener());
     }, [node, store]);
     useEffect(() => close, [close]);
-    return () => {
+    return useCallback(() => {
+        // A completion dialog can return to an already-open delivery viewer.
+        // Replace this hook's previous instance instead of stacking duplicates.
+        close();
         token.current = newModalWithToken(
             <LiveContent store={store} />,
-            SPREADSHEET_MODAL_OPTIONS,
-            SPREADSHEET_MODAL_TYPES
+            presentation === 'compact'
+                ? { className: 'issue-spreadsheet-completion' }
+                : SPREADSHEET_MODAL_OPTIONS,
+            presentation === 'compact'
+                ? { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+                : SPREADSHEET_MODAL_TYPES
         );
-    };
+    }, [close, newModalWithToken, presentation, store]);
 };

@@ -24,10 +24,12 @@ type SkillIssuancesProps = {
 };
 
 const SkillIssuances: React.FC<SkillIssuancesProps> = ({ frameworkId, skillId, credentials }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const swiperRef = useRef<any>(null);
     const [atBeginning, setAtBeginning] = useState(true);
     const [atEnd, setAtEnd] = useState(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleSwiperUpdate = (swiper: any) => {
         setAtBeginning(swiper.isBeginning);
         setAtEnd(swiper.isEnd);

@@ -102,6 +102,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
     const headerColors =
         colors?.headerBrandingTextColor || getHeaderBrandingColor(branding, location.pathname);
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let mainHeaderBranding: React.ReactElement | null = null;
 
     mainHeaderBranding = (

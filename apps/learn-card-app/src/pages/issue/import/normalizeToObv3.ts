@@ -329,8 +329,8 @@ const firstResourceUrl = (value: unknown): string | undefined => {
 /** The registry URL of the org that owns (or, failing that, offers) a credential. */
 export const ctdlOwnerRef = (resource: unknown): string | undefined =>
     isObject(resource)
-        ? firstResourceUrl(resource['ceterms:ownedBy']) ??
-          firstResourceUrl(resource['ceterms:offeredBy'])
+        ? (firstResourceUrl(resource['ceterms:ownedBy']) ??
+          firstResourceUrl(resource['ceterms:offeredBy']))
         : undefined;
 
 export const readOrgProfile = (org: unknown): CtdlCreator | undefined => {
@@ -476,6 +476,7 @@ export const normalizeToObv3 = (
                 label: context.label,
                 ctid:
                     context.ctid ??
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     (obv3Json as any)?.credentialSubject?.achievement?.alignment?.[0]?.targetCode,
                 sourceUrl: context.sourceUrl,
             },

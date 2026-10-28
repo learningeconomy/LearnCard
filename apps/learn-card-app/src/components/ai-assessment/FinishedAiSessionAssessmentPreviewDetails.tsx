@@ -98,6 +98,7 @@ export const FinishedAiSessionAssessmentPreviewDetails: React.FC<{
                                 <TransP
                                     m={m['ai.completedOn']}
                                     values={{ date: completedDate }}
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     components={[<span className="text-grayscale-900" />]}
                                 />
                             </p>

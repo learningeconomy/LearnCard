@@ -58,6 +58,7 @@ const ViewIdTemplate: React.FC<ViewIdTemplateProps> = ({
     isGeneralView = false,
     skipProofCheck,
 }) => {
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     boostUri = boostUri ?? credential?.boostId;
 
     // const network = useGetTroopNetwork(credential, boostUri);

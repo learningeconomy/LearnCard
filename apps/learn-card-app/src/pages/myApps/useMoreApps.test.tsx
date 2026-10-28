@@ -1,12 +1,17 @@
 import { vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 let installed: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 let featured: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 let curated: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 let browse: any[] = [];
 let featuredLoading = false;
 let browseLoading = false;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 let browseOpts: any;
 
 vi.mock('../launchPad/useAppStore', () => ({
@@ -14,6 +19,7 @@ vi.mock('../launchPad/useAppStore', () => ({
         useInstalledApps: () => ({ data: { records: installed }, isLoading: false }),
         useFeaturedCarouselApps: () => ({ data: featured, isLoading: featuredLoading }),
         useCuratedListApps: () => ({ data: curated, isLoading: false }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         useBrowseAppStore: (opts?: any) => {
             browseOpts = opts;
             return { data: { records: browse }, isLoading: browseLoading };

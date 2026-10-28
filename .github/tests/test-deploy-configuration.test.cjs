@@ -248,6 +248,24 @@ withEnv({ RUNTIME_SECRETS_ID: 'lca-api/dev/runtime-secrets' }, () => {
         'Fn::GetAtt': ['SigningAuthoritySeedKey', 'Arn'],
     });
 });
+// Bedrock endpoint overrides survive bundle/fallback selection without leaking to OIDC
+// or the shared provider environment. Values are synthetic, never deployed credentials.
+for (const runtimeSecretsId of [undefined, 'lca-api/dev/runtime-secrets']) {
+    withEnv(
+        {
+            RUNTIME_SECRETS_ID: runtimeSecretsId,
+            BEDROCK_BASE_URL: 'https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1',
+        },
+        () => {
+            assert.equal(functionEnv.api().BEDROCK_BASE_URL, process.env.BEDROCK_BASE_URL);
+            assert.equal(functionEnv.provider().BEDROCK_BASE_URL, undefined);
+            assert.equal(functionEnv.oidc().BEDROCK_BASE_URL, undefined);
+        }
+    );
+}
+withEnv({ BEDROCK_BASE_URL: '' }, () => {
+    assert.equal(functionEnv.api().BEDROCK_BASE_URL, undefined);
+});
 // Even stale deployment variables for checked-in values must never reach Lambda env.
 const stageEnv = Object.fromEntries(
     Object.keys(productionStage).map(key => [key, placeholder(key)])
@@ -829,6 +847,60 @@ assertDefaultRoleRuntimeGrant({
     secretPrefix: 'brain-service',
     requireQueueConstructs: true,
 });
+
+// LC-2206: brain's default role may invoke only the reviewed Nova 2 embeddings foundation model
+// in us-east-1 (SigV4). No wildcard model, other Region, or Bedrock API-key permission.
+{
+    const brainService = yaml.load(
+        fs.readFileSync(
+            path.join(root, 'services/learn-card-network/brain-service/serverless.yml'),
+            'utf8'
+        )
+    );
+    const brainStatements = brainService.provider.iam.role.statements;
+    const bedrockGrants = brainStatements.filter(statement =>
+        [statement.Action].flat().some(action => String(action).startsWith('bedrock:'))
+    );
+    assert.deepEqual(bedrockGrants, [
+        {
+            Sid: 'SkillEmbeddingNova2Invoke',
+            Effect: 'Allow',
+            Action: 'bedrock:InvokeModel',
+            Resource: {
+                'Fn::Sub':
+                    'arn:${AWS::Partition}:bedrock:us-east-1::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0',
+            },
+        },
+    ]);
+}
+
+// LC-2206 rollout: every deployed brain stage writes Nova vectors (Bedrock enabled) but keeps
+// semantic search on the legacy Google index until SKILL_EMBEDDING_BEDROCK_READ_ENABLED is
+// flipped after the backfill and quality check. Flipping it back to "false" is the rollback.
+for (const stageFile of [
+    'config.dev.json',
+    'config.production.json',
+    'config.scouts.dev.json',
+    'config.scouts.production.json',
+]) {
+    const config = JSON.parse(
+        fs.readFileSync(
+            path.join(root, 'services/learn-card-network/brain-service/config', stageFile),
+            'utf8'
+        )
+    );
+    assert.equal(config.SKILL_EMBEDDING_BEDROCK_ENABLED, 'true', `brain ${stageFile} Nova writes`);
+    assert.equal(
+        config.SKILL_EMBEDDING_BEDROCK_READ_ENABLED,
+        'false',
+        `brain ${stageFile} Nova reads stay off until the read flag is flipped`
+    );
+    assert.equal(
+        config.SKILL_EMBEDDING_GOOGLE_MODEL,
+        'gemini-embedding-001',
+        `brain ${stageFile} legacy read model`
+    );
+}
 assertDefaultRoleRuntimeGrant({
     dir: path.join(root, 'services/learn-card-network/learn-cloud-service'),
     secretPrefix: 'learn-cloud-service',
@@ -885,3 +957,5 @@ assert(
 console.log(
     `${workflows.size} workflows parsed strictly; deploy env preservation, lca-api/brain/learn-cloud stage-config removal, and Keycloak preflight routing passed.`
 );
+
+require('./test-lca-node24.test.cjs');

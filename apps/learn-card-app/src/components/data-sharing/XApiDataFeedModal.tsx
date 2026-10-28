@@ -55,6 +55,7 @@ const XApiDataFeedModal: React.FC<XApiDataFeedModalProps> = ({
     const { data, fetchNextPage, hasNextPage, isFetching, isLoading, refetch } =
         useXApiStatementsForContract(contractUri);
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
         data?.pages?.[0]?.statements?.length,
     ]);
