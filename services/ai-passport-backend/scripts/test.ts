@@ -88,6 +88,7 @@ const ALL_TEST_FILES = [
     'src/services/dataErasureReconciliation.test.ts',
     'src/services/ownerAuthIndex.test.ts',
     'src/http/dataDeletionResponse.test.ts',
+    'src/http/finishAssessment.test.ts',
     'src/http/uploadRequest.test.ts',
     'src/http/uploadReservation.test.ts',
     'src/http/requestBody.test.ts',

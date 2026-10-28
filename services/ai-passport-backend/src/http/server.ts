@@ -65,6 +65,7 @@ import {
 import { logSafeEvent } from '../logging';
 import { createAiInsightHttpResponse } from './aiInsightResponse';
 import { createJsonResponse } from './jsonResponse';
+import { authorizeFinishAssessment, getCredentialSubjectDid } from './finishAssessment';
 import {
     createUploadRequestGuard,
     getUploadCapacityConfig,
@@ -279,18 +280,6 @@ fetch(location.pathname + location.search, {
         }
     );
 
-const getCredentialSubjectDid = (credential: unknown): string | undefined => {
-    if (!credential || typeof credential !== 'object') return;
-
-    const subject = (credential as Record<string, unknown>).credentialSubject;
-    const firstSubject = Array.isArray(subject) ? subject[0] : subject;
-
-    if (!firstSubject || typeof firstSubject !== 'object') return;
-
-    const did = (firstSubject as Record<string, unknown>).id;
-
-    return typeof did === 'string' ? did : undefined;
-};
 const aiErrorResponse = (
     error: unknown,
     operation: string,
@@ -1136,24 +1125,19 @@ export const startHttpServer = async () => {
 
           case "/finish-assessment": {
             if (req.method === "POST") {
-              const { session, assessmentQA, sessionUri } = await req.json();
+              const authorized = await authorizeFinishAssessment(
+                did,
+                await req.json(),
+              );
 
-              if (!session || !assessmentQA || !sessionUri) {
+              if (!authorized.ok) {
                 return jsonResponse(
-                  {
-                    error:
-                      "Session VC/boost URI and assessmentQA are required in the request body",
-                  },
-                  400,
+                  { error: authorized.error },
+                  authorized.status,
                 );
               }
 
-              if (
-                getCredentialSubjectDid(session) !== did ||
-                !(await db.ownsSummaryCredential(did, sessionUri))
-              ) {
-                return jsonResponse({ error: "Not found" }, 404);
-              }
+              const { session, assessmentQA, sessionUri } = authorized.request;
 
               try {
                 return jsonResponse(

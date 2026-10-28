@@ -758,7 +758,8 @@ export const sendConversationSummary = async (
                     did,
                     threadId,
                     JSON.stringify(summary),
-                    credentialUri
+                    credentialUri,
+                    boostUri
                 );
 
                 // Create learning pathway credentials for each next step

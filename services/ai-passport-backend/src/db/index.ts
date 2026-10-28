@@ -82,6 +82,8 @@ export type DBThreadPlan = {
 export type DBThreadSummaryCredential = {
     summary_data: string;
     credential_uri: string;
+    /** Summary boost the credential was issued from; absent on summaries stored before it was persisted. */
+    boostId?: string;
     created_at: string;
 };
 
@@ -1859,12 +1861,56 @@ export class ChatDB {
         );
     }
 
-    public async ownsSummaryCredential(did: string, credentialUri: string): Promise<boolean> {
+    /**
+     * True when boostUri is the boost of a summary issued to this owner. Clients address
+     * the summary by its boost URI (the assessment's parent boost), while threads store the
+     * contract credential URI, so resolve the owner-bound boost -> credential link: the
+     * persisted summary boostId first, then this owner's issuance ledger for summaries
+     * stored before the boost was persisted.
+     */
+    public async ownsSummaryBoost(did: string, boostUri: string): Promise<boolean> {
         await this.init();
+
+        if (
+            await this.threads.findOne(
+                { did, 'summaries.boostId': boostUri },
+                { projection: { _id: 1 } }
+            )
+        ) {
+            return true;
+        }
+
+        const subjectRef = getPrivacySubjectRef(did);
+        const boosts = await this.externalArtifacts
+            .find(
+                {
+                    subjectRef,
+                    kind: { $in: ['boost', 'child-boost'] },
+                    status: 'complete',
+                    uris: boostUri,
+                },
+                { projection: { credentialId: 1 } }
+            )
+            .toArray();
+        if (boosts.length === 0) return false;
+
+        const credentials = await this.externalArtifacts
+            .find(
+                {
+                    subjectRef,
+                    kind: 'contract-credential',
+                    status: 'complete',
+                    credentialId: { $in: boosts.map(({ credentialId }) => credentialId) },
+                },
+                { projection: { uris: 1 } }
+            )
+            .toArray();
+        const credentialUris = credentials.flatMap(({ uris }) => uris);
+        if (credentialUris.length === 0) return false;
 
         return Boolean(
             await this.threads.findOne(
-                { did, 'summaries.credential_uri': credentialUri },
+                { did, 'summaries.credential_uri': { $in: credentialUris } },
                 { projection: { _id: 1 } }
             )
         );
@@ -3128,12 +3174,14 @@ export class ChatDB {
         did: string,
         threadId: string,
         summaryData: string,
-        credentialUri: string
+        credentialUri: string,
+        boostUri?: string
     ) {
         return this.withOwnerWrite(did, async () => {
             await this.init();
-            const summaryDoc = {
+            const summaryDoc: DBThreadSummaryCredential = {
                 credential_uri: credentialUri,
+                ...(boostUri ? { boostId: boostUri } : {}),
                 summary_data: summaryData,
                 created_at: new Date().toISOString(),
             };

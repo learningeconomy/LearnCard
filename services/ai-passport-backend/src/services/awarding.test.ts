@@ -207,8 +207,13 @@ const writeCredentialToContract = mock(
     async (_did: string, _contract: string, _vc: JWE, boostUri: string) => `${boostUri}:credential`
 );
 const storeThreadSummaryCredential = mock(
-    async (_did: string, _threadId: string, _summaryData: string, _credentialUri: string) =>
-        undefined
+    async (
+        _did: string,
+        _threadId: string,
+        _summaryData: string,
+        _credentialUri: string,
+        _boostUri?: string
+    ) => undefined
 );
 
 const verifyGeneratedCredential = mock(async (): Promise<unknown> => ({
@@ -958,7 +963,8 @@ describe('services/awarding.sendConversationSummary', () => {
             TEST_DID,
             'thread-summary',
             JSON.stringify(expectedSummary),
-            'lc:boost:summary:credential'
+            'lc:boost:summary:credential',
+            'lc:boost:summary'
         );
         expect(send.mock.calls.map(([message]) => JSON.parse(message))).toEqual([
             {
