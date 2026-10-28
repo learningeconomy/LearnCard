@@ -3,7 +3,7 @@ import type { NotificationType } from '@learncard/lca-api-plugin';
 import { useHistory } from 'react-router-dom';
 import type { ConsentFlowContractChangeKind, ConsentFlowContractDiff } from '@learncard/types';
 import { buildContractUpdatePreview } from '@learncard/helpers';
-import { getLogger, useUpdateNotification } from 'learn-card-base';
+import { getLogger, useModal, useUpdateNotification } from 'learn-card-base';
 import { notificationCardStyles } from './types';
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
@@ -13,6 +13,7 @@ type Props = { notification: NotificationType; handleArchive?: () => void | Prom
 
 const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleArchive }) => {
     const history = useHistory();
+    const { closeModal } = useModal();
     const locale = useLocale();
     const { mutateAsync: updateNotification } = useUpdateNotification();
     const [dismissing, setDismissing] = useState(false);
@@ -61,6 +62,7 @@ const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleA
 
     const openReview = async () => {
         if (!data?.contractUri) return;
+        closeModal();
         history.push(`/consent-flow/review?uri=${encodeURIComponent(data.contractUri)}`);
         if (notification._id) {
             try {
@@ -75,49 +77,55 @@ const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleA
     };
 
     return (
-        <article className={`${notificationCardStyles.shell} ${quietChange ? 'opacity-75' : ''}`}>
-            {!read && (
-                <span aria-hidden className="notification-count-mobile unread-indicator-dot" />
-            )}
-            <button
-                type="button"
-                onClick={openReview}
-                className="w-full text-start"
-                aria-label={m['consentUpdate.review']()}
-            >
-                <p className="text-sm text-grayscale-700">
-                    {date} · {message}
-                </p>
-            </button>
-            {handleArchive && (
+        <article
+            className={`${notificationCardStyles.shell} flex-col ${quietChange ? 'opacity-75' : ''}`}
+        >
+            <div className="flex w-full min-w-0 items-start gap-3">
+                {!read && (
+                    <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                )}
                 <button
                     type="button"
-                    disabled={dismissing}
-                    onClick={async event => {
-                        event.stopPropagation();
-                        setDismissing(true);
-                        setArchiveError(false);
-                        try {
-                            await handleArchive();
-                        } catch (error) {
-                            log.error('Unable to dismiss contract update notification', error);
-                            setArchiveError(true);
-                        } finally {
-                            setDismissing(false);
-                        }
-                    }}
-                    aria-label={m['consentUpdate.dismiss']()}
-                    className="flex shrink-0 items-center gap-2 rounded-[20px] border border-grayscale-200 bg-white px-3 py-2 text-sm font-medium hover:bg-grayscale-10 disabled:opacity-40"
+                    onClick={openReview}
+                    className="min-w-0 flex-1 text-start"
+                    aria-label={m['consentUpdate.review']()}
                 >
-                    {dismissing && (
-                        <span
-                            aria-hidden
-                            className="h-3 w-3 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-900"
-                        />
-                    )}
-                    {dismissing ? m['consentUpdate.dismissing']() : m['consentUpdate.dismiss']()}
+                    <p className="break-words text-sm text-grayscale-700">
+                        {date} · {message}
+                    </p>
                 </button>
-            )}
+                {handleArchive && (
+                    <button
+                        type="button"
+                        disabled={dismissing}
+                        onClick={async event => {
+                            event.stopPropagation();
+                            setDismissing(true);
+                            setArchiveError(false);
+                            try {
+                                await handleArchive();
+                            } catch (error) {
+                                log.error('Unable to dismiss contract update notification', error);
+                                setArchiveError(true);
+                            } finally {
+                                setDismissing(false);
+                            }
+                        }}
+                        aria-label={m['consentUpdate.dismiss']()}
+                        className="flex shrink-0 items-center gap-2 rounded-[20px] border border-grayscale-200 bg-white px-3 py-2 text-sm font-medium hover:bg-grayscale-10 disabled:opacity-40"
+                    >
+                        {dismissing && (
+                            <span
+                                aria-hidden
+                                className="h-3 w-3 animate-spin rounded-full border-2 border-grayscale-300 border-t-grayscale-900"
+                            />
+                        )}
+                        {dismissing
+                            ? m['consentUpdate.dismissing']()
+                            : m['consentUpdate.dismiss']()}
+                    </button>
+                )}
+            </div>
             {archiveError && (
                 <p role="alert" className="mt-2 text-xs text-red-700">
                     {m['consentUpdate.dismissError']()}

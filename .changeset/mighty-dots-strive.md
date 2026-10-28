@@ -16,6 +16,8 @@ Preserve existing grants in partial scope updates, gate Lambda startup on legacy
 
 Resolve built-in request categories and personal fields to localized labels and descriptions in English, Spanish, French, and Arabic, including learning history and career/AI categories.
 
+Dismiss Alerts when opening a contract-update review without waiting for read-status writes. Give unread indicators their own layout space so they cannot overlap notification dates.
+
 Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
 
 Separate Advanced Options from changes, published feedback, and actions. Keep the image's remove control inside its thumbnail so it cannot obscure the current version.
