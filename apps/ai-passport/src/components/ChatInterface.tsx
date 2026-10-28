@@ -35,6 +35,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const typing = useStore(isTyping);
     const loading = useStore(isLoading);
     const preloadUnavailable = useStore(credentialPreloadUnavailable);
+    const { did } = useStore(auth);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const lastScrollTimeRef = useRef<number>(0);
 
@@ -54,6 +55,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     useEffect(() => {
         console.log('initialTopicUri', initialTopicUri);
         console.log('initialTopic', initialTopic);
+        // The page restores the cookie session asynchronously. The start* actions bail
+        // without a DID and never retry, so leave the initial topic unconsumed until the
+        // session is restored; this effect re-runs when the DID arrives.
+        if (!did) return;
+
         const initializeTopic = async () => {
             if (initialTopicUri && !topicInitialized) {
                 setTopicInitialized(true);
@@ -71,7 +77,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             }
         };
         initializeTopic();
-    }, [initialTopic, initialTopicUri, topicInitialized]);
+    }, [did, initialTopic, initialTopicUri, topicInitialized]);
 
     // notify backend on visibility change (hidden/visible) for session management
     // Only trigger after being hidden for a substantial period to avoid brief tab switches

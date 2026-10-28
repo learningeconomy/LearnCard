@@ -97,6 +97,7 @@
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@playwright/test": "^1.51.1",
+        "happy-dom": "20.10.6",
       },
     },
     "apps/learn-card-app": {
