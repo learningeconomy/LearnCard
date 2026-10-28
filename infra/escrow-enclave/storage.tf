@@ -33,6 +33,59 @@ data "aws_iam_policy_document" "s3_kms_key_policy" {
     actions   = ["kms:*"]
     resources = ["*"]
   }
+
+  # This key also protects the sealed escrow key object and the authority
+  # table, so disabling, deleting or re-policying it can destroy escrow
+  # material without touching the attested escrow CMK. Usage stays
+  # IAM-delegated; only these destructive actions are reserved for the MFA
+  # escrow-kms-admin role and root (MFA-only below, as on the other CMKs).
+  # Exempting the applier also keeps KMS's lockout safety check satisfied.
+  statement {
+    sid    = "DenyDestructiveAdministrationExceptKmsAdmin"
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions   = ["kms:PutKeyPolicy", "kms:ScheduleKeyDeletion", "kms:DisableKey", "kms:DisableKeyRotation"]
+    resources = ["*"]
+
+    condition {
+      test     = "ArnNotEquals"
+      variable = "aws:PrincipalArn"
+      values = [
+        var.kms_admin_role_arn,
+        "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root",
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DenyRootDestructiveAdministrationWithoutMfa"
+    effect = "Deny"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["*"]
+    }
+
+    actions   = ["kms:PutKeyPolicy", "kms:ScheduleKeyDeletion", "kms:DisableKey", "kms:DisableKeyRotation"]
+    resources = ["*"]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:PrincipalArn"
+      values   = ["arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    condition {
+      test     = "BoolIfExists"
+      variable = "aws:MultiFactorAuthPresent"
+      values   = ["false"]
+    }
+  }
 }
 
 resource "aws_kms_key" "s3" {

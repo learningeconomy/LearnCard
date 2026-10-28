@@ -243,6 +243,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: record?.uri,
+            credentialRecordUri: record?.uri,
             onShareWithOtherCredentials:
                 flags?.shareMultipleEnabled === true && record?.uri
                     ? () =>

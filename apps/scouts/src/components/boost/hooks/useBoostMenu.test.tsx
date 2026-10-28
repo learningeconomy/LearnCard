@@ -57,7 +57,11 @@ const TROOP_ID_CATEGORIES = [
     'Scout ID',
 ];
 
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
+    // Category normalization checks own keys, so use real metadata rather than an empty proxy.
+    ...(await vi.importActual<typeof import('learn-card-base/types/boostAndCredentialMetadata')>(
+        'learn-card-base/types/boostAndCredentialMetadata'
+    )),
     BoostCategoryOptionsEnum: { achievement: 'Achievement' },
     BoostGenericCardWrapper: ({ optionsTriggerOnClick }: { optionsTriggerOnClick: () => void }) => (
         <button type="button" onClick={optionsTriggerOnClick}>
@@ -66,9 +70,7 @@ vi.mock('learn-card-base', () => ({
     ),
     BoostPageViewMode: { Card: 'card', List: 'list' },
     BrandingEnum: { scoutPass: 'scoutPass' },
-    CredentialCategoryEnum: { meritBadge: 'Merit Badge' },
     ModalTypes: { Cancel: 'cancel', Center: 'center', FullScreen: 'full-screen' },
-    categoryMetadata: new Proxy({}, { get: () => ({ walletSubtype: 'subtype' }) }),
     resetIonicModalBackground: vi.fn(),
     setIonicModalBackground: vi.fn(),
     useConfirmation: () => vi.fn(),

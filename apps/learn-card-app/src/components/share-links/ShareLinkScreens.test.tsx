@@ -5,12 +5,13 @@ vi.mock('../../pages/wallet/activity-feed/activityFeed.helpers', () => ({
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ShareLink } from '@learncard/types';
+import type * as ShareLinkFlow from './shareLinkFlow';
 const mocks = vi.hoisted(() => ({
     wallet: {
         id: { did: vi.fn(() => 'owner') },
-        index: { LearnCloud: { getPage: vi.fn() } },
+        index: { LearnCloud: { get: vi.fn(), getPage: vi.fn() } },
         read: { get: vi.fn() },
         invoke: {
             createShareLink: vi.fn(),
@@ -22,6 +23,9 @@ const mocks = vi.hoisted(() => ({
             verifyPresentation: vi.fn(),
             verifyCredential: vi.fn(),
             getProfile: vi.fn(),
+            getShareLinkOwnerContent: vi.fn(),
+            issuePresentation: vi.fn(),
+            createDagJwe: vi.fn(),
             getReceivedPresentations: vi.fn(),
             getIncomingPresentations: vi.fn(),
             sendPresentation: vi.fn(),
@@ -39,6 +43,7 @@ const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
     validate: vi.fn(),
     appBaseUrl: 'https://tenant.example',
+    inferredCategory: 'Achievement',
     route: { id: 'AAAAAAAAAAAAAAAAAAAAAA' },
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
@@ -78,7 +83,7 @@ vi.mock('../../theme/hooks/useTheme', () => ({
     useTheme: () => ({ getThemedCategory: () => ({ icons: {}, colors: {} }) }),
 }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
-    getDefaultCategoryForCredential: () => 'Achievement',
+    getDefaultCategoryForCredential: () => mocks.inferredCategory,
     unwrapBoostCredential: (credential: unknown) => credential,
     getImageUrlFromCredential: () => undefined,
     getCredentialName: (credential: { name?: string }) => credential?.name ?? 'Credential',
@@ -92,7 +97,8 @@ vi.mock('./CredentialPreviewButton', () => ({
     CredentialPreviewButton: () => null,
     default: () => null,
 }));
-vi.mock('learn-card-base/helpers/share-links', () => ({
+vi.mock('learn-card-base/helpers/share-links', async importOriginal => ({
+    ...(await importOriginal<object>()),
     isShareLinkError: () => false,
     decryptSharePayload: (...args: unknown[]) => mocks.decrypt(...args),
     validateShareManifest: (...args: unknown[]) => mocks.validate(...args),
@@ -109,11 +115,13 @@ import { enterSharePrivacy } from './sharePrivacy';
 import { Clipboard } from '@capacitor/clipboard';
 import ShareLinkCreate from './ShareLinkCreate';
 import ShareLinkViewer from './ShareLinkViewer';
+import ShareLinkOwnerPreview from './ShareLinkOwnerPreview';
 const credential = { name: 'Community leadership', issuer: { name: 'Learning Collective' } };
 beforeEach(() => {
     vi.clearAllMocks();
     mocks.history.replace.mockReset();
     mocks.appBaseUrl = 'https://tenant.example';
+    mocks.inferredCategory = 'Achievement';
     mocks.route.id = 'AAAAAAAAAAAAAAAAAAAAAA';
     mocks.auth.loggedIn = false;
     sessionStorage.clear();
@@ -283,6 +291,62 @@ describe('create screen', () => {
         expect(pinned).not.toBeChecked();
         expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     });
+
+    it.each(['Achievement', undefined])(
+        'keeps the picker category in the signed preview with index category %s',
+        async category => {
+            const { prepareShare } = await vi.importActual<typeof ShareLinkFlow>('./shareLinkFlow');
+            mocks.prepare.mockImplementation(prepareShare);
+            mocks.inferredCategory = 'Social Badge';
+            const badge = {
+                ...credential,
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                type: ['VerifiableCredential'],
+                issuer: 'did:example:issuer',
+                credentialSubject: {
+                    id: 'did:example:owner',
+                    achievement: { achievementType: 'Badge' },
+                },
+                proof: {
+                    type: 'Ed25519Signature2020',
+                    created: '2026-10-22T00:00:00Z',
+                    proofPurpose: 'assertionMethod',
+                    verificationMethod: 'did:example:issuer#key',
+                    proofValue: 'fixture',
+                },
+            };
+            mocks.wallet.read.get.mockResolvedValue(badge);
+            mocks.wallet.index.LearnCloud.get.mockResolvedValue([]);
+            mocks.wallet.invoke.issuePresentation.mockImplementation(async presentation => ({
+                ...presentation,
+                proof: { ...badge.proof, proofPurpose: 'authentication' },
+            }));
+            mocks.wallet.invoke.createDagJwe.mockResolvedValue({
+                protected: 'e30',
+                iv: 'a',
+                ciphertext: 'b',
+                tag: 'c',
+            });
+            mocks.wallet.index.LearnCloud.getPage.mockResolvedValue({
+                records: [{ uri: 'private:one', category }],
+                hasMore: false,
+            });
+            render(<ShareLinkCreate onDismiss={() => {}} />);
+            const checkbox = await screen.findByRole('checkbox');
+            const expectedCategory = category ?? 'Social Badge';
+            expect(await screen.findByText(expectedCategory, { exact: true })).toBeVisible();
+            fireEvent.click(checkbox);
+            fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+            fireEvent.change(screen.getByLabelText('Title'), {
+                target: { value: 'Learning highlights' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: /Preview/ }));
+            const preview = await screen.findByTestId('share-link-preview');
+            expect(
+                await within(preview).findByText(expectedCategory, { exact: true })
+            ).toBeVisible();
+        }
+    );
 
     it('keeps Continue disabled without a selection', async () => {
         render(<ShareLinkCreate onDismiss={() => {}} />);
@@ -1305,4 +1369,50 @@ it('reviews selections across filters and clears the entire selection', async ()
     fireEvent.click(screen.getByRole('button', { name: 'Deselect all' }));
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
     expect(screen.getByRole('searchbox')).toHaveValue('Badge');
+});
+
+describe.each(['owner', 'recipient'] as const)('%s published category display', surface => {
+    it.each([{ categories: ['Achievement'] }, { categories: undefined }])(
+        'uses stored categories $categories and falls back for legacy links',
+        async ({ categories }) => {
+            mocks.inferredCategory = 'Social Badge';
+            const presentation = {
+                verifiableCredential: [credential],
+                ...(categories ? { lcCredentialCategories: categories } : {}),
+            };
+            mocks.validate.mockReturnValue({
+                ok: true,
+                manifest: {
+                    sharer: { displayName: 'Alex', profileId: 'owner' },
+                    presentation,
+                    selection: [{ credentialIndex: 0 }],
+                    endorsements: [],
+                },
+            });
+            if (surface === 'owner') {
+                mocks.wallet.invoke.getShareLinkOwnerContent.mockResolvedValue({
+                    id: mocks.route.id,
+                    contentVersion: 1,
+                    envelope: {},
+                });
+                const share = {
+                    id: mocks.route.id,
+                    title: 'Learning highlights',
+                    selectedCount: 1,
+                    contentVersion: 1,
+                    createdAt: '2026-09-24T12:00:00.000Z',
+                    expiresAt: null,
+                } as ShareLink;
+                render(<ShareLinkOwnerPreview share={share} onDismiss={() => {}} />);
+            } else {
+                render(<ShareLinkViewer />);
+            }
+            const preview = await screen.findByTestId('share-link-preview');
+            expect(
+                within(preview).getByText(categories ? 'Achievement' : 'Social Badge', {
+                    exact: true,
+                })
+            ).toBeVisible();
+        }
+    );
 });

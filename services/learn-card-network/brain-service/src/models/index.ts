@@ -155,6 +155,7 @@ const indexQueries = [
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
     ...contractEventMaintenanceSchema,
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
+    'CREATE CONSTRAINT credential_share_preview_id_unique IF NOT EXISTS FOR (p:CredentialSharePreview) REQUIRE p.id IS UNIQUE',
     'CREATE INDEX profile_did_idx IF NOT EXISTS FOR (p:Profile) ON (p.did)',
     'CREATE TEXT INDEX profileId_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.profileId)',
     'CREATE TEXT INDEX profile_displayname_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.displayName)',
@@ -299,6 +300,7 @@ export * from './AppManifestVersion';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './CredentialRefresh';
+export * from './CredentialSharePreview';
 export * from './ShareLink';
 export * from './StatusList';
 export * from './Campaign';
