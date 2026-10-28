@@ -13,6 +13,7 @@ import androidx.credentials.provider.PendingIntentHandler
 import androidx.activity.OnBackPressedCallback
 import androidx.credentials.registry.provider.selectedCredentialSet
 import androidx.credentials.registry.provider.selectedEntryId
+import com.getcapacitor.CapConfig
 import com.getcapacitor.BridgeActivity
 import com.getcapacitor.JSObject
 import org.json.JSONArray
@@ -26,6 +27,16 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
     private var pending: JSObject? = null
     private var generation = ""
     private var completed = false
+
+    override fun load() {
+        // MainActivity deliberately holds its launch splash until account hydration.
+        // A provider must draw/focus immediately so Android Back can terminate its
+        // pending result even while the account/JS bundle is still loading.
+        config = CapConfig.loadDefault(this)
+        config.getPluginConfiguration("SplashScreen").configJSON
+            .put("launchShowDuration", 0).put("launchAutoHide", true)
+        super.load()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         registry = RegistryState(this)

@@ -48,7 +48,9 @@ if (values['after-sync']) {
         CapacitorUpdater: {
             ...config.plugins?.CapacitorUpdater,
             autoUpdate: false,
-            appReadyTimeout: 120000,
+            // Live-server debug builds have no OTA bundle to roll back. Keep the
+            // updater launch handshake short instead of delaying this native test.
+            appReadyTimeout: 1000,
         },
         FirebaseAuthentication: { skipNativeAuth: true },
     };
