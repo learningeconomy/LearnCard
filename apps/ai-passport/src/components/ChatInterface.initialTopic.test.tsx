@@ -69,7 +69,7 @@ beforeEach(() => {
             releaseSession = resolve;
         });
         return Response.json({ authenticated: true, did: 'did:key:alice' });
-    }) as typeof fetch;
+    }) as unknown as typeof fetch;
 });
 
 afterEach(async () => {

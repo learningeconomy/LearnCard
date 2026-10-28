@@ -50,6 +50,26 @@ const cancelReadyListeners = (error: Error): void => {
 };
 onAuthChange(() => disconnectWebSocket());
 
+// Streamed chunks carry no thread id, so the store tracks which thread selection
+// the in-flight response belongs to. Switching threads starts a new selection;
+// starting a response claims the current one. Events from an older selection are
+// dropped instead of being written into whichever thread is now on screen.
+let threadSelection = 0;
+let responseSelection = 0;
+
+const selectThread = (): number => {
+    threadSelection += 1;
+    isTyping.set(false);
+    isLoading.set(false);
+    return threadSelection;
+};
+
+const beginResponse = (): void => {
+    responseSelection = threadSelection;
+};
+
+const isStaleResponse = (): boolean => responseSelection !== threadSelection;
+
 // Load user's threads
 export async function loadThreads() {
     const { did } = auth.get();
@@ -71,6 +91,9 @@ export async function loadThread(threadId: string) {
     const { did } = auth.get();
     if (!did) return;
 
+    const selection = selectThread();
+    const isCurrentSelection = () => selection === threadSelection;
+
     try {
         const response = await authenticatedFetch(
             `/messages?threadId=${encodeURIComponent(threadId)}`
@@ -78,6 +101,8 @@ export async function loadThread(threadId: string) {
         if (!response.ok) throw new Error('Failed to load messages');
 
         const threadMessages = await response.json();
+        if (!isCurrentSelection()) return;
+
         messages.set(threadMessages);
         currentThreadId.set(threadId);
 
@@ -90,6 +115,7 @@ export async function loadThread(threadId: string) {
         if (!loadedThread) {
             // If thread not found in store, reload threads to get latest data
             await loadThreads();
+            if (!isCurrentSelection()) return;
             loadedThread = threads.get().find(t => t.id === threadId);
         }
 
@@ -105,6 +131,7 @@ export async function loadThread(threadId: string) {
         const credsResponse = await authenticatedFetch(
             `/thread_credentials?threadId=${encodeURIComponent(threadId)}`
         );
+        if (!isCurrentSelection()) return;
         if (!credsResponse.ok) {
             console.error('Failed to load thread credentials');
             topicCredentials.set([]);
@@ -130,6 +157,7 @@ export async function createThread() {
         if (!response.ok) throw new Error('Failed to create thread');
 
         const { threadId } = await response.json();
+        selectThread();
         messages.set([]);
         currentThreadId.set(threadId);
         activeQuestions.set([]);
@@ -158,6 +186,7 @@ export async function deleteThread(threadId: string) {
         if (!response.ok) throw new Error('Failed to delete thread');
 
         if (currentThreadId.get() === threadId) {
+            selectThread();
             currentThreadId.set(null);
             messages.set([]);
             activeQuestions.set([]);
@@ -293,6 +322,7 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             // Handle no conversation summary event
             if (data.event === 'no_conversation_summary') {
+                if (isStaleResponse()) return;
                 isTyping.set(false);
                 sessionEnded.set(true);
                 // Optionally, we could surface a toast or UI note using data.reason
@@ -323,6 +353,7 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             // Handle plan introduction event
             if (data.event === 'plan_intro') {
+                if (isStaleResponse()) return;
                 isTyping.set(false);
                 isLoading.set(false);
                 return;
@@ -330,6 +361,7 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             // Handle plan ready event (after intro)
             if (data.event === 'plan_ready') {
+                if (isStaleResponse()) return;
                 isTyping.set(false);
                 isLoading.set(false);
                 planReady.set(true);
@@ -360,8 +392,10 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             // Handle conversation summary event
             if (data.event === 'conversation_summary') {
-                isTyping.set(false);
-                sessionEnded.set(true);
+                if (!isStaleResponse()) {
+                    isTyping.set(false);
+                    sessionEnded.set(true);
+                }
                 // Update threads store to include new summary
                 if (data.threadId && data.credentialUri) {
                     const newSummary = {
@@ -422,6 +456,7 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             // Handle session completed event
             if (data.event === 'session_completed') {
+                if (isStaleResponse()) return;
                 console.log('Session already completed for this thread');
                 sessionEnded.set(true);
                 isTyping.set(false);
@@ -430,12 +465,14 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             if (data.error) {
                 console.error('Error:', data.error);
+                if (isStaleResponse()) return;
                 isTyping.set(false);
                 return;
             }
 
             // Handle structured response
             if (data.assistantMessage) {
+                if (isStaleResponse()) return;
                 const { questions } = JSON.parse(
                     data.assistantMessage.tool_calls?.[0]?.function?.arguments
                 );
@@ -491,11 +528,13 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
             }
 
             if (data.done) {
-                isTyping.set(false);
+                const stale = isStaleResponse();
+
+                if (!stale) isTyping.set(false);
 
                 // Handle thread creation and title updates
                 if (data.threadId) {
-                    currentThreadId.set(data.threadId);
+                    if (!stale) currentThreadId.set(data.threadId);
                     if (data.title) {
                         // Update threads list with new thread
                         const currentThreads = threads.get();
@@ -528,6 +567,7 @@ async function createWebSocket(did: string, generation: number): Promise<void> {
 
             // Handle streaming message content (legacy format)
             if (typeof data === 'string') {
+                if (isStaleResponse()) return;
                 const currentMessages = messages.get();
                 const lastMessage = currentMessages[currentMessages.length - 1];
 
@@ -642,6 +682,7 @@ export function sendMessageWithQuestion(content: string, selectedQuestion?: stri
     }
 
     const updatedMessages = [...currentMessages, newMessage];
+    beginResponse();
     messages.set(updatedMessages);
 
     // Clear active questions once user responds
@@ -695,6 +736,8 @@ export function sendMessage(content: string) {
 
 // Function to start a new topic using a topic URI
 export async function startTopicWithUri(topicUri: string) {
+    selectThread();
+    beginResponse();
     isTyping.set(true);
     isLoading.set(true);
     planReady.set(false);
@@ -751,6 +794,8 @@ export async function startTopicWithUri(topicUri: string) {
 
 // Function to start a new learning pathway with topic and pathway URIs
 export async function startLearningPathway(topicUri: string, pathwayUri: string) {
+    selectThread();
+    beginResponse();
     isTyping.set(true);
     isLoading.set(true);
     planReady.set(false);
@@ -808,6 +853,8 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
 
 // Function to initiate a new session plan for a topic
 export async function startTopic(topic: string) {
+    selectThread();
+    beginResponse();
     isTyping.set(true);
     isLoading.set(true);
     planReady.set(false);
@@ -938,6 +985,7 @@ export function continuePlan() {
 
     // Add placeholder for continuation streaming to a new assistant message
     const currentMsgs = messages.get();
+    beginResponse();
     messages.set([...currentMsgs, { role: 'assistant', content: '' }]);
     isTyping.set(true);
     socket.send(JSON.stringify({ action: 'continue_plan', threadId }));
@@ -952,6 +1000,7 @@ export async function finishSession() {
     if (!did || !threadId) return;
 
     try {
+        beginResponse();
         messages.set([
             ...messages.get(),
             { role: 'user', content: 'Finish Session' },
