@@ -25,6 +25,10 @@ import type {
 import type { PooledCandidate } from '../candidatePool';
 
 import { BoostEarnedCard } from '../../../components/boost/boost-earned-card/BoostEarnedCard';
+import {
+    NativeConsentView,
+    type NativeRequesterIdentity,
+} from '../../../native-digital-credentials/NativeConsentView';
 
 interface ParsedSdJwtForConsent {
     disclosureKeys?: string[];
@@ -83,6 +87,8 @@ export interface RequestConsentProps {
     dcqlSelection?: DcqlSelectionResult;
     /** Native transport: only these flat claims may be displayed/disclosed; all are required. */
     disclosurePolicy?: Record<string, string[]>;
+    /** Android-established identity; enables the compact native consent presentation. */
+    nativeRequester?: NativeRequesterIdentity;
     submitting?: boolean;
     canceling?: boolean;
 
@@ -113,6 +119,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     selection,
     dcqlSelection,
     disclosurePolicy,
+    nativeRequester,
     submitting = false,
     canceling = false,
     onApprove,
@@ -320,6 +327,50 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
             };
         });
     };
+
+    if (nativeRequester && disclosurePolicy) {
+        return (
+            <NativeConsentView
+                requester={nativeRequester}
+                credentials={rows.map(row => {
+                    const candidate = row.candidates[picks.row[row.id] ?? 0]?.candidate;
+                    const cacheKey = `${row.id}::${candidate?.id}`;
+                    const parsed = parsedSdJwts[cacheKey];
+                    return {
+                        cacheKey,
+                        title: candidate?.title?.trim() || humanizeClaimKey(row.title),
+                        issuer: parsed?.issuer,
+                        credentialType: parsed?.vct,
+                        expires: parsed?.expiresAt?.toLocaleDateString(),
+                        available: Boolean(candidate),
+                        loading: Boolean(
+                            sdJwtStatuses[row.id]?.isSdJwt && !sdJwtStatuses[row.id]?.isReady
+                        ),
+                        fields: (parsed?.disclosureKeys ?? []).map(key => {
+                            const value = parsed?.claims?.[key];
+                            return {
+                                key,
+                                label: humanizeClaimKey(key),
+                                value:
+                                    typeof value === 'object'
+                                        ? (JSON.stringify(value) ?? '')
+                                        : String(value ?? ''),
+                                checked: picks.disclose[cacheKey]?.[key] === true,
+                            };
+                        }),
+                    };
+                })}
+                canShare={canShare}
+                requiredFieldsApproved={requiredFieldsApproved}
+                loading={pendingSdJwtRows > 0}
+                submitting={submitting}
+                canceling={canceling}
+                onFieldChange={handleClaimChange}
+                onApprove={() => onApprove(picks)}
+                onCancel={onCancel}
+            />
+        );
+    }
 
     return (
         <div

@@ -15,6 +15,8 @@ export interface PendingDigitalCredentialRequest {
     origin: string;
     /** Display label supplied by Android; request JSON metadata is ignored. */
     callerName?: string;
+    /** Authenticated Android package identifier, independent of the optional display label. */
+    callerPackage?: string;
     request: { protocol: string; data: Record<string, unknown> };
 }
 

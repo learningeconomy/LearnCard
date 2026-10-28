@@ -8,15 +8,14 @@ import {
     useHistoryAccountRevision,
 } from '../helpers/verifier-history/account';
 import RequestConsent, { type ConsentPicks } from '../pages/oid4vp/components/RequestConsent';
-import RequestLoading from '../pages/oid4vp/components/RequestLoading';
 import ClaimLoginPage from '../pages/login/ClaimLoginPage';
 import { nativeDigitalCredentials } from './plugin';
 import { readNativeInventory } from './runtime';
 import { prepareAccountPresentation } from './presentation';
 import type { DigitalCredentialWallet } from './inventory';
 import type { PendingDigitalCredentialRequest } from './types';
-import * as m from '../paraglide/messages.js';
 import { markStartupPhase } from '../helpers/startupDiagnostics';
+import { NativeRequestState } from './NativeRequestState';
 
 type Prepared = Awaited<ReturnType<typeof prepareAccountPresentation>>;
 
@@ -113,29 +112,29 @@ export default function NativeDigitalCredentialFlow() {
                         request={prepared.request}
                         dcqlSelection={prepared.selection}
                         disclosurePolicy={prepared.policy}
+                        nativeRequester={{
+                            name: pending?.callerName,
+                            packageName: pending?.callerPackage,
+                            origin: prepared.request.client_id,
+                        }}
                         onApprove={approve}
                         onCancel={() => void cancel()}
                         submitting={sending}
                         canceling={canceling}
                     />
                 )}
-                {!prepared && !error && <RequestLoading />}
+                {!prepared && !error && (
+                    <NativeRequestState
+                        canceling={canceling}
+                        onCancel={pending || isProvider ? () => void cancel() : undefined}
+                    />
+                )}
                 {error && (
-                    <div className="font-poppins max-w-md mx-auto p-8 space-y-5">
-                        <h1 className="text-xl font-semibold text-grayscale-900">
-                            {m['nativeCredentials.unavailableTitle']()}
-                        </h1>
-                        <p className="text-sm text-grayscale-600 leading-relaxed">
-                            {m['nativeCredentials.unavailableDescription']()}
-                        </p>
-                        <button
-                            onClick={() => void cancel()}
-                            disabled={canceling}
-                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white text-sm font-medium disabled:opacity-40"
-                        >
-                            {canceling ? m['nativeCredentials.canceling']() : m['common.cancel']()}
-                        </button>
-                    </div>
+                    <NativeRequestState
+                        unavailable
+                        canceling={canceling}
+                        onCancel={() => void cancel()}
+                    />
                 )}
             </IonContent>
         </IonPage>

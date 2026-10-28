@@ -61,6 +61,7 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
             stage = "caller_identity"
             pending = JSObject().put("requestId", UUID.randomUUID().toString())
                 .put("selectedEntryId", selected.single()).put("origin", CallerOrigin.resolve(this, request.callingAppInfo))
+                .put("callerPackage", request.callingAppInfo.packageName)
                 .put("callerName", runCatching {
                     packageManager.getApplicationLabel(packageManager.getApplicationInfo(request.callingAppInfo.packageName, 0)).toString()
                 }.getOrDefault(request.callingAppInfo.packageName))
