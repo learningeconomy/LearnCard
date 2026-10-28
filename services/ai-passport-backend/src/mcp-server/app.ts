@@ -55,11 +55,6 @@ const oauthProvider = new ProxyOAuthServerProvider({
     },
 });
 
-// Create an MCP server
-const server = new McpServer({
-    name: 'learncard-mcp-server',
-    version: '1.0.0',
-});
 type ToolSchema = Record<string, z.ZodType>;
 
 type ToolExtra = {
@@ -85,10 +80,6 @@ type RegisterTool = (
     callback: (args: Record<string, unknown>, extra: ToolExtra) => Promise<ToolResponse>
 ) => unknown;
 
-// The SDK installs its own compatible Zod version, so its generic type identity
-// differs from the workspace Zod instance even though both work at runtime.
-const registerTool = server.registerTool.bind(server) as unknown as RegisterTool;
-
 const getAuthenticatedDid = (extra: ToolExtra): string | undefined => {
     const did = extra.authInfo?.extra?.did;
 
@@ -105,139 +96,159 @@ const createResponse = (general_summary: string): StructuredResponse => ({
     structuredContent: { general_summary },
 });
 
-// Get user context for personalized teaching
-registerTool(
-    'get_user_context',
-    {
-        title: 'Get User Context Tool',
-        description:
-            'It is recommended to call this tool before teaching the user something. Helps tailor explanations and teaching style for better learning outcomes.',
-        inputSchema: {},
-        outputSchema: { general_summary: z.string().nullable() },
-    },
-    async (_args, extra) => {
-        const did = getAuthenticatedDid(extra);
+// McpServer.connect() owns exactly one transport at a time, so a module-level server
+// shared across per-request stateless transports throws on overlapping requests. Build
+// a fresh server (and tool registry) for every stateless transport instead.
+export const createMcpServer = (): McpServer => {
+    const server = new McpServer({
+        name: 'learncard-mcp-server',
+        version: '1.0.0',
+    });
 
-        if (!did) {
-            logSafeEvent('warn', 'auth_verification_failed');
-            throw new Error('Unauthorized: No DID found in authentication token');
-        }
+    // The SDK installs its own compatible Zod version, so its generic type identity
+    // differs from the workspace Zod instance even though both work at runtime.
+    const registerTool = server.registerTool.bind(server) as unknown as RegisterTool;
 
-        try {
-            const generalSummary = await runMcpOwnerOperation(did, () => getLatestUserSummary(did));
-            return createResponse(generalSummary);
-        } catch {
-            Sentry.captureMessage('backend_operation_failed', {
-                level: 'error',
-                tags: { tool: 'get_user_context' },
-            });
-            logSafeEvent('error', 'request_failed');
-            return createResponse('Unable to retrieve user context');
-        }
-    }
-);
-
-// Ask questions to personalize teaching
-registerTool(
-    'get_answer_about_user',
-    {
-        title: 'Ask Learning Question',
-        description:
-            "It is recommended to call this tool frequently during teaching to ask specific questions about the user's knowledge, skills, and experience.",
-        inputSchema: { question: z.string() },
-    },
-    async (args, extra) => {
-        const { question } = z.object({ question: z.string() }).parse(args);
-        const did = getAuthenticatedDid(extra);
-
-        if (!did) {
-            logSafeEvent('warn', 'auth_verification_failed');
-            throw new Error('Unauthorized: No DID found in authentication token');
-        }
-
-        try {
-            const response = await runMcpOwnerOperation(did, () =>
-                getAnswerAboutUser(did, question)
-            );
-            const answer = { answer: response };
-            return {
-                content: [{ type: 'text', text: JSON.stringify(answer) }],
-                structuredContent: answer,
-            };
-        } catch {
-            Sentry.captureMessage('backend_operation_failed', {
-                level: 'error',
-                tags: { tool: 'get_answer_about_user' },
-            });
-            logSafeEvent('error', 'request_failed');
-            throw new Error('Unable to answer learning question');
-        }
-    }
-);
-
-// Save learning session summary
-registerTool(
-    'save_session_summary',
-    {
-        title: 'Save Session Summary',
-        description:
-            'Save a summary at the end of a learning session to track progress. Share the returned sessions link with the learner; they can sign in and choose their session for review and assessment.',
-        inputSchema: {
-            summary: z
-                .string()
-                .describe(
-                    'A summary of the learning session including topics covered and insights gained'
-                ),
+    // Get user context for personalized teaching
+    registerTool(
+        'get_user_context',
+        {
+            title: 'Get User Context Tool',
+            description:
+                'It is recommended to call this tool before teaching the user something. Helps tailor explanations and teaching style for better learning outcomes.',
+            inputSchema: {},
+            outputSchema: { general_summary: z.string().nullable() },
         },
-        outputSchema: {
-            success: z.boolean(),
-            message: z.string(),
-            learnCardLink: z.string().optional(),
+        async (_args, extra) => {
+            const did = getAuthenticatedDid(extra);
+
+            if (!did) {
+                logSafeEvent('warn', 'auth_verification_failed');
+                throw new Error('Unauthorized: No DID found in authentication token');
+            }
+
+            try {
+                const generalSummary = await runMcpOwnerOperation(did, () =>
+                    getLatestUserSummary(did)
+                );
+                return createResponse(generalSummary);
+            } catch {
+                Sentry.captureMessage('backend_operation_failed', {
+                    level: 'error',
+                    tags: { tool: 'get_user_context' },
+                });
+                logSafeEvent('error', 'request_failed');
+                return createResponse('Unable to retrieve user context');
+            }
+        }
+    );
+
+    // Ask questions to personalize teaching
+    registerTool(
+        'get_answer_about_user',
+        {
+            title: 'Ask Learning Question',
+            description:
+                "It is recommended to call this tool frequently during teaching to ask specific questions about the user's knowledge, skills, and experience.",
+            inputSchema: { question: z.string() },
         },
-    },
-    async (args, extra) => {
-        const { summary } = z.object({ summary: z.string() }).parse(args);
-        const did = getAuthenticatedDid(extra);
+        async (args, extra) => {
+            const { question } = z.object({ question: z.string() }).parse(args);
+            const did = getAuthenticatedDid(extra);
 
-        if (!did) {
-            logSafeEvent('warn', 'auth_verification_failed');
-            throw new Error('Unauthorized: No DID found in authentication token');
-        }
+            if (!did) {
+                logSafeEvent('warn', 'auth_verification_failed');
+                throw new Error('Unauthorized: No DID found in authentication token');
+            }
 
-        try {
-            // Auto-generate threadId internally
-            const threadId = `session:${Date.now()}:${did.slice(-8)}`;
-            await runMcpOwnerOperation(did, () => saveSessionSummary(did, threadId, { summary }));
-            const output = {
-                success: true,
-                message: 'Session summary saved successfully',
-                // External models must not receive the underlying credential/storage IDs.
-                learnCardLink: 'https://learncard.app/ai/sessions',
-            };
-            return {
-                content: [{ type: 'text', text: JSON.stringify(output) }],
-                structuredContent: output,
-            };
-        } catch {
-            Sentry.captureMessage('backend_operation_failed', {
-                level: 'error',
-                tags: { tool: 'save_session_summary' },
-            });
-            logSafeEvent('error', 'request_failed');
-            const output = {
-                success: false,
-                message: 'Unable to save session summary',
-            };
-            return {
-                content: [{ type: 'text', text: JSON.stringify(output) }],
-                structuredContent: output,
-            };
+            try {
+                const response = await runMcpOwnerOperation(did, () =>
+                    getAnswerAboutUser(did, question)
+                );
+                const answer = { answer: response };
+                return {
+                    content: [{ type: 'text', text: JSON.stringify(answer) }],
+                    structuredContent: answer,
+                };
+            } catch {
+                Sentry.captureMessage('backend_operation_failed', {
+                    level: 'error',
+                    tags: { tool: 'get_answer_about_user' },
+                });
+                logSafeEvent('error', 'request_failed');
+                throw new Error('Unable to answer learning question');
+            }
         }
-    }
-);
+    );
+
+    // Save learning session summary
+    registerTool(
+        'save_session_summary',
+        {
+            title: 'Save Session Summary',
+            description:
+                'Save a summary at the end of a learning session to track progress. Share the returned sessions link with the learner; they can sign in and choose their session for review and assessment.',
+            inputSchema: {
+                summary: z
+                    .string()
+                    .describe(
+                        'A summary of the learning session including topics covered and insights gained'
+                    ),
+            },
+            outputSchema: {
+                success: z.boolean(),
+                message: z.string(),
+                learnCardLink: z.string().optional(),
+            },
+        },
+        async (args, extra) => {
+            const { summary } = z.object({ summary: z.string() }).parse(args);
+            const did = getAuthenticatedDid(extra);
+
+            if (!did) {
+                logSafeEvent('warn', 'auth_verification_failed');
+                throw new Error('Unauthorized: No DID found in authentication token');
+            }
+
+            try {
+                // Auto-generate threadId internally
+                const threadId = `session:${Date.now()}:${did.slice(-8)}`;
+                await runMcpOwnerOperation(did, () =>
+                    saveSessionSummary(did, threadId, { summary })
+                );
+                const output = {
+                    success: true,
+                    message: 'Session summary saved successfully',
+                    // External models must not receive the underlying credential/storage IDs.
+                    learnCardLink: 'https://learncard.app/ai/sessions',
+                };
+                return {
+                    content: [{ type: 'text', text: JSON.stringify(output) }],
+                    structuredContent: output,
+                };
+            } catch {
+                Sentry.captureMessage('backend_operation_failed', {
+                    level: 'error',
+                    tags: { tool: 'save_session_summary' },
+                });
+                logSafeEvent('error', 'request_failed');
+                const output = {
+                    success: false,
+                    message: 'Unable to save session summary',
+                };
+                return {
+                    content: [{ type: 'text', text: JSON.stringify(output) }],
+                    structuredContent: output,
+                };
+            }
+        }
+    );
+
+    return server;
+};
 
 // Set up Express and HTTP transport
-const app = express();
+export const app = express();
 app.use(express.json());
 
 // Add OAuth router - provides /.well-known/oauth-protected-resource
@@ -266,8 +277,13 @@ app.post(
                 enableJsonResponse: true,
             });
 
+            const server = createMcpServer();
+
             res.on('close', () => {
-                transport.close();
+                // Closing the server also closes its connected transport; close the
+                // transport directly too in case connect() never attached it.
+                void server.close().catch(() => undefined);
+                void transport.close().catch(() => undefined);
             });
 
             await server.connect(transport);
