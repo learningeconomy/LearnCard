@@ -141,3 +141,6 @@ public/branding/
 
 # Edge function — generated tenant config bundle (scripts/generate-edge-tenant-configs.ts)
 netlify/edge-functions/shared/resolved-tenant-configs.generated.json
+
+# Generated Paraglide compiler cache
+project.inlang/cache/

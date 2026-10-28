@@ -398,6 +398,13 @@ export type OpenID4VCPluginMethods = {
         /** HTTP-level result of the direct_post submission. Always populated. */
         submitted: SubmitPresentationResult;
     }>;
+    /** Return unsigned-profile DC API JSON locally. verifiedOrigin must be transport-verified, never request data. */
+    createDcApiResponse: (
+        input: import('./vp/dcApi').DcApiRequest,
+        verifiedOrigin: string,
+        chosen: DcqlChosenCredential[],
+        options?: import('./vp/dcApi').DcApiResponseOptions
+    ) => Promise<import('./vp/dcApi').DcApiResponse>;
 };
 
 /** Configuration passed to {@link getOpenID4VCPlugin}. */

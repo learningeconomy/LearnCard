@@ -9930,5 +9930,33 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Credencial digital",
+        "unavailableTitle": "Solicitud no disponible",
+        "unavailableDescription": "Vuelve a la aplicación que hizo la solicitud e inténtalo de nuevo.",
+        "canceling": "Cancelando…",
+        "preparing": "Preparando…",
+        "requiredFields": "Estos campos son obligatorios. Puedes cancelar si lo prefieres.",
+        "reviewTitle": "¿Compartir estos datos?",
+        "reviewDescription": "Revisa los datos solicitados antes de compartirlos.",
+        "requestedBy": "Solicitado por",
+        "androidApp": "Aplicación de Android",
+        "requestDetails": "Detalles de la solicitud",
+        "requestIdentity": "Identidad de firma de la aplicación",
+        "selectedCredential": "Credencial seleccionada",
+        "requestedDetails": "Datos solicitados",
+        "required": "Obligatorio",
+        "notShared": "No se comparte",
+        "metadataIncluded": "También se incluyen el emisor y el tipo de credencial.",
+        "credentialDetails": "Detalles de la credencial",
+        "issuer": "Emisor",
+        "credentialType": "Tipo de credencial",
+        "expires": "Vence",
+        "sharing": "Compartiendo…",
+        "shareDetails": "Compartir datos",
+        "loadingTitle": "Preparando tu solicitud",
+        "loadingDescription": "Comprobando los datos que puedes compartir.",
+        "returnToApp": "Volver a la aplicación"
     }
 }

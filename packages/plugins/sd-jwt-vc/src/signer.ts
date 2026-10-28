@@ -1,4 +1,5 @@
-import { compactVerify, importJWK, SignJWT, type JWK } from 'jose';
+import { compactVerify, importJWK, base64url, type JWK } from 'jose';
+import { ed25519 } from '@noble/curves/ed25519';
 import type { Signer as SdJwtLibSigner } from '@sd-jwt/types';
 
 import { SdJwtVcError } from './types';
@@ -14,6 +15,48 @@ export const createJoseVerifier = async (
     publicJwk: JWK,
     alg: string
 ): Promise<CreateJoseVerifierResult> => {
+    // Ed25519 is unavailable in older Android WebViews. Keep signature verification
+    // independent of WebCrypto while preserving JOSE algorithm/critical-header checks.
+    if (alg === 'EdDSA') {
+        if (
+            publicJwk.kty !== 'OKP' ||
+            publicJwk.crv !== 'Ed25519' ||
+            typeof publicJwk.x !== 'string'
+        ) {
+            throw new SdJwtVcError(
+                'verification_method_not_found',
+                'Expected an Ed25519 issuer key'
+            );
+        }
+        const publicKey = base64url.decode(publicJwk.x);
+        if (publicKey.length !== 32)
+            throw new SdJwtVcError('verification_method_not_found', 'Invalid Ed25519 issuer key');
+        let lastError: Error | undefined;
+        return {
+            verifier: async (data, sig) => {
+                try {
+                    const header = decodeJsonSegment(data.split('.')[0]!);
+                    if (header.alg !== 'EdDSA' || header.crit !== undefined || header.b64 === false)
+                        throw new Error('Unsupported protected header');
+                    if (
+                        !ed25519.verify(
+                            base64url.decode(sig),
+                            new TextEncoder().encode(data),
+                            publicKey,
+                            { zip215: false }
+                        )
+                    )
+                        throw new Error('Invalid issuer signature');
+                    lastError = undefined;
+                    return true;
+                } catch (error) {
+                    lastError = error instanceof Error ? error : new Error(String(error));
+                    return false;
+                }
+            },
+            getLastError: () => lastError,
+        };
+    }
     let key;
     try {
         key = await importJWK(publicJwk, alg);
@@ -66,69 +109,31 @@ export const createEd25519KbSigner = async (
         );
     }
 
-    let privateKey;
+    let privateKey: Uint8Array;
     try {
-        privateKey = await importJWK(privateJwk, 'EdDSA');
-    } catch (e) {
-        throw new SdJwtVcError(
-            'kb_jwt_invalid',
-            `Failed to import Ed25519 private JWK for KB-JWT signing: ${
-                e instanceof Error ? e.message : String(e)
-            }`,
-            { cause: e }
-        );
+        privateKey = base64url.decode(privateJwk.d);
+        if (
+            privateKey.length !== 32 ||
+            typeof privateJwk.x !== 'string' ||
+            base64url.encode(ed25519.getPublicKey(privateKey)) !== privateJwk.x
+        )
+            throw new Error('Ed25519 keypair mismatch');
+    } catch (cause) {
+        throw new SdJwtVcError('kb_jwt_invalid', 'Invalid Ed25519 signing key', { cause });
     }
-
     return async (data: string): Promise<string> => {
-        const dotIndex = data.indexOf('.');
-        if (dotIndex < 0 || dotIndex === 0 || dotIndex === data.length - 1) {
-            throw new SdJwtVcError(
-                'kb_jwt_invalid',
-                'KB-JWT signer received malformed JWS signing input (expected "<headerB64url>.<payloadB64url>")'
-            );
-        }
-
-        const headerSegment = data.slice(0, dotIndex);
-        const payloadSegment = data.slice(dotIndex + 1);
-
-        let header: Record<string, unknown>;
-        let payload: Record<string, unknown>;
+        const segments = data.split('.');
+        if (segments.length !== 2 || segments.some(segment => !segment))
+            throw new SdJwtVcError('kb_jwt_invalid', 'Malformed JWS signing input');
         try {
-            header = decodeJsonSegment(headerSegment);
-            payload = decodeJsonSegment(payloadSegment);
-        } catch (e) {
-            throw new SdJwtVcError(
-                'kb_jwt_invalid',
-                `KB-JWT signer could not decode signing input: ${
-                    e instanceof Error ? e.message : String(e)
-                }`,
-                { cause: e }
-            );
+            const header = decodeJsonSegment(segments[0]!);
+            decodeJsonSegment(segments[1]!);
+            if (header.alg !== 'EdDSA' || header.crit !== undefined || header.b64 === false)
+                throw new Error('Unsupported signing header');
+            return base64url.encode(ed25519.sign(new TextEncoder().encode(data), privateKey));
+        } catch (cause) {
+            throw new SdJwtVcError('kb_jwt_invalid', 'Could not sign key binding proof', { cause });
         }
-
-        let compact: string;
-        try {
-            compact = await new SignJWT(payload)
-                .setProtectedHeader(header as { alg: string; typ: string })
-                .sign(privateKey);
-        } catch (e) {
-            throw new SdJwtVcError(
-                'kb_jwt_invalid',
-                `Failed to sign KB-JWT with Ed25519 key: ${
-                    e instanceof Error ? e.message : String(e)
-                }`,
-                { cause: e }
-            );
-        }
-
-        const sigSegment = compact.split('.')[2];
-        if (!sigSegment) {
-            throw new SdJwtVcError(
-                'kb_jwt_invalid',
-                'KB-JWT signing produced no signature segment (jose returned malformed JWS)'
-            );
-        }
-        return sigSegment;
     };
 };
 

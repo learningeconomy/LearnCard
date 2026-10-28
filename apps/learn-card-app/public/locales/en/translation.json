@@ -9981,5 +9981,33 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Digital credential",
+        "unavailableTitle": "Request unavailable",
+        "unavailableDescription": "Return to the requesting app and try again.",
+        "canceling": "Canceling…",
+        "preparing": "Preparing…",
+        "requiredFields": "These fields are required. You can cancel instead.",
+        "reviewTitle": "Share these details?",
+        "reviewDescription": "Check the requested details before sharing.",
+        "requestedBy": "Requested by",
+        "androidApp": "Android app",
+        "requestDetails": "Request details",
+        "requestIdentity": "App signing identity",
+        "selectedCredential": "Selected credential",
+        "requestedDetails": "Requested details",
+        "required": "Required",
+        "notShared": "Not shared",
+        "metadataIncluded": "The issuer and credential type are also included.",
+        "credentialDetails": "Credential details",
+        "issuer": "Issuer",
+        "credentialType": "Credential type",
+        "expires": "Expires",
+        "sharing": "Sharing…",
+        "shareDetails": "Share details",
+        "loadingTitle": "Preparing your request",
+        "loadingDescription": "Checking the details you can share.",
+        "returnToApp": "Return to app"
     }
 }

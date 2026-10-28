@@ -9930,5 +9930,33 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Justificatif numérique",
+        "unavailableTitle": "Demande indisponible",
+        "unavailableDescription": "Revenez à l’application à l’origine de la demande et réessayez.",
+        "canceling": "Annulation…",
+        "preparing": "Préparation…",
+        "requiredFields": "Ces champs sont obligatoires. Vous pouvez annuler.",
+        "reviewTitle": "Partager ces informations ?",
+        "reviewDescription": "Vérifiez les informations demandées avant de les partager.",
+        "requestedBy": "Demandé par",
+        "androidApp": "Application Android",
+        "requestDetails": "Détails de la demande",
+        "requestIdentity": "Identité de signature de l’application",
+        "selectedCredential": "Justificatif sélectionné",
+        "requestedDetails": "Informations demandées",
+        "required": "Obligatoire",
+        "notShared": "Non partagé",
+        "metadataIncluded": "L’émetteur et le type de justificatif sont également inclus.",
+        "credentialDetails": "Détails du justificatif",
+        "issuer": "Émetteur",
+        "credentialType": "Type de justificatif",
+        "expires": "Expire le",
+        "sharing": "Partage en cours…",
+        "shareDetails": "Partager les informations",
+        "loadingTitle": "Préparation de votre demande",
+        "loadingDescription": "Vérification des informations que vous pouvez partager.",
+        "returnToApp": "Revenir à l’application"
     }
 }

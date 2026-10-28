@@ -10019,5 +10019,33 @@
         "revocationCheck": "التحقق من الإلغاء متاح",
         "evidenceCount": "عناصر الأدلة: {{count}}",
         "evidence": "الأدلة الداعمة"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "بيان اعتماد رقمي",
+        "unavailableTitle": "الطلب غير متاح",
+        "unavailableDescription": "عُد إلى التطبيق الذي أرسل الطلب وحاول مرة أخرى.",
+        "canceling": "جارٍ الإلغاء…",
+        "preparing": "جارٍ التحضير…",
+        "requiredFields": "هذه الحقول مطلوبة. يمكنك إلغاء الطلب بدلًا من ذلك.",
+        "reviewTitle": "هل تريد مشاركة هذه التفاصيل؟",
+        "reviewDescription": "راجع التفاصيل المطلوبة قبل مشاركتها.",
+        "requestedBy": "مطلوب من",
+        "androidApp": "تطبيق Android",
+        "requestDetails": "تفاصيل الطلب",
+        "requestIdentity": "هوية توقيع التطبيق",
+        "selectedCredential": "بيانات الاعتماد المحددة",
+        "requestedDetails": "التفاصيل المطلوبة",
+        "required": "مطلوب",
+        "notShared": "لن تتم المشاركة",
+        "metadataIncluded": "يتم أيضًا تضمين الجهة المُصدرة ونوع بيانات الاعتماد.",
+        "credentialDetails": "تفاصيل بيانات الاعتماد",
+        "issuer": "الجهة المُصدرة",
+        "credentialType": "نوع بيانات الاعتماد",
+        "expires": "تنتهي الصلاحية في",
+        "sharing": "جارٍ المشاركة…",
+        "shareDetails": "مشاركة التفاصيل",
+        "loadingTitle": "جارٍ إعداد طلبك",
+        "loadingDescription": "نتحقق من التفاصيل التي يمكنك مشاركتها.",
+        "returnToApp": "العودة إلى التطبيق"
     }
 }

@@ -1,0 +1,41 @@
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies {
+        if (project.findProperty('android.builtInKotlin') == 'false') {
+            classpath 'com.android.built-in-kotlin:com.android.built-in-kotlin.gradle.plugin:9.3.0'
+        }
+    }
+}
+
+apply plugin: 'com.android.library'
+// The host app keeps legacy Kotlin plugins for Capacitor dependencies. Opt this
+// module into AGP's compiler independently (the standalone lab already enables it).
+if (providers.gradleProperty('android.builtInKotlin').getOrElse('true') == 'false') {
+    apply plugin: 'com.android.built-in-kotlin'
+}
+
+android {
+    namespace = 'com.learncard.digitalcredentials'
+    compileSdk = 36
+    defaultConfig {
+        minSdk = 26
+        testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+dependencies {
+    api 'androidx.appcompat:appcompat:1.7.1'
+    implementation project(':capacitor-android')
+    implementation 'androidx.credentials:credentials:1.6.0'
+    implementation 'androidx.credentials.registry:registry-provider:1.0.0-alpha05'
+    implementation 'androidx.credentials.registry:registry-provider-play-services:1.0.0-alpha05'
+    implementation 'androidx.credentials.registry:registry-digitalcredentials-openid:1.0.0-alpha05'
+    implementation 'androidx.credentials.registry:registry-digitalcredentials-sdjwtvc:1.0.0-alpha05'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+}

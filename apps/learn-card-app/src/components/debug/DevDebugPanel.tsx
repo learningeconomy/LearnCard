@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     Bug,
     X,
@@ -15,6 +16,7 @@ import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
 import { environment } from '../../config/environment';
 
 import { WIDGET_ENABLED } from './debugComponents';
+import { NATIVE_CREDENTIAL_PATH } from '../../native-digital-credentials/types';
 import { AuthDebugTab, getMeta } from './AuthDebugTab';
 import { ConfigDebugTab } from './ConfigDebugTab';
 import { ThemeDebugTab } from './ThemeDebugTab';
@@ -52,11 +54,12 @@ const TABS: TabDef[] = [
 export const DevDebugPanel: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<TabId>('auth');
+    const { pathname } = useLocation();
 
     const { state, isReady } = useAuthCoordinator();
     const meta = getMeta(state.status);
 
-    if (!WIDGET_ENABLED) return null;
+    if (!WIDGET_ENABLED || pathname === NATIVE_CREDENTIAL_PATH) return null;
 
     // --- Fab button color follows coordinator status ---
     const fabBg = isOpen
