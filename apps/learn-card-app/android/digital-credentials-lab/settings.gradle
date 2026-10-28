@@ -1,0 +1,5 @@
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+rootProject.name = 'LearnCardDigitalCredentialsLab'
+include ':capacitor-android', ':learncard-digital-credentials', ':lab'
+project(':capacitor-android').projectDir = file('../../../../node_modules/@capacitor/android/capacitor')
+project(':learncard-digital-credentials').projectDir = file('../digital-credentials')

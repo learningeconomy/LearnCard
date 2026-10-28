@@ -85,6 +85,19 @@ const setup = async () => {
 };
 
 describe('unsigned DC API response profile', () => {
+    it('accepts a canonical native certificate origin supplied by the trusted transport', () => {
+        const origin = `android:apk-key-hash:${Buffer.alloc(32, 1).toString('base64url')}`;
+        expect(parseDcApiRequest(request(), origin).audience).toBe(`origin:${origin}`);
+    });
+
+    it.each([
+        'android:apk-key-hash:short',
+        `android:apk-key-hash:${'A'.repeat(42)}B`,
+        `android:apk-key-hash:${'A'.repeat(43)}=`,
+    ])('rejects malformed certificate origin %s', origin => {
+        expect(() => parseDcApiRequest(request(), origin)).toThrow(DcApiError);
+    });
+
     it('returns course completion JSON, ignores request origins, binds nonce/audience, and never fetches', async () => {
         const context = await setup();
         const result = await context.plugin.methods.createDcApiResponse(

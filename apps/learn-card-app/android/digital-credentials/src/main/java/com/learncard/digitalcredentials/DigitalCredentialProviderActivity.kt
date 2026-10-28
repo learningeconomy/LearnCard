@@ -1,0 +1,91 @@
+package com.learncard.digitalcredentials
+
+import android.app.Activity
+import android.content.Intent
+import android.os.Bundle
+import androidx.credentials.DigitalCredential
+import androidx.credentials.ExperimentalDigitalCredentialApi
+import androidx.credentials.GetCredentialResponse
+import androidx.credentials.GetDigitalCredentialOption
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialUnknownException
+import androidx.credentials.provider.PendingIntentHandler
+import androidx.credentials.registry.provider.selectedCredentialSet
+import androidx.credentials.registry.provider.selectedEntryId
+import com.getcapacitor.BridgeActivity
+import com.getcapacitor.JSObject
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.UUID
+
+/** Owns the platform result. The request is rebuilt from the system intent after process recreation. */
+@OptIn(ExperimentalDigitalCredentialApi::class)
+class DigitalCredentialProviderActivity : BridgeActivity() {
+    private lateinit var registry: RegistryState
+    private var pending: JSObject? = null
+    private var generation = ""
+    private var completed = false
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        registry = RegistryState(this)
+        try {
+            require(resources.getBoolean(R.bool.lc_digital_credentials_enabled))
+            val request = PendingIntentHandler.retrieveProviderGetCredentialRequest(intent) ?: error("Missing request")
+            val selected = request.selectedCredentialSet?.credentials?.map { it.credentialId }
+                ?: listOfNotNull(request.selectedEntryId)
+            require(selected.size == 1 && registry.contains(selected.single()))
+            val options = request.credentialOptions.filterIsInstance<GetDigitalCredentialOption>()
+            require(options.size == 1)
+            val requests = JSONObject(options.single().requestJson).getJSONArray("requests")
+            val supported = (0 until requests.length()).map { requests.getJSONObject(it) }
+                .filter { it.optString("protocol") == "openid4vp-v1-unsigned" }
+            require(supported.size == 1)
+            generation = registry.generation
+            pending = JSObject().put("requestId", UUID.randomUUID().toString())
+                .put("selectedEntryId", selected.single()).put("origin", CallerOrigin.resolve(this, request.callingAppInfo))
+                .put("request", supported.single()) as JSObject
+        } catch (_: Exception) {
+            completed = true
+            val result = Intent()
+            PendingIntentHandler.setGetCredentialException(result, GetCredentialUnknownException("Request unavailable"))
+            setResult(Activity.RESULT_OK, result)
+            super.onCreate(savedInstanceState)
+            finish()
+            return
+        }
+        registerPlugin(NativeDigitalCredentialsPlugin::class.java)
+        super.onCreate(savedInstanceState)
+    }
+
+    fun pendingRequest(): JSObject? = if (!completed && registry.generation == generation) pending else null
+
+    fun complete(requestId: String, responseJson: String) {
+        require(!completed && pendingRequest()?.getString("requestId") == requestId)
+        val response = JSONObject(responseJson)
+        require(response.getString("protocol") == "openid4vp-v1-unsigned")
+        val data = response.getJSONObject("data")
+        require(data.keys().asSequence().toSet() == setOf("vp_token"))
+        require(data.getJSONObject("vp_token").length() > 0)
+        completed = true
+        pending = null
+        val result = Intent()
+        PendingIntentHandler.setGetCredentialResponse(result, GetCredentialResponse(DigitalCredential(response.toString())))
+        setResult(Activity.RESULT_OK, result)
+        finish()
+    }
+
+    fun cancel(requestId: String) {
+        require(!completed && pending?.getString("requestId") == requestId)
+        completed = true
+        pending = null
+        val result = Intent()
+        PendingIntentHandler.setGetCredentialException(result, GetCredentialCancellationException("Canceled"))
+        setResult(Activity.RESULT_OK, result)
+        finish()
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        pending?.let { cancel(it.getString("requestId") ?: return@let) } ?: super.onBackPressed()
+    }
+}

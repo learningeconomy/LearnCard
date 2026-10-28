@@ -39,14 +39,26 @@ export interface DcApiResponseOptions {
 
 /** Parse only the unsigned DC API profile. Origin must come from a trusted transport. */
 export const parseDcApiRequest = (input: unknown, verifiedOrigin: string): ParsedDcApiRequest => {
-    let origin: URL;
-    try {
-        origin = new URL(verifiedOrigin);
-    } catch (cause) {
-        throw new DcApiError('invalid_origin', 'verifiedOrigin must be an HTTPS origin', { cause });
-    }
-    if (origin.protocol !== 'https:' || origin.origin !== verifiedOrigin) {
-        throw new DcApiError('invalid_origin', 'verifiedOrigin must be a canonical HTTPS origin');
+    // Android derives this identifier from the caller's signing certificate. The last
+    // base64url character must have zero padding bits for a canonical SHA-256 digest.
+    const nativeOrigin = /^android:apk-key-hash:[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/.test(
+        verifiedOrigin
+    );
+    if (!nativeOrigin) {
+        let origin: URL;
+        try {
+            origin = new URL(verifiedOrigin);
+        } catch (cause) {
+            throw new DcApiError('invalid_origin', 'verifiedOrigin must be a platform origin', {
+                cause,
+            });
+        }
+        if (origin.protocol !== 'https:' || origin.origin !== verifiedOrigin) {
+            throw new DcApiError(
+                'invalid_origin',
+                'verifiedOrigin must be a canonical platform origin'
+            );
+        }
     }
 
     if (!isRecord(input) || input.protocol !== 'openid4vp-v1-unsigned') {
