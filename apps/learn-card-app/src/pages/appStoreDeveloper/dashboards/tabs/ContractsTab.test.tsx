@@ -9,6 +9,8 @@ import { ModalAccessibilityManager } from 'learn-card-base/components/modals/Mod
 import { TenantConfigProvider } from 'learn-card-base/config/TenantConfigProvider';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/config/tenantDefaults';
 import { ConsentFlowTestingTab } from './ConsentFlowTestingTab';
+import { ContractsTab } from './ContractsTab';
+import * as m from '../../../../paraglide/messages.js';
 import { setLocale } from '../../../../paraglide/runtime.js';
 
 const state = vi.hoisted(() => ({ getContract: vi.fn(), updateContract: vi.fn() }));
@@ -74,7 +76,7 @@ const integration: LCNIntegration = {
     guideState: { config: { consentFlowConfig: { contractUri: contract.uri } } },
 };
 
-const showTesting = (project = integration) => {
+const showTab = (project = integration, tab: 'contracts' | 'testing' = 'contracts') => {
     const root = document.createElement('div');
     root.id = 'app-router';
     document.body.append(root);
@@ -86,7 +88,11 @@ const showTesting = (project = integration) => {
         <QueryClientProvider client={client}>
             <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
                 <ModalsProvider>
-                    <ConsentFlowTestingTab integration={project} templates={[]} />
+                    {tab === 'contracts' ? (
+                        <ContractsTab integration={project} />
+                    ) : (
+                        <ConsentFlowTestingTab integration={project} templates={[]} />
+                    )}
                     <Modals />
                     <ModalAccessibilityManager />
                 </ModalsProvider>
@@ -117,9 +123,9 @@ afterEach(() => {
     document.getElementById('modal-mid-root')?.remove();
 });
 
-describe('Testing contract editor modal', () => {
-    it('keeps editing out of Testing, opens on demand and discards an unpublished draft on close', async () => {
-        showTesting();
+describe('Contracts tab editor modal', () => {
+    it('opens on demand from Contracts and discards an unpublished draft on close', async () => {
+        showTab();
         expect(screen.queryByLabelText('Contract Name')).toBeNull();
         fireEvent.click(screen.getByRole('button', { name: 'Update contract' }));
         await screen.findByLabelText('Contract Name');
@@ -137,7 +143,7 @@ describe('Testing contract editor modal', () => {
         expect(state.updateContract).not.toHaveBeenCalled();
     });
     it('dismisses only the stacked preview with Escape and returns focus and the draft to the editor', async () => {
-        showTesting();
+        showTab();
         fireEvent.click(screen.getByRole('button', { name: 'Update contract' }));
         await screen.findByLabelText('Contract Name');
         fireEvent.change(screen.getByRole('textbox', { name: /Subtitle/ }), {
@@ -157,9 +163,45 @@ describe('Testing contract editor modal', () => {
             )
         );
     });
-    it('does not open an editor without a configured contract', () => {
-        showTesting({ ...integration, guideState: {} });
-        expect(screen.getByRole('button', { name: 'Update contract' })).toBeDisabled();
+    it('does not offer updates when there are no configured contracts', () => {
+        showTab({ ...integration, guideState: {} });
+        expect(screen.queryByRole('button', { name: 'Update contract' })).toBeNull();
         expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    it('does not expose the editor from Testing anymore', () => {
+        showTab(integration, 'testing');
+        expect(screen.queryByRole('button', { name: 'Update contract' })).toBeNull();
+        expect(screen.queryByLabelText('Contract Name')).toBeNull();
+    });
+    it('opens the selected contract when a project configures multiple contracts', async () => {
+        const otherContract = { ...contract, uri: 'lc:contract:issuing', name: 'Issuing contract' };
+        state.getContract.mockImplementation(async (uri: string) =>
+            structuredClone(uri === otherContract.uri ? otherContract : contract)
+        );
+        showTab({
+            ...integration,
+            guideState: {
+                config: {
+                    consentFlowConfig: { contractUri: contract.uri },
+                    embedAppConfig: {
+                        featureConfig: {
+                            'issue-credentials': { contractUri: otherContract.uri },
+                        },
+                    },
+                },
+            },
+        });
+        const issuingCard = screen.getByRole('region', {
+            name: m['developerPortal.dashboards.tabs.contracts.credentialIssuanceContract'](),
+        });
+        fireEvent.click(within(issuingCard).getByRole('button', { name: 'Update contract' }));
+        expect(await screen.findByLabelText('Contract Name')).toHaveValue('Issuing contract');
+        fireEvent.click(screen.getByRole('button', { name: 'Close contract editor' }));
+        await waitFor(() => expect(screen.queryByLabelText('Contract Name')).toBeNull());
+        const flowCard = screen.getByRole('region', {
+            name: m['developerPortal.dashboards.tabs.contracts.consentFlowContract'](),
+        });
+        fireEvent.click(within(flowCard).getByRole('button', { name: 'Update contract' }));
+        expect(await screen.findByLabelText('Contract Name')).toHaveValue(contract.name);
     });
 });

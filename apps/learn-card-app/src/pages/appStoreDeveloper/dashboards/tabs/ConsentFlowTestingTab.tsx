@@ -25,7 +25,6 @@ import {
     Info,
     Link2,
     Code,
-    FilePenLine,
 } from 'lucide-react';
 import type { LCNIntegration } from '@learncard/types';
 import type { CredentialTemplate } from '../types';
@@ -33,9 +32,7 @@ import type { GuideState } from '../../guides/types';
 import { useTemplateDetails } from '../hooks/useTemplateDetails';
 import { getAppBaseUrl } from '../../../../config/bootstrapTenantConfig';
 import { CodeOutputPanel } from '../../guides/shared/CodeOutputPanel';
-import { ModalTypes, useModal, useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
-import ContractUpdateModal from '../../components/ContractUpdateModal';
-import { mDynamic } from '../../../../i18n/mDynamic';
+import { useWallet, useToast, ToastTypeEnum } from 'learn-card-base';
 
 interface ConsentFlowTestingTabProps {
     integration: LCNIntegration;
@@ -50,10 +47,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
 }) => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
-    const { newModal } = useModal({
-        desktop: ModalTypes.Center,
-        mobile: ModalTypes.Center,
-    });
 
     const { templates, isLoading: isLoadingTemplates } = useTemplateDetails(
         integration.id,
@@ -219,38 +212,6 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                     </div>
                 )}
             </div>
-            <section className="flex flex-col gap-4 rounded-xl border border-grayscale-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-grayscale-100">
-                        <FilePenLine className="h-4 w-4 text-grayscale-600" />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-semibold text-grayscale-900">
-                            {mDynamic('consentUpdate.editor.contractSettings')}
-                        </h3>
-                        <p className="mt-1 text-sm text-grayscale-600">
-                            {mDynamic('consentUpdate.editor.contractSettingsDescription')}
-                        </p>
-                    </div>
-                </div>
-                <button
-                    type="button"
-                    disabled={!contractUri}
-                    onClick={() =>
-                        newModal(
-                            <ContractUpdateModal contractUri={contractUri} />,
-                            {
-                                hideButton: true,
-                                sectionClassName: 'max-w-[720px]! flex! flex-col! overflow-hidden!',
-                            },
-                            { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
-                        )
-                    }
-                    className="w-full shrink-0 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
-                >
-                    {mDynamic('consentUpdate.editor.title')}
-                </button>
-            </section>
 
             {/* Step 2: Verify Callback */}
             <div className="border border-gray-200 rounded-xl p-5 space-y-v3-4">

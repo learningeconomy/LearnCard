@@ -9,8 +9,6 @@
         "editor": {
             "accessSettings": "Paramètres de {{label}}",
             "title": "Mettre à jour la demande",
-            "contractSettings": "Demande de consentement",
-            "contractSettingsDescription": "Consultez et modifiez les données auxquelles cette application peut accéder.",
             "close": "Fermer l’éditeur de la demande",
             "description": "Modifiez la demande actuelle, vérifiez vos changements, puis publiez-les quand vous êtes prêt.",
             "noContract": "Créez ou sélectionnez une demande de consentement avant de la modifier.",

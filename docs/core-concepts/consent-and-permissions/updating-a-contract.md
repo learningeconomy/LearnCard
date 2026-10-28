@@ -73,7 +73,7 @@ Versioned updates require a network running the updated backend, not just an upd
 
 No SDK script or JSON is needed to publish an update:
 
-1. Open your project's **Testing** tab and select **Update contract**. The shared form opens in a modal; it is not shown inline on the Testing page.
+1. Open your project's **Contracts** tab and select **Update contract** on the request you want to change. The shared form opens in a modal. An app with several configured requests has a separate update action for each one; the Testing tab remains for trying its ConsentFlow.
 2. Edit its details, read/write categories, or read-side personal fields using the original creation controls. Personal fields keep their **Required/Optional** toggle; a category's settings button offers **Required**, **Opt-in**, or **Opt-out**. There are no per-item purpose fields or added default-enabled checkboxes. Unedited settings and existing SDK-supplied purposes stay unchanged.
 3. After you make an edit, **Your changes** groups current and next values under request details, read access, and write access. The separate **Why are you making this update?** field appears below this summary with room to breathe. Approval-requiring changes need a reason of at most 140 characters; reverting all changes hides both sections.
 4. Select **Preview Update** to open the user review in a second modal. It does not save anything. Closing it or pressing Escape returns to the editor with your draft intact. Its help icon explains the connection; its access disclosure lists unchanged defaults from the current request, not a person's saved permissions. An empty disclosure explains that no default access stays unchanged.
