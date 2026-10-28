@@ -10,6 +10,7 @@ import openSyllabusLogo from '../../../assets/images/open-syllabus-logo.webp';
 
 import { useModal } from 'learn-card-base';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const AiPathwayCourseDetails: React.FC<{ course: any }> = ({ course }) => {
     const { closeModal } = useModal();
 

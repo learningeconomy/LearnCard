@@ -65,8 +65,10 @@ export const HeroCanvas: React.FC<HeroCanvasProps> = ({
                         className={hasImage ? 'motion-safe:animate-image-drop' : ''}
                     >
                         <BoostEarnedCard
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             credential={credential as any}
                             categoryType={
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                 getDefaultCategoryForCredential(credential as any) ||
                                 BoostCategoryOptionsEnum.achievement
                             }

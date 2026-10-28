@@ -93,7 +93,9 @@ export const ShareInsightsWithUser: React.FC<{
                         targetName: _targetProfile?.displayName ?? '',
                     }}
                     components={[
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
                     ]}
                 />

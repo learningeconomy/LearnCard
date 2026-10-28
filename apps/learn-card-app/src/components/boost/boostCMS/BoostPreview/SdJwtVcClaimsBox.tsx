@@ -39,6 +39,7 @@ const SdJwtVcClaimsBoxContent: React.FC<SdJwtVcClaimsBoxProps> = ({ credential }
     const proof = credential.proof;
     const proofs = Array.isArray(proof) ? proof : proof ? [proof] : [];
     const sdJwtProof = proofs.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (p: any) => p?.type === 'SdJwtCompactProof' && typeof p?.jwt === 'string'
     );
     const compact = typeof sdJwtProof?.jwt === 'string' ? sdJwtProof.jwt : undefined;

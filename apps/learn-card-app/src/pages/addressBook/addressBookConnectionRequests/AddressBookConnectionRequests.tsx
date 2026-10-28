@@ -74,6 +74,7 @@ const AddressBookConnectionRequests: React.FC<{
                     onError(error, variables, context) {
                         refetch();
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message || 'An error occurred, unable to block user',
                             {
@@ -87,6 +88,7 @@ const AddressBookConnectionRequests: React.FC<{
         } catch (err) {
             log.info('blockProfile::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to block user',
                 {
@@ -103,7 +105,9 @@ const AddressBookConnectionRequests: React.FC<{
         });
 
         queryClient.setQueryData(['getConnectionRequests'], prevPendingRequest => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const connectionRequests = (prevPendingRequest as any)?.filter(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 (connectionReq: any) => connectionReq.profileId !== userId
             );
             setRequestCount(connectionRequests?.length);

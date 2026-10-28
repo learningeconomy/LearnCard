@@ -35,7 +35,9 @@ type CategoryAndTypeSelectorProps = {
     activeCategoryType: string;
     activeType: string;
     setActiveType: React.Dispatch<React.SetStateAction<string>>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     customTypes: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setCustomTypes: React.Dispatch<any>;
 };
 
@@ -61,6 +63,7 @@ const BoostCMSCategoryAndTypeSelector: React.FC<CategoryAndTypeSelectorProps> = 
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [_customTypes, _setCustomTypes] = useState<any>(setCustomTypes);
 
     const [search, setSearch] = useState<string>('');

@@ -143,6 +143,7 @@ const DevCli: React.FC = () => {
             setTimeout(() => setCopyNotification(null), 2000);
             return `Copied ${text.length} characters to clipboard`;
         } catch (err) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('Failed to copy to clipboard');
         }
     }, []);

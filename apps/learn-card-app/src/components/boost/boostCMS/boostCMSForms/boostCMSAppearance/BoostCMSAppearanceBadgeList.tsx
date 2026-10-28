@@ -81,6 +81,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
     const [photo, setPhoto] = useState<string>(state?.appearance?.badgeThumbnail ?? '');
     const [uploadProgress, setUploadProgress] = useState<number | false>(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState({
             ...state,
@@ -148,6 +149,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
         }
     }
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let activeStep = null;
     if (showStylePackCategoryList) {
         const boostOptions = boostVCTypeOptions[boostUserType];
@@ -219,6 +221,7 @@ export const BoostCMSAppearanceBadgeList: React.FC<BoostCMSAppearanceBadgeListPr
             </IonGrid>
         );
     } else {
+        // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
         let categoryButton = null;
         if (activeStylePackCategory === StylePackCategories.all) {
             categoryButton = (

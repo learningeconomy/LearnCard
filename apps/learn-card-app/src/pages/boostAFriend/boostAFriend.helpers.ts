@@ -39,6 +39,7 @@ export const buildPreviewCredential = (input: {
         imageUrl: input.imageUrl,
         issuerName: input.issuerName,
     });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const json = templateToJson(template) as Record<string, any>;
 
     json.validFrom = new Date().toISOString();

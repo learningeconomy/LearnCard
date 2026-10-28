@@ -14,6 +14,7 @@ const EndorsementRequestModalFooter: React.FC<{
 }> = ({ isDisabled, className, handleOnClick }) => {
     const { closeModal } = useModal();
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let iconStyles = '';
     if (isDisabled) iconStyles = 'text-grayscale-300';
     else iconStyles = 'text-teal-400';

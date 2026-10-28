@@ -89,7 +89,6 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
         vibeColor,
         effectiveImageUrl,
         issuerName,
-        ,
         locale,
     ]);
 
@@ -119,6 +118,7 @@ export const BadgePersonalize: React.FC<BadgePersonalizeProps> = ({
                     <div className="flex justify-center">
                         <div className="w-[160px] sm:w-[200px]">
                             <BoostEarnedCard
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                 credential={previewCredential as any}
                                 categoryType={BoostCategoryOptionsEnum.socialBadge}
                                 boostPageViewMode={BoostPageViewMode.Card}

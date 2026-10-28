@@ -40,6 +40,7 @@ const OnboardingSwiperForSlides: React.FC<OnboardingSwiperForSlidesProps> = ({ r
         clickable: true,
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleSlideChange = (swiper: any) => {
         setActiveSlideIndex(swiper.activeIndex);
     };

@@ -4,6 +4,7 @@ import AiPathwaySessionsItem from './AiPathwaySessionItem';
 import AiPathwaySessionsSkeletonLoader from './AiPathwaySessionsSkeletonLoader';
 
 export const AiPathwaySessions: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     learningPathwaysData?: any[];
     isLoading?: boolean;
 }> = ({ learningPathwaysData, isLoading }) => {

@@ -20,6 +20,7 @@ const BoostCMSAdminsForm: React.FC<{
 
     const [showAbout, setShowAbout] = useState<boolean>(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {

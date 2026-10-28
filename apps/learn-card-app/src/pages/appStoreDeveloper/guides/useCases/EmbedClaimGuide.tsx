@@ -1351,6 +1351,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
                     updates: { whitelistedDomains: [...existing, networkDomain] },
                 });
             }
+            // eslint-disable-next-line no-empty -- existing intentionally empty block
         } catch {}
     }, [guideState.currentStep, selectedIntegration?.id, apiBaseUrl]);
 
@@ -1402,6 +1403,7 @@ const EmbedClaimGuide: React.FC<GuideProps> = ({ selectedIntegration, setSelecte
 
     // Allow navigating to current step, any completed step, or any earlier step.
     // Forward navigation requires all previous steps to be complete.
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const canNavigateToStep = useCallback(
         (index: number) => {
             if (index === guideState.currentStep) return true;

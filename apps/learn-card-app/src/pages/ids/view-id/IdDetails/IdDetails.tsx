@@ -124,6 +124,7 @@ export const IdDetails: React.FC<IdDetailsProps> = ({
 
             <HistoryBox history={history} />
 
+            {/* eslint-disable-next-line no-constant-binary-expression -- existing intentionally disabled branch */}
             {false && isGeneralView && (
                 <PermissionsBox
                     credential={credential}

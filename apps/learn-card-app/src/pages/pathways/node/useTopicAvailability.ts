@@ -93,6 +93,7 @@ export const useTopicAvailability = (topicUri: string | null): TopicAvailability
     const { data: records, isLoading: credentialsLoading } = useGetCredentialList('AI Topic');
 
     const topicRecords = useMemo(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         return records?.pages?.flatMap((page: any) => page?.records) || [];
     }, [records?.pages]);
 
@@ -102,16 +103,14 @@ export const useTopicAvailability = (topicUri: string | null): TopicAvailability
     // we don't want to pay for a no-op.
     const { data: topics, isLoading: topicsLoading } = useGetEnrichedTopicsList(
         topicRecords,
-        !!topicUri,
+        !!topicUri
     );
 
     const match = useMemo<EnrichedTopic | null>(() => {
         if (!topicUri) return null;
         if (!topics) return null;
 
-        const found = (topics as EnrichedTopic[]).find(
-            t => t?.topicBoost?.uri === topicUri,
-        );
+        const found = (topics as EnrichedTopic[]).find(t => t?.topicBoost?.uri === topicUri);
 
         return found ?? null;
     }, [topicUri, topics]);
