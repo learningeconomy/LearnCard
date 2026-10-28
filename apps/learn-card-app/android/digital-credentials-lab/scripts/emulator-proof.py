@@ -124,8 +124,12 @@ try:
     screenshot('cleared')
     launch(VERIFIER)
     tap('Request Course Details')
-    wait('No matching credential is registered.')
+    # Play services may offer cross-device fallback instead of throwing NoCredentialException.
+    wait('Your info wasn’t found', timeout=90)
     screenshot('no-credential')
+    tap('Close')
+    wait('Canceled. No credential was received.')
+    assert not any(n.get('resource-id') == 'result' for n in nodes())
     passed('registry clear removes sample from subsequent matching')
 finally:
     # Native-specific evidence. This is deliberately not an lc verify report.
