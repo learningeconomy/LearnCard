@@ -53,8 +53,11 @@ export const credentialDigest = async (value: string): Promise<string> => {
     return Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
 };
 
+// A personal account restores first as did:key and then as its network did:web
+// alias. Ownership follows the credential-bound signing key, not that alias.
+// Switched/managed profiles are independently excluded by the host listener.
 export const accountOwner = (wallet: DigitalCredentialWallet): string =>
-    `${wallet.id.did()}::${wallet.id.keypair('ed25519').x}`;
+    `ed25519:${wallet.id.keypair('ed25519').x}`;
 
 const metadata = new Set(['iss', 'vct', 'iat', 'exp', 'nbf', 'cnf', '_sd', '_sd_alg']);
 export const isFlatClaim = (key: string, value: unknown): boolean =>

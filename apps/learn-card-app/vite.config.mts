@@ -333,6 +333,9 @@ export default defineConfig(async ({ mode, command }) => {
         server: {
             port: 3000,
             watch: {
+                // Native assembly writes generated HTML/assets; those must not reload an
+                // in-progress credential request in the development WebView.
+                ignored: ['**/android/**', '**/ios/**', '**/build/**'],
                 // Enable polling for Docker volume mounts
                 usePolling: environment.CHOKIDAR_USEPOLLING,
                 interval: environment.CHOKIDAR_INTERVAL,

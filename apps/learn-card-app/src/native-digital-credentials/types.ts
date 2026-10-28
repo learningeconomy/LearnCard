@@ -1,3 +1,5 @@
+export const NATIVE_CREDENTIAL_PATH = '/native-digital-credentials';
+
 /** Sanitized registry projection. Claim values, credentials, keys and storage URIs are forbidden. */
 export interface AndroidCredentialEntry {
     id: string;
@@ -20,7 +22,10 @@ export interface NativeDigitalCredentialsPlugin {
     status: () => Promise<{ enabled: boolean; registeredEntryIds?: string[] }>;
     register: (options: { entries: AndroidCredentialEntry[] }) => Promise<{ registered: number }>;
     clear: () => Promise<{ cleared: boolean }>;
-    getPendingRequest: () => Promise<{ pending?: PendingDigitalCredentialRequest }>;
+    getPendingRequest: () => Promise<{
+        pending?: PendingDigitalCredentialRequest;
+        isProvider?: boolean;
+    }>;
     complete: (options: { requestId: string; responseJson: string }) => Promise<void>;
-    cancel: (options: { requestId: string }) => Promise<void>;
+    cancel: (options: { requestId?: string }) => Promise<void>;
 }

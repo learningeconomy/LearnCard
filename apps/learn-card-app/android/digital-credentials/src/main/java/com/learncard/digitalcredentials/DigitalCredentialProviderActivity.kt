@@ -10,6 +10,7 @@ import androidx.credentials.GetDigitalCredentialOption
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialUnknownException
 import androidx.credentials.provider.PendingIntentHandler
+import androidx.activity.OnBackPressedCallback
 import androidx.credentials.registry.provider.selectedCredentialSet
 import androidx.credentials.registry.provider.selectedEntryId
 import com.getcapacitor.BridgeActivity
@@ -68,6 +69,13 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         }
         registerPlugin(NativeDigitalCredentialsPlugin::class.java)
         super.onCreate(savedInstanceState)
+        // Own Android's back dispatcher before the host's JS router can navigate
+        // away and strand Credential Manager's pending result (including expired requests).
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (!completed) cancel(null) else finish()
+            }
+        })
     }
 
     fun pendingRequest(): JSObject? = if (!completed && registry.generation == generation) pending else null
@@ -87,8 +95,10 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         finish()
     }
 
-    fun cancel(requestId: String) {
-        require(!completed && pending?.getString("requestId") == requestId)
+    fun cancel(requestId: String?) {
+        // Dismissal must still work after registry/account invalidation hides the JS
+        // request. It can only terminate this Activity's result, never disclose data.
+        require(!completed && pending != null && (requestId == null || pending?.getString("requestId") == requestId))
         completed = true
         pending = null
         val result = Intent()
@@ -97,8 +107,4 @@ class DigitalCredentialProviderActivity : BridgeActivity() {
         finish()
     }
 
-    @Suppress("DEPRECATION")
-    override fun onBackPressed() {
-        pending?.let { cancel(it.getString("requestId") ?: return@let) } ?: super.onBackPressed()
-    }
 }

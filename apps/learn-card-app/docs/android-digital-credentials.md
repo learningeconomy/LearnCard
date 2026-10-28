@@ -2,7 +2,36 @@
 
 This development slice adds an app-local Capacitor bridge and an Android Credential Manager provider Activity. It carries forward the local response prototype from [PR #1795](https://github.com/learningeconomy/LearnCard/pull/1795).
 
-The production LearnCard provider is **disabled by default**. The separate, debug-only holder and verifier lab applications enable the same native module to test OS registration, selection, consent, result delivery and process restoration without a personal account. This is not yet integration with LearnCard's real account, encrypted credential inventory or production consent screen.
+The production provider is **disabled by default**. The dedicated `com.learncard.app.dctest` development build connects the reusable Android module to LearnCard's account initialization, encrypted LearnCloud credential inventory and existing OpenID4VP consent screen. Separate debug lab applications provide a synthetic issuer and native verifier. The development build uses a local Vite server; it does not prove an offline release bundle.
+
+## Try the real account flow
+
+Use the repo-pinned Bun, JDK 21, Android SDK 36 and a Google Play-enabled emulator. A 4 GiB emulator avoids the low-memory caller termination seen with the full app and verifier on the original 2 GiB AVD. Keep your normal LearnCard installation: the development APK has its own application ID and account data.
+
+1. Start the normal local LearnCard backend. Defaults below are Brain 4000, LearnCloud 4100 and LCA API 5100; override the helper's port flags for another owned stack.
+2. From the repository root, configure the ignored development artifacts:
+
+    ```bash
+    bun apps/learn-card-app/scripts/native-digital-credentials/prepare-account-proof.ts
+    ```
+
+3. Run the app's normal environment preparation and `cap sync android` from `apps/learn-card-app`. Then run the helper again with `--after-sync` and start Vite on port 43157. The helper retains the real HTTPS tenant connectivity probe while routing account APIs to local services; it disables analytics and native Firebase authentication for the synthetic seed-based test.
+4. Build from `apps/learn-card-app` with a command-scoped JDK/SDK:
+
+    ```bash
+    JAVA_HOME='/Applications/Android Studio.app/Contents/jbr/Contents/Home' \
+    ANDROID_HOME="$HOME/Library/Android/sdk" \
+    android/gradlew -p android :app:assembleDebug \
+      :learncard-digital-credentials:testDebugUnitTest -PdigitalCredentialsDev
+    adb -s emulator-5580 install -r android/app/build/outputs/apk/debug/app-debug.apk
+    ```
+
+5. Reverse ports 43157, 4000, 4100 and 5100 with `adb -s emulator-5580 reverse tcp:PORT tcp:PORT`. Open **LearnCard Native Dev** and sign into a disposable `android-native-*` profile through `/developer/sign-in`. Never use a personal account or production services for this setup.
+6. In that development WebView's console, import `/scripts/native-digital-credentials/account-proof-client.ts` and call `provision()`. It signs a synthetic course credential bound to the active account, verifies its issuer, writes through the real encrypted store/index and checks readback. `inspect()` returns only safe counts/flags; `removeFixture()` removes only the synthetic index entry. The helper refuses other app IDs, nonlocal APIs and ordinary profiles. It is never imported by production code.
+7. Foreground LearnCard. The normal listener automatically registers eligible inventory. Build/install only the verifier lab below, open **LearnCard Verifier Lab**, choose **Request Course Details**, then **Digital credential** → **Agree and continue**. LearnCard should display the shared consent screen with Course name and Completion date. A required field must stay selected before **Share** is enabled. The native verifier must display **Verified** after approval; seeing consent alone is insufficient.
+8. Repeat with **Cancel**, Android Back and a cold process: background LearnCard, run `adb shell am kill com.learncard.app.dctest`, confirm its PID is absent and request again. Use ordinary process death rather than `force-stop`, which changes component eligibility. Removing the synthetic index entry and foregrounding LearnCard must remove its OS entry.
+
+A sample with the wrong holder key, an invalid issuer signature, unrequested disclosure, a changed body or a removed index entry is rejected. Ordinary JSON-LD credentials are not automatically converted into native digital credentials.
 
 ## Build and run the emulator lab
 
@@ -39,7 +68,8 @@ Use **Clear Samples** in the holder to remove its registry record and invalidate
 ## Boundaries
 
 - `android/digital-credentials/` is the reusable native library used by both the main application and the lab. It registers through AndroidX `OpenId4VpRegistry`, restricts registration to `openid4vp-v1-unsigned`, and returns results through `PendingIntentHandler`.
-- `src/native-digital-credentials/` is the typed host interface: `status`, `register`, `clear`, `getPendingRequest`, `complete`, `cancel`. Result handles are native-owned, one-time, and invalidated when the registry generation changes. Completion accepts no origin override.
+- `src/native-digital-credentials/` reads eligible SD-JWTs through the active account's encrypted read plane, stores private URI/digest mappings and routes native requests to the shared consent UI. Ownership follows the credential-bound Ed25519 key across the account's did:key/did:web aliases. Account replacement, logout and managed-profile switching invalidate native handles. Selected bodies, index membership, issuer verification and account ownership are checked again at approval.
+- The typed bridge exposes `status`, `register`, `clear`, `getPendingRequest`, `complete`, `cancel`. Native handles are one-time and registry-generation-bound. Completion accepts no origin override. Expired requests can still be dismissed through Cancel or Android Back.
 - Only opaque entry IDs, VCT, title and claim paths/display labels cross the metadata boundary. `SdJwtClaim.value` is null. Value-constrained matching is not promised by this presence-based lab profile. Full credentials, private keys, claim values and LearnCloud URIs are rejected by the native projection schema.
 - The native Activity requires Android's calling package. For a system broker, it uses the broker-authenticated `CallingAppInfo` certificates; for a direct caller, it checks them against the installed calling package. Arbitrary requester-package lookups are restricted by Android package visibility. Only Google Play services broker visibility is declared; `QUERY_ALL_PACKAGES` is unnecessary. Native-app origins use the caller's signing-certificate hash.
 - Privileged web origins require a package/certificate allowlist. The supplied allowlist is empty and fails closed; browser interoperability requires a separately reviewed allowlist and tests. No browser package or certificate supplied through JavaScript is trusted.
@@ -48,10 +78,10 @@ Use **Clear Samples** in the holder to remove its registry record and invalidate
 
 ## Remaining acceptance gates
 
-- Connect the native request to the main LearnCard account/runtime and existing consent UI, including logged-out and recovery behavior. Prove encrypted storage readback and holder-key compatibility after a cold start.
+- Qualify logged-out/recovery flows and all account/profile/key transitions beyond the synthetic personal-account path. The listener fences transitions; that is not a complete LC-2158 lifecycle qualification.
 - Complete LC-2158 account/profile/key invalidation, credential lifecycle/status freshness, privacy, failure and interoperability qualification.
 - Finalize LC-2159 request-bound disclosure and selected-credential validation in the public shared API. The prototype fixes declaration compilation and adds native certificate-origin parsing as prerequisites for the lab.
 - Validate browser callers and an independent verifier, then run physical-device tests on the Samsung Galaxy Fold after setup. One emulator does not satisfy the physical-device gate or supported-device matrix.
 - Run the matching SDK/cross-surface `lc verify` journeys on Linux before rollout readiness. Browser journeys cannot prove Android provider behavior; native emulator/device evidence must remain separate.
 
-To enable a future qualified host build, override `lc_digital_credentials_enabled` in its resources. Do not enable the production provider until its pending-request consumer, account isolation, lifecycle clearing and caller policy are wired and verified.
+Only `-PdigitalCredentialsDev` enables the dedicated debug app's provider. Production builds retain `lc_digital_credentials_enabled=false`; rollout remains gated on the remaining acceptance work.

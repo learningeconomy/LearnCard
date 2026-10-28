@@ -95,6 +95,10 @@ describe('native LearnCard account presentation', () => {
         const { wallet, inventory, pending, picks } = await setup();
         const rebuilt = await buildAccountInventory(wallet, inventory, 'Digital credential');
         expect(rebuilt.entries[0].id).toBe(inventory.entries[0].id);
+        wallet.id.did = () => 'did:web:network.example:users:restored-account';
+        const aliased = await buildAccountInventory(wallet, inventory, 'Digital credential');
+        expect(aliased.owner).toBe(inventory.owner);
+        expect(aliased.entries[0].id).toBe(inventory.entries[0].id);
         const metadata = JSON.stringify(inventory.entries.map(entry => entry.projection));
         expect(metadata).not.toContain('encrypted-course');
         expect(metadata).not.toContain('Introduction to');
@@ -109,7 +113,7 @@ describe('native LearnCard account presentation', () => {
             'account-nonce'
         );
         expect(result.learner_name).toBeUndefined();
-        expect(wallet.read.get).toHaveBeenCalledTimes(4);
+        expect(wallet.read.get).toHaveBeenCalledTimes(5);
     });
 
     it('rejects a selected entry mapped to another account', async () => {

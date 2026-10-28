@@ -61,6 +61,7 @@ class NativeDigitalCredentialsPlugin : Plugin() {
     @PluginMethod fun getPendingRequest(call: PluginCall) {
         activity.runOnUiThread {
             val result = JSObject()
+            result.put("isProvider", activity is DigitalCredentialProviderActivity)
             (activity as? DigitalCredentialProviderActivity)?.pendingRequest()?.let { result.put("pending", it) }
             call.resolve(result)
         }
@@ -80,7 +81,7 @@ class NativeDigitalCredentialsPlugin : Plugin() {
         activity.runOnUiThread {
         try {
             val provider = activity as? DigitalCredentialProviderActivity ?: error("No provider request")
-            provider.cancel(call.getString("requestId") ?: error("Missing id"))
+            provider.cancel(call.getString("requestId"))
             call.resolve()
         } catch (_: Exception) { call.reject("Could not cancel request", "request_unavailable") }
         }

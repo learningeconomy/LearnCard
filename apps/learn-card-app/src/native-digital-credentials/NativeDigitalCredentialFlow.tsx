@@ -26,6 +26,7 @@ export default function NativeDigitalCredentialFlow() {
     const revision = useHistoryAccountRevision();
     const history = useHistory();
     const [pending, setPending] = useState<PendingDigitalCredentialRequest>();
+    const [isProvider, setIsProvider] = useState(false);
     const [prepared, setPrepared] = useState<Prepared>();
     const [error, setError] = useState(false);
     const [sending, setSending] = useState(false);
@@ -37,9 +38,11 @@ export default function NativeDigitalCredentialFlow() {
         setPrepared(undefined);
         setError(false);
         void (async () => {
-            const request = (await nativeDigitalCredentials.getPendingRequest()).pending;
+            const context = await nativeDigitalCredentials.getPendingRequest();
+            const request = context.pending;
             if (stopped) return;
             setPending(request);
+            setIsProvider(Boolean(context.isProvider));
             if (!request) throw new Error('Request unavailable');
             if (!loggedIn) {
                 redirectStore.set.lcnRedirect('/native-digital-credentials');
@@ -70,7 +73,8 @@ export default function NativeDigitalCredentialFlow() {
         if (sending || canceling) return;
         setCanceling(true);
         try {
-            if (pending) await nativeDigitalCredentials.cancel({ requestId: pending.requestId });
+            if (pending || isProvider)
+                await nativeDigitalCredentials.cancel({ requestId: pending?.requestId });
             else history.replace('/wallet');
         } catch {
             setError(true);

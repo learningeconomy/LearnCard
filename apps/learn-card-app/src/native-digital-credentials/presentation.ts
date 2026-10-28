@@ -40,10 +40,13 @@ export const prepareAccountPresentation = async (
     if (request.query.credentials.length !== 1 || request.query.credential_sets)
         throw new Error('Unsupported credential selection');
     const query = request.query.credentials[0];
+    if (query.format !== 'dc+sd-jwt' && query.format !== 'vc+sd-jwt')
+        throw new Error('Unsupported credential format');
     if (query.multiple || query.claim_sets || !query.claims?.length)
         throw new Error('Unsupported claim selection');
     const fields = query.claims.map(claim => {
         if (
+            !('path' in claim) ||
             claim.path.length !== 1 ||
             typeof claim.path[0] !== 'string' ||
             !entry.projection.claims.some(value => value.path[0] === claim.path[0])

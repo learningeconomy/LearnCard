@@ -5,6 +5,7 @@ import { App } from '@capacitor/app';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIsLoggedIn, useWallet, useHasCurrentUserHydrated } from 'learn-card-base';
 import { currentUserStore } from 'learn-card-base/stores/currentUserStore';
+import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
 import { useAppAuth } from '../providers/AuthCoordinatorProvider';
 import {
     captureHistoryAccount,
@@ -14,9 +15,9 @@ import {
 import { nativeDigitalCredentials } from './plugin';
 import { clearNativeInventory, synchronizeNativeInventory } from './runtime';
 import type { DigitalCredentialWallet } from './inventory';
+import { NATIVE_CREDENTIAL_PATH } from './types';
+import { nativeAccountChanged } from './accountChange';
 import * as m from '../paraglide/messages.js';
-
-export const NATIVE_CREDENTIAL_PATH = '/native-digital-credentials';
 
 /** Account-aware registry synchronization plus native pending-intent routing. */
 export default function NativeDigitalCredentialsListener() {
@@ -36,6 +37,22 @@ export default function NativeDigitalCredentialsListener() {
         let timer: ReturnType<typeof setTimeout> | undefined;
         let running = false;
         let dirty = false;
+        let enabled = false;
+        // Fence native handles before async wallet replacement. Each WebView has its own
+        // JS stores, while the native registry generation is shared by all host Activities.
+        const invalidate = () => {
+            if (enabled) void nativeDigitalCredentials.clear().catch(() => undefined);
+        };
+        const unsubscribeAccount = currentUserStore.store.subscribe((next, previous) => {
+            if (nativeAccountChanged(next, previous)) invalidate();
+        });
+        const unsubscribeProfile = switchedProfileStore.store.subscribe((next, previous) => {
+            if (
+                next.switchedDid !== previous.switchedDid ||
+                next.profileType !== previous.profileType
+            )
+                invalidate();
+        });
         const check = async () => {
             if (stopped) return;
             if (running) {
@@ -44,16 +61,17 @@ export default function NativeDigitalCredentialsListener() {
             }
             running = true;
             try {
-                if (!(await nativeDigitalCredentials.status()).enabled || stopped) return;
+                enabled = (await nativeDigitalCredentials.status()).enabled;
+                if (!enabled || stopped) return;
                 if (
                     !isHistoryAccountEligible() ||
                     (!loggedIn && !currentUserStore.get.currentUser() && state.status === 'idle')
                 ) {
                     await clearNativeInventory();
                 }
-                const { pending } = await nativeDigitalCredentials.getPendingRequest();
+                const { pending, isProvider } = await nativeDigitalCredentials.getPendingRequest();
                 if (stopped) return;
-                if (pending) {
+                if (pending || isProvider) {
                     if (history.location.pathname !== NATIVE_CREDENTIAL_PATH)
                         history.replace(NATIVE_CREDENTIAL_PATH);
                     return;
@@ -87,9 +105,18 @@ export default function NativeDigitalCredentialsListener() {
             const key = event.query.queryKey[0];
             if (
                 event.type === 'updated' &&
-                ['boosts', 'useGetCredentials', 'useGetIDs', 'getPaginatedBoosts'].includes(
-                    String(key)
-                )
+                [
+                    'boosts',
+                    'useGetCredentials',
+                    'useGetIDs',
+                    'getPaginatedBoosts',
+                    'useGetCredentialList',
+                    'useGetCredentialsListFromIDX',
+                    'useGetCredentialCount',
+                    'useCountBoosts',
+                    'totalBoostCounts',
+                    'useGetPaginatedManagedBoosts',
+                ].includes(String(key))
             )
                 schedule();
         });
@@ -101,6 +128,8 @@ export default function NativeDigitalCredentialsListener() {
             stopped = true;
             clearTimeout(timer);
             unsubscribe();
+            unsubscribeAccount();
+            unsubscribeProfile();
             void foreground.then(listener => listener.remove());
         };
     }, [history, loggedIn, hydrated, revision, queryClient, state.status]);
