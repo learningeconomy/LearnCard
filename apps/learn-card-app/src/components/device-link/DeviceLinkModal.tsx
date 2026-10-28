@@ -55,6 +55,7 @@ export const DeviceLinkModal: React.FC<DeviceLinkModalProps> = ({
                 }
             }
 
+            // eslint-disable-next-line no-async-promise-executor -- rewriting the executor changes rejection behavior
             return new Promise(async resolve => {
                 const listener = await BarcodeScanner.addListener(
                     'barcodeScanned',

@@ -23,6 +23,7 @@ export const transformPersonalizedAnswersForVC = (
     });
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const transformQACredIntoState = (data: any): PersonalizedAnswersState => {
     const qaMap: PersonalizedAnswersState = {
         [PersonalizedQuestionEnum.iLearnBest]: [],

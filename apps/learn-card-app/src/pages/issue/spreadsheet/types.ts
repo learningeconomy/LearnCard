@@ -47,7 +47,15 @@ export interface ParsedSpreadsheet {
 }
 
 export type RowProblem =
-    'email' | 'duplicate' | 'required' | 'evidence' | 'formula' | 'number' | 'date' | 'result';
+    | 'email'
+    | 'duplicate'
+    | 'required'
+    | 'evidence'
+    | 'formula'
+    | 'number'
+    | 'date'
+    | 'result'
+    | 'length';
 
 export type RosterProblemField = 'recipient' | 'evidence' | { variable: string };
 export interface RowFieldProblems {

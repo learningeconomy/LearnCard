@@ -12,6 +12,7 @@ import {
 const BulkBoostPreviewModal: React.FC<{
     csvData: BadgeDataRow[];
     imageTracking: ImageTrackingType;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     handlePreview: (csvRow: any) => void;
     handleDeleteRow: (rowIndex: number) => void;
 }> = ({ csvData, imageTracking, handlePreview, handleDeleteRow }) => {

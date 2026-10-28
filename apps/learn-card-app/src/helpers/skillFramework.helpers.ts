@@ -143,6 +143,7 @@ export const generateSkillId = () => {
     return `skill-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const convertSkillToBackendFormat = (node: SkillFrameworkNode): any => {
     return {
         id: node.id || generateSkillId(),
@@ -156,6 +157,7 @@ export const convertSkillToBackendFormat = (node: SkillFrameworkNode): any => {
     };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const convertSkillsToBackendFormat = (nodes: SkillFrameworkNode[]): any[] => {
     return nodes.map(node => convertSkillToBackendFormat(node));
 };

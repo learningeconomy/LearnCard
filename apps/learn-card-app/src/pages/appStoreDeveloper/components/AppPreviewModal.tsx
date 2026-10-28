@@ -47,10 +47,12 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         credential?: any;
     } | null>(null);
 
     const handleCredentialIssued = useCallback(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (credentialUri: string, boostUri?: string, credential?: any) => {
             setPendingCredential({ credentialUri, boostUri, credential });
         },
@@ -140,6 +142,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         const wrapped: typeof baseHandlers = {};
 
         for (const [action, handler] of Object.entries(baseHandlers)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             wrapped[action as keyof typeof baseHandlers] = async (context: any) => {
                 const eventId = addDiagnosticEvent(action, context.payload);
 
@@ -248,6 +251,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                                 LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey
                                             ),
                                         }}
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<strong />]}
                                     />
                                 </p>

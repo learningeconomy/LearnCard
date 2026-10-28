@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.90.46
+
+### Patch Changes
+
+- [#1738](https://github.com/learningeconomy/LearnCard/pull/1738) [`877f16ed99043133febc23115f7887b0f46c2f67`](https://github.com/learningeconomy/LearnCard/commit/877f16ed99043133febc23115f7887b0f46c2f67) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix the ScoutPass earned badge card crashing when a credential has a missing or unknown category. The card now uses the shared category fallback from learn-card-base.
+
+- [#1759](https://github.com/learningeconomy/LearnCard/pull/1759) [`08381b41d544d2207517f277d8027cf0adb38c33`](https://github.com/learningeconomy/LearnCard/commit/08381b41d544d2207517f277d8027cf0adb38c33) Thanks [@goblincore](https://github.com/goblincore)! - Use the shared credential footer for standalone credentials and earned IDs in ScoutPass, including Details/Back, Share, close, and options controls.
+
+- [#1763](https://github.com/learningeconomy/LearnCard/pull/1763) [`eabb09dd327580b6157e65a20c2533ddea1f7b47`](https://github.com/learningeconomy/LearnCard/commit/eabb09dd327580b6157e65a20c2533ddea1f7b47) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2263] - Add Stories & Iframe in-app message presentations
+
+- Updated dependencies [[`616d4e3bf506aa14852e66c0423f232906e2c339`](https://github.com/learningeconomy/LearnCard/commit/616d4e3bf506aa14852e66c0423f232906e2c339), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/react@3.0.1
+    - @learncard/helpers@1.7.1
+    - @learncard/lca-api-plugin@2.0.12
+    - @learncard/sss-key-manager@0.2.4
+
 ## 1.90.45
 
 ### Patch Changes

@@ -24,6 +24,7 @@ const ViewCredsBundle: React.FC = () => {
 
     const [credentials, setCredentials] = useState<VC[] | undefined>();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [jobMetaData, setJobMetaData] = useState<any>(null);
 
     const showPinInputAlert = () => {
@@ -60,7 +61,7 @@ const ViewCredsBundle: React.FC = () => {
 
         try {
             const wallet = await initLearnCard({ seed: _seed });
-            let bundleWalletIndex = await wallet.invoke.getIDXIndex();
+            const bundleWalletIndex = await wallet.invoke.getIDXIndex();
             log.info('wallet index', bundleWalletIndex);
             // There should never be more than one in job id in this case
             //const jobId = jobWalletIndex?.jobs?.[0]?.jobId;
@@ -86,6 +87,7 @@ const ViewCredsBundle: React.FC = () => {
         } catch (e) {
             setLoading(false);
             setErrMsg(`Error: wrong PIN: ${e}`);
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error(`Error fetching credential: ${e}`);
         }
     };

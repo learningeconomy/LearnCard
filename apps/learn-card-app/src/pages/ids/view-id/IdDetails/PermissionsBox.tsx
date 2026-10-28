@@ -33,6 +33,7 @@ const PermissionsBox: React.FC<PermissionsBoxProps> = ({
 
     const { canViewAnalytics } = permissionsByCategory;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const displayPermissions: any = {};
 
     if (canViewAnalytics) {

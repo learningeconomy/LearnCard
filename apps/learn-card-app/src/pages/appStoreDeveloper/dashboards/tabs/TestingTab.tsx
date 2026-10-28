@@ -521,6 +521,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                             ]
                                         }
                                         values={{ email: testEmail }}
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<strong />]}
                                     />
                                 ) : (
@@ -531,6 +532,7 @@ export const TestingTab: React.FC<TestingTabProps> = ({
                                             ]
                                         }
                                         values={{ userId: testUserId }}
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<strong />]}
                                     />
                                 )}

@@ -9,6 +9,7 @@ function useSectionPreselection(sectionKey: ResumeSectionKey) {
     const toggleCredential = resumeBuilderStore.set.toggleCredential;
     const selected = (credentialEntries[sectionKey] ?? []).map(e => e.uri);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { data: credentialPages, isLoading } = useGetCredentialList(sectionKey as any);
 
     const records = credentialPages?.pages?.flatMap(page => page?.records ?? []) ?? [];
