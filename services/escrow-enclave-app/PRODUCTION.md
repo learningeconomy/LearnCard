@@ -440,6 +440,11 @@ zone when `ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME` and `ESCROW_ENCLAVE_HOSTNAME` a
 set together on its GitHub environment; CloudFormation calls as the deploy
 identity, so that ARN (not the account root) is `privatelink_allowed_principals`. Configure private DNS/TLS hostname and endpoint SG access from the
 production Lambda ENIs. An allowed principal does not create/accept the endpoint.
+Expected pages to reconcile with the change record: the apply that adds the
+connection notification (`EscrowPrivateLinkChange` for
+`CreateVpcEndpointConnectionNotification`), the endpoint's `Connect` notification,
+and your acceptance (`Accept` plus `EscrowPrivateLinkChange`). Accept only the exact
+endpoint ID from lca-api's stack in the expected owner account.
 
 ```sh
 aws cloudwatch describe-alarms --alarm-name-prefix escrow-enclave-production
