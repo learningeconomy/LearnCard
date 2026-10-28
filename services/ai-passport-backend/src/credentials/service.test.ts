@@ -1,6 +1,6 @@
 import { AiConsentError } from '../learncard/consent';
 import { FileUploadTypesEnum } from '../ai/generation-schemas';
-import { beforeEach, expect, jest, mock, spyOn, test } from 'bun:test';
+import { beforeEach, expect, mock, spyOn, test, vi } from 'bun:test';
 import * as projectionModule from './projection';
 import type { Job } from 'bullmq';
 import { UnrecoverableError } from 'bullmq';
@@ -2602,7 +2602,7 @@ test('with fake timers, an opening with credentials the preload verified is read
     learnCardMocks.readGet.mockImplementation(() => new Promise<never>(() => {}));
     const receipt = getActiveAiConsentReceipt(consentFlowResponse.records[0], 'model-inference')!;
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     try {
         let ready = false;
         const opening = resolveProjection(receipt).then((projection: unknown) => {
@@ -2611,13 +2611,13 @@ test('with fake timers, an opening with credentials the preload verified is read
         });
         for (let elapsed = 0; elapsed < 2_000 && !ready; elapsed += 100) {
             for (let tick = 0; tick < 50; tick += 1) await Promise.resolve();
-            jest.advanceTimersByTime(100);
+            vi.advanceTimersByTime(100);
         }
         expect(ready).toBe(true);
         expect(await opening).toMatchObject({ schemaVersion: '1' });
         expect(learnCardMocks.readGet).toHaveBeenCalledTimes(1);
     } finally {
-        jest.useRealTimers();
+        vi.useRealTimers();
     }
 });
 

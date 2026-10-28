@@ -6,7 +6,13 @@ const didkit = await import(
         .resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
         .replace('didkit_wasm_bg.wasm', 'didkit_wasm.js')
 );
-const initialize = didkit.default;
+// Initialize before importing the service: under `--conditions=development` this is the same
+// wasm-bindgen glue the plugin loads, and two overlapping inits instantiate two WASM memories.
+await didkit.default({
+    module_or_path: await readFile(
+        require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
+    ),
+});
 mock.module('../services/ownerAuthIndex', () => ({
     setOwnerAuthenticationRecord: async (
         store: { set: (key: string, value: string) => Promise<unknown> },
@@ -21,11 +27,6 @@ const { createAuthService } = await import('./service');
 // This uses the shipped DIDKit verifier against an actual loopback DID document.
 // The signing key belongs to a manager; the session principal remains the profile.
 test('managed profile authentication verifies relationship, nonce, audience and replay', async () => {
-    await initialize({
-        module_or_path: await readFile(
-            require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm')
-        ),
-    });
     const manager = generateKeyPairSync('ed25519');
     const key = manager.privateKey.export({ format: 'jwk' });
     const publicKey = manager.publicKey.export({ format: 'jwk' });

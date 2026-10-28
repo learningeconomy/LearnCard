@@ -62,8 +62,8 @@ jobs:
 
             - uses: ./.github/actions/setup
 
-            # Bun links the npm @learncard/init tree to these workspace packages wherever their
-            # versions satisfy, so they need a dist before the backend can load them.
+            # The backend's scripts and tests resolve workspace @learncard/* source through
+            # `--conditions=development`; these dists cover anything loaded with default resolution.
             - name: Build linked LearnCard libraries
               run: bunx nx run-many -t build --projects=core,didkit-plugin,helpers,types,vc-plugin
 

@@ -179,7 +179,7 @@ const testEnv = {
 };
 
 for (const file of TEST_FILES) {
-    const process = Bun.spawn(['bun', 'test', file], {
+    const process = Bun.spawn(['bun', '--conditions=development', 'test', file], {
         cwd: new URL('..', import.meta.url).pathname,
         env: testEnv,
         stdout: 'inherit',

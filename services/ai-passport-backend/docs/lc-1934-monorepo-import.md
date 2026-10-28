@@ -32,11 +32,12 @@ AI Passport moved out of `WeLibraryOS/AI-Passport` and into LearnCard as a file 
 ## Running it
 
 - Unit tests: `bun run test:unit` in `services/ai-passport-backend`. They need Mongo (replica set), Redis, Qdrant, and the privacy runtime. `.github/workflows/ai-passport.yml` shows the CI setup.
-- The workspace-linked LearnCard libraries need a build first: `bunx nx run-many -t build --projects=core,didkit-plugin,helpers,types,vc-plugin`. Another option is to run with `--conditions=development`, which the `start*` scripts and the bundle already do.
+- The `dev*`, `start*` and test scripts, plus the bundle, run with `--conditions=development`, so workspace `@learncard/*` packages resolve from source. CI still builds `core,didkit-plugin,helpers,types,vc-plugin` first (`bunx nx run-many -t build --projects=…`) for anything that uses default resolution.
+- Local services: `docker-compose up -d` publishes Redis on 6384 and Mongo on 27018 (use `directConnection=true`). `scripts/test.ts` already points non-CI runs at those ports.
 - `bunfig.toml` preloads `test/react-resolution.ts` so the root-hoisted `react-test-renderer` resolves this package's React 19.
 - App: `bun test src`, `bun run build` (Node >= 22.12 for Astro 7), and `bun run test:e2e`. The e2e run needs the backend and workers running.
 
-## Leftovers for Taylor
+## Follow-ups
 
 - **Qdrant key rotation.** A Qdrant key lives in AIP's Git history. None of that history was imported, but rotating the key is still an ops item.
 - **`@learncard/init` / `didkit-plugin` now come from the workspace.** AIP pinned npm `@learncard/init@2.4.16` and `@learncard/didkit-plugin@1.10.0`. In the monorepo, Bun linked that npm tree's inner `@learncard/*` deps to the workspace packages anyway, and a clean `bun install --frozen-lockfile` failed with `EEXIST` on those links. So the backend uses `workspace:*` like the other LearnCard services, and verifier provenance now records the workspace versions (`@learncard/init-2.5.5;@learncard/didkit-plugin-1.10.5` today, instead of `2.4.16;1.10.0`). Stored records keep their old provenance string, and the real signing/verification tests pass on the workspace build.
@@ -44,3 +45,5 @@ AI Passport moved out of `WeLibraryOS/AI-Passport` and into LearnCard as a file 
 - **Cookie CSRF/Origin hardening.** This Phase A item is still open.
 - **Fly cutover.** The Dockerfiles now use Bun `1.4.2` and the full-workspace install, but the Fly apps still build from the AIP repo. Moving deploys here is a follow-up and nothing in this PR deploys.
 - **Binary review.** The snapshot tool flagged 7 images for manual review.
+- **Live AI E2E.** AIP's `ci.yml` `live` job (Bedrock Guardrail smoke + Playwright against a running backend) wasn't carried over. It needs `OPENAI_API_KEY`, `SEED`, the Guardrail variables, and an AWS CI role whose OIDC trust allows `learningeconomy/LearnCard`.
+- **Netlify.** AIP's root `netlify.toml` (deploy previews: `bun run --cwd apps/ai-passport build`, publish `apps/ai-passport/dist`) wasn't carried over, and `apps/ai-passport` has no Netlify config here yet. Relinking the site needs that config or the equivalent site settings.
