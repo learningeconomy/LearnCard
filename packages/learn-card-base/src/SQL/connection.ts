@@ -13,6 +13,28 @@ interface ConnectionState {
 
 const connections = new WeakMap<SQLiteConnectionAccess, ConnectionState>();
 const schemas = new WeakMap<SQLiteConnectionAccess, Map<string, Promise<void>>>();
+const retained = new WeakSet<SQLiteConnectionAccess>();
+
+/** Native SQLCipher owners retain the connection to avoid deriving its key for every query. */
+export const retainSQLiteConnection = (db: SQLiteConnectionAccess): void => {
+    retained.add(db);
+};
+
+/** Release an owner's retention; overlapping operations still finish before the last close. */
+export const releaseSQLiteConnection = async (db: SQLiteConnectionAccess): Promise<void> => {
+    retained.delete(db);
+    const state = connections.get(db);
+    if (!state) return;
+    await transition(state, async () => {
+        if (!state.users && state.open) {
+            try {
+                await db.close();
+            } finally {
+                state.open = false;
+            }
+        }
+    });
+};
 
 const transition = (state: ConnectionState, operation: () => Promise<void>): Promise<void> => {
     const result = state.transition.then(operation);
@@ -57,7 +79,7 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
     } finally {
         connection.users--;
         await transition(connection, async () => {
-            if (!connection.users && connection.open) {
+            if (!connection.users && connection.open && !retained.has(db)) {
                 try {
                     await db.close();
                 } finally {
@@ -99,4 +121,6 @@ export const ensureSQLiteSchema = (
 /** Invalidate schema knowledge after the owning connection's database is deleted. */
 export const forgetSQLiteSchema = (db: SQLiteConnectionAccess): void => {
     schemas.delete(db);
+    connections.delete(db);
+    retained.delete(db);
 };

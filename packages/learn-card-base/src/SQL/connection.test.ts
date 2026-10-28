@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
-import { ensureSQLiteSchema, withSQLiteDatabase } from './connection';
+import {
+    ensureSQLiteSchema,
+    withSQLiteDatabase,
+    retainSQLiteConnection,
+    releaseSQLiteConnection,
+} from './connection';
 
 const deferred = () => {
     let resolve!: () => void;
@@ -25,6 +30,35 @@ const database = () => {
 };
 
 describe('shared SQLite connection ownership', () => {
+    it('retains an encrypted connection across sequential operations until explicitly released', async () => {
+        const { db, methods, isOpen } = database();
+        retainSQLiteConnection(db);
+        await withSQLiteDatabase(db, async () => undefined);
+        await withSQLiteDatabase(db, async () => undefined);
+        expect(methods.open).toHaveBeenCalledOnce();
+        expect(methods.close).not.toHaveBeenCalled();
+        expect(isOpen()).toBe(true);
+        await releaseSQLiteConnection(db);
+        expect(methods.close).toHaveBeenCalledOnce();
+        expect(isOpen()).toBe(false);
+    });
+
+    it('waits for active operations before closing a released encrypted connection', async () => {
+        const { db, methods } = database();
+        const entered = deferred(),
+            done = deferred();
+        retainSQLiteConnection(db);
+        const operation = withSQLiteDatabase(db, async () => {
+            entered.resolve();
+            await done.promise;
+        });
+        await entered.promise;
+        await releaseSQLiteConnection(db);
+        expect(methods.close).not.toHaveBeenCalled();
+        done.resolve();
+        await operation;
+        expect(methods.close).toHaveBeenCalledOnce();
+    });
     it('does not close a key read while a parallel cache write finishes', async () => {
         const { db, methods, isOpen } = database();
         const entered = deferred(),

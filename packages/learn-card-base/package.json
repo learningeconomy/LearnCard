@@ -11,7 +11,7 @@
         "lint": "eslint src"
     },
     "dependencies": {
-        "@capacitor-community/sqlite": "8.1.0",
+        "@capacitor-community/sqlite": "8.1.1",
         "@capacitor/app": "^8.1.0",
         "@capacitor/browser": "^8.0.3",
         "@capacitor/clipboard": "^8.0.1",
