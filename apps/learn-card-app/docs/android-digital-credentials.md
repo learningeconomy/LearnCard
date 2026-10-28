@@ -88,6 +88,8 @@ Only `-PdigitalCredentialsDev` enables the dedicated debug app's provider. Produ
 
 ## Investigating startup and SQLite errors
 
+The shared SQLite ownership/initialization and web-loader fixes are isolated in [PR #1837](https://github.com/learningeconomy/LearnCard/pull/1837), which targets `main`. The Android PR stacks on that prerequisite; merge the shared fix first, then retarget the Android PR to `main`. The startup probe and native feature remain in the Android PR.
+
 The initial 6–7 minute observation was a development-run outlier, not a repeatable measurement of Ed25519 signing or account-key derivation. An instrumented run of the previous build restored the account in 20.8 seconds, with key derivation around 1.4 seconds. Keep process startup, JavaScript/module loading, account readiness and consent readiness separate when comparing runs.
 
 Two defects were reproduced and fixed:
