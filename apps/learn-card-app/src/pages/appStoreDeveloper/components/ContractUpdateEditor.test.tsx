@@ -42,13 +42,19 @@ const initial: ConsentFlowContractDetails = {
         write: { credentials: { categories: {} }, personal: {} },
     },
 };
-const showEditor = async () => {
+const renderEditor = (cachedContract?: unknown) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+    if (cachedContract)
+        client.setQueryData(['developer-contract-update', initial.uri], cachedContract);
     render(
         <QueryClientProvider client={client}>
             <ContractUpdateEditor contractUri={initial.uri} />
         </QueryClientProvider>
     );
+};
+
+const showEditor = async () => {
+    renderEditor();
     await screen.findByLabelText('Contract Name');
 };
 
@@ -59,6 +65,24 @@ beforeEach(() => {
 });
 
 describe('contract update authoring', () => {
+    it('does not offer contract updates when the network omits version metadata', async () => {
+        state.getContract.mockResolvedValue({ ...initial, version: undefined });
+        renderEditor();
+        await screen.findByRole('alert');
+        expect(screen.queryByLabelText('Contract Name')).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Publish Update' })).toBeNull();
+        expect(state.updateContract).not.toHaveBeenCalled();
+    });
+    it('rejects unversioned cached data and recovers after the service returns a version', async () => {
+        renderEditor({ ...initial, version: undefined });
+        await screen.findByRole('alert');
+        expect(screen.queryByLabelText('Contract Name')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Try Again' }));
+        await screen.findByLabelText('Contract Name');
+        expect(screen.queryByRole('alert')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();
+        expect(state.updateContract).not.toHaveBeenCalled();
+    });
     it('requires a reason for an approval-requiring edit and disables an unchanged request', async () => {
         await showEditor();
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();

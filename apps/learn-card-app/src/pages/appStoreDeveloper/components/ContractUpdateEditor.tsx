@@ -40,6 +40,23 @@ const FIELD_LABELS: Record<(typeof CONTRACT_FORM_TEXT_FIELDS)[number], string> =
     redirectUrl: 'developerPortal.components.createConsentContractModal.redirectUrl',
 };
 
+class ContractUpdatesUnavailableError extends Error {
+    constructor() {
+        super('The network did not return contract version metadata');
+        this.name = 'ContractUpdatesUnavailableError';
+    }
+}
+
+const hasContractVersion = (contract: ConsentFlowContractDetails): boolean =>
+    Number.isInteger(contract.version) && contract.version > 0;
+
+const requireContractVersion = (
+    contract: ConsentFlowContractDetails
+): ConsentFlowContractDetails => {
+    if (!hasContractVersion(contract)) throw new ContractUpdatesUnavailableError();
+    return contract;
+};
+
 const LoadedContractUpdateEditor: React.FC<{
     uri: string;
     initial: ConsentFlowContractDetails;
@@ -100,6 +117,7 @@ const LoadedContractUpdateEditor: React.FC<{
         };
     }, [baseline, preview, value.name, locale]);
     const acceptBaseline = (contract: ConsentFlowContractDetails) => {
+        requireContractVersion(contract);
         setBaseline(contract);
         setValue(contractToFormValue(contract));
         queryClient.setQueryData(['developer-contract-update', uri], contract);
@@ -118,7 +136,13 @@ const LoadedContractUpdateEditor: React.FC<{
             acceptBaseline(current);
         } catch (cause) {
             log.error('Could not reload request', cause);
-            setError(mDynamic('consentUpdate.editor.loadError'));
+            setError(
+                mDynamic(
+                    cause instanceof ContractUpdatesUnavailableError
+                        ? 'consentUpdate.editor.unsupportedNetwork'
+                        : 'consentUpdate.editor.loadError'
+                )
+            );
         } finally {
             inFlight.current = false;
             setBusy(null);
@@ -133,6 +157,7 @@ const LoadedContractUpdateEditor: React.FC<{
         try {
             const wallet = await initWallet();
             const current = await wallet.invoke.getContract(uri);
+            if (current) requireContractVersion(current);
             if (!current || current.version !== baseline.version) {
                 setNeedsReload(true);
                 setError(mDynamic('consentUpdate.editor.conflict'));
@@ -159,7 +184,10 @@ const LoadedContractUpdateEditor: React.FC<{
             }
         } catch (cause) {
             log.error('Contract update failed', cause);
-            if (isConsentConflict(cause)) {
+            if (cause instanceof ContractUpdatesUnavailableError) {
+                setNeedsReload(true);
+                setError(mDynamic('consentUpdate.editor.unsupportedNetwork'));
+            } else if (isConsentConflict(cause)) {
                 setNeedsReload(true);
                 setError(mDynamic('consentUpdate.editor.conflict'));
             } else
@@ -445,12 +473,15 @@ const ContractUpdateEditor: React.FC<{ contractUri: string }> = ({ contractUri }
             const wallet = await initWallet();
             const contract = await wallet.invoke.getContract(contractUri);
             if (!contract) throw new Error('Contract not found');
-            return contract;
+            return requireContractVersion(contract);
         },
         enabled: Boolean(contractUri),
         staleTime: Infinity,
         retry: false,
     });
+    const updatesUnavailable =
+        query.error instanceof ContractUpdatesUnavailableError ||
+        (query.data && !hasContractVersion(query.data));
     return (
         <section className="space-y-5 rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins">
             <div>
@@ -470,10 +501,14 @@ const ContractUpdateEditor: React.FC<{ contractUri: string }> = ({ contractUri }
                     <Loader2 size={16} className="animate-spin" />
                     {mDynamic('consentUpdate.editor.loading')}
                 </p>
-            ) : query.isError || !query.data ? (
+            ) : query.isError || !query.data || updatesUnavailable ? (
                 <div className="space-y-3">
                     <p role="alert" className="text-sm text-red-700">
-                        {mDynamic('consentUpdate.editor.loadError')}
+                        {mDynamic(
+                            updatesUnavailable
+                                ? 'consentUpdate.editor.unsupportedNetwork'
+                                : 'consentUpdate.editor.loadError'
+                        )}
                     </p>
                     <button
                         type="button"

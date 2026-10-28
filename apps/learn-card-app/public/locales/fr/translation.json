@@ -7,6 +7,7 @@
             "noContract": "Créez ou sélectionnez une demande de consentement avant de la modifier.",
             "loading": "Chargement de la demande…",
             "loadError": "Impossible de charger la demande actuelle. Veuillez réessayer.",
+            "unsupportedNetwork": "Les mises à jour des demandes ne sont pas encore disponibles sur ce réseau. Connectez-vous au service mis à jour et réessayez.",
             "retry": "Réessayer",
             "currentVersion": "Version actuelle : {{version}}",
             "customField": "Champ personnalisé pour {{area}}",

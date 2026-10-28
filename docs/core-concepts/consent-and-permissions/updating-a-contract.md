@@ -69,6 +69,8 @@ Update notifications identify the connected app using the request's public `cont
 
 ### Update from the developer dashboard
 
+Versioned updates require a network running the updated backend, not just an updated frontend. New contracts on that backend start at version 1. If the service omits version metadata, the editor explains that updates are unavailable on that network instead of displaying an invented version or allowing publication.
+
 No SDK script or JSON is needed to publish an update:
 
 1. Open your project's **Testing** tab and find **Update this request**. The form loads the saved request using the same controls as request creation.

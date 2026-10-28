@@ -7,6 +7,7 @@
             "noContract": "Create or select a consent request before editing it.",
             "loading": "Loading request…",
             "loadError": "Couldn’t load the current request. Please try again.",
+            "unsupportedNetwork": "Contract updates aren’t available on this network yet. Connect to the updated service and try again.",
             "retry": "Try Again",
             "currentVersion": "Current version: {{version}}",
             "customField": "Custom field for {{area}}",

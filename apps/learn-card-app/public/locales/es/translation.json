@@ -7,6 +7,7 @@
             "noContract": "Crea o selecciona una solicitud de consentimiento antes de editarla.",
             "loading": "Cargando solicitud…",
             "loadError": "No pudimos cargar la solicitud actual. Inténtalo de nuevo.",
+            "unsupportedNetwork": "Las actualizaciones de solicitudes aún no están disponibles en esta red. Conéctate al servicio actualizado e inténtalo de nuevo.",
             "retry": "Intentar de nuevo",
             "currentVersion": "Versión actual: {{version}}",
             "customField": "Campo personalizado para {{area}}",
