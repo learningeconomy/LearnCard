@@ -9,8 +9,6 @@
             "loadError": "Couldn’t load the current request. Please try again.",
             "retry": "Try Again",
             "currentVersion": "Current version: {{version}}",
-            "scopeReason": "Why do you need {{label}}?",
-            "defaultEnabled": "Enabled by default",
             "customField": "Custom field for {{area}}",
             "addField": "Add field",
             "removeAccess": "Remove {{label}}",

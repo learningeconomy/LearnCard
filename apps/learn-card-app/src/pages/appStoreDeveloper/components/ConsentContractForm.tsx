@@ -1,7 +1,6 @@
 import React, { useId, useState } from 'react';
 import { ChevronDown, ChevronUp, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import type { Updater } from 'use-immer';
-import { contractCategoryNameToCategoryMetadata } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { mDynamic } from '../../../i18n/mDynamic';
 import ContractCategoryMultiSelect from '../../hidden/ContractCategoryMultiSelect';
@@ -40,17 +39,17 @@ const ConsentContractForm: React.FC<Props> = ({
     );
     const id = useId();
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [customFields, setCustomFields] = useState({ read: '', write: '' });
+    const [customField, setCustomField] = useState('');
     const inputClass =
         'w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent';
     const labelClass = 'mb-1.5 block text-xs font-medium text-grayscale-700';
-    const addField = (area: 'read' | 'write', field: string) => {
+    const addField = (field: string) => {
         const key = field.trim();
-        if (!key || key in value.contract[area].personal) return;
+        if (!key || key in value.contract.read.personal) return;
         onChange(draft => {
-            draft.contract[area].personal[key] = { required: false, defaultEnabled: true };
+            draft.contract.read.personal[key] = { required: false, defaultEnabled: true };
         });
-        setCustomFields(current => ({ ...current, [area]: '' }));
+        setCustomField('');
     };
 
     return (
@@ -207,36 +206,6 @@ const ConsentContractForm: React.FC<Props> = ({
                         availableCategories={FORM_CATEGORIES}
                         categoryTitleOverrides={categoryTitleOverrides}
                     />
-                    {Object.entries(value.contract[area].credentials.categories).map(
-                        ([category, config]) => {
-                            const label =
-                                categoryTitleOverrides[category] ??
-                                contractCategoryNameToCategoryMetadata(category)?.title ??
-                                category;
-                            return (
-                                <div key={category}>
-                                    <label
-                                        htmlFor={`${id}-${area}-${category}-reason`}
-                                        className={labelClass}
-                                    >
-                                        {mDynamic('consentUpdate.editor.scopeReason', { label })}
-                                    </label>
-                                    <input
-                                        id={`${id}-${area}-${category}-reason`}
-                                        value={config.reason ?? ''}
-                                        onChange={event =>
-                                            onChange(draft => {
-                                                draft.contract[area].credentials.categories[
-                                                    category
-                                                ].reason = event.target.value;
-                                            })
-                                        }
-                                        className={inputClass}
-                                    />
-                                </div>
-                            );
-                        }
-                    )}
                     {area === 'read' && (
                         <label className="flex items-start gap-3 border-t border-grayscale-200 pt-4 text-sm text-grayscale-700">
                             <input
@@ -261,146 +230,110 @@ const ConsentContractForm: React.FC<Props> = ({
                             </span>
                         </label>
                     )}
-                    <div className="space-y-3 border-t border-grayscale-200 pt-4">
-                        <p className="text-xs text-grayscale-600">
-                            {m[
-                                'developerPortal.components.createConsentContractModal.personalDataFieldsDesc'
-                            ]()}
-                        </p>
-                        <div className="flex gap-2">
-                            {['name', 'email']
-                                .filter(field => !(field in value.contract[area].personal))
-                                .map(field => (
-                                    <button
-                                        key={field}
-                                        type="button"
-                                        onClick={() => addField(area, field)}
-                                        className="rounded-[20px] border border-grayscale-300 bg-white px-3 py-1.5 text-xs text-grayscale-700"
-                                    >
-                                        + {field}
-                                    </button>
-                                ))}
-                        </div>
-                        {Object.entries(value.contract[area].personal).map(([field, config]) => (
-                            <div
-                                key={field}
-                                className="space-y-3 rounded-xl border border-grayscale-200 bg-white p-3"
-                            >
-                                <div className="flex items-center justify-between gap-3">
+                    {area === 'read' && (
+                        <div className="space-y-3 border-t border-grayscale-200 pt-4">
+                            <p className="text-xs text-grayscale-600">
+                                {m[
+                                    'developerPortal.components.createConsentContractModal.personalDataFieldsDesc'
+                                ]()}
+                            </p>
+                            <div className="flex gap-2">
+                                {['name', 'email']
+                                    .filter(field => !(field in value.contract.read.personal))
+                                    .map(field => (
+                                        <button
+                                            key={field}
+                                            type="button"
+                                            onClick={() => addField(field)}
+                                            className="rounded-[20px] border border-grayscale-300 bg-white px-3 py-1.5 text-xs text-grayscale-700"
+                                        >
+                                            + {field}
+                                        </button>
+                                    ))}
+                            </div>
+                            {Object.entries(value.contract.read.personal).map(([field, config]) => (
+                                <div
+                                    key={field}
+                                    className="flex items-center justify-between gap-3 rounded-xl border border-grayscale-200 bg-white p-2.5"
+                                >
                                     <span className="text-sm font-medium text-grayscale-900">
                                         {field}
                                     </span>
-                                    <button
-                                        type="button"
-                                        aria-label={mDynamic('consentUpdate.editor.removeAccess', {
-                                            label: field,
-                                        })}
-                                        onClick={() =>
-                                            onChange(draft => {
-                                                delete draft.contract[area].personal[field];
-                                            })
-                                        }
-                                        className="text-grayscale-500 hover:text-red-600"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-4 text-xs text-grayscale-700">
-                                    <label className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={config.required}
-                                            onChange={event =>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            aria-pressed={config.required}
+                                            onClick={() =>
                                                 onChange(draft => {
-                                                    draft.contract[area].personal[field].required =
-                                                        event.target.checked;
-                                                    if (event.target.checked)
-                                                        draft.contract[area].personal[
-                                                            field
-                                                        ].defaultEnabled = true;
+                                                    draft.contract.read.personal[field].required =
+                                                        !config.required;
                                                 })
                                             }
-                                            className="accent-emerald-600"
-                                        />
-                                        {m[
-                                            'developerPortal.components.createConsentContractModal.required'
-                                        ]()}
-                                    </label>
-                                    <label className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={
-                                                config.required || Boolean(config.defaultEnabled)
-                                            }
-                                            disabled={config.required}
-                                            onChange={event =>
+                                            className={`rounded-full border px-2 py-0.5 text-xs transition-colors ${
+                                                config.required
+                                                    ? 'border-red-200 bg-red-50 text-red-600'
+                                                    : 'border-grayscale-200 bg-grayscale-100 text-grayscale-500'
+                                            }`}
+                                        >
+                                            {mDynamic(
+                                                config.required
+                                                    ? 'developerPortal.components.createConsentContractModal.required'
+                                                    : 'developerPortal.components.createConsentContractModal.optional'
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            aria-label={mDynamic(
+                                                'consentUpdate.editor.removeAccess',
+                                                {
+                                                    label: field,
+                                                }
+                                            )}
+                                            onClick={() =>
                                                 onChange(draft => {
-                                                    draft.contract[area].personal[
-                                                        field
-                                                    ].defaultEnabled = event.target.checked;
+                                                    delete draft.contract.read.personal[field];
                                                 })
                                             }
-                                            className="accent-emerald-600"
-                                        />
-                                        {mDynamic('consentUpdate.editor.defaultEnabled')}
-                                    </label>
+                                            className="text-grayscale-500 hover:text-red-600"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <label className={labelClass}>
-                                    {mDynamic('consentUpdate.editor.scopeReason', { label: field })}
-                                    <input
-                                        value={config.reason ?? ''}
-                                        onChange={event =>
-                                            onChange(draft => {
-                                                draft.contract[area].personal[field].reason =
-                                                    event.target.value;
-                                            })
+                            ))}
+                            <div className="flex gap-2">
+                                <input
+                                    value={customField}
+                                    aria-label={mDynamic('consentUpdate.editor.customField', {
+                                        area: mDynamic('consentUpdate.ui.readAccess'),
+                                    })}
+                                    onChange={event => setCustomField(event.target.value)}
+                                    onKeyDown={event => {
+                                        if (event.key === 'Enter') {
+                                            event.preventDefault();
+                                            addField(customField);
                                         }
-                                        className={`${inputClass} mt-1.5`}
-                                    />
-                                </label>
-                            </div>
-                        ))}
-                        <div className="flex gap-2">
-                            <input
-                                value={customFields[area]}
-                                aria-label={mDynamic('consentUpdate.editor.customField', {
-                                    area: mDynamic(
-                                        area === 'read'
-                                            ? 'consentUpdate.ui.readAccess'
-                                            : 'consentUpdate.ui.writeAccess'
-                                    ),
-                                })}
-                                onChange={event =>
-                                    setCustomFields(current => ({
-                                        ...current,
-                                        [area]: event.target.value,
-                                    }))
-                                }
-                                onKeyDown={event => {
-                                    if (event.key === 'Enter') {
-                                        event.preventDefault();
-                                        addField(area, customFields[area]);
+                                    }}
+                                    placeholder={m[
+                                        'developerPortal.components.createConsentContractModal.customFieldName'
+                                    ]()}
+                                    className={inputClass}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => addField(customField)}
+                                    disabled={
+                                        !customField.trim() ||
+                                        customField.trim() in value.contract.read.personal
                                     }
-                                }}
-                                placeholder={m[
-                                    'developerPortal.components.createConsentContractModal.customFieldName'
-                                ]()}
-                                className={inputClass}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => addField(area, customFields[area])}
-                                disabled={
-                                    !customFields[area].trim() ||
-                                    customFields[area].trim() in value.contract[area].personal
-                                }
-                                aria-label={mDynamic('consentUpdate.editor.addField')}
-                                className="rounded-[20px] bg-grayscale-900 px-4 text-white disabled:opacity-40"
-                            >
-                                <Plus size={16} />
-                            </button>
+                                    aria-label={mDynamic('consentUpdate.editor.addField')}
+                                    className="rounded-[20px] bg-grayscale-900 px-4 text-white disabled:opacity-40"
+                                >
+                                    <Plus size={16} />
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </section>
             ))}
             <div className="overflow-hidden rounded-2xl border border-grayscale-200">

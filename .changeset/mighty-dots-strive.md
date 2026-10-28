@@ -14,6 +14,6 @@ Keep a connection's URI and history while publishing immutable access updates. N
 
 Preserve existing grants in partial scope updates, gate Lambda startup on legacy snapshots, and retain once-only delivery during explicit one-time updates. Localize review and history content, recover from cancelled guardian checks and concurrent updates, and keep handled notifications safe to reopen.
 
-Use one shared request form for metadata, data categories, defaults, and per-item reasons. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Testing tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
+Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Testing tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
 
 Breaking SDK/API changes: use `updateContract` instead of the removed `addAutoBoostsToContract` and `removeAutoBoostsFromContract` SDK methods. One-time consent status is now `consumed`, not `stale`. The deprecated HTTP AutoBoost routes remain available for one compatibility release and use the versioned update path.

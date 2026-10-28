@@ -9,8 +9,6 @@
             "loadError": "Impossible de charger la demande actuelle. Veuillez réessayer.",
             "retry": "Réessayer",
             "currentVersion": "Version actuelle : {{version}}",
-            "scopeReason": "Pourquoi avez-vous besoin de {{label}} ?",
-            "defaultEnabled": "Activé par défaut",
             "customField": "Champ personnalisé pour {{area}}",
             "addField": "Ajouter un champ",
             "removeAccess": "Retirer {{label}}",

@@ -72,7 +72,7 @@ Update notifications identify the connected app using the request's public `cont
 No SDK script or JSON is needed to publish an update:
 
 1. Open your project's **Testing** tab and find **Update this request**. The form loads the saved request using the same controls as request creation.
-2. Edit its details, read/write categories, personal fields, required/default choices, or per-item reasons. Use a category's settings button to choose **Required**, **Opt-in**, or **Opt-out**. Unedited settings stay unchanged.
+2. Edit its details, read/write categories, or read-side personal fields using the original creation controls. Personal fields keep their **Required/Optional** toggle; a category's settings button offers **Required**, **Opt-in**, or **Opt-out**. There are no per-item purpose fields or added default-enabled checkboxes. Unedited settings and existing SDK-supplied purposes stay unchanged.
 3. Add an explanation under **Why are you making this update?** Approval-requiring changes need a reason of at most 140 characters.
 4. Check **Your changes**, then select **Preview Update**. The preview does not save anything. Its help icon explains the connection; its access disclosure lists unchanged defaults from the current request, not a person's saved permissions. An empty disclosure explains that no default access stays unchanged.
 5. Close the preview and select **Publish Update**. A success message shows the saved version. Reload the page to see the persisted request.

@@ -9,8 +9,6 @@
             "loadError": "No pudimos cargar la solicitud actual. Inténtalo de nuevo.",
             "retry": "Intentar de nuevo",
             "currentVersion": "Versión actual: {{version}}",
-            "scopeReason": "¿Por qué necesitas {{label}}?",
-            "defaultEnabled": "Activado de forma predeterminada",
             "customField": "Campo personalizado para {{area}}",
             "addField": "Añadir campo",
             "removeAccess": "Quitar {{label}}",

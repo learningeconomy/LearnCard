@@ -72,6 +72,29 @@ describe('contract update authoring', () => {
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeEnabled();
         expect(state.updateContract).not.toHaveBeenCalled();
     });
+    it('does not change a saved opt-in default when Required is toggled on and back off', async () => {
+        state.getContract.mockResolvedValue({
+            ...initial,
+            contract: {
+                ...initial.contract,
+                read: {
+                    ...initial.contract.read,
+                    personal: {
+                        email: { required: false, defaultEnabled: false, reason: 'Existing use' },
+                    },
+                },
+            },
+        });
+        await showEditor();
+        fireEvent.change(screen.getByLabelText(/Why are you making this update/), {
+            target: { value: 'Testing whether this field should be required.' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: /^optional$/i }));
+        expect(screen.getByRole('button', { name: 'Publish Update' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: /^required$/i }));
+        expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();
+        expect(state.updateContract).not.toHaveBeenCalled();
+    });
     it('retains the edited form and allows retry after a failed publication', async () => {
         state.updateContract.mockRejectedValue(new Error('Connection failed'));
         await showEditor();

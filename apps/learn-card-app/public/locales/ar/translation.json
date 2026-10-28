@@ -9,8 +9,6 @@
             "loadError": "تعذّر تحميل الطلب الحالي. يُرجى المحاولة مجددًا.",
             "retry": "حاول مجددًا",
             "currentVersion": "الإصدار الحالي: {{version}}",
-            "scopeReason": "لماذا تحتاج إلى {{label}}؟",
-            "defaultEnabled": "مفعّل افتراضيًا",
             "customField": "حقل مخصص لـ {{area}}",
             "addField": "إضافة حقل",
             "removeAccess": "إزالة {{label}}",
