@@ -65,6 +65,8 @@ name = "security-floor-fixture"
 requires-python = ">=3.9"
 dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
 ''' + dev,
+            # Stock Python setup_cfg.mustache in OpenAPI Generator 7.25.0.
+            "setup.cfg": "[flake8]\nmax-line-length=99\n",
             "setup.py": 'PYTHON_REQUIRES = ">= 3.9"\nREQUIRES = ["urllib3 >= 2.1.0, < 3.0.0"]\ndef setup(**kwargs):\n    pass\nsetup(\n    install_requires=REQUIRES,\n)\n',
             "requirements.txt": "urllib3 >= 2.1.0, < 3.0.0\n",
             "test-requirements.txt": "pytest >= 7.2.1\npytest-cov >= 2.8.1\nvirtualenv >= 21.14.13\ntox >= 3.9.0\n",
@@ -120,6 +122,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     self.assertEqual((self.client / ".gitlab-ci.yml").read_text(), "pytest-3.11:\n  image: python:3.11-alpine\npytest-3.12:\n  image: python:3.12-alpine\n")
                     self.assertIn("Python 3.11+", (self.client / "README.md").read_text())
                     self.assertIn("envlist = py311,py312", (self.client / "tox.ini").read_text())
+                    self.assertEqual((self.client / "setup.cfg").read_text(), "[flake8]\nmax-line-length=99\n")
                     before = {str(p.relative_to(self.client)): p.read_bytes() for p in self.client.rglob("*") if p.is_file()}
                     result = self.run_script()
                     self.assertEqual(result.returncode, 0, result.stderr)
@@ -207,6 +210,36 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                         self.assertNotEqual(result.returncode, 0)
                         self.assertIn("FAIL: 'filelock floor'", result.stderr)
 
+    def test_required_python_metadata_is_still_enforced(self):
+        for filename in ("setup.py", "pyproject.toml"):
+            with self.subTest(filename=filename):
+                self.fixture()
+                path = self.client / filename
+                path.write_text(path.read_text().replace(">= 3.9", ">= 3.8").replace(">=3.9", ">=3.8"))
+                result = self.run_script()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("floor", result.stderr)
+
+    def test_setup_cfg_is_optional_but_declared_python_floor_is_enforced(self):
+        for requirement in (None, ">=3.9", ">=3.10", ">=3.11", ">=3.8", "<3.11", "invalid"):
+            with self.subTest(requirement=requirement):
+                self.fixture()
+                path = self.client / "setup.cfg"
+                if requirement is None:
+                    path.unlink()
+                else:
+                    path.write_text(f"[options]\npython_requires = {requirement}\n")
+                result = self.run_script()
+                if requirement in (">=3.8", "<3.11", "invalid"):
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("Python 3.11 metadata", result.stderr)
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    if requirement is not None:
+                        self.assertEqual(path.read_text(), "[options]\npython_requires = >=3.11\n")
+                    else:
+                        self.assertFalse(path.exists())
+
     def test_formatted_ci_and_python_metadata(self):
         self.fixture()
         for name in (".travis.yml", ".gitlab-ci.yml"):
@@ -263,7 +296,7 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                 self.assertEqual(nested.read_text(), sentinel.read_text())
 
     def test_generator_is_pinned(self):
-        self.fixture(True)
+        self.fixture()
         package = SCRIPT.parent
         with tempfile.TemporaryDirectory(prefix=".pin-contract-", dir=package) as directory:
             output = pathlib.Path(directory) / "generated"
@@ -326,8 +359,8 @@ elif "/workspace/node_modules/prettier/bin/prettier.cjs" not in args:
             metadata = tomllib.loads((output / "pyproject.toml").read_text())
             self.assertEqual(metadata["project"]["requires-python"], ">=3.11")
             self.assertEqual(metadata["project"]["dependencies"], ["urllib3 (>=2.7.0,<3.0.0)"])
-            for requirement in FILELOCK_REQUIREMENTS:
-                self.assertIn(requirement, metadata["dependency-groups"]["dev"])
+            self.assert_client_floors(output)
+            self.assertEqual((output / "setup.cfg").read_text(), "[flake8]\nmax-line-length=99\n")
             self.assertFalse((output / ".github").exists())
 
 
