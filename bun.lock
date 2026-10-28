@@ -1595,6 +1595,7 @@
     },
     "services/ai-passport-backend": {
       "name": "ai-passport-backend",
+      "version": "0.0.1",
       "dependencies": {
         "@aws-sdk/client-bedrock": "3.1138.0",
         "@aws-sdk/client-bedrock-runtime": "3.1138.0",

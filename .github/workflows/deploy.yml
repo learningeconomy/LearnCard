@@ -48,6 +48,16 @@ on:
                 required: false
                 default: false
                 type: boolean
+            deploy-ai-passport-backend:
+                description: 'Deploy AI Passport Backend (Fly; staging or production only)'
+                required: false
+                default: false
+                type: boolean
+            deploy-ai-passport-app:
+                description: 'Deploy AI Passport App (Netlify; staging or production only)'
+                required: false
+                default: false
+                type: boolean
             publish-npm:
                 description: 'Publish Registry Packages'
                 required: false
@@ -88,6 +98,14 @@ jobs:
             ai_agent_changed: ${{ steps.check_versions.outputs.ai_agent_changed }}
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
+            aip_backend_changed: ${{ steps.check_versions.outputs.aip_backend_changed }}
+            aip_app_changed: ${{ steps.check_versions.outputs.aip_app_changed }}
+            # AI Passport legs are computed separately (aip-env) so they can't disturb the
+            # LearnCard/ScoutPass matrices above.
+            aip_backend_deployment_matrix: ${{ steps.aip-env.outputs.aip_backend_deployment_matrix }}
+            aip_backend_matrix_has_legs: ${{ steps.aip-env.outputs.aip_backend_matrix_has_legs }}
+            aip_app_deployment_matrix: ${{ steps.aip-env.outputs.aip_app_deployment_matrix }}
+            aip_app_matrix_has_legs: ${{ steps.aip-env.outputs.aip_app_matrix_has_legs }}
             # Dynamic environment names
             # target_frontend_env is only consumed by publish-native-apps (fastlane);
             # Netlify/CapGo deploys fan out over frontend_deployment_matrix instead.
@@ -195,6 +213,20 @@ jobs:
                     echo "lca_app_changed=false" >> $GITHUB_OUTPUT
                   fi
 
+                  if echo "$CHANGED_FILES" | grep -qx "services/ai-passport-backend/package.json"; then
+                    echo "aip_backend_changed=true" >> $GITHUB_OUTPUT
+                    echo "AI Passport backend version changed"
+                  else
+                    echo "aip_backend_changed=false" >> $GITHUB_OUTPUT
+                  fi
+
+                  if echo "$CHANGED_FILES" | grep -qx "apps/ai-passport/package.json"; then
+                    echo "aip_app_changed=true" >> $GITHUB_OUTPUT
+                    echo "AI Passport app version changed"
+                  else
+                    echo "aip_app_changed=false" >> $GITHUB_OUTPUT
+                  fi
+
                   if echo "$CHANGED_FILES" | grep -qE "packages/plugins/didkit-plugin-node/(native|src)/"; then
                     echo "native_plugin_changed=true" >> $GITHUB_OUTPUT
                     echo "Native DIDKit plugin changed - will wait for prebuilds"
@@ -284,6 +316,95 @@ jobs:
                     fi
                     set_frontend_matrix "${FE_LEGS[@]}"
                   fi
+
+            # AI Passport deploys (Fly backend, Netlify app). Automatic legs stay off until
+            # the repo var AIP_DEPLOY_ENABLED is 'true', so merging this workflow doesn't race
+            # the AI-Passport repo's own deploy-fly.yml. Flip the var when that repo is frozen.
+            # Manual dispatch ignores the var so ops can prove staging first.
+            - name: Determine AI Passport Deployments
+              id: aip-env
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
+                  DEPLOY_BACKEND: ${{ inputs.deploy-ai-passport-backend }}
+                  DEPLOY_APP: ${{ inputs.deploy-ai-passport-app }}
+                  IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
+                  BACKEND_CHANGED: ${{ steps.check_versions.outputs.aip_backend_changed }}
+                  APP_CHANGED: ${{ steps.check_versions.outputs.aip_app_changed }}
+                  AFFECTED: ${{ steps.affected.outputs.affected }}
+                  AIP_DEPLOY_ENABLED: ${{ vars.AIP_DEPLOY_ENABLED }}
+              run: |
+                  # Production Fly app names are pinned here; staging reads FLY_APP_NAME from
+                  # its GitHub Environment because ops hasn't created that app yet.
+                  BE_STAGING='{"name":"AI Passport API Staging","environment":"ai-passport-api-staging","stage":"staging","fly_app":""}'
+                  BE_PRODUCTION='{"name":"AI Passport API Production","environment":"ai-passport-api-production","stage":"production","fly_app":"ai-passport"}'
+                  BE_LCA_PRODUCTION='{"name":"LCA Backend Production","environment":"ai-passport-lca-backend-production","stage":"production","fly_app":"lca-backend"}'
+                  APP_STAGING='{"name":"AI Passport App Staging","environment":"ai-passport-app-staging","stage":"staging"}'
+                  APP_PRODUCTION='{"name":"AI Passport App Production","environment":"ai-passport-app-production","stage":"production"}'
+
+                  set_matrix() {
+                    local key="$1" legs
+                    shift
+                    legs=$(IFS=,; echo "$*")
+                    echo "${key}_deployment_matrix={\"include\":[${legs}]}" >> "$GITHUB_OUTPUT"
+                    if [[ -n "$legs" ]]; then
+                      echo "${key}_matrix_has_legs=true" >> "$GITHUB_OUTPUT"
+                    else
+                      echo "${key}_matrix_has_legs=false" >> "$GITHUB_OUTPUT"
+                    fi
+                  }
+
+                  # Exact match: 'ai-passport' is a prefix of 'ai-passport-backend'.
+                  is_affected() {
+                    tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
+                  }
+
+                  BE_LEGS=()
+                  APP_LEGS=()
+                  if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
+                    case "$TARGET_ENVIRONMENT" in
+                      staging)
+                        if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
+                          BE_LEGS+=("$BE_STAGING")
+                        fi
+                        if [[ "$DEPLOY_APP" == 'true' ]]; then
+                          APP_LEGS+=("$APP_STAGING")
+                        fi
+                        ;;
+                      production)
+                        if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
+                          BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
+                        fi
+                        if [[ "$DEPLOY_APP" == 'true' ]]; then
+                          APP_LEGS+=("$APP_PRODUCTION")
+                        fi
+                        ;;
+                      *)
+                        if [[ "$DEPLOY_BACKEND" == 'true' || "$DEPLOY_APP" == 'true' ]]; then
+                          echo "::warning::AI Passport deploys only target staging or production; ignoring for $TARGET_ENVIRONMENT."
+                        fi
+                        ;;
+                    esac
+                  elif [[ "$AIP_DEPLOY_ENABLED" != 'true' ]]; then
+                    echo "Automatic AI Passport deploys are off (repo var AIP_DEPLOY_ENABLED != 'true')."
+                  elif [[ "$IS_RELEASE" == 'true' ]]; then
+                    if [[ "$BACKEND_CHANGED" == 'true' ]]; then
+                      BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
+                    fi
+                    if [[ "$APP_CHANGED" == 'true' ]]; then
+                      APP_LEGS+=("$APP_PRODUCTION")
+                    fi
+                  else
+                    if is_affected ai-passport-backend; then
+                      BE_LEGS+=("$BE_STAGING")
+                    fi
+                    if is_affected ai-passport; then
+                      APP_LEGS+=("$APP_STAGING")
+                    fi
+                  fi
+
+                  set_matrix aip_backend "${BE_LEGS[@]}"
+                  set_matrix aip_app "${APP_LEGS[@]}"
 
     # ============================================================================
     # BUILD NATIVE PLUGIN (for Lambda deploys - Linux x64)
@@ -1969,3 +2090,279 @@ jobs:
                     echo "::error::Authenticated staging smoke test failed"
                     exit 1
                   fi
+
+    # ============================================================================
+    # AI PASSPORT DEPLOYMENTS (Fly backend + Netlify app)
+    # Triggers (automatic legs need the repo var AIP_DEPLOY_ENABLED='true'):
+    #   - Push: staging when Nx marks ai-passport-backend / ai-passport affected
+    #   - Release: production when that project's package.json version changed
+    #   - Manual: deploy-ai-passport-backend / deploy-ai-passport-app, staging or production
+    # GitHub Environments, FLY_API_TOKEN and the staging overrides: ENVIRONMENTS.md.
+    # ============================================================================
+    deploy-ai-passport-backend:
+        name: Deploy AI Passport Backend (${{ matrix.name }})
+        timeout-minutes: 30
+        needs: [determine-affected, test-affected]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.result == 'success' &&
+            needs.determine-affected.outputs.aip_backend_matrix_has_legs == 'true' &&
+            (
+              needs.determine-affected.outputs.is_manual == 'true' ||
+              needs.determine-affected.outputs.is_release == 'true' ||
+              needs.test-affected.result == 'success'
+            )
+        permissions:
+            contents: read
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.aip_backend_deployment_matrix) }}
+        environment: ${{ matrix.environment }}
+        concurrency:
+            group: deploy-ai-passport-backend-${{ matrix.environment }}
+            cancel-in-progress: false
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+
+            # Production deploys exactly what AI-Passport's deploy-fly.yml did: fly.toml plus the
+            # app's existing Fly secrets, no overrides. Staging must override every value that
+            # would otherwise point at production (fly.toml's role ARN, the code-default DID and
+            # contract URI), and the job refuses to deploy staging with production values.
+            - name: Validate Fly target and staging overrides
+              id: fly-target
+              env:
+                  ENVIRONMENT: ${{ matrix.environment }}
+                  STAGE: ${{ matrix.stage }}
+                  PINNED_APP: ${{ matrix.fly_app }}
+                  FLY_APP_NAME: ${{ vars.FLY_APP_NAME }}
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  AIP_LEARNCARD_DID_WEB: ${{ vars.AIP_LEARNCARD_DID_WEB }}
+                  AIP_LEARNCARD_CONTRACT_URI: ${{ vars.AIP_LEARNCARD_CONTRACT_URI }}
+                  AIP_LEARNCARD_NETWORK_URL: ${{ vars.AIP_LEARNCARD_NETWORK_URL }}
+                  AIP_LEARNCARD_CLOUD_URL: ${{ vars.AIP_LEARNCARD_CLOUD_URL }}
+                  AIP_LCA_URL: ${{ vars.AIP_LCA_URL }}
+                  AIP_DOMAIN: ${{ vars.AIP_DOMAIN }}
+                  AIP_CORS_ORIGINS: ${{ vars.AIP_CORS_ORIGINS }}
+                  AIP_AWS_ROLE_ARN: ${{ vars.AIP_AWS_ROLE_ARN }}
+                  AIP_BEDROCK_GUARDRAIL_ID: ${{ vars.AIP_BEDROCK_GUARDRAIL_ID }}
+                  AIP_BEDROCK_GUARDRAIL_VERSION: ${{ vars.AIP_BEDROCK_GUARDRAIL_VERSION }}
+              run: |
+                  failed=0
+                  fail() { echo "::error::$1"; failed=1; }
+
+                  if [[ -z "$FLY_API_TOKEN" ]]; then
+                    fail "FLY_API_TOKEN secret is missing in environment '$ENVIRONMENT'."
+                  fi
+
+                  APP="${PINNED_APP:-$FLY_APP_NAME}"
+                  if [[ -z "$APP" ]]; then
+                    fail "FLY_APP_NAME var is missing in environment '$ENVIRONMENT'."
+                  elif [[ -n "$PINNED_APP" && -n "$FLY_APP_NAME" && "$FLY_APP_NAME" != "$PINNED_APP" ]]; then
+                    fail "FLY_APP_NAME ($FLY_APP_NAME) in '$ENVIRONMENT' doesn't match the pinned app $PINNED_APP."
+                  fi
+
+                  OVERRIDES="$RUNNER_TEMP/fly-env-overrides"
+                  : > "$OVERRIDES"
+
+                  if [[ "$STAGE" == 'staging' ]]; then
+                    # Production values staging must never inherit. Keep in sync with
+                    # services/ai-passport-backend/src/constants/env.ts and fly.toml.
+                    PROD_DID='did:web:network.learncard.com:users:ai-passport'
+                    PROD_CONTRACT_URI='lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b'
+                    PROD_ROLE_ARN=$(sed -n 's/^ *AWS_ROLE_ARN *= *"\(.*\)"/\1/p' services/ai-passport-backend/fly.toml)
+
+                    case "$APP" in
+                      ai-passport|lca-backend|claude-ai-passport)
+                        fail "Staging can't deploy to the production Fly app $APP." ;;
+                    esac
+
+                    for name in AIP_LEARNCARD_DID_WEB AIP_LEARNCARD_CONTRACT_URI AIP_DOMAIN AIP_CORS_ORIGINS \
+                                AIP_AWS_ROLE_ARN AIP_BEDROCK_GUARDRAIL_ID AIP_BEDROCK_GUARDRAIL_VERSION; do
+                      if [[ -z "${!name}" ]]; then
+                        fail "$name var is missing in environment '$ENVIRONMENT'."
+                      fi
+                    done
+
+                    if [[ "$AIP_LEARNCARD_DID_WEB" == "$PROD_DID" ]]; then
+                      fail "AIP_LEARNCARD_DID_WEB is the production AI Passport DID."
+                    fi
+                    if [[ "$AIP_LEARNCARD_CONTRACT_URI" == "$PROD_CONTRACT_URI" ]]; then
+                      fail "AIP_LEARNCARD_CONTRACT_URI is the production consent contract."
+                    fi
+                    if [[ -n "$PROD_ROLE_ARN" && "$AIP_AWS_ROLE_ARN" == "$PROD_ROLE_ARN" ]]; then
+                      fail "AIP_AWS_ROLE_ARN is the production privacy-runtime role from fly.toml."
+                    fi
+                    if [[ -n "$AIP_BEDROCK_GUARDRAIL_VERSION" && ! "$AIP_BEDROCK_GUARDRAIL_VERSION" =~ ^[1-9][0-9]*$ ]]; then
+                      fail "AIP_BEDROCK_GUARDRAIL_VERSION must be a published numeric version, not DRAFT."
+                    fi
+
+                    add_env() {
+                      if [[ -n "$2" ]]; then
+                        printf '%s\n' "--env" "$1=$2" >> "$OVERRIDES"
+                      fi
+                    }
+                    add_env LEARNCARD_DID_WEB "$AIP_LEARNCARD_DID_WEB"
+                    add_env LEARNCARD_CONTRACT_URI "$AIP_LEARNCARD_CONTRACT_URI"
+                    add_env LEARNCARD_NETWORK_URL "$AIP_LEARNCARD_NETWORK_URL"
+                    add_env LEARNCARD_CLOUD_URL "$AIP_LEARNCARD_CLOUD_URL"
+                    add_env LCA_URL "$AIP_LCA_URL"
+                    add_env DOMAIN "$AIP_DOMAIN"
+                    add_env CORS_ORIGINS "$AIP_CORS_ORIGINS"
+                    add_env AWS_ROLE_ARN "$AIP_AWS_ROLE_ARN"
+                    add_env BEDROCK_GUARDRAIL_ID "$AIP_BEDROCK_GUARDRAIL_ID"
+                    add_env BEDROCK_GUARDRAIL_VERSION "$AIP_BEDROCK_GUARDRAIL_VERSION"
+                  fi
+
+                  if [[ "$failed" != 0 ]]; then
+                    exit 1
+                  fi
+
+                  echo "app=$APP" >> "$GITHUB_OUTPUT"
+                  echo "overrides=$OVERRIDES" >> "$GITHUB_OUTPUT"
+                  echo "Deploying $STAGE to Fly app $APP with $(( $(wc -l < "$OVERRIDES") / 2 )) env override(s)."
+
+            - name: Set up flyctl
+              uses: superfly/flyctl-actions/setup-flyctl@1.6
+
+            # Same invocation as AI-Passport's deploy-fly.yml: the build context is the monorepo
+            # root (Dockerfile.api installs the full workspace) and fly.toml's dockerfile path
+            # resolves next to the config.
+            - name: Deploy to Fly
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+                  OVERRIDES: ${{ steps.fly-target.outputs.overrides }}
+              run: |
+                  mapfile -t ENV_ARGS < "$OVERRIDES"
+                  flyctl deploy . \
+                    --remote-only \
+                    --config services/ai-passport-backend/fly.toml \
+                    --app "$FLY_APP" \
+                    "${ENV_ARGS[@]}"
+
+            # fly.toml has no health check, so probe /health here. Machines scale to zero, so the
+            # retries also cover the cold start.
+            - name: Verify deployment health
+              env:
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+              run: |
+                  curl --fail --silent --show-error \
+                    --retry 10 --retry-delay 6 --retry-all-errors --max-time 20 \
+                    "https://$FLY_APP.fly.dev/health"
+
+    deploy-ai-passport-app:
+        name: Deploy AI Passport App (${{ matrix.name }})
+        timeout-minutes: 20
+        needs: [determine-affected, test-affected, deploy-ai-passport-backend]
+        if: |
+            always() &&
+            !cancelled() &&
+            needs.determine-affected.result == 'success' &&
+            needs.determine-affected.outputs.aip_app_matrix_has_legs == 'true' &&
+            (
+              needs.determine-affected.outputs.is_manual == 'true' ||
+              needs.determine-affected.outputs.is_release == 'true' ||
+              needs.test-affected.result == 'success'
+            ) &&
+            !contains(needs.deploy-ai-passport-backend.result, 'failure')
+        permissions:
+            contents: read
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.determine-affected.outputs.aip_app_deployment_matrix) }}
+        environment: ${{ matrix.environment }}
+        concurrency:
+            group: deploy-ai-passport-app-${{ matrix.environment }}
+            cancel-in-progress: false
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+
+            # PUBLIC_* values are baked into the build. Unset, they fall back to localhost and the
+            # production contract (apps/ai-passport/src/constants/env.ts), so require them here.
+            - name: Validate Netlify target and build env
+              env:
+                  ENVIRONMENT: ${{ matrix.environment }}
+                  STAGE: ${{ matrix.stage }}
+                  NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+                  PUBLIC_BACKEND_URL: ${{ vars.PUBLIC_BACKEND_URL }}
+                  PUBLIC_DOMAIN: ${{ vars.PUBLIC_DOMAIN }}
+                  PUBLIC_LCA_URL: ${{ vars.PUBLIC_LCA_URL }}
+                  PUBLIC_CONTRACT_URI: ${{ vars.PUBLIC_CONTRACT_URI }}
+              run: |
+                  failed=0
+                  fail() { echo "::error::$1"; failed=1; }
+
+                  REQUIRED=(NETLIFY_SITE_ID NETLIFY_AUTH_TOKEN PUBLIC_BACKEND_URL PUBLIC_DOMAIN)
+                  if [[ "$STAGE" == 'staging' ]]; then
+                    REQUIRED+=(PUBLIC_LCA_URL PUBLIC_CONTRACT_URI)
+                  fi
+                  for name in "${REQUIRED[@]}"; do
+                    if [[ -z "${!name}" ]]; then
+                      fail "$name is missing in environment '$ENVIRONMENT'."
+                    fi
+                  done
+
+                  if [[ "$STAGE" == 'staging' && "$PUBLIC_CONTRACT_URI" == 'lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b' ]]; then
+                    fail "PUBLIC_CONTRACT_URI is the production consent contract."
+                  fi
+
+                  exit "$failed"
+
+            # Astro 7 needs Node >= 22.12.
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+                  package-manager-cache: false
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+
+            # --skip-nx-cache: the Netlify adapter writes the SSR function to .netlify/v1, which
+            # isn't an Nx build output, so a cache hit would restore dist/ without it.
+            - name: Build App
+              run: bunx nx build ai-passport --skip-nx-cache
+              env:
+                  PUBLIC_BACKEND_URL: ${{ vars.PUBLIC_BACKEND_URL }}
+                  PUBLIC_DOMAIN: ${{ vars.PUBLIC_DOMAIN }}
+                  PUBLIC_LCA_URL: ${{ vars.PUBLIC_LCA_URL }}
+                  PUBLIC_CONTRACT_URI: ${{ vars.PUBLIC_CONTRACT_URI }}
+
+            # Same staging-dir approach as deploy-frontend: deploy outside the repo so the CLI's
+            # monorepo workspace detection can't misplace the function bundle. The site's UI base
+            # directory must be apps/ai-passport. Astro's adapter puts the SSR function and its
+            # routing config in .netlify/v1 (Netlify Frameworks API), which --no-build uploads.
+            - name: Deploy to Netlify
+              working-directory: apps/ai-passport
+              run: |
+                  if [[ ! -f .netlify/v1/functions/ssr/ssr.mjs ]]; then
+                    echo "::error::Astro didn't emit the SSR function (.netlify/v1/functions/ssr/ssr.mjs); the deploy would serve no on-demand pages."
+                    exit 1
+                  fi
+
+                  STAGE_ROOT="$RUNNER_TEMP/netlify-deploy-ai-passport"
+                  STAGE_DIR="$STAGE_ROOT/apps/ai-passport"
+                  rm -rf "$STAGE_ROOT"
+                  mkdir -p "$STAGE_DIR"
+                  cp netlify.toml "$STAGE_DIR/"
+                  cp -R dist "$STAGE_DIR/dist"
+                  mkdir -p "$STAGE_DIR/.netlify"
+                  cp -R .netlify/v1 "$STAGE_DIR/.netlify/v1"
+                  git -C "$STAGE_ROOT" init --quiet
+
+                  cd "$STAGE_DIR"
+                  bunx netlify-cli@26 deploy \
+                    --debug \
+                    --prod \
+                    --no-build \
+                    --dir "$STAGE_DIR/dist" \
+                    --site "$NETLIFY_SITE_ID" \
+                    --message "CI deploy ${{ github.sha }}"
+              env:
+                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+                  NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
