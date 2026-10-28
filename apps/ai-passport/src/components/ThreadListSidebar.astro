@@ -1,0 +1,182 @@
+---
+import Curve from "../assets/Curve.svg";
+import OpenAILogo from "../assets/openai.svg";
+import ProfilePicture from "./ProfilePicture.astro";
+import ThreadList from "./ThreadList";
+import X from "./svgs/X";
+import type { Thread } from "@learncard/types";
+
+type Props = {
+  initialThreadId?: string | undefined;
+  initialThreadList?: Thread[];
+  isMobile?: boolean;
+};
+
+const {
+  initialThreadId = undefined,
+  initialThreadList = [],
+  isMobile = false,
+} = Astro.props;
+
+const sidebarClasses = isMobile
+  ? "fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out -translate-x-full sm:hidden w-full"
+  : "w-80 min-w-[18rem] hidden sm:flex";
+---
+
+<aside
+  id={`thread-list-sidebar${isMobile ? "-mobile" : ""}`}
+  class={`bg-white flex flex-col overflow-hidden border border-gray-200 max-w-[375px] ${sidebarClasses}`}
+>
+  <header
+    class={`relative flex flex-col justify-center items-center ${isMobile ? "" : "mb-[10px]"}`}
+  >
+    <section
+      class={`pt-[30px] px-[20px] pb-[5px] w-full flex justify-between items-center ${isMobile ? "bg-white" : "bg-grayscale-10"}`}
+    >
+      {
+        !isMobile && (
+          <div class="w-full flex justify-center">
+            <span class="font-semibold text-lg text-indigo-500 tracking-tight font-poppins">
+              AI Session
+            </span>
+            <span class="font-semibold text-lg text-black tracking-tight font-poppins">
+              &nbsp;• ChatGPT
+            </span>
+          </div>
+        )
+      }
+      {
+        isMobile && (
+          <>
+            <span class="text-grayscale-600 font-poppins text-[20px] font-[600]">
+              Chats
+            </span>
+            <button
+              id="close-mobile-menu"
+              class="p-[10px] cursor-pointer"
+              aria-label="Close menu"
+            >
+              <X size="24" />
+            </button>
+          </>
+        )
+      }
+    </section>
+
+    {
+      !isMobile && (
+        <>
+          <Curve class="w-full h-14 bg-white relative top-[-6px]" />
+          <OpenAILogo class="absolute bottom-[-10px] h-[50px] w-[50px] rounded-full" />
+        </>
+      )
+    }
+  </header>
+
+  <ThreadList
+    client:load
+    initialThreadId={initialThreadId}
+    initialThreadList={initialThreadList}
+  />
+
+  <footer
+    class="bg-grayscale-50-off-white py-[20px] border-t border-grayscale-200 mt-auto flex flex-col gap-[10px] items-center"
+  >
+    <ProfilePicture hideOnDesktop={true} />
+
+    <div class="flex items-center justify-center">
+      <span class="text-grayscale-900 font-poppins text-[17px] font-[600]">
+        LearnCard •&nbsp;
+      </span>
+      <button
+        id="logout"
+        class="text-grayscale-900 font-poppins text-[17px] font-[600] hover:text-red-600 transition-colors hover:cursor-pointer"
+      >
+        Logout
+      </button>
+    </div>
+  </footer>
+</aside>
+
+<script>
+  import { navigate } from "astro:transitions/client";
+  import {
+    loadThreads,
+    currentThreadId,
+    connectWebSocket,
+  } from "../stores/chatStore";
+  import { refreshAuth, logout } from "../stores/authStore";
+  import { getProfile } from "../stores/profile";
+
+  async function checkAuthAndLoadThreads() {
+    if (!(await refreshAuth())) {
+      window.location.href = "/login";
+      return;
+    }
+
+    await loadThreads();
+
+    currentThreadId.subscribe((threadId) => {
+      const url = new URL(window.location.href);
+
+      if (threadId) {
+        url.searchParams.set("threadId", threadId);
+      } else {
+        url.searchParams.delete("threadId");
+      }
+
+      if (!url.pathname.startsWith("/chats") && threadId) {
+        url.pathname = "/chats";
+        navigate(url.toString());
+      } else {
+        history.replaceState({}, "", url);
+      }
+    });
+
+    getProfile();
+    connectWebSocket();
+  }
+
+  void checkAuthAndLoadThreads();
+
+  document.getElementById("logout")?.addEventListener("click", async () => {
+    await logout();
+    window.location.href = "/login";
+  });
+
+  // Handle sidebar visibility
+  document.addEventListener("DOMContentLoaded", () => {
+    const closeButton = document.getElementById("close-mobile-menu");
+    const sidebar = document.getElementById("thread-list-sidebar-mobile");
+
+    // Close button handler
+    if (closeButton && sidebar) {
+      closeButton.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        sidebar.classList.remove("translate-x-0");
+        sidebar.classList.add("-translate-x-full");
+      });
+    }
+
+    // Toggle sidebar visibility when event is received
+    document.addEventListener("toggle-mobile-menu", () => {
+      if (sidebar) {
+        sidebar.classList.toggle("-translate-x-full");
+        sidebar.classList.toggle("translate-x-0");
+      }
+    });
+
+    // Handle clicking outside the sidebar to close it
+    document.addEventListener("click", (event) => {
+      if (
+        sidebar &&
+        !sidebar.contains(event.target as Node) &&
+        !(event.target as Element).closest("#mobile-menu-button") &&
+        sidebar.classList.contains("translate-x-0")
+      ) {
+        sidebar.classList.remove("translate-x-0");
+        sidebar.classList.add("-translate-x-full");
+      }
+    });
+  });
+</script>

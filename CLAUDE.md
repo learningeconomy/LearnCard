@@ -54,6 +54,7 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | Developer portal (guides, dashboards)                | `PATTERNS.md` (Dashboard Patterns section)            | Guide/dashboard tab system, guide state access, per-guideType routing                                                                                  |
 | Near-ready cross-surface/network verification       | `.agents/skills/verify-learncard/SKILL.md`            | Linux-owned `lc verify` gate or secret-free hosted workflow; focused scripts/browser reuse during development; honest catalog coverage                  |
 | ConsentFlow test harness                             | `examples/consent-flow-test/README.md`                | Standalone test app for consent redirect + credential sending                                                                                          |
+| AI Passport (Astro app + backend)                    | `services/ai-passport-backend/README.md`               | API/WS/workers/MCP, privacy runtime, local services; monorepo import notes and follow-ups in `docs/lc-1934-monorepo-import.md`                         |
 
 ## Quick Reference
 

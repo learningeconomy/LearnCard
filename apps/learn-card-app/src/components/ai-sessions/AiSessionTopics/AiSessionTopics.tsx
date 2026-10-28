@@ -75,17 +75,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
     const aiTopics = useMemo(() => {
         if (!topics?.length) return [];
 
-        if (activeTab === AiSessionsTabsEnum.chatGPT) {
-            const chatGPTProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.chatGPT
-            );
-            return topics?.filter(t => t?.topicRecord?.contractUri === chatGPTProfile?.contractUri);
-        } else if (activeTab === AiSessionsTabsEnum.claude) {
-            const claudeProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.claude
-            );
-            return topics?.filter(t => t?.topicRecord?.contractUri === claudeProfile?.contractUri);
-        } else if (activeTab === AiSessionsTabsEnum.gemini) {
+        if (activeTab === AiSessionsTabsEnum.gemini) {
             const geminiProfile = aiPassportApps?.find(
                 app => app?.type === AiPassportAppsEnum.gemini
             );

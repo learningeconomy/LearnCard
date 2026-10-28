@@ -52,23 +52,7 @@ export const AiSessionsTabs: React.FC<AiSessionsTabsProps> = ({
     const { isMobile } = useDeviceTypeByWidth();
 
     const topicsCount = useMemo(() => {
-        if (activeTab === AiSessionsTabsEnum.chatGPT) {
-            const chatGPTProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.chatGPT
-            );
-            return (
-                aiTopics?.filter(topics => topics?.contractUri === chatGPTProfile?.contractUri)
-                    .length ?? 0
-            );
-        } else if (activeTab === AiSessionsTabsEnum.claude) {
-            const claudeProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.claude
-            );
-            return (
-                aiTopics?.filter(topics => topics?.contractUri === claudeProfile?.contractUri)
-                    .length ?? 0
-            );
-        } else if (activeTab === AiSessionsTabsEnum.gemini) {
+        if (activeTab === AiSessionsTabsEnum.gemini) {
             const geminiProfile = aiPassportApps?.find(
                 app => app?.type === AiPassportAppsEnum.gemini
             );

@@ -1,0 +1,33 @@
+# fly.toml configuration for LearnCard MCP Server
+#
+# Deploy from the monorepo root with: fly deploy --config services/ai-passport-backend/fly.mcp.toml
+# See https://fly.io/docs/reference/configuration/
+
+primary_region = 'sjc'
+
+[env]
+  AWS_REGION = "us-east-1"
+  AWS_ROLE_ARN = "arn:aws:iam::206533012615:role/ai-passport-privacy-runtime"
+
+[build]
+  dockerfile = "services/ai-passport-backend/Dockerfile.mcp"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[http_service.checks]]
+  grace_period = "5s"
+  interval = "10s"
+  method = "GET"
+  timeout = "2s"
+  path = "/.well-known/oauth-protected-resource"
+
+[[vm]]
+  memory = '2gb'
+  cpu_kind = 'shared'
+  cpus = 2

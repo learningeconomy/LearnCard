@@ -1,0 +1,34 @@
+# syntax = docker/dockerfile:1
+
+# Bun pin matches the LearnCard monorepo (root package.json packageManager).
+ARG BUN_VERSION=1.4.2
+FROM oven/bun:${BUN_VERSION}-slim AS base
+
+LABEL fly_launch_runtime="Bun"
+
+WORKDIR /app
+
+ENV NODE_ENV="production"
+
+COPY services/ai-passport-backend/privacy/requirements.txt services/ai-passport-backend/privacy/install.sh /tmp/ai-privacy-assets/
+RUN sh /tmp/ai-privacy-assets/install.sh /tmp/ai-privacy-assets && rm -rf /tmp/ai-privacy-assets
+COPY services/ai-passport-backend/privacy/processor.py /opt/ai-privacy/assets/processor.py
+ENV AI_PRIVACY_PYTHON=/opt/ai-privacy/bin/python \
+    AI_PRIVACY_ASSET_DIR=/opt/ai-privacy/assets
+
+# The bun.lock is shared by every LearnCard workspace, so a frozen install needs the full
+# workspace closure (same pattern as services/learn-card-network/*/Dockerfile).
+# .dockerignore at the repo root keeps node_modules and Rust targets out of the context.
+COPY . .
+
+ENV SKIP_DIDKIT_NAPI=1 \
+    MONGOMS_DISABLE_POSTINSTALL=1
+
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
+
+WORKDIR /app/services/ai-passport-backend
+
+EXPOSE 3000
+
+CMD ["bun", "run", "start:mcp"]

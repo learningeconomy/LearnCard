@@ -1,0 +1,35 @@
+{
+    // Monorepo
+    "extends": "../../tsconfig.json",
+    "exclude": ["dist", "node_modules"],
+    "compilerOptions": {
+        // Enable latest features
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleDetection": "force",
+        "jsx": "react-jsx",
+        "allowJs": true,
+        // Keep ambient types to Bun/Node; the LearnCard root hoists unrelated globals.
+        "types": ["bun"],
+        "baseUrl": ".",
+        "paths": {
+            "next": ["./types/next-stub.d.ts"]
+        },
+        // Bundler mode
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": false,
+        "noEmit": true,
+        // Best practices
+        "strict": true,
+        "skipLibCheck": true,
+        "noFallthroughCasesInSwitch": true,
+        // Some stricter flags (disabled by default)
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noPropertyAccessFromIndexSignature": false
+    }
+}

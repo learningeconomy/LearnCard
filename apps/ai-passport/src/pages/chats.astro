@@ -1,0 +1,79 @@
+---
+export const prerender = false;
+
+import ChatPage from "../components/Chat.astro";
+import BaseLayout from "../layouts/Layout.astro";
+// Get thread ID from URL
+const threadId = Astro.url.searchParams.get("threadId");
+const initialThreadList = [];
+const initialMessages = [];
+
+const topic = Astro.url.searchParams.get("topic") || undefined;
+const topicUri = Astro.url.searchParams.get("topicUri") || undefined;
+---
+
+<BaseLayout>
+  <div id="chat-container" class="hidden">
+    <div class="flex flex-col h-screen">
+      <!-- Removed header for full custom sidebar experience -->
+      <main class="flex-1 overflow-hidden">
+        <ChatPage
+          initialMessages={initialMessages}
+          initialThreadId={threadId ?? undefined}
+          initialThreadList={initialThreadList}
+          initialTopic={topic}
+          initialTopicUri={topicUri}
+        />
+      </main>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    loadThreads,
+    loadThread,
+    currentThreadId,
+    connectWebSocket,
+  } from "@/stores/chatStore";
+  import { refreshAuth, logout } from "../stores/authStore";
+
+  async function initialize() {
+    const chatContainer = document.getElementById("chat-container");
+
+    if (!(await refreshAuth())) {
+      window.location.href = "/login";
+      return;
+    }
+
+    chatContainer?.classList.remove("hidden");
+    await loadThreads();
+
+    currentThreadId.subscribe((threadId) => {
+      const url = new URL(window.location.href);
+
+      if (threadId) {
+        url.searchParams.set("threadId", threadId);
+      } else {
+        url.searchParams.delete("threadId");
+      }
+
+      history.replaceState({}, "", url);
+    });
+
+    connectWebSocket();
+
+    const threadIdClient = new URL(window.location.href).searchParams.get(
+      "threadId",
+    );
+
+    if (threadIdClient) await loadThread(threadIdClient);
+  }
+
+  void initialize();
+
+  document.getElementById("logout")?.addEventListener("click", async () => {
+    await logout();
+    window.location.href = "/login";
+  });
+</script>
