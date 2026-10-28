@@ -2,6 +2,8 @@ import { authorizeContractNotification } from '@helpers/contract-events.helpers'
 import { ConsentFlowWebhookMetadataValidator, LCNNotificationValidator } from '@learncard/types';
 
 import { acknowledgeConnectionPromptNotificationDelivery } from '@helpers/connectionPrompt.helpers';
+import { acknowledgeCampaignNotification } from '@accesslayer/campaign/delivery';
+import { authorizeCampaignNotification } from '@helpers/campaign-notifications.helpers';
 import {
     PermanentNotificationDeliveryError,
     sendNotification,
@@ -10,6 +12,7 @@ import {
 export const deliverQueuedNotification = async (body: string): Promise<void> => {
     const notification = await LCNNotificationValidator.parseAsync(JSON.parse(body));
 
+    if (!(await authorizeCampaignNotification(notification))) return;
     if (!(await authorizeContractNotification(notification))) return;
 
     const isContractEvent = ConsentFlowWebhookMetadataValidator.safeParse(
@@ -29,6 +32,8 @@ export const deliverQueuedNotification = async (body: string): Promise<void> => 
     }
 
     if (!stored) throw new Error('Notification was not durably stored');
+
+    await acknowledgeCampaignNotification(notification);
 
     const connectionPrompt = notification.data?.metadata?.connectionPrompt;
     if (!connectionPrompt) return;

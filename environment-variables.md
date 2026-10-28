@@ -93,8 +93,25 @@ Whitespace is trimmed. An empty/unset value grants nobody campaign administratio
 In non-bundle Lambda deployments it is forwarded like `APP_STORE_ADMIN_PROFILE_IDS`.
 No administrators or production campaigns are enabled by this change.
 
-LC-2265 adds setup, audiences and engagement state only. Dispatch settings and queue
-configuration belong to LC-2266; this setting does not enable notification delivery.
+Campaign notification delivery additionally uses:
+
+| Variable                          | Default       | Purpose                                                                                                                     |
+| --------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `CAMPAIGN_QUEUE_URL`              | unset locally | Serverless injects the `campaign-queue` URL. Missing URL or `IS_OFFLINE=true` uses the awaited, non-durable local fallback. |
+| `CAMPAIGN_DISPATCH_PAGE_SIZE`     | `1000`        | Recipients per wave, integer 1–1000.                                                                                        |
+| `CAMPAIGN_DISPATCH_DELAY_SECONDS` | `60`          | Delay between full pages, integer 0–900 (SQS maximum).                                                                      |
+
+Put non-secret page-size/delay tuning in the brain-service stage config, or override it in
+runtime environment configuration. Empty values use defaults; invalid values fail startup.
+The queue uses batch size 1, three retries, a 300-second worker timeout and the inbox VPC.
+The notification worker also needs that VPC to recheck eligibility and acknowledge delivery.
+Monitor the construct's dead-letter queue; redrive failed jobs or re-dispatch after fixing
+the cause. Retried notifications retain their receiver identity.
+
+Deploy lca-api's ANNOUNCEMENT enum **and campaign deduplication support first**, then brain,
+then the app integration. Only an explicit admin dispatch sends audience notifications.
+See [campaign delivery](services/learn-card-network/brain-service/src/accesslayer/campaign/README.md#notification-delivery-lc-2266)
+for retry semantics and the pilot sequence. No rollout is authorized by these changes.
 
 ## Quick Start
 

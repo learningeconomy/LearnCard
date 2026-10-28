@@ -1,8 +1,7 @@
 # Campaigns: setup, audiences and engagement (LC-2265)
 
-This slice stores campaign definitions, server-selected audiences and shared engagement
-state. It does not deliver notifications or render messages. LC-2266 owns dispatch and
-`sendTestToMe`; LC-2267 owns app integration. It does not require the in-app messages V2
+This service stores campaign definitions, server-selected audiences, shared engagement
+state and paced notification delivery. LC-2267 owns app rendering and tap routing. It does not require the in-app messages V2
 branches: `message` uses the shared `InAppMessage` schema available in this checkout.
 
 ## Administration and lifecycle
@@ -34,7 +33,7 @@ the campaign and its relationships.
 Use a new ID for a new campaign; deleting/reusing an ID cannot clear clients' local seen state.
 
 `channels` must contain `inApp`, `notify`, or both without duplicates. `notify` requires
-`notification: { title, body }`, but does not send anything in this slice. Dates are ISO
+`notification: { title, body }`, but sends only after an explicit test or dispatch. Dates are ISO
 timestamps normalized to UTC; `startsAt` is inclusive and `endsAt` is exclusive. If both
 exist, the end must follow the start. Partial updates preserve omitted fields; `null`
 clears optional notification/start/end fields. Updates replace `message` as a whole.
@@ -144,7 +143,7 @@ duplicate state edges and lost increments under concurrent devices. Repeated req
 are separate events, not transport-idempotent retries.
 
 Stats count distinct profiles, not impressions; `enrolled` counts memberships originally
-created by self-enrollment. `notified` is reserved for LC-2266 and is not client-writable.
+created by self-enrollment. `notified` counts durable inbox acknowledgements and is not client-writable.
 All user/discovery calls share a 60-call/profile/minute rate limit; admin operations do not.
 
 The network plugin exposes `learnCard.invoke.getMyCampaigns()`,
@@ -172,3 +171,68 @@ The hosted Linux verification workflow also runs `test/verification/campaigns.ts
 `lc verify script` after the full catalog: real signed SDK calls prove non-admin denial
 and user isolation over HTTP. The default stack grants no admin access, so positive
 administration and graph mutations are covered by the dedicated Neo4j suite instead.
+
+## Notification delivery (LC-2266)
+
+```ts
+// Allowlisted administrator, with campaigns:admin scope.
+await learnCard.invoke.campaignsSendTestToMe('transcript-pilot-v1');
+await learnCard.invoke.campaignsSetStatus('transcript-pilot-v1', 'live');
+const { dispatchId } = await learnCard.invoke.campaignsDispatch('transcript-pilot-v1');
+```
+
+`sendTestToMe` always targets the authenticated caller. It ignores audience, status, dates,
+and channels, but requires notification copy. Each explicit test gets a fresh test ID;
+queue retries preserve it. Test sends neither enroll the caller nor increment `notified`.
+`dispatch` requires a live, in-window campaign with the `notify` channel. The queue job
+contains campaign ID, creation timestamp, dispatch ID and an optional profile-ID cursor.
+The creation timestamp prevents old jobs from applying to a deleted/recreated campaign.
+
+Audience pages are ordered by profile ID, reapply the existing age policy and default to
+1000 recipients. Full pages schedule the next cursor after 60 seconds. Thus 2500 recipients
+use three waves; an exact multiple can schedule an empty final page. The defaults are
+configurable through `CAMPAIGN_DISPATCH_PAGE_SIZE` and `CAMPAIGN_DISPATCH_DELAY_SECONDS`.
+A re-dispatch starts at the beginning, including newly added members with earlier IDs,
+and skips recipients with `notifiedAt`.
+
+The worker sends ANNOUNCEMENT via the existing notification queue. Each recipient is
+checked again before enqueue and before webhook delivery. Paused, archived, expired,
+deleted, no-longer-notify and age-ineligible campaigns/recipients stop future delivery;
+a send already in flight at a pause can still complete. Resume with an explicit dispatch.
+The local fallback awaits all waves and their delays and loses unfinished work on process
+exit; use a small page size/delay during development and SQS for production.
+
+### Retry and statistics boundary
+
+Enqueue and Neo4j are separate systems: duplicate queue messages are expected after a
+lost enqueue response, concurrent dispatches, worker retries or acknowledgement failure.
+There is deliberately no pre-send `notifiedAt` marker that could silently lose deliveries.
+lca-api atomically inserts one inbox record using its Mongo `_id` uniqueness constraint,
+keyed by sender, recipient, campaign ID and creation timestamp (plus test ID for tests).
+Only the inserting request attempts push. Retries preserve existing read/archive state
+and copy. This is a narrowly approved extension of the ticket's original enum-only scope;
+it leaves the existing FCM delivery path intact.
+
+After lca-api acknowledges durable storage, brain records `notifiedAt` under the same
+profile lock as engagement writes. Queue acceptance alone is not counted. If that graph
+write fails, the notification retries; lca-api returns success for the existing record
+without another push attempt. Stats measure acknowledged inbox storage, **not** device
+receipt. FCM remains best effort: a crash between inbox insertion and push, or a push
+failure, can leave an inbox card without push. There is no exactly-once device guarantee.
+Receiver deduplication lasts while the inbox record exists; hard-deleting it before an
+unacknowledged retry can permit reinsertion. Production pilot QA must include this existing
+notification retention limitation.
+
+### Deployment and proof
+
+Deploy lca-api (enum plus campaign deduplication), then brain, then the separate app
+integration. Pilot with draft → audience preview → test-to-me → live → dispatch. This
+implementation does not authorize deployment or any real audience send. Preserve LC-2265's
+age policy and obtain its documented product/legal sign-off before a pilot.
+
+Focused tests cover three-wave paging, delays, eligibility, stable retry identities,
+receiver deduplication and acknowledgement failures. The Neo4j campaign suite covers
+admin denial, caller-only tests, concurrent state acknowledgements and stats. The lca-api
+notification integration suite covers concurrent receiver storage and push suppression.
+Hosted `lc verify` additionally exercises SDK authorization; it does not provision FCM
+or prove iOS/Android device receipt. Those require separately authorized device QA.

@@ -15,6 +15,18 @@ plugins:
     - serverless-prune-plugin
 
 constructs:
+    campaign-queue:
+        type: queue
+        batchSize: 1
+        maxRetries: 3
+        worker:
+            handler: lambda.campaignDispatchWorker
+            timeout: 300
+            vpc:
+                securityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+                subnetIds:
+                    - Ref: PrivateSubnetA
     inbox-queue:
         type: queue
         batchSize: 1
@@ -33,6 +45,11 @@ constructs:
         type: queue
         worker:
             handler: lambda.notificationsWorker
+            vpc:
+                securityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+                subnetIds:
+                    - Ref: PrivateSubnetA
 
 custom:
     prune:
