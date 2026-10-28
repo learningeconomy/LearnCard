@@ -85,3 +85,27 @@ Use **Clear Samples** in the holder to remove its registry record and invalidate
 - Run the matching SDK/cross-surface `lc verify` journeys on Linux before rollout readiness. Browser journeys cannot prove Android provider behavior; native emulator/device evidence must remain separate.
 
 Only `-PdigitalCredentialsDev` enables the dedicated debug app's provider. Production builds retain `lc_digital_credentials_enabled=false`; rollout remains gated on the remaining acceptance work.
+
+## Investigating startup and SQLite errors
+
+The initial 6–7 minute observation was a development-run outlier, not a repeatable measurement of Ed25519 signing or account-key derivation. An instrumented run of the previous build restored the account in 20.8 seconds, with key derivation around 1.4 seconds. Keep process startup, JavaScript/module loading, account readiness and consent readiness separate when comparing runs.
+
+Two defects were reproduced and fixed:
+
+- The HTML entry point loaded a web-only `jeep-sqlite` module from a public CDN before the app entry module. Holding just that request for 20 seconds kept React's root empty throughout. The web component now loads from the installed package inside the web-only effect; native startup makes no such CDN request.
+- Cache, account-key, recovery-share and credential operations independently opened and closed the same SQLite connection. A captured baseline contained 107 close calls, including 70 failures, and five query-cache errors. Overlapping operations now hold shared connection leases; only the final owner closes it. Schema initialization is shared and idempotent, and native initialization has one owner per JavaScript context. The web hook's cleanup cannot close a native connection.
+
+Use `withSQLiteDatabase` for work on the shared connection. Do not add independent `open`/`close` calls inside its callback. Nested SDK cache work is supported; serializing whole callbacks would deadlock nested operations. Logout still preserves the recovery-share table. Tests cover overlapping operations, error cleanup/retry, schema initialization, account-key persistence and recovery-share retention.
+
+### Collect timings
+
+After forwarding the dedicated development app's current WebView debugger socket with ADB, run from the repository root:
+
+```bash
+node apps/learn-card-app/scripts/native-digital-credentials/startup-probe.mjs \
+  --cdp-port 19258 --output /absolute/new/private-startup.json
+```
+
+Start the probe soon after opening the app. It only accepts the local `com.learncard.app.dctest` WebView and refuses to overwrite an existing result. It records fixed development performance marks and native method names/counts/durations; it never records SQL, call arguments, credential bodies or keys. It removes its instrumentation when finished. The JSON is private investigation data, not an `lc verify` report or publishable media.
+
+`learncard:startup:entry` begins after initial module evaluation; `react` follows tenant/updater/flag setup; `learncard:auth:wallet_ready` signals account readiness; `learncard:startup:consent` follows the consent render. Compare repeated runs with the same code, cache conditions, CPU/RAM allocation and recording settings. The original AVD had one CPU core and 2 GiB RAM; task launches override RAM to 4 GiB, and multi-core comparisons use `-cores 4` without changing the saved AVD configuration. Development-source timings do not establish production-bundle or physical-device performance.
