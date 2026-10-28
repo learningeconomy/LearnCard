@@ -16,6 +16,7 @@ import { prepareAccountPresentation } from './presentation';
 import type { DigitalCredentialWallet } from './inventory';
 import type { PendingDigitalCredentialRequest } from './types';
 import * as m from '../paraglide/messages.js';
+import { markStartupPhase } from '../helpers/startupDiagnostics';
 
 type Prepared = Awaited<ReturnType<typeof prepareAccountPresentation>>;
 
@@ -31,6 +32,11 @@ export default function NativeDigitalCredentialFlow() {
     const [error, setError] = useState(false);
     const [sending, setSending] = useState(false);
     const [canceling, setCanceling] = useState(false);
+
+    useEffect(() => {
+        if (prepared && !error) markStartupPhase('consent');
+        if (error) markStartupPhase('unavailable');
+    }, [prepared, error]);
 
     useEffect(() => {
         let stopped = false;

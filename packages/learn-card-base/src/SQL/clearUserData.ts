@@ -1,3 +1,4 @@
+import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 import { getLogger } from '../logging/logger';
 const log = getLogger('clear-user-data');
 /**
@@ -26,39 +27,31 @@ export const PRESERVED_TABLES = new Set(['sss_shares', 'sqlite_sequence']);
  */
 export const clearUserData = async (db: SQLiteDBConnection): Promise<void> => {
     try {
-        await db.open();
+        return await withSQLiteDatabase(db, async () => {
+            // Clear well-known app-data tables.
+            await db.query('DELETE FROM users');
+            await db.query('DELETE FROM tokens');
 
-        // Clear well-known app-data tables.
-        await db.query('DELETE FROM users');
-        await db.query('DELETE FROM tokens');
+            // Dynamically clear any other tables, but leave preserved ones intact.
+            try {
+                const preservedList = [...PRESERVED_TABLES].map(t => `'${t}'`).join(', ');
 
-        // Dynamically clear any other tables, but leave preserved ones intact.
-        try {
-            const preservedList = [...PRESERVED_TABLES].map(t => `'${t}'`).join(', ');
+                const { values } = await db.query(
+                    `SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN (${preservedList})`
+                );
 
-            const { values } = await db.query(
-                `SELECT name FROM sqlite_master WHERE type='table' AND name NOT IN (${preservedList})`
-            );
+                for (const row of values ?? []) {
+                    const table = row?.name;
 
-            for (const row of values ?? []) {
-                const table = row?.name;
-
-                if (table) {
-                    await db.query(`DELETE FROM ${table}`);
+                    if (table) {
+                        await db.query(`DELETE FROM ${table}`);
+                    }
                 }
+            } catch (tableErr) {
+                log.warn('clearUserData: dynamic table clear failed', tableErr);
             }
-        } catch (tableErr) {
-            log.warn('clearUserData: dynamic table clear failed', tableErr);
-        }
+        });
     } catch (e) {
         log.warn('😵 clearUserData', e);
-    } finally {
-        if (db && (await db?.isDBOpen())?.result) {
-            try {
-                await db?.close();
-            } catch (closeErr) {
-                log.warn('😵 clearUserData close failed', closeErr);
-            }
-        }
     }
 };

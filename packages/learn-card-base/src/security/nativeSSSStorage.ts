@@ -1,3 +1,4 @@
+import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 import { getLogger } from '../logging/logger';
 const log = getLogger('native-sssstorage');
 /**
@@ -37,21 +38,17 @@ const ensureTable = async (): Promise<boolean> => {
     if (!db) return false;
 
     try {
-        await db.open();
-
-        await db.execute(`
+        return await withSQLiteDatabase(db, async () => {
+            await db.execute(`
             CREATE TABLE IF NOT EXISTS ${TABLE} (
                 id TEXT PRIMARY KEY,
                 share TEXT NOT NULL
             )
         `);
-        return true;
+            return true;
+        });
     } catch {
         return false;
-    } finally {
-        try {
-            if ((await db?.isDBOpen())?.result) await db?.close();
-        } catch {}
     }
 };
 
@@ -99,18 +96,14 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         }
 
         try {
-            await db.open();
-
-            await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
-                shareId,
-                share,
-            ]);
+            return await withSQLiteDatabase(db, async () => {
+                await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
+                    shareId,
+                    share,
+                ]);
+            });
         } catch (e) {
             log.error('[NativeSSSStorage] storeDeviceShare failed', e);
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 
@@ -123,22 +116,18 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         if (!db) return null;
 
         try {
-            await db.open();
+            return await withSQLiteDatabase(db, async () => {
+                const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
+                    shareId,
+                ]);
 
-            const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
-                shareId,
-            ]);
+                const share = res?.values?.[0]?.share ?? null;
 
-            const share = res?.values?.[0]?.share ?? null;
-
-            return typeof share === 'string' && share.length > 0 ? share : null;
+                return typeof share === 'string' && share.length > 0 ? share : null;
+            });
         } catch (e) {
             log.warn('[NativeSSSStorage] getDeviceShare failed', e);
             return null;
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 
@@ -153,20 +142,16 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         if (!db) return;
 
         try {
-            await db.open();
-
-            if (id) {
-                await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
-            } else {
-                await db.execute(`DELETE FROM ${TABLE}`);
-                tableEnsured = false;
-            }
+            return await withSQLiteDatabase(db, async () => {
+                if (id) {
+                    await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
+                } else {
+                    await db.execute(`DELETE FROM ${TABLE}`);
+                    tableEnsured = false;
+                }
+            });
         } catch (e) {
             log.warn('[NativeSSSStorage] clearAllShares failed', e);
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 
@@ -182,18 +167,14 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         }
 
         try {
-            await db.open();
-
-            await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
-                versionId,
-                String(version),
-            ]);
+            return await withSQLiteDatabase(db, async () => {
+                await db.run(`INSERT OR REPLACE INTO ${TABLE} (id, share) VALUES (?, ?)`, [
+                    versionId,
+                    String(version),
+                ]);
+            });
         } catch (e) {
             log.error('[NativeSSSStorage] storeShareVersion failed', e);
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 
@@ -206,26 +187,22 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         if (!db) return null;
 
         try {
-            await db.open();
+            return await withSQLiteDatabase(db, async () => {
+                const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
+                    versionId,
+                ]);
 
-            const res = await db.query(`SELECT share FROM ${TABLE} WHERE id = ? LIMIT 1`, [
-                versionId,
-            ]);
+                const raw = res?.values?.[0]?.share ?? null;
 
-            const raw = res?.values?.[0]?.share ?? null;
+                if (raw == null) return null;
 
-            if (raw == null) return null;
+                const parsed = Number(raw);
 
-            const parsed = Number(raw);
-
-            return Number.isFinite(parsed) ? parsed : null;
+                return Number.isFinite(parsed) ? parsed : null;
+            });
         } catch (e) {
             log.warn('[NativeSSSStorage] getShareVersion failed', e);
             return null;
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 
@@ -237,42 +214,38 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         if (!db) return [];
 
         try {
-            await db.open();
+            return await withSQLiteDatabase(db, async () => {
+                const res = await db.query(`SELECT id, share FROM ${TABLE}`);
+                const rows: Array<{ id: string; share: string }> = res?.values ?? [];
 
-            const res = await db.query(`SELECT id, share FROM ${TABLE}`);
-            const rows: Array<{ id: string; share: string }> = res?.values ?? [];
+                const entries: NativeShareEntry[] = [];
 
-            const entries: NativeShareEntry[] = [];
+                for (const row of rows) {
+                    // Skip :version metadata rows
+                    if (row.id.endsWith(':version')) continue;
 
-            for (const row of rows) {
-                // Skip :version metadata rows
-                if (row.id.endsWith(':version')) continue;
+                    const share = row.share;
+                    const preview =
+                        share.length > 16
+                            ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
+                            : share;
 
-                const share = row.share;
-                const preview =
-                    share.length > 16
-                        ? share.substring(0, 8) + '...' + share.substring(share.length - 8)
-                        : share;
+                    // Look up companion version
+                    const versionRow = rows.find(r => r.id === `${row.id}:version`);
+                    const version = versionRow ? Number(versionRow.share) : undefined;
 
-                // Look up companion version
-                const versionRow = rows.find(r => r.id === `${row.id}:version`);
-                const version = versionRow ? Number(versionRow.share) : undefined;
+                    entries.push({
+                        id: row.id,
+                        preview,
+                        shareVersion: version && Number.isFinite(version) ? version : undefined,
+                    });
+                }
 
-                entries.push({
-                    id: row.id,
-                    preview,
-                    shareVersion: version && Number.isFinite(version) ? version : undefined,
-                });
-            }
-
-            return entries;
+                return entries;
+            });
         } catch (e) {
             log.warn('[NativeSSSStorage] listAllShares failed', e);
             return [];
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 
@@ -284,16 +257,12 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         if (!db) return;
 
         try {
-            await db.open();
-
-            await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
-            await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [`${id}:version`]);
+            return await withSQLiteDatabase(db, async () => {
+                await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
+                await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [`${id}:version`]);
+            });
         } catch (e) {
             log.warn('[NativeSSSStorage] deleteShare failed', e);
-        } finally {
-            try {
-                if ((await db?.isDBOpen())?.result) await db?.close();
-            } catch {}
         }
     };
 

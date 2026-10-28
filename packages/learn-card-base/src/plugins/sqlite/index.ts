@@ -1,3 +1,4 @@
+import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 import { LearnCard } from '@learncard/core';
 import { CredentialRecord } from '@learncard/types';
 import { stringify } from 'learn-card-base/helpers/jsonHelpers';
@@ -22,21 +23,19 @@ export const getSQLitePlugin = async (
         const db = sqliteStore.get.db();
 
         if (!db) return [];
+        return await withSQLiteDatabase(db, async () => {
+            await ensureIndexTableExists(db);
 
-        await ensureIndexTableExists(db);
-        await db.open();
+            const result = await db.query(
+                `SELECT * FROM indexRecords WHERE did="${learnCard.id.did()}";`
+            );
 
-        const result = await db.query(
-            `SELECT * FROM indexRecords WHERE did="${learnCard.id.did()}";`
-        );
+            if (result.values?.length === 0) return [];
 
-        await db.close();
+            const encryptedRecords = JSON.parse(result.values![0].records);
 
-        if (result.values?.length === 0) return [];
-
-        const encryptedRecords = JSON.parse(result.values![0].records);
-
-        return _learnCard.invoke.decryptDagJwe(encryptedRecords) as any;
+            return _learnCard.invoke.decryptDagJwe(encryptedRecords) as any;
+        });
     };
 
     const upsertIndex = async (
@@ -46,24 +45,22 @@ export const getSQLitePlugin = async (
         const db = sqliteStore.get.db();
 
         if (!db) return false;
+        return await withSQLiteDatabase(db, async () => {
+            await ensureIndexTableExists(db);
 
-        await ensureIndexTableExists(db);
-        await db.open();
+            const encryptedRecords = await _learnCard.invoke.createDagJwe(records, [
+                _learnCard.id.did(),
+            ]);
 
-        const encryptedRecords = await _learnCard.invoke.createDagJwe(records, [
-            _learnCard.id.did(),
-        ]);
-
-        const result = await db.execute(
-            `INSERT INTO indexRecords (did, records) VALUES ('${learnCard.id.did()}', '${JSON.stringify(
-                encryptedRecords
-            )}')
+            const result = await db.execute(
+                `INSERT INTO indexRecords (did, records) VALUES ('${learnCard.id.did()}', '${JSON.stringify(
+                    encryptedRecords
+                )}')
                 ON CONFLICT (did) DO UPDATE SET records=excluded.records;`
-        );
+            );
 
-        await db.close();
-
-        return (result.changes?.changes ?? 0) > 0;
+            return (result.changes?.changes ?? 0) > 0;
+        });
     };
 
     return {
@@ -84,19 +81,17 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return undefined;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureCredentialsTableExists(db);
 
-                await ensureCredentialsTableExists(db);
-                await db.open();
+                    const result = await db.query(`SELECT * FROM credentials WHERE id="${id}";`);
 
-                const result = await db.query(`SELECT * FROM credentials WHERE id="${id}";`);
+                    if (result.values?.length === 0) return undefined;
 
-                await db.close();
+                    const encryptedVc = JSON.parse(result.values![0].credential);
 
-                if (result.values?.length === 0) return undefined;
-
-                const encryptedVc = JSON.parse(result.values![0].credential);
-
-                return _learnCard.invoke.decryptDagJwe(encryptedVc) as any;
+                    return _learnCard.invoke.decryptDagJwe(encryptedVc) as any;
+                });
             },
         },
         store: {
@@ -106,23 +101,23 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) throw new Error('SQLite unavailable');
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureCredentialsTableExists(db);
 
-                await ensureCredentialsTableExists(db);
-                await db.open();
+                    const encryptedVc = await _learnCard.invoke.createDagJwe(vc, [
+                        _learnCard.id.did(),
+                    ]);
 
-                const encryptedVc = await _learnCard.invoke.createDagJwe(vc, [_learnCard.id.did()]);
+                    const result = await db.execute(
+                        `INSERT INTO credentials (credential) VALUES ('${JSON.stringify(
+                            encryptedVc
+                        )}');`
+                    );
 
-                const result = await db.execute(
-                    `INSERT INTO credentials (credential) VALUES ('${JSON.stringify(
-                        encryptedVc
-                    )}');`
-                );
+                    if (result.changes?.changes) return `lc:sqlite:${result.changes.lastId}`;
 
-                await db.close();
-
-                if (result.changes?.changes) return `lc:sqlite:${result.changes.lastId}`;
-
-                throw new Error('Could not get ID From SQLite');
+                    throw new Error('Could not get ID From SQLite');
+                });
             },
             uploadEncrypted: async (_learnCard, vc, params) => {
                 _learnCard.debug?.('sqlite:store:uploadEncrypted', vc);
@@ -130,26 +125,24 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) throw new Error('SQLite unavailable');
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureCredentialsTableExists(db);
 
-                await ensureCredentialsTableExists(db);
-                await db.open();
+                    const encryptedVc = await _learnCard.invoke.createDagJwe(vc, [
+                        _learnCard.id.did(),
+                        ...(params?.recipients ?? []),
+                    ]);
 
-                const encryptedVc = await _learnCard.invoke.createDagJwe(vc, [
-                    _learnCard.id.did(),
-                    ...(params?.recipients ?? []),
-                ]);
+                    const result = await db.execute(
+                        `INSERT INTO credentials (credential) VALUES ('${JSON.stringify(
+                            encryptedVc
+                        )}');`
+                    );
 
-                const result = await db.execute(
-                    `INSERT INTO credentials (credential) VALUES ('${JSON.stringify(
-                        encryptedVc
-                    )}');`
-                );
+                    if (result.changes?.changes) return `lc:sqlite:${result.changes.lastId}`;
 
-                await db.close();
-
-                if (result.changes?.changes) return `lc:sqlite:${result.changes.lastId}`;
-
-                throw new Error('Could not get ID From SQLite');
+                    throw new Error('Could not get ID From SQLite');
+                });
             },
         },
         index: {
@@ -189,17 +182,15 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexTableExists(db);
 
-                await ensureIndexTableExists(db);
-                await db.open();
+                    const result = await db.execute(
+                        `DELETE FROM indexRecords WHERE did='${learnCard.id.did()}';`
+                    );
 
-                const result = await db.execute(
-                    `DELETE FROM indexRecords WHERE did='${learnCard.id.did()}';`
-                );
-
-                await db.close();
-
-                return (result.changes?.changes ?? 0) > 0;
+                    return (result.changes?.changes ?? 0) > 0;
+                });
             },
         },
         cache: {
@@ -211,17 +202,17 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return undefined;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureCredentialCacheTableExists(db);
 
-                await ensureCredentialCacheTableExists(db);
-                await db.open();
+                    const result = await db.query(
+                        `SELECT * FROM credentialsCache WHERE uri="${uri}";`
+                    );
 
-                const result = await db.query(`SELECT * FROM credentialsCache WHERE uri="${uri}";`);
+                    if (result.values?.length === 0) return undefined;
 
-                await db.close();
-
-                if (result.values?.length === 0) return undefined;
-
-                return JSON.parse(result.values![0].credential);
+                    return JSON.parse(result.values![0].credential);
+                });
             },
             setVc: async (_learnCard, uri, vc) => {
                 _learnCard.debug?.('sqlite:cache:setVc', uri, vc);
@@ -229,20 +220,18 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureCredentialCacheTableExists(db);
 
-                await ensureCredentialCacheTableExists(db);
-                await db.open();
-
-                const result = await db.execute(
-                    `INSERT INTO credentialsCache (uri, credential) VALUES ('${uri}', '${JSON.stringify(
-                        vc
-                    )}')
+                    const result = await db.execute(
+                        `INSERT INTO credentialsCache (uri, credential) VALUES ('${uri}', '${JSON.stringify(
+                            vc
+                        )}')
                         ON CONFLICT (uri) DO UPDATE SET credential=excluded.credential;`
-                );
+                    );
 
-                await db.close();
-
-                return !!result.changes?.changes;
+                    return !!result.changes?.changes;
+                });
             },
             flushVc: async _learnCard => {
                 _learnCard.debug?.('sqlite:cache:flushVc');
@@ -250,15 +239,13 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureCredentialCacheTableExists(db);
 
-                await ensureCredentialCacheTableExists(db);
-                await db.open();
+                    const result = await db.execute(`DELETE FROM credentialsCache;`);
 
-                const result = await db.execute(`DELETE FROM credentialsCache;`);
-
-                await db.close();
-
-                return !!result.changes?.changes;
+                    return !!result.changes?.changes;
+                });
             },
             getIndex: async (_learnCard, name, query) => {
                 _learnCard.debug?.('sqlite:cache:getIndex', name, query);
@@ -268,21 +255,19 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return undefined;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexCacheTableExists(db);
 
-                await ensureIndexCacheTableExists(db);
-                await db.open();
+                    const result = await db.query(
+                        `SELECT * FROM indexCache WHERE did='${learnCard.id.did()}' AND name='${name}' AND indexQuery='${stringify(
+                            query
+                        )}';`
+                    );
 
-                const result = await db.query(
-                    `SELECT * FROM indexCache WHERE did='${learnCard.id.did()}' AND name='${name}' AND indexQuery='${stringify(
-                        query
-                    )}';`
-                );
+                    if (result.values?.length === 0) return undefined;
 
-                await db.close();
-
-                if (result.values?.length === 0) return undefined;
-
-                return JSON.parse(result.values![0].records);
+                    return JSON.parse(result.values![0].records);
+                });
             },
             setIndex: async (_learnCard, name, query, records) => {
                 _learnCard.debug?.('sqlite:cache:setIndex', name, query, records);
@@ -290,20 +275,18 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexCacheTableExists(db);
 
-                await ensureIndexCacheTableExists(db);
-                await db.open();
-
-                const result = await db.execute(
-                    `INSERT INTO indexCache (did, name, indexQuery, records) VALUES ('${learnCard.id.did()}', '${name}', '${stringify(
-                        query
-                    )}', '${JSON.stringify(records)} ')
+                    const result = await db.execute(
+                        `INSERT INTO indexCache (did, name, indexQuery, records) VALUES ('${learnCard.id.did()}', '${name}', '${stringify(
+                            query
+                        )}', '${JSON.stringify(records)} ')
                         ON CONFLICT(did, name, indexQuery) DO UPDATE SET records=excluded.records; `
-                );
+                    );
 
-                await db.close();
-
-                return !!result.changes?.changes;
+                    return !!result.changes?.changes;
+                });
             },
             getIndexPage: async (_learnCard, name, query, paginationOptions) => {
                 _learnCard.debug?.('sqlite:cache:getIndexPage', name, query, paginationOptions);
@@ -313,21 +296,19 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return undefined;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexPageCacheTableExists(db);
 
-                await ensureIndexPageCacheTableExists(db);
-                await db.open();
+                    const result = await db.query(
+                        `SELECT * FROM indexPageCache WHERE did='${learnCard.id.did()}' AND name='${name}' AND indexQuery='${stringify(
+                            query
+                        )}' AND paginationOptions='${stringify(paginationOptions)}';`
+                    );
 
-                const result = await db.query(
-                    `SELECT * FROM indexPageCache WHERE did='${learnCard.id.did()}' AND name='${name}' AND indexQuery='${stringify(
-                        query
-                    )}' AND paginationOptions='${stringify(paginationOptions)}';`
-                );
+                    if (result.values?.length === 0) return undefined;
 
-                await db.close();
-
-                if (result.values?.length === 0) return undefined;
-
-                return JSON.parse(result.values![0].result);
+                    return JSON.parse(result.values![0].result);
+                });
             },
             setIndexPage: async (_learnCard, name, query, result, paginationOptions) => {
                 _learnCard.debug?.(
@@ -341,20 +322,18 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexPageCacheTableExists(db);
 
-                await ensureIndexPageCacheTableExists(db);
-                await db.open();
-
-                const results = await db.execute(
-                    `INSERT INTO indexPageCache (did, name, indexQuery, paginationOptions, result) VALUES ('${learnCard.id.did()}', '${name}', '${stringify(
-                        query
-                    )}', '${stringify(paginationOptions)}', '${stringify(result)} ')
+                    const results = await db.execute(
+                        `INSERT INTO indexPageCache (did, name, indexQuery, paginationOptions, result) VALUES ('${learnCard.id.did()}', '${name}', '${stringify(
+                            query
+                        )}', '${stringify(paginationOptions)}', '${stringify(result)} ')
                         ON CONFLICT(did, name, indexQuery, paginationOptions) DO UPDATE SET result=excluded.result; `
-                );
+                    );
 
-                await db.close();
-
-                return !!results.changes?.changes;
+                    return !!results.changes?.changes;
+                });
             },
             getIndexCount: async (_learnCard, name, query) => {
                 _learnCard.debug?.('sqlite:cache:getIndexCount', name, query);
@@ -364,21 +343,19 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return undefined;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexCountCacheTableExists(db);
 
-                await ensureIndexCountCacheTableExists(db);
-                await db.open();
+                    const result = await db.query(
+                        `SELECT * FROM indexCountCache WHERE did='${learnCard.id.did()}' AND name='${name}' AND indexQuery='${stringify(
+                            query
+                        )}';`
+                    );
 
-                const result = await db.query(
-                    `SELECT * FROM indexCountCache WHERE did='${learnCard.id.did()}' AND name='${name}' AND indexQuery='${stringify(
-                        query
-                    )}';`
-                );
+                    if (result.values?.length === 0) return undefined;
 
-                await db.close();
-
-                if (result.values?.length === 0) return undefined;
-
-                return JSON.parse(result.values![0].count);
+                    return JSON.parse(result.values![0].count);
+                });
             },
             setIndexCount: async (_learnCard, name, query, count) => {
                 _learnCard.debug?.('sqlite:cache:setIndexCount', name, query, count);
@@ -386,20 +363,18 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexCountCacheTableExists(db);
 
-                await ensureIndexCountCacheTableExists(db);
-                await db.open();
-
-                const result = await db.execute(
-                    `INSERT INTO indexCountCache (did, name, indexQuery, count) VALUES ('${learnCard.id.did()}', '${name}', '${stringify(
-                        query
-                    )}', ${count})
+                    const result = await db.execute(
+                        `INSERT INTO indexCountCache (did, name, indexQuery, count) VALUES ('${learnCard.id.did()}', '${name}', '${stringify(
+                            query
+                        )}', ${count})
                         ON CONFLICT(did, name, indexQuery) DO UPDATE SET count=excluded.count; `
-                );
+                    );
 
-                await db.close();
-
-                return !!result.changes?.changes;
+                    return !!result.changes?.changes;
+                });
             },
             flushIndex: async _learnCard => {
                 _learnCard.debug?.('sqlite:cache:flushIndex');
@@ -407,29 +382,27 @@ export const getSQLitePlugin = async (
                 const db = sqliteStore.get.db();
 
                 if (!db) return false;
+                return await withSQLiteDatabase(db, async () => {
+                    await ensureIndexCacheTableExists(db);
+                    await ensureIndexPageCacheTableExists(db);
+                    await ensureIndexCountCacheTableExists(db);
 
-                await ensureIndexCacheTableExists(db);
-                await ensureIndexPageCacheTableExists(db);
-                await ensureIndexCountCacheTableExists(db);
-                await db.open();
+                    const indexResult = await db.execute(
+                        `DELETE FROM indexCache WHERE did='${learnCard.id.did()}';`
+                    );
+                    const pageResult = await db.execute(
+                        `DELETE FROM indexPageCache WHERE did='${learnCard.id.did()}';`
+                    );
+                    const countResult = await db.execute(
+                        `DELETE FROM indexCountCache WHERE did='${learnCard.id.did()}';`
+                    );
 
-                const indexResult = await db.execute(
-                    `DELETE FROM indexCache WHERE did='${learnCard.id.did()}';`
-                );
-                const pageResult = await db.execute(
-                    `DELETE FROM indexPageCache WHERE did='${learnCard.id.did()}';`
-                );
-                const countResult = await db.execute(
-                    `DELETE FROM indexCountCache WHERE did='${learnCard.id.did()}';`
-                );
-
-                await db.close();
-
-                return Boolean(
-                    indexResult.changes?.changes ||
-                    pageResult.changes?.changes ||
-                    countResult.changes?.changes
-                );
+                    return Boolean(
+                        indexResult.changes?.changes ||
+                        pageResult.changes?.changes ||
+                        countResult.changes?.changes
+                    );
+                });
             },
         },
     };
