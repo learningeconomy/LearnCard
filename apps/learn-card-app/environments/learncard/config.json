@@ -26,7 +26,7 @@
             "dynamicLinkDomain": "learncard.app"
         },
         "sss": {
-            "serverUrl": "https://api.learncard.app/trpc",
+            "serverUrl": "https://api.learncard.app/api",
             "escrowEnclaveMeasurements": [
                 {
                     "pcr0": "6dc94e2b4da01921c831d7bfc5658ba21145636ca1e81c369ef2dc60be75b009ee98bb5eb56d16ede37a8d86534ba2e2",
