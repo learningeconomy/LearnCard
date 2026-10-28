@@ -240,6 +240,17 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     else:
                         self.assertFalse(path.exists())
 
+    def test_unsupported_setup_cfg_declarations_fail_closed(self):
+        # ConfigParser also accepts colon delimiters and case-insensitive keys;
+        # unsupported layouts must not be mistaken for lint-only configuration.
+        for declaration in ("python_requires: >=3.10", "Python_Requires = >=3.10", "python_requires ="):
+            with self.subTest(declaration=declaration):
+                self.fixture()
+                (self.client / "setup.cfg").write_text(f"[options]\n{declaration}\n")
+                result = self.run_script()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Python 3.11 metadata", result.stderr)
+
     def test_formatted_ci_and_python_metadata(self):
         self.fixture()
         for name in (".travis.yml", ".gitlab-ci.yml"):
