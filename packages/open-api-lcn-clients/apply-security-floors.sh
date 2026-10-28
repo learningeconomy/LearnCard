@@ -166,7 +166,10 @@ for name in ("pyproject.toml", "setup.py", "setup.cfg"):
     path = client / name
     if path.exists():
         update(name, lambda text: re.sub(r"^.*Programming Language :: Python :: 3\.(?:[0-9]|10)['\", ]*\n", "", text, flags=re.M), r"\S")
-        if name == "setup.cfg":
+        # Stock OpenAPI Generator setup.cfg only carries [flake8] settings;
+        # python_requires lives in setup.py. Enforce the floor only where
+        # setup.cfg actually declares one.
+        if name == "setup.cfg" and re.search(r"^python_requires\s*=", path.read_text(), re.M):
             update(name, lambda text: re.sub(r"^(python_requires\s*=\s*)>=\s*3\.(?:9|10)$", r"\g<1>>=3.11", text, flags=re.M),
                    r"^python_requires\s*=\s*>=\s*3\.11$")
         text = path.read_text()
