@@ -1,8 +1,17 @@
 {
     "consentUpdate": {
+        "summary": {
+            "requestDetails": "تفاصيل الطلب",
+            "before": "حاليًا",
+            "after": "بعد التحديث",
+            "notRequested": "غير مطلوب"
+        },
         "editor": {
             "accessSettings": "إعدادات {{label}}",
-            "title": "تحديث هذا الطلب",
+            "title": "تحديث الطلب",
+            "contractSettings": "طلب الموافقة",
+            "contractSettingsDescription": "راجع وعدّل البيانات التي يمكن لهذا التطبيق الوصول إليها.",
+            "close": "إغلاق محرّر الطلب",
             "description": "عدّل الطلب الحالي وراجع تغييراتك، ثم انشرها عندما تكون جاهزًا.",
             "noContract": "أنشئ طلب موافقة أو اختر طلبًا قبل تعديله.",
             "loading": "جارٍ تحميل الطلب…",

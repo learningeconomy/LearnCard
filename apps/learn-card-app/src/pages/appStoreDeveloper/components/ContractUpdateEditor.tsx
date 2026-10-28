@@ -2,43 +2,28 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImmer } from 'use-immer';
 import { Eye, Loader2, Upload } from 'lucide-react';
-import type { ConsentFlowContractDetails, ConsentFlowContractUpdateResult } from '@learncard/types';
+import type { ConsentFlowContractDetails } from '@learncard/types';
+import { buildContractUpdatePreview, classifyContractChange } from '@learncard/helpers';
 import {
-    buildContractUpdatePreview,
-    classifyContractChange,
-    diffContractChange,
-} from '@learncard/helpers';
-import {
-    contractCategoryNameToCategoryMetadata,
     getLogger,
     isConsentConflict,
     useImageUpload,
     useWallet,
+    useModal,
+    ModalTypes,
 } from 'learn-card-base';
 import type { UploadRes } from 'learn-card-base';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 import { useLocale } from '../../../i18n';
 import { mDynamic } from '../../../i18n/mDynamic';
-import ContractUpdateReview from '../../consentFlow/ContractUpdateReview';
+import { ContractUpdateReviewContent } from '../../consentFlow/ContractUpdateReview';
 import { getUnchangedDefaultAccessScopes } from '../../consentFlow/contractUpdateReview.helpers';
 import ConsentContractForm from './ConsentContractForm';
-import {
-    buildContractFormChanges,
-    contractToFormValue,
-    CONTRACT_FORM_TEXT_FIELDS,
-    CONTRACT_FORM_EXTRA_CATEGORY_LABELS,
-} from './consentContractForm.helpers';
+import ContractUpdateChangesSummary from './ContractUpdateChangesSummary';
+import { buildContractFormChanges, contractToFormValue } from './consentContractForm.helpers';
 import type { ConsentContractFormValue } from './consentContractForm.types';
 
 const log = getLogger('contract-update-editor');
-const FIELD_LABELS: Record<(typeof CONTRACT_FORM_TEXT_FIELDS)[number], string> = {
-    name: 'developerPortal.components.createConsentContractModal.contractName',
-    subtitle: 'developerPortal.components.createConsentContractModal.subtitle',
-    description: 'developerPortal.components.createConsentContractModal.description',
-    image: 'consentUpdate.editor.image',
-    reasonForAccessing: 'developerPortal.components.createConsentContractModal.reasonForAccessing',
-    redirectUrl: 'developerPortal.components.createConsentContractModal.redirectUrl',
-};
 
 class ContractUpdatesUnavailableError extends Error {
     constructor() {
@@ -63,7 +48,11 @@ const LoadedContractUpdateEditor: React.FC<{
 }> = ({ uri, initial }) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
-    const locale = useLocale();
+    useLocale();
+    const { newModal, closeModal } = useModal({
+        desktop: ModalTypes.FullScreen,
+        mobile: ModalTypes.FullScreen,
+    });
     const [baseline, setBaseline] = useState(initial);
     const [value, setValue] = useImmer<ConsentContractFormValue>(() =>
         contractToFormValue(initial)
@@ -74,7 +63,6 @@ const LoadedContractUpdateEditor: React.FC<{
     const [error, setError] = useState('');
     const [needsReload, setNeedsReload] = useState(false);
     const [publishedVersion, setPublishedVersion] = useState<number>();
-    const [preview, setPreview] = useState<ConsentFlowContractUpdateResult>();
     const { handleFileSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) =>
@@ -82,40 +70,15 @@ const LoadedContractUpdateEditor: React.FC<{
                 draft.image = data.url;
             }),
     });
+    const previous = useMemo(() => contractToFormValue(baseline), [baseline]);
     const draft = useMemo(() => {
         const changes = buildContractFormChanges(baseline, value);
-        const previous = contractToFormValue(baseline);
-        const diff = diffContractChange(previous, value);
-        return { changes, diff, kind: classifyContractChange(previous, value) };
-    }, [baseline, value]);
+        return { changes, kind: classifyContractChange(previous, value) };
+    }, [baseline, previous, value]);
     const hasChanges = Object.keys(draft.changes).length > 0;
     const reasonRequired = draft.kind === 'requires_consent';
     const valid =
         Boolean(value.name.trim()) && hasChanges && (!reasonRequired || Boolean(reason.trim()));
-    const previewDisplay = useMemo(() => {
-        if (!preview) return undefined;
-        const rows = preview.preview.rows;
-        const diff = {
-            added: rows.filter(row => row.change === 'added').map(row => row.scope),
-            removed: rows.filter(row => row.change === 'removed').map(row => row.scope),
-            changed: rows.filter(row => row.change === 'changed').map(row => row.scope),
-        };
-        const defaults = getUnchangedDefaultAccessScopes(baseline, diff);
-        return {
-            preview: buildContractUpdatePreview({
-                name: value.name,
-                kind: preview.kind,
-                diff,
-                translate: mDynamic,
-            }),
-            unchangedRows: buildContractUpdatePreview({
-                name: baseline.name,
-                kind: 'requires_consent',
-                diff: { added: defaults, removed: [], changed: [] },
-                translate: mDynamic,
-            }).rows.map(row => ({ area: row.scope.area, label: row.label })),
-        };
-    }, [baseline, preview, value.name, locale]);
     const acceptBaseline = (contract: ConsentFlowContractDetails) => {
         requireContractVersion(contract);
         setBaseline(contract);
@@ -168,7 +131,39 @@ const LoadedContractUpdateEditor: React.FC<{
                 dryRun: action === 'preview',
             });
             if (action === 'preview') {
-                setPreview(result);
+                const rows = result.preview.rows;
+                const diff = {
+                    added: rows.filter(row => row.change === 'added').map(row => row.scope),
+                    removed: rows.filter(row => row.change === 'removed').map(row => row.scope),
+                    changed: rows.filter(row => row.change === 'changed').map(row => row.scope),
+                };
+                const defaults = getUnchangedDefaultAccessScopes(baseline, diff);
+                newModal(
+                    <ContractUpdateReviewContent
+                        name={value.name}
+                        image={value.image}
+                        reason={reason.trim() || undefined}
+                        preview={buildContractUpdatePreview({
+                            name: value.name,
+                            kind: result.kind,
+                            diff,
+                            translate: mDynamic,
+                        })}
+                        unchangedRows={buildContractUpdatePreview({
+                            name: baseline.name,
+                            kind: 'requires_consent',
+                            diff: { added: defaults, removed: [], changed: [] },
+                            translate: mDynamic,
+                        }).rows.map(row => ({ area: row.scope.area, label: row.label }))}
+                        accessContext="defaults"
+                        readOnly
+                        onClose={closeModal}
+                    />,
+                    {
+                        sectionClassName:
+                            '!bg-white !w-full !h-full !max-w-none !rounded-none overflow-hidden flex flex-col',
+                    }
+                );
                 return;
             }
             setPublishedVersion(result.version);
@@ -216,156 +211,42 @@ const LoadedContractUpdateEditor: React.FC<{
                 imageUploading={imageUploading}
                 onSelectImage={handleFileSelect}
             />
-            <div>
-                <label
-                    htmlFor="contract-update-reason"
-                    className="mb-1.5 block text-xs font-medium text-grayscale-700"
-                >
-                    {mDynamic('consentUpdate.editor.reason')}
-                    {reasonRequired ? ' *' : ''}
-                </label>
-                <textarea
-                    id="contract-update-reason"
-                    value={reason}
-                    onChange={event => setReason(event.target.value)}
-                    disabled={Boolean(busy) || needsReload}
-                    maxLength={140}
-                    rows={2}
-                    placeholder={mDynamic('consentUpdate.editor.reasonPlaceholder')}
-                    className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-                />
-                <p className="mt-1 text-xs text-grayscale-500">
-                    {mDynamic(
-                        reasonRequired
-                            ? 'consentUpdate.editor.reasonRequired'
-                            : 'consentUpdate.editor.reasonHint'
-                    )}
-                </p>
-            </div>
-            <section
-                aria-label={mDynamic('consentUpdate.editor.summary')}
-                className="space-y-3 rounded-2xl border border-grayscale-200 bg-grayscale-10 p-4"
-            >
-                <h4 className="text-sm font-medium text-grayscale-900">
-                    {mDynamic('consentUpdate.editor.summary')}
-                </h4>
-                {!hasChanges ? (
-                    <p className="text-sm text-grayscale-600">
-                        {mDynamic('consentUpdate.editor.noChanges')}
-                    </p>
-                ) : (
-                    <>
-                        <p className="text-xs text-grayscale-600">
+            {hasChanges && (
+                <div className="space-y-8 border-t border-grayscale-200 pt-8">
+                    <ContractUpdateChangesSummary
+                        baseline={baseline}
+                        value={value}
+                        changes={draft.changes}
+                        kind={draft.kind}
+                    />
+                    <section className="space-y-3">
+                        <label
+                            htmlFor="contract-update-reason"
+                            className="block text-sm font-medium text-grayscale-900"
+                        >
+                            {mDynamic('consentUpdate.editor.reason')}
+                            {reasonRequired ? ' *' : ''}
+                        </label>
+                        <textarea
+                            id="contract-update-reason"
+                            value={reason}
+                            onChange={event => setReason(event.target.value)}
+                            disabled={Boolean(busy) || needsReload}
+                            maxLength={140}
+                            rows={3}
+                            placeholder={mDynamic('consentUpdate.editor.reasonPlaceholder')}
+                            className="w-full rounded-xl border border-grayscale-300 bg-white px-4 py-3 text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
+                        <p className="text-xs leading-relaxed text-grayscale-500">
                             {mDynamic(
                                 reasonRequired
-                                    ? 'consentUpdate.editor.approvalNeeded'
-                                    : draft.kind === 'expanded_optional'
-                                      ? 'consentUpdate.editor.optionalNotice'
-                                      : 'consentUpdate.editor.quietNotice'
+                                    ? 'consentUpdate.editor.reasonRequired'
+                                    : 'consentUpdate.editor.reasonHint'
                             )}
                         </p>
-                        <ul className="space-y-3 text-sm text-grayscale-700">
-                            {CONTRACT_FORM_TEXT_FIELDS.filter(field => field in draft.changes).map(
-                                field => (
-                                    <li key={field}>
-                                        <span className="font-medium">
-                                            {mDynamic(FIELD_LABELS[field])}:{' '}
-                                        </span>
-                                        {field === 'image' ? (
-                                            mDynamic('consentUpdate.editor.updated')
-                                        ) : (
-                                            <span className="break-words whitespace-pre-wrap">
-                                                {baseline[field] ||
-                                                    mDynamic('consentUpdate.editor.notSet')}{' '}
-                                                →{' '}
-                                                {value[field] ||
-                                                    mDynamic('consentUpdate.editor.cleared')}
-                                            </span>
-                                        )}
-                                    </li>
-                                )
-                            )}
-                            {'needsGuardianConsent' in draft.changes && (
-                                <li>
-                                    {mDynamic(
-                                        'developerPortal.components.createConsentContractModal.guardianConsentFlow'
-                                    )}
-                                    :{' '}
-                                    {mDynamic(
-                                        value.needsGuardianConsent
-                                            ? 'consentUpdate.editor.enabled'
-                                            : 'consentUpdate.editor.disabled'
-                                    )}
-                                </li>
-                            )}
-                            {(['read', 'write'] as const).flatMap(area => {
-                                const changes = draft.changes.contract?.[area];
-                                return (['credentials', 'personal'] as const).flatMap(type =>
-                                    Object.entries(
-                                        type === 'credentials'
-                                            ? (changes?.credentials?.categories ?? {})
-                                            : (changes?.personal ?? {})
-                                    ).map(([key, config]) => {
-                                        const label =
-                                            type === 'credentials'
-                                                ? CONTRACT_FORM_EXTRA_CATEGORY_LABELS[key]
-                                                    ? mDynamic(
-                                                          CONTRACT_FORM_EXTRA_CATEGORY_LABELS[key]
-                                                      )
-                                                    : (contractCategoryNameToCategoryMetadata(key)
-                                                          ?.title ?? key)
-                                                : key;
-                                        return (
-                                            <li key={`${area}-${type}-${key}`}>
-                                                <span className="font-medium">
-                                                    {mDynamic(
-                                                        area === 'read'
-                                                            ? 'consentUpdate.ui.readAccess'
-                                                            : 'consentUpdate.ui.writeAccess'
-                                                    )}{' '}
-                                                    · {label}:{' '}
-                                                </span>
-                                                {config ? (
-                                                    <>
-                                                        {mDynamic(
-                                                            config.required
-                                                                ? 'consentUpdate.ui.required'
-                                                                : config.defaultEnabled
-                                                                  ? 'consentUpdate.editor.optionalOn'
-                                                                  : 'consentUpdate.editor.optionalOff'
-                                                        )}
-                                                        {config.reason && (
-                                                            <p className="mt-1 text-xs italic text-grayscale-600">
-                                                                {config.reason}
-                                                            </p>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    mDynamic('consentUpdate.ui.removed')
-                                                )}
-                                            </li>
-                                        );
-                                    })
-                                );
-                            })}
-                            {draft.changes.contract?.read &&
-                                'anonymize' in draft.changes.contract.read && (
-                                    <li>
-                                        {mDynamic(
-                                            'developerPortal.components.createConsentContractModal.anonymizeData'
-                                        )}
-                                        :{' '}
-                                        {mDynamic(
-                                            value.contract.read.anonymize
-                                                ? 'consentUpdate.editor.enabled'
-                                                : 'consentUpdate.editor.disabled'
-                                        )}
-                                    </li>
-                                )}
-                        </ul>
-                    </>
-                )}
-            </section>
+                    </section>
+                </div>
+            )}
             {baseline.status === 'retired' && (
                 <p role="alert" className="text-sm text-amber-700">
                     {mDynamic('consentUpdate.editor.retired')}
@@ -448,19 +329,6 @@ const LoadedContractUpdateEditor: React.FC<{
                     </button>
                 </div>
             )}
-            {preview && previewDisplay && (
-                <ContractUpdateReview
-                    open
-                    name={value.name}
-                    image={value.image}
-                    reason={reason.trim() || undefined}
-                    preview={previewDisplay.preview}
-                    unchangedRows={previewDisplay.unchangedRows}
-                    accessContext="defaults"
-                    readOnly
-                    onClose={() => setPreview(undefined)}
-                />
-            )}
         </div>
     );
 };
@@ -483,15 +351,10 @@ const ContractUpdateEditor: React.FC<{ contractUri: string }> = ({ contractUri }
         query.error instanceof ContractUpdatesUnavailableError ||
         (query.data && !hasContractVersion(query.data));
     return (
-        <section className="space-y-5 rounded-[20px] border border-grayscale-200 bg-white p-5 font-poppins">
-            <div>
-                <h3 className="text-sm font-semibold text-grayscale-900">
-                    {mDynamic('consentUpdate.editor.title')}
-                </h3>
-                <p className="mt-1 text-xs leading-relaxed text-grayscale-600">
-                    {mDynamic('consentUpdate.editor.description')}
-                </p>
-            </div>
+        <section className="space-y-5 font-poppins">
+            <p className="text-sm leading-relaxed text-grayscale-600">
+                {mDynamic('consentUpdate.editor.description')}
+            </p>
             {!contractUri ? (
                 <p className="text-sm text-grayscale-600">
                     {mDynamic('consentUpdate.editor.noContract')}

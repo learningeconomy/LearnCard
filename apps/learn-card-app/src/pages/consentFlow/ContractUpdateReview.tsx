@@ -31,9 +31,8 @@ export type ContractUpdateReviewProps = {
     onClose: () => void;
 };
 
-/** The one review surface used by inbox links and the developer dry-run preview. */
-export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
-    open,
+/** Shared review content, hosted either by its route surface or the developer modal stack. */
+export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProps, 'open'>> = ({
     name,
     image,
     reason,
@@ -126,13 +125,7 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
     };
 
     return (
-        <AppModal
-            rootId="full-screen-modal"
-            variant="fullscreen"
-            open={open}
-            onDimmerClick={onClose}
-            sectionClassName="!bg-white !w-full !h-full !max-w-none !rounded-none overflow-hidden flex flex-col font-poppins"
-        >
+        <div className="flex h-full min-h-0 flex-1 flex-col bg-white font-poppins">
             <header className="shrink-0 flex items-center gap-4 border-b border-grayscale-200 px-5 py-4">
                 {image ? (
                     <img src={image} alt="" className="h-16 w-16 rounded-full object-cover" />
@@ -384,8 +377,21 @@ export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = ({
                     )}
                 </footer>
             )}
-        </AppModal>
+        </div>
     );
 };
+
+/** Standalone route surface; developer previews use the same content in newModal. */
+export const ContractUpdateReview: React.FC<ContractUpdateReviewProps> = props => (
+    <AppModal
+        rootId="full-screen-modal"
+        variant="fullscreen"
+        open={props.open}
+        onDimmerClick={props.onClose}
+        sectionClassName="!bg-white !w-full !h-full !max-w-none !rounded-none overflow-hidden flex flex-col font-poppins"
+    >
+        <ContractUpdateReviewContent {...props} />
+    </AppModal>
+);
 
 export default ContractUpdateReview;

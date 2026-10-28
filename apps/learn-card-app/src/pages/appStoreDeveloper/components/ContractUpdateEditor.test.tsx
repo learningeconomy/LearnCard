@@ -14,6 +14,8 @@ vi.mock('learn-card-base', () => ({
         }),
     }),
     useImageUpload: () => ({ handleFileSelect: vi.fn(), isLoading: false }),
+    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    ModalTypes: { FullScreen: 'full-screen' },
     contractCategoryNameToCategoryMetadata: (key: string) => ({ title: key }),
     getLogger: () => ({ error: vi.fn() }),
     isConsentConflict: () => false,
@@ -21,7 +23,10 @@ vi.mock('learn-card-base', () => ({
 vi.mock('../../../i18n', () => ({ useLocale: () => 'en' }));
 vi.mock('../../../helpers/contract.helpers', () => ({ CONTRACT_CATEGORIES: [] }));
 vi.mock('../../hidden/ContractCategoryMultiSelect', () => ({ default: () => null }));
-vi.mock('../../consentFlow/ContractUpdateReview', () => ({ default: () => null }));
+vi.mock('../../consentFlow/ContractUpdateReview', () => ({
+    default: () => null,
+    ContractUpdateReviewContent: () => null,
+}));
 
 const initial: ConsentFlowContractDetails = {
     uri: 'lc:contract:editor',
@@ -86,6 +91,8 @@ describe('contract update authoring', () => {
     it('requires a reason for an approval-requiring edit and disables an unchanged request', async () => {
         await showEditor();
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();
+        expect(screen.queryByLabelText(/Why are you making this update/)).toBeNull();
+        expect(screen.queryByRole('region', { name: 'Your changes' })).toBeNull();
         fireEvent.change(screen.getByLabelText('Contract Name'), {
             target: { value: 'New app identity' },
         });
@@ -95,6 +102,12 @@ describe('contract update authoring', () => {
         });
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeEnabled();
         expect(state.updateContract).not.toHaveBeenCalled();
+        fireEvent.change(screen.getByLabelText('Contract Name'), {
+            target: { value: initial.name },
+        });
+        expect(screen.queryByLabelText(/Why are you making this update/)).toBeNull();
+        expect(screen.queryByRole('region', { name: 'Your changes' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();
     });
     it('does not change a saved opt-in default when Required is toggled on and back off', async () => {
         state.getContract.mockResolvedValue({
@@ -110,10 +123,10 @@ describe('contract update authoring', () => {
             },
         });
         await showEditor();
+        fireEvent.click(screen.getByRole('button', { name: /^optional$/i }));
         fireEvent.change(screen.getByLabelText(/Why are you making this update/), {
             target: { value: 'Testing whether this field should be required.' },
         });
-        fireEvent.click(screen.getByRole('button', { name: /^optional$/i }));
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeEnabled();
         fireEvent.click(screen.getByRole('button', { name: /^required$/i }));
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();

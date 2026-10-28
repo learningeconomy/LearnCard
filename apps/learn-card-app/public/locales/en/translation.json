@@ -1,8 +1,17 @@
 {
     "consentUpdate": {
+        "summary": {
+            "requestDetails": "Request details",
+            "before": "Current",
+            "after": "After update",
+            "notRequested": "Not requested"
+        },
         "editor": {
             "accessSettings": "Settings for {{label}}",
-            "title": "Update this request",
+            "title": "Update contract",
+            "contractSettings": "Consent contract",
+            "contractSettingsDescription": "Review and update what this app can access.",
+            "close": "Close contract editor",
             "description": "Edit the current request, review your changes, then publish when you’re ready.",
             "noContract": "Create or select a consent request before editing it.",
             "loading": "Loading request…",

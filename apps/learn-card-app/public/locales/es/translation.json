@@ -1,8 +1,17 @@
 {
     "consentUpdate": {
+        "summary": {
+            "requestDetails": "Detalles de la solicitud",
+            "before": "Actual",
+            "after": "Después de la actualización",
+            "notRequested": "No solicitado"
+        },
         "editor": {
             "accessSettings": "Ajustes de {{label}}",
-            "title": "Actualizar esta solicitud",
+            "title": "Actualizar solicitud",
+            "contractSettings": "Solicitud de consentimiento",
+            "contractSettingsDescription": "Revisa y cambia los datos a los que puede acceder esta aplicación.",
+            "close": "Cerrar el editor de la solicitud",
             "description": "Edita la solicitud actual, revisa los cambios y publícalos cuando estén listos.",
             "noContract": "Crea o selecciona una solicitud de consentimiento antes de editarla.",
             "loading": "Cargando solicitud…",
