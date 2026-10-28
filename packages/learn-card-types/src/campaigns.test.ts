@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LCNNotificationValidator } from './lcn';
 
 import {
     CampaignValidator,
@@ -131,8 +132,7 @@ describe('campaign schemas', () => {
 });
 
 describe('campaign notification wire shape', () => {
-    it('accepts ANNOUNCEMENT and retains its campaign identity', async () => {
-        const { LCNNotificationValidator } = await import('./lcn');
+    it('accepts ANNOUNCEMENT and retains its campaign identity', () => {
         const notification = {
             type: 'ANNOUNCEMENT',
             from: 'did:web:brain.example',
