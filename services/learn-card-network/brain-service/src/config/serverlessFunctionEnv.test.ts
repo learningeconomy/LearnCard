@@ -16,6 +16,7 @@ const INFRA_KEYS = {
     REDIS_PORT: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Port'] },
     NOTIFICATIONS_QUEUE_URL: '${construct:notifications-queue.queueUrl}',
     INBOX_QUEUE_URL: '${construct:inbox-queue.queueUrl}',
+    CAMPAIGN_QUEUE_URL: '${construct:campaign-queue.queueUrl}',
 };
 
 beforeEach(() => {

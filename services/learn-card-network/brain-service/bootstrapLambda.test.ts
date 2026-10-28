@@ -25,6 +25,7 @@ const LAMBDA_APP_HANDLERS = [
     'inboxQueueDispatcher',
     'inboxDeadLetterWorker',
     'notificationsWorker',
+    'campaignDispatchWorker',
     'inboxMaintenanceHandler',
 ] as const;
 
