@@ -1,4 +1,18 @@
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies {
+        if (project.findProperty('android.builtInKotlin') == 'false') {
+            classpath 'com.android.built-in-kotlin:com.android.built-in-kotlin.gradle.plugin:9.3.0'
+        }
+    }
+}
+
 apply plugin: 'com.android.library'
+// The host app keeps legacy Kotlin plugins for Capacitor dependencies. Opt this
+// module into AGP's compiler independently (the standalone lab already enables it).
+if (providers.gradleProperty('android.builtInKotlin').getOrElse('true') == 'false') {
+    apply plugin: 'com.android.built-in-kotlin'
+}
 
 android {
     namespace = 'com.learncard.digitalcredentials'

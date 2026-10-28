@@ -1,4 +1,5 @@
 import { ed25519 } from '@noble/curves/ed25519';
+import { base58 } from '@scure/base';
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc';
 
 import { sdJwtVcCourseCompletion } from '../../../../../packages/credential-library/src/fixtures/sd-jwt-vc/course-completion';
@@ -7,10 +8,10 @@ import { sha256Hasher } from '../../../../../packages/plugins/sd-jwt-vc/src/hash
 import { randomSalt } from '../../../../../packages/plugins/sd-jwt-vc/src/salt';
 
 export const fixture = sdJwtVcCourseCompletion;
-export const ISSUER = 'did:example:learncard-android-lab';
 // Publicly known test issuer. This file is bundled only in the separate debug lab applications.
 const TEST_ISSUER_SEED = new Uint8Array(32).fill(7);
 export const issuerPublicKey = ed25519.getPublicKey(TEST_ISSUER_SEED);
+export const ISSUER = `did:key:z${base58.encode(new Uint8Array([0xed, 0x01, ...issuerPublicKey]))}`;
 const bytes = (input: string): Uint8Array => new TextEncoder().encode(input);
 export const encode = (input: Uint8Array): string =>
     btoa(String.fromCharCode(...input))
@@ -35,14 +36,18 @@ export interface LabCredential {
 /** Real fixture materialization uses the same issuer/holder contract as the credential viewer. */
 export const createLabCredential = async (): Promise<LabCredential> => {
     const secret = crypto.getRandomValues(new Uint8Array(32));
-    const issued = await materializeSdJwtVcFixture(fixture, {
-        issuerDid: ISSUER,
-        issuerKid: `${ISSUER}#issuer`,
-        issuerSigner: async input => encode(ed25519.sign(bytes(input), TEST_ISSUER_SEED)),
-        holderPublicJwk: publicJwk(secret),
-    });
+    const issued = await issueLabCredential(publicJwk(secret));
     return { id: crypto.randomUUID(), compact: issued.compact, holderSecret: encode(secret) };
 };
+
+/** Synthetic issuer only; the full-app proof binds its fixture to the real account's public key. */
+export const issueLabCredential = (holderPublicJwk: Record<string, unknown>) =>
+    materializeSdJwtVcFixture(fixture, {
+        issuerDid: ISSUER,
+        issuerKid: `${ISSUER}#${ISSUER.slice('did:key:'.length)}`,
+        issuerSigner: async input => encode(ed25519.sign(bytes(input), TEST_ISSUER_SEED)),
+        holderPublicJwk,
+    });
 
 /** A separately configured verifier verifies issuer proof, disclosures and key binding. */
 export const verifier = (): SDJwtVcInstance =>

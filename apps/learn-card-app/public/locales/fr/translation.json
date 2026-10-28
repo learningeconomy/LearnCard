@@ -9930,5 +9930,13 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Justificatif numérique",
+        "unavailableTitle": "Demande indisponible",
+        "unavailableDescription": "Cette demande ne peut plus être traitée. Annulez et réessayez depuis l’application à l’origine de la demande.",
+        "canceling": "Annulation…",
+        "preparing": "Préparation…",
+        "requiredFields": "Ces champs sont obligatoires. Vous pouvez annuler."
     }
 }

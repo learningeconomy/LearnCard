@@ -140,7 +140,9 @@
         "web-vitals": "^0.2.4",
         "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
         "zod": "4.4.3",
-        "zustand": "^3.7.2"
+        "zustand": "^3.7.2",
+        "@learncard/openid4vc-plugin": "workspace:*",
+        "@learncard/sd-jwt-vc-plugin": "workspace:*"
     },
     "scripts": {
         "dev": "docker compose -f compose-local.yaml up --build",

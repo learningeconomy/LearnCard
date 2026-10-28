@@ -10019,5 +10019,13 @@
         "revocationCheck": "التحقق من الإلغاء متاح",
         "evidenceCount": "عناصر الأدلة: {{count}}",
         "evidence": "الأدلة الداعمة"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "بيان اعتماد رقمي",
+        "unavailableTitle": "الطلب غير متاح",
+        "unavailableDescription": "لم يعد من الممكن إكمال هذا الطلب. ألغِ الطلب وحاول مرة أخرى من التطبيق الذي طلبه.",
+        "canceling": "جارٍ الإلغاء…",
+        "preparing": "جارٍ التحضير…",
+        "requiredFields": "هذه الحقول مطلوبة. يمكنك إلغاء الطلب بدلًا من ذلك."
     }
 }

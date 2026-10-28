@@ -21,7 +21,8 @@ class NativeDigitalCredentialsPlugin : Plugin() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     @PluginMethod fun status(call: PluginCall) {
-        call.resolve(JSObject().put("enabled", context.resources.getBoolean(R.bool.lc_digital_credentials_enabled)) as JSObject)
+        call.resolve(JSObject().put("enabled", context.resources.getBoolean(R.bool.lc_digital_credentials_enabled))
+            .put("registeredEntryIds", org.json.JSONArray(RegistryState(context).entryIds.toList())) as JSObject)
     }
 
     @PluginMethod fun register(call: PluginCall) {

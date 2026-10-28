@@ -267,6 +267,8 @@ export default defineConfig(async ({ mode, command }) => {
                 '@learncard/chapi-plugin > credential-handler-polyfill',
                 '@learncard/chapi-plugin > web-credential-handler',
                 '@learncard/sd-jwt-vc-plugin > @sd-jwt/sd-jwt-vc',
+                '@learncard/sd-jwt-vc-plugin > @noble/curves/ed25519',
+                '@learncard/sd-jwt-vc-plugin > @scure/base',
                 '@learncard/openid4vc-plugin > jose',
                 '@learncard/openid4vc-plugin > safe-regex',
                 '@learncard/openid4vc-plugin > @peculiar/x509',

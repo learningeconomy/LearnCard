@@ -9981,5 +9981,13 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Digital credential",
+        "unavailableTitle": "Request unavailable",
+        "unavailableDescription": "This request can no longer be completed. Cancel and try again from the requesting app.",
+        "canceling": "Canceling…",
+        "preparing": "Preparing…",
+        "requiredFields": "These fields are required. You can cancel instead."
     }
 }

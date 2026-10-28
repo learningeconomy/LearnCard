@@ -7,6 +7,7 @@
       "dependencies": {
         "@capacitor/core": "8.5.2",
         "@noble/curves": "1.9.7",
+        "@scure/base": "1.2.6",
         "@sd-jwt/sd-jwt-vc": "0.19.0",
         "esbuild": "0.27.1",
       },
@@ -70,6 +71,8 @@
     "@noble/curves": ["@noble/curves@1.9.7", "", { "dependencies": { "@noble/hashes": "1.8.0" } }, "sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw=="],
 
     "@noble/hashes": ["@noble/hashes@1.8.0", "", {}, "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="],
+
+    "@scure/base": ["@scure/base@1.2.6", "", {}, "sha512-g/nm5FgUa//MCj1gV09zTJTaM6KBAHqLN907YVQqf7zC49+DcO4B1so4ZX07Ef10Twr6nuqYEH9GEggFXA4Fmg=="],
 
     "@sd-jwt/core": ["@sd-jwt/core@0.19.0", "", { "dependencies": { "@sd-jwt/decode": "0.19.0", "@sd-jwt/present": "0.19.0", "@sd-jwt/types": "0.19.0", "@sd-jwt/utils": "0.19.0" } }, "sha512-/FeuQjzQFtnxDsHF64Bw+3uixVogNkXlMGBo1CKWrxB/OLNqtGXQZplKBRZMJWgnOJEqDwD6750wrOxsVly6mg=="],
 

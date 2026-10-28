@@ -106,6 +106,9 @@ const ClaimFromDashboard = lazyWithRetry(
 const ClaimFromRequest = lazyWithRetry(() => import('./pages/claim-from-request/ClaimFromRequest'));
 const Oid4vciExchange = lazyWithRetry(() => import('./pages/oid4vci/Oid4vciExchange'));
 const Oid4vpExchange = lazyWithRetry(() => import('./pages/oid4vp/Oid4vpExchange'));
+const NativeDigitalCredentialFlow = lazyWithRetry(
+    () => import('./native-digital-credentials/NativeDigitalCredentialFlow')
+);
 const InteractionsPage = lazyWithRetry(() => import('./pages/interactions/InteractionsPage'));
 const GuardianCredentialApprovalPage = lazyWithRetry(
     () => import('./pages/interactions/GuardianCredentialApprovalPage')
@@ -387,6 +390,11 @@ export const Routes: React.FC = () => {
                         <SentryRoute exact path="/request" component={ClaimFromRequest} />
                         <SentryRoute exact path="/oid4vci" component={Oid4vciExchange} />
                         <SentryRoute exact path="/oid4vp" component={Oid4vpExchange} />
+                        <SentryRoute
+                            exact
+                            path="/native-digital-credentials"
+                            component={NativeDigitalCredentialFlow}
+                        />
 
                         <SentryRoute
                             exact

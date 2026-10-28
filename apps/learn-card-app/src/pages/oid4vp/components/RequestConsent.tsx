@@ -81,6 +81,10 @@ export interface RequestConsentProps {
     selection?: SelectionResult;
     /** DCQL selection \u2014 mutually exclusive with `selection`. */
     dcqlSelection?: DcqlSelectionResult;
+    /** Native transport: only these flat claims may be displayed/disclosed; all are required. */
+    disclosurePolicy?: Record<string, string[]>;
+    submitting?: boolean;
+    canceling?: boolean;
 
     /**
      * Called with the holder\u2019s per-row picks once they approve. Index
@@ -108,6 +112,9 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     request,
     selection,
     dcqlSelection,
+    disclosurePolicy,
+    submitting = false,
+    canceling = false,
     onApprove,
     onCancel,
 }) => {
@@ -188,12 +195,21 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                             const parsed = await invoke.parseSdJwtVc(compact);
                             if (cancelled) continue;
 
-                            setParsedSdJwts(prev => ({ ...prev, [cacheKey]: parsed }));
+                            const allowed = disclosurePolicy?.[rowId];
+                            const bounded = allowed
+                                ? {
+                                      ...parsed,
+                                      disclosureKeys: parsed.disclosureKeys?.filter(key =>
+                                          allowed.includes(key)
+                                      ),
+                                  }
+                                : parsed;
+                            setParsedSdJwts(prev => ({ ...prev, [cacheKey]: bounded }));
 
                             setPicks(prev => {
                                 if (prev.disclose[cacheKey]) return prev;
                                 const initialDisclose: Record<string, boolean> = {};
-                                parsed.disclosureKeys?.forEach((key: string) => {
+                                bounded.disclosureKeys?.forEach((key: string) => {
                                     initialDisclose[key] = true;
                                 });
                                 return {
@@ -236,7 +252,7 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
         return () => {
             cancelled = true;
         };
-    }, [rows, picks.row, initWallet, presentToast]);
+    }, [rows, picks.row, initWallet, presentToast, disclosurePolicy]);
 
     const sdJwtStatuses = useMemo<Record<string, SdJwtConsentStatus>>(() => {
         return Object.fromEntries(
@@ -271,7 +287,19 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
     const pendingSdJwtRows = Object.values(sdJwtStatuses).filter(
         status => status.isSdJwt && !status.isReady
     ).length;
-    const canShare = allRowsHaveCandidate && pendingSdJwtRows === 0;
+    const requiredFieldsApproved =
+        !disclosurePolicy ||
+        rows.every(row => {
+            const candidate = row.candidates[picks.row[row.id] ?? 0]?.candidate;
+            const frame = picks.disclose[`${row.id}::${candidate?.id}`];
+            return (disclosurePolicy[row.id] ?? []).every(key => frame?.[key] === true);
+        });
+    const canShare =
+        allRowsHaveCandidate &&
+        pendingSdJwtRows === 0 &&
+        requiredFieldsApproved &&
+        !submitting &&
+        !canceling;
 
     const handlePickChange = (rowId: string, index: number) => {
         setPicks(prev => ({ ...prev, row: { ...prev.row, [rowId]: index } }));
@@ -400,21 +428,29 @@ const RequestConsent: React.FC<RequestConsentProps> = ({
                     )}
 
                     <div className="space-y-v3-3 pt-1">
+                        {disclosurePolicy && !requiredFieldsApproved && (
+                            <p className="text-sm text-grayscale-600">
+                                {m['nativeCredentials.requiredFields']()}
+                            </p>
+                        )}
                         <button
                             onClick={() => onApprove(picks)}
                             disabled={!canShare}
                             className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            {pendingSdJwtRows > 0
-                                ? m['common.loadingClaims']()
-                                : m['common.share']()}
+                            {submitting
+                                ? m['nativeCredentials.preparing']()
+                                : pendingSdJwtRows > 0
+                                  ? m['common.loadingClaims']()
+                                  : m['common.share']()}
                         </button>
 
                         <button
                             onClick={onCancel}
+                            disabled={submitting || canceling}
                             className="w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
                         >
-                            Cancel
+                            {canceling ? m['nativeCredentials.canceling']() : m['common.cancel']()}
                         </button>
                     </div>
                 </div>

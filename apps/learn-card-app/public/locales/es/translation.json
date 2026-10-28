@@ -9930,5 +9930,13 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo"
+    },
+    "nativeCredentials": {
+        "credentialTitle": "Credencial digital",
+        "unavailableTitle": "Solicitud no disponible",
+        "unavailableDescription": "Esta solicitud ya no se puede completar. Cancela y vuelve a intentarlo desde la aplicación que la solicita.",
+        "canceling": "Cancelando…",
+        "preparing": "Preparando…",
+        "requiredFields": "Estos campos son obligatorios. Puedes cancelar si lo prefieres."
     }
 }

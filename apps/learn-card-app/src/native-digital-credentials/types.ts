@@ -11,11 +11,13 @@ export interface PendingDigitalCredentialRequest {
     selectedEntryId: string;
     /** Established in Android from platform calling-app information, never from the request JSON. */
     origin: string;
+    /** Display label supplied by Android; request JSON metadata is ignored. */
+    callerName?: string;
     request: { protocol: string; data: Record<string, unknown> };
 }
 
 export interface NativeDigitalCredentialsPlugin {
-    status: () => Promise<{ enabled: boolean }>;
+    status: () => Promise<{ enabled: boolean; registeredEntryIds?: string[] }>;
     register: (options: { entries: AndroidCredentialEntry[] }) => Promise<{ registered: number }>;
     clear: () => Promise<{ cleared: boolean }>;
     getPendingRequest: () => Promise<{ pending?: PendingDigitalCredentialRequest }>;
