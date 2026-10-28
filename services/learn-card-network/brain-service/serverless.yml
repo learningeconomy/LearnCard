@@ -45,6 +45,7 @@ constructs:
         type: queue
         worker:
             handler: lambda.notificationsWorker
+            timeout: 30
             vpc:
                 securityGroupIds:
                     - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]

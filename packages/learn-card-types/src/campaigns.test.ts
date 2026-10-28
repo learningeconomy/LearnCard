@@ -129,3 +129,24 @@ describe('campaign schemas', () => {
         }
     });
 });
+
+describe('campaign notification wire shape', () => {
+    it('accepts ANNOUNCEMENT and retains its campaign identity', async () => {
+        const { LCNNotificationValidator } = await import('./lcn');
+        const notification = {
+            type: 'ANNOUNCEMENT',
+            from: 'did:web:brain.example',
+            to: { did: 'did:key:learner' },
+            data: {
+                metadata: { campaignId: 'pilot-clr', campaignCreatedAt: '2026-01-01T00:00:00Z' },
+            },
+        };
+        expect(LCNNotificationValidator.parse(notification)).toMatchObject(notification);
+        expect(
+            LCNNotificationValidator.safeParse({
+                ...notification,
+                data: { metadata: { campaignId: '../invalid' } },
+            }).success
+        ).toBe(false);
+    });
+});

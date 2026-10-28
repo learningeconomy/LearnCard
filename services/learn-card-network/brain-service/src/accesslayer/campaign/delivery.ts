@@ -22,7 +22,7 @@ export const getCampaignDeliveryRecipient = async (
              WHERE c.createdAt = $campaignCreatedAt AND ${liveCampaignPredicate}
                AND ${campaignAgePredicate}
              OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
-             WITH p, state WHERE state.notifiedAt IS NULL
+             WITH p, c, state WHERE state.notifiedAt IS NULL
              RETURN properties(p) AS profile, c.definition AS definition`,
             { campaignId, campaignCreatedAt, profileId, ...campaignTimeParams() }
         )
