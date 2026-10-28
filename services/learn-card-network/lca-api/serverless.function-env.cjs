@@ -24,10 +24,8 @@ const API_SECRETS = [
     'KEYCLOAK_JWKS_URL_OVERRIDES',
 ];
 
-// Non-secret operator toggles forwarded in bundle mode too, so enabling RUNTIME_SECRETS_ID
-// can never silently change them: escrow stays off unless ESCROW_ENCLAVE_MODE is set, and
-// ESCROW_RELEASE_KILL_SWITCH must be flippable without editing the bundle.
-const API_TOGGLES = ['ESCROW_ENCLAVE_MODE', 'ESCROW_RELEASE_KILL_SWITCH'];
+// Non-secret operator toggles are forwarded in both bundle and fallback modes.
+const API_TOGGLES = ['ESCROW_ENCLAVE_MODE', 'ESCROW_RELEASE_KILL_SWITCH', 'BEDROCK_BASE_URL'];
 
 // Serverless v3 supplies CLI options to file functions and preserves CF intrinsics.
 // No stage-file values are forwarded from the deployment environment.
