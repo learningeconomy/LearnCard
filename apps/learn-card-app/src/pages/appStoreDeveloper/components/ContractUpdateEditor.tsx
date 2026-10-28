@@ -200,7 +200,7 @@ const LoadedContractUpdateEditor: React.FC<{
     };
 
     return (
-        <div className="space-y-5">
+        <div className="flex flex-col gap-5">
             <p className="text-xs text-grayscale-500">
                 {mDynamic('consentUpdate.editor.currentVersion', { version: baseline.version })}
             </p>
