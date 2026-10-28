@@ -197,7 +197,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
             )}
 
             {confirmOff && (
-                <div className="py-3 px-4 bg-amber-50 space-y-3">
+                <div className="py-3 px-4 bg-amber-50 space-y-v3-3">
                     <p className="text-sm text-grayscale-700 leading-relaxed">
                         {m['recovery.automatic.warning']()}
                     </p>
@@ -286,7 +286,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
 
                     {/* PIN UI */}
                     {pinMode === 'set' && (
-                        <div className="py-3 px-4 bg-grayscale-10/50 space-y-4">
+                        <div className="py-3 px-4 bg-grayscale-10/50 space-y-v3-4">
                             <p className="text-sm text-grayscale-600">
                                 {m['recovery.pin.enterPin']()}
                             </p>
@@ -318,7 +318,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                     )}
 
                     {pinMode === 'confirm' && (
-                        <div className="py-3 px-4 bg-grayscale-10/50 space-y-4">
+                        <div className="py-3 px-4 bg-grayscale-10/50 space-y-v3-4">
                             <p className="text-sm text-grayscale-600">
                                 {m['recovery.pin.confirmPin']()}
                             </p>
@@ -350,7 +350,7 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
                     )}
 
                     {pinMode === 'remove' && (
-                        <div className="py-3 px-4 bg-amber-50 space-y-3">
+                        <div className="py-3 px-4 bg-amber-50 space-y-v3-3">
                             <p className="text-sm text-grayscale-700 leading-relaxed">
                                 {m['recovery.pin.removeConfirm']()}
                             </p>

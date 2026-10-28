@@ -1,11 +1,12 @@
 data "aws_ssm_parameter" "al2023_ami" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+  count = var.environment == "staging" && var.host_ami_id == null ? 1 : 0
+  name  = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
 resource "aws_launch_template" "enclave_host" {
   name_prefix            = "${local.name_prefix}-"
   description            = "escrow-enclave-host: AL2023 + Nitro Enclaves, image ${var.enclave_image_version}"
-  image_id               = data.aws_ssm_parameter.al2023_ami.value
+  image_id               = var.host_ami_id != null ? var.host_ami_id : try(data.aws_ssm_parameter.al2023_ami[0].value, null)
   instance_type          = var.instance_type
   update_default_version = true
 
@@ -108,14 +109,23 @@ resource "aws_autoscaling_group" "enclave_host" {
   target_group_arns         = [aws_lb_target_group.enclave_host.arn]
 
   launch_template {
-    id      = aws_launch_template.enclave_host.id
-    version = "$Latest"
+    id = aws_launch_template.enclave_host.id
+    # Numeric versions trigger production refresh; preserve staging behavior.
+    version = var.environment == "production" ? tostring(aws_launch_template.enclave_host.latest_version) : "$Latest"
   }
 
   instance_refresh {
     strategy = "Rolling"
     preferences {
-      min_healthy_percentage = 50
+      min_healthy_percentage = var.environment == "production" ? 100 : 50
+      max_healthy_percentage = var.environment == "production" ? 200 : 100
+    }
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.environment != "production" || length(distinct([for s in data.aws_subnet.selected : s.availability_zone])) >= 2
+      error_message = "Production hosts must span at least two Availability Zones (not just two subnets)."
     }
   }
 

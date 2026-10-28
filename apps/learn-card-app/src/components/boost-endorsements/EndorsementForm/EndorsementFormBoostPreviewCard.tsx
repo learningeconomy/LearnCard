@@ -227,7 +227,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
                             ? 'hidden'
                             : 'mt-[0px] mb-[8px]'
                     }
-                    badgeCircleCustomClass={`!w-[80px] h-[80px] mt-1 ${
+                    badgeCircleCustomClass={`w-[80px]! h-[80px] mt-1 ${
                         isAwardDisplay || isMeritBadge ? '' : 'shadow-3xl'
                     }`}
                     badgeRibbonContainerCustomClass="left-[34%] bottom-[-40%]"
@@ -243,7 +243,7 @@ export const EndorsementFormBoostPreviewCard: React.FC<{
                 <p className="flex text-xs text-grayscale-700 text-left">
                     <CredentialVerificationDisplay
                         credential={credential}
-                        iconClassName="!w-[15px] !h-[15px] mr-1"
+                        iconClassName="w-[15px]! h-[15px]! mr-1"
                     />
                     {issuerName} • {issueDate}
                 </p>

@@ -101,7 +101,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                                 autoComplete="email"
                                 aria-invalid={Boolean(error)}
                                 aria-describedby={error ? 'eu-guardian-email-error' : undefined}
-                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[12px] ion-padding font-medium tracking-wider text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
+                                className={`w-full bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[12px] ion-padding font-medium tracking-wider text-base focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                     error ? 'login-input-email-error' : ''
                                 }`}
                             />
@@ -131,7 +131,7 @@ const EUParentalConsentModalContent: React.FC<EUParentalConsentModalContentProps
                     </>
                 )}
             </div>
-            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] safe-area-bottom">
+            <div className="w-full flex gap-[10px] justify-center px-[10px] left-[0px] items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! safe-area-bottom">
                 <div className="w-full max-w-[700px] flex gap-[10px]">
                     <button
                         type="button"

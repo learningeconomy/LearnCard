@@ -56,6 +56,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
         error: managedBoostsError,
     } = useGetPaginatedManagedBoosts(category, { limit: 12 });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const managedBoostsOnScreen = useOnScreen(managedBoostInfiniteScrollRef as any, '-100px', [
         managedBoosts?.pages?.[0]?.records?.length,
     ]);
@@ -112,6 +113,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
         try {
             await managedBoostsRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
@@ -180,7 +182,7 @@ const BoostManagedList: React.FC<BoostManagedListProps> = ({
                             </div>
                         )}
                         <div
-                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] z-[-50] ${bgFillerColor}`}
+                            className={`bg-filler absolute h-full top-[0px] left-[0px] w-full mt-[110px] -z-50 ${bgFillerColor}`}
                         />
                     </IonCol>
                 </>

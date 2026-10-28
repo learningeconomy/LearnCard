@@ -9,13 +9,17 @@ name: Mock E2E
 on:
     pull_request:
         types: [opened, synchronize, reopened]
+    workflow_dispatch:
 
 concurrency:
-    group: mock-e2e-${{ github.head_ref || github.ref }}
+    group: mock-e2e-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.head_ref || github.ref }}
     cancel-in-progress: true
 
 env:
     CI: true
+
+permissions:
+    contents: read
 
 jobs:
     mock-e2e:
@@ -24,7 +28,7 @@ jobs:
             - name: Checkout Repo
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.pull_request.head.sha }}
+                  ref: ${{ github.event.pull_request.head.sha || github.sha }}
                   fetch-depth: 0
 
             - name: Fetch main for NX comparison
@@ -38,7 +42,12 @@ jobs:
               run: bunx playwright install --with-deps firefox
 
             - name: Run affected mocked E2E
+              if: ${{ github.event_name != 'workflow_dispatch' }}
               run: bunx nx affected --target=test-mock --base=origin/main --head=HEAD
+
+            - name: Run full mocked E2E
+              if: ${{ github.event_name == 'workflow_dispatch' }}
+              run: bunx nx run learn-card-app:test-mock
 
             - name: Upload Playwright report
               if: always()

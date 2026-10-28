@@ -148,7 +148,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
 
     return (
         <section
-            className={`h-full flex flex-col justify-start items-start bg-white/50 backdrop-blur-sm`}
+            className={`h-full flex flex-col justify-start items-start bg-white/50 backdrop-blur-xs`}
         >
             <div className="w-full flex items-center justify-start ion-padding bg-white rounded-b-[30px] overflow-hidden shadow-md">
                 <div>
@@ -161,13 +161,13 @@ export const BoostLinkedCredentialsModal: React.FC<{
                         badgeThumbnail={badgeThumbnail}
                         badgeThumbnailContainerClass="w-[80%] h-[80%]"
                         badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                        badgeCircleCustomClass={`!w-[54px] h-[54px] mt-1 shadow-3xl`}
+                        badgeCircleCustomClass={`w-[54px]! h-[54px] mt-1 shadow-3xl`}
                         badgeRibbonContainerCustomClass="left-[30%] bottom-[-70%]"
                         badgeRibbonCustomClass="w-[20px]"
                         badgeRibbonIconCustomClass="w-[80%] mt-[4px]"
                         credential={credential}
-                        borderStyle="border-[1px]"
-                        certRibbonCustomClass="!w-[75px]"
+                        borderStyle="border"
+                        certRibbonCustomClass="w-[75px]!"
                     />
                 </div>
                 <div className="flex flex-col items-start ml-[12px]">
@@ -192,7 +192,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                             autocapitalize="on"
                             placeholder="Credentials..."
                             value={search}
-                            className="!pl-10 text-grayscale-800 text-[17px] font-notoSans !py-1 w-full"
+                            className="pl-10! text-grayscale-800 text-[17px] font-notoSans py-1! w-full"
                             onIonInput={e => setSearch(e.detail.value ?? '')}
                             type="text"
                         />
@@ -224,11 +224,12 @@ export const BoostLinkedCredentialsModal: React.FC<{
                 </div>
                 {search.length > 0 && credentials.length === 0 && (
                     <div className="w-full flex items-center justify-center z-10 mt-4">
-                        <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t-[1px] border-solid border-grayscale-200 pt-2">
+                        <div className="w-full max-w-[550px] flex items-center justify-start px-2 border-t border-solid border-grayscale-200 pt-2">
                             <p className="text-grayscale-800 text-base font-normal font-notoSans">
                                 <TransP
                                     m={m['common.searchResults.noResultsFor']}
                                     values={{ query: search }}
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     components={[<span className="text-black italic" />]}
                                 />
                             </p>
@@ -255,13 +256,13 @@ export const BoostLinkedCredentialsModal: React.FC<{
             <IonFooter
                 ref={bottomBarRef}
                 mode="ios"
-                className="w-full flex justify-center items-center ion-no-border bg-opacity-60 backdrop-blur-[10px] py-4 absolute bottom-0 bg-white !max-h-[100px] z-9999"
+                className="w-full flex justify-center items-center ion-no-border  backdrop-blur-[10px] py-4 absolute bottom-0 bg-white/60 max-h-[100px]! z-9999"
             >
                 <div className="w-full flex items-center justify-center">
                     <div className="w-full flex items-center justify-between max-w-[600px] ion-padding">
                         <button
                             onClick={closeModal}
-                            className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-[600] leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
+                            className=" py-[9px] pl-[20px] pr-[15px] bg-white rounded-[30px] font-notoSans text-[17px] font-semibold leading-[24px] tracking-[0.25px] text-grayscale-900 w-full shadow-button-bottom flex gap-[5px] justify-center mr-2"
                         >
                             Close
                         </button>

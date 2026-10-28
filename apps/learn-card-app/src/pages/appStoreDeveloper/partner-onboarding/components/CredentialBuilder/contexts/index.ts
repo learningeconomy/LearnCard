@@ -68,6 +68,7 @@ const fetchRemoteContext = async (url: string) => {
         return { document: await response.json(), documentUrl: url, contextUrl: null };
     } catch (e) {
         if (e instanceof Error && e.name === 'AbortError') {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error(`Timed out loading JSON-LD context: ${url}`);
         }
         throw e instanceof Error ? e : new Error(`Unable to load JSON-LD context: ${url}`);

@@ -25,7 +25,7 @@ const EditAPITokenModal: React.FC<{
         (updatedDescription !== '' && updatedDescription !== grantDescription);
 
     const updateAuthGrant = async () => {
-        let updates = {};
+        const updates = {};
         if (updatedName !== grantName && updatedName !== '') {
             updates.name = updatedName;
         }
@@ -61,7 +61,7 @@ const EditAPITokenModal: React.FC<{
             />
             {sectionPortal &&
                 createPortal(
-                    <div className="flex flex-col justify-center gap-2 items-center relative !border-none max-w-[500px]">
+                    <div className="flex flex-col justify-center gap-2 items-center relative border-none! max-w-[500px]">
                         <button
                             disabled={!canUpdate}
                             onClick={updateAuthGrant}

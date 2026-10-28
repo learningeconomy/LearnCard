@@ -2,9 +2,9 @@ import React from 'react';
 
 const PuzzlePiece: React.FC<{
     className?: string;
-    version?: 'outline' | 'filled' | 'with-plus';
-}> = ({ className = '', version = 'outline' }) => {
-    if (version === 'outline') {
+    version?: 'outline-solid' | 'filled' | 'with-plus';
+}> = ({ className = '', version = 'outline-solid' }) => {
+    if (version === 'outline-solid') {
         return (
             <svg viewBox="0 0 26 26" fill="none" className={className}>
                 <path

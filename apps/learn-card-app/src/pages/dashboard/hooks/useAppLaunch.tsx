@@ -29,6 +29,7 @@ type UseAppLaunchOptions = {
     onInstallSuccess?: () => void;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const parseLaunchConfig = (raw: string | undefined): Record<string, any> => {
     if (!raw) return {};
     try {
@@ -84,7 +85,7 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -110,9 +111,8 @@ export const useAppLaunch = ({ listing, isInstalled, onInstallSuccess }: UseAppL
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
                     const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',

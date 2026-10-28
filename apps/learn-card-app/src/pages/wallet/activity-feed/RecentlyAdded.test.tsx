@@ -10,6 +10,12 @@ vi.mock('learn-card-base', async () => ({
     useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     ModalTypes: { FullScreen: 'full-screen' },
     categoryMetadata: {},
+    UploadTypesEnum: {
+        Resume: 'resume',
+        Certificate: 'certificate',
+        Transcript: 'transcript',
+        Diploma: 'diploma',
+    },
 }));
 // PassportCredentialCard includes query-backed title resolution and previews;
 // stub it so this test stays focused on the strip's filter/sort/cap behavior.
@@ -50,18 +56,57 @@ describe('RecentlyAdded', () => {
         expect(queryByText('Hidden Data')).toBeNull();
     });
 
-    it('sorts newest-first and caps at five tiles', () => {
-        withRecords(
-            Array.from({ length: 7 }, (_, i) => ({
-                uri: `u${i}`,
-                title: `Cred ${i}`,
-                category: 'Achievement',
-                date: `2026-06-0${i}`,
-            }))
-        );
-        const { getAllByTestId, getByText } = render(<RecentlyAdded />);
-        expect(getAllByTestId('recent-tile').length).toBe(5);
-        expect(getByText('Cred 6')).toBeTruthy();
-        expect(() => getByText('Cred 0')).toThrow();
+    it('hides uploaded originals without filtering earned credentials by their title', () => {
+        withRecords([
+            { uri: 'original-resume', title: 'Uploaded résumé', category: 'resume' },
+            { uri: 'original-certificate', title: 'Uploaded certificate', category: 'certificate' },
+            { uri: 'original-transcript', title: 'Uploaded transcript', category: 'transcript' },
+            { uri: 'original-diploma', title: 'Uploaded diploma', category: 'diploma' },
+            { uri: 'earned', title: 'Raw Artifact', category: 'Achievement' },
+            { uri: 'published-resume', title: 'Published résumé', category: 'Resume' },
+        ]);
+        const { getAllByTestId } = render(<RecentlyAdded />);
+        expect(getAllByTestId('recent-tile').map(tile => tile.textContent)).toEqual([
+            'Raw Artifact',
+        ]);
+    });
+
+    it('renders nothing when every record is an uploaded original', () => {
+        withRecords([{ uri: 'original', title: 'Raw Artifact', category: 'resume' }]);
+        const { container } = render(<RecentlyAdded />);
+        expect(container.firstChild).toBeNull();
+    });
+
+    it('filters originals across loaded pages before sorting and filling the five tiles', () => {
+        credentialList.value = {
+            pages: [
+                {
+                    records: [
+                        {
+                            uri: 'original',
+                            title: 'Raw Artifact',
+                            category: 'resume',
+                            date: '2026-06-20',
+                        },
+                    ],
+                },
+                {
+                    records: Array.from({ length: 7 }, (_, i) => ({
+                        uri: `u${i}`,
+                        title: `Cred ${i}`,
+                        category: 'Achievement',
+                        date: `2026-06-0${i + 1}`,
+                    })),
+                },
+            ],
+        };
+        const { getAllByTestId } = render(<RecentlyAdded />);
+        expect(getAllByTestId('recent-tile').map(tile => tile.textContent)).toEqual([
+            'Cred 6',
+            'Cred 5',
+            'Cred 4',
+            'Cred 3',
+            'Cred 2',
+        ]);
     });
 });

@@ -44,7 +44,7 @@ export const StoreListingPreview: React.FC<StoreListingPreviewProps> = ({
                     <img
                         src={iconUrl || DEFAULT_APP_ICON_URL}
                         alt=""
-                        className="w-20 h-20 rounded-2xl border-4 border-white object-cover bg-white shadow-sm"
+                        className="w-20 h-20 rounded-2xl border-4 border-white object-cover bg-white shadow-xs"
                     />
                 </div>
             </div>
@@ -122,7 +122,7 @@ export const StoreListingPreview: React.FC<StoreListingPreviewProps> = ({
                         <h3 className="text-sm font-semibold text-grayscale-900 mb-2">
                             Highlights
                         </h3>
-                        <ul className="space-y-2">
+                        <ul className="space-y-v3-2">
                             {visibleHighlights.map((highlight, i) => (
                                 <li
                                     key={i}

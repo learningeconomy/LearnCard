@@ -46,6 +46,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
 
     if (isEditing) {
         const sharedProps = {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             ref: inputRef as any,
             value: draft,
             placeholder,
@@ -54,7 +55,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 setDraft(e.target.value);
                 onChange?.(e.target.value);
             },
-            className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-none resize-none leading-relaxed ${
+            className: `w-full text-xs text-grayscale-700 px-2 py-1.5 outline-hidden resize-none leading-relaxed ${
                 showDecoration ? 'bg-transparent rounded-none' : 'bg-indigo-50 rounded-lg'
             }`,
         };
@@ -64,6 +65,7 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                 <div className="flex-1">
                     {showDecoration ? (
                         <div className="bg-indigo-50 rounded-lg overflow-hidden">
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR */}
                             <textarea {...(sharedProps as any)} rows={3} />
                             <div className="flex justify-end px-2 pb-1.5">
                                 {isSelfAttested ? (
@@ -92,8 +94,10 @@ const ResumePreviewEditableTextBlock: React.FC<ResumePreviewEditableTextBlockPro
                             </div>
                         </div>
                     ) : multiline ? (
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         <textarea {...(sharedProps as any)} rows={2} />
                     ) : (
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         <input {...(sharedProps as any)} type="text" />
                     )}
                 </div>

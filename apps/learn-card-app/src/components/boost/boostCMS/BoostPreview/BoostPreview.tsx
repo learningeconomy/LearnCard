@@ -14,6 +14,7 @@ import BoostDetailsSideBar from './BoostDetailsSideBar';
 import BoostDetailsSideMenu from './BoostDetailsSideMenu';
 import RenderMethodDisplay from '../../../render-method/RenderMethodDisplay';
 import VerifiedChildCLRFooter from './VerifiedChildCLRFooter';
+import PreviewCredentialFooter from './PreviewCredentialFooter';
 import EndorsementBadge from '../../../boost-endorsements/EndorsementBadge';
 import BoostFooterLayout from '../../../accessibility/AccessibleBoostFooterLayout';
 import AccessibleCredentialCard from '../../../accessibility/AccessibleCredentialCard';
@@ -215,6 +216,8 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         );
     }, [credentialWithEdits?.id, renderMethod?.template]);
     const credential = credentialWithEdits ?? unwrappedCredential;
+    // Preserve verification if the original or displayed credential has a proof.
+    const isUnsignedPreview = isPreview && !_credential?.proof && !credential?.proof;
     const { newModal, closeModal } = useModal();
     const { credentialIssuerPopoverProps, openCredentialIssuerPopover } =
         useReactCredentialIssuerPopover();
@@ -223,7 +226,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
         typeof credential?.issuer === 'string' ? credential.issuer : credential?.issuer?.id;
     const { data: knownDIDRegistry } = useKnownDIDRegistry(profileID);
 
-    const vcVerifications = useVerification(credential, !sharedOriginal);
+    const vcVerifications = useVerification(
+        credential,
+        !sharedOriginal && !isUnsignedPreview && !skipVerification
+    );
     const [isFront, setIsFront] = useState(true);
     const viewedCredentialIdRef = useRef<string | undefined>(undefined);
 
@@ -303,10 +309,10 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                 renderMethodCredential={_credential as VC | UnsignedVC}
                 issuancesSummaryComponent={issuancesSummaryComponent}
                 hideEndorsementRequestCard={sharedOriginal}
-                isPreview={isPreview}
+                isPreview={isUnsignedPreview}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -360,7 +366,9 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     issuerOverride={issuerOverride}
                     subjectImageComponent={subjectImageComponent}
                     issuerImageComponent={issuerImageComponent}
-                    customFooterComponent={customFooterComponent}
+                    customFooterComponent={
+                        isUnsignedPreview ? <PreviewCredentialFooter /> : customFooterComponent
+                    }
                     customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     hideNavButtons
                     hideQRCode={hideQRCode}
@@ -378,7 +386,13 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                     customThumbComponent={customThumbComponent}
                     customBodyCardComponent={customBodyCardComponent}
                     customFooterComponent={
-                        isClrChildCredential ? <VerifiedChildCLRFooter /> : customFooterComponent
+                        isUnsignedPreview ? (
+                            <PreviewCredentialFooter />
+                        ) : isClrChildCredential ? (
+                            <VerifiedChildCLRFooter />
+                        ) : (
+                            customFooterComponent
+                        )
                     }
                     subjectDID={subjectDID}
                     subjectImageComponent={subjectImageComponent}
@@ -430,7 +444,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                         <div
                             className={`w-full flex flex-col items-center justify-center overflow-x-auto ${boostPreviewWrapperCustomClass} ${
                                 isCertificate ? 'certificate-display-zoom' : ''
-                            } ${isID ? '!px-0 mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
+                            } ${isID ? 'px-0! mt-[calc(20px+var(--ion-safe-area-top,0px))]' : ''}`}
                         >
                             <section
                                 className={`w-full mt-[var(--ion-safe-area-top,0px)] overflow-y-auto max-h-full disable-scrollbars ${
@@ -465,7 +479,7 @@ const BoostPreview: React.FC<BoostPreviewProps> = ({
                             renderMethodCredential={_credential as VC | UnsignedVC}
                             issuancesSummaryComponent={issuancesSummaryComponent}
                             hideEndorsementRequestCard={sharedOriginal}
-                            isPreview={isPreview}
+                            isPreview={isUnsignedPreview}
                         />
                     )}
                     <ReactCredentialIssuerPopover {...credentialIssuerPopoverProps} />

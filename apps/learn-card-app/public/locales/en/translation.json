@@ -391,6 +391,32 @@
                     "toastAddedBody": "Your journey is now reflected in portable, trusted credentials.",
                     "toastParseFailed": "Failed to parse JSON VC."
                 },
+                "credentialAdded": "1 credential added",
+                "credentialsAdded": "{{count}} credentials added",
+                "openFile": "Open File",
+                "openingFile": "Opening...",
+                "retryExtraction": "Try Again",
+                "retrySave": "Retry Save",
+                "retrying": "Trying again...",
+                "documentNoCredentials": "No credentials were extracted. Try another file.",
+                "credentialsReady": "Credentials ready for review: {{count}}.",
+                "originalDocumentSaved": "The original document is saved.",
+                "extractionFailedSavingOriginal": "We could not extract credentials. Saving your original document...",
+                "saveOutcomeError": "We couldn't save your file. You can try again.",
+                "credentialSaveOutcomeError": "Your file is saved. Some selected credentials couldn't be saved.",
+                "extractionRetryError": "We couldn't extract credentials. You can try again.",
+                "errorNoReadableText": "We could not find readable text in this file.",
+                "errorInputInvalid": "We could not read that file. Please choose it again.",
+                "errorFileTooLarge": "This file is too large. Choose a file smaller than 4 MB.",
+                "errorReadFailed": "We could not read this file. Please try a different file.",
+                "errorContentRejected": "We could not identify a supported document in this file.",
+                "errorUploadBusy": "Uploads are still busy. Please try again shortly.",
+                "errorProcessingFailed": "We could not process this file right now. Please try again.",
+                "errorConsentDenied": "AI processing is not available for this account.",
+                "errorResponseInvalid": "We received an incomplete result. Please try again.",
+                "errorNetworkFailed": "Connection issue. Check your internet and try again.",
+                "errorAiGateLoading": "We’re loading your AI settings. Try again shortly.",
+                "documentUnavailable": "This document is unavailable.",
                 "addButton": "Add",
                 "schools": {
                     "title": "Schools",
@@ -450,6 +476,7 @@
                 "noMatches": "No matching types found"
             },
             "loader": {
+                "waitingForCapacity": "Uploads are busy. Waiting for a turn…",
                 "notifyWhenReady": "Notify me when it's ready",
                 "quotes": {
                     "resume": {
@@ -1103,7 +1130,8 @@
                 "error": "Unable to verify code. Please try again."
             },
             "error": {
-                "invalidEmail": "Missing or Invalid Email"
+                "invalidEmail": "Missing or Invalid Email",
+                "sendFailed": "Unable to send code. Please try again."
             },
             "label": "Email"
         },
@@ -1143,7 +1171,14 @@
             "button": "Sign in with SMS",
             "smsSent": "A verification code has been sent",
             "error": {
-                "invalidPhone": "Phone is required!"
+                "invalidPhone": "Phone is required!",
+                "invalidPhoneNumber": "Please enter a valid phone number.",
+                "invalidCode": "Invalid or expired code.",
+                "tooManyAttempts": "Too many attempts. Please resend code.",
+                "tooManyRequests": "Too many attempts from this phone number. For your security, please wait 10–15 minutes before trying again, or sign in with email instead.",
+                "quotaExceeded": "We can't send a text message right now. Please try again later or sign in with email.",
+                "network": "Connection issue. Please check your internet and try again.",
+                "generic": "Something went wrong. Please try again."
             }
         },
         "qrApproved": {
@@ -1191,7 +1226,9 @@
             "notDeveloper": "Not a developer? ",
             "signInNormally": "Sign in normally",
             "securityWarning": "Keep your seed private. Anyone with it controls this account.",
-            "pasteHint": "Paste it into the field below."
+            "pasteHint": "Paste it into the field below.",
+            "showSeed": "Show seed",
+            "hideSeed": "Hide seed"
         },
         "sharedComputer": "Shared or public computer",
         "signInFromAnotherDevice": "Sign in from another device",
@@ -1299,6 +1336,7 @@
             "imA": "I'm a ",
             "selectRole": "Select Role",
             "fullName": "Full Name",
+            "fullNameOptional": "Full Name (optional)",
             "dateOfBirth": "Date of Birth",
             "age": "Age: {{age}}",
             "countryOfResidence": "Country of Residence",
@@ -1827,6 +1865,8 @@
         "previewCredentials": "Preview {{count}} Credentials"
     },
     "consentFlow": {
+        "aiPassportReauthenticationRequired": "Go back to AI Passport and sign in again.",
+        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "guardianApprovalRequired": "Ask a current account manager to approve this connection, then try again.",
         "acceptAndSync": "Accept & Sync",
         "accepted": "Accepted",
@@ -1947,7 +1987,6 @@
             "email": "email",
             "profilePicture": "profile picture"
         },
-        "reviewChanged": "The sharing details changed. Review them before connecting again.",
         "retryPublication": "Your sharing choices are saved. Try again to finish sending them."
     },
     "recovery": {
@@ -2286,6 +2325,10 @@
                 "title": "Skip the wait next time",
                 "body": "You're back in. Set a 6-digit PIN so you can recover instantly next time, without waiting 7 days."
             },
+            "pinResetRequired": {
+                "title": "Set a new recovery PIN",
+                "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
+            },
             "useInstead": "Use my recovery PIN instead"
         },
         "confirmCode": {
@@ -2305,6 +2348,9 @@
             "resendFailed": "We couldn't send a new code. Check your connection and try again."
         },
         "invalidRequest": "This recovery request is no longer valid. Start a new one.",
+        "status": {
+            "failed": "We couldn't check your request right now."
+        },
         "addWayBackIn": "Add a way back in",
         "addAnotherMethod": "Add another method",
         "fullyProtected": "You're fully protected.",
@@ -3111,7 +3157,8 @@
             "preview": {
                 "criteria": "Criteria",
                 "certificate": "Certificate",
-                "id": "ID"
+                "id": "ID",
+                "awardedOn": "Awarded on {{date}}"
             },
             "loading": {
                 "issuing": "Issuing boost...",
@@ -3737,6 +3784,20 @@
         "skillsHub": "Skills Hub"
     },
     "base": {
+        "inAppMessages": {
+            "next": "Next",
+            "previous": "Previous",
+            "done": "Done",
+            "progress": "Story progress",
+            "error": "Something went wrong. Please try again.",
+            "retry": "Try Again",
+            "loading": "Loading…",
+            "opening": "Opening…",
+            "checking": "Checking…",
+            "downloading": "Downloading… {{progress}}%",
+            "installing": "Installing…",
+            "upToDate": "You're on the latest version."
+        },
         "verification": {
             "selfIssued": "Self Issued",
             "trustedIssuer": "Trusted Issuer",
@@ -3818,7 +3879,9 @@
             "lifecycle": {
                 "revoked": "Revoked",
                 "suspended": "Suspended"
-            }
+            },
+            "awardedOn": "Awarded on {{date}}",
+            "awardedOnBy": "Awarded on {{date}} by"
         }
     },
     "skills": {
@@ -4705,6 +4768,19 @@
             "maxClaims": "Max claims (optional)",
             "unlimited": "Unlimited"
         }
+    },
+    "credentialShare": {
+        "copyLink": "Copy Link",
+        "publicPreviewPersistent": "Public preview is published and may remain available. Social apps may keep their own copies, even if you later change sharing settings.",
+        "publicPreviewPrivate": "A public preview shows the credential name, issuer and image. Once published, it may remain available, and social apps may keep copies. Everything else stays encrypted.",
+        "issuerUnavailable": "Issuer details are unavailable. You can still share the encrypted link.",
+        "enablePreview": "Enable Public Preview",
+        "publishingPreview": "Publishing preview...",
+        "addToLinkedIn": "Add to LinkedIn",
+        "postToLinkedIn": "Post to LinkedIn",
+        "linkedInOrgId": "LinkedIn organization ID (optional)",
+        "linkedInOrgIdHelp": "Find the numeric ID in your LinkedIn admin page URL. Enter the number, not the page slug. Leave blank to remove it.",
+        "linkedInOrgIdError": "Enter digits only."
     },
     "developerPortal": {
         "shell": {
@@ -8980,16 +9056,16 @@
         "addByHint": "Add by name, @username, or email",
         "linkOnIssue": "We'll create a shareable link when you issue.",
         "alreadyHave": "Already have something?",
-        "startFromLink": "Start from a link, file, or ID",
+        "startFromLink": "Import a credential or spreadsheet",
         "sendExisting": "Send one you've made",
-        "startFromSomething": "Start from something",
-        "importIntro": "Paste a link, a Credential Engine ID, or a credential's data — we'll figure out the rest.",
-        "importPlaceholder": "Paste a URL, ce- ID, or credential JSON…",
-        "importSupports": "We support links, IDs, and files",
-        "uploadFile": "Upload file",
+        "startFromSomething": "Import a credential or spreadsheet",
+        "importIntro": "Choose a file or paste content you already have.",
+        "importPlaceholder": "Paste your link or copied data here…",
+        "importSupports": "JSON · CSV · TSV · XLSX",
+        "uploadFile": "Choose file",
         "pasteInstead": "Open the source, copy its JSON, and paste it above.",
-        "bringingIn": "Bringing it in…",
-        "bringItIn": "Bring it in",
+        "bringingIn": "Checking content…",
+        "bringItIn": "Review content",
         "foundIt": "Found it",
         "fromCredEngine": "From Credential Engine",
         "useThis": "Use this",
@@ -9387,7 +9463,8 @@
         },
         "preview": {
             "willLook": "This is how your credential will look.",
-            "pickToStart": "Pick a type to start designing your credential."
+            "pickToStart": "Pick a type to start designing your credential.",
+            "verificationPending": "Verification runs after you issue it."
         },
         "err": {
             "network": "Connection issue. Check your internet and try again.",
@@ -9399,6 +9476,197 @@
             "recipient": "We couldn't reach one of your recipients. Double-check the names or emails and try again.",
             "invalid": "Some details on this credential aren't valid yet. Please review and try again.",
             "generic": "Something went wrong issuing your credential. Please try again."
+        },
+        "sheet": {
+            "invalidEmail": "Enter a valid email address.",
+            "duplicateEmail": "This recipient appears more than once.",
+            "required": "Fill in the required fields.",
+            "invalidEvidence": "Enter a complete http or https evidence link.",
+            "formula": "Recalculate this formula in your spreadsheet and upload again.",
+            "tooLarge": "Use a file under 10 MB with at most 10,000 people and 200 columns.",
+            "tooComplex": "This workbook is too complex to import. Remove unused sheets or split it into smaller files.",
+            "storage": "Recovery could not be saved on this device. Free some space and try again.",
+            "corrupt": "This saved run could not be read. Keep your spreadsheet and check sent results before starting again.",
+            "contextChanged": "Your account or network changed. Return to the original account to resume.",
+            "expired": "This request is too old to resend safely. Contact support to reconcile these deliveries. Other people can still be issued credentials.",
+            "busy": "This run is already active or has changed. Reload to see its latest results.",
+            "chooseEmail": "Choose the column containing recipient email addresses.",
+            "mappedColumnMissing": "An included column is missing. Restore it in the spreadsheet or remove it from Map columns before importing again.",
+            "mapping": "Check the column names and fix the highlighted rows.",
+            "wrongRun": "This file belongs to another saved run. Open it on the original account and device.",
+            "fileType": "Choose a CSV, TSV, or XLSX file.",
+            "malformed": "This spreadsheet could not be read. Check the file and try again.",
+            "review": "Review spreadsheet",
+            "worksheet": "Worksheet",
+            "emailColumn": "Recipient email column",
+            "headerRow": "Column names row",
+            "noHeader": "No column names",
+            "importSummary": "People found: {{count}} · Rows skipped: {{skipped}}",
+            "importing": "Reading spreadsheet...",
+            "addPeople": "Add People",
+            "upload": "Upload spreadsheet",
+            "getTemplate": "Get CSV template",
+            "emailFor": "Email for {{name}}",
+            "evidenceFor": "Evidence for {{name}}",
+            "skip": "Skip",
+            "details": "People and fields",
+            "download": "Download table",
+            "recipient": "Recipient",
+            "evidence": "Evidence link",
+            "sending": "Sending {{count}} of {{total}}...",
+            "savedDraft": "Draft saved on this device",
+            "results": "{{sent}} sent · {{failed}} failed",
+            "confirming": "{{count}} need confirmation",
+            "waiting": "{{count}} waiting",
+            "resume": "Resume",
+            "retryFailed": "Retry Failed",
+            "downloadFailed": "Download {{count}} Failed Rows",
+            "newRun": "Start Another Run",
+            "confirmingHelp": "Check email delivery again without sending twice. If it stays unconfirmed, contact support before issuing again. Profile sends need manual confirmation.",
+            "recoverable": "A saved issuance run is available on this device.",
+            "restore": "Restore Saved Run",
+            "lockedRows": "Sent or submitted rows cannot be changed. Edit only unsent or failed rows.",
+            "saving": "Saving…",
+            "viewSaved": "View saved run",
+            "dismissRecovery": "Skip for Now",
+            "checking": "Checking delivery status…",
+            "checkStatus": "Check Again",
+            "previous": "Previous person",
+            "next": "Next person",
+            "previewPosition": "{{index}} of {{total}} · {{name}}",
+            "peopleSummary": "{{count}} people",
+            "viewAll": "View All",
+            "searchPeople": "Search people",
+            "pageRows": "Rows {{first}}–{{last}} of {{total}}",
+            "needsConfirmation": "Needs confirmation",
+            "design": {
+                "peopleHint": "Review recipients, fix issues, and personalize their credential fields.",
+                "issueCount": "Needs attention · {{count}}",
+                "noIssues": "No issues found",
+                "reviewPeople": "Review people",
+                "editorHint": "Changes are saved to your draft as you edit.",
+                "locked": "Already sent or in progress",
+                "fieldSettings": "Credential fields · {{count}}",
+                "noMatches": "No people match this view.",
+                "importHint": "You can correct recipient details after adding people.",
+                "importSetup": "Set up your import",
+                "previewPeople": "People preview",
+                "previewHint": "Showing {{count}} of {{total}} people.",
+                "additionalEvidence": "Additional evidence",
+                "additionalEvidenceFor": "Additional evidence for {{name}}",
+                "emailFormatGood": "Email format looks good",
+                "emptyImport": "No people found. Check the email column and header row.",
+                "reviewDeliveryIssues": "Review delivery issues · {{count}}",
+                "deliveryIssuesHint": "Review unconfirmed sends here; edit failed recipients in Review people.",
+                "viewDeliveryStatus": "View delivery status",
+                "deliveryStatus": "Delivery status",
+                "deliveryStatusHint": "Statuses update as this run sends.",
+                "searchDeliveryStatus": "Search recipients",
+                "statusFilter": "Status",
+                "allDeliveryStatuses": "All recipients · {{count}}",
+                "deliveryState": {
+                    "ready": "Not sent",
+                    "queued": "Queued",
+                    "sent": "Sent",
+                    "failed": "Failed",
+                    "confirming": "Unconfirmed"
+                },
+                "dateUtc": "UTC · changing the date keeps the time",
+                "originalDate": "Original value: {{value}}",
+                "mappingHint": "Match spreadsheet columns to the information on each credential.",
+                "mappingSummary": "{{mapped}} of {{total}} columns included",
+                "mapColumns": "Map columns",
+                "sourceColumn": "Spreadsheet column",
+                "credentialField": "Credential field",
+                "sample": "Example: {{value}}",
+                "include": "Include",
+                "included": "Included",
+                "includeColumn": "Include {{name}}",
+                "removeColumn": "Remove {{name}}",
+                "formatOptions": "Format options",
+                "openBadgesOnly": "Column mapping is available for Open Badges credentials.",
+                "columnsReadOnly": "This run’s columns are read-only."
+            },
+            "encoding": "Save this spreadsheet as CSV UTF-8 or XLSX, then import it again. Some characters could not be read safely.",
+            "bounds": "Remove the out-of-range cell {{cell}}, then import the workbook again.",
+            "resultField": "Result field",
+            "spreadsheet": "Spreadsheet",
+            "invalidNumber": "Use a number with a decimal point, without units.",
+            "invalidDate": "Use YYYY-MM-DD or a timestamp with a timezone.",
+            "invalidResult": "Check the result value and its scale.",
+            "columns": "Spreadsheet columns",
+            "columnsHint": "Choose which columns to include in this credential.",
+            "pickTypeForColumns": "Choose a credential type before adding columns.",
+            "mappingFor": "Use {{name}} as",
+            "numberFormat": "Spreadsheet decimal format",
+            "creditUnit": "Credit unit",
+            "creditUnitExample": "For example, semester credit hours",
+            "hoursHint": "Choose a credit unit to count hours as credits, or keep them in the description.",
+            "dateFormat": "Spreadsheet date format",
+            "dateIso": "YYYY-MM-DD or timestamp",
+            "dateDmy": "Day / month / year",
+            "dateMdy": "Month / day / year",
+            "target": {
+                "description": "Description",
+                "Percent": "Percent",
+                "RawScore": "Raw score",
+                "LetterGrade": "Letter grade",
+                "GradePointAverage": "Grade point average",
+                "credits": "Credits earned",
+                "evidence": "Evidence link",
+                "awardedDate": "Awarded date"
+            },
+            "numberFormatConflict": "This column mixes number formats. Choose the correct format or fix the spreadsheet.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} characters",
+                "expand": "Expand",
+                "collapse": "Collapse",
+                "expandField": "Expand {{field}}",
+                "collapseField": "Collapse {{field}}",
+                "descriptionTooLong": "Use at most {{limit}} characters for this field.",
+                "sharedEvidence": "Evidence for everyone",
+                "sharedEvidenceHelp": "Included for every person. Edit these items in Evidence & media.",
+                "noSharedEvidence": "No evidence has been added for everyone.",
+                "personalEvidenceHelp": "Evidence added in a row is only sent to that person.",
+                "personalEvidence": "Extra evidence for this person",
+                "personalEvidenceFor": "Extra evidence link for {{name}}",
+                "personalAttachments": "Files & links for this person ({{count}})",
+                "evidenceFor": "Evidence for {{name}}",
+                "rowEvidenceHelp": "Only for this person; evidence for everyone is still included.",
+                "allSent": "All credentials sent",
+                "attention": "Delivery needs attention",
+                "completionCount": "{{sent}} of {{total}} sent successfully.",
+                "completionHelp": "Review delivery status or start another credential.",
+                "confirmationHelp": "Some deliveries are unconfirmed. Check their status before trying again.",
+                "failureHelp": "Review the failed deliveries, then retry only those that failed.",
+                "attentionToast": "{{sent}} of {{total}} sent. Review the remaining deliveries.",
+                "successToast": "Delivery complete: {{count}} sent."
+            }
+        },
+        "importOptions": {
+            "uploadTitle": "Upload a file",
+            "uploadHint": "A spreadsheet of people or an existing credential.",
+            "dropHint": "Drag a file here, or choose one below.",
+            "readingFile": "Reading file…",
+            "pasteTitle": "Paste a link or data",
+            "pasteHint": "Use content copied from another source.",
+            "contentLabel": "Content to import",
+            "pasteHelp": "Paste a credential link, JSON data, or spreadsheet rows with email addresses.",
+            "or": "or",
+            "examplesTitle": "What can I paste?",
+            "exampleLinkTitle": "Credential link",
+            "exampleLinkBody": "A direct link to a credential’s JSON data.",
+            "exampleRowsTitle": "Spreadsheet rows",
+            "exampleRowsBody": "Copy rows with an email column from Google Sheets or Excel.",
+            "exampleJsonTitle": "Credential data (JSON)",
+            "exampleJsonBody": "Copy the complete JSON text of an existing credential.",
+            "exampleRegistry": "Credential Engine links and record IDs also work here.",
+            "reviewNote": "You’ll review the content before adding it.",
+            "detectedJson": "Credential data",
+            "detectedRegistry": "Credential Engine record",
+            "detectedFramework": "Competency framework",
+            "detectedLink": "Credential link",
+            "unrecognized": "Add a credential link, JSON data, or rows with email addresses."
         }
     },
     "connectivity": {
@@ -9547,7 +9815,8 @@
         "savedToLearnCard": "Saved to LearnCard",
         "saveError": "Could not save these credentials. Please try again.",
         "signInToSave": "Sign in to save",
-        "saveHint": "Keep this signed collection with your received items."
+        "saveHint": "Keep this signed collection with your received items.",
+        "viewCredential": "View credential"
     },
     "resumePublishing": {
         "linkReady": "Your private link is ready.",

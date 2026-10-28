@@ -116,7 +116,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, currentStep, onSte
                         </button>
 
                         {index < steps.length - 1 && (
-                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                            <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
                         )}
                     </React.Fragment>
                 );
@@ -177,7 +177,9 @@ const PartnerOnboardingWizard: React.FC = () => {
                 });
 
                 const templates: CredentialTemplate[] =
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     boostsResult?.records?.map((boost: any) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         const meta = boost.boost?.meta as any;
                         const credential = boost.boost?.credential;
 
@@ -600,6 +602,7 @@ const PartnerOnboardingWizard: React.FC = () => {
  */
 export const PartnerOnboardingWizardContent: React.FC<{
     integrationId: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     selectedIntegration: any;
 }> = ({ integrationId }) => {
     const history = useHistory();
@@ -636,7 +639,9 @@ export const PartnerOnboardingWizardContent: React.FC<{
                 });
 
                 const templates: CredentialTemplate[] =
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     boostsResult?.records?.map((boost: any) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         const meta = boost.boost?.meta as any;
                         const credential = boost.boost?.credential;
 

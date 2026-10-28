@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.90.45
+
+### Patch Changes
+
+- [#1694](https://github.com/learningeconomy/LearnCard/pull/1694) [`5005858e8ffaebb83ae6be53908cd36b9ff3adf8`](https://github.com/learningeconomy/LearnCard/commit/5005858e8ffaebb83ae6be53908cd36b9ff3adf8) Thanks [@goblincore](https://github.com/goblincore)! - Prevent login from stalling after logout while other app tabs remain open. Preserve Firebase-managed database connections and clear authenticated sessions through Firebase sign-out. Add safe ScoutPass login diagnostics.
+
+    Coordinate Web3Auth account setup across browser tabs so Firebase sign-in propagation does not reuse a token concurrently. Validate restored account identity and replace raw provider errors with safe sign-in messages.
+
+    Clear stale account state when sign-out propagates to an already-open tab, without reopening its cached account or changing cold offline startup behavior.
+
+    Bound queued Web3Auth lock acquisition without interrupting an active SDK operation, and verify Firebase sign-out removed this app's persisted user with a bounded, read-only diagnostic check.
+
+- [#1743](https://github.com/learningeconomy/LearnCard/pull/1743) [`7ff06628cd51fdb19ab66db335284fec143d249c`](https://github.com/learningeconomy/LearnCard/commit/7ff06628cd51fdb19ab66db335284fec143d249c) Thanks [@goblincore](https://github.com/goblincore)! - Migrate styles to Tailwind 4.3. The published React styles now require Safari/iOS 16.4+, Chrome/Edge/Android WebView 111+, or Firefox 128+; this raises the supported browser floor and requires a major release of `@learncard/react`.
+
+    Keep importing `dist/main.css` for card styles and optionally `dist/base.css` for the global reset. Card palette and font utilities retain literal values rather than inheriting host Tailwind tokens. Existing global utility class names remain subject to the normal stylesheet cascade. See the package README for migration and native release requirements.
+
+- Updated dependencies [[`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c), [`7ff06628cd51fdb19ab66db335284fec143d249c`](https://github.com/learningeconomy/LearnCard/commit/7ff06628cd51fdb19ab66db335284fec143d249c)]:
+    - @learncard/helpers@1.7.0
+    - @learncard/react@3.0.0
+    - @learncard/lca-api-plugin@2.0.11
+    - @learncard/sss-key-manager@0.2.3
+
+## 1.90.44
+
+### Patch Changes
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
+- [#1750](https://github.com/learningeconomy/LearnCard/pull/1750) [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Only run the contacts search when there is a search term. The address book used to send an empty profile search on every open even though results are only shown while searching.
+
+## 1.90.43
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
 ## 1.90.42
 
 ### Patch Changes

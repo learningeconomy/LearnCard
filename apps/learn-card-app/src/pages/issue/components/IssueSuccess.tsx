@@ -117,8 +117,10 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             <div className="flex justify-center">
                 <div className="w-[160px] motion-safe:animate-reveal-card">
                     <BoostEarnedCard
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         credential={credential as any}
                         categoryType={
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             getDefaultCategoryForCredential(credential as any) ||
                             BoostCategoryOptionsEnum.achievement
                         }
@@ -184,7 +186,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
             <Confetti />
             {claimLink ? (
                 <div className="relative w-full max-w-[860px] mx-auto desktop:grid desktop:grid-cols-2 desktop:gap-10 desktop:items-center">
-                    <div className="text-center space-y-6 mb-8 desktop:mb-0">
+                    <div className="text-center space-y-v3-6 mb-8 desktop:mb-0">
                         {renderCard()}
                         <div className="animate-fade-in-up">
                             <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -197,8 +199,8 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </div>
                     </div>
 
-                    <div className="animate-fade-in-up space-y-6 text-center max-w-[420px] mx-auto w-full">
-                        <div className="bg-white p-6 rounded-[20px] shadow-sm border border-grayscale-200 flex flex-col items-center gap-4">
+                    <div className="animate-fade-in-up space-y-v3-6 text-center max-w-[420px] mx-auto w-full">
+                        <div className="bg-white p-6 rounded-[20px] shadow-xs border border-grayscale-200 flex flex-col items-center gap-4">
                             <div className="w-48 h-48 relative">
                                 <QRCodeSVG
                                     className="w-full h-full"
@@ -228,7 +230,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <button
                                 type="button"
                                 onClick={handleCopy}
@@ -279,7 +281,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                     </div>
                 </div>
             ) : recipientMode === 'people' ? (
-                <div className="relative w-full max-w-[420px] text-center space-y-6">
+                <div className="relative w-full max-w-[420px] text-center space-y-v3-6">
                     {renderCard()}
                     <div className="animate-fade-in-up">
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -292,7 +294,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </p>
                     </div>
 
-                    <div className="space-y-3 animate-fade-in-up">
+                    <div className="space-y-v3-3 animate-fade-in-up">
                         <button
                             type="button"
                             onClick={onViewWallet}
@@ -312,7 +314,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                     </div>
                 </div>
             ) : (
-                <div className="relative w-full max-w-[420px] text-center space-y-6">
+                <div className="relative w-full max-w-[420px] text-center space-y-v3-6">
                     {renderCard()}
                     <div className="animate-fade-in-up">
                         <h2 className="text-xl font-semibold text-grayscale-900 mb-1">
@@ -323,7 +325,7 @@ export const IssueSuccess: React.FC<IssueSuccessProps> = ({
                         </p>
                     </div>
 
-                    <div className="space-y-3 animate-fade-in-up">
+                    <div className="space-y-v3-3 animate-fade-in-up">
                         <button
                             type="button"
                             onClick={onViewWallet}

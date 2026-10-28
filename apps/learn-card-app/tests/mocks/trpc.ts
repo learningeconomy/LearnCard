@@ -93,7 +93,7 @@ export const createTrpcMock = (page: Page) => {
             const payload: Array<{ result: { data: unknown } }> = [];
             for (let i = 0; i < procedures.length; i++) {
                 const handler = handlers.get(procedures[i])!;
-                const out = handler(decodeBatchInput(body[String(i)]));
+                const out = await handler(decodeBatchInput(body[String(i)]));
                 if (out === ABORT) return route.abort('failed');
                 payload.push({ result: { data: out } });
             }

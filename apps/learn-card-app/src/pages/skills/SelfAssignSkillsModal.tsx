@@ -21,8 +21,10 @@ import { SelectedSkill } from './skillTypes';
 import * as m from '../../paraglide/messages.js';
 import { useAnalytics, AnalyticsEvents } from '@analytics';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type SelfAssignSkillsModalProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
     const { presentToast } = useToast();
     const { closeModal, newModal } = useModal();
@@ -75,7 +77,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
         if (!hasNoChanges) {
             newModal(
                 <SkillsCloseConfirmationModal />,
-                { sectionClassName: '!bg-transparent !shadow-none !overflow-visible' },
+                { sectionClassName: 'bg-transparent! shadow-none! overflow-visible!' },
                 {
                     desktop: ModalTypes.Center,
                     mobile: ModalTypes.Center,
@@ -105,6 +107,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
             presentToast(m['toasts.skills.savedSuccess'](), {
                 type: ToastTypeEnum.Success,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             log.error('Error creating or updating skills:', error);
             presentToast(`Error saving skills!${error?.message ? ` ${error?.message}` : ''}`, {
@@ -119,7 +122,7 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
     return (
         <div className="h-full relative bg-grayscale-50 overflow-hidden">
-            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b-[1px] border-grayscale-200 border-solid rounded-b-[30px]">
+            <div className="px-[20px] py-[20px] bg-white flex flex-col gap-[10px] z-20 relative border-b border-grayscale-200 border-solid rounded-b-[30px]">
                 <div className="flex items-center gap-[10px] text-grayscale-900">
                     <PuzzlePiece className="w-[40px] h-[40px]" version="filled" />
                     <h5 className="text-[22px] font-poppins font-[600] leading-[24px]">
@@ -144,12 +147,12 @@ const SelfAssignSkillsModal: React.FC<SelfAssignSkillsModalProps> = ({}) => {
 
             <IonFooter
                 mode="ios"
-                className="w-full flex justify-center items-center bg-opacity-80 backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white border-solid border-[1px] border-white"
+                className="w-full flex justify-center items-center  backdrop-blur-[5px] p-[20px] absolute bottom-0 left-0 bg-white/80 border-solid border border-white"
             >
                 <div className="w-full flex items-center justify-center gap-[10px] max-w-[600px]">
                     <button
                         onClick={handleClose}
-                        className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border-[1px] border-grayscale-200 leading-[22px]"
+                        className="p-[10px] bg-white rounded-full text-grayscale-900 shadow-button-bottom flex-1 font-poppins text-[17px] border-solid border border-grayscale-200 leading-[22px]"
                     >
                         {m['common.close']()}
                     </button>

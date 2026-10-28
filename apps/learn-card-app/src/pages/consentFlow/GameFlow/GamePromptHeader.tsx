@@ -51,13 +51,13 @@ export const GamePromptHeader: React.FC<GamePromptHeaderProps> = ({
 
                 {user ? (
                     <UserProfilePicture
-                        customContainerClass="w-[50px] h-[50px] rounded-full overflow-hidden border-b-solid baorder-white border-2 !absolute bottom-0 right-[-40px] shadow-bottom text-white font-medium text-2xl"
+                        customContainerClass="w-[50px] h-[50px] rounded-full overflow-hidden border-b-solid baorder-white border-2 absolute! bottom-0 right-[-40px] shadow-bottom text-white font-medium text-2xl"
                         customImageClass="h-full w-full object-cover"
                         customSize={120}
                         user={user}
                     />
                 ) : (
-                    <div className="w-[50px] h-[50px] rounded-[10px] overflow-hidden border-b-solid border-white border-[2px] absolute bottom-0 right-[-40px] drop-shadow-bottom bg-white">
+                    <div className="w-[50px] h-[50px] rounded-[10px] overflow-hidden border-b-solid border-white border-2 absolute bottom-0 right-[-40px] drop-shadow-bottom bg-white">
                         <img
                             src={appIcon}
                             alt="App Icon"

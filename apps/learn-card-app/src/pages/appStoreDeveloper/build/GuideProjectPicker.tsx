@@ -108,7 +108,7 @@ export const GuideProjectPicker: React.FC<GuideProjectPickerProps> = ({
                         placeholder="e.g. Summer Coding Camp"
                         autoFocus
                         maxLength={80}
-                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
+                        className="w-full py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white"
                     />
                     <button
                         type="submit"

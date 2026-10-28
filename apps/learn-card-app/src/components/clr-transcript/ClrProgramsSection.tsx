@@ -31,7 +31,7 @@ const ClrProgramsSection: React.FC<{
 
     return (
         <>
-            <div className="space-y-3">
+            <div className="space-y-v3-3">
                 {/* Section header */}
                 <div className="flex items-center justify-between px-1 border-b border-grayscale-100 pb-2 mb-4">
                     <p className="text-xs font-semibold text-grayscale-500 uppercase tracking-widest">
@@ -48,8 +48,8 @@ const ClrProgramsSection: React.FC<{
                     >
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             {/* Left: name + meta */}
-                            <div className="min-w-0 flex-1 space-y-1">
-                                <p className="text-sm font-semibold text-grayscale-900 leading-snug break-words">
+                            <div className="min-w-0 flex-1 space-y-v3-1">
+                                <p className="text-sm font-semibold text-grayscale-900 leading-snug wrap-break-word">
                                     {p.name?.value ?? 'Program'}
                                 </p>
                                 <p className="text-xs text-grayscale-500">
@@ -57,7 +57,7 @@ const ClrProgramsSection: React.FC<{
                                     {formatEarnedAt(p.earnedAt?.value)}
                                 </p>
                                 {p.description?.value && (
-                                    <p className="text-xs text-grayscale-600 leading-relaxed pt-1 break-words">
+                                    <p className="text-xs text-grayscale-600 leading-relaxed pt-1 wrap-break-word">
                                         {p.description.value}
                                     </p>
                                 )}
@@ -66,9 +66,9 @@ const ClrProgramsSection: React.FC<{
                             {/* Right: View button */}
                             <button
                                 onClick={() => onSelectProgram(p)}
-                                className="shrink-0 self-end md:self-auto flex items-center gap-1.5 border-[1px] border-solid border-grayscale-100 bg-white rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 whitespace-nowrap md:ml-auto"
+                                className="shrink-0 self-end md:self-auto flex items-center gap-1.5 border border-solid border-grayscale-100 bg-white rounded-full px-3 py-1.5 text-xs font-semibold text-grayscale-800 whitespace-nowrap md:ml-auto"
                             >
-                                <CertificateDisplayIcon className="w-4 h-4 !text-grayscale-200" />
+                                <CertificateDisplayIcon className="w-4 h-4 text-grayscale-200!" />
                                 View {inferProgramKind(p.achievementType.value)}
                             </button>
                         </div>

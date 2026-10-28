@@ -27,5 +27,11 @@ export const deleteProfile = async (profile: ProfileType): Promise<void> => {
         { profileId: profile.profileId }
     );
 
+    // Delete share previews owned by this profile to prevent orphaned nodes.
+    await neogma.queryRunner.run(
+        `MATCH (p:Profile {profileId: $profileId})-[:PUBLISHED_CREDENTIAL_SHARE_PREVIEW]->(preview:CredentialSharePreview)
+         DETACH DELETE preview`,
+        { profileId: profile.profileId }
+    );
     await Profile.delete({ detach: true, where: { profileId: profile.profileId } });
 };

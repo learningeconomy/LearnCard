@@ -46,7 +46,7 @@ export const CredentialCLRBadge: React.FC<CredentialCLRBadgeProps> = ({
 
     return (
         <div
-            className={`relative z-50 flex items-center justify-center !shadow-none ${badgeCircleCustomClass}`}
+            className={`relative z-50 flex items-center justify-center shadow-none! ${badgeCircleCustomClass}`}
         >
             <div
                 className={`absolute top-[5%] left-[50%] -translate-x-1/2 rounded-full border-grayscale-600 border-solid border-[3px]  overflow-hidden shadow-[0_12px_24px_rgba(24,34,78,0.18)]`}

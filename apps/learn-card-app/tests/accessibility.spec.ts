@@ -10,6 +10,31 @@ import { TEST_CREDENTIAL_TITLE, waitForAuthenticatedState } from './test.helpers
 // catch authoring mistakes; axe verifies the composed UI after Ionic, portals,
 // and client-side routing have rendered.
 const HIGH_IMPACT_LEVELS = new Set(['serious', 'critical']);
+
+// Rules gated at zero violations regardless of impact (LC-2169). Most are axe
+// `best-practice` rules rather than WCAG criteria, so an axe upgrade that
+// renames one fails every checkpoint via the "gated rule must run" check below;
+// update this list alongside any @axe-core/playwright bump.
+const GATED_RULES = new Set([
+    'meta-viewport',
+    'landmark-no-duplicate-main',
+    'landmark-one-main',
+    'landmark-main-is-top-level',
+    'landmark-unique',
+]);
+
+// Scan explicitly against WCAG 2.0/2.1/2.2 A+AA (plus axe best-practices) so
+// the report surfaces WCAG 2.2-specific rules (e.g. target-size) instead of
+// axe's narrower defaults.
+const AXE_SCAN_TAGS = [
+    'wcag2a',
+    'wcag2aa',
+    'wcag21a',
+    'wcag21aa',
+    'wcag22a',
+    'wcag22aa',
+    'best-practice',
+];
 const FOCUS_RESET_SENTINEL_ID = 'playwright-a11y-focus-reset';
 const SEEDED_ISSUER_PROFILE_ID = 'testa';
 
@@ -66,11 +91,12 @@ const axeAttachmentName = (checkpoint: string): string =>
     `axe-${checkpoint.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`;
 
 /**
- * Axe reports all impacts, but this rollout gates only serious and critical
- * violations. On failure, attach the actionable DOM targets to the test report
- * rather than making maintainers reproduce the page state to inspect them.
+ * Axe reports all impacts. The rollout gates serious and critical violations,
+ * plus the viewport and main-landmark rules that LC-2169 must keep at zero.
+ * Every violation (any impact) is attached to the test report with its DOM
+ * targets so maintainers don't have to reproduce the page state.
  */
-const assertNoHighImpactViolations = async (
+const assertNoGatedViolations = async (
     page: Page,
     testInfo: TestInfo,
     checkpoint: string
@@ -102,20 +128,24 @@ const assertNoHighImpactViolations = async (
         await Promise.allSettled(transientAnimations.map(animation => animation.finished));
     });
 
-    const results = await new AxeBuilder({ page }).analyze();
+    const results = await new AxeBuilder({ page }).withTags(AXE_SCAN_TAGS).analyze();
     const violations = results.violations.filter(
-        violation => violation.impact && HIGH_IMPACT_LEVELS.has(violation.impact)
+        violation =>
+            GATED_RULES.has(violation.id) ||
+            (violation.impact && HIGH_IMPACT_LEVELS.has(violation.impact))
     );
 
-    if (violations.length > 0) {
+    // Attach before any assertion so the report survives every failure mode.
+    if (results.violations.length > 0) {
         await testInfo.attach(axeAttachmentName(checkpoint), {
             body: JSON.stringify(
                 {
                     checkpoint,
                     url: page.url(),
-                    violations: violations.map(violation => ({
+                    violations: results.violations.map(violation => ({
                         id: violation.id,
                         impact: violation.impact,
+                        tags: violation.tags,
                         help: violation.help,
                         description: violation.description,
                         helpUrl: violation.helpUrl,
@@ -132,6 +162,21 @@ const assertNoHighImpactViolations = async (
             contentType: 'application/json',
         });
     }
+
+    const evaluatedRuleIds = new Set(
+        [
+            ...results.passes,
+            ...results.incomplete,
+            ...results.violations,
+            ...results.inapplicable,
+        ].map(result => result.id)
+    );
+    const missingGatedRules = [...GATED_RULES].filter(ruleId => !evaluatedRuleIds.has(ruleId));
+
+    expect(
+        missingGatedRules,
+        `Expected every gated axe rule to run at "${checkpoint}" on ${page.url()}.`
+    ).toEqual([]);
 
     const summary = violations
         .map(
@@ -151,7 +196,7 @@ const assertNoHighImpactViolations = async (
 
     expect(
         violations.length,
-        `Expected no serious or critical axe violations at "${checkpoint}" on ${page.url()}.${
+        `Expected no gated axe violations at "${checkpoint}" on ${page.url()}.${
             summary ? `\n${summary}` : ''
         }`
     ).toBe(0);
@@ -444,7 +489,7 @@ test.describe('Sign-in and onboarding accessibility', () => {
         const emailInput = page.getByRole('textbox', { name: /email/i });
         const signInButton = page.getByRole('button', { name: /sign in with email/i });
         await expect(emailInput).toBeVisible({ timeout: 30_000 });
-        await assertNoHighImpactViolations(page, testInfo, 'sign-in');
+        await assertNoGatedViolations(page, testInfo, 'sign-in');
 
         await focusWithVisibleIndicator(page, emailInput);
         // The demo shortcut lower-cases its comparison but derives the account
@@ -459,7 +504,7 @@ test.describe('Sign-in and onboarding accessibility', () => {
 
         await expect(welcomeHeading).toBeVisible({ timeout: 30_000 });
 
-        await assertNoHighImpactViolations(page, testInfo, 'onboarding-age-and-country');
+        await assertNoGatedViolations(page, testInfo, 'onboarding-age-and-country');
 
         const monthPicker = page.getByRole('listbox', { name: 'Month' });
         await focusWithVisibleIndicator(page, monthPicker);
@@ -474,7 +519,7 @@ test.describe('Sign-in and onboarding accessibility', () => {
         const countrySearch = page.getByPlaceholder('Search countries');
         await expect(countryDialog).toBeVisible({ timeout: 30_000 });
         await expect(countrySearch).toBeVisible({ timeout: 30_000 });
-        await assertNoHighImpactViolations(page, testInfo, 'onboarding-country-dialog');
+        await assertNoGatedViolations(page, testInfo, 'onboarding-country-dialog');
         await focusWithVisibleIndicator(page, countrySearch);
         await page.keyboard.type('United States');
 
@@ -505,19 +550,19 @@ test.describe('Sign-in and onboarding accessibility', () => {
             name: 'Create my LearnCard',
         });
         await expect(createAccountButton).toBeEnabled({ timeout: 30_000 });
-        await assertNoHighImpactViolations(page, testInfo, 'onboarding-profile');
+        await assertNoGatedViolations(page, testInfo, 'onboarding-profile');
         await activateWithKeyboard(page, createAccountButton, 'Enter');
 
         await expect(page.getByRole('heading', { name: "You're in!" })).toBeVisible({
             timeout: 90_000,
         });
-        await assertNoHighImpactViolations(page, testInfo, 'onboarding-complete');
+        await assertNoGatedViolations(page, testInfo, 'onboarding-complete');
 
         const exploreButton = page.getByRole('button', { name: 'Explore LearnCard' });
         await activateWithKeyboard(page, exploreButton, 'Enter');
         await page.waitForURL(/\/dashboard/, { timeout: 30_000 });
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
-        await assertNoHighImpactViolations(page, testInfo, 'post-onboarding-dashboard');
+        await assertNoGatedViolations(page, testInfo, 'post-onboarding-dashboard');
     });
 });
 
@@ -545,7 +590,7 @@ test.describe('Authenticated core-page accessibility', () => {
         await expect(skipLink).toBeVisible();
         await page.keyboard.press('Enter');
         await expect(page.locator('#main')).toBeFocused();
-        await assertNoHighImpactViolations(page, testInfo, 'dashboard-home');
+        await assertNoGatedViolations(page, testInfo, 'dashboard-home');
         await assertTransformMotionIsDisabled(page);
 
         await page.goto('/wallet');
@@ -554,7 +599,7 @@ test.describe('Authenticated core-page accessibility', () => {
         });
         const badgesCategory = page.getByRole('button', { name: /Badges/i });
         await expect(badgesCategory).toBeVisible({ timeout: 30_000 });
-        await assertNoHighImpactViolations(page, testInfo, 'wallet-home');
+        await assertNoGatedViolations(page, testInfo, 'wallet-home');
 
         await activateWithKeyboard(page, badgesCategory, 'Space');
         await page.waitForURL(/\/socialBadges/, { timeout: 30_000 });
@@ -564,7 +609,7 @@ test.describe('Authenticated core-page accessibility', () => {
         const earnedTab = page.getByRole('tab', { name: 'Earned', exact: true });
         await tabTo(page, earnedTab);
         await expect(earnedTab).toBeFocused();
-        await assertNoHighImpactViolations(page, testInfo, 'wallet-badges-category');
+        await assertNoGatedViolations(page, testInfo, 'wallet-badges-category');
 
         await page.goto('/dashboard');
         await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({
@@ -582,7 +627,7 @@ test.describe('Authenticated core-page accessibility', () => {
         });
         await expect(profileDialog).toBeVisible({ timeout: 30_000 });
         await expect(accountSettingsButton).toBeVisible();
-        await assertNoHighImpactViolations(page, testInfo, 'settings-menu');
+        await assertNoGatedViolations(page, testInfo, 'settings-menu');
 
         await page.keyboard.press('Escape');
         await expect(profileDialog).toBeHidden();
@@ -593,17 +638,69 @@ test.describe('Authenticated core-page accessibility', () => {
         await activateWithKeyboard(page, accountSettingsButton, 'Enter');
         await expect(page.locator('form').last()).toBeVisible({ timeout: 30_000 });
         await expect(page.getByRole('textbox', { name: /full name/i })).toBeVisible();
-        await assertNoHighImpactViolations(page, testInfo, 'account-settings');
+        await assertNoGatedViolations(page, testInfo, 'account-settings');
 
         await page.goto('/privacy-and-data');
         await expect(page.getByText('Your data is yours', { exact: true })).toBeVisible({
             timeout: 30_000,
         });
-        await assertNoHighImpactViolations(page, testInfo, 'privacy-settings');
+        await assertNoGatedViolations(page, testInfo, 'privacy-settings');
 
         const showEmailSwitch = page.getByRole('switch', { name: /show email/i });
         await tabTo(page, showEmailSwitch);
         await expect(showEmailSwitch).toBeFocused();
+    });
+});
+
+test.describe('Public page accessibility', () => {
+    test('legal, developer sign-in, and hidden utility pages pass the gated axe scan', async ({
+        page,
+    }, testInfo) => {
+        // Seven axe scans plus a real wallet initialization exceed the base
+        // config's 120s budget on the shared E2E runner.
+        test.setTimeout(240_000);
+
+        await configureLocalE2EServices(page);
+
+        await page.goto('/legal/terms');
+        await expect(
+            page.getByRole('heading', { name: /Terms of Service$/, level: 1 })
+        ).toBeVisible({ timeout: 30_000 });
+        await assertNoGatedViolations(page, testInfo, 'legal-terms');
+
+        await page.goto('/legal/privacy');
+        await expect(page.getByRole('heading', { name: /Privacy Policy$/, level: 1 })).toBeVisible({
+            timeout: 30_000,
+        });
+        await assertNoGatedViolations(page, testInfo, 'legal-privacy');
+
+        await page.goto('/developer/sign-in');
+        await expect(
+            page.getByRole('heading', { name: 'Sign in with your developer seed', level: 1 })
+        ).toBeVisible({ timeout: 30_000 });
+        await expect(page.getByRole('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'developer-sign-in');
+
+        await page.goto('/hidden/custom-wallet');
+        await expect(page.getByText('Hello, please enter a seed lol')).toBeVisible({
+            timeout: 30_000,
+        });
+        await expect(page.getByRole('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'custom-wallet');
+
+        await page.getByRole('button', { name: 'Create Wallet' }).click();
+        await expect(page.getByText('What would you like to do?', { exact: true })).toBeVisible({
+            timeout: 30_000,
+        });
+        await expect(page.getByRole('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'custom-wallet-main');
+
+        await page.getByRole('button', { name: 'Manage LCN Account' }).click();
+        await expect(page.getByRole('button', { name: '< Back' })).toBeVisible({
+            timeout: 30_000,
+        });
+        await expect(page.getByRole('main')).toHaveCount(1);
+        await assertNoGatedViolations(page, testInfo, 'custom-wallet-manage-account');
     });
 });
 
@@ -734,14 +831,14 @@ test.describe('Credential lifecycle accessibility', () => {
             await expect(
                 recipientPage.getByRole('heading', { name: TEST_CREDENTIAL_TITLE, exact: true })
             ).toBeVisible({ timeout: 30_000 });
-            await assertNoHighImpactViolations(recipientPage, testInfo, 'claim-link');
+            await assertNoGatedViolations(recipientPage, testInfo, 'claim-link');
 
             const acceptButton = recipientPage.getByRole('button', {
                 name: 'Accept',
                 exact: true,
             });
             await expect(acceptButton).toBeVisible({ timeout: 30_000 });
-            await assertNoHighImpactViolations(recipientPage, testInfo, 'claim-credential-preview');
+            await assertNoGatedViolations(recipientPage, testInfo, 'claim-credential-preview');
 
             // The success toast is intentionally brief and can disappear while
             // Playwright waits for the post-claim render. The route transition is
@@ -807,7 +904,7 @@ test.describe('Credential lifecycle accessibility', () => {
                         .join('\n')}`
                 );
             }
-            await assertNoHighImpactViolations(recipientPage, testInfo, 'claim-success');
+            await assertNoGatedViolations(recipientPage, testInfo, 'claim-success');
             // The connection nudge is presented asynchronously after claiming.
             // Resolve it before navigating: the wallet can briefly be accessible
             // before the nudge opens and hides its category tiles from axe/roles.
@@ -841,7 +938,7 @@ test.describe('Credential lifecycle accessibility', () => {
             await expect(recipientPage.locator('.issued-by').first()).toBeVisible({
                 timeout: 30_000,
             });
-            await assertNoHighImpactViolations(recipientPage, testInfo, 'credential-detail');
+            await assertNoGatedViolations(recipientPage, testInfo, 'credential-detail');
 
             const shareButton = recipientPage.getByRole('button', {
                 name: 'Share',
@@ -851,7 +948,7 @@ test.describe('Credential lifecycle accessibility', () => {
 
             const copyLinkButton = recipientPage.getByRole('button', { name: 'Copy Link' });
             await expect(copyLinkButton).toBeVisible({ timeout: 60_000 });
-            await assertNoHighImpactViolations(recipientPage, testInfo, 'share-credential');
+            await assertNoGatedViolations(recipientPage, testInfo, 'share-credential');
             await activateWithKeyboard(recipientPage, copyLinkButton, 'Enter');
             await expect(recipientPage.getByText(/share link copied/i)).toBeVisible({
                 timeout: 30_000,

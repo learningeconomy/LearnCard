@@ -7,7 +7,7 @@ from pathlib import Path
 
 PACKAGE = Path(__file__).resolve().parents[1]
 ROOT = PACKAGE.parents[1]
-METADATA = ("pyproject.toml", "setup.py", "requirements.txt", "test-requirements.txt", ".travis.yml", ".gitlab-ci.yml", "openapi_client/__init__.py")
+METADATA = ("pyproject.toml", "setup.py", "requirements.txt", "test-requirements.txt", ".travis.yml", ".gitlab-ci.yml", "README.md", "tox.ini", "openapi_client/__init__.py")
 
 
 class ScriptSafetyTests(unittest.TestCase):

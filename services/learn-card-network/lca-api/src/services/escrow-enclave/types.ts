@@ -177,7 +177,17 @@ export class EscrowBlobError extends Error {
     }
 }
 export class EscrowUnavailableError extends Error {
-    constructor() {
+    constructor(
+        readonly reason:
+            | 'unavailable'
+            | 'ledger'
+            | 'time'
+            | 'transport'
+            | 'invalid_response'
+            | 'invalid_hold'
+            | 'http_refusal'
+            | 'rate_limit' = 'unavailable'
+    ) {
         super('Escrow recovery is not available.');
         this.name = 'EscrowUnavailableError';
     }

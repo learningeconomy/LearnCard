@@ -1,5 +1,54 @@
 # @learncard/network-brain-service
 
+## 4.0.4
+
+### Patch Changes
+
+- [#1718](https://github.com/learningeconomy/LearnCard/pull/1718) [`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a) Thanks [@goblincore](https://github.com/goblincore)! - Import and edit spreadsheet recipients on the Issue page, issue through durable inbox batches, and recover interrupted runs from IndexedDB without resending successful or unconfirmed rows. Support standard Open Badges Evidence without requiring LearnCard extension contexts.
+
+    All sends to specific people now require local IndexedDB recovery and Web Locks, including picker-only profile sends. Signing out clears local recovery records for privacy; accepted server work can continue. Restore issue lifecycle analytics, add dismissible saved-run reminders and receipt-only delivery checks, and reject edits to submitted rows with a clear message. Import XLSX content without counting formatting-only trailing ranges against row limits.
+
+    Evidence attachments retain standard names and URLs but omit unsupported EvidenceFile, fileName, and fileType extensions in every issuance mode, including single sends. Changing credential type keeps recipient values for review instead of clearing imported data.
+
+- [#1735](https://github.com/learningeconomy/LearnCard/pull/1735) [`c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910`](https://github.com/learningeconomy/LearnCard/commit/c742ccf1bc1d28bd347b1a5cf2a2c6d69ba1d910) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stamp the issuance date when issuing credentials from Boost templates (claim links, VC-API workflows, ConsentFlow autoboosts), so a stale or malformed template `issuanceDate`/`validFrom` no longer fails signing or back-dates new credentials. VC 2.0 credentials built from templates (including direct sends and inbox issuance) now get a fresh `validFrom` and drop any leftover `issuanceDate`, which DIDKit can't sign under the VC 2.0 context.
+
+- [#1720](https://github.com/learningeconomy/LearnCard/pull/1720) [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c) Thanks [@goblincore](https://github.com/goblincore)! - Import spreadsheets from the Issue import modal and choose column mappings for independent grades, numeric credits, standard Evidence, awarded dates, and description text. Preserve source cells across type changes, zero credits across editor round trips, and the original awarded date independently of issuance time. Use shared field materialization in previews, queued issuance, and local profile signing without modifying signed credentials.
+
+    The network plugin and brain-service now coerce declared OBv3/CLR credit fields to finite numbers and normalize awarded dates to UTC before signing. Blank credit and optional award-date fields are omitted; malformed nonblank fields are rejected (BAD_REQUEST in brain-service). Calendar days use midnight UTC, while timestamps require complete seconds and an explicit timezone. Offset spelling is normalized while preserving the instant; signed credentials are left unchanged.
+
+    Bound XLSX archive expansion and member counts before spreadsheet parsing, isolate workbook parsing in a browser worker with a deadline, and stop CSV parsing at its row/column/cell budgets. Retry cold concurrent API/worker schema creation through Neo4j managed write transactions.
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/helpers@1.7.0
+    - @learncard/credential-library@2.1.3
+    - @learncard/core@9.4.40
+    - @learncard/did-web-plugin@1.1.40
+    - @learncard/didkey-plugin@1.1.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/didkit-plugin-node@0.3.5
+    - @learncard/encryption-plugin@1.1.40
+    - @learncard/learn-card-plugin@1.2.40
+    - @learncard/vc-plugin@1.6.6
+    - @learncard/vc-templates-plugin@1.1.40
+    - @learncard/crypto-plugin@1.1.40
+    - @learncard/dynamic-loader-plugin@1.1.40
+    - @learncard/expiration-plugin@1.2.40
+
+## 4.0.3
+
+### Patch Changes
+
+- [#1752](https://github.com/learningeconomy/LearnCard/pull/1752) [`cb54286a0d2bce596a3981f5e8c5f413d46493e4`](https://github.com/learningeconomy/LearnCard/commit/cb54286a0d2bce596a3981f5e8c5f413d46493e4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Look up boost recipient Profiles only for the page being returned, not for every send. Recipient counts no longer join a Profile per send either.
+
+- [#1749](https://github.com/learningeconomy/LearnCard/pull/1749) [`f7f37e3195f35a63f86fcbe44d2e314679f0924d`](https://github.com/learningeconomy/LearnCard/commit/f7f37e3195f35a63f86fcbe44d2e314679f0924d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add a relationship index on `CREDENTIAL_SENT.activityId`. Credential activity feeds and stats join each activity to its credential by this property; without the index every activity row scanned all `CREDENTIAL_SENT` relationships.
+
+- [#1751](https://github.com/learningeconomy/LearnCard/pull/1751) [`43bcd912c30b108bb4cee41691eedb87300cf8eb`](https://github.com/learningeconomy/LearnCard/commit/43bcd912c30b108bb4cee41691eedb87300cf8eb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Speed up `getFamilialBoosts` and `countFamilialBoosts`. The family is now expanded outward from the starting boost instead of label-scanning every `Boost` node and checking the parent/child patterns against each one, so cost scales with the size of the family rather than the size of the network. When the filter has an indexed field (`id`, `category` or `autoConnectRecipients`) that matches 16 boosts or fewer, those boosts are checked directly instead, so selective filters on wide or deep families stay fast too. Results are unchanged.
+
+- [#1750](https://github.com/learningeconomy/LearnCard/pull/1750) [`2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f`](https://github.com/learningeconomy/LearnCard/commit/2c3a865d79f9b98e6eda0ffe8a9146f7f1f14f2f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Back `searchProfiles` with TEXT indexes instead of scanning every `Profile`. The search is now a `UNION` of two index-backed `CONTAINS` lookups: `profileId` (already stored lowercased) and a new normalized `displayNameLower` copy of `displayName` (new `profile_displayname_lower_text_idx`). The normalization is Cypher `toLower` with final sigma (ς) folded to σ, applied the same way on writes, the backfill and the search input, so a substring of a name always matches. Matching stays case-insensitive. New and updated profiles get `displayNameLower` on write; existing profiles need a one-time `bun run backfill:profile-search -- --yes` per environment, run once no instance of the previous build is still writing profiles, before they're findable by display name again. Search input is now matched literally (it used to be interpolated into a regex), and non-ASCII letters are now case-folded too.
+
+- [#1753](https://github.com/learningeconomy/LearnCard/pull/1753) [`a36ca5dbfc61276e5da533ee40c3d20d86026742`](https://github.com/learningeconomy/LearnCard/commit/a36ca5dbfc61276e5da533ee40c3d20d86026742) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Run the credential refresh constraints before the index setup on cold start instead of alongside it, and retry transient schema errors the same way the index setup does.
+
 ## 4.0.2
 
 ### Patch Changes

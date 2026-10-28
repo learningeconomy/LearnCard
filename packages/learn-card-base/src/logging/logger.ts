@@ -6,6 +6,7 @@ import { isProductionEnvironment } from '../config/isProduction';
 
 import {
     clearDiagnosticLogs,
+    isDiagnosticLogCollectionEnabled,
     recordDiagnosticLog,
     setDiagnosticLogCollectionEnabled,
 } from './diagnosticLogBuffer';
@@ -320,6 +321,18 @@ export const configureLoggerContext = (opts: {
     }
     if (opts.tenantId !== undefined) _tenantId = opts.tenantId ?? undefined;
 };
+
+export interface DiagnosticCollectionContext {
+    enabled: boolean;
+    identity: string | null;
+}
+
+/** Capture this context before an operation and compare identity again when it settles. */
+export const getDiagnosticCollectionContext = (): DiagnosticCollectionContext => ({
+    enabled:
+        _bugReportsEnabled && isDiagnosticLogCollectionEnabled() && Boolean(_diagnosticIdentity),
+    identity: _diagnosticIdentity ?? null,
+});
 
 // ---------------------------------------------------------------------------
 // Logger factory

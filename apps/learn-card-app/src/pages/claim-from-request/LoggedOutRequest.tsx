@@ -42,7 +42,7 @@ export const SomeoneSentYouACredentialRequest: React.FC<{
     const handleInteractionModal = () => {
         newModal(
             <InteractWithWallet vc_request_url={vc_request_url} />,
-            { className: 'shrink-1' },
+            { className: 'shrink' },
             { mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel }
         );
     };
@@ -65,7 +65,7 @@ export const SomeoneSentYouACredentialRequest: React.FC<{
                     />
                 </div>
 
-                <h1 className="text-white text-[30px] font-semibold mb-3 leading-snug drop-shadow-sm">
+                <h1 className="text-white text-[30px] font-semibold mb-3 leading-snug drop-shadow-xs">
                     Someone sent you a credential
                 </h1>
                 <p className="text-white/85 text-[17px] font-medium leading-relaxed max-w-[380px]">
@@ -95,7 +95,7 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
     const handleInteractionModal = () => {
         newModal(
             <InteractWithWallet vc_request_url={vc_request_url} />,
-            { className: 'shrink-1' },
+            { className: 'shrink' },
             { mobile: ModalTypes.Cancel, desktop: ModalTypes.Cancel }
         );
     };
@@ -124,7 +124,7 @@ export const SomeoneSentYouACredentialRequestMobile: React.FC<{
                     </div>
                 </IonRow>
 
-                <h1 className="text-white text-[24px] font-semibold text-center mb-4 max-w-[300px] drop-shadow-sm">
+                <h1 className="text-white text-[24px] font-semibold text-center mb-4 max-w-[300px] drop-shadow-xs">
                     Someone sent you a credential
                 </h1>
                 <button

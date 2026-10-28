@@ -10,6 +10,16 @@ Available on:
 
 ---
 
+## Supported browsers and devices
+
+Tailwind 4 requires Safari 16.4+, Chrome 111+, or Firefox 128+. The iOS app
+requires iOS 16.4 or later. On Android, keep Android System WebView or Chrome
+updated to version 111 or later; the Android OS version alone does not determine
+support. Native builds check the standard Android WebView minimum and show a
+standalone notice if the browser cannot open the app. Update Android System
+WebView or Chrome through the device's app store, then reopen the app.
+See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility).
+
 ## Key Features
 
 | Feature                    | Description                                                       |
@@ -19,6 +29,14 @@ Available on:
 | **Badge Issuance**         | Issue digital badges for achievements, ranks, and milestones      |
 | **Role-Based Permissions** | NSO admins, troop leaders, and scouts have scoped permissions     |
 | **Verifiable Credentials** | All badges and IDs are W3C Verifiable Credentials                 |
+
+---
+
+## Setting up your profile with Apple
+
+After **Sign in with Apple**, ScoutPass fills in your name when it is available. **Full Name (optional)** can be left blank or cleared in profile setup and account settings. Choose an available public username to finish setup; ScoutPass uses that username as your display name when the name is blank. You do not need to re-enter your Apple email address.
+
+If saving fails, the form stays open so you can try again.
 
 ---
 

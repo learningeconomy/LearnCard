@@ -7,6 +7,7 @@ import { LCNProfile } from '@learncard/types';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 
 type AddressBookContactListProps = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     pages?: any[];
     hasNextPage?: boolean;
     fetchNextPage?: () => void;
@@ -64,6 +65,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 }) => {
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [pages?.[0]?.records?.length]);
 
     useEffect(() => {
@@ -74,7 +76,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 
     if (!pages) {
         return (
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
                 {contacts?.map((contact, index) => {
                     return (
                         <AddressBookContactItem
@@ -105,7 +107,7 @@ export const AddressBookContactList: React.FC<AddressBookContactListProps> = ({
 
     return (
         <>
-            <IonList lines="none" className="flex flex-col items-center justify-center w-[100%]">
+            <IonList lines="none" className="flex flex-col items-center justify-center w-full">
                 {pages?.flatMap(page => (
                     <>
                         {page?.records?.map((record: LCNProfile, index: number) => (

@@ -15,8 +15,10 @@ import {
 } from './skillshub-search.helpers';
 import { CredentialCategoryEnum } from 'learn-card-base';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type SkillsMyHubProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
     const [searchInput, setSearchInput] = useState('');
     const [filterBy, setFilterBy] = useState<SkillsHubFilterValue[]>([
@@ -64,6 +66,7 @@ const SkillsMyHub: React.FC<SkillsMyHubProps> = ({}) => {
                             <TransP
                                 m={m['skills.myHub.noResultsFoundFor']}
                                 values={{ query: searchInput }}
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 components={[<span className="italic" />]}
                             />
                         </p>

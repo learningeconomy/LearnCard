@@ -52,7 +52,7 @@ const ClrProvenanceTable: React.FC<{
     const rows = buildRows(course);
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-v3-2">
             <p className="text-xs font-semibold text-grayscale-600 uppercase tracking-wide">
                 Field Provenance
             </p>

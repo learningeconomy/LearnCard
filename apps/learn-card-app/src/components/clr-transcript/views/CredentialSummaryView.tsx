@@ -5,8 +5,8 @@ import type { ClrTranscriptDisplayModel } from 'learn-card-base/helpers/credenti
 
 const CredentialSummaryView: React.FC<{ model: ClrTranscriptDisplayModel }> = ({ model }) => {
     return (
-        <div className="bg-white border border-grayscale-200 rounded-[20px] p-6 space-y-4">
-            <div className="space-y-1">
+        <div className="bg-white border border-grayscale-200 rounded-[20px] p-6 space-y-v3-4">
+            <div className="space-y-v3-1">
                 <p className="text-sm font-semibold text-grayscale-900">
                     {model.header.title.value}
                 </p>

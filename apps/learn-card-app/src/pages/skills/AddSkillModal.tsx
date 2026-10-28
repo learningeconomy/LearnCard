@@ -125,6 +125,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
     const previousSkill =
         previousSkills.length > 0 ? previousSkills[previousSkills.length - 1] : null;
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
     // @ts-ignore - skill node may have either targetDescription or description property depending on framework node type
     const description = skill?.targetDescription || skill?.description || '';
     const isTier = skill?.role === FrameworkNodeRole.tier;
@@ -138,10 +139,11 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                         handleGoBack();
                     }}
                 >
-                    <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 flex-shrink-0" />
+                    <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 shrink-0" />
                     <div className="flex items-center gap-[5px] overflow-hidden">
                         <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
                         <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
+                            {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck */}
                             {/* @ts-ignore - skill node may have either targetName or statement property depending on framework node type */}
                             {previousSkill.skill.targetName || previousSkill.skill.statement}
                         </span>
@@ -170,10 +172,10 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                 e.stopPropagation();
                 handleCloseWithEditProficiency();
             }}
-            className="h-full w-full flex flex-col bg-grayscale-200 backdrop-blur-[22.5px] bg-opacity-70"
+            className="h-full w-full flex flex-col bg-grayscale-200/70 backdrop-blur-[22.5px] "
         >
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 flex justify-between items-center bg-white bg-opacity-70 backdrop-blur-[5px] p-[20px] border-b border-grayscale-200 md:hidden">
+            <div className="sticky top-0 z-10 flex justify-between items-center bg-white/70  backdrop-blur-[5px] p-[20px] border-b border-grayscale-200 md:hidden">
                 {headerContent}
             </div>
 
@@ -182,7 +184,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                 onClick={e => e.stopPropagation()}
                 className="flex-1 overflow-y-auto scrollbar-hide px-[20px] flex flex-col"
             >
-                <div className="hidden md:sticky md:top-0 md:z-10 md:-mx-[20px] md:flex md:justify-between md:items-start md:px-[20px] md:pt-[20px] md:pointer-events-none">
+                <div className="hidden md:sticky md:top-0 md:z-10 md:mx-[-20px] md:flex md:justify-between md:items-start md:px-[20px] md:pt-[20px] md:pointer-events-none">
                     <div className="pointer-events-auto">
                         {previousSkill ? (
                             <button
@@ -192,10 +194,11 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                     handleGoBack();
                                 }}
                             >
-                                <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 flex-shrink-0" />
+                                <SlimCaretLeft className="h-[20px] w-[20px] text-grayscale-700 shrink-0" />
                                 <div className="flex items-center gap-[5px] overflow-hidden">
                                     <CompetencyIcon icon={previousSkill.skill.icon} size="small" />
                                     <span className="text-[14px] text-grayscale-800 font-bold font-poppins truncate">
+                                        {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck */}
                                         {/* @ts-ignore - skill node may have either targetName or statement property depending on framework node type */}
                                         {previousSkill.skill.targetName ||
                                             previousSkill.skill.statement}
@@ -226,7 +229,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                     {selectedTab === AddSkillTabEnum.Options && (
                         <>
                             <div className="bg-white rounded-[24px] overflow-hidden flex flex-col shadow-box-bottom w-full">
-                                <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b-[1px] border-grayscale-200 border-solid">
+                                <div className="bg-grayscale-50 flex flex-col gap-[10px] items-center p-[20px] border-b border-grayscale-200 border-solid">
                                     <div
                                         className={`${
                                             isTier
@@ -350,7 +353,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
             </div>
 
             {/* Sticky Footer */}
-            <div className="sticky bottom-0 z-10 w-full flex justify-center items-center bg-white bg-opacity-70 backdrop-blur-[5px] p-[20px] border-t border-grayscale-200">
+            <div className="sticky bottom-0 z-10 w-full flex justify-center items-center bg-white/70  backdrop-blur-[5px] p-[20px] border-t border-grayscale-200">
                 <div
                     onClick={e => e.stopPropagation()}
                     className="w-full flex items-center justify-center gap-[10px] max-w-[450px]"
@@ -363,7 +366,7 @@ const AddSkillModal: React.FC<AddSkillModalProps> = ({
                                     : AddSkillTabEnum.Options
                             )
                         }
-                        className="px-[15px] py-[7px] bg-white rounded-full text-grayscale-900 flex-1 font-poppins text-[17px] border-[1px] border-grayscale-200 border-solid focus:outline-none"
+                        className="px-[15px] py-[7px] bg-white rounded-full text-grayscale-900 flex-1 font-poppins text-[17px] border border-grayscale-200 border-solid focus:outline-hidden"
                     >
                         {selectedTab === AddSkillTabEnum.Options
                             ? m['skills.addSkill.details']()

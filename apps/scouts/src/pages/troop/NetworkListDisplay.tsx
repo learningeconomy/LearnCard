@@ -111,7 +111,7 @@ const NetworkListDisplay: React.FC<NetworkListDisplayProps> = ({
                                     autocapitalize="on"
                                     placeholder={m['troops.membersList.startPlaceholder']()}
                                     value={search}
-                                    className="bg-white text-grayscale-800 !px-4 !py-1 rounded-[15px] text-[17px] font-notoSans"
+                                    className="bg-white text-grayscale-800 px-4! py-1! rounded-[15px] text-[17px] font-notoSans"
                                     onIonInput={e => setSearch(e?.detail?.value as string)}
                                     type="text"
                                     clearInput

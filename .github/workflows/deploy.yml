@@ -517,13 +517,16 @@ jobs:
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  CAMPAIGN_ADMIN_PROFILE_IDS: ${{ vars.CAMPAIGN_ADMIN_PROFILE_IDS }}
                   # Optional per-stage runtime-secrets bundle id. When set, the bundle
                   # supplies the credentials below and serverless.function-env.cjs omits the
                   # GitHub fallbacks. Non-secret per-stage config (DOMAIN_NAME, SENTRY_ENV,
                   # POSTMARK_FROM_EMAIL, MESSAGEBIRD_ORIGINATOR, CLIENT_APP_DOMAIN_NAME,
                   # the SHARE_LINK_MAINTENANCE_* trust/maintenance values, OIDC_TRUSTED_ISSUERS,
                   # OIDC_EXPECTED_AUDIENCE, CREDENTIAL_REFRESH_ENABLED / _NOTIFICATION_WINDOW_HOURS,
-                  # SKILL_EMBEDDING_GOOGLE_MODEL) is checked in under config/, not passed here.
+                  # SKILL_EMBEDDING_BEDROCK_* / SKILL_EMBEDDING_DIMENSION / SKILL_EMBEDDING_GOOGLE_MODEL)
+                  # is checked in under config/, not passed here. Nova skill embeddings use the Lambda
+                  # role (SigV4); the Google key below serves the legacy read path (LC-2206).
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
@@ -690,6 +693,11 @@ jobs:
               with:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
+
+            - name: Set up LCA Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24.12.0
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -1449,6 +1457,12 @@ jobs:
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
                   '
 
+            # Native artifacts publish in a separate workflow. Hold dependent
+            # packages until the exact wrapper and every supported binding are public.
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
             - name: Publish Registry Packages
               run: bunx changeset publish
     # ============================================================================
@@ -1730,7 +1744,13 @@ jobs:
 
             # The native prebuild workflow publishes independently of Deploy.
             # Trigger installs this external package from npm, not the checkout.
-            - name: Wait for Trigger native package publication
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
+            # Publication waiting has its own budget; keep the fresh Linux install
+            # and runtime verification after all native artifacts are available.
+            - name: Verify Trigger native package installation
               timeout-minutes: 16
               run: node scripts/wait-for-trigger-native-package.mjs
 
@@ -1913,7 +1933,11 @@ jobs:
               env:
                   AI_AGENT_SMOKE_BASE_URL: ${{ vars.AI_AGENT_BASE_URL }}
                   AI_AGENT_SMOKE_SEED: ${{ secrets.AI_AGENT_SMOKE_SEED }}
-              run: bun run --cwd services/learn-card-network/ai-agent smoke:staging
+                  AI_AGENT_SMOKE_TRIGGER_PROJECT_REF: ${{ vars.AI_AGENT_TRIGGER_PROJECT_REF }}
+              run: |
+                  # The CloudWatch check below reads logs from here on; the scheduled-card wait can outlast its old 10-minute lookback.
+                  echo "AI_AGENT_SMOKE_STARTED_AT_MS=$(( $(date +%s) * 1000 - 60000 ))" >> "$GITHUB_ENV"
+                  bun run --cwd services/learn-card-network/ai-agent smoke:staging
 
             - name: Verify readable CloudWatch application logs
               if: always() && env.TARGET_ENVIRONMENT == 'staging'
@@ -1928,7 +1952,7 @@ jobs:
                         --stack-name '${{ vars.AI_AGENT_CLOUDFORMATION_STACK }}' \
                         --query "Stacks[0].Outputs[?OutputKey=='ApplicationLogGroupName'].OutputValue | [0]" \
                         --output text)"
-                      START_TIME="$(( $(date +%s) * 1000 - 600000 ))"
+                      START_TIME="${AI_AGENT_SMOKE_STARTED_AT_MS:-$(( $(date +%s) * 1000 - 600000 ))}"
                       MESSAGES="$(aws logs filter-log-events \
                         --log-group-name "$LOG_GROUP" \
                         --start-time "$START_TIME" \

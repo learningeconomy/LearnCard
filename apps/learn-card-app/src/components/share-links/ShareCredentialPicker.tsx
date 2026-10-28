@@ -60,7 +60,7 @@ export const ShareCredentialPicker = ({
     const { getThemedCategory } = useTheme();
     return (
         <>
-            <div hidden={selectedOnly} className="space-y-4">
+            <div hidden={selectedOnly} className="space-y-v3-4">
                 <div>
                     <label
                         htmlFor={searchId}
@@ -78,7 +78,7 @@ export const ShareCredentialPicker = ({
                             <input
                                 ref={searchInput}
                                 id={searchId}
-                                className="share-credential-search w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+                                className="share-credential-search w-full min-w-0 py-3 bg-transparent text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-hidden [&::-webkit-search-cancel-button]:appearance-none"
                                 placeholder={m['shareLinks.searchPlaceholder']()}
                                 value={search}
                                 onChange={event => setSearch(event.target.value)}
@@ -92,7 +92,7 @@ export const ShareCredentialPicker = ({
                                         onClearSearch();
                                         searchInput.current?.focus();
                                     }}
-                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-grayscale-600 hover:bg-grayscale-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
                                 >
                                     <IonIcon
                                         aria-hidden="true"
@@ -117,7 +117,7 @@ export const ShareCredentialPicker = ({
                     </p>
                 )}
             </div>
-            <div className="rounded-2xl bg-grayscale-100 p-4 space-y-3">
+            <div className="rounded-2xl bg-grayscale-100 p-4 space-y-v3-3">
                 <div className="flex justify-between items-start gap-3 text-xs text-grayscale-600">
                     <div>
                         <p className="font-medium text-grayscale-900">
@@ -172,7 +172,7 @@ export const ShareCredentialPicker = ({
             </p>
             <div
                 aria-busy={searchPending}
-                className={`space-y-3 motion-safe:transition-opacity motion-safe:duration-200 ${searchPending ? 'opacity-60' : 'opacity-100'}`}
+                className={`space-y-v3-3 motion-safe:transition-opacity motion-safe:duration-200 ${searchPending ? 'opacity-60' : 'opacity-100'}`}
             >
                 {filtered.map(choice => (
                     <ShareCredentialSelectionRow

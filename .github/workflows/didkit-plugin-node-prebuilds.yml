@@ -23,6 +23,9 @@ env:
     # tests in this workflow.
     MONGOMS_DISABLE_POSTINSTALL: '1'
 
+permissions:
+    contents: read
+
 jobs:
     build:
         strategy:

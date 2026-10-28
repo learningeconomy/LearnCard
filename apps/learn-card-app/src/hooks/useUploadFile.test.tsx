@@ -1,13 +1,33 @@
+/// <reference lib="es2024.promise" />
+
 import React from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-const { initWalletMock, logErrorMock, presentToastMock, refetchQueriesMock } = vi.hoisted(() => ({
+import type { Mock } from 'vitest';
+import type { PendingReviewData } from 'learn-card-base/stores/checklistStore';
+import type * as FileExtractionHelpers from 'learn-card-base/helpers/fileExtraction';
+const {
+    initWalletMock,
+    logErrorMock,
+    presentToastMock,
+    refetchQueriesMock,
+    uploadMutationMock,
+    storeAndAddVCToWalletMock,
+    syncAllMock,
+} = vi.hoisted(() => ({
     initWalletMock: vi.fn(),
     logErrorMock: vi.fn(),
     presentToastMock: vi.fn(),
     refetchQueriesMock: vi.fn(),
+    uploadMutationMock: vi.fn(),
+    storeAndAddVCToWalletMock: vi.fn(),
+    syncAllMock: vi.fn(),
 }));
-
+const testState = vi.hoisted(() => ({
+    aiEnabled: true,
+    aiLoading: false,
+    pending: {} as Record<string, PendingReviewData | null>,
+}));
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: () => ({ refetchQueries: refetchQueriesMock }),
 }));
@@ -24,6 +44,9 @@ vi.mock('../paraglide/messages.js', () => ({
     }: {
         count: number;
     }) => `${count} uploads failed; continue with the rest`,
+    'passport.buildMyLearnCard.managers.saveOutcomeError': () => 'Original save failed',
+    'passport.buildMyLearnCard.managers.credentialSaveOutcomeError': () => 'Credential save failed',
+    'passport.buildMyLearnCard.managers.toastGenericError': () => 'Extraction failed',
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -36,20 +59,37 @@ vi.mock('learn-card-base', () => ({
         Diploma: 'diploma',
         RawVC: 'rawVC',
     },
-    categoryMetadata: {},
-    checklistStore: { set: { updateIsParsing: vi.fn() } },
+    categoryMetadata: { Achievement: {} },
+    checklistStore: {
+        get: { pendingReview: () => testState.pending },
+        set: {
+            updateIsParsing: vi.fn(),
+            setPendingReview: (kind: string, pending: PendingReviewData | null) => {
+                testState.pending[kind] = pending;
+            },
+        },
+        useTracked: {
+            isParsing: () => ({
+                resume: false,
+                certificate: false,
+                transcript: false,
+                diploma: false,
+                rawVC: false,
+            }),
+        },
+    },
     getCategoryForCredential: vi.fn(),
     getLogger: () => ({ debug: vi.fn(), error: logErrorMock, info: vi.fn(), warn: vi.fn() }),
     newCredsStore: { set: { addNewCreds: vi.fn() } },
     switchedProfileStore: { use: { switchedDid: () => undefined } },
     useGetCheckListStatus: () => ({ refetchCheckListStatus: vi.fn().mockResolvedValue(undefined) }),
-    useModal: () => ({ closeModal: vi.fn() }),
-    useSyncAllCredentialsToContractsMutation: () => ({ mutate: vi.fn() }),
+    useAiFeatureGate: () => ({ isAiEnabled: testState.aiEnabled, isLoading: testState.aiLoading }),
+    useSyncAllCredentialsToContractsMutation: () => ({ mutateAsync: syncAllMock }),
     useToast: () => ({ presentToast: presentToastMock }),
-    useUploadFileMutation: () => ({ mutateAsync: vi.fn() }),
+    useUploadFileMutation: () => ({ mutateAsync: uploadMutationMock }),
     useWallet: () => ({
         initWallet: initWalletMock,
-        storeAndAddVCToWallet: vi.fn(),
+        storeAndAddVCToWallet: storeAndAddVCToWalletMock,
     }),
 }));
 
@@ -57,6 +97,10 @@ vi.mock('learn-card-base/hooks/useAiInsightCredential', () => ({
     useAiInsightCredentialMutation: () => ({ mutate: vi.fn() }),
 }));
 
+vi.mock('learn-card-base/helpers/fileExtraction', async importOriginal => ({
+    ...(await importOriginal<typeof FileExtractionHelpers>()),
+    recordFilePersistenceDiagnostic: vi.fn(),
+}));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: vi.fn(),
 }));
@@ -67,11 +111,53 @@ vi.mock('./useUploadVcFromText', () => ({
 
 import { createRawArtifactVC, getFileInfo, useUploadFile } from './useUploadFile';
 import { addCertificateAttachment } from './certificateAttachment';
-import { ToastTypeEnum, UploadTypesEnum } from 'learn-card-base';
+import { UploadTypesEnum } from 'learn-card-base';
+import { FileExtractionError } from 'learn-card-base/helpers/fileExtraction';
+import type {
+    RawArtifactCredential,
+    ParsedFileCredential,
+} from 'learn-card-base/types/file-extraction';
+import type { UnsignedVC } from '@learncard/types';
+import type { ArtifactProcessingResult } from './uploadFile.types';
+
+const rawArtifact = (id: string, fileName = 'document.pdf'): RawArtifactCredential => ({
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    id,
+    type: ['VerifiableCredential', 'RawArtifactCredential'],
+    issuer: 'did:key:test',
+    issuanceDate: '2025-01-01T00:00:00.000Z',
+    credentialSubject: { id: 'did:key:test' },
+    rawArtifact: {
+        type: UploadTypesEnum.Certificate,
+        fileName,
+        fileSize: '1 KB',
+        fileType: 'PDF',
+        data: 'data:application/pdf;base64,YQ==',
+    },
+});
+
+const unsignedDraft = (id?: string): UnsignedVC => ({
+    '@context': ['https://www.w3.org/2018/credentials/v1'],
+    ...(id ? { id } : {}),
+    type: ['VerifiableCredential'],
+    issuer: 'did:key:test',
+    issuanceDate: '2025-01-01T00:00:00.000Z',
+    credentialSubject: { id: 'did:key:test', name: 'Draft' },
+});
+
+const parsedDraft = (vc: UnsignedVC, artifactId?: string): ParsedFileCredential => ({
+    vc,
+    artifactId,
+});
 
 const createChangeEvent = (files: File[]): React.ChangeEvent<HTMLInputElement> =>
-    ({ target: { files } } as unknown as React.ChangeEvent<HTMLInputElement>);
-
+    ({ target: { files } }) as unknown as React.ChangeEvent<HTMLInputElement>;
+beforeEach(() => {
+    testState.aiEnabled = true;
+    testState.aiLoading = false;
+    testState.pending = {};
+    syncAllMock.mockReset().mockResolvedValue(undefined);
+});
 describe('getFileInfo', () => {
     it('uses the final extension segment for multi-dot filenames', () => {
         expect(getFileInfo(new File(['image'], 'scan.final.png'))).toEqual({
@@ -84,14 +170,18 @@ describe('getFileInfo', () => {
 
 describe('useUploadFile certificate uploads', () => {
     beforeEach(() => {
+        storeAndAddVCToWalletMock.mockReset();
+        storeAndAddVCToWalletMock.mockResolvedValue({
+            result: true,
+            credentialUri: 'credential-uri',
+        });
         initWalletMock.mockReset();
         logErrorMock.mockReset();
         presentToastMock.mockReset();
         refetchQueriesMock.mockReset();
         initWalletMock.mockResolvedValue({ id: { did: () => 'did:key:test' } });
     });
-
-    it('keeps certificate bytes in the raw artifact instead of uploading them externally', async () => {
+    it('preserves the original bytes when preparing a certificate', async () => {
         const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
         const event = createChangeEvent([
             new File(['certificate'], 'certificate.pdf', { type: 'application/pdf' }),
@@ -102,12 +192,12 @@ describe('useUploadFile certificate uploads', () => {
         });
 
         expect(result.current.isUploading).toBe(false);
-        expect(result.current.rawArtifactCredential.rawArtifact).toMatchObject({
+        expect(result.current.rawArtifactCredential?.rawArtifact).toMatchObject({
             data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
             fileName: 'certificate.pdf',
             type: UploadTypesEnum.Certificate,
         });
-        expect(result.current.rawArtifactCredential.rawArtifact).not.toHaveProperty('url');
+        expect(result.current.rawArtifactCredential?.rawArtifact).not.toHaveProperty('url');
         expect(presentToastMock).not.toHaveBeenCalled();
     });
 
@@ -148,61 +238,1113 @@ describe('useUploadFile certificate uploads', () => {
         expect(JSON.stringify(credential['@context'])).not.toContain('rawArtifactUrl');
     });
 });
-
-describe('useUploadFile toast options', () => {
+describe('useUploadFile persistence outcomes', () => {
+    let records: Map<string, { id: string; uri: string; category: string }>;
+    let documents: Map<string, UnsignedVC>;
+    let savedCredentials: Map<string, UnsignedVC>;
+    let failingCredentials: Set<string>;
+    let wallet: {
+        id: { did: () => string };
+        invoke: { issueCredential: Mock };
+        read: { get: Mock };
+        store: { LearnCloud: { uploadEncrypted: Mock } };
+        index: { LearnCloud: { get: Mock; add: Mock; update: Mock } };
+    };
     beforeEach(() => {
         initWalletMock.mockReset();
+        uploadMutationMock.mockReset();
         logErrorMock.mockReset();
-        presentToastMock.mockReset();
-        refetchQueriesMock.mockReset();
-        initWalletMock.mockResolvedValue({
+        records = new Map();
+        documents = new Map();
+        savedCredentials = new Map();
+        failingCredentials = new Set();
+        wallet = {
             id: { did: () => 'did:key:test' },
-            invoke: { issueCredential: vi.fn().mockResolvedValue({}) },
+            invoke: { issueCredential: vi.fn(async (vc: UnsignedVC) => vc) },
+            read: { get: vi.fn(async (uri: string) => documents.get(uri)) },
             store: {
-                LearnCloud: { uploadEncrypted: vi.fn().mockResolvedValue('credential-uri') },
+                LearnCloud: {
+                    uploadEncrypted: vi.fn(async (vc: UnsignedVC) => {
+                        const uri = `original:${vc.id}`;
+                        documents.set(uri, vc);
+                        return uri;
+                    }),
+                },
             },
             index: {
                 LearnCloud: {
-                    get: vi.fn().mockResolvedValue([]),
-                    add: vi.fn().mockResolvedValue(undefined),
+                    get: vi.fn(async (query: { id?: string; category?: string }) => {
+                        if (query.id && savedCredentials.has(query.id)) {
+                            return [
+                                {
+                                    id: query.id,
+                                    uri: `selected:${query.id}`,
+                                    category: 'Achievement',
+                                },
+                            ];
+                        }
+                        return [...records.values()].filter(record =>
+                            query.id ? record.id === query.id : record.category === query.category
+                        );
+                    }),
+                    add: vi.fn(async (record: { id: string; uri: string; category: string }) => {
+                        records.set(record.id, record);
+                        return true;
+                    }),
+                    update: vi.fn(async (id: string, update: { uri: string }) => {
+                        const existing = records.get(id);
+                        if (!existing) return false;
+                        records.set(id, { ...existing, ...update });
+                        return true;
+                    }),
                 },
             },
+        };
+        initWalletMock.mockResolvedValue(wallet);
+        storeAndAddVCToWalletMock.mockReset();
+        storeAndAddVCToWalletMock.mockImplementation(async (vc: UnsignedVC) => {
+            if (!vc.id || failingCredentials.has(vc.id)) throw new Error('PRIVATE_STORAGE_ERROR');
+            savedCredentials.set(vc.id, vc);
+            return { result: true, credentialUri: `selected:${vc.id}`, category: 'Achievement' };
         });
     });
 
-    it('keeps the no-credentials error visible until it is dismissed', async () => {
-        vi.useFakeTimers();
+    it('waits for review before storing nonempty extraction', async () => {
+        uploadMutationMock.mockResolvedValue({
+            vcs: [parsedDraft(unsignedDraft('reviewed'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.getFile(
+                createChangeEvent([
+                    new File(['certificate'], 'certificate.txt', { type: 'text/plain' }),
+                ]),
+                UploadTypesEnum.Certificate
+            );
+        });
+        await act(async () => {
+            await result.current.fetchParsedCredentials(UploadTypesEnum.Certificate);
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'review',
+            extractedCount: 1,
+        });
+        expect(records.size).toBe(0);
+        expect(savedCredentials.size).toBe(0);
+    });
 
-        try {
+    it('saves a newly edited extraction even when its backend ID was already saved', async () => {
+        const original = unsignedDraft('backend-reused-id');
+        savedCredentials.set('backend-reused-id', original);
+        uploadMutationMock.mockResolvedValue({
+            vcs: [parsedDraft(original)],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const artifact = rawArtifact('new-transcript', 'transcript.pdf');
+        artifact.rawArtifact.type = UploadTypesEnum.Transcript;
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Transcript));
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Transcript);
+        });
+        const edited = {
+            ...result.current.parsedCredentials[0].vc,
+            name: 'Reviewed transcript',
+        };
+        await act(async () => {
+            await result.current.storeSelectedCredentials(
+                [edited],
+                artifact,
+                UploadTypesEnum.Transcript
+            );
+        });
+        expect(savedCredentials.get('backend-reused-id')).toMatchObject({
+            id: 'backend-reused-id',
+            credentialSubject: { name: 'Draft' },
+        });
+        expect([...savedCredentials.values()].map(vc => vc.name)).toEqual([
+            undefined,
+            'Reviewed transcript',
+        ]);
+        await act(async () => {
+            await result.current.storeSelectedCredentials(
+                [edited],
+                artifact,
+                UploadTypesEnum.Transcript
+            );
+        });
+        expect(storeAndAddVCToWalletMock).toHaveBeenCalledOnce();
+    });
+
+    it.each(['sign', 'upload', 'index'] as const)(
+        'leaves the existing resume intact when %s fails',
+        async stage => {
+            records.set('resume-index', {
+                id: 'resume-index',
+                uri: 'existing',
+                category: 'resume',
+            });
+            documents.set('existing', rawArtifact('old-resume'));
+            if (stage === 'sign')
+                wallet.invoke.issueCredential.mockRejectedValueOnce(new Error('PRIVATE_SIGN'));
+            if (stage === 'upload')
+                wallet.store.LearnCloud.uploadEncrypted.mockRejectedValueOnce(
+                    new Error('PRIVATE_UPLOAD')
+                );
+            if (stage === 'index') wallet.index.LearnCloud.update.mockResolvedValueOnce(false);
             const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
-            const rawArtifactCredential = {
-                rawArtifact: { fileName: 'Katie_Kempton_Resume.pdf' },
-            };
+            await act(async () => {
+                await expect(
+                    result.current.storeSelectedCredentials(
+                        [],
+                        rawArtifact('new-resume'),
+                        UploadTypesEnum.Resume
+                    )
+                ).rejects.toMatchObject({ stage: 'artifact_save' });
+            });
+            expect(records.get('resume-index')?.uri).toBe('existing');
+            expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+                status: 'save_failed',
+                failedStage: 'artifact_save',
+                storedCount: 0,
+            });
+            expect(JSON.stringify(result.current.fileUploadOutcomes)).not.toContain('PRIVATE_');
+        }
+    );
 
+    it('retries indexing without uploading the original twice', async () => {
+        wallet.index.LearnCloud.add.mockRejectedValueOnce(new Error('PRIVATE_INDEX'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        const artifact = rawArtifact('index-retry');
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials([], artifact, UploadTypesEnum.Certificate)
+            ).rejects.toMatchObject({ stage: 'artifact_save' });
+        });
+        await act(async () => {
+            await result.current.retryFileSave(artifact, UploadTypesEnum.Certificate);
+        });
+        expect(records.get(artifact.id)?.uri).toBe(`original:${artifact.id}`);
+        expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledTimes(1);
+        expect(uploadMutationMock).not.toHaveBeenCalled();
+    });
+
+    it('does not replace a changed resume when retrying an index failure', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'existing', category: 'resume' });
+        documents.set('existing', rawArtifact('old-resume'));
+        wallet.index.LearnCloud.update.mockRejectedValueOnce(new Error('PRIVATE_INDEX'));
+        const artifact = rawArtifact('pending-resume');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials([], artifact, UploadTypesEnum.Resume)
+            ).rejects.toMatchObject({ stage: 'artifact_save' });
+        });
+        records.set('resume-index', { id: 'resume-index', uri: 'changed', category: 'resume' });
+        documents.set('changed', {
+            ...rawArtifact('other-resume'),
+            issuanceDate: '2020-01-01T00:00:00Z',
+        });
+        await act(async () => {
+            await expect(
+                result.current.retryFileSave(artifact, UploadTypesEnum.Resume)
+            ).rejects.toMatchObject({ stage: 'artifact_save' });
+        });
+        expect(records.get('resume-index')?.uri).toBe('changed');
+        expect(wallet.index.LearnCloud.update).toHaveBeenCalledTimes(1);
+    });
+
+    it('distinguishes empty extraction from choosing none of the extracted credentials', async () => {
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        uploadMutationMock.mockResolvedValueOnce({
+            vcs: [],
+            processing: { outcome: 'empty', credentialCount: 0 },
+        });
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('empty'),
+                UploadTypesEnum.Certificate
+            );
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'empty',
+            extractedCount: 0,
+        });
+        expect(records.size).toBe(0);
+        expect(documents.size).toBe(0);
+        expect(savedCredentials.size).toBe(0);
+        uploadMutationMock.mockResolvedValueOnce({
+            vcs: [parsedDraft(unsignedDraft('unselected'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const artifact = rawArtifact('none');
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Certificate);
+        });
+        await act(async () => {
+            const saved = await result.current.storeSelectedCredentials(
+                [],
+                artifact,
+                UploadTypesEnum.Certificate
+            );
+            expect(saved).toMatchObject({ extractedCount: 1, selectedCount: 0, storedCount: 0 });
+        });
+        expect(
+            result.current.fileUploadOutcomes.find(item => item.artifact.id === 'none')
+        ).toMatchObject({ status: 'stored', extractedCount: 1, selectedCount: 0, storedCount: 0 });
+        expect(savedCredentials.size).toBe(0);
+    });
+
+    it('keeps a busy upload unsaved after the foreground wait expires', async () => {
+        uploadMutationMock.mockRejectedValue(new FileExtractionError('UPLOAD_BUSY'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('capacity-expired'),
+                UploadTypesEnum.Certificate
+            );
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'extraction_failed',
+            failureCode: 'UPLOAD_BUSY',
+            originalSaved: false,
+        });
+        expect(wallet.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it('shows foreground waiting, cancels an unsaved batch, and allows a new upload', async () => {
+        const entered = Promise.withResolvers<void>();
+        uploadMutationMock.mockImplementationOnce(({ waitSignal, onWaiting }) => {
+            onWaiting(true);
+            entered.resolve();
+            return new Promise((_resolve, reject) => {
+                waitSignal.addEventListener(
+                    'abort',
+                    () => reject(new FileExtractionError('UPLOAD_CANCELLED')),
+                    { once: true }
+                );
+            });
+        });
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.getFiles(
+                createChangeEvent([
+                    new File(['certificate'], 'waiting.txt', { type: 'text/plain' }),
+                ]),
+                UploadTypesEnum.Certificate
+            );
+        });
+        let pending!: Promise<ParsedFileCredential[]>;
+        await act(async () => {
+            pending = result.current.fetchParsedCredentialsFromFiles(UploadTypesEnum.Certificate);
+            await entered.promise;
+        });
+        expect(result.current.isWaitingForCapacity).toBe(true);
+        await act(async () => {
+            result.current.cancelCapacityWait();
+            expect(await pending).toEqual([]);
+        });
+        expect(result.current.isWaitingForCapacity).toBe(false);
+        expect(result.current.fileUploadOutcomes).toEqual([]);
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+        expect(result.current.parsedCredentials).toEqual([]);
+        uploadMutationMock.mockImplementationOnce(async ({ waitSignal }) => {
+            expect(waitSignal.aborted).toBe(false);
+            return { vcs: [], processing: { outcome: 'empty', credentialCount: 0 } };
+        });
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('after-cancel'),
+                UploadTypesEnum.Certificate
+            );
+        });
+        expect(uploadMutationMock).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(['user', 'session'])(
+        'preserves completed batch results only for user cancellation (%s)',
+        async cancellation => {
+            const cancelled = Promise.withResolvers<never>();
+            const entered = Promise.withResolvers<void>();
+            uploadMutationMock
+                .mockResolvedValueOnce({
+                    vcs: [parsedDraft(unsignedDraft('first-extracted'))],
+                    processing: { outcome: 'success', credentialCount: 1 },
+                })
+                .mockImplementationOnce(({ waitSignal, onWaiting }) => {
+                    onWaiting(true);
+                    entered.resolve();
+                    waitSignal.addEventListener(
+                        'abort',
+                        () => {
+                            cancelled.reject(new FileExtractionError('UPLOAD_CANCELLED'));
+                        },
+                        { once: true }
+                    );
+                    return cancelled.promise.finally(() => onWaiting(false));
+                });
+            const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+            await act(async () => {
+                await result.current.getFiles(
+                    createChangeEvent([
+                        new File(['first'], 'first.txt', { type: 'text/plain' }),
+                        new File(['second'], 'second.txt', { type: 'text/plain' }),
+                        new File(['third'], 'third.txt', { type: 'text/plain' }),
+                    ]),
+                    UploadTypesEnum.Certificate
+                );
+            });
+            const [first, second, third] = result.current.rawArtifactCredentials;
+            let pending!: Promise<ParsedFileCredential[]>;
+            await act(async () => {
+                pending = result.current.fetchParsedCredentialsFromFiles(
+                    UploadTypesEnum.Certificate
+                );
+                await entered.promise;
+            });
+            expect(result.current.isWaitingForCapacity).toBe(true);
+            let completed!: ParsedFileCredential[];
+            await act(async () => {
+                if (cancellation === 'user') result.current.cancelCapacityWait();
+                else cancelled.reject(new FileExtractionError('UPLOAD_CANCELLED'));
+                completed = await pending;
+            });
+            if (cancellation === 'session') {
+                expect(completed).toEqual([]);
+                expect(result.current.parsedCredentials).toEqual([]);
+                expect(result.current.fileUploadOutcomes).toEqual([]);
+                expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+                return;
+            }
+            expect(completed).toMatchObject([{ artifactId: first.id }]);
+            expect(result.current.parsedCredentials).toEqual(completed);
+            expect(result.current.fileUploadOutcomes).toMatchObject([
+                {
+                    artifact: { id: first.id },
+                    status: 'review',
+                    originalSaved: false,
+                },
+            ]);
+            expect(result.current.isWaitingForCapacity).toBe(false);
+            expect(uploadMutationMock).toHaveBeenCalledTimes(2);
+            expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
             await act(async () => {
                 await result.current.storeSelectedCredentials(
-                    [],
-                    rawArtifactCredential,
-                    UploadTypesEnum.Resume
+                    completed.map(entry => entry.vc),
+                    first,
+                    UploadTypesEnum.Certificate
                 );
-                vi.advanceTimersByTime(100);
             });
-
-            expect(presentToastMock).toHaveBeenCalledWith(
-                'No credentials could be extracted from this file.',
-                {
-                    title: 'Resume "Katie_Kempton_Resume.pdf" saved',
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Error,
-                    hasX: true,
-                    duration: 5000,
-                    autoDismiss: false,
-                }
-            );
-        } finally {
-            vi.clearAllTimers();
-            vi.useRealTimers();
+            expect(savedCredentials.size).toBe(1);
+            expect(documents.has(`original:${first.id}`)).toBe(true);
+            expect(documents.has(`original:${second.id}`)).toBe(false);
+            expect(documents.has(`original:${third.id}`)).toBe(false);
+            expect(uploadMutationMock).toHaveBeenCalledTimes(2);
         }
+    );
+
+    it('keeps the waiting state until all concurrent extraction waits finish', async () => {
+        const entered = [Promise.withResolvers<void>(), Promise.withResolvers<void>()];
+        const finish = [Promise.withResolvers<void>(), Promise.withResolvers<void>()];
+        for (let index = 0; index < 2; index += 1) {
+            uploadMutationMock.mockImplementationOnce(async ({ onWaiting }) => {
+                onWaiting(true);
+                entered[index].resolve();
+                await finish[index].promise;
+                onWaiting(false);
+                return { vcs: [], processing: { outcome: 'empty', credentialCount: 0 } };
+            });
+        }
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        let first!: Promise<ArtifactProcessingResult>;
+        let second!: Promise<ArtifactProcessingResult>;
+        await act(async () => {
+            first = result.current.retryFileExtraction(
+                rawArtifact('wait-one'),
+                UploadTypesEnum.Certificate
+            );
+            second = result.current.retryFileExtraction(
+                rawArtifact('wait-two'),
+                UploadTypesEnum.Certificate
+            );
+            await Promise.all(entered.map(item => item.promise));
+        });
+        expect(result.current.isWaitingForCapacity).toBe(true);
+        await act(async () => {
+            finish[0].resolve();
+            await first;
+        });
+        expect(result.current.isWaitingForCapacity).toBe(true);
+        await act(async () => {
+            finish[1].resolve();
+            await second;
+        });
+        expect(result.current.isWaitingForCapacity).toBe(false);
+    });
+
+    it('cancels an unmounted screen wait without persisting the original', async () => {
+        let signal!: AbortSignal;
+        const entered = Promise.withResolvers<void>();
+        uploadMutationMock.mockImplementationOnce(({ waitSignal }) => {
+            signal = waitSignal;
+            entered.resolve();
+            return new Promise((_resolve, reject) =>
+                signal.addEventListener(
+                    'abort',
+                    () => reject(new FileExtractionError('UPLOAD_CANCELLED')),
+                    { once: true }
+                )
+            );
+        });
+        const { result, unmount } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        const pending = result.current.retryFileExtraction(
+            rawArtifact('unmounted-wait'),
+            UploadTypesEnum.Certificate
+        );
+        const rejected = expect(pending).rejects.toMatchObject({ code: 'UPLOAD_CANCELLED' });
+        await entered.promise;
+        unmount();
+        await rejected;
+        expect(signal.aborted).toBe(true);
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it('does not replace the saved resume with a blank document or persist it on retry', async () => {
+        records.set('resume-index', {
+            id: 'resume-index',
+            uri: 'existing-resume',
+            category: 'resume',
+        });
+        documents.set('existing-resume', rawArtifact('existing-resume'));
+        uploadMutationMock.mockRejectedValue(new FileExtractionError('NO_READABLE_TEXT'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact('blank-resume');
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { status: 'empty', extractedCount: 0 },
+        ]);
+        expect([...records.values()]).toEqual([
+            { id: 'resume-index', uri: 'existing-resume', category: 'resume' },
+        ]);
+        expect(documents.has('original:blank-resume')).toBe(false);
+        expect(savedCredentials.size).toBe(0);
+        expect(wallet.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])(
+        'does not save the blank source when confirming a mixed batch (remounted: %s)',
+        async remount => {
+            let mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+            await act(async () => {
+                await mounted.result.current.getFiles(
+                    createChangeEvent([
+                        new File(['blank'], 'blank.pdf', { type: 'application/pdf' }),
+                        new File(['certificate'], 'readable.txt', { type: 'text/plain' }),
+                    ]),
+                    UploadTypesEnum.Certificate
+                );
+            });
+            uploadMutationMock
+                .mockRejectedValueOnce(new FileExtractionError('NO_READABLE_TEXT'))
+                .mockResolvedValueOnce({
+                    vcs: [parsedDraft(unsignedDraft('mixed-candidate'))],
+                    processing: { outcome: 'success', credentialCount: 1 },
+                });
+            await act(async () => {
+                await mounted.result.current.fetchParsedCredentialsFromFiles(
+                    UploadTypesEnum.Certificate
+                );
+            });
+            const [blank, readable] = mounted.result.current.rawArtifactCredentials;
+            const drafts = mounted.result.current.parsedCredentials;
+            if (remount) {
+                // Older in-memory reviews included every selected source, including blank files.
+                testState.pending.certificate = {
+                    credentials: drafts,
+                    rawArtifact: blank,
+                    additionalRawArtifacts: [readable],
+                };
+                mounted.unmount();
+                mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+                await act(async () => mounted.result.current.setParsedCredentials(drafts));
+            }
+            await act(async () => {
+                await expect(
+                    mounted.result.current.storeSelectedCredentials(
+                        drafts.map(entry => entry.vc),
+                        blank,
+                        UploadTypesEnum.Certificate,
+                        [readable]
+                    )
+                ).resolves.toMatchObject({
+                    extractedCount: 1,
+                    selectedCount: 1,
+                    storedCount: 1,
+                    artifactUris: [`original:${readable.id}`],
+                });
+            });
+            expect([...records.keys()]).toEqual([readable.id]);
+            expect(documents.has(`original:${blank.id}`)).toBe(false);
+            expect([...savedCredentials.values()].map(vc => vc.attachments[0].fileName)).toEqual([
+                'readable.txt',
+            ]);
+        }
+    );
+
+    it('keeps a pending AI gate local and can extract once settings finish loading', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        testState.aiLoading = true;
+        const { result, rerender } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact(`pending-gate-${crypto.randomUUID()}`);
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome).toMatchObject({
+                status: 'extraction_failed',
+                failureCode: 'AI_GATE_LOADING',
+                originalSaved: false,
+            });
+        });
+        expect(uploadMutationMock).not.toHaveBeenCalled();
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+        expect(records.get('resume-index')?.uri).toBe('current');
+        testState.aiLoading = false;
+        rerender();
+        uploadMutationMock.mockResolvedValueOnce({
+            vcs: [parsedDraft(unsignedDraft('ready-candidate'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome.status).toBe('review');
+        });
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+    });
+
+    it.each([
+        'RESPONSE_INVALID',
+        'INPUT_INVALID',
+        'FILE_TOO_LARGE',
+        'CONTENT_REJECTED',
+        'CONSENT_DENIED',
+    ])('does not replace the current resume after %s', async code => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        uploadMutationMock.mockRejectedValue(new FileExtractionError(code));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact(`rejected-${code}`);
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'extraction_failed',
+            failureCode: code,
+            originalSaved: false,
+        });
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+        expect(wallet.invoke.issueCredential).not.toHaveBeenCalled();
+    });
+
+    it('handles exhausted extraction attempts without saving or replacing the resume', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        uploadMutationMock.mockResolvedValue({
+            vcs: [],
+            processing: { outcome: 'empty', credentialCount: 0 },
+        });
+        const artifact = rawArtifact(`exhausted-${crypto.randomUUID()}`);
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            for (let attempt = 0; attempt < 100; attempt += 1) {
+                await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+            }
+        });
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome).toMatchObject({
+                status: 'extraction_failed',
+                failureCode: 'INPUT_INVALID',
+                originalSaved: false,
+            });
+        });
+        expect(uploadMutationMock).toHaveBeenCalledTimes(100);
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+    });
+
+    it('does not persist an upload whose restored extraction attempt is malformed', async () => {
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        const artifact = rawArtifact(`invalid-attempt-${crypto.randomUUID()}`);
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            result.current.setParsedCredentials([
+                {
+                    ...parsedDraft(unsignedDraft('restored-candidate'), artifact.id),
+                    attempt: { operationId: 'invalid', attemptId: 'invalid', attempt: -1 },
+                },
+            ]);
+        });
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume
+            );
+            expect(retry.outcome).toMatchObject({
+                status: 'extraction_failed',
+                failureCode: 'INPUT_INVALID',
+                originalSaved: false,
+            });
+        });
+        expect(uploadMutationMock).not.toHaveBeenCalled();
+        expect(records.get('resume-index')?.uri).toBe('current');
+        expect(documents.has(`original:${artifact.id}`)).toBe(false);
+    });
+
+    it('retries the failed selection without duplicating successful selected credentials', async () => {
+        const artifact = rawArtifact('selection-retry');
+        const drafts = [unsignedDraft('selection-saved'), unsignedDraft('selection-failed')];
+        failingCredentials.add('selection-failed');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            result.current.setParsedCredentials(drafts.map(vc => parsedDraft(vc, artifact.id)));
+        });
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials(
+                    drafts,
+                    artifact,
+                    UploadTypesEnum.Certificate
+                )
+            ).rejects.toMatchObject({ stage: 'credential_save' });
+        });
+        failingCredentials.clear();
+        await act(async () => {
+            await result.current.retryFileSave(artifact, UploadTypesEnum.Certificate);
+        });
+        expect([...savedCredentials.keys()]).toEqual(['selection-saved', 'selection-failed']);
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'stored',
+            selectedCount: 2,
+            storedCount: 2,
+        });
+        expect(
+            storeAndAddVCToWalletMock.mock.calls.filter(([vc]) => vc.id === 'selection-saved')
+        ).toHaveLength(1);
+    });
+
+    it('keeps idless caller drafts immutable and reuses their IDs across manager remounts', async () => {
+        const artifact = rawArtifact('immutable-draft-source');
+        const draft = Object.freeze(unsignedDraft());
+        let mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        for (let mount = 0; mount < 2; mount += 1) {
+            await act(async () => {
+                mounted.result.current.setParsedCredentials([parsedDraft(draft, artifact.id)]);
+            });
+            await act(async () => {
+                await mounted.result.current.storeSelectedCredentials(
+                    [draft],
+                    artifact,
+                    UploadTypesEnum.Certificate
+                );
+            });
+            mounted.unmount();
+            if (mount === 0) mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        }
+        expect(draft).not.toHaveProperty('id');
+        expect(savedCredentials.size).toBe(1);
+        expect(storeAndAddVCToWalletMock).toHaveBeenCalledTimes(1);
+        expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not count a false selected-storage result even if it includes a URI', async () => {
+        storeAndAddVCToWalletMock.mockResolvedValue({
+            result: false,
+            credentialUri: 'not-saved',
+            category: 'Achievement',
+        });
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials(
+                    [unsignedDraft('failed')],
+                    rawArtifact('source'),
+                    UploadTypesEnum.Certificate
+                )
+            ).rejects.toMatchObject({ stage: 'credential_save' });
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            failedStage: 'credential_save',
+            selectedCount: 1,
+            storedCount: 0,
+        });
+        expect(savedCredentials.size).toBe(0);
+    });
+
+    it('keeps confirmed save counts when background sharing fails', async () => {
+        syncAllMock.mockRejectedValueOnce(new Error('Sharing unavailable'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials(
+                    [unsignedDraft('confirmed')],
+                    rawArtifact('source'),
+                    UploadTypesEnum.Certificate
+                )
+            ).resolves.toMatchObject({ selectedCount: 1, storedCount: 1 });
+        });
+        expect(savedCredentials.get('confirmed')?.id).toBe('confirmed');
+        expect(records.get('source')?.uri).toBe('original:source');
+        expect(result.current.isSaving).toBe(false);
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'stored',
+            selectedCount: 1,
+            storedCount: 1,
+        });
+    });
+
+    it.each([undefined, 'backend-stable-id'])(
+        'keeps candidates attached to their own files (%s)',
+        async backendId => {
+            const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+            await act(async () => {
+                await result.current.getFiles(
+                    createChangeEvent([
+                        new File(['first'], 'first.txt', { type: 'text/plain' }),
+                        new File(['second'], 'second.txt', { type: 'text/plain' }),
+                    ]),
+                    UploadTypesEnum.Certificate
+                );
+            });
+            uploadMutationMock.mockImplementation(async () => ({
+                vcs: [parsedDraft(unsignedDraft(backendId))],
+                processing: { outcome: 'success', credentialCount: 1 },
+            }));
+            await act(async () => {
+                await result.current.fetchParsedCredentialsFromFiles(UploadTypesEnum.Certificate);
+            });
+            const [first, second] = result.current.rawArtifactCredentials;
+            const drafts = result.current.parsedCredentials;
+            await act(async () => {
+                await result.current.storeSelectedCredentials(
+                    drafts.map(entry => entry.vc),
+                    first,
+                    UploadTypesEnum.Certificate,
+                    [second]
+                );
+            });
+            expect([...savedCredentials.values()].map(vc => vc.attachments[0].fileName)).toEqual([
+                'first.txt',
+                'second.txt',
+            ]);
+            expect(
+                result.current.fileUploadOutcomes.map(item => ({
+                    id: item.artifact.id,
+                    extracted: item.extractedCount,
+                    selected: item.selectedCount,
+                    stored: item.storedCount,
+                }))
+            ).toEqual(
+                [first, second].map(artifact => ({
+                    id: artifact.id,
+                    extracted: 1,
+                    selected: 1,
+                    stored: 1,
+                }))
+            );
+        }
+    );
+
+    it('continues other files after an original fails to index', async () => {
+        wallet.index.LearnCloud.add.mockRejectedValueOnce(new Error('PRIVATE_INDEX'));
+        const first = rawArtifact('first');
+        const second = rawArtifact('second');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await expect(
+                result.current.storeSelectedCredentials([], first, UploadTypesEnum.Certificate, [
+                    second,
+                ])
+            ).rejects.toMatchObject({ stage: 'artifact_save' });
+        });
+        expect(records.has('first')).toBe(false);
+        expect(records.has('second')).toBe(true);
+        expect(result.current.fileUploadOutcomes.map(item => item.status)).toEqual([
+            'save_failed',
+            'stored',
+        ]);
+    });
+
+    it('reuses successful selected writes after a failed batch and remount', async () => {
+        const artifact = rawArtifact('partial');
+        const drafts = [unsignedDraft('saved'), unsignedDraft('failed')];
+        failingCredentials.add('failed');
+        const mounted = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            mounted.result.current.setParsedCredentials(
+                drafts.map(vc => parsedDraft(vc, artifact.id))
+            );
+        });
+        await act(async () => {
+            await expect(
+                mounted.result.current.storeSelectedCredentials(
+                    drafts,
+                    artifact,
+                    UploadTypesEnum.Certificate
+                )
+            ).rejects.toMatchObject({ stage: 'credential_save' });
+        });
+        expect(mounted.result.current.fileUploadOutcomes[0]).toMatchObject({
+            extractedCount: 2,
+            selectedCount: 2,
+            storedCount: 1,
+        });
+        mounted.unmount();
+        failingCredentials.clear();
+        const restored = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            restored.result.current.setParsedCredentials(
+                drafts.map(vc => parsedDraft(vc, artifact.id))
+            );
+        });
+        await act(async () => {
+            const saved = await restored.result.current.storeSelectedCredentials(
+                drafts,
+                artifact,
+                UploadTypesEnum.Certificate
+            );
+            expect(saved).toMatchObject({ extractedCount: 2, selectedCount: 2, storedCount: 2 });
+        });
+        expect(savedCredentials.size).toBe(2);
+        expect(
+            storeAndAddVCToWalletMock.mock.calls.filter(([vc]) => vc.id === 'saved')
+        ).toHaveLength(1);
+        expect(wallet.store.LearnCloud.uploadEncrypted).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not resave an original retried from its immutable saved URI', async () => {
+        uploadMutationMock.mockResolvedValue({
+            vcs: [parsedDraft(unsignedDraft('retry-draft'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const artifact = rawArtifact('saved-original');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume,
+                'immutable-original'
+            );
+            expect(retry.outcome.status).toBe('review');
+        });
+        await act(async () => {
+            await result.current.storeSelectedCredentials(
+                [result.current.parsedCredentials[0].vc],
+                artifact,
+                UploadTypesEnum.Resume
+            );
+        });
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+        expect(records.size).toBe(0);
+        expect(savedCredentials.size).toBe(1);
+    });
+
+    it('reports a failed retry for this file even when another still has review drafts', async () => {
+        uploadMutationMock.mockResolvedValueOnce({
+            vcs: [parsedDraft(unsignedDraft('pending'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('first'),
+                UploadTypesEnum.Certificate
+            );
+        });
+        const previousDrafts = result.current.parsedCredentials;
+        uploadMutationMock.mockRejectedValueOnce(new Error('PRIVATE_MODEL_ERROR'));
+        await act(async () => {
+            const retry = await result.current.retryFileExtraction(
+                rawArtifact('second'),
+                UploadTypesEnum.Certificate
+            );
+            expect(retry.outcome.status).toBe('extraction_failed');
+            expect(retry.credentials).toEqual(previousDrafts);
+            expect(JSON.stringify(retry.outcome)).not.toContain('PRIVATE_MODEL_ERROR');
+        });
+        expect(records.has('second')).toBe(true);
+    });
+
+    it('reports extraction failure while the original is still saving', async () => {
+        uploadMutationMock.mockRejectedValue(new Error('PRIVATE_MODEL_ERROR'));
+        const upload = Promise.withResolvers<string>();
+        const uploadStarted = Promise.withResolvers<void>();
+        const processing = Promise.withResolvers<ArtifactProcessingResult>();
+        wallet.store.LearnCloud.uploadEncrypted.mockImplementationOnce(() => {
+            uploadStarted.resolve();
+            return upload.promise;
+        });
+        const artifact = rawArtifact('delayed-original');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            void result.current
+                .retryFileExtraction(artifact, UploadTypesEnum.Certificate)
+                .then(processing.resolve, processing.reject);
+            await uploadStarted.promise;
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { artifact: { id: artifact.id }, status: 'saving_original', extractedCount: 0 },
+        ]);
+        expect(result.current.isSaving).toBe(true);
+        expect(records.has(artifact.id)).toBe(false);
+        await act(async () => {
+            upload.resolve(`original:${artifact.id}`);
+            await processing.promise;
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { artifact: { id: artifact.id }, status: 'extraction_failed', extractedCount: 0 },
+        ]);
+        expect(result.current.isSaving).toBe(false);
+        expect(records.get(artifact.id)?.uri).toBe(`original:${artifact.id}`);
+    });
+
+    it('optimistically clears one document and rolls back without affecting other files', async () => {
+        uploadMutationMock.mockRejectedValue(new Error('PRIVATE_MODEL_ERROR'));
+        const first = rawArtifact('deleted-document', 'resume.pdf');
+        const second = rawArtifact('remaining-document', 'resume.pdf');
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Certificate));
+        await act(async () => {
+            await result.current.retryFileExtraction(first, UploadTypesEnum.Certificate);
+            await result.current.retryFileExtraction(second, UploadTypesEnum.Certificate);
+        });
+        expect(result.current.fileUploadOutcomes.map(item => item.artifact.id)).toEqual([
+            first.id,
+            second.id,
+        ]);
+        let restoreOutcome: (() => void) | undefined;
+        await act(async () => {
+            restoreOutcome = result.current.clearFileUploadOutcome(first.id);
+        });
+        expect(result.current.fileUploadOutcomes).toMatchObject([
+            { artifact: { id: second.id }, status: 'extraction_failed' },
+        ]);
+        expect(records.get(second.id)?.uri).toBe(`original:${second.id}`);
+        const third = rawArtifact('new-document', 'resume.pdf');
+        await act(async () => {
+            await result.current.retryFileExtraction(third, UploadTypesEnum.Certificate);
+        });
+        await act(async () => {
+            restoreOutcome?.();
+            restoreOutcome?.();
+        });
+        expect(result.current.fileUploadOutcomes.map(item => item.artifact.id)).toEqual([
+            second.id,
+            third.id,
+            first.id,
+        ]);
+    });
+
+    it('saves only the original without model work when AI is disabled', async () => {
+        testState.aiEnabled = false;
+        records.set('resume-index', { id: 'resume-index', uri: 'current', category: 'resume' });
+        documents.set('current', rawArtifact('current-resume'));
+        const { result } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            await result.current.retryFileExtraction(
+                rawArtifact('disabled'),
+                UploadTypesEnum.Resume
+            );
+        });
+        expect(uploadMutationMock).not.toHaveBeenCalled();
+        expect(records.get('resume-index')?.uri).toBe('original:disabled');
+        expect(documents.get('original:disabled')?.rawArtifact).toEqual(
+            rawArtifact('disabled').rawArtifact
+        );
+        expect(savedCredentials.size).toBe(0);
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'extraction_failed',
+            failureCode: 'CONSENT_DENIED',
+            originalSaved: true,
+        });
+    });
+
+    it('does not save a known empty file when AI is turned off before retry', async () => {
+        uploadMutationMock.mockRejectedValue(new FileExtractionError('NO_READABLE_TEXT'));
+        const { result, rerender } = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        const artifact = rawArtifact('known-empty-then-disabled');
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        testState.aiEnabled = false;
+        rerender();
+        await act(async () => {
+            await result.current.retryFileExtraction(artifact, UploadTypesEnum.Resume);
+        });
+        expect(result.current.fileUploadOutcomes[0]).toMatchObject({
+            status: 'empty',
+            failureCode: 'NO_READABLE_TEXT',
+            originalSaved: false,
+        });
+        expect(uploadMutationMock).toHaveBeenCalledTimes(1);
+        expect(records.size).toBe(0);
+        expect(documents.size).toBe(0);
+    });
+
+    it('keeps a saved-original receipt after review closes without replacing another resume', async () => {
+        const artifact = rawArtifact('historical-resume');
+        uploadMutationMock.mockResolvedValue({
+            vcs: [parsedDraft(unsignedDraft('historical-draft'))],
+            processing: { outcome: 'success', credentialCount: 1 },
+        });
+        const initial = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            await initial.result.current.retryFileExtraction(
+                artifact,
+                UploadTypesEnum.Resume,
+                'historical-original'
+            );
+        });
+        const pending = testState.pending.resume!;
+        initial.unmount();
+        records.set('resume-index', {
+            id: 'resume-index',
+            uri: 'other-original',
+            category: 'resume',
+        });
+        documents.set('other-original', rawArtifact('other-resume'));
+        const restored = renderHook(() => useUploadFile(UploadTypesEnum.Resume));
+        await act(async () => {
+            restored.result.current.setParsedCredentials(pending.credentials);
+        });
+        await act(async () => {
+            await restored.result.current.storeSelectedCredentials(
+                pending.credentials.map(entry => entry.vc),
+                pending.rawArtifact,
+                UploadTypesEnum.Resume
+            );
+        });
+        expect(records.get('resume-index')?.uri).toBe('other-original');
+        expect(savedCredentials.size).toBe(1);
+        expect(wallet.store.LearnCloud.uploadEncrypted).not.toHaveBeenCalled();
+        expect(wallet.index.LearnCloud.update).not.toHaveBeenCalled();
     });
 });
 
@@ -217,66 +1359,24 @@ describe('addCertificateAttachment', () => {
         },
     };
 
-    it('embeds base64 data using canonical boost attachment terms', () => {
+    it('preserves attachment bytes and file identity without a public file URL', () => {
         const credential = addCertificateAttachment(
             { '@context': ['https://www.w3.org/2018/credentials/v1'] },
             rawArtifactCredential
         );
-        const attachmentContexts = credential['@context'].filter(
-            (context: unknown) =>
-                typeof context === 'object' &&
-                context !== null &&
-                'attachments' in context &&
-                typeof context.attachments === 'object' &&
-                context.attachments !== null
-        );
 
-        expect(credential.attachments[0]).toMatchObject({
-            title: 'certificate.pdf',
-            fileName: 'certificate.pdf',
-            fileSize: '1 KB',
-            fileType: 'PDF',
-            type: 'document',
-            data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
-        });
-        expect(credential.attachments[0]).not.toHaveProperty('url');
-        expect(attachmentContexts).toHaveLength(1);
-        expect(attachmentContexts[0]).toMatchObject({
-            attachments: {
-                '@id': 'lcn:boostAttachments',
-                '@container': '@set',
-                '@context': {
-                    title: {
-                        '@id': 'lcn:boostAttachmentTitle',
-                        '@type': 'xsd:string',
-                    },
-                    type: {
-                        '@id': 'lcn:boostAttachmentType',
-                        '@type': 'xsd:string',
-                    },
-                    url: {
-                        '@id': 'lcn:boostAttachmentUrl',
-                        '@type': 'xsd:string',
-                    },
-                    data: {
-                        '@id': 'lcn:boostAttachmentData',
-                        '@type': 'xsd:string',
-                    },
-                    fileName: {
-                        '@id': 'lcn:boostAttachmentFileName',
-                        '@type': 'xsd:string',
-                    },
-                    fileSize: {
-                        '@id': 'lcn:boostAttachmentFileSize',
-                        '@type': 'xsd:string',
-                    },
-                    fileType: {
-                        '@id': 'lcn:boostAttachmentFileType',
-                        '@type': 'xsd:string',
-                    },
-                },
-            },
-        });
+        expect(credential).toHaveProperty(
+            'attachments.0',
+            expect.objectContaining({
+                title: 'certificate.pdf',
+                fileName: 'certificate.pdf',
+                fileSize: '1 KB',
+                fileType: 'PDF',
+                type: 'document',
+                data: 'data:application/pdf;base64,Y2VydGlmaWNhdGU=',
+            })
+        );
+        expect(credential).not.toHaveProperty('attachments.0.url');
     });
 
     it('does not duplicate the canonical context or attachment', () => {
@@ -296,7 +1396,7 @@ describe('addCertificateAttachment', () => {
         );
 
         expect(attachmentContexts).toHaveLength(1);
-        expect(enrichedAgain.attachments).toHaveLength(1);
+        expect(enrichedAgain).toHaveProperty('attachments.length', 1);
     });
 
     it('deduplicates an existing attachment with the same file identity', () => {

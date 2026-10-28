@@ -57,6 +57,7 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
         isPending,
     } = useTermsTransactions(consentedContract?.uri);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
         transactionsData?.pages?.[0]?.records?.length,
     ]);
@@ -102,29 +103,29 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
 
     const transactions = isPending
         ? Array(10)
-            .fill(0)
-            .map((_, index) => (
-                <li
-                    key={index}
-                    className="w-full py-4 [&:not(:last-of-type)]:border-b flex flex-col gap-2"
-                >
-                    <header className="flex gap-1 text-sm font-poppins">
-                        <IonSkeletonText animated className="w-64" />
-                    </header>
-                    <section className="text-xs font-poppins text-grayscale-700">
-                        <IonSkeletonText animated />
-                    </section>
-                </li>
-            ))
+              .fill(0)
+              .map((_, index) => (
+                  <li
+                      key={index}
+                      className="w-full py-4 not-last-of-type:border-b flex flex-col gap-2"
+                  >
+                      <header className="flex gap-1 text-sm font-poppins">
+                          <IonSkeletonText animated className="w-64" />
+                      </header>
+                      <section className="text-xs font-poppins text-grayscale-700">
+                          <IonSkeletonText animated />
+                      </section>
+                  </li>
+              ))
         : transactionsData?.pages.flatMap(page =>
-            page?.records.map(transaction => (
-                <TransactionHistoryItem
-                    key={transaction.id}
-                    transaction={transaction}
-                    contractOwner={consentedContract?.contract.owner}
-                />
-            ))
-        );
+              page?.records.map(transaction => (
+                  <TransactionHistoryItem
+                      key={transaction.id}
+                      transaction={transaction}
+                      contractOwner={consentedContract?.contract.owner}
+                  />
+              ))
+          );
 
     return (
         <section className="bg-white min-h-full w-full pt-[15px]">

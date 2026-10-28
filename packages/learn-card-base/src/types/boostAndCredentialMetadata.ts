@@ -1,5 +1,7 @@
 import React from 'react';
 import { z } from 'zod';
+import { BoostCategoryOptionsEnum, CredentialCategoryEnum } from './boostCategories';
+export { BoostCategoryOptionsEnum, CredentialCategoryEnum } from './boostCategories';
 
 import BrokenStar from 'learn-card-base/svgs/BrokenStar';
 import PuzzlePiece, { TiltedPuzzlePiece } from 'learn-card-base/svgs/PuzzlePiece';
@@ -76,102 +78,6 @@ import AiInsightsIcon, {
     AiInsightsIconWithShape,
 } from 'learn-card-base/svgs/wallet/AiInsightsIcon';
 
-// Used in the actual index for credentials (see: IndexMetadata in learn-card-base/src/types/credentials.ts)
-export enum CredentialCategoryEnum {
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    qualifications = 'Qualifications',
-    accomplishment = 'Accomplishment',
-    accommodation = 'Accommodation',
-    workHistory = 'Work History',
-    resume = 'Resume',
-    experience = 'Experience',
-    learningHistory = 'Learning History',
-    course = 'Course',
-
-    skill = 'Skill',
-
-    events = 'Events',
-    family = 'Family',
-    relationship = 'Relationship',
-
-    meritBadge = 'Merit Badge',
-    troops = 'Membership',
-
-    // troops 2.0 ID categories
-    globalAdminId = 'Global Admin ID',
-    nationalNetworkAdminId = 'National Network Admin ID',
-    troopLeaderId = 'Troop Leader ID',
-    scoutId = 'Scout ID',
-
-    // AI
-    aiSummary = 'AI Summary',
-    aiTopic = 'AI Topic',
-    aiPathway = 'AI Pathway',
-    aiInsight = 'AI Insight',
-    aiAssessment = 'AI Assessment',
-
-    goals = 'Goals',
-    professionalTitle = 'Professional Title',
-    roleExperience = 'Role Experience',
-    workExperience = 'Work Experience',
-    payRate = 'Pay Rate',
-    workLifeBalance = 'Work Life Balance',
-    jobStability = 'Job Stability',
-    selfAssignedSkills = 'Self-Assigned Skills',
-
-    verifiableData = 'VerifiableData',
-
-    // todo
-    membership = 'Membership',
-
-    // deprecated
-    id = 'ID',
-    currency = 'Currency',
-}
-
-export enum BoostCategoryOptionsEnum {
-    socialBadge = 'Social Badge',
-    achievement = 'Achievement',
-    qualifications = 'Qualifications',
-    course = 'Course',
-    job = 'Job', // not in CredentialCategory
-    id = 'ID',
-    workHistory = 'Work History',
-    learningHistory = 'Learning History', // -> Courses
-    skill = 'Skill',
-    membership = 'Membership',
-
-    // LCA specific
-    family = 'Family',
-    accomplishment = 'Accomplishment',
-    accommodation = 'Accommodation',
-
-    // AI
-    //  (Not truly boost types, really these are just here for metadata structure purposes)
-    aiSummary = 'AI Summary',
-    aiTopic = 'AI Topic',
-    aiPathway = 'AI Pathway',
-    aiInsight = 'AI Insight',
-    aiAssessment = 'AI Assessment',
-
-    // general
-    all = 'All',
-
-    // Scouts
-    meritBadge = 'Merit Badge',
-    globalAdminId = 'Global Admin ID',
-    nationalNetworkAdminId = 'National Network Admin ID',
-    troopLeaderId = 'Troop Leader ID',
-    scoutId = 'Scout ID',
-
-    // obsolete / unused / future
-    currency = 'Currency',
-    relationship = 'Relationship',
-    events = 'Events',
-    goals = 'Goals',
-    describe = 'Describe',
-}
 export const BoostCategoryOptionsEnumValidator = z.nativeEnum(BoostCategoryOptionsEnum);
 
 export type BoostCategoryMetadata = {
@@ -233,7 +139,7 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         IconComponent: BoostsIcon,
         IconWithShape: ThickBoostsIconWithShape,
         CategoryImage: 'https://cdn.filestackcontent.com/DRPwxXjSWKl6TTkd2OCF',
-        shapeColor: 'text-[#93C5FD] w-[35px] h-[35px] !right-[-50%]',
+        shapeColor: 'text-[#93C5FD] w-[35px] h-[35px] right-[-50%]!',
         iconStyles: 'h-[35px] w-[35px]',
 
         // badge thumbnail
@@ -383,7 +289,7 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         CategoryImage: 'https://cdn.filestackcontent.com/A3cfrOaQ3StXLw7guVKO',
 
         shapeColor: 'text-cyan-400 w-[35px] h-[35px]',
-        iconStyles: 'h-[35px] w-[35px] !top-[46%]',
+        iconStyles: 'h-[35px] w-[35px] top-[46%]!',
 
         // badge thumbnail
         SolidIconComponent: ExperiencesIconSolid,
@@ -465,7 +371,7 @@ export const boostCategoryMetadata: Record<BoostCategoryOptionsEnum, BoostCatego
         CategoryImage: 'https://cdn.filestackcontent.com/HRKQyEDZSc2NS01uur0F',
 
         shapeColor: 'text-blue-400 w-[35px] h-[35px]',
-        iconStyles: 'h-[33px] w-[33px] !top-[55%] !left-[50%]',
+        iconStyles: 'h-[33px] w-[33px] top-[55%]! left-[50%]!',
     },
     [BoostCategoryOptionsEnum.skill]: {
         displayName: 'Skill',

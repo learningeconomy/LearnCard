@@ -179,7 +179,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                     <img
                         src={listing.icon_url}
                         alt={listing.display_name}
-                        className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl object-cover flex-shrink-0"
+                        className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl object-cover shrink-0"
                         onError={e => {
                             (e.target as HTMLImageElement).src =
                                 'https://cdn.filestackcontent.com/Ja9TRvGVRsuncjqpxedb';
@@ -201,7 +201,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                             <div className="relative">
                                 <button
                                     onClick={() => setShowPreviewMenu(!showPreviewMenu)}
-                                    className="flex-shrink-0 flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-200 transition-colors"
+                                    className="shrink-0 flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 md:py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-xs md:text-sm font-medium hover:bg-indigo-200 transition-colors"
                                 >
                                     <Eye className="w-3 h-3 md:w-4 md:h-4" />
                                     <span className="hidden sm:inline">
@@ -244,11 +244,11 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
 
                         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                             {getCategoryLabel(listing.category) && (
-                                <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-medium text-gray-500">
+                                <span className="px-1.5 py-0.5 bg-gray-100 rounded-sm text-xs font-medium text-gray-500">
                                     {getCategoryLabel(listing.category)}
                                 </span>
                             )}
-                            <span className="px-1.5 py-0.5 bg-cyan-100 rounded text-xs font-medium text-cyan-700">
+                            <span className="px-1.5 py-0.5 bg-cyan-100 rounded-sm text-xs font-medium text-cyan-700">
                                 {getLaunchTypeLabel(listing.launch_type)}
                             </span>
                             <StatusBadge status={listing.app_listing_status as AppListingStatus} />
@@ -263,10 +263,10 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="flex-1 overflow-y-auto p-5 space-y-v3-5">
                 {/* Submitter Info */}
                 <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-                    <div className="space-y-1">
+                    <div className="space-y-v3-1">
                         <div className="flex items-center gap-2">
                             <User className="w-3.5 h-3.5 text-gray-400" />
                             <span className="text-sm text-gray-600">
@@ -323,10 +323,10 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         <h3 className="text-sm font-medium text-gray-600 mb-2">
                             {m['appStoreAdmin.listing.highlights']()}
                         </h3>
-                        <ul className="space-y-1.5">
+                        <ul className="space-y-v3-1.5">
                             {listing.highlights.map((h, i) => (
                                 <li key={i} className="flex items-start gap-2">
-                                    <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                    <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                                     <span className="text-sm text-gray-500">{h}</span>
                                 </li>
                             ))}
@@ -364,7 +364,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                     href={s}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex-shrink-0"
+                                    className="shrink-0"
                                 >
                                     <img
                                         src={s}
@@ -400,7 +400,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                                 {permissions.map(p => (
                                     <span
                                         key={p}
-                                        className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs font-medium"
+                                        className="px-2 py-0.5 bg-cyan-100 text-cyan-700 rounded-sm text-xs font-medium"
                                         title={getPermissionDescription(p)}
                                     >
                                         {getPermissionLabel(p)}
@@ -421,7 +421,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                     <h3 className="text-sm font-medium text-gray-600 mb-2">
                         {m['appStoreAdmin.listing.externalLinks']()}
                     </h3>
-                    <div className="space-y-1.5">
+                    <div className="space-y-v3-1.5">
                         {typeof parsedConfig.url === 'string' && parsedConfig.url && (
                             <a
                                 href={parsedConfig.url}
@@ -475,7 +475,7 @@ export const ListingDetail: React.FC<ListingDetailProps> = ({
                         <h3 className="text-sm font-medium text-gray-600 mb-2">
                             {m['appStoreAdmin.listing.nativeAppLinks']()}
                         </h3>
-                        <div className="space-y-1.5">
+                        <div className="space-y-v3-1.5">
                             {listing.ios_app_store_id && (
                                 <a
                                     href={`https://apps.apple.com/us/app/id${listing.ios_app_store_id}`}

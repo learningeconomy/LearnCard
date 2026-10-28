@@ -11,6 +11,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 
 export const LearnCardIDContainerWallpaperSelect: React.FC<{
     backgroundImage?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     handleSetState: (key: string, value: any) => void;
 }> = ({ backgroundImage, handleSetState }) => {
     const [wallpaper, setWallpaper] = useState<string>(backgroundImage ?? '');
@@ -41,10 +42,10 @@ export const LearnCardIDContainerWallpaperSelect: React.FC<{
     });
 
     return (
-        <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 pb-4 pl-[10px] border-b-white border-b-solid border-b-[2px] rounded-tl-[20px] rounded-tr-[20px] mt-4">
+        <div className="flex items-center justify-between w-full bg-grayscale-100 p-2 pb-4 pl-[10px] border-b-white border-b-solid border-b-2 rounded-tl-[20px] rounded-tr-[20px] mt-4">
             <div className="flex items-center justify-start w-[70%] overflow-hidden">
                 <div
-                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-[10px] border-solid border-white border-[1px]`}
+                    className={`relative flex items-center justify-center object-contain overflow-hidden w-[50px] h-[50px] bg-grayscale-300 rounded-[10px] border-solid border-white border`}
                 >
                     {!wallpaper ? (
                         <div className="p-[6px]">

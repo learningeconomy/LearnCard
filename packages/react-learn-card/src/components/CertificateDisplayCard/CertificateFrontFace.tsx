@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../i18n';
 
 import CertificateCornerIcon from './CertificateCornerIcon';
 import CertificateImageDisplay from './CertificateImageDisplay';
@@ -68,6 +69,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
+    const t = useT();
     const {
         title = '',
         createdAt,
@@ -75,7 +77,10 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         issuee: _issuee = '',
         credentialSubject,
         imageUrl,
-    } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
+    } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
+        uppercaseDate: false,
+        dateType: 'awarded',
+    });
 
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
@@ -166,14 +171,14 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] pb-[20px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] pb-[20px] border-solid border-4 ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
                         {title}
                     </h1>
                     <div
-                        className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                        className={`${textLightColor} uppercase text-[14px] font-notoSans font-semibold`}
                     >
                         {formattedDisplayType}
                     </div>
@@ -218,7 +223,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                             </>
                         )}
                     </span>
-                    {!hideIssueDate && <span className="font-jacques">Awarded on {createdAt}</span>}
+                    {!hideIssueDate && createdAt && (
+                        <span className="font-jacques">
+                            {t('credential.awardedOn', { date: createdAt })}
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-[10px] items-center">
@@ -263,14 +272,14 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         Certified by
                     </span>
                     {issuerDisplay.isDidValue ? (
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
-                            <span className="font-[600]">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[14px] leading-[90%] font-jacques tracking-[0.25px] border-b border-solid border-grayscale-200 w-full text-center line-clamp-2 wrap-break-word scrollbar-hide">
+                            <span className="font-semibold">
                                 {issuerDisplay.isDidValue ? 'Digital ID: ' : ''}
                             </span>
                             <span className="text-grayscale-600">{issuerName}</span>
                         </span>
                     ) : (
-                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center line-clamp-2 break-words scrollbar-hide">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b border-solid border-grayscale-200 w-full text-center line-clamp-2 wrap-break-word scrollbar-hide">
                             {issuerName}
                         </span>
                     )}
@@ -282,7 +291,9 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     />
                 </div>
                 {customBodyContentSlot && customBodyContentSlot}
-                <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
+                <div
+                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-semibold`}
+                >
                     {categoryTitle}
                 </div>
             </div>

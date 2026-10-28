@@ -101,6 +101,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const [topicInitialized, setTopicInitialized] = useState(() => {
         try {
             const existingThread = currentThreadId.get?.();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
             return (
                 Boolean(existingThread) ||
@@ -161,6 +162,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
         // If there is already an active thread or messages, do not re-initialize
         const existingThread = currentThreadId.get?.();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
         if (existingThread || (existingMsgs && existingMsgs.length > 0)) {
             setTopicInitialized(true);
@@ -213,19 +215,22 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                     // This prevents brief tab switches from triggering auto-summary
                     // Also, only set the timer if one is not already running to prevent leaks.
                     if (!hiddenTimer) {
-                        hiddenTimer = setTimeout(() => {
-                            const form = new FormData();
-                            form.append('threadId', threadId);
-                            form.append('event', 'hidden');
-                            void aiPassportFetch(
-                                '/threads/visibility',
-                                { method: 'POST', body: form, keepalive: true },
-                                did
-                            ).catch(error => log.warn('Failed to send hidden event', error));
-                            log.debug('sent beacon after 5min hidden');
-                            // After the timer fires, reset it to null so a new one can be created.
-                            hiddenTimer = null;
-                        }, 5 * 60 * 1000); // 5 minutes
+                        hiddenTimer = setTimeout(
+                            () => {
+                                const form = new FormData();
+                                form.append('threadId', threadId);
+                                form.append('event', 'hidden');
+                                void aiPassportFetch(
+                                    '/threads/visibility',
+                                    { method: 'POST', body: form, keepalive: true },
+                                    did
+                                ).catch(error => log.warn('Failed to send hidden event', error));
+                                log.debug('sent beacon after 5min hidden');
+                                // After the timer fires, reset it to null so a new one can be created.
+                                hiddenTimer = null;
+                            },
+                            5 * 60 * 1000
+                        ); // 5 minutes
                     }
                 } else if (document.visibilityState === 'visible') {
                     // Cancel the hidden timer if user comes back
@@ -283,6 +288,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
     useEffect(() => {
         if (initialMessages?.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
             if (!existingMsgs || existingMsgs.length === 0) {
                 messages.set(initialMessages);
@@ -337,8 +343,8 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
         const isNowStreaming = Boolean(streaming);
         const hasCurrentError = Boolean(
             aiError &&
-                aiError.at >= aiMountedAtRef.current &&
-                aiError.at !== aiHandledErrorAtRef.current
+            aiError.at >= aiMountedAtRef.current &&
+            aiError.at !== aiHandledErrorAtRef.current
         );
         if (aiPrevStreamingRef.current && !isNowStreaming) {
             if (aiSuppressNextStreamCompletionRef.current) {
@@ -379,7 +385,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
             surface: 'ai_chat',
             message_index: response.messageIndex,
             error_code:
-                aiError.event === 'ai_error' ? aiError.rawCode ?? aiError.code : aiError.code,
+                aiError.event === 'ai_error' ? (aiError.rawCode ?? aiError.code) : aiError.code,
             duration_ms: response.lifecycle.durationMs(),
         });
         if (streaming) {
@@ -514,7 +520,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                     <div className="sticky bottom-[20px] left-1/2 transform -translate-x-1/2 w-fit">
                                         <button
                                             onClick={() => scrollToBottom('smooth')}
-                                            className="relative p-[11px] bg-white rounded-full border-solid border-[1px] border-grayscale-200 shadow-button-bottom text-grayscale-900"
+                                            className="relative p-[11px] bg-white rounded-full border-solid border border-grayscale-200 shadow-button-bottom text-grayscale-900"
                                             aria-label={
                                                 streaming
                                                     ? 'AI is responding — scroll to bottom'
@@ -523,7 +529,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
                                         >
                                             {streaming && (
                                                 <span
-                                                    className="pointer-events-none absolute inset-[-3px] rounded-full border-[2px] border-transparent border-t-emerald-700 animate-spin"
+                                                    className="pointer-events-none absolute inset-[-3px] rounded-full border-2 border-transparent border-t-emerald-700 animate-spin"
                                                     aria-hidden="true"
                                                 />
                                             )}

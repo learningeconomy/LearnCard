@@ -51,6 +51,7 @@ const BoostEarnedIDList: React.FC<{
     const noSearchResults = searchResults?.length === 0;
     const searchResultsCount = searchResults?.length;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [
         records?.pages?.[0]?.records?.length,
     ]);
@@ -94,6 +95,7 @@ const BoostEarnedIDList: React.FC<{
         try {
             await earnedBoostsRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };
@@ -150,7 +152,7 @@ const BoostEarnedIDList: React.FC<{
                             {searchActive && searchResultsElement}
                             <section className="relative flex flex-wrap text-center justify-center items-center gap-4 max-w-[800px]">
                                 <div
-                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                    className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                                 />
                                 {credentials}
                                 <div role="presentation" ref={infiniteScrollRef} />
@@ -169,7 +171,7 @@ const BoostEarnedIDList: React.FC<{
                     {!isCardView && (
                         <IonCol className="flex m-auto items-center flex-wrap w-full achievements-list-container">
                             <div
-                                className={`bg-filler absolute h-full mt-[200px] w-[3000px] z-[-10] ${bgFillerColor}`}
+                                className={`bg-filler absolute h-full mt-[200px] w-[3000px] -z-10 ${bgFillerColor}`}
                             />
                             <div className="flex flex-col gap-[10px] w-full max-w-[700px] px-[20px]">
                                 {searchActive && searchResultsElement}

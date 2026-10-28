@@ -61,7 +61,7 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
             <button
                 type="button"
                 aria-pressed={isSelected}
-                className={`w-full text-grayscale-900 border-solid flex items-start justify-between border-[1px] rounded-[10px] p-4 text-left ${activeStyles}`}
+                className={`w-full text-grayscale-900 border-solid flex items-start justify-between border rounded-[10px] p-4 text-left ${activeStyles}`}
                 onClick={e => {
                     e.stopPropagation();
 
@@ -100,8 +100,8 @@ export const OnboardingRoleItem: React.FC<OnboardingRoleItemProps> = ({
                                 {!showDescription && !isSelected
                                     ? m['onboarding.profile.selectRole']()
                                     : roleItem
-                                    ? getRoleTitle(roleItem.type)
-                                    : ''}
+                                      ? getRoleTitle(roleItem.type)
+                                      : ''}
                             </p>
                         </div>
 

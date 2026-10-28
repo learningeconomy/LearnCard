@@ -22,6 +22,7 @@ export const AddressBookHeader: React.FC<{
     connectionCount: number;
     search: string;
     clearSearch: () => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     children?: any;
     showSearch?: boolean;
     handleShowSearch?: () => void;

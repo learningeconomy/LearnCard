@@ -671,7 +671,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div>
                 <h2 className="text-lg font-semibold text-gray-800">
                     {m['developerPortal.dashboards.tabs.integrationCode.title']()}
@@ -687,7 +687,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     onClick={() => setViewMode('reference')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         viewMode === 'reference'
-                            ? 'bg-white text-gray-800 shadow-sm'
+                            ? 'bg-white text-gray-800 shadow-xs'
                             : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
@@ -699,7 +699,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     onClick={() => setViewMode('example')}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         viewMode === 'example'
-                            ? 'bg-white text-gray-800 shadow-sm'
+                            ? 'bg-white text-gray-800 shadow-xs'
                             : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
@@ -710,9 +710,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
             {/* Reference View - All Boost URIs */}
             {viewMode === 'reference' && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                        <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                        <Zap className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
                             <p className="font-medium mb-1">
                                 {m[
@@ -731,7 +731,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {savedTemplateCount > 0 && (
                         <button
                             onClick={handleCopyAllConfig}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 transition-all"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-linear-to-r/srgb from-cyan-500 to-violet-500 text-white rounded-xl font-medium hover:from-cyan-600 hover:to-violet-600 transition-all"
                         >
                             {copiedConfig ? (
                                 <>
@@ -752,7 +752,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     )}
 
                     {/* All Templates List */}
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         {/* Master Templates with Children */}
                         {masterTemplates.map(master => (
                             <div
@@ -796,7 +796,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                         onClick={() =>
                                                             handleCopyUri(child.boostUri!)
                                                         }
-                                                        className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        className="shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                     >
                                                         {copiedUri === child.boostUri ? (
                                                             <Check className="w-4 h-4 text-emerald-500" />
@@ -858,7 +858,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                             onClick={() =>
                                                                 handleCopyUri(template.boostUri!)
                                                             }
-                                                            className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            className="shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                                         >
                                                             {copiedUri === template.boostUri ? (
                                                                 <Check className="w-4 h-4 text-emerald-500" />
@@ -878,7 +878,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {/* API Key Reference */}
                     {integration.publishableKey && (
                         <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                            <Code className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <Code className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                             <div className="text-sm">
                                 <p className="font-medium text-amber-800">
                                     {m[
@@ -896,8 +896,10 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             key: integration.publishableKey.slice(0, 12) + '...',
                                         }}
                                         components={[
-                                            <code className="bg-amber-100 px-1 rounded" />,
-                                            <code className="bg-amber-100 px-1 rounded ml-1 font-mono" />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
+                                            <code className="bg-amber-100 px-1 rounded-sm" />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
+                                            <code className="bg-amber-100 px-1 rounded-sm ml-1 font-mono" />,
                                         ]}
                                     />
                                 </p>
@@ -909,9 +911,9 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
             {/* Example View - Code Generator */}
             {viewMode === 'example' && (
-                <div className="space-y-4">
+                <div className="space-y-v3-4">
                     <div className="flex items-start gap-3 p-4 bg-violet-50 border border-violet-200 rounded-xl">
-                        <Zap className="w-5 h-5 text-violet-600 flex-shrink-0 mt-0.5" />
+                        <Zap className="w-5 h-5 text-violet-600 shrink-0 mt-0.5" />
                         <div className="text-sm text-violet-800">
                             <p className="font-medium mb-1">
                                 {m[
@@ -925,7 +927,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     </div>
 
                     {/* Template Selector */}
-                    <div className="space-y-3">
+                    <div className="space-y-v3-3">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.dashboards.tabs.integrationCode.selectTemplate']()}
                         </label>
@@ -949,7 +951,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                     </div>
                                 </div>
 
-                                <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-1">
+                                <div className="p-2 bg-white max-h-48 overflow-y-auto space-y-v3-1">
                                     {master.childTemplates?.map(child => (
                                         <button
                                             key={child.id}
@@ -981,7 +983,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             </div>
 
                                             {child.boostUri && (
-                                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs flex-shrink-0">
+                                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded-sm text-xs shrink-0">
                                                     {m[
                                                         'developerPortal.dashboards.tabs.integrationCode.saved'
                                                     ]()}
@@ -989,7 +991,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             )}
 
                                             {selectedTemplateId === child.id && (
-                                                <CheckCircle2 className="w-4 h-4 text-cyan-600 flex-shrink-0" />
+                                                <CheckCircle2 className="w-4 h-4 text-cyan-600 shrink-0" />
                                             )}
                                         </button>
                                     ))}
@@ -1001,7 +1003,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                         {issuableTemplates.filter(
                             t => !childTemplateIds.has(t.id) && !t.isMasterTemplate
                         ).length > 0 && (
-                            <div className="space-y-2">
+                            <div className="space-y-v3-2">
                                 {masterTemplates.length > 0 && (
                                     <p className="text-xs text-gray-500 font-medium pt-2">
                                         {m[
@@ -1051,7 +1053,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             </div>
 
                                             {template.boostUri && (
-                                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs">
+                                                <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-sm text-xs">
                                                     {m[
                                                         'developerPortal.dashboards.tabs.integrationCode.saved'
                                                     ]()}
@@ -1070,7 +1072,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     {/* Info about child boost - course data is baked in */}
                     {selectedTemplateMaster && (
                         <div className="flex items-start gap-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
-                            <Layers className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <Layers className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                             <div className="text-sm text-emerald-800">
                                 <p className="font-medium">
                                     {m[
@@ -1088,7 +1090,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Template Data Inputs */}
                     {templateVariables.length > 0 && (
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <div className="flex items-center justify-between">
                                 <label className="block text-sm font-medium text-gray-700">
                                     {m[
@@ -1108,7 +1110,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                 ]()}
                             </p>
 
-                            <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="space-y-v3-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                 {templateVariables.map(varName => {
                                     const displayName = varName
                                         .replace(/_/g, ' ')
@@ -1133,7 +1135,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                     }))
                                                 }
                                                 placeholder={getSmartDefault(varName)}
-                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                             />
                                         </div>
                                     );
@@ -1143,7 +1145,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                     )}
 
                     {/* Recipient Input */}
-                    <div className="space-y-2">
+                    <div className="space-y-v3-2">
                         <label className="block text-sm font-medium text-gray-700">
                             {m['developerPortal.dashboards.tabs.integrationCode.recipient']()}
                         </label>
@@ -1155,7 +1157,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             placeholder={m[
                                 'developerPortal.dashboards.tabs.integrationCode.recipientPlaceholder'
                             ]()}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                         />
 
                         <p className="text-xs text-gray-500">
@@ -1231,12 +1233,13 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 ]
                                             }
                                             components={[
+                                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                                 <span className="text-cyan-600 font-medium" />,
                                             ]}
                                         />
                                     </p>
                                 ) : (
-                                    <div className="space-y-2">
+                                    <div className="space-y-v3-2">
                                         {authGrants.map(grant => (
                                             <button
                                                 key={grant.id}
@@ -1300,7 +1303,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             ? m['developerPortal.onboarding.dataMapping.hideAdvancedOptions']()
                             : m['developerPortal.onboarding.dataMapping.showAdvancedOptions']()}
                         {hasAdvancedOptions && (
-                            <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded text-xs">
+                            <span className="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-sm text-xs">
                                 {m['developerPortal.shell.statusActive']()}
                             </span>
                         )}
@@ -1308,7 +1311,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
 
                     {/* Advanced Options Panel */}
                     {showAdvanced && (
-                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-4">
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl space-y-v3-4">
                             <p className="text-sm text-gray-600">
                                 {m[
                                     'developerPortal.dashboards.tabs.integrationCode.advancedOptionsDesc'
@@ -1316,7 +1319,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             </p>
 
                             {/* Branding Section */}
-                            <div className="space-y-3">
+                            <div className="space-y-v3-3">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                     <Building2 className="w-4 h-4 text-indigo-500" />
                                     {m[
@@ -1341,7 +1344,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             placeholder={m[
                                                 'developerPortal.onboarding.branding.yourOrg'
                                             ]()}
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
 
@@ -1361,7 +1364,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 }))
                                             }
                                             placeholder="https://example.com/logo.png"
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
 
@@ -1383,14 +1386,14 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             placeholder={m[
                                                 'developerPortal.dashboards.tabs.integrationCode.johnDoe'
                                             ]()}
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                         />
                                     </div>
                                 </div>
                             </div>
 
                             {/* Webhook Section */}
-                            <div className="space-y-3 pt-3 border-t border-gray-200">
+                            <div className="space-y-v3-3 pt-3 border-t border-gray-200">
                                 <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                     <Webhook className="w-4 h-4 text-emerald-500" />
                                     {m[
@@ -1414,7 +1417,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                             }))
                                         }
                                         placeholder="https://your-server.com/webhook"
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
                                         {m[
@@ -1425,7 +1428,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                             </div>
 
                             {/* Suppress Delivery */}
-                            <div className="space-y-3 pt-3 border-t border-gray-200">
+                            <div className="space-y-v3-3 pt-3 border-t border-gray-200">
                                 <label className="flex items-center gap-3 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -1436,7 +1439,7 @@ curl -X POST "${getResolvedTenantConfig().apis.brainServiceApi}/send" \\
                                                 suppressDelivery: e.target.checked,
                                             }))
                                         }
-                                        className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                                        className="w-4 h-4 rounded-sm border-gray-300 text-cyan-500 focus:ring-cyan-500"
                                     />
                                     <div className="flex items-center gap-2">
                                         <BellOff className="w-4 h-4 text-amber-500" />
