@@ -52,11 +52,16 @@ services:
         ports:
             - '3100:3100'
         depends_on:
-            - neo4j
-            - mongodb
-            - redis
-            - redis2
-            - redis3
+            neo4j:
+                condition: service_started
+            mongodb:
+                condition: service_healthy
+            redis:
+                condition: service_started
+            redis2:
+                condition: service_started
+            redis3:
+                condition: service_started
         extra_hosts:
             - 'localhost:host-gateway'
         networks:
@@ -158,8 +163,10 @@ services:
         ports:
             - '4100:4100'
         depends_on:
-            - mongodb
-            - redis2
+            mongodb:
+                condition: service_healthy
+            redis2:
+                condition: service_started
         networks:
             - learn-card
         extra_hosts:
@@ -206,8 +213,10 @@ services:
         ports:
             - '5100:5100'
         depends_on:
-            - mongodb
-            - redis3
+            mongodb:
+                condition: service_healthy
+            redis3:
+                condition: service_started
         networks:
             - learn-card
         extra_hosts:
@@ -266,9 +275,12 @@ services:
                 export AI_AGENT_WALLET_SEED="$${AI_AGENT_WALLET_SEED:-$${SEED:-d}}"
                 bun run --cwd services/learn-card-network/ai-agent dev
         depends_on:
-            - brain
-            - cloud
-            - mongodb
+            brain:
+                condition: service_started
+            cloud:
+                condition: service_started
+            mongodb:
+                condition: service_healthy
         networks:
             - learn-card
         extra_hosts:
@@ -361,9 +373,10 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         healthcheck:
+            # Wait for writable primary, not merely a responding replica.
             # Host tools use localhost; container clients must use directConnection.
             test: >
-                mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+                mongosh --host 127.0.0.1 --port 27017 --quiet --eval "try { rs.status() } catch (err) { if (err.code !== 94) throw err; rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}); } quit(db.hello().isWritablePrimary ? 0 : 1)"
             interval: 5s
             timeout: 30s
             start_period: 0s
