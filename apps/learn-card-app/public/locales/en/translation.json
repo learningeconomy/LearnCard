@@ -4769,6 +4769,19 @@
             "unlimited": "Unlimited"
         }
     },
+    "credentialShare": {
+        "copyLink": "Copy Link",
+        "publicPreviewPersistent": "Public preview is published and may remain available. Social apps may keep their own copies, even if you later change sharing settings.",
+        "publicPreviewPrivate": "A public preview shows the credential name, issuer and image. Once published, it may remain available, and social apps may keep copies. Everything else stays encrypted.",
+        "issuerUnavailable": "Issuer details are unavailable. You can still share the encrypted link.",
+        "enablePreview": "Enable Public Preview",
+        "publishingPreview": "Publishing preview...",
+        "addToLinkedIn": "Add to LinkedIn",
+        "postToLinkedIn": "Post to LinkedIn",
+        "linkedInOrgId": "LinkedIn organization ID (optional)",
+        "linkedInOrgIdHelp": "Find the numeric ID in your LinkedIn admin page URL. Enter the number, not the page slug. Leave blank to remove it.",
+        "linkedInOrgIdError": "Enter digits only."
+    },
     "developerPortal": {
         "shell": {
             "title": "Developer Portal",
