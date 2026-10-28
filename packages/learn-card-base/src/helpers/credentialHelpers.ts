@@ -45,6 +45,7 @@ import { VERIFIER_STATES } from '@learncard/react';
 import { BoostCMSMediaAttachment, BoostEvidenceSpec } from 'learn-card-base/components/boost/boost';
 import { getVideoMetadata } from './video.helpers';
 import { getFileMetadata } from './attachment.helpers';
+import { getEvidenceMimeType } from './credentials/clr/evidence';
 import { getLogger } from '../logging/logger';
 import { parseLcTags } from './displayTags.helpers';
 import { getBespokeLearnCard } from './walletHelpers';
@@ -907,7 +908,8 @@ export const getCredentialName = (credential: VC): string => {
         credential?.name ||
         name ||
         credentialSubjectAchievementName ||
-        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType)
+        (isResumeBuilderCredential(credential) ? 'Resume Builder' : humanizedType) ||
+        ''
     );
 };
 
@@ -1268,6 +1270,23 @@ export const formatCredentialDate = (credential?: VC, format: string = 'MMMM DD,
     return dateValue ? moment(dateValue).format(format) : '';
 };
 
+/** Display the Open Badges award date separately from credential issuance. */
+export const formatCredentialAwardedDate = (
+    credential?: VC,
+    format: string = 'MMMM DD, YYYY'
+): string => {
+    const unwrapped = credential?.boostCredential ?? credential;
+    const awardedDate = unwrapped?.awardedDate;
+    // Spreadsheet date editing uses UTC; keep the displayed day consistent with it.
+    if (awardedDate && moment.utc(awardedDate, moment.ISO_8601, true).isValid()) {
+        return moment.utc(awardedDate).format(format);
+    }
+    const issued = getIssuanceDate(credential);
+    return issued && moment(issued, moment.ISO_8601, true).isValid()
+        ? moment(issued).format(format)
+        : '';
+};
+
 export const getAchievementTypeDisplayText = (
     achievementType: string,
     boostType: BoostCategoryOptionsEnum,
@@ -1539,27 +1558,53 @@ export const normalizeEvidenceGenreType = (
     return EVIDENCE_ATTACHMENT_TYPES.find(type => type === normalized);
 };
 
-export const getEvidenceAttachmentType = async (url: string) => {
-    if (isPdfAttachmentSource(url)) {
-        return 'document';
+/** Classify evidence conservatively: unknown metadata is not evidence of a video. */
+export const getEvidenceAttachmentType = async (url: string): Promise<EvidenceAttachmentType> => {
+    const mimeType = getEvidenceMimeType(url);
+    if (isPdfAttachmentSource(url) || mimeType === 'application/pdf') return 'document';
+    if (mimeType?.startsWith('image/')) return 'photo';
+    try {
+        const source = new URL(url);
+        if (
+            ['http:', 'https:'].includes(source.protocol) &&
+            /\.(mp4|mov|webm)$/i.test(source.pathname)
+        ) {
+            return 'video';
+        }
+    } catch {
+        // Text evidence has no URL pathname to classify.
     }
 
-    const videoMetadata = await getVideoMetadata(url);
-    const docMetadata = await getFileMetadata(url);
-
-    if (docMetadata && !videoMetadata) {
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(docMetadata?.fileExtension)) {
+    const [videoMetadata, docMetadata] = await Promise.all([
+        getVideoMetadata(url),
+        getFileMetadata(url),
+    ]);
+    if (docMetadata) {
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(docMetadata.fileExtension ?? '')) {
             return 'photo';
         }
-        if (['docx', 'doc', 'ppt', 'pptx', 'pdf'].includes(docMetadata?.fileExtension)) {
+        if (['docx', 'doc', 'ppt', 'pptx', 'pdf'].includes(docMetadata.fileExtension ?? '')) {
             return 'document';
         }
+        if (['mp4', 'mov', 'webm'].includes(docMetadata.fileExtension ?? '')) {
+            return 'video';
+        }
     }
-    if (videoMetadata && !docMetadata) {
+    // The video helper always returns an object, even for an unknown URL. Drive
+    // also returns an embed for any file, so it cannot establish a video type.
+    if (
+        ['youtube', 'vimeo', 'loom'].includes(videoMetadata.type) &&
+        videoMetadata.videoId &&
+        videoMetadata.embedUrl
+    ) {
         return 'video';
     }
 
-    return 'text';
+    try {
+        return ['http:', 'https:'].includes(new URL(url).protocol) ? 'link' : 'text';
+    } catch {
+        return 'text';
+    }
 };
 
 export const getEvidenceAttachments = async (evidence: BoostEvidenceSpec[]) => {

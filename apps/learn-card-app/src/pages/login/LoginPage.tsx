@@ -23,6 +23,7 @@ import {
     getAuthConfig,
     getSSSConfig,
     useAuthStatus,
+    resumeAuthRedirect,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -282,7 +283,7 @@ export const LoginContent: React.FC = () => {
                 redirectStore.set.lcnRedirect(null);
                 redirectStore.set.authRedirect(null);
                 chapiStore.set.isChapiInteraction(null);
-                history.push(redirectTo);
+                resumeAuthRedirect(history, redirectTo);
                 void handleGeneratePinUpdateToken();
                 if (canRepromptOnboarding) void handlePromptOnboarding();
             } else if (lcnRedirectTo) {

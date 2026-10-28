@@ -647,6 +647,12 @@ export async function getLearnCardNetworkPlugin(
           );
 
     let userData: LCNProfile | undefined;
+    // Share concurrent profile lookups within this client only. Completed results
+    // are not retained, so later explicit reads still see profile updates.
+    const profileLookups = new Map<
+        string,
+        ReturnType<typeof client.profile.getOtherProfile.query>
+    >();
 
     learnCard?.debug?.('LCN: initial getProfile query starting', { apiToken: !!apiToken });
     const initialQuery = client.profile.getProfile
@@ -1019,7 +1025,16 @@ export async function getLearnCardNetworkPlugin(
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
 
-                return client.profile.getOtherProfile.query({ profileId });
+                let lookup = profileLookups.get(profileId);
+                if (!lookup) {
+                    lookup = client.profile.getOtherProfile.query({ profileId });
+                    profileLookups.set(profileId, lookup);
+                }
+                try {
+                    return await lookup;
+                } finally {
+                    if (profileLookups.get(profileId) === lookup) profileLookups.delete(profileId);
+                }
             },
             getProfileManagerProfile: async (_learnCard, id) => {
                 if (!id) return client.profileManager.getProfileManager.query();
@@ -1155,6 +1170,14 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
+            publishCredentialSharePreview: async (_learnCard, preview) => {
+                await ensureUser();
+                return client.credentialSharePreviews.publish.mutate(preview);
+            },
+            deleteCredentialSharePreview: async (_learnCard, id) => {
+                await ensureUser();
+                return client.credentialSharePreviews.delete.mutate({ id });
+            },
             createShareLink: async (_learnCard, input) => {
                 await ensureUser();
 
@@ -3281,6 +3304,63 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 return client.appStore.isAdmin.query();
+            },
+
+            campaignsIsAdmin: async _learnCard => {
+                await ensureUser();
+                return client.campaigns.isAdmin.query();
+            },
+            campaignsCreate: async (_learnCard, input) => {
+                await ensureUser();
+                return client.campaigns.create.mutate(input);
+            },
+            campaignsUpdate: async (_learnCard, input) => {
+                await ensureUser();
+                return client.campaigns.update.mutate(input);
+            },
+            campaignsGet: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.get.query({ campaignId });
+            },
+            campaignsList: async (_learnCard, input = {}) => {
+                await ensureUser();
+                return client.campaigns.list.query(input);
+            },
+            campaignsDelete: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.delete.mutate({ campaignId });
+            },
+            campaignsSetStatus: async (_learnCard, campaignId, status) => {
+                await ensureUser();
+                return client.campaigns.setStatus.mutate({ campaignId, status });
+            },
+            campaignsPreviewAudience: async (_learnCard, input) => {
+                await ensureUser();
+                return client.campaigns.previewAudience.query(input);
+            },
+            campaignsAddAudience: async (_learnCard, input) => {
+                await ensureUser();
+                return client.campaigns.addAudience.mutate(input);
+            },
+            campaignsPageAudience: async (_learnCard, input) => {
+                await ensureUser();
+                return client.campaigns.pageAudience.query(input);
+            },
+            campaignsGetStats: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.getStats.query({ campaignId });
+            },
+            getMyCampaigns: async _learnCard => {
+                await ensureUser();
+                return client.campaigns.getMyCampaigns.query();
+            },
+            recordCampaignEvent: async (_learnCard, campaignId, event) => {
+                await ensureUser();
+                return client.campaigns.recordEvent.mutate({ campaignId, event });
+            },
+            enrollInCampaign: async (_learnCard, campaignId) => {
+                await ensureUser();
+                return client.campaigns.enroll.mutate({ campaignId });
             },
 
             adminUpdateListingStatus: async (_learnCard, listingId, status) => {

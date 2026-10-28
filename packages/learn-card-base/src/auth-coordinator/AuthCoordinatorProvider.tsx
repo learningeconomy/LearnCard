@@ -83,6 +83,7 @@ export interface AuthCoordinatorContextValue {
     enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
     setEscrowPin: AuthCoordinator['setEscrowPin'];
     clearEscrowPin: AuthCoordinator['clearEscrowPin'];
+    acknowledgeEscrowPinAutoClear: AuthCoordinator['acknowledgeEscrowPinAutoClear'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -538,6 +539,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.clearEscrowPin();
     }, []);
+    const acknowledgeEscrowPinAutoClear = useCallback(() => {
+        coordinatorRef.current?.acknowledgeEscrowPinAutoClear();
+    }, []);
     const getEscrowEnrollmentState = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.getEscrowEnrollmentState();
@@ -693,6 +697,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             enableEscrowRecovery,
             setEscrowPin,
             clearEscrowPin,
+            acknowledgeEscrowPinAutoClear,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -740,6 +745,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             enableEscrowRecovery,
             setEscrowPin,
             clearEscrowPin,
+            acknowledgeEscrowPinAutoClear,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,

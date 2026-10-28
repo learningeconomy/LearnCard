@@ -8,6 +8,7 @@ import type {
     RawArtifactCredential,
 } from 'learn-card-base/types/file-extraction';
 import { UploadTypesEnum } from 'learn-card-base';
+import { FileExtractionError } from 'learn-card-base/helpers/fileExtraction';
 import * as m from '../../../../paraglide/messages.js';
 import { UploadFileOutcomePanel } from './UploadFileOutcomePanel';
 
@@ -26,6 +27,7 @@ const EXTRACTION_MESSAGES: Record<string, () => string> = {
     RESPONSE_INVALID: m['passport.buildMyLearnCard.managers.errorResponseInvalid'],
     CONSENT_DENIED: m['passport.buildMyLearnCard.managers.errorConsentDenied'],
     AI_GATE_LOADING: m['passport.buildMyLearnCard.managers.errorAiGateLoading'],
+    UPLOAD_BUSY: m['passport.buildMyLearnCard.managers.errorUploadBusy'],
 };
 
 const extractionMessage = (code?: string): string =>
@@ -86,7 +88,8 @@ export const UploadFileOutcomeList: React.FC<Props> = ({
                 if (result.outcome.status === 'review') onExtracted?.(result.credentials);
             }
             onSettled?.();
-        } catch {
+        } catch (error) {
+            if (error instanceof FileExtractionError && error.code === 'UPLOAD_CANCELLED') return;
             if (mounted.current) setFailedId(item.artifact.id);
         } finally {
             busy.current = false;

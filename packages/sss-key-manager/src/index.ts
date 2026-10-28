@@ -177,7 +177,11 @@ export {
     EscrowRequestError,
 } from './sss-strategy';
 
-export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
+export type {
+    EscrowPinAutoClearedEvent,
+    SSSStorageFunctions,
+    SSSStrategyConfig,
+} from './sss-strategy';
 
 export {
     generateEphemeralKeypair,

@@ -21,22 +21,6 @@ export const loginTestAccount = async (page: Page) => {
 /** Title used when creating a test credential. Exported so tests can assert on it. */
 export const TEST_CREDENTIAL_TITLE = 'Test Credential';
 
-/**
- * Completes the "Setup Your Profile" modal to join the LearnCard Network.
- * If the modal doesn't appear (user already has a profile), this is a no-op.
- */
-export const joinNetworkIfNeeded = async (page: Page, profileId: string) => {
-    const userIdInput = page.locator('input[placeholder="User ID"]');
-    if (await locatorExists(userIdInput, 15_000)) {
-        await userIdInput.fill(profileId);
-        await page.getByRole('button', { name: "Let's Go!" }).click({ timeout: 30_000 });
-        // Wait for "Joining Network..." to finish and modal to close
-        await page
-            .getByRole('button', { name: "Let's Go!" })
-            .waitFor({ state: 'hidden', timeout: 60_000 });
-    }
-};
-
 const TEST_BADGE_PRESET = 'Vibe Curator';
 
 /** Opens the peer-badge picker from the Launchpad. */
@@ -94,7 +78,10 @@ export const waitForAuthenticatedState = async (
               path?: string;
               seed?: string;
               profileId?: string;
-              waitUntil?: 'load' | 'domcontentloaded';
+              /** Mocked flows can use commit, then assert their authenticated UI. */
+              waitUntil?: 'load' | 'domcontentloaded' | 'commit';
+              /** Use the developer sign-in return path instead of another full app load. */
+              nextPath?: string;
           } = '/',
     timeout = 30000
 ) => {
@@ -106,50 +93,53 @@ export const waitForAuthenticatedState = async (
                   seed: TEST_USER_SEED,
                   profileId: undefined as string | undefined,
                   waitUntil: 'load' as const,
+                  nextPath: undefined as string | undefined,
               }
             : {
                   path: pathOrOptions.path ?? '/',
                   seed: pathOrOptions.seed ?? TEST_USER_SEED,
                   profileId: pathOrOptions.profileId,
                   waitUntil: pathOrOptions.waitUntil ?? 'load',
+                  nextPath: pathOrOptions.nextPath,
               };
 
-    // Wait for the LCN gate's underlying profile lookup so `Add to LearnCard`
-    // opens the menu rather than the OnboardingContainer. Tolerate timeout
-    // for cache-hit paths where no fresh request fires.
-    const profileFetchPromise = page
-        .waitForResponse(
-            response => /profile\.getProfile/.test(response.url()) && response.status() < 500,
-            { timeout }
-        )
-        .catch(() => undefined);
+    // Seed sign-in with profileId awaits profile creation and query reset before
+    // redirecting. Only legacy sign-in without profile creation needs this lookup.
+    const profileFetchPromise = options.profileId
+        ? undefined
+        : page
+              .waitForResponse(
+                  response => /profile\.getProfile/.test(response.url()) && response.status() < 500,
+                  { timeout }
+              )
+              .catch(() => undefined);
 
     // Login via seed - this creates a proper user with privateKey.
     // ?profileId= makes the page create the network profile during sign-in
     // (deterministic), instead of relying on the Setup Profile modal appearing.
-    const seedUrl = options.profileId
-        ? `/developer/sign-in?profileId=${encodeURIComponent(options.profileId)}`
-        : '/developer/sign-in';
+    const seedParams = new URLSearchParams();
+    if (options.profileId) seedParams.set('profileId', options.profileId);
+    if (options.nextPath) seedParams.set('next', options.nextPath);
+    const seedUrl = `/developer/sign-in${seedParams.size ? `?${seedParams}` : ''}`;
     await page.goto(seedUrl, { waitUntil: options.waitUntil });
 
     // Fill in the seed and submit. The page is state-aware: the primary button reads
     // "Sign in" when logged out, or "Sign out and switch" when a session already
     // exists (e.g. the demo user in tests/states/demoState.json). Either path
     // ends on /wallet — the switch variant logs out, reloads, and auto-signs in
-    // with the seed it stashed.
+    // with the seed it stashed. nextPath can select another same-app return route.
     await page.getByRole('textbox').fill(options.seed);
     await page.getByRole('button', { name: /^(Sign in|Sign out and switch)$/ }).click();
 
-    await page.waitForURL(/\/wallet/, { timeout, waitUntil: options.waitUntil });
-
-    if (options.profileId) {
-        await joinNetworkIfNeeded(page, options.profileId);
-    }
+    await page.waitForURL(
+        options.nextPath ? new URL(options.nextPath, page.url()).href : /\/wallet/,
+        { timeout, waitUntil: options.waitUntil }
+    );
 
     await profileFetchPromise;
 
     // If a different path was requested, navigate there
-    if (options.path !== '/' && options.path !== '/wallet') {
+    if (options.path !== '/' && options.path !== (options.nextPath ?? '/wallet')) {
         await page.goto(options.path, { waitUntil: options.waitUntil });
     }
 };

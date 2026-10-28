@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { expect, test } from './fixtures/mocked-test';
 import en from '../public/locales/en/translation.json';
 import ar from '../public/locales/ar/translation.json';
 

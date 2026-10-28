@@ -220,6 +220,20 @@
         }
     },
     "base": {
+        "inAppMessages": {
+            "next": "Siguiente",
+            "previous": "Anterior",
+            "done": "Listo",
+            "progress": "Progreso de la historia",
+            "error": "Algo salió mal. Inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "loading": "Cargando…",
+            "opening": "Abriendo…",
+            "checking": "Comprobando…",
+            "downloading": "Descargando… {{progress}}%",
+            "installing": "Instalando…",
+            "upToDate": "Tienes la última versión."
+        },
         "verification": {
             "selfIssued": "Autoemitido",
             "trustedIssuer": "Emisor de confianza",

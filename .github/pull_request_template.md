@@ -10,6 +10,19 @@
 
 #### 💡 Feature Breakdown (screenshots & videos encouraged!)
 
+#### 🔬 How Can Someone QA This?
+
+<!--
+Write these for a reviewer (human or agent) who hasn't read the code. Aim for steps a teammate could follow cold in a few minutes: more than "it works", less than a full test plan.
+- Setup: branch, env, seed data, flags, accounts, or devices needed before step 1
+- Steps: numbered, one action each, naming the exact screen, command, or input
+- Expected: after each step, what they should see (UI text, response, state change)
+- Edge cases: 1-3 worth poking (empty/invalid input, permissions, offline, mobile, existing data)
+Skip what CI already proves. If there's nothing to QA by hand, say why.
+-->
+
+<!--- Please add QA steps someone can follow in order to verify this works. -->
+
 #### 🛠 Important tradeoffs made:
 
 #### 🔍 Types of Changes
@@ -35,10 +48,6 @@
 
 Generate with `bun scripts/proof.ts publish --pr <n> --from-run <run dir> --update-pr`.
 Media is optional locally; LearnCard Verification CI attaches it when the PR is ready for review (drafts are skipped).
-
-#### 🔬 How Can Someone QA This?
-
-<!--- Please add QA steps someone can follow in order to verify this works. -->
 
 #### 📱 🖥 Which devices would you like help testing on?
 

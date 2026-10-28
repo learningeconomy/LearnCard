@@ -135,6 +135,15 @@ Apply order for the **existing staging account**, from the repository root:
   be denied and trigger `EscrowCloudTrailTamper`; immediately verify logging is
   still on. Never run this drill as the excepted MFA admin. Also verify a normal
   successful enclave transaction is logged but does not produce a nonwriter alert.
+  **2026-10-23 finding:** this drill previously produced zero invocations — an
+  SCP-denied `StopLogging` returns `requestParameters: null` in CloudTrail, and
+  `trail_tamper`'s pattern matched only on named `requestParameters`. Fixed in
+  `trail-monitor.tf` to also match denied calls via `errorCode`; **this drill
+  must be re-run after that fix is applied** to confirm the page actually fires.
+  In the same drill, attempt an SSO `PutBucketPolicy` on the CloudTrail log
+  bucket: it must be denied and page `EscrowCloudTrailTamper`. Record whether
+  the denied event keeps `requestParameters.bucketName`. Denied calls on the
+  audit, artifacts and tfstate buckets also page under this rule, by design.
 
 The trail is multi-region; EventBridge rules are regional. These new rules cover
 the home-region trail/log bucket and authority table. Existing forwarding covers
@@ -459,6 +468,12 @@ eifSha256, nitroCliVersion, nitroCliContainerImage}`) as a workflow artifact, pl
    self-hosted Nitro-capable runner to provision — because `nitro-cli build-enclave` needs no real
    Nitro hardware; `nitro-cli` runs containerized against a pinned Amazon Linux 2023 image (see
    `scripts/nitro-cli-container.sh` and `README.md` "Reproducible build" for the full explanation).
+   The same job, from the same checkout, builds `services/escrow-enclave-host` twice
+   (`services/escrow-enclave-host/scripts/build-host.sh`, pinned `amazonlinux:2023` amd64 image,
+   `rust-toolchain.toml` toolchain), fails on a sha256 mismatch, and puts
+   `host-a/escrow-enclave-host`, `host-a/escrow-enclave-host.sha256` and `host-a/host-build.json`
+   in the same artifact. The cosign-signed `manifest.json` carries `eifSha256` **and**
+   `hostSha256` (plus `hostBuild`: image, glibc, rustc), so the pair is attested together.
 2. Copy `pcr0`/`pcr1`/`pcr2` into `infra/escrow-enclave/escrow-measurements.tfvars` under
    `enclave_measurements` (add as a new tuple alongside the currently-deployed one during a
    rotation — do not remove the old tuple until every instance has rolled, per the measurement
@@ -487,6 +502,25 @@ Reference `services/escrow-enclave-host/README.md` for the full env var contract
 
 Roll the ASG to the new EIF via the launch template (Terraform `compute.tf`), then confirm the
 host's `/health` endpoint (via the internal NLB) reports healthy before pointing lca-api at it.
+
+**Take the EIF and the host binary from the same workflow run's artifact, and roll both
+together.** Never pair a new EIF with a host binary from an older run or a hand build. Before
+uploading, verify the bundle and that both files match the signed manifest:
+
+```sh
+cosign verify-blob --bundle manifest.json.sigstore.json \
+  --certificate-identity "https://github.com/learningeconomy/LearnCard/.github/workflows/escrow-enclave-eif.yml@<ref>" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com manifest.json
+printf '%s  %s\n' "$(jq -r .eifSha256 manifest.json)" build-a/escrow-enclave.eif \
+  "$(jq -r .hostSha256 manifest.json)" host-a/escrow-enclave-host | sha256sum -c -
+```
+
+Upload `host-a/escrow-enclave-host` to the artifacts bucket (write-once, read back and compare), set
+`host_binary_s3_uri` to that object and `host_binary_sha256` to the manifest's `hostSha256`, and
+point the launch template at the EIF from the same artifact. Record the run ID with both. `/health` and the HTTP NLB check stay green when the host cannot parse new
+enclave responses; it returns `503 unavailable` per request instead (2026-10-23, see SECURITY.md).
+After the roll, an unauthenticated `POST /v1/hold-state` on host loopback returns 401 (route known)
+rather than 404 on a current host.
 
 Set lca-api's `ESCROW_ENCLAVE_MODE=remote`, `ESCROW_ENCLAVE_REMOTE_URL=<internal NLB URL>`,
 `ESCROW_ENCLAVE_REMOTE_TOKEN=<same token as above>`.
@@ -536,7 +570,8 @@ reviewed apply.
 2. **Stage 1, targeted** (`-target` on the CMKs, buckets, tables and host role) with placeholder
    all-`ff` measurements. The EIF cannot be built before the CMK exists because the CMK ARN is
    measured into it. A full apply at this point would create the ASG against placeholder artifacts.
-3. **Artifacts.** EIF from CI; host binary and monitor zip built in the pinned
+3. **Artifacts.** EIF from CI; host binary (now from the same CI run as the EIF, see section 3)
+   and monitor zip built in the pinned
    `amazonlinux:2023` image for `linux/amd64` (glibc 2.34). Every upload uses
    `put-object --if-none-match '*'` and is read back to compare the SHA-256.
 4. **TLS and secrets.** A staging CA name-constrained to `escrow-enclave.staging.internal` (so

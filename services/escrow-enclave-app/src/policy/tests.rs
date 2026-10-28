@@ -4,7 +4,7 @@ use crate::{
     ledger::{AppendError, FakeHeadStore, StoreFuture},
     time::{SourceEvidence, TimeError, TimeFuture, TrustedInterval},
 };
-use p256::elliptic_curve::sec1::ToEncodedPoint;
+use p256::elliptic_curve::sec1::ToSec1Point;
 use std::sync::Mutex;
 
 struct Clock(Mutex<Result<TimeEvidence, TimeError>>);
@@ -271,7 +271,7 @@ async fn negated_ephemeral_point_twin_cannot_reset_the_attempt_budget() {
     let point = STANDARD.decode(&twin.ephemeral_public_key).unwrap();
     let public = p256::PublicKey::from_sec1_bytes(&point).unwrap();
     let negated = p256::PublicKey::from_affine(-*public.as_affine()).unwrap();
-    twin.ephemeral_public_key = STANDARD.encode(negated.to_encoded_point(false).as_bytes());
+    twin.ephemeral_public_key = STANDARD.encode(negated.to_sec1_point(false).as_bytes());
     assert_ne!(twin.ephemeral_public_key, f.envelope.ephemeral_public_key);
     assert_eq!(blob_hash(&twin).unwrap(), blob_hash(&f.envelope).unwrap());
 

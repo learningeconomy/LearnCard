@@ -20,7 +20,7 @@ A visitor lands on the public sign-in page, a new account signs in with a seed, 
 
 Preconditions:
 
-- `$LCV doctor --dir /tmp/lcv` is ok. Ports 3000/4000/4100/5100 are owned by the stack.
+- `$LCV doctor --dir /tmp/lcv` is ok. Ports are allocated per directory and stored in `state.json`; read the app origin from doctor output (`endpoints.app`) or `v.stack`, never a fixed port.
 
 - **Run the journey.** `$LCV run account --dir /tmp/lcv`. `runs/<id>/report.json` shows `account: passed` with all four entries and `observations.networkProfile.profileId` equal to the new handle.
 - **Public email field.** `getByRole('textbox', { name: 'Email' })` fills `verification@example.com`. `getByRole('button', { name: 'Sign in with Email' })` goes from disabled to enabled, then back to disabled when cleared. The URL stays on `/login`.

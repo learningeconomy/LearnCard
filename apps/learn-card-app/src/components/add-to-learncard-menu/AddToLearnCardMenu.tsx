@@ -31,7 +31,7 @@ const PasteOrUploadClaimModalFallback: React.FC = () => (
         </IonContent>
     </IonPage>
 );
-import NewAiSessionContainer from '../new-ai-session/NewAiSessionContainer';
+import NewAiSessionContainer from '../new-ai-session/LazyNewAiSessionContainer';
 import NewAiSessionIcon from 'learn-card-base/svgs/NewAiSessionIcon';
 import BoostsTwoTonedIcon from 'learn-card-base/svgs/SideNav/BoostsTwoTonedIcon';
 import useBoostRecoveryCheck from '../../hooks/useBoostRecoveryCheck';
