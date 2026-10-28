@@ -16,6 +16,7 @@ import { addSubmissionAttempts } from './issuance';
 import { validateCredentialJsonLd } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/validateJsonLd';
 import { writeResult } from '../components/resultField';
 import { AnalyticsEvents } from '../../../analytics/events';
+import * as longText from './longText';
 
 const analytics = vi.hoisted(() => ({ track: vi.fn() }));
 vi.mock('../../../analytics', async () => ({
@@ -72,6 +73,40 @@ describe('roster autosave and sending', () => {
         onPeople: vi.fn(),
         initWallet: vi.fn(),
         ensureSigningAuthority: vi.fn(),
+    });
+    it('reuses description classification while editing a 250-person roster and refreshes it for a changed template', () => {
+        store.list.mockResolvedValue([]);
+        const run = makeRun(250);
+        run.template.credentialSubject.achievement.description = dynamicField('notes');
+        const classify = vi.spyOn(longText, 'getLongTextVariables');
+        try {
+            const options = {
+                ...emptyOptions(run),
+                recipients: run.draft.recipients,
+                variables: ['notes'],
+            };
+            const { result, rerender } = renderHook(
+                ({ template, shared }) => useIssueRoster({ ...options, template, shared }),
+                { initialProps: { template: run.template, shared: { notes: 'First description' } } }
+            );
+            expect(classify).toHaveBeenCalledTimes(1);
+            rerender({
+                template: run.template,
+                shared: { notes: 'x'.repeat(longText.ROSTER_LONG_TEXT_LIMIT + 1) },
+            });
+            expect(classify).toHaveBeenCalledTimes(1);
+            expect(Object.keys(result.current.problems)).toHaveLength(250);
+            expect(
+                Object.values(result.current.problems).every(row => row.includes('length'))
+            ).toBe(true);
+            const changed = structuredClone(run.template);
+            changed.credentialSubject.achievement.description = dynamicField('reflection');
+            rerender({ template: changed, shared: { notes: 'Corrected description' } });
+            expect(classify).toHaveBeenCalledTimes(2);
+            expect(classify).toHaveLastReturnedWith(['reflection']);
+        } finally {
+            classify.mockRestore();
+        }
     });
     it('identifies each invalid credential field and clears its errors after correction', () => {
         store.list.mockResolvedValue([]);
@@ -901,7 +936,7 @@ describe('roster autosave and sending', () => {
             const run = makeRun();
             run.template.credentialSubject.achievement.description = dynamicField('description');
             run.scopes = { description: 'perRecipient' };
-            run.draft.values = { 'row-0': { description: 'x'.repeat(5001) } };
+            run.draft.values = { 'row-0': { description: 'x'.repeat(2001) } };
             run.outcomes['row-0'] = { state: retryFailed ? 'failed' : 'ready' };
             store.list.mockResolvedValue([]);
             store.read.mockResolvedValue(run);
@@ -910,9 +945,9 @@ describe('roster autosave and sending', () => {
             await act(async () => {
                 await result.current.execute(retryFailed, run);
             });
-            expect(result.current.error).toBe('Use at most 5,000 characters for this field.');
+            expect(result.current.error).toBe('Use at most 2,000 characters for this field.');
             expect(options.initWallet).not.toHaveBeenCalled();
-            expect(run.draft.values['row-0'].description).toHaveLength(5001);
+            expect(run.draft.values['row-0'].description).toHaveLength(2001);
         }
     );
     it.each([0, 100])('permits the Percent boundary %s on resume', async percent => {

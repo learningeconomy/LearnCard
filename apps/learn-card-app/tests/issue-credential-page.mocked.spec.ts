@@ -587,14 +587,14 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             await expect(field).toHaveJSProperty('tagName', 'TEXTAREA');
             await expect(field).toHaveValue(description);
             await expect(field).toHaveAccessibleDescription(
-                `${description.length} / 5,000 characters`
+                `${description.length} / 2,000 characters`
             );
             await page.getByRole('button', { name: 'Expand Ada Description', exact: true }).click();
             await expect(field).toHaveAttribute('rows', '7');
-            await field.fill('x'.repeat(5001));
-            await expect(field).toHaveValue('x'.repeat(5001));
+            await field.fill('x'.repeat(2001));
+            await expect(field).toHaveValue('x'.repeat(2001));
             await expect(field).toHaveAttribute('aria-invalid', 'true');
-            await expect(field).toHaveAccessibleDescription(/Use at most 5,000 characters/);
+            await expect(field).toHaveAccessibleDescription(/Use at most 2,000 characters/);
             await field.fill('Corrected\ntext');
             await expect(field).toHaveAttribute('aria-invalid', 'false');
             await page.getByRole('button', { name: 'Done', exact: true }).click();

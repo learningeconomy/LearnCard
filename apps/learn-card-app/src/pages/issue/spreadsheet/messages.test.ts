@@ -11,7 +11,7 @@ describe('description length errors', () => {
         locale => {
             setLocale(locale, { reload: false });
             const message = spreadsheetProblem('length');
-            expect(message).toContain(new Intl.NumberFormat(locale).format(5000));
+            expect(message).toContain(new Intl.NumberFormat(locale).format(2000));
             expect(spreadsheetErrorMessage(new SpreadsheetError('textLength'))).toBe(message);
             expect(message).not.toBe(spreadsheetErrorMessage(new SpreadsheetError('mapping')));
         }

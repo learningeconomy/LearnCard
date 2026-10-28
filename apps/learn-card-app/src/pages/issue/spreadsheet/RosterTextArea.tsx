@@ -7,7 +7,7 @@ import { ROSTER_LONG_TEXT_LIMIT } from './longText';
 
 export const RosterTextArea: React.FC<
     Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'value'> & { value: string }
-> = ({ value, disabled, className, 'aria-describedby': describedBy, ...props }) => {
+> = ({ value, disabled, className = '', 'aria-describedby': describedBy, ...props }) => {
     const [expanded, setExpanded] = useState(false);
     const counterId = useId();
     const locale = useLocale();

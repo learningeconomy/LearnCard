@@ -72,6 +72,25 @@ describe('long description authoring', () => {
             getOverlongTextVariables(template, { description: 'a'.repeat(ROSTER_LONG_TEXT_LIMIT) })
         ).toEqual([]);
     });
+    it('measures the editable value rather than the prose surrounding it in the rendered credential', () => {
+        const { template } = makeRun();
+        template.credentialSubject.achievement.description = staticField('Great work! {{note}}');
+        const variables = getLongTextVariables(template);
+        expect(
+            getOverlongTextVariables(
+                template,
+                { note: 'x'.repeat(ROSTER_LONG_TEXT_LIMIT) },
+                variables
+            )
+        ).toEqual([]);
+        expect(
+            getOverlongTextVariables(
+                template,
+                { note: 'x'.repeat(ROSTER_LONG_TEXT_LIMIT + 1) },
+                variables
+            )
+        ).toEqual(['note']);
+    });
     it('keeps description editors for custom-schema templates and excludes system placeholders', () => {
         const { template } = makeRun();
         template.schemaType = 'custom';

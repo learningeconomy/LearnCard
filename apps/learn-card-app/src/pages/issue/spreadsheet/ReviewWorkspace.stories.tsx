@@ -246,7 +246,7 @@ export const People: Story = {
         await userEvent.clear(description);
         await userEvent.paste(oversized);
         await expect(description).toHaveValue(oversized);
-        await expect(canvas.getByText('6,000 / 5,000 characters')).toBeVisible();
+        await expect(canvas.getByText('6,000 / 2,000 characters')).toBeVisible();
         await userEvent.clear(description);
         await userEvent.paste(original);
     },

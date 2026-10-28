@@ -4,8 +4,8 @@ import {
 } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/types';
 import { extractVariablesByType } from '../../appStoreDeveloper/partner-onboarding/components/CredentialBuilder/utils';
 
-/** UI authoring limit, not a restriction imposed by the Open Badges specification. */
-export const ROSTER_LONG_TEXT_LIMIT = 5_000;
+/** Per editable description value; surrounding template prose is excluded. */
+export const ROSTER_LONG_TEXT_LIMIT = 2_000;
 
 /** Description text stays multiline, including spreadsheet values appended to existing prose. */
 export const getLongTextVariables = (template?: OBv3CredentialTemplate | null): string[] => {
@@ -55,8 +55,7 @@ export const getLongTextVariables = (template?: OBv3CredentialTemplate | null): 
 
 export const getOverlongTextVariables = (
     template: OBv3CredentialTemplate,
-    values: Record<string, string>
+    values: Record<string, string>,
+    longTextVariables: readonly string[] = getLongTextVariables(template)
 ): string[] =>
-    getLongTextVariables(template).filter(
-        name => (values[name]?.length ?? 0) > ROSTER_LONG_TEXT_LIMIT
-    );
+    longTextVariables.filter(name => (values[name]?.length ?? 0) > ROSTER_LONG_TEXT_LIMIT);

@@ -59,7 +59,7 @@ describe('roster review workspace', () => {
             expect(description.tagName).toBe('TEXTAREA');
             expect(description).toHaveAttribute('rows', '3');
             expect(description).not.toHaveAttribute('maxlength');
-            expect(description).toHaveAccessibleDescription('22 / 5,000 characters');
+            expect(description).toHaveAccessibleDescription('22 / 2,000 characters');
             fireEvent.click(screen.getByRole('button', { name: 'Expand Person0 Description' }));
             expect(description).toHaveAttribute('rows', '7');
             expect(screen.getByRole('textbox', { name: 'Person1 Description' })).toHaveAttribute(
@@ -83,7 +83,7 @@ describe('roster review workspace', () => {
             variables: ['description'],
             longTextVariables: ['description'],
             scopes: { description: 'shared' },
-            shared: { description: 'x'.repeat(5001) },
+            shared: { description: 'x'.repeat(2001) },
             problems: { 'row-0': ['length'] },
             fieldProblems: {
                 'row-0': { recipient: [], evidence: [], variables: { description: ['length'] } },
@@ -93,9 +93,9 @@ describe('roster review workspace', () => {
         fireEvent.click(screen.getByText('Credential fields · 1'));
         const shared = screen.getByRole('textbox', { name: 'Description', exact: true });
         expect(shared.tagName).toBe('TEXTAREA');
-        expect(shared).toHaveValue('x'.repeat(5001));
+        expect(shared).toHaveValue('x'.repeat(2001));
         expect(shared).toHaveAttribute('aria-invalid', 'true');
-        expect(screen.getByText('Use at most 5,000 characters for this field.')).toBeVisible();
+        expect(screen.getByText('Use at most 2,000 characters for this field.')).toBeVisible();
         expect(screen.getByRole('textbox', { name: 'Person0 Description' })).toBeDisabled();
     });
     it('preserves an oversized paste and identifies the field to shorten', () => {
@@ -129,8 +129,8 @@ describe('roster review workspace', () => {
         const field = screen.getByRole('textbox', { name: 'Person0 Description' });
         expect(field).toHaveValue(text);
         expect(field).toHaveAttribute('aria-invalid', 'true');
-        expect(field).toHaveAccessibleDescription(/Use at most 5,000 characters/);
-        expect(screen.getByText('6,000 / 5,000 characters')).toHaveClass('text-red-700');
+        expect(field).toHaveAccessibleDescription(/Use at most 2,000 characters/);
+        expect(screen.getByText('6,000 / 2,000 characters')).toHaveClass('text-red-700');
     });
     it('separates evidence for everyone from each person’s extra evidence', () => {
         const data: RosterDetailsProps = {

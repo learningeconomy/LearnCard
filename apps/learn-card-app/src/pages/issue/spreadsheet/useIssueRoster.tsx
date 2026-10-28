@@ -64,6 +64,7 @@ import { normalizeColumn, normalizeEmail, type ParsedSpreadsheet, type RosterDra
 import { SpreadsheetError } from './parseSpreadsheet';
 import { spreadsheetErrorMessage } from './messages';
 import { getFriendlyIssueError } from '../issueErrors';
+import { getLongTextVariables } from './longText';
 
 interface RosterOptions {
     issuer: string;
@@ -86,6 +87,10 @@ interface RosterOptions {
 
 export const useIssueRoster = (options: RosterOptions) => {
     const { track } = useAnalytics();
+    const longTextVariables = useMemo(
+        () => getLongTextVariables(options.template),
+        [options.template]
+    );
     const network = networkStore.use.networkUrl();
     const tenant = networkStore.use.tenantId();
     const scope: IssuanceScope = { issuer: options.issuer, domain: network, tenant };
@@ -603,6 +608,7 @@ export const useIssueRoster = (options: RosterOptions) => {
             const saved = restore ?? capture();
             if (restore) apply(restore);
             const variables = extractVariablesByType(saved.template).dynamic;
+            const savedLongTextVariables = getLongTextVariables(saved.template);
             const candidates = checkOnly
                 ? []
                 : saved.draft.recipients.filter(row =>
@@ -637,7 +643,9 @@ export const useIssueRoster = (options: RosterOptions) => {
                             saved.scopes,
                             saved.shared,
                             saved.draft.values
-                        )
+                        ),
+                        undefined,
+                        savedLongTextVariables
                     );
                     if (fieldProblems.includes('length')) throw new SpreadsheetError('textLength');
                     if (issues[recipientKey(row)]?.length || fieldProblems.length)
@@ -823,7 +831,8 @@ export const useIssueRoster = (options: RosterOptions) => {
                             ? credentialRowProblems(
                                   options.template,
                                   valuesForRow(row),
-                                  (problem, variable) => reportProblem(key, problem, { variable })
+                                  (problem, variable) => reportProblem(key, problem, { variable }),
+                                  longTextVariables
                               )
                             : []),
                     ],
