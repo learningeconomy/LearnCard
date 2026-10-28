@@ -485,8 +485,11 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
             });
             await page.getByRole('button', { name: 'Done', exact: true }).click();
             await expect(
-                page.getByRole('heading', { name: '249 sent · 1 failed', exact: true })
+                card.getByRole('heading', { name: 'Delivery needs attention', exact: true })
             ).toBeVisible({ timeout: 30000 });
+            await expect(
+                card.getByText('249 of 250 sent successfully.', { exact: true })
+            ).toBeVisible();
             expect(submissions.map(body => body.items.length)).toEqual([100, 100, 50]);
             expect(templateCount).toBe(1);
             await page
@@ -523,9 +526,24 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
                 .getByRole('button', { name: 'Restore Saved Run', exact: true })
                 .click({ timeout: 30000 });
             await page.getByRole('button', { name: 'Retry Failed', exact: true }).click();
+            const completion = page.locator('#center-modal.issue-spreadsheet-completion');
             await expect(
-                page.getByRole('heading', { name: '250 sent · 0 failed', exact: true })
+                completion.getByRole('heading', { name: 'All credentials sent', exact: true })
             ).toBeVisible({ timeout: 30000 });
+            await expect(
+                completion.getByText('250 of 250 sent successfully.', { exact: true })
+            ).toBeVisible();
+            await completion.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(completion).toBeHidden();
+            await expect(
+                card.getByRole('heading', { name: 'All credentials sent', exact: true })
+            ).toBeVisible({ timeout: 30000 });
+            await expect(
+                card.getByText('250 of 250 sent successfully.', { exact: true })
+            ).toBeVisible();
+            await expect(
+                card.getByRole('button', { name: 'Retry Failed', exact: true })
+            ).toHaveCount(0);
             expect(submissions[3].items).toHaveLength(1);
             expect(submissions[3].items[0].idempotencyKey).toBe(
                 submissions[0].items[7].idempotencyKey
@@ -541,6 +559,47 @@ test.describe('Issue Credential Page (/issue) @mocked', () => {
         { width: 1440, height: 1000 },
         { width: 390, height: 844 },
     ]) {
+        test(`edits imported description columns as multiline text at ${viewport.width}px`, async ({
+            page,
+        }) => {
+            await page.setViewportSize(viewport);
+            const description = 'First paragraph.\nSecond paragraph.';
+            await selectBadgeType(page);
+            await fillName(page, 'Description review');
+            await page
+                .getByRole('button', {
+                    name: viewport.width <= 991 ? /^People$/ : /specific people/i,
+                })
+                .click();
+            await page.getByTestId('issue-spreadsheet-file').setInputFiles({
+                name: 'descriptions.csv',
+                mimeType: 'text/csv',
+                buffer: Buffer.from(
+                    `Email,Name,Description\nada@example.test,Ada,"${description}"`
+                ),
+            });
+            await page.getByRole('button', { name: 'Add People', exact: true }).click();
+            await page.getByRole('button', { name: 'Map columns', exact: true }).click();
+            await page.getByRole('button', { name: 'Include Description', exact: true }).click();
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await page.getByRole('button', { name: 'Review people', exact: true }).click();
+            const field = page.getByRole('textbox', { name: 'Ada Description', exact: true });
+            await expect(field).toHaveJSProperty('tagName', 'TEXTAREA');
+            await expect(field).toHaveValue(description);
+            await expect(field).toHaveAccessibleDescription(
+                `${description.length} / 2,000 characters`
+            );
+            await page.getByRole('button', { name: 'Expand Ada Description', exact: true }).click();
+            await expect(field).toHaveAttribute('rows', '7');
+            await field.fill('x'.repeat(2001));
+            await expect(field).toHaveValue('x'.repeat(2001));
+            await expect(field).toHaveAttribute('aria-invalid', 'true');
+            await expect(field).toHaveAccessibleDescription(/Use at most 2,000 characters/);
+            await field.fill('Corrected\ntext');
+            await expect(field).toHaveAttribute('aria-invalid', 'false');
+            await page.getByRole('button', { name: 'Done', exact: true }).click();
+            await expect(issueButton(page)).toBeEnabled();
+        });
         test(`highlights invalid mapped fields and clears them after correction at ${viewport.width}px`, async ({
             page,
         }, testInfo) => {

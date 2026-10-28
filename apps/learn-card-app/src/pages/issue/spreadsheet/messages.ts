@@ -1,7 +1,9 @@
 import * as m from '../../../paraglide/messages.js';
 import type { RowProblem } from './types';
+import { ROSTER_LONG_TEXT_LIMIT } from './longText';
 import { SpreadsheetError } from './parseSpreadsheet';
 import { IssuanceRecoveryError } from './issuanceTypes';
+import { formatLocaleNumber } from '../../../i18n/formatters';
 
 export const spreadsheetProblem = (problem: RowProblem): string => {
     switch (problem) {
@@ -11,6 +13,10 @@ export const spreadsheetProblem = (problem: RowProblem): string => {
             return m['issueFlow.sheet.duplicateEmail']();
         case 'required':
             return m['issueFlow.sheet.required']();
+        case 'length':
+            return m['issueFlow.sheet.reviewWorkspace.descriptionTooLong']({
+                limit: formatLocaleNumber(ROSTER_LONG_TEXT_LIMIT),
+            });
         case 'evidence':
             return m['issueFlow.sheet.invalidEvidence']();
         case 'number':
@@ -61,6 +67,8 @@ export const spreadsheetErrorMessage = (error: unknown): string => {
             return m['issueFlow.sheet.mappedColumnMissing']();
         case 'mapping':
             return m['issueFlow.sheet.mapping']();
+        case 'textLength':
+            return spreadsheetProblem('length');
         case 'run':
             return m['issueFlow.sheet.wrongRun']();
         case 'file':

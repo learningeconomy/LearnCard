@@ -164,6 +164,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
     const effectiveIsLoadingMore = columnNode?.id ? isFetchingMoreChildren : isLoadingMore;
 
     // Infinite scroll for loading more nodes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [
         _nodes?.length,
         apiNodes?.length,
@@ -277,7 +278,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
         let truncatedSecondLast = secondLast;
         const lastItemWidth = getTextWidth(lastItem);
         const ellipsisWidth = getTextWidth('... > ');
-        let maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
+        const maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
 
         if (getTextWidth(secondLast) > maxSecondLastWidth) {
             // Binary search for optimal truncation
@@ -314,7 +315,7 @@ const FrameworkColumn: React.FC<FrameworkColumnProps> = ({
 
     const navPathTitle = selectedPath.map(n => n.targetName).join(' > ');
     let countOverride = undefined;
-    let countAdjustment = countAdjustments?.[columnNode?.id ?? 'root'] || 0;
+    const countAdjustment = countAdjustments?.[columnNode?.id ?? 'root'] || 0;
     if (isFullSkillFramework) {
         if (columnNode) {
             countOverride = countCompetenciesInNode(columnNode);

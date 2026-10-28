@@ -137,6 +137,7 @@ export const parseClaimInput = (
         normalizeClaimInputHost
     );
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let parsedUrl: URL | null = null;
     try {
         parsedUrl = new URL(trimmed);

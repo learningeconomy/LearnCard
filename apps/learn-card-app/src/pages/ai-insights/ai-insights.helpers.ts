@@ -4,8 +4,11 @@ import { ConsentFlowContractDetailsValidator } from '@learncard/types';
 
 type Insights = {
     suggestedPathways?: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     roomForGrowth?: Record<string, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     weakestArea?: Record<string, any>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     strongestArea?: Record<string, any>;
 };
 

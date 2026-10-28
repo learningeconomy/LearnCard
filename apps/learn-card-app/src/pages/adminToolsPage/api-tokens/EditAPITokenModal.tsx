@@ -25,7 +25,7 @@ const EditAPITokenModal: React.FC<{
         (updatedDescription !== '' && updatedDescription !== grantDescription);
 
     const updateAuthGrant = async () => {
-        let updates = {};
+        const updates = {};
         if (updatedName !== grantName && updatedName !== '') {
             updates.name = updatedName;
         }
