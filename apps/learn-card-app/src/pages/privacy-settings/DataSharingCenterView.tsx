@@ -31,6 +31,12 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
 }) => {
     const { isLoading, isMinor, contracts, onContractsUpdate, ai, profile, diagnostics, shared } =
         vm;
+    const hasSharedSection = Boolean(
+        shared &&
+        (showOwnerLinks ||
+            shared.savedCollections.records.length > 0 ||
+            shared.savedCollections.error)
+    );
 
     return (
         <div className="ds-content-bg relative min-h-full w-full">
@@ -76,14 +82,16 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
                         <ConnectedAppsSection
                             contracts={contracts}
                             onUpdate={onContractsUpdate}
-                            delay={shared ? 120 : 60}
+                            delay={hasSharedSection ? 120 : 60}
                         />
 
-                        {ai && <AiPersonalizationCard {...ai} delay={shared ? 180 : 120} />}
+                        {ai && (
+                            <AiPersonalizationCard {...ai} delay={hasSharedSection ? 180 : 120} />
+                        )}
 
-                        <ProfileVisibilityCard {...profile} delay={shared ? 240 : 180} />
+                        <ProfileVisibilityCard {...profile} delay={hasSharedSection ? 240 : 180} />
 
-                        <AppDiagnosticsCard {...diagnostics} delay={shared ? 300 : 240} />
+                        <AppDiagnosticsCard {...diagnostics} delay={hasSharedSection ? 300 : 240} />
 
                         <p className="text-xs text-grayscale-600 text-center px-6 mt-1">
                             {m['dataSharing.centerFooter']()}

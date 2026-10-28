@@ -149,6 +149,7 @@ const SharedLinksSection: React.FC<{
     // Nothing received yet (or still loading): leave the section out entirely.
     // A load failure still shows so the user can retry.
     const hideReceived = saved.records.length === 0 && !saved.error;
+    if (!showOwnerLinks && hideReceived) return null;
     const showLinksViewAll = vm.records.length > preview.length || vm.hasMore;
     const newLinkButton = (
         <QuietTextButton icon={addOutline} onClick={vm.onCreateShare}>

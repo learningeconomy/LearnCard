@@ -158,9 +158,9 @@ const PrivacySettingsPage: React.FC = () => {
         handleUpdateShare,
         handleCreateShare
     );
-    refreshSharedRef.current = shared?.onRefresh ?? null;
-    const savedDestinationReady = Boolean(shared && !shared.savedCollections.isLoading);
-    refreshSavedRef.current = shared?.savedCollections.onRefresh ?? null;
+    refreshSharedRef.current = shared.onRefresh;
+    const savedDestinationReady = !shared.savedCollections.isLoading;
+    refreshSavedRef.current = shared.savedCollections.onRefresh;
 
     const contracts = useMemo(
         () =>

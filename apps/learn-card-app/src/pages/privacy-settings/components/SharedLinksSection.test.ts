@@ -341,6 +341,61 @@ describe('row animation', () => {
 });
 
 describe('shared with you', () => {
+    it('occupies no layout space without owner access until received content or an error appears', () => {
+        const base = viewModel();
+        const pending = {
+            ...base,
+            savedCollections: { ...base.savedCollections, records: [], isLoading: true },
+        };
+        const view = render(
+            React.createElement(SharedLinksSection, { vm: pending, showOwnerLinks: false })
+        );
+        expect(view.container).toBeEmptyDOMElement();
+
+        const empty = {
+            ...pending,
+            savedCollections: { ...pending.savedCollections, isLoading: false },
+        };
+        view.rerender(
+            React.createElement(SharedLinksSection, { vm: empty, showOwnerLinks: false })
+        );
+        expect(view.container).toBeEmptyDOMElement();
+
+        view.rerender(
+            React.createElement(SharedLinksSection, {
+                vm: { ...empty, savedCollections: { ...empty.savedCollections, error: true } },
+                showOwnerLinks: false,
+            })
+        );
+        expect(screen.getByRole('alert')).toHaveTextContent(/saved collections/);
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeEnabled();
+
+        view.rerender(React.createElement(SharedLinksSection, { vm: base, showOwnerLinks: false }));
+        expect(screen.getByRole('button', { name: /^Career highlights/ })).toBeVisible();
+        expect(screen.queryByRole('heading', { name: 'Your shared links' })).toBeNull();
+    });
+
+    it('opens an explicitly requested empty received list without an inline layout gap', () => {
+        const base = viewModel();
+        const vm = {
+            ...base,
+            savedCollections: { ...base.savedCollections, records: [] },
+        };
+        const view = render(
+            React.createElement(SharedLinksSection, {
+                vm,
+                showOwnerLinks: false,
+                openReceived: true,
+            })
+        );
+        expect(view.container).toBeEmptyDOMElement();
+        const sheet = openTopSheet();
+        expect(
+            sheet.getByText("When someone shares credentials with you, they'll land here.")
+        ).toBeVisible();
+        expect(sheet.getByRole('button', { name: 'Back' })).toBeEnabled();
+    });
+
     it('opens the received destination without exposing disabled owner controls', () => {
         const vm = viewModel();
         const props = { vm, openReceived: true, showOwnerLinks: false };
