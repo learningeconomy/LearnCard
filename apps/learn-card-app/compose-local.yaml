@@ -68,7 +68,7 @@ services:
             __DELETE_SERVICE__NEO4J_URI: bolt://neo4j:7687
             __DELETE_SERVICE__NEO4J_USERNAME: neo4j
             __DELETE_SERVICE__NEO4J_PASSWORD: this-is-the-password
-            __DELETE_SERVICE__MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0
+            __DELETE_SERVICE__MONGO_URI: mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true
             __DELETE_SERVICE__MONGO_DB_NAME1: learn-cloud
             __DELETE_SERVICE__MONGO_DB_NAME2: lca-api
             __DELETE_SERVICE__REDIS1_HOST: redis
@@ -183,7 +183,7 @@ services:
             SKIP_DIDKIT_NAPI: '1'
             CHOKIDAR_USEPOLLING: 'true'
             CHOKIDAR_INTERVAL: '1000'
-            LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}
             LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
             REDIS_HOST: redis2
             REDIS_PORT: 6379
@@ -228,7 +228,7 @@ services:
             SEED: c
             AUTHORIZED_DIDS: did:web:localhost%3A4000
             SKIP_DIDKIT_NAPI: '1'
-            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+            MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}
             MONGO_DB_NAME: ${MONGO_DB_NAME:-lca-api}
             REDIS_HOST: redis3
             REDIS_PORT: 6379
@@ -261,7 +261,7 @@ services:
                 export AI_AGENT_CLOUD_URL="$${AI_AGENT_CLOUD_URL:-http://cloud:4100/trpc}"
                 export AI_AGENT_NETWORK_URL="$${AI_AGENT_NETWORK_URL:-http://brain:4000/trpc}"
                 export AI_AGENT_CONSENT_FLOW_APP_URL="$${AI_AGENT_CONSENT_FLOW_APP_URL:-http://localhost:3000}"
-                export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}"
+                export AI_AGENT_MONGO_URI="$${AI_AGENT_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0&directConnection=true}"
                 export AI_AGENT_MONGO_DB_NAME="$${AI_AGENT_MONGO_DB_NAME:-learn-card-ai-agent}"
                 export AI_AGENT_WALLET_SEED="$${AI_AGENT_WALLET_SEED:-$${SEED:-d}}"
                 bun run --cwd services/learn-card-network/ai-agent dev
@@ -361,6 +361,7 @@ services:
         extra_hosts:
             - 'localhost:host-gateway'
         healthcheck:
+            # Host tools use localhost; container clients must use directConnection.
             test: >
                 mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
             interval: 5s
