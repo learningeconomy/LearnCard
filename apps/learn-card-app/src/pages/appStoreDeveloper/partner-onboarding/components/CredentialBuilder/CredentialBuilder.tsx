@@ -1253,9 +1253,11 @@ export const CredentialBuilder: React.FC<CredentialBuilderProps> = ({
                             <div className="flex justify-center py-4">
                                 <div className="w-[180px]">
                                     <BoostEarnedCard
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                         credential={previewCredential as any}
                                         categoryType={
                                             getDefaultCategoryForCredential(
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                 previewCredential as any
                                             ) || BoostCategoryOptionsEnum.achievement
                                         }

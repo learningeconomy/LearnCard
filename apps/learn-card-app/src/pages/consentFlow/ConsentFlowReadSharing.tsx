@@ -66,7 +66,7 @@ const ConsentFlowReadSharing: React.FC<ConsentFlowReadSharingProps> = ({
         })
         .sort((a, b) => a.order - b.order);
 
-    let aiSessionCategories: {
+    const aiSessionCategories: {
         [key: string]: {
             required: boolean;
             term: ConsentFlowTerms['read']['credentials']['categories'][string];

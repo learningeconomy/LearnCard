@@ -132,9 +132,11 @@ const main = async () => {
     log.info(dim('   Which visual theme should this tenant use?\n'));
 
     const existingThemes = existsSync(THEME_SCHEMAS_DIR)
-        ? (require('fs')
+        ? // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS require kept; converting it changes module loading
+          (require('fs')
               .readdirSync(THEME_SCHEMAS_DIR)
               .filter((d: string) =>
+                  // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS require kept; converting it changes module loading
                   require('fs').statSync(join(THEME_SCHEMAS_DIR, d)).isDirectory()
               ) as string[])
         : [];
@@ -399,6 +401,7 @@ const main = async () => {
         const formalAssetsDir = join(THEME_SCHEMAS_DIR, 'formal', 'assets');
 
         if (existsSync(formalAssetsDir)) {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS require kept; converting it changes module loading
             for (const file of require('fs').readdirSync(formalAssetsDir) as string[]) {
                 const src = join(formalAssetsDir, file);
                 const dest = join(themeAssetsDir, file);

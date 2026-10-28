@@ -79,6 +79,7 @@ const VerifySharedResume: React.FC = () => {
                 title: 'Downloaded',
                 type: ToastTypeEnum.Success,
             });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             presentToast(error?.message ?? 'Failed to download resume.', {
                 title: 'Download Failed',

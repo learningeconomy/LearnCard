@@ -40,6 +40,7 @@ describe('type guards', () => {
 describe('ctdlToObv3Json', () => {
     it('maps CTDL language-map fields onto an OBv3 achievement', () => {
         const { obv3Json } = ctdlToObv3Json(ctdlResource);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const achievement = (obv3Json.credentialSubject as any).achievement;
         expect(achievement.name).toBe('Certified Widget Maker');
         expect(achievement.description).toBe('Demonstrates widget mastery.');
@@ -50,6 +51,7 @@ describe('ctdlToObv3Json', () => {
 
     it('emits the canonical Credential Engine alignment for the CTID', () => {
         const { obv3Json } = ctdlToObv3Json(ctdlResource);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const alignment = (obv3Json.credentialSubject as any).achievement.alignment[0];
         expect(alignment.targetFramework).toBe('Credential Engine Registry');
         expect(alignment.targetType).toBe('ceterms:Credential');
@@ -109,12 +111,15 @@ describe('ctdlToObv3Json — real registry data enrichment', () => {
 
     it('infers achievementType from @type when credentialType is absent', () => {
         const { obv3Json } = ctdlToObv3Json(nursing);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         expect((obv3Json.credentialSubject as any).achievement.achievementType).toBe('Certificate');
     });
 
     it('harvests occupation and instructional-program alignments, plus the CTID alignment', () => {
         const { obv3Json } = ctdlToObv3Json(nursing);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const alignment = (obv3Json.credentialSubject as any).achievement.alignment;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const urls = alignment.map((a: any) => a.targetUrl);
         expect(urls).toContain('https://www.onetonline.org/link/summary/29-2061.00');
         expect(urls).toContain('https://nces.ed.gov/ipeds/cipcode/cipdetail.aspx?cip=51.3901');
@@ -123,13 +128,16 @@ describe('ctdlToObv3Json — real registry data enrichment', () => {
 
     it('skips bare-term alignment nodes like cost type (non-URL targetNode)', () => {
         const { obv3Json } = ctdlToObv3Json(nursing);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const alignment = (obv3Json.credentialSubject as any).achievement.alignment;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const urls = alignment.map((a: any) => a.targetUrl);
         expect(urls).not.toContain('costType:AggregateCost');
     });
 
     it('maps inLanguage and uses subjectWebpage as criteria', () => {
         const { obv3Json } = ctdlToObv3Json(nursing);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const achievement = (obv3Json.credentialSubject as any).achievement;
         expect(achievement.inLanguage).toBe('en-US');
         expect(achievement.criteria.id).toBe('https://www.employflorida.com/x');
@@ -137,14 +145,17 @@ describe('ctdlToObv3Json — real registry data enrichment', () => {
 
     it('sets achievement.id to the registry resource URI (@id)', () => {
         const { obv3Json } = ctdlToObv3Json({ ...nursing });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         expect((obv3Json.credentialSubject as any).achievement.id).toBe(nursing['@id']);
     });
 
     it('tags harvested alignments with targetType CTDL and the CTID alignment with ceterms:Credential', () => {
         const { obv3Json } = ctdlToObv3Json(nursing);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const alignment = (obv3Json.credentialSubject as any).achievement.alignment;
         expect(alignment[0].targetType).toBe('ceterms:Credential');
         const occupation = alignment.find(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             (a: any) => a.targetUrl === 'https://www.onetonline.org/link/summary/29-2061.00'
         );
         expect(occupation.targetType).toBe('CTDL');
@@ -161,6 +172,7 @@ describe('ctdlToObv3Json — real registry data enrichment', () => {
             ],
         };
         const { obv3Json } = ctdlToObv3Json(withRequires);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         expect((obv3Json.credentialSubject as any).achievement.criteria.narrative).toBe(
             'Complete 1500 clinical hours.'
         );
@@ -172,6 +184,7 @@ describe('ctdlToObv3Json — real registry data enrichment', () => {
             name: 'Herzing University',
             url: 'https://herzing.edu',
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const creator = (obv3Json.credentialSubject as any).achievement.creator;
         expect(creator.type).toEqual(['Profile']);
         expect(creator.name).toBe('Herzing University');
@@ -186,6 +199,7 @@ describe('achievementType mapping — CTDL classes → OBv3 AchievementType', ()
             'ceterms:name': { 'en-US': 'X' },
             ...extra,
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         return (obv3Json.credentialSubject as any).achievement.achievementType;
     };
 
@@ -284,10 +298,12 @@ describe('creator + targetType round-trip through the template model', () => {
         );
 
         const reSerialized = templateToJson(template);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const achievement = (reSerialized.credentialSubject as any).achievement;
         expect(achievement.creator.name).toBe('Herzing University');
         expect(achievement.creator.type).toEqual(['Profile']);
         expect(JSON.stringify(achievement.creator)).not.toContain('issuer_did');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const ctdlAlignment = achievement.alignment.find((a: any) => a.targetType === 'CTDL');
         expect(ctdlAlignment.targetUrl).toBe('https://www.onetonline.org/link/summary/29-2061.00');
     });
@@ -328,6 +344,7 @@ describe('normalizeToObv3', () => {
             label: 'Credential Engine',
             ctid: CTID,
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const achievement = (result.obv3Json.credentialSubject as any).achievement;
         expect(achievement.name).toBe('Certified Widget Maker');
         expect(result.provenance.ctid).toBe(CTID);

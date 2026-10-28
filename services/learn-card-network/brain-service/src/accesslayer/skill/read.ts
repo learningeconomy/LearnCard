@@ -3,6 +3,10 @@ import { int } from 'neo4j-driver';
 import { convertObjectRegExpToNeo4j, buildWhereClause } from '@helpers/neo4j.helpers';
 import type { FlatSkillType, SkillType } from 'types/skill';
 import type { SkillQuery } from '@learncard/types';
+import type {
+    SkillEmbeddingGeneration,
+    SkillEmbeddingSearchIndex,
+} from '../../config/skillEmbedding';
 
 export const doesProfileManageSkill = async (
     profileId: string,
@@ -448,21 +452,36 @@ export type SkillEmbeddingSearchResult = {
     score: number;
 };
 
+/** Drop stored vectors (current and legacy generations) from node properties returned to callers. */
+const withoutEmbeddingProperties = (props: Record<string, unknown>): Record<string, unknown> =>
+    Object.fromEntries(Object.entries(props).filter(([key]) => !key.startsWith('embedding')));
+
+/**
+ * LC-2206: query one vector index (the Nova generation's, or the legacy Google one while
+ * SKILL_EMBEDDING_BEDROCK_READ_ENABLED is off). Vectors from other models or dimensions live
+ * in other properties and indexes, so one query never mixes embedding spaces.
+ */
 export const searchSkillsByEmbedding = async (
     embedding: number[],
     limit: number,
-    frameworkId?: string
+    frameworkId: string | undefined,
+    index: Pick<SkillEmbeddingSearchIndex, 'indexName' | 'dimension'>
 ): Promise<SkillEmbeddingSearchResult[]> => {
+    if (embedding.length !== index.dimension) {
+        throw new Error('Skill search embedding does not match the index dimension');
+    }
+
     const normalizedLimit = Math.min(Math.max(limit, 1), 200);
     const queryLimit = frameworkId ? Math.min(normalizedLimit * 3, 200) : normalizedLimit;
 
     const result = await neogma.queryRunner.run(
-        `CALL db.index.vector.queryNodes('skill_embedding_vector_idx', $limit, $embedding)
+        `CALL db.index.vector.queryNodes($indexName, $limit, $embedding)
          YIELD node, score
          WHERE $frameworkId IS NULL OR node.frameworkId = $frameworkId
          RETURN node AS s, score AS score
          ORDER BY score DESC`,
         {
+            indexName: index.indexName,
             limit: int(queryLimit),
             embedding,
             frameworkId: frameworkId ?? null,
@@ -471,7 +490,7 @@ export const searchSkillsByEmbedding = async (
 
     const rows = result.records.map(record => {
         const node = record.get('s') as { properties?: Record<string, unknown> } | undefined;
-        const props = (node?.properties ?? {}) as Record<string, unknown>;
+        const props = withoutEmbeddingProperties(node?.properties ?? {});
         const skill = {
             ...props,
             type: (props.type as string | undefined) ?? 'skill',
@@ -486,30 +505,51 @@ export const searchSkillsByEmbedding = async (
     return rows.filter(row => row.skill.frameworkId === frameworkId).slice(0, normalizedLimit);
 };
 
-export const getSkillsMissingEmbedding = async (
+export type SkillEmbeddingCandidate = {
+    id: string;
+    frameworkId?: string;
+    statement: string;
+    description?: string | null;
+    code?: string | null;
+    /** sha256(identity + text) stored with the current generation's vector, if any. */
+    embeddingKey: string | null;
+    hasEmbedding: boolean;
+};
+
+/**
+ * Page through every skill (ordered by id) with its current-generation embedding key, without
+ * loading any vectors. The caller compares keys to decide which skills need (re-)embedding,
+ * which makes the backfill idempotent and resumable from any cursor.
+ */
+export const getSkillEmbeddingCandidates = async (
+    generation: SkillEmbeddingGeneration,
     limit: number,
     cursorId?: string | null
-): Promise<Paginated<FlatSkillType>> => {
+): Promise<Paginated<SkillEmbeddingCandidate>> => {
     const normalizedLimit = Math.min(Math.max(limit, 1), 500);
 
+    // Property names come from resolveSkillEmbeddingGeneration ([a-z0-9_] only).
     const result = await neogma.queryRunner.run(
         `MATCH (s:Skill)
-         WHERE s.embedding IS NULL
-         AND ($cursorId IS NULL OR s.id > $cursorId)
-         RETURN s AS s
+         WHERE $cursorId IS NULL OR s.id > $cursorId
+         RETURN s.id AS id, s.frameworkId AS frameworkId, s.statement AS statement,
+                s.description AS description, s.code AS code,
+                s.${generation.keyProperty} AS embeddingKey,
+                s.${generation.vectorProperty} IS NOT NULL AS hasEmbedding
          ORDER BY s.id
          LIMIT $limitPlusOne`,
         { cursorId: cursorId ?? null, limitPlusOne: int(normalizedLimit + 1) }
     );
 
-    const all = result.records.map(record => {
-        const node = record.get('s') as { properties?: Record<string, unknown> } | undefined;
-        const props = (node?.properties ?? {}) as Record<string, unknown>;
-        return {
-            ...props,
-            type: (props.type as string | undefined) ?? 'skill',
-        } as FlatSkillType;
-    });
+    const all = result.records.map(record => ({
+        id: String(record.get('id')),
+        frameworkId: (record.get('frameworkId') as string | null) ?? undefined,
+        statement: String(record.get('statement') ?? ''),
+        description: record.get('description') as string | null,
+        code: record.get('code') as string | null,
+        embeddingKey: (record.get('embeddingKey') as string | null) ?? null,
+        hasEmbedding: Boolean(record.get('hasEmbedding')),
+    }));
 
     const hasMore = all.length > normalizedLimit;
     const page = all.slice(0, normalizedLimit);

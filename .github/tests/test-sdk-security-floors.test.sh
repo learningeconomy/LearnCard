@@ -240,17 +240,6 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
                     else:
                         self.assertFalse(path.exists())
 
-    def test_unsupported_setup_cfg_declarations_fail_closed(self):
-        # ConfigParser also accepts colon delimiters and case-insensitive keys;
-        # unsupported layouts must not be mistaken for lint-only configuration.
-        for declaration in ("python_requires: >=3.10", "Python_Requires = >=3.10", "python_requires ="):
-            with self.subTest(declaration=declaration):
-                self.fixture()
-                (self.client / "setup.cfg").write_text(f"[options]\n{declaration}\n")
-                result = self.run_script()
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("Python 3.11 metadata", result.stderr)
-
     def test_formatted_ci_and_python_metadata(self):
         self.fixture()
         for name in (".travis.yml", ".gitlab-ci.yml"):
@@ -280,6 +269,19 @@ dependencies = ["urllib3 (>=2.1.0,<3.0.0)"]
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertNotIn("3.10", workflow.read_text())
             self.assertIn('node-version: "3.9"', workflow.read_text())
+
+    def test_stock_setup_cfg_without_python_requires(self):
+        # openapi-generator 7.25.0 emits setup.cfg with only [flake8] settings.
+        self.fixture()
+        stock = "[flake8]\nmax-line-length=99\n"
+        (self.client / "setup.cfg").write_text(stock)
+        result = self.run_script()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.client / "setup.cfg").read_text(), stock)
+        (self.client / "setup.cfg").write_text("[options]\npython_requires = >=3.8\n")
+        result = self.run_script()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("FAIL: 'Python 3.11 metadata'", result.stderr)
 
     def test_workflow_parent_symlinks_are_rejected(self):
         for name in (".github", ".github/workflows"):

@@ -32,12 +32,14 @@ type VerifiableDataSummaryGroup = {
 
 type VerifiableDataSummaryEntry = VerifiableDataSummary | VerifiableDataSummaryGroup;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const isWorkExperienceCredential = (credential: any): boolean =>
     credential?.type?.includes('BoostCredential') &&
     credential?.credentialSubject?.achievement?.achievementType === 'ext:Job';
 
 const buildVerifiableDataSummaryEntry = (
     credentialUri: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     credential: any
 ): VerifiableDataSummaryEntry => {
     if (isWorkExperienceCredential(credential)) {
@@ -69,6 +71,7 @@ const buildVerifiableDataSummaryEntry = (
     };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const extractSelfAssignedSkills = (credential: any): string[] | undefined => {
     const alignment = credential?.boostCredential?.credentialSubject?.achievement?.alignment;
 
@@ -81,6 +84,7 @@ const extractSelfAssignedSkills = (credential: any): string[] | undefined => {
     return skills.length ? skills : undefined;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 const getSummaryName = (credential: any): string | undefined => {
     if (
         credential?.boostCredential?.credentialSubject?.achievement?.name === 'Self-Assigned Skills'

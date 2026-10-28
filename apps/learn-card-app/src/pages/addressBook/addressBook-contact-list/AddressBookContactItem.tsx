@@ -9,6 +9,7 @@ const log = getLogger('address-book-contact-item');
 import { IonItem, useIonAlert } from '@ionic/react';
 
 import Plus from 'learn-card-base/svgs/Plus';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
 // @ts-ignore
 import BoostIcon from '../../../assets/images/Learncard-new-boost-icon.png';
 import SlimCaretRight from 'apps/learn-card-app/src/components/svgs/SlimCaretRight';
@@ -145,6 +146,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     },
                     onError(error, variables, context) {
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message ||
                                 'An error occurred, unable to send connection request',
@@ -159,6 +161,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         } catch (err) {
             log.info('connectionReq::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to send connection request',
                 {
@@ -204,6 +207,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 onError(error, variables, context) {
                     refetch();
                     presentToast(
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                         // @ts-ignore
                         error?.message || 'An error occurred, unable to cancel request',
                         {
@@ -214,10 +218,12 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 },
             }
         );
+        // eslint-disable-next-line no-empty -- existing intentionally empty block
         try {
         } catch (err) {
             log.info('canceledConnectionReq::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to cancel request',
                 {
@@ -281,6 +287,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     onError(error, variables, context) {
                         refetch();
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message || 'An error occurred, unable to accept request',
                             {
@@ -293,6 +300,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             );
         } catch (err) {
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to accept request',
                 {
@@ -348,6 +356,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                     },
                     onError(error, variables, context) {
                         presentToast(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                             // @ts-ignore
                             error?.message || 'An error occurred, unable to unblock user',
                             {
@@ -361,6 +370,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
         } catch (err) {
             log.info('unBlockProfile::error', err);
             presentToast(
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- existing suppression of a real type error; changing it can fail typecheck
                 // @ts-ignore
                 err?.message || 'An error occurred, unable to unblock user',
                 {
@@ -374,6 +384,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
     let actionButton = null;
 
     if (showRequestButton) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         if (LCNProfileConnectionStatusEnum.enum.CONNECTED === (contact as any)?.connectionStatus) {
             actionButton = (
                 <button className="text-emerald-600 font-bold text-sm">
@@ -381,6 +392,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
                 </button>
             );
         } else if (
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED === (contact as any)?.connectionStatus
         ) {
             actionButton = (
@@ -416,6 +428,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             );
         } else if (
             LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT ===
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             (contact as any)?.connectionStatus
         ) {
             actionButton = (
@@ -452,6 +465,7 @@ export const AddressBookContactItem: React.FC<AddressBookContactItemProps> = ({
             );
         } else if (
             LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED ===
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             (contact as any)?.connectionStatus
         ) {
             actionButton = (

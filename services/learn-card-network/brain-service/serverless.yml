@@ -141,7 +141,8 @@ provider:
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     # Every function shares the default execution role. Grant it read access to the stage's
-    # runtime-secrets bundle only; the id itself is passed through RUNTIME_SECRETS_ID.
+    # runtime-secrets bundle only; the id itself is passed through RUNTIME_SECRETS_ID. It may
+    # also invoke the Nova 2 embeddings model used for skill matching (LC-2206).
     iam:
         role:
             statements:
@@ -149,6 +150,16 @@ provider:
                   Action: secretsmanager:GetSecretValue
                   Resource:
                       Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:brain-service/${sls:stage}/runtime-secrets-*
+                # LC-2206: skill-matching embeddings. InvokeModel on the one reviewed Nova 2
+                # embeddings foundation model, in-Region us-east-1 only (the model has no geo or
+                # global inference profile). SigV4 with this role; no Bedrock API keys
+                # (bedrock:CallWithBearerToken) are granted. Keep in sync with
+                # DEPLOYED_SKILL_EMBEDDING_ALLOWLIST in src/config/skillEmbedding.ts.
+                - Sid: SkillEmbeddingNova2Invoke
+                  Effect: Allow
+                  Action: bedrock:InvokeModel
+                  Resource:
+                      Fn::Sub: arn:${AWS::Partition}:bedrock:us-east-1::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0
     # Bundle mode emits only infra (Redis/queue CF intrinsics, the bundle pointer and the
     # deploy commit); fallback mode retains the existing GitHub credential secrets. Non-secret
     # per-stage tuning, allowlists and OIDC/share-link config are applied from checked-in stage

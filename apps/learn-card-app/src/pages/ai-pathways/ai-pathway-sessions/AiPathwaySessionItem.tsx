@@ -17,6 +17,7 @@ export const AiPathwaySessionsItem: React.FC<{
     const history = useHistory();
     const fireEngagement = useEngagementSignal();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStart = (item: any) => {
         if (!item?.topicUri || !item?.pathwayUri) return;
 

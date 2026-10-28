@@ -103,6 +103,7 @@ export const resilientAcceptAndStoreCredentialOffer = async ({
     );
 
     const stored = await storeAcceptedCredentials(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         wallet as unknown as LearnCard<any, any, any>,
         accepted,
         options

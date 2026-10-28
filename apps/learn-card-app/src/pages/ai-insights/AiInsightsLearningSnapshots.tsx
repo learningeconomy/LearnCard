@@ -27,6 +27,7 @@ interface AiInsightsLearningSnapshot {
 const AiInsightsLearningSnapshots: React.FC<{
     isLoading: boolean;
     isRegenerating?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     aiInsightCredential?: any;
     isSharedView?: boolean;
     showRegenerate?: boolean;

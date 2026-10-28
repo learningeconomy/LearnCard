@@ -32,6 +32,7 @@ export const EndorsementRequestFormHeader: React.FC<{
                             <TransP
                                 m={m['endorsement.request.header.text']}
                                 values={{ categoryType, title }}
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 components={[<span className="font-semibold" />]}
                             />
                         </p>
