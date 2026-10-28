@@ -99,7 +99,7 @@ export const useSpreadsheetDialog = (
         store.listeners.forEach(listener => listener());
     }, [node, store]);
     useEffect(() => close, [close]);
-    return () => {
+    return useCallback(() => {
         // A completion dialog can return to an already-open delivery viewer.
         // Replace this hook's previous instance instead of stacking duplicates.
         close();
@@ -112,5 +112,5 @@ export const useSpreadsheetDialog = (
                 ? { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                 : SPREADSHEET_MODAL_TYPES
         );
-    };
+    }, [close, newModalWithToken, presentation, store]);
 };

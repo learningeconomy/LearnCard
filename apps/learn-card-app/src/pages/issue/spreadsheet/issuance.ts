@@ -131,19 +131,7 @@ const validateSubmissionResults = (run: IssuanceRun, retryFailed = false): void 
         );
         if (getOverlongTextVariables(run.template, values, longTextVariables).length)
             throw new SpreadsheetError('textLength');
-        if (
-            getResultValidationError(
-                run.template,
-                effectiveRowValues(
-                    row,
-                    Object.keys(run.scopes),
-                    run.scopes,
-                    run.shared,
-                    run.draft.values
-                )
-            )
-        )
-            throw new SpreadsheetError('mapping');
+        if (getResultValidationError(run.template, values)) throw new SpreadsheetError('mapping');
     }
 };
 
