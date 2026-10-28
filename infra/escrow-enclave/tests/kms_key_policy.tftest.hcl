@@ -568,6 +568,32 @@ run "rejects_neither_access_mode" {
   expect_failures = [var.privatelink_allowed_principals]
 }
 
+run "privatelink_accepts_the_named_deploy_user" {
+  command = plan
+
+  # lca-api's endpoint is created by CloudFormation as its IAM deploy user.
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:user/lcn"]
+  }
+
+  assert {
+    condition     = aws_vpc_endpoint_service.enclave_host[0].allowed_principals == toset(["arn:aws:iam::206533012615:user/lcn"])
+    error_message = "PrivateLink mode must allow exactly the named endpoint creator"
+  }
+}
+
+run "rejects_user_wildcards" {
+  command = plan
+
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:user/*"]
+  }
+
+  expect_failures = [var.privatelink_allowed_principals]
+}
+
 run "rejects_wildcard_principals" {
   command = plan
 
@@ -717,4 +743,17 @@ run "storage_key_reserves_destructive_administration" {
     ]) == 0
     error_message = "The storage CMK must keep IAM-delegated use: S3 SSE, DynamoDB SSE grants, host, monitor and publisher rely on it"
   }
+}
+override_resource {
+  target = aws_vpc_endpoint_connection_notification.enclave_host
+}
+override_resource {
+  target = aws_cloudwatch_event_rule.privatelink_governance
+  values = { arn = "arn:aws:events:us-east-1:123456789012:rule/privatelink-governance" }
+}
+override_resource {
+  target = aws_cloudwatch_event_target.privatelink_governance
+}
+override_resource {
+  target = aws_cloudwatch_metric_alarm.nlb_healthy_hosts
 }

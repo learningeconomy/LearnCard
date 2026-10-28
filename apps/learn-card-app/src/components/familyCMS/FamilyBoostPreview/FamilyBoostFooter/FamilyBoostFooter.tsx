@@ -16,17 +16,8 @@ export const FamilyBoostFooter: React.FC<{
     isFront?: boolean;
     setIsFront?: React.Dispatch<React.SetStateAction<boolean>>;
     handleShareBoostLink: () => void;
-    handleInviteModal: () => void;
     handleCloseModal: () => void;
-}> = ({
-    credential,
-    boostUri,
-    isFront,
-    setIsFront,
-    handleShareBoostLink,
-    handleInviteModal,
-    handleCloseModal,
-}) => {
+}> = ({ credential, boostUri, isFront, setIsFront, handleShareBoostLink, handleCloseModal }) => {
     const { newModal } = useModal({ desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel });
 
     return (
@@ -71,7 +62,6 @@ export const FamilyBoostFooter: React.FC<{
                                     <FamilyActionMenu
                                         credential={credential}
                                         boostUri={boostUri}
-                                        handleInviteModal={handleInviteModal}
                                         handleShareBoostLink={handleShareBoostLink}
                                     />
                                 );

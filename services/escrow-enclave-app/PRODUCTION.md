@@ -435,8 +435,16 @@ The kill switch remains manual, not an automatic monitor side effect.
 
 Create a production lca-api interface endpoint for the module's endpoint-service
 output, allow only the reviewed endpoint creator, and manually accept the exact
-connection. Configure private DNS/TLS hostname and endpoint SG access from the
+connection. lca-api's serverless.yml creates the endpoint, its SG and the private
+zone when `ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME` and `ESCROW_ENCLAVE_HOSTNAME` are
+set together on its GitHub environment; CloudFormation calls as the deploy
+identity, so that ARN (not the account root) is `privatelink_allowed_principals`. Configure private DNS/TLS hostname and endpoint SG access from the
 production Lambda ENIs. An allowed principal does not create/accept the endpoint.
+Expected pages to reconcile with the change record: the apply that adds the
+connection notification (`EscrowPrivateLinkChange` for
+`CreateVpcEndpointConnectionNotification`), the endpoint's `Connect` notification,
+and your acceptance (`Accept` plus `EscrowPrivateLinkChange`). Accept only the exact
+endpoint ID from lca-api's stack in the expected owner account.
 
 ```sh
 aws cloudwatch describe-alarms --alarm-name-prefix escrow-enclave-production
@@ -501,18 +509,20 @@ fail-closed cases with approved disposable identities.
 
 ### 9. [operator] Production configuration and rollout gate
 
-Review `services/learn-card-network/lca-api/config/config.production.json` for
-non-secret `ESCROW_ENCLAVE_MODE=remote` and `ESCROW_RELEASE_KILL_SWITCH=true` at
-cutover. This branch has **no API PCR-pin configuration field**: do not invent one
+`ESCROW_ENCLAVE_MODE` and `ESCROW_RELEASE_KILL_SWITCH` are GitHub environment
+toggles on `learn-card-app-api-production` (never stage JSON; enforced by
+`escrowDeployment.test.ts`): keep the mode unset and the kill switch `true` until
+cutover. The enclave CA is pinned per hostname in `enclaveTrustAnchors.ts`, a
+reviewed code change, not `NODE_EXTRA_CA_CERTS`. This branch has **no API PCR-pin configuration field**: do not invent one
 in that file. The production **tenant config** pins live at
 `auth.sss.escrowEnclaveMeasurements`; copy only verified production tuples there
 and select `auth.sss.escrowEnclaveMode=nitro` only after approval. Keep automatic
-rollout at zero. Internal URL/token and CA delivery belong in the runtime secrets/
-deployment configuration, not checked-in stage JSON. Explicit environment overrides
+rollout at zero. The internal URL (`https://escrow-enclave.production.internal:8443`)
+and bearer token belong in the runtime secrets bundle, not checked-in stage JSON. Explicit environment overrides
 win over stage config; inspect the effective deployment without printing secrets.
 
 ```sh
-jq '{ESCROW_ENCLAVE_MODE, ESCROW_RELEASE_KILL_SWITCH}' services/learn-card-network/lca-api/config/config.production.json
+gh api repos/<OWNER>/<REPO>/environments/learn-card-app-api-production/variables --paginate -q '.variables[] | select(.name | startswith("ESCROW_")) | "\(.name)=\(.value)"'
 jq '.auth.sss | {escrowEnclaveMode, escrowEnclaveMeasurements}' '<PRODUCTION_TENANT_CONFIG_JSON>'
 ```
 

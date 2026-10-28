@@ -79,13 +79,14 @@ rejects both.
 
 ## Inputs
 
-| Input                               | Default / purpose                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| `environment`                       | Required: staging or production                                           |
-| `expected_account_id`               | Required, 12 digits; provider allowlist and caller-identity postcondition |
-| `aws_region`                        | us-east-1; region for the bucket and key                                  |
-| `admin_principal_arn_patterns`      | Required; `aws:PrincipalArn` patterns allowed to use the bucket           |
-| `noncurrent_version_retention_days` | 90 (minimum 30); how long superseded state versions are kept for recovery |
+| Input                               | Default / purpose                                                                               |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `environment`                       | Required: staging or production                                                                 |
+| `expected_account_id`               | Required, 12 digits; provider allowlist and caller-identity postcondition                       |
+| `aws_region`                        | us-east-1; region for the bucket and key                                                        |
+| `admin_principal_arn_patterns`      | Required; `aws:PrincipalArn` patterns allowed to use the bucket                                 |
+| `config_auditor_role_arns`          | `[]`; compliance scanner roles (Sprinto) that may read bucket configuration only, never objects |
+| `noncurrent_version_retention_days` | 90 (minimum 30); how long superseded state versions are kept for recovery                       |
 
 ## Offline checks
 

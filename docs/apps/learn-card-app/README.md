@@ -81,6 +81,27 @@ When creating a private link from **Privacy & Data**, your Passport categories�
 
 For a link created before category snapshots, open it under **Your shared links**, choose **Update contents** → **Choose credentials**, keep the same credentials selected, then continue through **Preview** and **Update private link**. This saves the current categories without changing the URL. Later category changes in your Passport also require updating the link; published snapshots do not change automatically.
 
+### Sharing to LinkedIn
+
+Issuers can link their organization in **Developer Portal → Build → an issuance project → Branding**. Enter the numeric **LinkedIn organization ID** from the organization's LinkedIn admin-page URL, not its public page name. Leave it blank to use the issuer name without an organization link. Saving a blank value removes a previous ID.
+
+1. Open an earned credential and choose **Share**.
+2. Choose **Add to LinkedIn** to add it under Licenses & certifications. LinkedIn uses the configured organization ID to find the issuer's page and logo. For a recognized LearnCard credential address, the certification ID uses its trailing UUID. Other credential IDs or individual saved addresses are kept only when they fit LinkedIn's 80-character limit; missing or unsuitable IDs are omitted, never truncated or generated from the current time. The full viewing link is preserved.
+3. To include a social preview, choose **Enable Public Preview**. This publishes only the credential name, issuer name, and available HTTPS credential or achievement artwork. A recipient photo is not used as a fallback; credentials without eligible artwork publish no preview image. Other credential fields remain encrypted; anyone with the complete share link can still open the credential.
+4. Once publication succeeds, **Post to LinkedIn** opens a post with the preview-enabled share link filled in. It stays disabled before consent or if publication fails, with the public-preview explanation exposed to assistive technology; private copying remains available without opting in.
+
+Public previews are optional. Reopening Share without enabling a preview produces a link without preview metadata, but does not erase an already published preview or copies cached by social apps. Enabling it again refreshes the owned preview for the same encrypted presentation. A new presentation gets its own preview, so sharing it does not replace an earlier card. If a saved preview was deleted, opting in creates and saves a replacement. LinkedIn's certification tile shows the organization's logo, not the credential image; the credential image belongs to the social preview.
+
+Preview details are supplied by the person sharing, not proof of the issuer's identity or claims. Matching a share address does not prove that the publisher owns the presentation. Open the full credential to inspect its verification. LearnCard records the publisher, creation time, and last refresh time, requires the matching encrypted-link address for public lookup, and removes owned server-side previews when that profile is deleted. The SDK's `deleteCredentialSharePreview(id)` can also remove an owned preview; copies held by social apps may remain.
+
+If the issuer's name cannot be loaded and is not included in the credential, public previews stay disabled rather than publishing an “Unknown” placeholder. The encrypted link remains available.
+
+LinkedIn sharing controls follow your app language.
+
+Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the matching public preview record, and returns Open Graph metadata to social crawlers. The canonical destination preserves the original link's decryption parameters so a card click can open the credential. Ordinary visitors continue to the app; unavailable or mismatched previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
+
+Developer verification: `lc verify run sdk` covers owner-only refresh/deletion, immutable URI binding, creation/update times, and profile cleanup; `lc verify run sharing` checks private-record isolation, deleted-preview recovery, and that earlier and newer cards both resolve after sharing an endorsed credential again.
+
 ### Private Verifier History
 
 Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.
