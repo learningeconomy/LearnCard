@@ -123,27 +123,32 @@ beforeEach(() => {
     messageGates.clear();
 });
 
+const nextSocket = (): Promise<FakeWebSocket> => {
+    FakeWebSocket.created = Promise.withResolvers<FakeWebSocket>();
+
+    return FakeWebSocket.created.promise.then(socket => {
+        socket.readyState = FakeWebSocket.OPEN;
+        return socket;
+    });
+};
+
 const openSocket = async (): Promise<FakeWebSocket> => {
     disconnectWebSocket();
-    FakeWebSocket.created = Promise.withResolvers<FakeWebSocket>();
+    const socket = nextSocket();
     await refreshAuth();
     connectWebSocket();
-
-    const socket = await FakeWebSocket.created.promise;
-
-    socket.readyState = FakeWebSocket.OPEN;
 
     return socket;
 };
 
 test('drops the old stream when the learner switches threads mid-response', async () => {
-    const socket = await openSocket();
+    const socketA = await openSocket();
 
     await loadThread('thread-a');
     sendMessageWithQuestion('Explain photosynthesis');
-    socket.receive('Plants turn ');
+    socketA.receive('Plants turn ');
 
-    expect(socket.sent).toEqual([
+    expect(socketA.sent).toEqual([
         {
             message: { role: 'user', content: 'Explain photosynthesis' },
             threadId: 'thread-a',
@@ -151,14 +156,18 @@ test('drops the old stream when the learner switches threads mid-response', asyn
     ]);
     expect(messages.get().at(-1)).toEqual({ role: 'assistant', content: 'Plants turn ' });
 
+    const socketB = nextSocket();
     await loadThread('thread-b');
 
-    socket.receive('light into sugar.');
-    socket.receive({ done: true, threadId: 'thread-a' });
+    socketA.receive('light into sugar.');
+    socketA.receive({ done: true, threadId: 'thread-a' });
 
+    expect(socketA.readyState).toBe(FakeWebSocket.CLOSED);
     expect(currentThreadId.get()).toBe('thread-b');
     expect(messages.get()).toEqual(threadMessages['thread-b']);
     expect(isTyping.get()).toBe(false);
+
+    const socket = await socketB;
 
     sendMessageWithQuestion('And a decimal?');
     socket.receive('Another way to write one.');
@@ -169,6 +178,43 @@ test('drops the old stream when the learner switches threads mid-response', asyn
         { role: 'user', content: 'And a decimal?' },
         { role: 'assistant', content: 'Another way to write one.' },
     ]);
+});
+
+test("keeps the old thread's answer out of a question sent before it finished", async () => {
+    const socketA = await openSocket();
+
+    await loadThread('thread-a');
+    sendMessageWithQuestion('Explain photosynthesis');
+    socketA.receive('Plants turn ');
+
+    const socketB = nextSocket();
+    await loadThread('thread-b');
+    // A store that keeps A's socket open sends B's question on it too.
+    const socket = await Promise.race([socketB, Bun.sleep(50).then(() => socketA)]);
+
+    sendMessageWithQuestion('Question for B');
+
+    expect(socket.sent).toEqual([
+        { message: { role: 'user', content: 'Question for B' }, threadId: 'thread-b' },
+    ]);
+
+    // A is still streaming on its old socket while B's answer starts.
+    socketA.receive('light into sugar.');
+    socket.receive('Answer for B.');
+    socketA.receive({ done: true, threadId: 'thread-a' });
+
+    expect(currentThreadId.get()).toBe('thread-b');
+    expect(isTyping.get()).toBe(true);
+    expect(messages.get()).toEqual([
+        ...threadMessages['thread-b'],
+        { role: 'user', content: 'Question for B' },
+        { role: 'assistant', content: 'Answer for B.' },
+    ]);
+
+    socket.receive({ done: true, threadId: 'thread-b' });
+
+    expect(currentThreadId.get()).toBe('thread-b');
+    expect(isTyping.get()).toBe(false);
 });
 
 test('keeps the newest selection when thread loads finish out of order', async () => {
