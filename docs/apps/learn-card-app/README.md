@@ -95,6 +95,10 @@ flowchart LR
 The success message appears only after saving is confirmed. If saving fails, the
 collection stays open with an error and the option to try again.
 
+Saved collections remain available under **Data & Sharing → Shared with you**, even
+when creating shared links is not enabled for your account. **View saved collections**
+opens that list once; closing it does not make it reopen on later Back/Forward visits.
+
 ### Private Verifier History
 
 Click a verifier entry to expand the list of credential names recorded for that send. This uses the existing encrypted history; it does not fetch full credentials or show every claim sent.

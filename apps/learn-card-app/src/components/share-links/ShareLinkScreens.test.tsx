@@ -762,6 +762,45 @@ describe('recipient screen', () => {
         expect(screen.getByRole('button', { name: 'Save collection' })).toBeEnabled();
     });
 
+    it.each(['new', 'pending'])(
+        'keeps a %s save retryable when acceptance returns false without duplicating it',
+        async initialState => {
+            mocks.auth.loggedIn = true;
+            const pending = {
+                uri: 'lc:network:presentation:one',
+                from: 'recipient-1',
+                to: 'recipient-1',
+                sent: '2026-09-24T12:00:00.000Z',
+                metadata: {
+                    type: 'learncard.share-link.v1',
+                    shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                    title: 'Learning highlights',
+                    sharer: { displayName: 'Alex', profileId: 'owner' },
+                },
+            };
+            if (initialState === 'pending')
+                mocks.wallet.invoke.getIncomingPresentations.mockResolvedValue([pending]);
+            mocks.wallet.invoke.acceptPresentation.mockResolvedValueOnce(false);
+            render(<ShareLinkViewer />);
+            await screen.findByText('Community leadership');
+
+            fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
+            expect(await screen.findByRole('alert')).toBeVisible();
+            expect(screen.queryByRole('button', { name: 'View saved collections' })).toBeNull();
+            expect(screen.getByRole('button', { name: 'Save collection' })).toBeEnabled();
+
+            mocks.wallet.invoke.getIncomingPresentations.mockResolvedValue([pending]);
+            fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
+            expect(
+                await screen.findByRole('button', { name: 'View saved collections' })
+            ).toBeVisible();
+            expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledTimes(
+                initialState === 'new' ? 1 : 0
+            );
+            expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledTimes(2);
+        }
+    );
+
     it('shows an existing saved share without creating a duplicate presentation', async () => {
         mocks.auth.loggedIn = true;
         mocks.wallet.invoke.getReceivedPresentations.mockResolvedValue([

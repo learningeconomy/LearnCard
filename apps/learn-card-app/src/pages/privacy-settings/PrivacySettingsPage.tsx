@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useHistory } from 'react-router-dom';
 import {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
@@ -52,6 +53,7 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
+    const history = useHistory();
     const historyEligible = useVerifierHistoryEligibility();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -71,15 +73,11 @@ const PrivacySettingsPage: React.FC = () => {
     const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
     const refreshSavedRef = useRef<(() => Promise<void>) | null>(null);
     const hasEnteredRef = useRef(false);
-    const [savedRequested, setSavedRequested] = useState(
-        () => new URLSearchParams(window.location.search).get('view') === 'saved'
-    );
     const [openSavedOnEntry, setOpenSavedOnEntry] = useState(false);
     const [savingField, setSavingField] = useState<string | null>(null);
 
     useIonViewWillEnter(() => {
-        const requested = new URLSearchParams(window.location.search).get('view') === 'saved';
-        setSavedRequested(requested);
+        const requested = new URLSearchParams(history.location.search).get('view') === 'saved';
         setOpenSavedOnEntry(requested);
         if (hasEnteredRef.current) {
             void refreshSharedRef.current?.();
@@ -87,7 +85,13 @@ const PrivacySettingsPage: React.FC = () => {
         } else hasEnteredRef.current = true;
     });
 
-    const handleSavedOpened = useCallback(() => setOpenSavedOnEntry(false), []);
+    const handleSavedOpened = useCallback(() => {
+        setOpenSavedOnEntry(false);
+        const search = new URLSearchParams(history.location.search);
+        if (search.get('view') !== 'saved') return;
+        search.delete('view');
+        history.replace({ ...history.location, search: search.toString() });
+    }, [history]);
     const handleUpdateShare = useCallback(
         (share: ShareLink) => {
             newModal(
@@ -144,7 +148,7 @@ const PrivacySettingsPage: React.FC = () => {
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
     const shareFeatureEnabled = flags?.shareMultipleEnabled === true;
     const shared = useSharedLinks(
-        shareFeatureEnabled || savedRequested,
+        shareFeatureEnabled,
         !isMinor ||
             (currentLCNUser?.isServiceProfile === true &&
                 currentLCNUser.type !== 'child' &&

@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { addOutline } from 'ionicons/icons';
 import type { ShareLink } from '@learncard/types';
 import { ModalTypes, useModal } from 'learn-card-base';
@@ -131,11 +131,11 @@ const SharedLinksSection: React.FC<{
             FULL_SHEET
         );
     };
-    const openAllReceived = () => {
+    const openAllReceived = useCallback(() => {
         openSheet(onClose => <SharedWithYouAllSheet onClose={onClose} />, FULL_SHEET);
-    };
+    }, [openSheet]);
     const receivedOpenedRef = useRef(false);
-    React.useEffect(() => {
+    useEffect(() => {
         if (!openReceived) {
             receivedOpenedRef.current = false;
         } else if (!receivedOpenedRef.current) {
@@ -143,7 +143,7 @@ const SharedLinksSection: React.FC<{
             openAllReceived();
             onReceivedOpened?.();
         }
-    }, [openReceived, onReceivedOpened]);
+    }, [openReceived, onReceivedOpened, openAllReceived]);
 
     const nothingAtAll = !vm.isLoading && !vm.error && vm.records.length === 0 && !vm.hasMore;
     // Nothing received yet (or still loading): leave the section out entirely.
