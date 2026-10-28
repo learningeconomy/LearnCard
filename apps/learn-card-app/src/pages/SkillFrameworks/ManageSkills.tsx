@@ -347,8 +347,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         setFrameworkApproved(false);
 
                         // Recursively add IDs to all skills and subskills
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        const addIdsToNodes = (nodes: any[]): any[] => {
+                        const addIdsToNodes = (
+                            nodes: SkillFrameworkNode[]
+                        ): SkillFrameworkNode[] => {
                             return nodes.map(node => ({
                                 ...node,
                                 id: node.id || generateSkillId(),
