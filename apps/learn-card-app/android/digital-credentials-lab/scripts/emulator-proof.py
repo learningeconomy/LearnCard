@@ -33,7 +33,12 @@ def nodes():
 def wait(label, cls=None, timeout=45):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
-        for node in nodes():
+        try:
+            snapshot = nodes()
+        except (subprocess.CalledProcessError, ET.ParseError):
+            # Accessibility may be temporarily unavailable while a WebView/activity starts.
+            continue
+        for node in snapshot:
             if label in (node.get('text'), node.get('content-desc')) and (not cls or node.get('class') == cls):
                 return node
     raise RuntimeError(f'UI did not show: {label}')
@@ -76,9 +81,9 @@ try:
     tap('Register Sample')
     wait('1 sample registered. Open LearnCard Verifier Lab to request it.')
     screenshot('registered')
-    passed('register metadata and discover in system picker')
     launch(VERIFIER)
     consent('warm')
+    passed('register metadata and discover in system picker')
     claim = 'Course name: Introduction to Verifiable Credentials'
     tap(claim, 'android.widget.CheckBox')
     assert wait('Share Details').get('enabled') == 'false'
@@ -124,7 +129,8 @@ try:
     passed('registry clear removes sample from subsequent matching')
 finally:
     # Native-specific evidence. This is deliberately not an lc verify report.
-    report = {'kind': 'android-emulator-lab', 'serial': args.serial, 'passed': checks,
+    commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+    report = {'kind': 'android-emulator-lab', 'commit': commit, 'serial': args.serial, 'passed': checks,
               'complete': len(checks) == 6,
               'not_verified': ['main LearnCard account integration', 'physical device',
                                'browser caller', 'independent verifier', 'Linux lc verify catalog']}
