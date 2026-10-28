@@ -145,7 +145,7 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                                 </legend>
                                 {credential.loading ? (
                                     <p role="status" className="p-4 text-sm text-grayscale-600">
-                                        {m['common.loadingClaims']()}
+                                        {m['nativeCredentials.preparing']()}
                                     </p>
                                 ) : (
                                     <ul className="divide-y divide-grayscale-100">
@@ -275,7 +275,7 @@ export const NativeConsentView: React.FC<NativeConsentViewProps> = ({
                             {submitting
                                 ? m['nativeCredentials.sharing']()
                                 : loading
-                                  ? m['common.loadingClaims']()
+                                  ? m['nativeCredentials.preparing']()
                                   : m['nativeCredentials.shareDetails']()}
                         </span>
                     </button>
