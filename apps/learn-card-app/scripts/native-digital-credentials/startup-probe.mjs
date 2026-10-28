@@ -154,6 +154,13 @@ try {
  nav: performance.getEntriesByType('navigation').map(x => ({ domContentLoaded: x.domContentLoadedEventEnd, load: x.loadEventEnd })),
  wasm: performance.getEntriesByType('resource').filter(x => x.name.includes('.wasm')).map(x => ({ file: new URL(x.name).pathname.split('/').at(-1), start: x.startTime, duration: x.duration, bytes: x.transferSize })),
  externalSqliteScripts: [...document.scripts].filter(x => x.src.includes('cdn.jsdelivr.net/npm/jeep-sqlite')).length,
+ web: {
+   origin: location.origin,
+   bundledScripts: [...document.scripts].filter(x => x.src).map(x => new URL(x.src).pathname).filter(x => x.startsWith('/assets/')),
+   resourceCount: performance.getEntriesByType('resource').length,
+   localBundleResources: performance.getEntriesByType('resource').filter(x => { const u = new URL(x.name); return u.origin === location.origin && u.pathname.startsWith('/assets/'); }).length,
+   viteModuleRequests: performance.getEntriesByType('resource').filter(x => ['/@vite/', '/@fs/', '/@id/', '/src/', '/node_modules/', '/packages/'].some(prefix => new URL(x.name).pathname.startsWith(prefix))).length
+ },
  marks: performance.getEntriesByType('mark').filter(x => /^(learncard:startup:|learncard:auth:)/.test(x.name)).map(x => ({name:x.name,time:x.startTime}))
 }); })()`);
     await evaluate(

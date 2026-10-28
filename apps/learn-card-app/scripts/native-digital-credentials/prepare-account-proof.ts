@@ -14,12 +14,13 @@ const { values } = parseArgs({
         'cloud-port': { type: 'string', default: '4100' },
         'api-port': { type: 'string', default: '5100' },
         'after-sync': { type: 'boolean', default: false },
+        bundled: { type: 'boolean', default: false },
         help: { type: 'boolean', default: false },
     },
 });
 if (values.help) {
     console.log(
-        'Configure native account proof: --web-port 43157 --brain-port 4000 --cloud-port 4100 --api-port 5100; run again with --after-sync after cap sync android. Requires an existing local backend.'
+        'Configure native account proof: --web-port 43157 --brain-port 4000 --cloud-port 4100 --api-port 5100; run again with --after-sync after cap sync android. Add --bundled to package built web assets instead of using Vite. Requires an existing local backend.'
     );
     process.exit(0);
 }
@@ -40,23 +41,35 @@ const app = resolve(import.meta.dir, '../..');
 if (values['after-sync']) {
     const path = resolve(app, 'android/app/src/main/assets/capacitor.config.json');
     const config = JSON.parse(await readFile(path, 'utf8'));
+    if (values.bundled) {
+        const html = await readFile(
+            resolve(app, 'android/app/src/main/assets/public/index.html'),
+            'utf8'
+        );
+        if (html.includes('/src/index.tsx') || !/src=["']\/assets\/[^"']+\.js["']/.test(html))
+            throw new Error(
+                'Build the web app and run cap copy android before selecting bundled mode'
+            );
+    }
     config.appName = 'LearnCard Native Dev';
-    config.server = { ...config.server, url: `http://localhost:${ports.web}`, cleartext: true };
+    config.server = { ...config.server, cleartext: true };
+    if (values.bundled) delete config.server.url;
+    else config.server.url = `http://localhost:${ports.web}`;
     config.android = { ...config.android, allowMixedContent: true, loggingBehavior: 'none' };
     config.plugins = {
         ...config.plugins,
         CapacitorUpdater: {
             ...config.plugins?.CapacitorUpdater,
             autoUpdate: false,
-            // Live-server debug builds have no OTA bundle to roll back. Keep the
-            // updater launch handshake short instead of delaying this native test.
+            // Local debug builds never download an OTA bundle. Keep the updater
+            // launch handshake identical for live-server and bundled comparisons.
             appReadyTimeout: 1000,
         },
         FirebaseAuthentication: { skipNativeAuth: true },
     };
     await writeFile(path, JSON.stringify(config, null, 4) + '\n');
     console.log(
-        'Ignored Android debug configuration updated. Build only with -PdigitalCredentialsDev.'
+        `Ignored Android debug configuration updated (${values.bundled ? 'bundled assets' : 'Vite server'}). Build only with -PdigitalCredentialsDev.`
     );
 } else {
     const base = JSON.parse(
@@ -122,6 +135,8 @@ if (values['after-sync']) {
         );
     }
     console.log(
-        'Ignored local tenant configuration ready. This debug APK uses the Vite development server, not an offline production bundle.'
+        values.bundled
+            ? 'Ignored local tenant configuration ready. Build web assets, run cap copy android, then rerun with --after-sync --bundled. Local APIs remain required.'
+            : 'Ignored local tenant configuration ready. This debug APK uses the Vite development server, not an offline production bundle.'
     );
 }

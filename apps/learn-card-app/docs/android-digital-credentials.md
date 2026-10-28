@@ -111,3 +111,22 @@ node apps/learn-card-app/scripts/native-digital-credentials/startup-probe.mjs \
 Start the probe soon after opening the app. It only accepts the local `com.learncard.app.dctest` WebView and refuses to overwrite an existing result. It records fixed development performance marks and native method names/counts/durations; it never records SQL, call arguments, credential bodies or keys. It removes its instrumentation when finished. The JSON is private investigation data, not an `lc verify` report or publishable media.
 
 `learncard:startup:entry` begins after initial module evaluation; `react` follows tenant/updater/flag setup; `learncard:auth:wallet_ready` signals account readiness; `learncard:startup:consent` follows the consent render. Compare repeated runs with the same code, cache conditions, CPU/RAM allocation and recording settings. The original AVD had one CPU core and 2 GiB RAM; task launches override RAM to 4 GiB, and multi-core comparisons use `-cores 4` without changing the saved AVD configuration. Development-source timings do not establish production-bundle or physical-device performance.
+
+### Test a bundled debug APK
+
+This packages the current web app inside the isolated `com.learncard.app.dctest` APK. It still uses the local test APIs and the existing disposable account; it is not a production or fully offline build. Use the Node version in `.nvmrc` and the existing Android Studio JDK/SDK. From `apps/learn-card-app`, after configuring the local test tenant:
+
+```bash
+VITE_DOCKER_SOURCE=true VITE_ENABLE_AUTH_DEBUG_WIDGET=true NODE_OPTIONS=--max-old-space-size=6144 bunx vite build --mode development
+bunx cap copy android
+bun scripts/native-digital-credentials/prepare-account-proof.ts --after-sync --bundled --web-port 43157 --brain-port 43158 --cloud-port 43159 --api-port 43160
+JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ANDROID_HOME="$HOME/Library/Android/sdk" ./android/gradlew -p android :app:assembleDebug -PdigitalCredentialsDev --max-workers=2
+adb -s emulator-5580 install -r android/app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5580 reverse --remove tcp:43157
+```
+
+Keep the API reverse mappings for ports 43158–43160. `--bundled` removes `server.url` from the ignored native asset configuration, disables OTA downloads, and rejects a missing/unbuilt copied HTML entry. The live-server mode remains available by omitting `--bundled`; that requires restoring the web-port reverse mapping. Neither mode changes release provider defaults.
+
+Verify the APK's `assets/capacitor.config.json` has no server URL and that its `assets/public/index.html` points to packaged `/assets/*.js` files. After launch, the timing probe reports the WebView origin, packaged entry names, resource counts and any Vite module requests; a bundled run should use `https://localhost` and make no Vite module requests. The proof helper for creating fixtures is development-server-only, so provision the disposable test fixture before switching to a bundled build.
+
+For repeatable measurements, finish builds before measuring, avoid screen recording/CPU profiling during timing, keep the AVD CPU/RAM allocation fixed and note host contention. Force-stop and manually launch the dedicated app for fresh-process **main-app** measurements. For a fresh **provider** measurement, background the app, kill its process and confirm its PID absent before requesting through Verifier Lab; force-stop is not equivalent because it changes Android provider eligibility. Performance marks measure from WebView navigation, excluding some OS/process startup work. Native selection and successful cryptographic verification are separate acceptance checks from latency.
