@@ -46,7 +46,7 @@ export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
         <div className="space-y-5">
             <div className="flex flex-wrap justify-between gap-3 items-center">
                 <h1 className="text-xl font-semibold">Campaigns</h1>
-                <Link className={primaryClass} to="/admin/campaigns/new">
+                <Link className={primaryClass} to="/admin/campaigns?create=1">
                     Create campaign
                 </Link>
             </div>

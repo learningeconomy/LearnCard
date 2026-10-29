@@ -1,6 +1,6 @@
 # Private campaign composer
 
-LC-2270 provides URL-only `/admin/campaigns` and `/admin/campaigns/:id` routes. `/admin/campaigns/new` creates a draft. `campaignsIsAdmin` must succeed before list/editor data loads; denied users see a generic not-found page. Each account/network session owns a non-persisted query cache. Server authorization remains authoritative for every operation.
+LC-2270 provides URL-only `/admin/campaigns` and `/admin/campaigns/:id` routes. `/admin/campaigns?create=1` creates a draft. `campaignsIsAdmin` must succeed before list/editor data loads; denied users see a generic not-found page. Each account/network session owns a non-persisted query cache. Server authorization remains authoritative for every operation.
 
 ## Supported
 

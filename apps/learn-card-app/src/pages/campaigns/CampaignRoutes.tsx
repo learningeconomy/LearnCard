@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch } from 'react-router-dom';
+import { Route, Switch, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import type { CampaignApi } from './types';
 import { CampaignEditor } from './CampaignEditor';
@@ -15,6 +15,8 @@ export const CampaignNotFound = () => (
 
 /** Nothing below the admin gate mounts or fetches until the server grants access. */
 export const CampaignRoutes: React.FC<{ api: CampaignApi }> = ({ api }) => {
+    const location = useLocation();
+    const creating = new URLSearchParams(location.search).get('create') === '1';
     const access = useQuery({
         queryKey: ['campaign-admin'],
         queryFn: () => api.campaignsIsAdmin(),
@@ -41,12 +43,26 @@ export const CampaignRoutes: React.FC<{ api: CampaignApi }> = ({ api }) => {
     if (!access.data) return <CampaignNotFound />;
     return (
         <Switch>
-            <Route exact path="/admin/campaigns" render={() => <CampaignList api={api} />} />
+            <Route
+                exact
+                path="/admin/campaigns"
+                render={() =>
+                    creating ? (
+                        <CampaignEditor key="create-campaign" api={api} />
+                    ) : (
+                        <CampaignList api={api} />
+                    )
+                }
+            />
             <Route
                 exact
                 path="/admin/campaigns/:id"
                 render={({ match }) => (
-                    <CampaignEditor key={match.params.id} api={api} id={match.params.id} />
+                    <CampaignEditor
+                        key={`campaign:${match.params.id}`}
+                        api={api}
+                        id={match.params.id}
+                    />
                 )}
             />
             <Route component={CampaignNotFound} />

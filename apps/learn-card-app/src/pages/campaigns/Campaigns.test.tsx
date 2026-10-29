@@ -88,6 +88,16 @@ afterEach(() => {
 });
 
 describe('campaign composer', () => {
+    it('loads a saved campaign named new without confusing it with draft creation', async () => {
+        const api = apiMock();
+        api.campaignsGet.mockResolvedValue({ ...campaign(), id: 'new', name: 'Existing new ID' });
+        mount(api, '/admin/campaigns/new');
+        expect(await screen.findByLabelText('Campaign ID')).toHaveValue('new');
+        expect(screen.getByLabelText('Campaign ID')).toBeDisabled();
+        expect(api.campaignsGet).toHaveBeenCalledWith('new');
+        expect(api.campaignsCreate).not.toHaveBeenCalled();
+    });
+
     it('does not fetch protected data before admin access, and hides denied routes', async () => {
         const api = apiMock();
         const gate = deferred<boolean>();
@@ -174,7 +184,7 @@ describe('campaign composer', () => {
     });
     it('creates once, locks the saved ID, and never dispatches on go live', async () => {
         const api = apiMock();
-        mount(api, '/admin/campaigns/new');
+        mount(api, '/admin/campaigns?create=1');
         await screen.findByLabelText('Name');
         fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test campaign' } });
         fireEvent.change(screen.getByLabelText('Campaign ID'), {
