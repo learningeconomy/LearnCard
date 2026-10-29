@@ -225,6 +225,10 @@ test.describe('campaign composer @mocked', () => {
         }
         await page.getByRole('tab', { name: 'JSON', exact: true }).click();
         await expect(page.getByLabel('Message JSON')).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'JSON', exact: true })).toHaveCSS(
+            'background-color',
+            'rgb(24, 34, 78)'
+        );
         await page.screenshot({
             path: 'test-results/campaign-message-json-mobile.png',
             fullPage: true,
