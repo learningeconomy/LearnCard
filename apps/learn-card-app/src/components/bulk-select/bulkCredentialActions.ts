@@ -1,4 +1,5 @@
 import type { SelectedCredential } from '../../stores/credentialSelectionStore';
+import * as m from '../../paraglide/messages.js';
 
 export type BulkCredentialActionContext = 'passport' | 'archived';
 
@@ -21,7 +22,7 @@ export type BulkCredentialAction = {
 export const bulkCredentialActions: BulkCredentialAction[] = [
     {
         id: 'share',
-        label: count => `Share ${count}`,
+        label: count => m['bulkSelection.share']({ count }),
         tone: 'default',
         contexts: ['passport'],
         priority: 10,
@@ -30,7 +31,7 @@ export const bulkCredentialActions: BulkCredentialAction[] = [
     },
     {
         id: 'archive',
-        label: count => `Archive ${count}`,
+        label: count => m['bulkSelection.archive']({ count }),
         tone: 'default',
         contexts: ['passport'],
         priority: 20,
@@ -38,7 +39,7 @@ export const bulkCredentialActions: BulkCredentialAction[] = [
     },
     {
         id: 'restore',
-        label: count => `Restore ${count}`,
+        label: count => m['bulkSelection.restore']({ count }),
         tone: 'default',
         contexts: ['archived'],
         priority: 20,
@@ -46,7 +47,7 @@ export const bulkCredentialActions: BulkCredentialAction[] = [
     },
     {
         id: 'delete',
-        label: count => `Delete ${count}`,
+        label: count => m['bulkSelection.delete']({ count }),
         tone: 'destructive',
         contexts: ['passport', 'archived'],
         priority: 30,
