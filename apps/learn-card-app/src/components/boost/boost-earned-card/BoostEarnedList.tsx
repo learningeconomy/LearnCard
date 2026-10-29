@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../../paraglide/messages.js';
 import { useLoadingLine } from '../../../stores/loadingStore';
@@ -23,7 +24,7 @@ import {
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
 import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlaceHolder';
-import { SelectableCredential } from '../../bulk-select/SelectableCredential';
+import { SelectableCredential, toSelectedCredential } from '../../bulk-select/SelectableCredential';
 import { credentialSelectionStore } from '../../../stores/credentialSelectionStore';
 
 type CategoryType = CredentialCategory | 'Hidden' | 'Archived';
@@ -43,6 +44,8 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     defaultImg,
     title,
 }) => {
+    const flags = useFlags();
+    const selectionActive = credentialSelectionStore.use.active();
     /*
         * start **
         Earned boosts query + pagination
@@ -126,49 +129,77 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     const textColor = categoryColors[category];
 
-    const credentials =
-        records?.pages?.flatMap(page =>
-            page?.records
-                ?.filter?.(record => searchResults.find(cred => cred.uri === record?.uri))
-                .map((record, index) => {
-                    return (
-                        <SelectableCredential
-                            key={record?.uri || index}
-                            record={record}
-                            listId={category}
-                        >
-                            <BoostEarnedCard
-                                record={record}
-                                defaultImg={defaultImg}
-                                categoryType={
-                                    category as
-                                        | 'Achievement'
-                                        | 'Skill'
-                                        | 'ID'
-                                        | 'Learning History'
-                                        | 'Work History'
-                                        | 'Hidden'
-                                        | 'Social Badge'
-                                        | 'Membership'
-                                        | 'Currency'
-                                        | 'Course'
-                                        | 'Accomplishment'
-                                        | 'Accommodation'
-                                        | 'Relationship'
-                                        | 'Events'
-                                        | 'Merit Badge'
-                                        | 'Family'
-                                        | 'Archived'
-                                }
-                                boostPageViewMode={viewMode}
-                                loading={credentialsLoading}
-                                textColor={textColor}
-                                hideCardOptionsMenu={credentialSelectionStore.get.active()}
-                            />
-                        </SelectableCredential>
-                    );
-                })
-        ) ?? [];
+    const visibleRecords = useMemo(
+        () =>
+            records?.pages?.flatMap(page =>
+                page?.records?.filter?.(record =>
+                    searchResults.find(cred => cred.uri === record?.uri)
+                )
+            ) ?? [],
+        [records, searchResults]
+    );
+
+    useEffect(() => {
+        if (!flags?.bulkCredentialActions || !selectionActive) return undefined;
+        const onKeyDown = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape') {
+                credentialSelectionStore.set.exit();
+                return;
+            }
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
+                event.preventDefault();
+                credentialSelectionStore.set.selectMany(
+                    visibleRecords.flatMap(record => {
+                        const selection = toSelectedCredential(record);
+                        return selection ? [selection] : [];
+                    }),
+                    category
+                );
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [category, flags?.bulkCredentialActions, selectionActive, visibleRecords]);
+
+    const credentials = visibleRecords.map((record, index) => {
+        return (
+            <SelectableCredential
+                key={record?.uri || index}
+                record={record}
+                listId={category}
+                visibleRecords={visibleRecords}
+            >
+                <BoostEarnedCard
+                    record={record}
+                    defaultImg={defaultImg}
+                    categoryType={
+                        category as
+                            | 'Achievement'
+                            | 'Skill'
+                            | 'ID'
+                            | 'Learning History'
+                            | 'Work History'
+                            | 'Hidden'
+                            | 'Social Badge'
+                            | 'Membership'
+                            | 'Currency'
+                            | 'Course'
+                            | 'Accomplishment'
+                            | 'Accommodation'
+                            | 'Relationship'
+                            | 'Events'
+                            | 'Merit Badge'
+                            | 'Family'
+                            | 'Archived'
+                    }
+                    boostPageViewMode={viewMode}
+                    loading={credentialsLoading}
+                    textColor={textColor}
+                    hideCardOptionsMenu={selectionActive}
+                />
+            </SelectableCredential>
+        );
+    });
 
     const handleRefetch = async () => {
         try {

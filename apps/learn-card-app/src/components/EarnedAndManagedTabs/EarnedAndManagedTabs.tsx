@@ -12,6 +12,9 @@ import X from 'learn-card-base/svgs/X';
 
 import useTheme from '../../theme/hooks/useTheme';
 import { CredentialCategoryEnum } from 'learn-card-base';
+import { useFlags } from 'launchdarkly-react-client-sdk';
+import { credentialSelectionStore } from '../../stores/credentialSelectionStore';
+import type { CredentialSelectionContext } from '../../stores/credentialSelectionStore';
 
 import * as m from '../../paraglide/messages.js';
 
@@ -44,6 +47,7 @@ type EarnedAndManagedTabsProps = {
     lightSearchInput?: boolean;
     showEarnedAndManaged?: boolean;
     category?: CredentialCategoryEnum;
+    selectionContext?: CredentialSelectionContext;
 };
 
 export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
@@ -60,8 +64,11 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
     hideSearch = false,
     showEarnedAndManaged,
     category,
+    selectionContext = 'passport',
 }) => {
     const { getThemedCategoryColors } = useTheme();
+    const flags = useFlags();
+    const selectionActive = credentialSelectionStore.use.active();
     const colors = getThemedCategoryColors(category ?? CredentialCategoryEnum.achievement);
 
     const location = useLocation();
@@ -97,6 +104,19 @@ export const EarnedAndManagedTabs: React.FC<EarnedAndManagedTabsProps> = ({
             className={`relative pt-[50px] px-[5px] flex gap-[10px] w-full items-center justify-center max-w-[600px] mx-auto overflow-hidden ${containerClassName}`}
         >
             <IonCol className="flex items-center justify-between w-full p-0 min-w-0">
+                {flags?.bulkCredentialActions === true && (
+                    <button
+                        type="button"
+                        className="shrink-0 px-3 py-2 text-sm font-medium text-grayscale-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        onClick={() =>
+                            selectionActive
+                                ? credentialSelectionStore.set.exit()
+                                : credentialSelectionStore.set.enter(selectionContext)
+                        }
+                    >
+                        {selectionActive ? m['bulkSelection.done']() : m['bulkSelection.select']()}
+                    </button>
+                )}
                 {!isSearchActive && (
                     <div
                         className="flex pl-6"

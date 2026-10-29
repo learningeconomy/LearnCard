@@ -1,6 +1,7 @@
 import { KeyboardEvent, PointerEvent, ReactNode, useRef } from 'react';
 import { IonIcon } from '@ionic/react';
 import { checkmark } from 'ionicons/icons';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 import type { LCR } from 'learn-card-base/types/credential-records';
 import {
     credentialSelectionStore,
@@ -8,24 +9,31 @@ import {
 } from '../../stores/credentialSelectionStore';
 
 type SelectableCredentialProps = {
-    record: Partial<LCR>;
+    record: LCR;
     children: ReactNode;
     listId: string;
+    visibleRecords: LCR[];
 };
 
 const LONG_PRESS_MS = 450;
 const MOVE_TOLERANCE = 8;
 
-const toSelection = (record: Partial<LCR>): SelectedCredential | undefined =>
+export const toSelectedCredential = (record: LCR): SelectedCredential | undefined =>
     record.id && record.uri && record.category
-        ? { uri: record.uri, recordId: record.id, category: record.category }
+        ? { uri: record.uri, recordId: record.id, category: record.category, record }
         : undefined;
 
-export const SelectableCredential = ({ record, children, listId }: SelectableCredentialProps) => {
+export const SelectableCredential = ({
+    record,
+    children,
+    listId,
+    visibleRecords,
+}: SelectableCredentialProps) => {
+    const flags = useFlags();
     const active = credentialSelectionStore.use.active();
     const items = credentialSelectionStore.use.items();
     const press = useRef<{ x: number; y: number; timer?: ReturnType<typeof setTimeout> }>();
-    const selection = toSelection(record);
+    const selection = toSelectedCredential(record);
     const selected = selection ? Boolean(items[selection.uri]) : false;
     const label = record.title ?? record.metadata?.title ?? record.uri ?? 'Credential';
 
@@ -39,12 +47,14 @@ export const SelectableCredential = ({ record, children, listId }: SelectableCre
     };
 
     const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-        if (!selection || active) return;
+        if (!flags?.bulkCredentialActions || !selection || active) return;
         press.current = {
             x: event.clientX,
             y: event.clientY,
             timer: setTimeout(() => {
-                credentialSelectionStore.set.enter('passport');
+                credentialSelectionStore.set.enter(
+                    record.category === 'Archived' ? 'archived' : 'passport'
+                );
                 toggle();
                 clearPress();
             }, LONG_PRESS_MS),
@@ -84,7 +94,15 @@ export const SelectableCredential = ({ record, children, listId }: SelectableCre
                 if (!active || !selection) return;
                 event.preventDefault();
                 event.stopPropagation();
-                toggle();
+                if (event.shiftKey) {
+                    const selections = visibleRecords.flatMap(record => {
+                        const item = toSelectedCredential(record);
+                        return item ? [item] : [];
+                    });
+                    credentialSelectionStore.set.setRange(listId, selections, selection.uri);
+                } else {
+                    toggle();
+                }
             }}
             onKeyDown={onKeyDown}
             onPointerDown={onPointerDown}
