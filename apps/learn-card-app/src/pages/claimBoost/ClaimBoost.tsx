@@ -587,7 +587,11 @@ const ClaimBoost: React.FC<{
                     handleCloseModal={closeModal}
                     handleRedirectTo={handleRedirectTo}
                 />,
-                { hideButton: true },
+                {
+                    hideButton: true,
+                    // Ionic pages do not provide an intrinsic height for a centered surface.
+                    sectionClassName: 'h-[600px]',
+                },
                 { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
             );
         }

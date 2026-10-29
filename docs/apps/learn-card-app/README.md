@@ -61,6 +61,8 @@ Expired links and links that have reached their claim limit have different messa
 
 Recovery keeps the original link and credential preview in place. Action buttons cannot start overlapping attempts; the existing duplicate choices and Close action remain available when no operation is running.
 
+If you're signed out, **Accept** opens the sign-in prompt. **Close** returns to the original preview without starting a claim.
+
 ### Receiving Credentials from a Website
 
 For a browser credential offer, choose LearnCard in the website’s account chooser. The **Add to Passport** page lists every offered credential; expand **Details** to inspect one before choosing **Save to Passport** or **Cancel**. Saving disables the action buttons until it finishes. If part of a batch fails, **Try Again** continues without adding completed items again. Exact retries reuse the saved signed credential; a different revision is saved separately even if the issuer keeps the same credential ID. An unsupported offer or a failed exchange shows a visible error instead of leaving **Accepting…** on screen. Cancel remains available while the website’s request is loading. If you switch accounts, return to the issuing website and start a new request. If the credentials are saved but the website cannot be notified, the page tells you; retrying that notification is not offered. A failed cancellation also tells you to return to the website, without offering a retry on the used request. Cancelling after a partial save keeps the credentials already saved and shows their count. Start a new offer on the issuing website if the request has expired.
