@@ -260,6 +260,7 @@ export * from './helpers/recaptcha.helpers';
 export * from './helpers/deferred';
 
 export * from './types/credentials';
+export * from './types/credential-records';
 export * from './types/boostAndCredentialMetadata';
 
 // Constants
@@ -292,6 +293,7 @@ export * from './react-query/queries/preferences';
 export * from './react-query/queries/careerOneStop';
 export * from './react-query/mutations/syncAllCredentials';
 export * from './react-query/mutations/credentialRefresh';
+export * from './react-query/mutations/archiveCredentials';
 export * from './react-query/queries/credentialRefresh';
 
 export * from './svgs/SideNav/SideNavIcons';
