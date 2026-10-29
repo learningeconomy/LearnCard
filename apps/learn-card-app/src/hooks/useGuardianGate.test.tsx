@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { render, renderHook, act, waitFor } from '@testing-library/react';
 import {
     guardianApprovalStore,
     getGuardianApprovalVP,
@@ -39,6 +39,7 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { FullScreen: 'FullScreen', Cancel: 'Cancel' },
 }));
 vi.mock('../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper', () => ({
+    FamilyPinViewModeEnum: { edit: 'edit' },
     FamilyPinWrapper: () => <div />,
 }));
 
@@ -211,5 +212,60 @@ describe('guardian-approved actions', () => {
         await act(() => modal.props.handleOnSubmit());
         expect(onCancel).toHaveBeenCalledOnce();
         expect(action).not.toHaveBeenCalled();
+    });
+    it('settles external modal dismissal and does not run the action', async () => {
+        state.hasPin.mockResolvedValue(true);
+        const onCancel = vi.fn();
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate({ onCancel }));
+        const pending = result.current.guardedAction(action);
+        await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());
+        const options = state.newModal.mock.calls[0][1];
+        act(() => options.onClose());
+        await expect(pending).rejects.toThrow('Guardian verification was cancelled');
+        expect(onCancel).toHaveBeenCalledOnce();
+        expect(action).not.toHaveBeenCalled();
+    });
+
+    it('cancels a removed modal without mistaking a StrictMode effect remount for dismissal', async () => {
+        state.hasPin.mockResolvedValue(true);
+        const onCancel = vi.fn();
+        const action = vi.fn();
+        const { result } = renderHook(() => useGuardianGate({ onCancel }));
+        const pending = result.current.guardedAction(action);
+        const rejection = expect(pending).rejects.toThrow('Guardian verification was cancelled');
+        await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());
+        const view = render(<React.StrictMode>{state.newModal.mock.calls[0][0]}</React.StrictMode>);
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(onCancel).not.toHaveBeenCalled();
+        view.unmount();
+        await rejection;
+        expect(onCancel).toHaveBeenCalledOnce();
+        expect(action).not.toHaveBeenCalled();
+    });
+
+    it('continues a submitted action when closing invokes cancellation cleanup', async () => {
+        state.hasPin.mockResolvedValue(true);
+        state.closeModal.mockImplementation(() => state.newModal.mock.calls[0][1].onClose());
+        let finishAction!: () => void;
+        const action = vi.fn(() => new Promise<void>(resolve => (finishAction = resolve)));
+        const { result } = renderHook(() => useGuardianGate());
+        const pending = result.current.guardedAction(action);
+        await waitFor(() => expect(state.newModal).toHaveBeenCalledOnce());
+        const element = state.newModal.mock.calls[0][0];
+        let submission!: Promise<void>;
+        await act(async () => {
+            submission = element.props.handleOnSubmit();
+        });
+        await waitFor(() => expect(action).toHaveBeenCalledOnce());
+        act(() => state.newModal.mock.calls[0][1].onClose());
+        await act(async () => {
+            finishAction();
+            await pending;
+            await submission;
+        });
+        expect(action).toHaveBeenCalledOnce();
     });
 });
