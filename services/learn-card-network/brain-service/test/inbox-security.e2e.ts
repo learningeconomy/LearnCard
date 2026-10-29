@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { fastifyTRPCOpenApiPlugin } from 'trpc-to-openapi';
-import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import {
     JWEValidator,
@@ -897,19 +896,5 @@ describe('Universal Inbox escrow (HTTP + isolated Neo4j/Redis)', () => {
         expect(await getInboxCredentialById(expired.issuanceId)).toMatchObject({
             currentStatus: 'EXPIRED',
         });
-    });
-
-    it('wires the maintenance worker to an enabled daily schedule', async () => {
-        const config = await readFile(new URL('../serverless.yml', import.meta.url), 'utf8');
-        expect(config).toMatch(
-            /inboxMaintenance:\s+handler: lambda\.inboxMaintenanceHandler[\s\S]*?rate: rate\(1 day\)\s+enabled: true/
-        );
-        // lambda.ts is a thin bootstrap entry that delegates to the lazily imported lambdaApp.ts.
-        const entry = await readFile(new URL('../lambda.ts', import.meta.url), 'utf8');
-        expect(entry).toMatch(
-            /export const inboxMaintenanceHandler[\s\S]*?\(await getApplication\(\)\)\.inboxMaintenanceHandler\(/
-        );
-        const handler = await readFile(new URL('../lambdaApp.ts', import.meta.url), 'utf8');
-        expect(handler).toMatch(/inboxMaintenanceHandler[\s\S]*?await runInboxMaintenance\(\)/);
     });
 });

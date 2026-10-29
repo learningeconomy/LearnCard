@@ -14,7 +14,7 @@ Keep a connection's URI and history while publishing immutable access updates. N
 
 Preserve existing grants in partial scope updates, gate Lambda startup on legacy snapshots, and retain once-only delivery during explicit one-time updates. Localize review and history content, recover from cancelled guardian checks and concurrent updates, and keep handled notifications safe to reopen.
 
-Retry transient Lambda migration failures without poisoning warm application imports. Record completed migrations for fast cold starts, report malformed request IDs without credential data, and identify retained ambiguous AutoBoost claims for reconciliation.
+Retry transient Lambda migration failures without poisoning warm application imports. Record completed migrations for fast cold starts, report malformed request IDs without credential data, and identify retained ambiguous AutoBoost claims for reconciliation. Keep inbox maintenance coverage behavioral rather than pinning Lambda wrapper source text.
 
 Settle guardian PIN actions on external dismissal or unmount without cancelling valid submissions. Clear stacked overlays before opening a contract-update review. Use stable localization keys independent of English labels and stop proposing optional defaults after their window expires.
 
