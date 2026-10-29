@@ -22,6 +22,10 @@ Optional additions never enable themselves. An update also does not reactivate a
 
 In the review, a new **Opt-out** option starts checked and a new **Opt-in** option starts unchecked, in both the developer preview and the user's review. These are proposed selections, not grants: access changes only when the user saves. Reopening a handled review refreshes saved choices, including an option the user turned off, rather than keeping cached defaults. A background refresh does not overwrite choices the user is currently editing.
 
+The optional proposal window lasts 14 days. After it expires, reopening uses saved permissions instead of proposed Opt-out defaults. Saving sharing settings acknowledges the current optional proposal window even when the edit concerned another field; unselected options stay off.
+
+Quiet optional updates advance the accepted version immediately. Their dedicated review shows the latest publication, not a cumulative queue of optional additions from earlier publications. Earlier options remain at their saved values and are still editable in **Data Sharing**. Required updates continue to accumulate every unaccepted required change.
+
 ## Preview, then save
 
 Save this example as `update-contract.mjs` alongside the files from the [ConsentFlow tutorial](../../tutorials/create-a-consentflow.md). Use the owner's `SECURE_SEED` and existing `CONTRACT_URI` in `.env`.
@@ -89,7 +93,7 @@ In a person's actual update review, the disclosure uses accepted choices, not de
 
 To save with the SDK instead, set `APPLY_UPDATE=true` in your private `.env` and run the same command. The reason is required for `requires_consent` and is limited to 140 characters. Missing it produces `A reason is required when asking users for more access`.
 
-`changes` accepts creation metadata and a `contract` object; the SDK also accepts `read` and `write` directly, as above. Category and personal-field maps merge with the current request: omitted entries stay unchanged, and an empty map does not remove existing access. Set an individual entry to `null` to remove it, for example `{ read: { credentials: { categories: { Transcript: null } } } }`. AutoBoost and writer arrays still describe the complete next configuration. Use `updateContract` instead of the removed SDK `addAutoBoostsToContract` and `removeAutoBoostsFromContract` methods.
+`changes` accepts creation metadata and a `contract` object; the SDK also accepts `read` and `write` directly, as above. Use only one shape for each area: supplying both `read` and `contract.read`, or both `write` and `contract.write`, is rejected before a network mutation instead of silently discarding part of the patch. Different areas may use different shapes. Category and personal-field maps merge with the current request: omitted entries stay unchanged, and an empty map does not remove existing access. Set an individual entry to `null` to remove it, for example `{ read: { credentials: { categories: { Transcript: null } } } }`. AutoBoost and writer arrays still describe the complete next configuration. Use `updateContract` instead of the removed SDK `addAutoBoostsToContract` and `removeAutoBoostsFromContract` methods.
 
 Set `expiresAt: null` to clear expiry. Extending or clearing expiry follows the ticket's quiet-update policy: this can extend how long an app can access existing data without another approval prompt.
 
@@ -117,24 +121,26 @@ await userLearnCard.invoke.acceptContractUpdate(termsUri, {
 
 Here `termsUri` and `selectedTerms` come from the user's existing consent record and review selections. Pass the `audienceVersion` from the current contract whose data recipients the user reviewed; approval rejects a changed audience. Required items must be granted; optional grants follow the selections submitted by the user. Parent approval is still required where applicable. Acceptance records a `reconsent` transaction and restores `live` access. Declining uses `withdrawConsent(termsUri)`.
 
-Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. A cancelled parent check leaves the review available to retry. A version conflict reloads the latest request before another approval attempt.
+Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. Cancelling the parent PIN with its button, Escape, a backdrop, or a back gesture settles the pending action and leaves the review available to retry. Once a valid PIN submits the action, closing that PIN modal cannot cancel the submission. A version conflict reloads the latest request before another approval attempt.
 
 If a request changes several times before a user reviews it, `getConsentedContracts()` includes a `cumulativeUpdate` from their accepted version to the current version. Review and grant every required item in that cumulative change, not just the last published update, before accepting the current version.
 
-The web review, notification card, and history labels use the active app language (English, Spanish, French, or Arabic). Notification navigation does not wait for the best-effort read receipt; dismissal errors stay visible with a retry action.
+The web review, notification card, and history labels use the active app language (English, Spanish, French, or Arabic). Opening an update notification clears the modal stack so the review remains interactive even when Alerts was above another overlay. Navigation does not wait for the best-effort read receipt; dismissal errors stay visible with a retry action.
 
 An update requiring approval defaults to a deadline 30 days after it is saved. Pass an ISO `reconsentDeadline` in `updateContract` options to choose another date. When the deadline passes, the scheduled job moves unanswered requests to `suspended`. The user can still review and approve the latest request to reconnect.
 
 ## Rolling out versioned access
 
-Docker startup and Lambda application bootstrap await the same idempotent backfill before serving version-aware requests. It creates version 1 for legacy requests, records the accepted version on existing connections, and renames consumed one-time connections.
+Docker startup and Lambda handlers await the same idempotent backfill before serving version-aware requests. It creates version 1 for legacy requests, records the accepted version on existing connections, and renames consumed one-time connections. A failed Lambda migration is retried by the next request; concurrent requests share one migration attempt. Application import failures retain the bootstrap's separate memoization policy.
 
 Drain old request writers during the deployment cutover so they cannot create unversioned requests after a new process completes its readiness gate. The `migrate:consent-flow-versions` service command remains available for an explicit pre-deployment backfill; it is no longer the only migration path for Lambda.
 
-A malformed legacy request is logged by ID and skipped so healthy requests can start. Its missing snapshot remains fail-closed; the service does not invent grants from an unaccepted request. A database failure still rejects startup rather than serving before migration finishes.
+A malformed legacy request is skipped so healthy requests can start. The migration emits a bounded report containing skipped contract IDs and an `invalid_contract` reason, with a total count and truncation flag; it never logs credential contents. Its missing snapshot remains fail-closed. A database failure still rejects readiness rather than serving before migration finishes.
+
+A successful, complete backfill records `ConsentFlowContractMigration { id: 'legacy-v1' }` with `completedAt`; later cold starts check that marker instead of rescanning every request and connection. Interrupted migrations and migrations that skip malformed requests do not mark completion. Repair reported IDs and rerun the service migration command. If legacy data is restored after completion, clear only this migration marker before rerunning the idempotent backfill—never delete snapshots or consent history.
 
 ## One-time delivery and interrupted sends
 
 An explicit one-time consent, re-consent, or live terms update can deliver a newly enabled AutoBoost while recording the connection as `consumed`. Repeating a consumed terms update is rejected; explicitly consenting again does not issue the same Boost twice for that connection.
 
-AutoBoost claims are indexed by connection and Boost identity. Failures before sending begins release the claim. Once sending starts, an ambiguous failure or process crash leaves the claim in place: expiring it blindly could deliver a duplicate. Inspect the existing credential and write transaction before reconciling a retained claim. This deliberately favors avoiding duplicates over automatically retrying a delivery whose outcome is unknown.
+AutoBoost claims are indexed by connection and Boost identity. Failures before sending begins release the claim. Once sending starts, an ambiguous failure or process crash leaves the claim in place: expiring it blindly could deliver a duplicate. Ambiguous-send errors include `claimId`, `termsId`, and `boostId` with the original error so operators can identify the retained claim. Inspect the existing credential and write transaction before reconciling it. This deliberately favors avoiding duplicates over automatically retrying a delivery whose outcome is unknown.
