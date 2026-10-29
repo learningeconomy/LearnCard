@@ -311,7 +311,7 @@ export const CampaignAudience: React.FC<{
             )}
             {action.error && <Notice error>{action.error}</Notice>}
             {action.success && <Notice>{action.success}</Notice>}
-            <p className="text-xs text-grayscale-600">
+            <p className="py-4 text-xs leading-relaxed text-grayscale-600">
                 Counts include eligible existing members. They do not represent newly added people
                 or an exact send count.
             </p>
