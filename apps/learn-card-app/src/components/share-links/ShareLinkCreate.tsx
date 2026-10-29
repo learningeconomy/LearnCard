@@ -18,7 +18,7 @@ import {
 import type { ShareLink, ShareRecoveryPlaintext, VC } from '@learncard/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Clipboard } from '@capacitor/clipboard';
-import { useWallet, useGetSelfAssignedSkillsBoost } from 'learn-card-base';
+import { ARCHIVED_CATEGORY, useWallet, useGetSelfAssignedSkillsBoost } from 'learn-card-base';
 import {
     getDefaultCategoryForCredential,
     SELF_ASSIGNED_SKILLS_BOOST_NAME,
@@ -228,6 +228,7 @@ export const ShareLinkCreate = ({
                         if (initialSelectedUri && record.uri === initialSelectedUri) return true;
                         if (record.id?.startsWith('__verifiable_data_')) return false;
                         if (isHiddenActivity(record.category)) return false;
+                        if (record.category === ARCHIVED_CATEGORY) return false;
                         if (
                             selfAssignedSkillsUriRef.current &&
                             record.uri === selfAssignedSkillsUriRef.current

@@ -4,6 +4,7 @@ import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credent
 import { getUniqueId } from 'learn-card-base/helpers/credentials/ids';
 import {
     getCategoryMetadata,
+    ARCHIVED_CATEGORY,
     useGetCredentialList,
     useGetResolvedCredentials,
 } from 'learn-card-base';
@@ -57,7 +58,8 @@ export const VprShareModal: React.FC<VprShareModalProps> = ({
     }));
 
     const vcsToDisplay = allCredentials.filter(credential => {
-        if (credential.category === 'Hidden') return false;
+        if (credential.category === 'Hidden' || credential.category === ARCHIVED_CATEGORY)
+            return false;
         if (!credential.loading && !credential.vc) return false;
 
         if (!searchInput) return true;
