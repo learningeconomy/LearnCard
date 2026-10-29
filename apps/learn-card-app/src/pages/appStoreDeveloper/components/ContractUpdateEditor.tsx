@@ -17,7 +17,10 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 import { useLocale } from '../../../i18n';
 import { mDynamic } from '../../../i18n/mDynamic';
 import { ContractUpdateReviewContent } from '../../consentFlow/ContractUpdateReview';
-import { getUnchangedDefaultAccessScopes } from '../../consentFlow/contractUpdateReview.helpers';
+import {
+    getDefaultEnabledOptionalUpdateScopeKeys,
+    getUnchangedDefaultAccessScopes,
+} from '../../consentFlow/contractUpdateReview.helpers';
 import ConsentContractForm from './ConsentContractForm';
 import ContractUpdateChangesSummary from './ContractUpdateChangesSummary';
 import { buildContractFormChanges, contractToFormValue } from './consentContractForm.helpers';
@@ -137,18 +140,23 @@ const LoadedContractUpdateEditor: React.FC<{
                     removed: rows.filter(row => row.change === 'removed').map(row => row.scope),
                     changed: rows.filter(row => row.change === 'changed').map(row => row.scope),
                 };
+                const preview = buildContractUpdatePreview({
+                    name: value.name,
+                    kind: result.kind,
+                    diff,
+                    translate: mDynamic,
+                });
                 const defaults = getUnchangedDefaultAccessScopes(baseline, diff);
                 newModal(
                     <ContractUpdateReviewContent
                         name={value.name}
                         image={value.image}
                         reason={reason.trim() || undefined}
-                        preview={buildContractUpdatePreview({
-                            name: value.name,
-                            kind: result.kind,
-                            diff,
-                            translate: mDynamic,
-                        })}
+                        preview={preview}
+                        initialEnabledOptionalKeys={getDefaultEnabledOptionalUpdateScopeKeys(
+                            value.contract,
+                            preview.rows
+                        )}
                         unchangedRows={buildContractUpdatePreview({
                             name: baseline.name,
                             kind: 'requires_consent',
@@ -201,7 +209,7 @@ const LoadedContractUpdateEditor: React.FC<{
 
     return (
         <div className="flex flex-col gap-5">
-            <p className="pb-2 text-xs text-grayscale-500">
+            <p className="pb-1 text-xs text-grayscale-500">
                 {mDynamic('consentUpdate.editor.currentVersion', { version: baseline.version })}
             </p>
             <ConsentContractForm

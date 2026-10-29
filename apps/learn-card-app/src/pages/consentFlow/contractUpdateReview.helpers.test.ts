@@ -14,6 +14,7 @@ import {
     getUnchangedDefaultAccessScopes,
     getUnchangedAccessScopes,
     getEnabledOptionalUpdateScopeKeys,
+    getDefaultEnabledOptionalUpdateScopeKeys,
 } from './contractUpdateReview.helpers';
 
 const createTerms = (): ConsentFlowTerms => ({
@@ -282,6 +283,104 @@ describe('contract update scope choices', () => {
             { area: 'write', type: 'credential', key: 'RequiredWrite', required: true },
             { area: 'write', type: 'credential', key: 'DefaultWrite', required: false },
         ]);
+    });
+    it('seeds only newly added optional scopes from contract defaultEnabled metadata', () => {
+        const contract = {
+            contract: {
+                read: {
+                    credentials: {
+                        categories: {
+                            Required: { required: true, defaultEnabled: false },
+                            OptOut: { required: false, defaultEnabled: true },
+                            OptIn: { required: false, defaultEnabled: false },
+                            ExistingOptOut: { required: false, defaultEnabled: true },
+                        },
+                    },
+                    personal: {
+                        PersonalOptOut: { required: false, defaultEnabled: true },
+                    },
+                },
+                write: {
+                    credentials: {
+                        categories: {
+                            WriteOptOut: { required: false, defaultEnabled: true },
+                        },
+                    },
+                    personal: { WritePersonalOptOut: { required: false, defaultEnabled: true } },
+                },
+            },
+        } as unknown as ConsentFlowContractDetails;
+        const rows = [
+            {
+                scope: { area: 'read', type: 'credential', key: 'Required', required: true },
+                change: 'added',
+            },
+            {
+                scope: { area: 'read', type: 'credential', key: 'OptOut', required: false },
+                change: 'added',
+            },
+            {
+                scope: { area: 'read', type: 'credential', key: 'OptIn', required: false },
+                change: 'added',
+            },
+            {
+                scope: { area: 'read', type: 'personal', key: 'PersonalOptOut', required: false },
+                change: 'added',
+            },
+            {
+                scope: { area: 'write', type: 'credential', key: 'WriteOptOut', required: false },
+                change: 'added',
+            },
+            {
+                scope: {
+                    area: 'write',
+                    type: 'personal',
+                    key: 'WritePersonalOptOut',
+                    required: false,
+                },
+                change: 'added',
+            },
+            {
+                scope: { area: 'read', type: 'credential', key: 'ExistingOptOut', required: false },
+                change: 'changed',
+            },
+        ] as unknown as ConsentFlowContractUpdatePreview['rows'];
+
+        expect(getDefaultEnabledOptionalUpdateScopeKeys(contract.contract, rows)).toEqual([
+            'read|credential|OptOut',
+            'read|personal|PersonalOptOut',
+            'write|credential|WriteOptOut',
+            'write|personal|WritePersonalOptOut',
+        ]);
+    });
+
+    it('preserves a declined opt-out and other saved choices when a handled review reopens', () => {
+        const terms = createTerms();
+        terms.write.credentials.categories.Achievement = true;
+        const row: ConsentFlowContractUpdatePreview['rows'][number] = {
+            scope: { area: 'write', type: 'credential', key: 'Social Badge', required: false },
+            change: 'added',
+            label: 'Social Badges',
+            subtitle: '',
+        };
+        const contract = {
+            read: { credentials: { categories: {} }, personal: {} },
+            write: {
+                credentials: {
+                    categories: { 'Social Badge': { required: false, defaultEnabled: true } },
+                },
+                personal: {},
+            },
+        };
+        const defaults = getDefaultEnabledOptionalUpdateScopeKeys(contract, [row]);
+        applyContractUpdateScopeChoices(terms, [row], defaults, []);
+        expect(terms.write.credentials.categories).toEqual({
+            Achievement: true,
+            'Social Badge': true,
+        });
+        applyContractUpdateScopeChoices(terms, [row], [], []);
+        expect(getEnabledOptionalUpdateScopeKeys(terms, [row])).toEqual([]);
+        expect(terms.write.credentials.categories).toEqual({ Achievement: true });
     });
 
     it('does not infer accepted grants from default-enabled contract scopes', () => {

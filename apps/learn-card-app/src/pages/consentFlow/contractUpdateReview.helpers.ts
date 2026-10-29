@@ -48,6 +48,23 @@ export const getEnabledOptionalUpdateScopeKeys = (
     }
     return enabled;
 };
+/** Seeds review controls, not grants; access changes only when the holder saves. */
+export const getDefaultEnabledOptionalUpdateScopeKeys = (
+    contract: ConsentFlowContractDetails['contract'],
+    rows: ConsentFlowContractUpdatePreview['rows']
+): string[] => {
+    const enabled: string[] = [];
+    for (const row of rows) {
+        if (row.change !== 'added' || row.scope.required) continue;
+        const scope = row.scope;
+        const config =
+            scope.type === 'credential'
+                ? contract[scope.area].credentials.categories[scope.key]
+                : contract[scope.area].personal[scope.key];
+        if (config?.defaultEnabled) enabled.push(getContractUpdateScopeKey(scope));
+    }
+    return enabled;
+};
 
 export const applyContractUpdateScopeChoice = (
     terms: ConsentFlowTerms,

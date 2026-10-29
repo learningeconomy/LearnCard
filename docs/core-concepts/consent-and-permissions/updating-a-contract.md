@@ -20,6 +20,8 @@ Mixed updates use the strongest change kind in this table, from bottom to top.
 
 Optional additions never enable themselves. An update also does not reactivate a withdrawn connection or a consumed one-time request.
 
+In the review, a new **Opt-out** option starts checked and a new **Opt-in** option starts unchecked, in both the developer preview and the user's review. These are proposed selections, not grants: access changes only when the user saves. Reopening a handled review restores saved choices, including an option the user turned off.
+
 ## Preview, then save
 
 Save this example as `update-contract.mjs` alongside the files from the [ConsentFlow tutorial](../../tutorials/create-a-consentflow.md). Use the owner's `SECURE_SEED` and existing `CONTRACT_URI` in `.env`.
@@ -113,7 +115,7 @@ await userLearnCard.invoke.acceptContractUpdate(termsUri, {
 });
 ```
 
-Here `termsUri` and `selectedTerms` come from the user's existing consent record and review selections. Pass the `audienceVersion` from the current contract whose data recipients the user reviewed; approval rejects a changed audience. Required items must be granted; optional items remain off unless the user selects them. Parent approval is still required where applicable. Acceptance records a `reconsent` transaction and restores `live` access. Declining uses `withdrawConsent(termsUri)`.
+Here `termsUri` and `selectedTerms` come from the user's existing consent record and review selections. Pass the `audienceVersion` from the current contract whose data recipients the user reviewed; approval rejects a changed audience. Required items must be granted; optional grants follow the selections submitted by the user. Parent approval is still required where applicable. Acceptance records a `reconsent` transaction and restores `live` access. Declining uses `withdrawConsent(termsUri)`.
 
 Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. A cancelled parent check leaves the review available to retry. A version conflict reloads the latest request before another approval attempt.
 

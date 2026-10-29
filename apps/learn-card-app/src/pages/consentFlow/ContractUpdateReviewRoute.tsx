@@ -15,6 +15,7 @@ import { useGuardianGate } from '../../hooks/useGuardianGate';
 import { useLocale } from '../../i18n';
 import {
     applyContractUpdateScopeChoices,
+    getDefaultEnabledOptionalUpdateScopeKeys,
     getEnabledOptionalUpdateScopeKeys,
     getUnchangedAccessScopes,
     isContractUpdateScopeEnabled,
@@ -132,12 +133,11 @@ const ContractUpdateReviewRoute: React.FC = () => {
         );
     }
 
-    const initialEnabledOptionalKeys = getEnabledOptionalUpdateScopeKeys(
-        record.terms,
-        latestUpdate.preview.rows
-    );
-    const hasPreviouslyEnabledOptionalChoices = initialEnabledOptionalKeys.length > 0;
-    const alreadyHandled = (statusQuery.data?.consentedVersion ?? 0) >= latestUpdate.toVersion;
+    const alreadyHandled = record.consentedVersion >= latestUpdate.toVersion;
+    const hasPendingOptionalChoice = !alreadyHandled || Boolean(record.newOptionsUntil);
+    const initialEnabledOptionalKeys = hasPendingOptionalChoice
+        ? getDefaultEnabledOptionalUpdateScopeKeys(contract.contract, latestUpdate.preview.rows)
+        : getEnabledOptionalUpdateScopeKeys(record.terms, latestUpdate.preview.rows);
     const accept = async (enabledOptionalKeys: string[]) => {
         if (latestUpdate.kind === 'relaxed') return;
 
@@ -151,7 +151,6 @@ const ContractUpdateReviewRoute: React.FC = () => {
             currentUser
         );
         if (latestUpdate.kind === 'expanded_optional') {
-            if (!enabledOptionalKeys.length && !hasPreviouslyEnabledOptionalChoices) return;
             const saveOptionalChoices = async () => {
                 try {
                     await updateTerms({ terms, shareAllCategories });

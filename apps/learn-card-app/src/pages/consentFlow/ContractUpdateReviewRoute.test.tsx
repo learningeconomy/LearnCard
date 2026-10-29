@@ -7,6 +7,8 @@ vi.mock('../../i18n', () => ({ useLocale: () => 'en' }));
 
 type RouteRecord = {
     uri: string;
+    consentedVersion: number;
+    newOptionsUntil?: string;
     terms: { read: { credentials: { categories: Record<string, unknown> } } };
     contract: {
         uri: string;
@@ -80,8 +82,10 @@ vi.mock('@learncard/helpers', () => ({
 }));
 vi.mock('./contractUpdateReview.helpers', () => ({
     applyContractUpdateScopeChoices: () => [],
+    getDefaultEnabledOptionalUpdateScopeKeys: () => [],
     getEnabledOptionalUpdateScopeKeys: () => [],
     getUnchangedAccessScopes: () => [],
+    isContractUpdateScopeEnabled: () => false,
 }));
 vi.mock('../../hooks/useGuardianGate', () => ({
     useGuardianGate: () => ({
@@ -110,6 +114,7 @@ const makeRecord = (toVersion: number, includeOptional = false): RouteRecord => 
     const rows = includeOptional ? [optionalRow] : [];
     return {
         uri: 'record-uri',
+        consentedVersion: 1,
         terms: { read: { credentials: { categories: {} } } },
         contract: {
             uri: 'contract-uri',
@@ -162,9 +167,9 @@ describe('ContractUpdateReviewRoute', () => {
         expect(screen.queryByText('This update is no longer available.')).toBeNull();
     });
 
-    it('saves optional choices for a handled version without resubmitting acceptVersion', async () => {
-        state.records = [makeRecord(2, true)];
-        state.status = { status: 'live', consentedVersion: 2, currentVersion: 2 };
+    it('restores a handled version from its consent record even when the status cache is behind', async () => {
+        state.records = [{ ...makeRecord(2, true), consentedVersion: 2 }];
+        state.status = { status: 'live', consentedVersion: 1, currentVersion: 2 };
         showRoute();
         fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
         await waitFor(() => expect(state.mutateAsync).toHaveBeenCalledOnce());
