@@ -85,7 +85,7 @@ export const CREDENTIAL_CATEGORIES = [
 export type CredentialCategory = (typeof CREDENTIAL_CATEGORIES)[number];
 
 export type IndexMetadata = {
-    category: CredentialCategory | 'Hidden' | 'Archived';
+    category: CredentialCategory | 'Archived';
     courseId?: string;
     title?: string;
     imgUrl?: string;
