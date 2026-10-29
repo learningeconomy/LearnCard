@@ -1,5 +1,15 @@
 #!/usr/bin/env bun
 /**
+ * RETIRED: superseded by the EducationOS scenario runner (scenario/cli.ts), whose live driver
+ * seeds a fresh district, issuer, agreement and learners on every run:
+ *
+ *   bun run scenario doctor                 # repo root: is the dev stack ready?
+ *   bun run scenario mvp --driver live      # seeds and runs the whole walkthrough
+ *
+ * There is no seed-only runner command, so this script keeps its body for the manual
+ * LearnCard app flow (`--learner <profileId>`, then `prove:demo-lms -- --learner`).
+ * Kept, not deleted; no longer maintained.
+ *
  * Dev-only fixtures for the EducationOS MVP demo (WORKPLAN §1a). Run AFTER
  * `seed:education-os` (eco_dev_root) and the Demo LMS listing:
  *
@@ -21,6 +31,7 @@
  * `prove:demo-lms`, which drives the console BFF.
  */
 import * as dotenv from 'dotenv';
+import { warnRetired } from './retired-demo-script';
 
 dotenv.config();
 
@@ -43,7 +54,11 @@ const main = async (): Promise<void> => {
     // SEED must equal brain's (compose-local `a`); the package script sets it explicitly.
     const domain = process.env.DOMAIN_NAME;
     const learnerId = arg('learner');
-    if (!learnerId) throw new Error('Pass --learner <profileId> (a LearnCard app profile).');
+    if (!learnerId) {
+        throw new Error(
+            'Pass --learner <profileId> (a LearnCard app profile), or run `bun run scenario mvp --driver live` instead.'
+        );
+    }
 
     const { neogma } = await import('@instance');
     const { getEcosystemById, getChildEcosystems } = await import('@accesslayer/ecosystem/read');
@@ -225,6 +240,10 @@ Next: bun run prove:demo-lms -- --learner ${learnerId}
     await neogma.driver.close();
 };
 
+warnRetired(
+    'seed:demo-lms',
+    'bun run scenario mvp --driver live (repo root); this manual app-profile seed still runs'
+);
 main()
     .then(() => process.exit(0))
     .catch(error => {

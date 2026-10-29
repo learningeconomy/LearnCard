@@ -31,7 +31,30 @@ shows it as a link. With `LEARNCARD_APP_URL` set, the link is the LearnCard app'
 `/request?vc_request_url=<offerUri>`; otherwise it is the raw VC-API exchange URL. Only the
 learner's own wallet can redeem it. Resubmitting the same completion returns the same offer.
 
-## Run
+## Run the EducationOS walkthrough (start here)
+
+The scenario runner sets up a fresh district, installs this server, approves the Binding,
+starts the demo LMS with the right environment and walks every step. From the repo root:
+
+```sh
+bun run scenario doctor              # is the dev stack ready?
+bun run scenario mvp --driver live   # the whole walkthrough against the running stack
+bun run scenario:in-process          # the same steps against vitest's test database
+```
+
+The old scripts `prove:demo-lms`, `seed:demo-lms` and `prove:demo-learner` (brain-service)
+are retired; they are kept for the manual flow with a real LearnCard app profile, not
+maintained:
+
+- `seed:demo-lms` and `prove:demo-lms` take `--learner <profileId>`. Without `--learner`,
+  `prove:demo-lms` prints a notice and runs `scenario mvp --driver live`, passing through
+  only the runner's options (`--json`, `--keep-lms`, `--only`, `--from`, `--district`); it
+  refuses any other argument.
+- `prove:demo-learner` has no `--learner` flag. It acts as `DEMO_LEARNER_PROFILE_ID`
+  (default `demo-learner`) with its `--register`, `--consent`, `--withdraw`, `--claim` and
+  `--claim-offer` flags.
+
+## Run by hand
 
 ```sh
 BRAIN_URL=<brain-base-url> \

@@ -1,5 +1,17 @@
 #!/usr/bin/env bun
 /**
+ * RETIRED: superseded by the EducationOS scenario runner (scenario/cli.ts). Use
+ *
+ *   bun run scenario doctor                 # repo root: is the dev stack ready?
+ *   bun run scenario mvp --driver live      # the whole walkthrough, fresh district per run
+ *   bun run scenario:in-process             # the same steps against vitest's test database
+ *
+ * Run without `--learner`, this script now prints a deprecation notice and runs
+ * `scenario mvp --driver live`, passing through only the runner's own options (--json,
+ * --keep-lms, --only, --from, --district) and refusing any other argument. With `--learner
+ * <profileId>` it keeps the old manual flow below for a real LearnCard app profile, which the
+ * runner does not cover. Kept, not deleted; no longer maintained.
+ *
  * EducationOS MVP walkthrough proof (WORKPLAN §1a), against the local dev stack. Prereqs:
  * the stack is up (brain with INTEGRATION_HEALTH_ALLOW_LOCALHOST_HTTP=true, console-bff,
  * console on :5173, api on :5100) and `seed:demo-lms` has run.
@@ -21,6 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 import type { RecordProvisioningBindingMetadata } from '@learncard/types';
 import { InstallIntentRecordValidator } from '../src/types/install-intent';
+import { runScenarioMvpLive, warnRetired } from './retired-demo-script';
 
 const origin = process.env.CONSOLE_ORIGIN ?? 'http://localhost:5173';
 const brainOrigin = process.env.BRAIN_ORIGIN ?? 'http://localhost:4000';
@@ -485,9 +498,65 @@ const main = async (): Promise<void> => {
     await neogma.driver.close();
 };
 
-main()
-    .then(() => process.exit(0))
-    .catch(error => {
-        console.error(`\n❌ ${redact(error instanceof Error ? error.message : String(error))}`);
-        process.exit(1);
-    });
+/** The `scenario mvp` options this script passes through when it hands off to the runner. */
+const RUNNER_FLAGS = new Set(['--json', '--keep-lms']);
+const RUNNER_OPTIONS = new Set(['--only', '--from', '--district']);
+
+/**
+ * Why the arguments cannot be handed to `scenario mvp` (which ignores unknown flags), or
+ * undefined. Old flags such as --submit, and typos such as --learnr, must not silently run
+ * the whole live walkthrough.
+ */
+const runnerArgsProblem = (args: readonly string[]): string | undefined => {
+    for (let index = 0; index < args.length; index++) {
+        const current = args[index]!;
+        if (RUNNER_FLAGS.has(current)) continue;
+        if (RUNNER_OPTIONS.has(current)) {
+            const next = args[index + 1];
+            if (!next || next.startsWith('--')) return `${current} needs a value`;
+            index++;
+            continue;
+        }
+        return (
+            `${current} is not supported by scenario mvp (it accepts ` +
+            `${[...RUNNER_FLAGS, ...RUNNER_OPTIONS].join(', ')}); pass --learner <profileId> ` +
+            'for the old manual flow'
+        );
+    }
+    return undefined;
+};
+
+const learnerIndex = process.argv.indexOf('--learner');
+const learnerValue = learnerIndex >= 0 ? process.argv[learnerIndex + 1] : undefined;
+const handoffProblem =
+    learnerIndex >= 0
+        ? !learnerValue || learnerValue.startsWith('--')
+            ? '--learner needs a <profileId>'
+            : undefined
+        : runnerArgsProblem(process.argv.slice(2));
+
+if (handoffProblem) {
+    warnRetired('prove:demo-lms', 'bun run scenario mvp --driver live (repo root)');
+    console.error(`prove:demo-lms: ${handoffProblem}`);
+    process.exit(2);
+} else if (learnerIndex < 0) {
+    // No real app profile: the scenario runner covers this flow end to end.
+    warnRetired('prove:demo-lms', 'bun run scenario mvp --driver live (repo root)');
+    runScenarioMvpLive(process.argv.slice(2))
+        .then(code => process.exit(code))
+        .catch(error => {
+            console.error(`\n❌ ${error instanceof Error ? error.message : String(error)}`);
+            process.exit(2);
+        });
+} else {
+    warnRetired(
+        'prove:demo-lms --learner',
+        'bun run scenario mvp --driver live (repo root); this manual app-profile flow still runs'
+    );
+    main()
+        .then(() => process.exit(0))
+        .catch(error => {
+            console.error(`\n❌ ${redact(error instanceof Error ? error.message : String(error))}`);
+            process.exit(1);
+        });
+}

@@ -1,5 +1,15 @@
 #!/usr/bin/env bun
 /**
+ * RETIRED: superseded by the EducationOS scenario runner (scenario/cli.ts), whose wallet
+ * steps (consent, withdraw, accept and verify, offer claim) run in
+ *
+ *   bun run scenario mvp --driver live      # repo root
+ *   bun run scenario:in-process             # repo root
+ *
+ * The runner has no per-command wallet CLI, so this script keeps its body for the manual
+ * flow (--register, --consent, --withdraw, --consent-exchange, --claim, --claim-offer).
+ * Kept, not deleted; no longer maintained.
+ *
  * Headless learner wallet for the EducationOS MVP walkthrough. A real LearnCard wallet
  * (seed-derived keys) on the local network, so issuance can encrypt to it and the learner
  * side of the flow can be proven without the app UI. It does not exercise the app's screens.
@@ -22,6 +32,7 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { z } from 'zod';
 import { ConsentFlowTermsValidator, VCValidator } from '@learncard/types';
+import { warnRetired } from './retired-demo-script';
 
 const network = process.env.LCN_NETWORK ?? 'http://localhost:4000/trpc';
 const profileId = process.env.DEMO_LEARNER_PROFILE_ID ?? 'demo-learner';
@@ -213,6 +224,10 @@ const main = async (): Promise<void> => {
     await report(vc);
 };
 
+warnRetired(
+    'prove:demo-learner',
+    'bun run scenario mvp --driver live (repo root); this manual wallet still runs'
+);
 main().catch(error => {
     console.error(`\n❌ ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
