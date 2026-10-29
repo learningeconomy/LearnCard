@@ -161,6 +161,10 @@ export const resolveVersions = async ({
     return validateVersions(Object.fromEntries(entries));
 };
 
+// Metadata can list a new version before its tarball is served, so a tarball 404 is lag too.
+const YARN_CLASSIC_PENDING =
+    /^Couldn't find any versions for ".+" that matches ".+"$|Request failed "404\b[^"]*"|Package not found/m;
+
 export const publicationPending = (manager, result) => {
     const output = (result.stdout ?? '') + '\n' + (result.stderr ?? '');
     if (manager === 'npm') {
@@ -183,11 +187,9 @@ export const publicationPending = (manager, result) => {
                 return (
                     diagnostic.type === 'error' &&
                     (diagnostic.name === 82 ||
-                        // Yarn Classic reports missing versions without a numeric code.
+                        // Yarn Classic has no numeric code for missing versions or tarball 404s.
                         (typeof diagnostic.data === 'string' &&
-                            /^Couldn't find any versions for ".+" that matches ".+"$/.test(
-                                diagnostic.data
-                            )) ||
+                            YARN_CLASSIC_PENDING.test(diagnostic.data)) ||
                         (diagnostic.name === 35 &&
                             /(?:404|Package not found)/.test(
                                 diagnostic.displayName + ' ' + diagnostic.data

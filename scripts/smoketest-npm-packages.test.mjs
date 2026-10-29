@@ -72,10 +72,42 @@ test('Yarn Classic retries a missing published version with a fresh metadata cac
     assert.equal(caches[1], join(cwd, '.registry-cache', '2', 'yarn-cache'));
 });
 
+test('Yarn Classic retries a tarball 404 that has no diagnostic name', async t => {
+    // Exact shape from Prod Deploy run 40771349339, attempt 24.
+    const tarball404 = {
+        status: 1,
+        stdout: JSON.stringify({
+            type: 'error',
+            data: 'Error: https://registry.yarnpkg.com/@learncard/openid4vc-plugin/-/openid4vc-plugin-0.3.14.tgz: Request failed "404 Not Found"\n    at ResponseError.ExtendableBuiltin (/usr/lib/node_modules/yarn/lib/cli.js:696:66)',
+        }),
+        stderr: '',
+    };
+    assert(publicationPending('yarn', tarball404));
+    assert(
+        publicationPending('yarn', {
+            stderr: JSON.stringify({ type: 'error', data: 'Package not found' }),
+        })
+    );
+
+    let attempts = 0;
+    await installPackages({
+        manager: 'yarn',
+        group: 'plugins',
+        versions,
+        cwd: fixture(t),
+        wait: async () => {},
+        run: () => (++attempts === 1 ? tarball404 : { status: 0 }),
+        verify: () => {},
+    });
+    assert.equal(attempts, 2);
+});
+
 test('Yarn Classic authentication and engine errors are not pending publication', () => {
     for (const data of [
         'Request failed "401 Unauthorized"',
         'Request failed "403 Forbidden"',
+        'Request failed "500 Internal Server Error"',
+        'Error: https://registry.yarnpkg.com/@learncard/init/-/init-9.8.7.tgz: Request failed "401 Unauthorized"',
         'The engine "node" is incompatible with this module.',
     ]) {
         assert.equal(
