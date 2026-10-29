@@ -24,6 +24,11 @@ type CacheTransition = {
     replacement: LCR;
 };
 
+type CategoryMutationContext = {
+    did: string;
+    transitions: CacheTransition[];
+};
+
 export type CredentialMutationFailure = {
     record: LCR;
     error: Error;
@@ -33,6 +38,8 @@ export type CredentialRecordsMutationResult = {
     succeeded: LCR[];
     failed: CredentialMutationFailure[];
 };
+
+type CredentialMutationOutcome = { record: LCR } | CredentialMutationFailure;
 
 const cacheKeyFor = (did: string, category: CredentialListCategory) => [
     'useGetCredentialList',
@@ -184,33 +191,36 @@ const createCategoryMutation = (
         const { initWallet } = useWallet();
         const queryClient = useQueryClient();
 
-        return useMutation<CredentialRecordsMutationResult, Error, LCR[]>({
+        return useMutation<CredentialRecordsMutationResult, Error, LCR[], CategoryMutationContext>({
             mutationFn: async records => {
                 const wallet = await initWallet();
-                const results = await mapWithConcurrency(records, async record => {
-                    const replacement = transform(record);
-                    if (!replacement) {
-                        return {
-                            record,
-                            error: new Error(
-                                'This credential cannot be restored because its archive data is missing.'
-                            ),
-                        };
+                const results = await mapWithConcurrency<LCR, CredentialMutationOutcome>(
+                    records,
+                    async record => {
+                        const replacement = transform(record);
+                        if (!replacement) {
+                            return {
+                                record,
+                                error: new Error(
+                                    'This credential cannot be restored because its archive data is missing.'
+                                ),
+                            };
+                        }
+                        try {
+                            await wallet.index.LearnCloud.update(record.id, {
+                                category: replacement.category,
+                                categorySource: replacement.categorySource,
+                                archive: replacement.archive,
+                            });
+                            return { record };
+                        } catch (error) {
+                            return {
+                                record,
+                                error: error instanceof Error ? error : new Error(String(error)),
+                            };
+                        }
                     }
-                    try {
-                        await wallet.index.LearnCloud.update(record.id, {
-                            category: replacement.category,
-                            categorySource: replacement.categorySource,
-                            archive: replacement.archive,
-                        });
-                        return { record };
-                    } catch (error) {
-                        return {
-                            record,
-                            error: error instanceof Error ? error : new Error(String(error)),
-                        };
-                    }
-                });
+                );
                 await wallet.cache.flushIndex();
 
                 const failed = results.filter(
