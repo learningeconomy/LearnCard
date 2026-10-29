@@ -28,7 +28,7 @@ vi.mock('@capacitor-community/sqlite', () => ({
         }
     },
 }));
-vi.mock('jeep-sqlite/loader', () => ({ defineCustomElements: mocks.define }));
+vi.mock('jeep-sqlite/dist/components/jeep-sqlite', () => ({ defineCustomElement: mocks.define }));
 vi.mock('../stores/sqliteStore', () => ({
     sqliteStore: {
         get: { sqlite: () => mocks.nativeOwner },
