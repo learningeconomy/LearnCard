@@ -153,6 +153,8 @@ jobs:
               env:
                   IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
               with:
+                  # Retry transient API failures before using the conservative fallback.
+                  retries: 3
                   script: |
                       const { resolveDeployRange } = require('./scripts/resolve-deploy-range.cjs');
                       const range = await resolveDeployRange({
