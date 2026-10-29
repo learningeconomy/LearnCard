@@ -108,6 +108,29 @@ test.describe('campaign composer @mocked', () => {
         const nameBounds = await nameInput.boundingBox();
         const previewBounds = await previewPanel.boundingBox();
         expect(previewBounds!.x).toBeGreaterThan(nameBounds!.x + nameBounds!.width);
+        await expect(page.getByRole('tab', { name: 'Fields', exact: true })).toHaveAttribute(
+            'aria-selected',
+            'true'
+        );
+        await page.getByLabel('Title', { exact: true }).fill('Created with fields');
+        await page.getByLabel('Frequency', { exact: true }).selectOption('3');
+        await page.getByLabel('Days between messages').fill('7');
+        await page
+            .getByRole('heading', { name: 'Message', exact: true })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({
+            path: 'test-results/campaign-message-fields-desktop.png',
+            fullPage: true,
+        });
+        await page.getByRole('tab', { name: 'Fields', exact: true }).press('ArrowRight');
+        await expect(page.getByRole('tab', { name: 'JSON', exact: true })).toHaveAttribute(
+            'aria-selected',
+            'true'
+        );
+        expect(JSON.parse(await page.getByLabel('Message JSON').inputValue())).toMatchObject({
+            title: 'Created with fields',
+            frequency: { everyDays: 7 },
+        });
         await expect(page.getByLabel('Message JSON')).toHaveCSS('font-family', /monospace/);
         await expect(previewPanel).toHaveCSS('border-style', 'solid');
         await page.screenshot({ path: 'test-results/campaign-create-desktop.png', fullPage: true });
@@ -124,6 +147,8 @@ test.describe('campaign composer @mocked', () => {
                 actions: [{ label: 'Close local preview', action: { type: 'dismiss' } }],
             })
         );
+        await page.getByRole('tab', { name: 'JSON', exact: true }).press('ArrowLeft');
+        await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Local preview only');
         await page.getByLabel('Inbox / push notification').check();
         await page.getByLabel('Notification title').fill('Synthetic test');
         await page.getByLabel('Notification body').fill('Only a mocked test send');
@@ -138,6 +163,10 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Close local preview' }).click();
         await page.getByRole('button', { name: 'Save Draft' }).click();
         await expect(page.getByLabel('Campaign ID')).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+        await page.getByRole('tab', { name: 'JSON', exact: true }).click();
+        await page.getByRole('tab', { name: 'Fields', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
         await expect(
             page.getByRole('button', { name: 'Send Notifications — unavailable' })
         ).toBeDisabled();
@@ -182,6 +211,26 @@ test.describe('campaign composer @mocked', () => {
             .getByRole('heading', { name: 'Edit campaign', exact: true })
             .scrollIntoViewIfNeeded();
         await page.screenshot({ path: 'test-results/campaign-mobile.png', fullPage: true });
+        await page
+            .getByRole('heading', { name: 'Message', exact: true })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({
+            path: 'test-results/campaign-message-fields-mobile.png',
+            fullPage: true,
+        });
+        for (const label of ['Title', 'Format', 'Frequency', 'Button label']) {
+            const bounds = await page.getByLabel(label, { exact: true }).boundingBox();
+            expect(bounds!.x).toBeGreaterThanOrEqual(0);
+            expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+        }
+        await page.getByRole('tab', { name: 'JSON', exact: true }).click();
+        await expect(page.getByLabel('Message JSON')).toBeVisible();
+        await page.screenshot({
+            path: 'test-results/campaign-message-json-mobile.png',
+            fullPage: true,
+        });
+        await page.getByRole('tab', { name: 'Fields', exact: true }).click();
+
         expect(
             await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
         ).toBe(true);

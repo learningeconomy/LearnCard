@@ -4,7 +4,6 @@ import {
     arrowBackOutline,
     chatbubbleEllipsesOutline,
     notificationsOutline,
-    codeSlashOutline,
     eyeOutline,
     paperPlaneOutline,
 } from 'ionicons/icons';
@@ -15,6 +14,7 @@ import type { Campaign, CampaignStatus } from '@learncard/types';
 import type { CampaignApi, CampaignForm } from './types';
 import { campaignToForm, initialForm, previewMessage, validateForm } from './model';
 import { CampaignAudience } from './CampaignAudience';
+import { CampaignMessageEditor } from './CampaignMessageEditor';
 import { CampaignStatsPanel } from './CampaignStats';
 import { useCampaignAction } from './useCampaignAction';
 import {
@@ -115,15 +115,16 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     const transitionLocked = busy || dirty || !saved || Boolean(validation.errors.length);
     const visibleErrors = validation.errors.filter(error => {
         const path = error.split(':')[0];
-        const field = path.startsWith('message')
-            ? 'messageJson'
-            : path === 'notification.title'
-              ? 'title'
-              : path === 'notification.body'
-                ? 'body'
-                : path === 'channels'
-                  ? 'inApp'
-                  : path;
+        // The message editor shows its own live field-path validation in both modes.
+        if (path.startsWith('message')) return false;
+        const field =
+            path === 'notification.title'
+                ? 'title'
+                : path === 'notification.body'
+                  ? 'body'
+                  : path === 'channels'
+                    ? 'inApp'
+                    : path;
         return (
             edited.has(field as keyof CampaignForm) || (path === 'channels' && edited.has('notify'))
         );
@@ -280,31 +281,11 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
                             {form.inApp && (
-                                <div className="overflow-hidden rounded-2xl border border-grayscale-200">
-                                    <div className="flex items-center justify-between gap-3 border-b border-grayscale-200 bg-grayscale-100 px-4 py-3">
-                                        <label
-                                            htmlFor="campaign-json"
-                                            className="flex items-center gap-2 text-xs font-medium text-grayscale-700"
-                                        >
-                                            <IonIcon icon={codeSlashOutline} aria-hidden="true" />
-                                            Message JSON
-                                        </label>
-                                        <span
-                                            className={`text-xs ${preview?.success ? 'text-emerald-700' : 'text-grayscale-600'}`}
-                                        >
-                                            {preview?.success ? 'Valid message' : 'Check your JSON'}
-                                        </span>
-                                    </div>
-                                    <textarea
-                                        id="campaign-json"
-                                        spellCheck={false}
-                                        rows={12}
-                                        className="block w-full resize-y bg-white p-4 font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace] text-sm leading-relaxed text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
-                                        value={form.messageJson}
-                                        onChange={e => set('messageJson', e.target.value)}
-                                        aria-describedby="campaign-validation"
-                                    />
-                                </div>
+                                <CampaignMessageEditor
+                                    value={form.messageJson}
+                                    campaignId={form.id}
+                                    onChange={value => set('messageJson', value)}
+                                />
                             )}
                             {form.notify && (
                                 <div className="space-y-4 border-t border-grayscale-200 pt-5">
