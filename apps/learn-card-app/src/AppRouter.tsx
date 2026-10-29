@@ -21,7 +21,7 @@ import useAutoConsentLearnCardAi from './hooks/useAutoConsentLearnCardAi';
 import {
     useIsLoggedIn,
     QRCodeScannerStore,
-    usePrefetchCredentials,
+    usePrefetchCredentialPage,
     useIsCollapsed,
     usePrefetchBoosts,
     useModal,
@@ -377,15 +377,15 @@ const AppRouter: React.FC = () => {
 
     const enablePrefetch = isLoggedIn && !isChapiInteraction;
 
-    usePrefetchCredentials('Social Badge', enablePrefetch);
-    usePrefetchCredentials('Achievement', enablePrefetch);
-    usePrefetchCredentials('Learning History', enablePrefetch);
-    usePrefetchCredentials('Work History', enablePrefetch);
-    usePrefetchCredentials('Skill', enablePrefetch);
-    usePrefetchCredentials('ID', enablePrefetch);
-    usePrefetchCredentials('Membership', enablePrefetch);
-    usePrefetchCredentials('AI Topic', enablePrefetch);
-    usePrefetchCredentials(undefined, enablePrefetch);
+    usePrefetchCredentialPage('Social Badge', enablePrefetch);
+    usePrefetchCredentialPage('Achievement', enablePrefetch);
+    usePrefetchCredentialPage('Learning History', enablePrefetch);
+    usePrefetchCredentialPage('Work History', enablePrefetch);
+    usePrefetchCredentialPage('Skill', enablePrefetch);
+    usePrefetchCredentialPage('ID', enablePrefetch);
+    usePrefetchCredentialPage('Membership', enablePrefetch);
+    usePrefetchCredentialPage('AI Topic', enablePrefetch);
+    usePrefetchCredentialPage(undefined, enablePrefetch);
     usePrefetchBoosts(enablePrefetch);
     useSyncConsentFlow(enablePrefetch);
     usePendingContractSync(enablePrefetch);

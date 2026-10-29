@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Patch Changes
+
+- Fix incomplete earned-credential searches, navigation-dependent dashboard totals, internal-only recent pages, and collection loading-error recovery (LC-2294). Keep matches and loaded cards visible while work remains, expose keyboard-accessible continuation/retry and live status, and isolate account-scoped collection data.
+
 ## 1.100.6
 
 ### Patch Changes

@@ -40,7 +40,7 @@ interface WalletPageSquareProps {
         categoryId: CredentialCategoryEnum;
         labels: { singular: string; plural: string };
     };
-    count: number;
+    count: number | null;
     showNewItemIndicator?: boolean;
     loading?: boolean;
 }
@@ -73,7 +73,7 @@ const WalletPageSquare: React.FC<WalletPageSquareProps> = ({
 
     let metaData: React.ReactNode | null = (
         <p className={`${countTextColor} font-poppins font-semibold text-base`}>
-            {numeral(count).format('0a')}
+            {count === null ? '—' : numeral(count).format('0a')}
         </p>
     );
 

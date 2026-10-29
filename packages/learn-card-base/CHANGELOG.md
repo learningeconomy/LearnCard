@@ -1,5 +1,11 @@
 # learn-card-base
 
+## Unreleased
+
+### Patch Changes
+
+- Add progressive, account-scoped credential collection queries with shared visibility, metadata-only totals/title search, and bounded legacy-title resolution (LC-2294). Backfill index metadata only for documents already opened instead of downloading every indexed credential during pagination.
+
 ## 0.7.6
 
 ### Patch Changes

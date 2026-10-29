@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { useGetCredentialList, useModal, ModalTypes } from 'learn-card-base';
-import PassportCredentialCard, { ActivityIndexRecord } from './PassportCredentialCard';
+import { useCredentialCollection, useModal, ModalTypes } from 'learn-card-base';
+import PassportCredentialCard from './PassportCredentialCard';
 import { AllCredentialsModal } from './AllCredentialsModal';
-import { isHiddenActivity } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 
 const MAX_ITEMS = 5;
@@ -12,7 +11,15 @@ export const RecentlyAdded: React.FC = () => {
         desktop: ModalTypes.FullScreen,
         mobile: ModalTypes.FullScreen,
     });
-    const { data } = useGetCredentialList(undefined);
+    const collection = useCredentialCollection(undefined, { mode: 'recent', limit: MAX_ITEMS });
+    const items = useMemo(
+        () =>
+            [...collection.records]
+                .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
+                .slice(0, MAX_ITEMS),
+        [collection.records]
+    );
+    const loadingMore = !collection.isComplete && items.length < MAX_ITEMS;
 
     const openSeeAll = () =>
         newModal(<AllCredentialsModal onClose={closeModal} />, {
@@ -20,19 +27,8 @@ export const RecentlyAdded: React.FC = () => {
             sectionClassName: 'max-w-[760px]!',
         });
 
-    const items = useMemo(() => {
-        const records = (data?.pages?.flatMap(p => p?.records ?? []) ??
-            []) as ActivityIndexRecord[];
-        return records
-            .filter(r => r?.uri && !isHiddenActivity(r.category))
-            .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
-            .slice(0, MAX_ITEMS);
-    }, [data]);
-
-    if (items.length === 0) return null;
-
     return (
-        <section className="mb-[24px]">
+        <section className="mb-[24px]" aria-label={m['passport.activity.recent']()}>
             <div className="flex items-center justify-between mb-[10px]">
                 <h2 className="font-poppins text-[13px] tracking-[1px] text-grayscale-800">
                     {m['passport.activity.recent']()}
@@ -54,6 +50,33 @@ export const RecentlyAdded: React.FC = () => {
                     />
                 ))}
             </div>
+            <p
+                role="status"
+                aria-live="polite"
+                className={`text-sm mt-2 ${collection.isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-600'}`}
+            >
+                {collection.isError
+                    ? items.length > 0
+                        ? 'Some recent credentials could not be loaded. These results are incomplete.'
+                        : 'Recent credentials could not be loaded.'
+                    : loadingMore
+                      ? 'Loading recent credentials…'
+                      : items.length === 0
+                        ? m['passport.activity.emptyAll']()
+                        : ''}
+            </p>
+            {collection.isError && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!collection.isFetching) void collection.retry();
+                    }}
+                    aria-disabled={collection.isFetching}
+                    className="mt-2 py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                >
+                    {collection.isFetching ? 'Retrying…' : 'Retry recent credentials'}
+                </button>
+            )}
         </section>
     );
 };

@@ -1,5 +1,5 @@
 import { CredentialCategoryEnum } from 'learn-card-base';
-import { FILE_KINDS } from 'learn-card-base/types/file-extraction';
+import { isInternalCredentialCategory } from 'learn-card-base/helpers/credentialCollection';
 import * as m from '../../../paraglide/messages.js';
 import { getLocale } from '../../../paraglide/runtime.js';
 
@@ -119,35 +119,8 @@ export const matchActivityCategory = (category?: string): CredentialCategoryEnum
 export const resolveActivityCategory = (category?: string): CredentialCategoryEnum =>
     matchActivityCategory(category) ?? CredentialCategoryEnum.socialBadge;
 
-// Internal/system credentials the user never explicitly "sent" — profile data,
-// AI artifacts, and self-assigned skills. They pollute the activity feed, so we
-// hide them from the timeline entirely.
-export const HIDDEN_ACTIVITY_CATEGORIES: ReadonlySet<CredentialCategoryEnum> = new Set([
-    CredentialCategoryEnum.selfAssignedSkills,
-    CredentialCategoryEnum.verifiableData,
-    CredentialCategoryEnum.goals,
-    CredentialCategoryEnum.professionalTitle,
-    CredentialCategoryEnum.roleExperience,
-    CredentialCategoryEnum.workExperience,
-    CredentialCategoryEnum.payRate,
-    CredentialCategoryEnum.workLifeBalance,
-    CredentialCategoryEnum.jobStability,
-    CredentialCategoryEnum.aiSummary,
-    CredentialCategoryEnum.aiTopic,
-    CredentialCategoryEnum.aiPathway,
-    CredentialCategoryEnum.aiInsight,
-    CredentialCategoryEnum.aiAssessment,
-    CredentialCategoryEnum.resume,
-]);
-
-// Upload categories are lowercase; published credentials such as "Resume" are hidden via HIDDEN_ACTIVITY_CATEGORIES.
-const ORIGINAL_DOCUMENT_CATEGORIES = new Set<string>(FILE_KINDS);
-
-export const isHiddenActivity = (category?: string): boolean => {
-    if (category && ORIGINAL_DOCUMENT_CATEGORIES.has(category)) return true;
-    const matched = matchActivityCategory(category);
-    return matched !== undefined && HIDDEN_ACTIVITY_CATEGORIES.has(matched);
-};
+// Collection and activity views share the same internal-category rules.
+export const isHiddenActivity = isInternalCredentialCategory;
 
 // eventType → status sub-namespace key. CREATED/DELIVERED both read as "sent".
 const STATUS_KEY: Record<string, string> = {

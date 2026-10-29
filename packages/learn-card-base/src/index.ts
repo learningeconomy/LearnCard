@@ -273,6 +273,8 @@ export * from './types/careerOneStop';
 
 export * from './react-query/queries/queries';
 export * from './react-query/queries/vcQueries';
+export * from './react-query/queries/useCredentialCollection';
+export * from './helpers/credentialCollection';
 export * from './react-query/queries/notifications';
 export * from './react-query/queries/aiPassport-queries';
 export * from './react-query/connectionPrompts';

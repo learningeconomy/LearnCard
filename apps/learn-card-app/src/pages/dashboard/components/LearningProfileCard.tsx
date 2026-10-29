@@ -154,7 +154,7 @@ const LearningProfileCard: React.FC<LearningProfileCardProps> = ({ vm }) => {
             )}
 
             <div className="flex items-center justify-between pt-3 border-t border-grayscale-100 mt-1">
-                {state !== 'empty' ? (
+                {state !== 'empty' && verifiedRecords !== null ? (
                     <div className="flex items-center gap-1.5">
                         <IonIcon
                             icon={shieldCheckmarkOutline}

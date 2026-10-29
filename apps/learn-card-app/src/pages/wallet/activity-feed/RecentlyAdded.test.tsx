@@ -1,112 +1,80 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
-const { credentialList } = vi.hoisted(() => ({ credentialList: { value: undefined as unknown } }));
-
-vi.mock('learn-card-base', async () => ({
-    ...(await (await import('../../../test-utils/mockLearnCardBase')).learnCardBaseEnumMock()),
-    useGetCredentialList: () => ({ data: credentialList.value }),
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
-    ModalTypes: { FullScreen: 'full-screen' },
-    categoryMetadata: {},
-    UploadTypesEnum: {
-        Resume: 'resume',
-        Certificate: 'certificate',
-        Transcript: 'transcript',
-        Diploma: 'diploma',
+const host = vi.hoisted(() => ({
+    collection: {
+        records: [] as { uri: string; title: string; date?: string }[],
+        isComplete: false,
+        isError: false,
+        isFetching: false,
+        retry: vi.fn(),
     },
+    open: vi.fn(),
 }));
-// PassportCredentialCard includes query-backed title resolution and previews;
-// stub it so this test stays focused on the strip's filter/sort/cap behavior.
+vi.mock('learn-card-base', () => ({
+    useCredentialCollection: () => host.collection,
+    useModal: () => ({ newModal: host.open, closeModal: vi.fn() }),
+    ModalTypes: { FullScreen: 'full-screen' },
+}));
 vi.mock('./PassportCredentialCard', () => ({
-    default: ({ record }: { record: { title?: string } }) => (
-        <div data-testid="recent-tile">{record.title}</div>
-    ),
+    default: ({ record }: { record: { title: string } }) => <article>{record.title}</article>,
 }));
-vi.mock('./AllCredentialsModal', () => ({ AllCredentialsModal: () => null }));
-
-type TestRecord = {
-    uri: string;
-    title?: string;
-    category?: string;
-    date?: string;
-};
-
+vi.mock('./AllCredentialsModal', () => ({ AllCredentialsModal: () => <div>Full collection</div> }));
 import { RecentlyAdded } from './RecentlyAdded';
 
-const withRecords = (records: TestRecord[]) => {
-    credentialList.value = { pages: [{ records }] };
-};
+beforeEach(() =>
+    Object.assign(host.collection, {
+        records: [],
+        isComplete: false,
+        isError: false,
+        isFetching: false,
+    })
+);
+afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+});
 
-describe('RecentlyAdded', () => {
-    it('renders nothing when there are no records', () => {
-        credentialList.value = undefined;
-        const { container } = render(<RecentlyAdded />);
-        expect(container.firstChild).toBeNull();
-    });
-
-    it('hides internal/system categories and renders the rest', () => {
-        withRecords([
-            { uri: 'a', title: 'Diploma', category: 'Achievement', date: '2026-06-10' },
-            { uri: 'b', title: 'Hidden Data', category: 'VerifiableData', date: '2026-06-11' },
+describe('Recently added', () => {
+    it.each(['loading', 'failed', 'empty'])(
+        'keeps All credentials reachable when recent items are %s',
+        state => {
+            Object.assign(host.collection, {
+                isComplete: state === 'empty',
+                isError: state === 'failed',
+            });
+            render(<RecentlyAdded />);
+            const seeAll = screen.getByRole('button', { name: 'See all' });
+            seeAll.focus();
+            fireEvent.click(seeAll);
+            expect(host.open).toHaveBeenCalledTimes(1);
+            if (state !== 'empty')
+                expect(screen.queryByText('Nothing in your passport yet.')).toBeNull();
+            if (state === 'failed')
+                expect(
+                    screen.getByRole('button', { name: 'Retry recent credentials' })
+                ).toBeTruthy();
+        }
+    );
+    it('retains available cards during failure and caps the newest records at five', () => {
+        host.collection.records = [3, 1, 5, 2, 0, 4, 6, 7].map(i => ({
+            uri: `uri-${i}`,
+            title: `Badge ${i}`,
+            date: `2026-10-${String(20 - i).padStart(2, '0')}`,
+        }));
+        host.collection.isError = true;
+        render(<RecentlyAdded />);
+        expect(screen.getAllByRole('article').map(card => card.textContent)).toEqual([
+            'Badge 0',
+            'Badge 1',
+            'Badge 2',
+            'Badge 3',
+            'Badge 4',
         ]);
-        const { getByText, queryByText } = render(<RecentlyAdded />);
-        expect(getByText('Diploma')).toBeTruthy();
-        expect(queryByText('Hidden Data')).toBeNull();
-    });
-
-    it('hides uploaded originals without filtering earned credentials by their title', () => {
-        withRecords([
-            { uri: 'original-resume', title: 'Uploaded résumé', category: 'resume' },
-            { uri: 'original-certificate', title: 'Uploaded certificate', category: 'certificate' },
-            { uri: 'original-transcript', title: 'Uploaded transcript', category: 'transcript' },
-            { uri: 'original-diploma', title: 'Uploaded diploma', category: 'diploma' },
-            { uri: 'earned', title: 'Raw Artifact', category: 'Achievement' },
-            { uri: 'published-resume', title: 'Published résumé', category: 'Resume' },
-        ]);
-        const { getAllByTestId } = render(<RecentlyAdded />);
-        expect(getAllByTestId('recent-tile').map(tile => tile.textContent)).toEqual([
-            'Raw Artifact',
-        ]);
-    });
-
-    it('renders nothing when every record is an uploaded original', () => {
-        withRecords([{ uri: 'original', title: 'Raw Artifact', category: 'resume' }]);
-        const { container } = render(<RecentlyAdded />);
-        expect(container.firstChild).toBeNull();
-    });
-
-    it('filters originals across loaded pages before sorting and filling the five tiles', () => {
-        credentialList.value = {
-            pages: [
-                {
-                    records: [
-                        {
-                            uri: 'original',
-                            title: 'Raw Artifact',
-                            category: 'resume',
-                            date: '2026-06-20',
-                        },
-                    ],
-                },
-                {
-                    records: Array.from({ length: 7 }, (_, i) => ({
-                        uri: `u${i}`,
-                        title: `Cred ${i}`,
-                        category: 'Achievement',
-                        date: `2026-06-0${i + 1}`,
-                    })),
-                },
-            ],
-        };
-        const { getAllByTestId } = render(<RecentlyAdded />);
-        expect(getAllByTestId('recent-tile').map(tile => tile.textContent)).toEqual([
-            'Cred 6',
-            'Cred 5',
-            'Cred 4',
-            'Cred 3',
-            'Cred 2',
-        ]);
+        expect(screen.queryByText('Badge 5')).toBeNull();
+        expect(screen.getByRole('status').textContent).toContain('incomplete');
+        fireEvent.click(screen.getByRole('button', { name: 'Retry recent credentials' }));
+        expect(host.collection.retry).toHaveBeenCalledTimes(1);
     });
 });
