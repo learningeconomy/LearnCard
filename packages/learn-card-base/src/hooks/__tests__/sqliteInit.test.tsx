@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
     setDb: vi.fn(),
     setSqlite: vi.fn(),
     ready: vi.fn(),
-    encrypt: vi.fn(async () => undefined),
+    encrypt: vi.fn(async () => 'encrypted' as const),
     driver: {
         isAvailable: true,
         checkConnectionsConsistency: vi.fn(),

@@ -13,12 +13,27 @@ func readSecret(_ path: String) throws -> String? {
     manager.fileExists(atPath: path) ? try String(contentsOfFile: path, encoding: .utf8) : nil
 }
 
-func prepare(_ path: String, fault: String? = nil) throws -> Bool {
+func prepare(_ path: String, fault: String? = nil, damageStaging: Bool = false) throws -> Bool {
     try Database.prepare(path: path, readSecret: { try readSecret(path + ".synthetic-secret") }, writeSecret: {
         try $0.write(toFile: path + ".synthetic-secret", atomically: true, encoding: .utf8)
     }, checkpoint: { point in
         if point == fault { _exit(77) }
+        if damageStaging && point == "before-validate" {
+            _ = try damageCache(path + ".encryption.tmp", secret: readSecret(path + ".synthetic-secret")!)
+        }
     })
+}
+
+func damageCache(_ path: String, secret: String) throws -> Data {
+    let (page, pageSize) = try Database.withDatabase(path: path, secret: secret, writable: false) { db in
+        (Int(try Database.scalar(db, "SELECT rootpage FROM sqlite_master WHERE name='reactQuery'"))!,
+         Int(try Database.scalar(db, "PRAGMA cipher_page_size"))!)
+    }
+    try require(page > 1 && pageSize > 0)
+    var bytes = try Data(contentsOf: URL(fileURLWithPath: path))
+    bytes[(page - 1) * pageSize + 128] ^= 1
+    try bytes.write(to: URL(fileURLWithPath: path))
+    return bytes
 }
 
 func seed(_ path: String, rows: Int = 100, wal: Bool = false) throws {
@@ -111,6 +126,64 @@ try check(migrated, encrypted: true)
 try require(try !prepare(migrated))
 passed.append("plaintext-conversion-preserves-schema-version-and-recovery-material")
 
+let cacheCorruption = path("encrypted-cache-corruption")
+try seed(cacheCorruption)
+_ = try prepare(cacheCorruption)
+let cacheSecret = try readSecret(cacheCorruption + ".synthetic-secret")!
+// Corrupt only an authenticated cache page. The schema and account/recovery pages remain intact.
+let damagedCache = try damageCache(cacheCorruption, secret: cacheSecret)
+expectFailure { try Database.validate(path: cacheCorruption, secret: cacheSecret) }
+try require(try !prepare(cacheCorruption))
+try Database.withDatabase(path: cacheCorruption, secret: cacheSecret, writable: false) { db in
+    try require(try Database.scalar(db, "SELECT count(*) FROM sqlite_master") != "0")
+    try require(try Database.scalar(db, "SELECT privateKey FROM users") == "SYNTHETIC_PRIVATE_KEY")
+}
+try require(try Data(contentsOf: URL(fileURLWithPath: cacheCorruption)) == damagedCache)
+passed.append("existing-encrypted-prepare-does-not-scan-corrupt-disposable-cache")
+
+let stagedCorruption = path("corrupt-staging")
+try seed(stagedCorruption)
+let intactSource = try Data(contentsOf: URL(fileURLWithPath: stagedCorruption))
+expectFailure { _ = try prepare(stagedCorruption, damageStaging: true) }
+try require(try Data(contentsOf: URL(fileURLWithPath: stagedCorruption)) == intactSource)
+try check(stagedCorruption, encrypted: false)
+try require(!manager.fileExists(atPath: stagedCorruption + ".encryption.tmp"))
+passed.append("staged-cache-corruption-fails-full-validation-and-preserves-original")
+
+let wrongSecret = path("wrong-existing-secret")
+try seed(wrongSecret)
+_ = try prepare(wrongSecret)
+let encryptedSource = try Data(contentsOf: URL(fileURLWithPath: wrongSecret))
+try "WRONG_SYNTHETIC_SECRET".write(toFile: wrongSecret + ".synthetic-secret", atomically: true, encoding: .utf8)
+try require(try !prepare(wrongSecret))
+expectFailure { try check(wrongSecret, encrypted: true) }
+try require(try Data(contentsOf: URL(fileURLWithPath: wrongSecret)) == encryptedSource)
+passed.append("existing-wrong-secret-fails-at-keyed-open-without-replacement")
+
+let empty = path("empty-legacy-file")
+try Data().write(to: URL(fileURLWithPath: empty))
+try require(try !prepare(empty))
+try Database.validate(path: empty, secret: readSecret(empty + ".synthetic-secret")!)
+passed.append("zero-byte-legacy-file-provisions-fresh-encrypted-storage")
+
+let emptyWithWAL = path("empty-with-recovery-sidecar")
+try Data().write(to: URL(fileURLWithPath: emptyWithWAL))
+let recoverySidecar = Data("SYNTHETIC_RECOVERY_SIDECAR".utf8)
+try recoverySidecar.write(to: URL(fileURLWithPath: emptyWithWAL + "-wal"))
+expectFailure { _ = try prepare(emptyWithWAL) }
+try require(try Data(contentsOf: URL(fileURLWithPath: emptyWithWAL)).isEmpty)
+try require(try Data(contentsOf: URL(fileURLWithPath: emptyWithWAL + "-wal")) == recoverySidecar)
+try require(!manager.fileExists(atPath: emptyWithWAL + ".synthetic-secret"))
+passed.append("empty-file-with-recovery-sidecars-is-not-replaced")
+
+let short = path("short-unreadable-file")
+try Data("SYNTHETIC".utf8).write(to: URL(fileURLWithPath: short))
+let shortBytes = try Data(contentsOf: URL(fileURLWithPath: short))
+expectFailure { _ = try prepare(short) }
+try require(try Data(contentsOf: URL(fileURLWithPath: short)) == shortBytes)
+try require(!manager.fileExists(atPath: short + ".synthetic-secret"))
+passed.append("short-nonempty-file-is-preserved-without-provisioning")
+
 for point in ["after-secret", "before-replace", "after-replace"] {
     let file = path(point)
     try seed(file)
@@ -166,11 +239,13 @@ try check(concurrent, encrypted: true)
 passed.append("cross-process-bootstrap-lock")
 
 // Same engine, fixture, durability settings and query on both sides. No native bridge timing claim.
+var metrics: [String: Any] = [:]
+if ProcessInfo.processInfo.environment["LEARNCARD_SQLITE_SKIP_PERFORMANCE"] != "1" {
 let plainBench = path("benchmark-plain"), cipherBench = path("benchmark-cipher")
 try seed(plainBench, rows: 1_000); try seed(cipherBench, rows: 1_000)
 let conversionMs = try timed { _ = try prepare(cipherBench) }
 let cipherSecret = try readSecret(cipherBench + ".synthetic-secret")!
-var metrics: [String: Any] = ["migrationMs": conversionMs]
+metrics["migrationMs"] = conversionMs
 for (name, file, secret) in [("plaintext", plainBench, ""), ("encrypted", cipherBench, cipherSecret)] {
     var opened: [Double] = [], warm: [Double] = [], writes: [Double] = []
     for _ in 0..<10 {
@@ -194,7 +269,8 @@ for (name, file, secret) in [("plaintext", plainBench, ""), ("encrypted", cipher
     }
     metrics[name] = ["openFirstReadClose": summary(opened), "warmPointRead": summary(warm), "oneMiBSnapshotCommit": summary(writes)]
 }
-let output: [String: Any] = ["passed": passed, "metrics": metrics, "platform": "macOS host Swift + SQLCipher 4.14.0; no Capacitor bridge or protected-store proof", "syntheticRows": 1_000]
+}
+let output: [String: Any] = ["passed": passed, "metrics": metrics, "platform": "macOS host Swift + SQLCipher 4.14.0; no Capacitor bridge or protected-store proof", "performanceMeasured": !metrics.isEmpty, "syntheticRows": metrics.isEmpty ? 100 : 1_000]
 let json = try JSONSerialization.data(withJSONObject: output, options: [.prettyPrinted, .sortedKeys])
 FileHandle.standardOutput.write(json)
 FileHandle.standardOutput.write(Data("\n".utf8))

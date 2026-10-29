@@ -21,15 +21,33 @@ enum LearnCardEncryptedDatabase {
         guard flock(lock, LOCK_EX) == 0 else { throw failure("Cannot lock account storage") }
         defer { flock(lock, LOCK_UN) }
 
-        let exists = manager.fileExists(atPath: path)
+        var exists = manager.fileExists(atPath: path)
+        if exists {
+            let attributes = try manager.attributesOfItem(atPath: path)
+            guard attributes[.type] as? FileAttributeType == .typeRegular,
+                  let size = attributes[.size] as? NSNumber else {
+                throw failure("Account storage is unreadable")
+            }
+            // An interrupted initial SQLite open may leave an empty file with no data to convert.
+            exists = size.uint64Value > 0
+            if !exists {
+                for suffix in ["-wal", "-shm", "-journal"] where manager.fileExists(atPath: path + suffix) {
+                    let sidecar = try manager.attributesOfItem(atPath: path + suffix)
+                    guard let size = sidecar[.size] as? NSNumber, size.uint64Value == 0 else {
+                        throw failure("Empty account storage has recovery sidecars")
+                    }
+                }
+            }
+        }
         var secret = try readSecret() ?? ""
         if exists {
             let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: path))
             let header = try file.read(upToCount: 16)
             try file.close()
+            guard header?.count == 16 else { throw failure("Account storage is unreadable") }
             if header != Data("SQLite format 3\0".utf8) {
                 guard !secret.isEmpty else { throw failure("Account storage secret is unavailable") }
-                try validate(path: path, secret: secret)
+                // The plugin's keyed open authenticates the file without a duplicate KDF/full scan here.
                 return false
             }
             // A corrupt plaintext database must not be replaced or treated as a new account.
@@ -84,6 +102,7 @@ enum LearnCardEncryptedDatabase {
                 try execute(target, "PRAGMA user_version=1")
             }
         }
+        try checkpoint("before-validate")
         try validate(path: staged, secret: secret)
         let stagedFD = Darwin.open(staged, O_RDONLY)
         guard stagedFD >= 0 else { throw failure("Cannot sync account storage") }

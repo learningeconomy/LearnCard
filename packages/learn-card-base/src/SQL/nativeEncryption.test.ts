@@ -34,8 +34,25 @@ it('requires native preparation without transmitting a storage secret', async ()
         encrypted: true,
         migrated: true,
     });
-    await prepareNativeEncryption();
+    expect(await prepareNativeEncryption()).toBe('encrypted');
     expect(native.prepareEncryptedDatabase).toHaveBeenCalledWith({ database: 'learncardDB' });
+});
+
+it('keeps an older binary usable only when its native preparation method is unimplemented', async () => {
+    native.prepareEncryptedDatabase.mockRejectedValue({ code: 'UNIMPLEMENTED' });
+    expect(await prepareNativeEncryption()).toBe('legacy');
+    expect(native.prepareEncryptedDatabase).toHaveBeenCalledOnce();
+});
+
+it.each([
+    new Error('UNIMPLEMENTED'),
+    { message: 'not implemented' },
+    { code: 'UNAVAILABLE' },
+    { code: 'UNIMPLEMENTED ' },
+    { code: 'KEYSTORE_ERROR' },
+])('does not downgrade for a preparation failure or an error message: %s', async error => {
+    native.prepareEncryptedDatabase.mockRejectedValue(error);
+    await expect(prepareNativeEncryption()).rejects.toBe(error);
 });
 
 it.each([

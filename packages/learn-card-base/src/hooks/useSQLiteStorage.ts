@@ -154,13 +154,19 @@ export const ensureWriteAheadLogging = async (db: SQLiteDBConnection) => {
 type NativeDatabase = { db: SQLiteDBConnection; sqlite: SQLiteHook };
 let nativeInitialization: Promise<NativeDatabase> | undefined;
 const initializeNativeDatabase = async (sqlite: SQLiteHook): Promise<NativeDatabase> => {
-    await prepareNativeEncryption();
+    const encrypted = (await prepareNativeEncryption()) === 'encrypted';
     const consistent = (await sqlite.checkConnectionsConsistency()).result;
     const connected = (await sqlite.isConnection('learncardDB', false)).result;
     const db =
         consistent && connected
             ? await sqlite.retrieveConnection('learncardDB', false)
-            : await sqlite.createConnection('learncardDB', true, 'secret', 1, false);
+            : await sqlite.createConnection(
+                  'learncardDB',
+                  encrypted,
+                  encrypted ? 'secret' : 'no-encryption',
+                  1,
+                  false
+              );
     retainSQLiteConnection(db);
     try {
         await withSQLiteDatabase(db, async () => {

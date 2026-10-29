@@ -12,8 +12,13 @@ separate; it must retain its own selection rules when both land. Jira: LC-2321.
 ## File and secret lifecycle
 
 - A process lock serializes native preparation, including secret provisioning. Android also uses
-  a same-JVM monitor. A missing/corrupt/unreadable secret on an existing encrypted file fails
-  closed. No new secret, plaintext fallback, deletion or account reset occurs.
+  a same-JVM monitor. On encryption-capable binaries, missing/unreadable secrets fail preparation;
+  a wrong secret fails the plugin's keyed open. No new secret, plaintext downgrade, deletion or
+  account reset occurs for an existing encrypted file.
+- An existing encrypted file is not opened or scanned by preparation: it checks the header and
+  protected secret, then the plugin authenticates its own keyed connection. This avoids a duplicate
+  SQLCipher key derivation and a full startup scan of every cache page, including after a JS reload.
+  A damaged cache page can still fail when queried, but does not by itself gate healthy account pages.
 - Android persists the random secret synchronously in the plugin's EncryptedSharedPreferences
   backed by its Keystore MasterKey. iOS uses the plugin's Keychain account/prefix, with
   `AfterFirstUnlockThisDeviceOnly` accessibility. Keychain access errors propagate rather than
@@ -23,6 +28,8 @@ separate; it must retain its own selection rules when both land. Jira: LC-2321.
   preserve `user_version`, then validate both SQLite and SQLCipher integrity. The original is
   never renamed aside or deleted first. Sync the staged file, atomically rename it over the
   original, and sync the directory. Only encrypted staging files and their sidecars are disposable.
+- A zero-byte legacy file with no populated WAL/journal/SHM is treated as a fresh empty database.
+  Short nonempty files and empty files with populated recovery sidecars remain intact and fail closed.
 - Process death before replacement leaves a usable original and a stable stored secret; a retry
   rebuilds staging. Death after replacement leaves a valid encrypted file; a retry opens it.
   This is tested process-interruption recovery, not a claim of power-loss certification on every
@@ -43,11 +50,16 @@ owner still lets active leases finish. Failed schema initialization releases/clo
 database deletion invalidates schema and connection knowledge. There is no timer racing a new
 reader. Web and non-retained connection behavior is unchanged.
 
-An encrypted native **binary** is required: this uses a new plugin method and native backup/config
-changes. LearnCard/VetPass and ScoutPass canonical native configurations enable encryption. The
+Encryption requires an updated native **binary**: it uses a new plugin method and native backup/config
+changes. If Capacitor reports exactly `code: 'UNIMPLEMENTED'` for that method, the JS bundle uses
+the older binary's existing plaintext connection mode. Those devices remain unencrypted until a
+binary upgrade; this is compatibility with a missing capability, not a fallback after a preparation
+or keyed-open failure. Error messages, other error codes and invalid preparation responses never
+enable the legacy path. LearnCard/VetPass and ScoutPass canonical native configurations enable encryption. The
 new LearnCard OTA channel is `1.0.14`, ScoutPass `1.0.9`; older channels must remain on compatible
-JavaScript. Validate tenant generation/sync before release. Never push this bundle onto the older
-channels. An older binary expecting plaintext cannot read an already-converted DB; binary downgrade
+JavaScript for all native capabilities. ScoutPass's committed Android/iOS configs are generated from
+its canonical settings, with a regression for channel/encryption/browser-setting drift. Validate
+tenant generation/sync before release. An older binary expecting plaintext cannot read an already-converted DB; binary downgrade
 is unsupported without an explicitly designed recovery path. Keep the PR draft until device and
 release gates are reviewed.
 
@@ -75,7 +87,8 @@ From the repo root:
 
 ```sh
 node scripts/verify-native-sqlite-encryption.mjs \
-  --sqlcipher-dir /absolute/path/sqlcipher-4.14.0 --output /absolute/private/evidence-directory
+  --sqlcipher-dir /absolute/path/sqlcipher-4.14.0 --output /absolute/private/evidence-directory \
+  --functional-only
 ```
 
 This compiles the production Swift helper and exercises fresh files, wrong/missing secrets,
@@ -83,6 +96,10 @@ preserved account/recovery data and schema version, corrupt originals, secret-wr
 stale staging, real uncheckpointed WAL, concurrent processes, and process death after secret
 storage/before replacement/after replacement. Fixtures are synthetic and removed after success;
 the CLI secret-file adapter is a test double, **not proof of iOS Keychain behavior**.
+The added regressions corrupt an authenticated cache page: existing-file preparation permits a
+healthy account read, while the same corruption in conversion staging fails full validation and
+preserves the source. Wrong keys still fail at keyed open, and zero-byte/short/sidecar cases are covered.
+`--functional-only` skips the performance comparison; omit it only when intentionally measuring.
 
 The standalone `android-tests` app compiles the actual patched native plugin and Android SQLCipher
 4.17.0, without Firebase, LearnCard accounts, or any existing app data. Use a separately owned
@@ -100,8 +117,9 @@ Install its two APKs on the explicitly selected owned serial, then run
 Only synthetic counts/durations are emitted. Keep raw device output private. Uninstall the two
 probe packages and stop only the owned emulator after collecting evidence.
 
-For protected-secret persistence across an Android instrumentation process restart, run the six-test
-suite first, then rerun only `MigrationTest#nativePluginUsesProtectedStoreAndEncryptedConnection`
+The instrumentation class includes an explicit `measureEngineCosts` benchmark; select functional
+methods when measuring is paused. For protected-secret persistence across an Android process restart,
+run the functional suite first, then rerun only `MigrationTest#nativePluginUsesProtectedStoreAndEncryptedConnection`
 with instrumentation argument `-e sqlitePhase reopen`. That phase requires the existing encrypted
 fixture and must not seed or delete it.
 
