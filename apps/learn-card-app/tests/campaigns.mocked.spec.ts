@@ -2,6 +2,7 @@ import { test, expect } from './fixtures/mocked-test';
 import { installNetwork } from './mocks/network';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
+import { CampaignValidator } from '@learncard/types';
 import type {
     Campaign,
     CreateCampaignInput,
@@ -195,6 +196,136 @@ test.describe('campaign composer @mocked', () => {
         await page.setViewportSize({ width: 1440, height: 1000 });
         await expect(page.getByRole('columnheader', { name: 'Stored members' })).toBeVisible();
         await page.screenshot({ path: 'test-results/campaign-list-desktop.png', fullPage: true });
+    });
+    test('in-app-only self-test arrives on the next app visit through existing endpoints', async ({
+        page,
+    }) => {
+        const mock = await installNetwork(page);
+        const profile = {
+            profileId: TEST_USER_PROFILE_ID,
+            displayName: 'Synthetic campaign admin',
+            did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
+            dob: '1990-01-01',
+            country: 'US',
+            shortBio: '',
+            bio: '',
+        };
+        mock.on('profile.getProfile', () => profile);
+        mock.on('profile.getOtherProfile', () => profile);
+        mock.on('profile.createProfile', () => profile.did);
+        mock.on('user.getDids', () => [profile.did]);
+        mock.on('user.addDid', () => true);
+        // Own background reads that may share a tRPC batch with campaign retrieval.
+        const emptyPage = { records: [], hasMore: false };
+        for (const procedure of [
+            'contracts.getConsentedContracts',
+            'contracts.getAllCredentialsForTerms',
+            'boost.getPaginatedBoosts',
+            'skillFrameworks.getAllAvailableFrameworks',
+            'activity.getMyActivities',
+            'inbox.getMyInboxDeliveries',
+        ]) {
+            mock.on(procedure, () => emptyPage);
+        }
+        mock.on('profile.pendingConnectionPrompts', () => []);
+        mock.on('profile.updateProfile', () => true);
+        const testId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
+        const campaign = CampaignValidator.parse({
+            id: 'next-visit-test',
+            name: 'Private delivery QA',
+            channels: ['inApp'],
+            message: {
+                id: 'next-visit-test',
+                title: 'Private next-visit test',
+                body: 'Only the requesting administrator sees this.',
+                actions: [{ label: 'Close private test', action: { type: 'dismiss' } }],
+            },
+            createdAt: '2026-10-29T00:00:00Z',
+            updatedAt: '2026-10-29T00:00:00Z',
+        });
+        let pending = false;
+        let sends = 0;
+        let acknowledgements = 0;
+        let deliveriesRead = 0;
+        mock.on('campaigns.isAdmin', () => true);
+        mock.on('campaigns.get', () => campaign);
+        mock.on('campaigns.list', () => ({ records: [campaign], hasMore: false }));
+        mock.on('campaigns.getStats', () => ({
+            audience: 0,
+            notified: 0,
+            shown: 0,
+            clicked: 0,
+            dismissed: 0,
+            converted: 0,
+            enrolled: 0,
+        }));
+        mock.on('campaigns.sendTestToMe', () => {
+            pending = true;
+            sends++;
+            return true;
+        });
+        mock.on('campaigns.getMyCampaigns', () => {
+            deliveriesRead++;
+            return pending
+                ? [
+                      {
+                          testId,
+                          campaign: {
+                              id: campaign.id,
+                              message: { ...campaign.message, id: `campaign-test-${testId}` },
+                              selfEnroll: false,
+                          },
+                          state: { shownCount: 0 },
+                      },
+                  ]
+                : [];
+        });
+        mock.on('campaigns.recordEvent', value => {
+            expect(value).toEqual({ campaignId: campaign.id, event: 'shown', testId });
+            pending = false;
+            acknowledgements++;
+            return true;
+        });
+        await waitForAuthenticatedState(page, {
+            path: '/admin/campaigns/next-visit-test',
+            nextPath: '/admin/campaigns/next-visit-test',
+            waitUntil: 'commit',
+            profileId: TEST_USER_PROFILE_ID,
+        });
+        await page.getByRole('button', { name: 'Send Test to Me' }).click();
+        await page.getByRole('button', { name: 'Confirm test send' }).click();
+        await expect(page.getByText(/Your in-app test is waiting/)).toBeVisible();
+        expect(sends).toBe(1);
+        expect(acknowledgements).toBe(0);
+        await expect(
+            page.getByRole('heading', { name: 'Private next-visit test', exact: true })
+        ).toHaveCount(0);
+        await page.reload();
+        await expect(page.getByRole('button', { name: 'Send Test to Me' })).toBeVisible();
+        expect(acknowledgements).toBe(0);
+        await page.goto('/wallet');
+        await expect.poll(() => deliveriesRead, { timeout: 20_000 }).toBeGreaterThan(0);
+        await expect(
+            page.getByRole('heading', { name: 'Private next-visit test', exact: true })
+        ).toBeVisible({ timeout: 60_000 });
+        await expect.poll(() => acknowledgements).toBe(1);
+        await expect(
+            page
+                .getByRole('heading', { name: 'Private next-visit test', exact: true })
+                .locator('../../..')
+        ).toHaveCSS('opacity', '1');
+        await page.screenshot({
+            path: 'test-results/campaign-next-visit-test.png',
+            fullPage: true,
+        });
+        await page.getByRole('button', { name: 'Close private test' }).click();
+        const readsBeforeReload = deliveriesRead;
+        await page.reload();
+        await expect.poll(() => deliveriesRead).toBeGreaterThan(readsBeforeReload);
+        await expect(
+            page.getByRole('heading', { name: 'Private next-visit test', exact: true })
+        ).toHaveCount(0);
+        expect(acknowledgements).toBe(1);
     });
     test('non-admin sees only not found', async ({ page }) => {
         const mock = await installNetwork(page);

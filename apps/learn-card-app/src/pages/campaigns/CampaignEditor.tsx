@@ -78,6 +78,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                       campaignId: saved.id,
                       updates: {
                           ...definition,
+                          message: definition.message ?? null,
                           notification: definition.notification ?? null,
                           startsAt: definition.startsAt ?? null,
                           endsAt: definition.endsAt ?? null,
@@ -99,7 +100,9 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                     const sent = await api.campaignsSendTestToMe(saved.id);
                     if (!sent) throw new Error('Test was not acknowledged');
                     action.setSuccess(
-                        'Test notification sent to your signed-in account. Audience stats are unchanged.'
+                        saved.channels.includes('notify')
+                            ? `Test notification sent to your signed-in account.${saved.channels.includes('inApp') ? ' Your in-app test is waiting for your next visit.' : ''} Audience stats are unchanged.`
+                            : 'Your in-app test is waiting for your next visit. Audience stats are unchanged.'
                     );
                 } else {
                     accept(await api.campaignsSetStatus(saved.id, selected));
@@ -177,7 +180,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         <SectionHeading
                             step="01"
                             title="Campaign details"
-                            description="Give your campaign a name and choose where it appears."
+                            description="Give your campaign a name and choose one or both channels."
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
                             <Field label="Name" htmlFor="campaign-name">
@@ -273,34 +276,36 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         <SectionHeading
                             step="02"
                             title="Message"
-                            description="Define your message, then open a preview to try the real experience."
+                            description="Add content for each selected channel."
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
-                            <div className="overflow-hidden rounded-2xl border border-grayscale-200">
-                                <div className="flex items-center justify-between gap-3 border-b border-grayscale-200 bg-grayscale-100 px-4 py-3">
-                                    <label
-                                        htmlFor="campaign-json"
-                                        className="flex items-center gap-2 text-xs font-medium text-grayscale-700"
-                                    >
-                                        <IonIcon icon={codeSlashOutline} aria-hidden="true" />
-                                        Message JSON
-                                    </label>
-                                    <span
-                                        className={`text-xs ${preview?.success ? 'text-emerald-700' : 'text-grayscale-600'}`}
-                                    >
-                                        {preview?.success ? 'Valid message' : 'Check your JSON'}
-                                    </span>
+                            {form.inApp && (
+                                <div className="overflow-hidden rounded-2xl border border-grayscale-200">
+                                    <div className="flex items-center justify-between gap-3 border-b border-grayscale-200 bg-grayscale-100 px-4 py-3">
+                                        <label
+                                            htmlFor="campaign-json"
+                                            className="flex items-center gap-2 text-xs font-medium text-grayscale-700"
+                                        >
+                                            <IonIcon icon={codeSlashOutline} aria-hidden="true" />
+                                            Message JSON
+                                        </label>
+                                        <span
+                                            className={`text-xs ${preview?.success ? 'text-emerald-700' : 'text-grayscale-600'}`}
+                                        >
+                                            {preview?.success ? 'Valid message' : 'Check your JSON'}
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        id="campaign-json"
+                                        spellCheck={false}
+                                        rows={12}
+                                        className="block w-full resize-y bg-white p-4 font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace] text-sm leading-relaxed text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+                                        value={form.messageJson}
+                                        onChange={e => set('messageJson', e.target.value)}
+                                        aria-describedby="campaign-validation"
+                                    />
                                 </div>
-                                <textarea
-                                    id="campaign-json"
-                                    spellCheck={false}
-                                    rows={12}
-                                    className="block w-full resize-y bg-white p-4 font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace] text-sm leading-relaxed text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
-                                    value={form.messageJson}
-                                    onChange={e => set('messageJson', e.target.value)}
-                                    aria-describedby="campaign-validation"
-                                />
-                            </div>
+                            )}
                             {form.notify && (
                                 <div className="space-y-4 border-t border-grayscale-200 pt-5">
                                     <div>
@@ -405,43 +410,55 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                             </div>
                             <div className="space-y-3 rounded-2xl border border-grayscale-200 bg-white p-5 shadow-sm">
                                 <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                                    {preview?.success ? preview.data.presentation : 'Message'}
+                                    {form.inApp
+                                        ? preview?.success
+                                            ? preview.data.presentation
+                                            : 'Message'
+                                        : 'Inbox / push'}
                                 </span>
                                 <p className="break-words text-lg font-semibold leading-snug">
-                                    {preview?.success ? preview.data.title : 'Your message preview'}
+                                    {form.inApp
+                                        ? preview?.success
+                                            ? preview.data.title
+                                            : 'Your message preview'
+                                        : form.title || 'Your notification title'}
                                 </p>
                                 <p className="break-words whitespace-pre-wrap text-sm leading-relaxed text-grayscale-600 line-clamp-4">
-                                    {preview?.success
-                                        ? preview.data.body ||
-                                          'Add a body to tell your audience more.'
-                                        : 'Fix the message JSON to open a preview.'}
+                                    {!form.inApp
+                                        ? form.body || 'Add a notification body.'
+                                        : preview?.success
+                                          ? preview.data.body ||
+                                            'Add a body to tell your audience more.'
+                                          : 'Fix the message JSON to open a preview.'}
                                 </p>
                             </div>
                         </div>
-                        <div className="space-y-3 p-5">
-                            <button
-                                type="button"
-                                className={`${buttonClass} w-full`}
-                                disabled={!preview?.success || busy}
-                                onClick={() => {
-                                    if (preview?.success) setInAppMessageOverride(preview.data);
-                                }}
-                            >
-                                <IonIcon icon={eyeOutline} aria-hidden="true" />
-                                Preview message
-                            </button>
-                            <button
-                                type="button"
-                                className={`${textButtonClass} w-full !py-1.5`}
-                                onClick={() => setInAppMessageOverride(null)}
-                            >
-                                Close preview
-                            </button>
-                            <p className="text-center text-xs leading-relaxed text-grayscale-600">
-                                Opens the real message. Buttons remain interactive; preview activity
-                                is not counted.
-                            </p>
-                        </div>
+                        {form.inApp && (
+                            <div className="space-y-3 p-5">
+                                <button
+                                    type="button"
+                                    className={`${buttonClass} w-full`}
+                                    disabled={!preview?.success || busy}
+                                    onClick={() => {
+                                        if (preview?.success) setInAppMessageOverride(preview.data);
+                                    }}
+                                >
+                                    <IonIcon icon={eyeOutline} aria-hidden="true" />
+                                    Preview message
+                                </button>
+                                <button
+                                    type="button"
+                                    className={`${textButtonClass} w-full !py-1.5`}
+                                    onClick={() => setInAppMessageOverride(null)}
+                                >
+                                    Close preview
+                                </button>
+                                <p className="text-center text-xs leading-relaxed text-grayscale-600">
+                                    Opens the real message. Buttons remain interactive; preview
+                                    activity is not counted.
+                                </p>
+                            </div>
+                        )}
                     </section>
                     <section className={panelClass}>
                         <SectionHeading
@@ -479,22 +496,17 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     <button
                                         type="button"
                                         className={`${buttonClass} w-full`}
-                                        disabled={
-                                            transitionLocked ||
-                                            archived ||
-                                            !saved.channels.includes('notify')
-                                        }
+                                        disabled={transitionLocked}
                                         onClick={() => setConfirmation('test')}
                                     >
                                         <IonIcon icon={paperPlaneOutline} aria-hidden="true" />
                                         Send Test to Me
                                     </button>
-                                    {!saved.channels.includes('notify') && (
-                                        <p className="text-xs text-grayscale-600">
-                                            Enable Inbox / push notification and save to send a
-                                            test.
-                                        </p>
-                                    )}
+                                    <p className="text-xs leading-relaxed text-grayscale-600">
+                                        {saved.channels.includes('inApp')
+                                            ? 'Your in-app test appears when you next return to the app outside this editor.'
+                                            : 'The test notification goes only to your signed-in account.'}
+                                    </p>
                                     <div className="flex flex-wrap gap-2">
                                         {saved.status !== 'live' ? (
                                             <button
@@ -542,7 +554,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     >
                                         <p className="text-sm leading-relaxed">
                                             {confirmation === 'test'
-                                                ? 'Send the saved notification to your signed-in admin account only?'
+                                                ? `Send a private test to your account via ${saved.channels.map(channel => (channel === 'inApp' ? 'in-app message on your next visit' : 'inbox / push notification')).join(' and ')}?`
                                                 : confirmation === 'live'
                                                   ? 'Make this campaign live? Eligible members may see its in-app message.'
                                                   : confirmation === 'archived'

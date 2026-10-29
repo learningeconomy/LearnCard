@@ -186,6 +186,40 @@ describe('campaign composer', () => {
         await act(async () => send.resolve(true));
         expect(await screen.findByText(/Test notification sent/)).toBeVisible();
     });
+    it('uses the existing admin endpoint for a draft in-app-only test', async () => {
+        const api = apiMock();
+        api.campaignsGet.mockResolvedValue({
+            ...campaign(),
+            channels: ['inApp'],
+            notification: undefined,
+        });
+        mount(api);
+        fireEvent.click(await screen.findByRole('button', { name: 'Send Test to Me' }));
+        expect(
+            screen.getByText(/Send a private test.*in-app message on your next visit/)
+        ).toBeVisible();
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm test send' }));
+        await waitFor(() =>
+            expect(api.campaignsSendTestToMe).toHaveBeenCalledWith('test-campaign')
+        );
+        expect(await screen.findByText(/Your in-app test is waiting/)).toBeVisible();
+        expect(setInAppMessageOverride).not.toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'test-campaign' })
+        );
+    });
+    it('allows archived private tests and notification-only content without a JSON editor', async () => {
+        const api = apiMock();
+        api.campaignsGet.mockResolvedValue({
+            ...campaign(),
+            status: 'archived',
+            channels: ['notify'],
+            message: undefined,
+        });
+        mount(api);
+        expect(await screen.findByRole('button', { name: 'Send Test to Me' })).toBeEnabled();
+        expect(screen.queryByLabelText('Message JSON')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('Notification title')).toHaveValue('Test title');
+    });
     it('blocks saved actions and navigation while edits are unsaved, and explicitly clears optional fields', async () => {
         const api = apiMock();
         api.campaignsGet.mockResolvedValue({ ...campaign(), startsAt: '2026-11-01T00:00:00Z' });

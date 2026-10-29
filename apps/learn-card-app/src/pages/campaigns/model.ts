@@ -42,7 +42,9 @@ export const campaignToForm = (campaign: Campaign): CampaignForm => ({
     name: campaign.name,
     inApp: campaign.channels.includes('inApp'),
     notify: campaign.channels.includes('notify'),
-    messageJson: JSON.stringify(campaign.message, null, 2),
+    messageJson: campaign.message
+        ? JSON.stringify(campaign.message, null, 2)
+        : initialForm().messageJson,
     title: campaign.notification?.title ?? '',
     body: campaign.notification?.body ?? '',
     startsAt: localDate(campaign.startsAt),
@@ -54,10 +56,12 @@ export const campaignToForm = (campaign: Campaign): CampaignForm => ({
 /** Validate with the same schema as the server. Never silently repair invalid author JSON. */
 export const validateForm = (form: CampaignForm, status: CampaignStatus = 'draft') => {
     let message: unknown;
-    try {
-        message = JSON.parse(form.messageJson);
-    } catch {
-        return { errors: ['message: Enter valid JSON.'], data: undefined };
+    if (form.inApp) {
+        try {
+            message = JSON.parse(form.messageJson);
+        } catch {
+            return { errors: ['message: Enter valid JSON.'], data: undefined };
+        }
     }
     const errors: string[] = [];
     const timestamp = (value: string, path: string): string | undefined => {

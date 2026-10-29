@@ -41,6 +41,25 @@ describe('campaign authoring contracts', () => {
             )
         ).toBe(true);
     });
+    it('ignores inactive channel fields and requires the selected content', () => {
+        const result = validateForm({
+            ...valid(),
+            inApp: false,
+            notify: true,
+            messageJson: '{',
+            title: 'Hello',
+            body: 'Notification only',
+        });
+        expect(result.errors).toEqual([]);
+        expect(result.data?.channels).toEqual(['notify']);
+        expect(result.data?.message).toBeUndefined();
+        expect(
+            validateForm({ ...valid(), title: '', body: '' }).data?.notification
+        ).toBeUndefined();
+        expect(
+            validateForm({ ...valid(), inApp: false, notify: true, title: '', body: '' }).data
+        ).toBeUndefined();
+    });
     it('rejects empty channels and inverted dates', () => {
         expect(validateForm({ ...valid(), inApp: false }).data).toBeUndefined();
         expect(

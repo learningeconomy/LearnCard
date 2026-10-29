@@ -22,6 +22,8 @@ import {
 import * as notifications from '@helpers/notifications.helpers';
 import * as learnCardHelpers from '@helpers/learnCard.helpers';
 import { getLiveCampaignsForProfile } from '@accesslayer/campaign/read';
+import { MAX_CONFIRMED_DISPATCH_RECIPIENTS } from '@accesslayer/campaign/dispatch';
+import { int } from 'neo4j-driver';
 import { campaignTimeParams } from '@accesslayer/campaign/shared';
 import { constructUri } from '@helpers/uri.helpers';
 import { ensureCampaignConstraints } from '../src/models/campaign-constraints';
@@ -165,6 +167,7 @@ describe('campaign lifecycle and access', () => {
             () => other.getStats({ campaignId: 'pilot-clr' }),
             () => other.sendTestToMe({ campaignId: 'pilot-clr' }),
             () => other.dispatch({ campaignId: 'pilot-clr' }),
+            () => other.previewDispatch({ campaignId: 'pilot-clr' }),
         ])
             await expect(request()).rejects.toMatchObject({ code: 'FORBIDDEN' });
         await expect(caller('campaign-admin', '*:read').create(draft())).rejects.toMatchObject({
@@ -179,7 +182,7 @@ describe('campaign lifecycle and access', () => {
         const campaign = await admin.create(
             draft({ message: { id: 'different', title: 'Welcome' } })
         );
-        expect(campaign.message.id).toBe('pilot-clr');
+        expect(campaign.message?.id).toBe('pilot-clr');
         await expect(admin.create(draft())).rejects.toMatchObject({ code: 'CONFLICT' });
         await expect(
             admin.update({ campaignId: campaign.id, updates: { channels: ['notify'] } })
@@ -374,6 +377,34 @@ describe('campaign lifecycle and access', () => {
 });
 
 describe('campaign audiences', () => {
+    it('reports newly added profiles and missing DIDs across aliases and retries', async () => {
+        await admin.create(draft());
+        const input = audience({
+            type: 'dids',
+            dids: [
+                did('learner'),
+                `did:web:${domain}:users:learner`,
+                'did:key:missing',
+                did('minor'),
+            ],
+        });
+        expect(await admin.previewAudience(input)).toEqual({
+            count: 1,
+            added: 0,
+            notFound: ['did:key:missing'],
+        });
+        expect(await admin.addAudience(input)).toEqual({
+            count: 1,
+            added: 1,
+            notFound: ['did:key:missing'],
+        });
+        expect(await admin.addAudience(input)).toEqual({
+            count: 1,
+            added: 0,
+            notFound: ['did:key:missing'],
+        });
+    });
+
     it('deduplicates DID aliases and verified emails, applies minor policy, and pages eligible profiles', async () => {
         await admin.create(draft());
         await neogma.queryRunner.run(
@@ -393,9 +424,9 @@ describe('campaign audiences', () => {
                 did('unknown-dob'),
             ],
         });
-        expect(await admin.previewAudience(inputs)).toEqual({ count: 2 });
+        expect(await admin.previewAudience(inputs)).toMatchObject({ count: 2 });
         expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(0);
-        expect(await admin.addAudience(inputs)).toEqual({ count: 2 });
+        expect(await admin.addAudience(inputs)).toMatchObject({ count: 2 });
         expect(
             await admin.previewAudience(
                 audience({
@@ -403,7 +434,7 @@ describe('campaign audiences', () => {
                     emails: ['LEARNER@example.com', 'unverified@example.com'],
                 })
             )
-        ).toEqual({ count: 1 });
+        ).toMatchObject({ count: 1 });
         expect(
             await admin.addAudience(
                 audience({
@@ -411,7 +442,7 @@ describe('campaign audiences', () => {
                     emails: ['LEARNER@example.com', 'unverified@example.com'],
                 })
             )
-        ).toEqual({ count: 1 });
+        ).toMatchObject({ count: 1 });
         expect((await admin.getStats({ campaignId: 'pilot-clr' })).audience).toBe(2);
         const page = await admin.pageAudience({ campaignId: 'pilot-clr', limit: 1 });
         expect(page).toMatchObject({
@@ -423,7 +454,7 @@ describe('campaign audiences', () => {
             await admin.pageAudience({ campaignId: 'pilot-clr', cursor: page.cursor })
         ).toMatchObject({ hasMore: false, records: [{ profileId: 'other' }] });
         await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: false } });
-        expect(await admin.addAudience(inputs)).toEqual({ count: 4 });
+        expect(await admin.addAudience(inputs)).toMatchObject({ count: 4 });
         await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: true } });
         expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toHaveLength(2);
     });
@@ -441,7 +472,7 @@ describe('campaign audiences', () => {
 
         expect(
             await domainAdmin.previewAudience(audience({ type: 'dids', dids: [learnerDid] }))
-        ).toEqual({ count: 1 });
+        ).toMatchObject({ count: 1 });
     });
 
     it('treats managed human profiles as minors without classifying managed services as children', async () => {
@@ -459,10 +490,10 @@ describe('campaign audiences', () => {
             dids: [did('managed-adult'), did('managed-service')],
         });
 
-        expect(await admin.previewAudience(input)).toEqual({ count: 1 });
+        expect(await admin.previewAudience(input)).toMatchObject({ count: 1 });
         await admin.update({ campaignId: 'pilot-clr', updates: { excludeMinors: false } });
-        expect(await admin.previewAudience(input)).toEqual({ count: 2 });
-        expect(await admin.addAudience(input)).toEqual({ count: 2 });
+        expect(await admin.previewAudience(input)).toMatchObject({ count: 2 });
+        expect(await admin.addAudience(input)).toMatchObject({ count: 2 });
         await expect(
             caller('managed-adult').enroll({ campaignId: 'pilot-clr' })
         ).rejects.toMatchObject({ code: 'FORBIDDEN' });
@@ -492,8 +523,8 @@ describe('campaign audiences', () => {
                     campaignId,
                     source: { type: 'dids' as const, dids: [did('unknown-dob')] },
                 };
-                expect(await admin.previewAudience(input)).toEqual({ count: 0 });
-                expect(await admin.addAudience(input)).toEqual({ count: 0 });
+                expect(await admin.previewAudience(input)).toMatchObject({ count: 0 });
+                expect(await admin.addAudience(input)).toMatchObject({ count: 0 });
                 expect(await unknown.getMyCampaigns()).toEqual([]);
                 await expect(unknown.enroll({ campaignId })).rejects.toMatchObject({
                     code: 'FORBIDDEN',
@@ -554,31 +585,31 @@ describe('campaign audiences', () => {
                 metadata: { kind: 'transcript' },
                 since: '2026-10-19T00:00:00Z',
             };
-            expect(await admin.previewAudience(audience(source))).toEqual({ count: 1 });
-            expect(await admin.addAudience(audience(source))).toEqual({ count: 1 });
+            expect(await admin.previewAudience(audience(source))).toMatchObject({ count: 1 });
+            expect(await admin.addAudience(audience(source))).toMatchObject({ count: 1 });
             expect(
                 await admin.previewAudience(audience({ ...source, includePending: true }))
-            ).toEqual({ count: 2 });
+            ).toMatchObject({ count: 2 });
             expect(
                 await admin.previewAudience(audience({ ...source, metadata: { kind: 'badge' } }))
-            ).toEqual({ count: 0 });
+            ).toMatchObject({ count: 0 });
             expect(
                 await admin.previewAudience(audience({ ...source, since: '2026-10-21T00:00:00Z' }))
-            ).toEqual({ count: 0 });
+            ).toMatchObject({ count: 0 });
         }
         expect(
             await admin.previewAudience(
                 audience({ type: 'credentialsSentBy', listingId: 'other-app' })
             )
-        ).toEqual({ count: 0 });
+        ).toMatchObject({ count: 0 });
         const boostSource = {
             type: 'boostRecipients' as const,
             boostUri: `lc:network:${domain}/trpc:boost:test-boost`,
         };
-        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 2 });
-        expect(await admin.addAudience(audience({ ...boostSource, includePending: true }))).toEqual(
-            { count: 3 }
-        );
+        expect(await admin.previewAudience(audience(boostSource))).toMatchObject({ count: 2 });
+        expect(
+            await admin.addAudience(audience({ ...boostSource, includePending: true }))
+        ).toMatchObject({ count: 3 });
         for (const [callerDomain, boostUri] of [
             [
                 'pr-99.preview.learncard.ai:brain',
@@ -593,7 +624,7 @@ describe('campaign audiences', () => {
             const domainAdmin = caller('campaign-admin', '*:*', callerDomain);
             expect(
                 await domainAdmin.previewAudience(audience({ type: 'boostRecipients', boostUri }))
-            ).toEqual({ count: 2 });
+            ).toMatchObject({ count: 2 });
         }
         expect((await admin.pageAudience({ campaignId: 'pilot-clr' })).records).toEqual([
             { profileId: 'learner', did: did('learner') },
@@ -612,11 +643,11 @@ describe('campaign audiences', () => {
         await neogma.queryRunner.run(
             `MATCH (c:Credential {id:'learner'})-[received:CREDENTIAL_RECEIVED]->() SET received.status = 'revoked'`
         );
-        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 1 });
+        expect(await admin.previewAudience(audience(boostSource))).toMatchObject({ count: 1 });
         await neogma.queryRunner.run(
             `MATCH (c:Credential {id:'pending'}), (p:Profile {profileId:'pending'}) CREATE (c)-[:CREDENTIAL_RECEIVED {status:'pending'}]->(p)`
         );
-        expect(await admin.previewAudience(audience(boostSource))).toEqual({ count: 1 });
+        expect(await admin.previewAudience(audience(boostSource))).toMatchObject({ count: 1 });
     });
 
     it('matches inbox claims by issuer and claim time, and rejects injection before querying', async () => {
@@ -629,14 +660,14 @@ describe('campaign audiences', () => {
             issuerDid: 'did:key:issuer',
             since: '2026-10-19T00:00:00Z',
         };
-        expect(await admin.previewAudience(audience(source))).toEqual({ count: 1 });
-        expect(await admin.addAudience(audience(source))).toEqual({ count: 1 });
+        expect(await admin.previewAudience(audience(source))).toMatchObject({ count: 1 });
+        expect(await admin.addAudience(audience(source))).toMatchObject({ count: 1 });
         expect(
             await admin.previewAudience(audience({ ...source, issuerDid: 'did:key:other' }))
-        ).toEqual({ count: 0 });
+        ).toMatchObject({ count: 0 });
         expect(
             await admin.previewAudience(audience({ ...source, since: '2026-10-21T00:00:00Z' }))
-        ).toEqual({ count: 0 });
+        ).toMatchObject({ count: 0 });
         const unsafe = {
             type: 'credentialsSentBy' as const,
             senderProfileId: 'campaign-admin',
@@ -938,9 +969,91 @@ describe('campaign notification delivery state', () => {
         ).resolves.toBeUndefined();
     });
 
+    it('keeps in-app tests private, durable, snapshot-based and separate from campaign state', async () => {
+        await admin.create(draft());
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        const [first] = await admin.getMyCampaigns();
+        expect(first?.testId).toBeTruthy();
+        expect(first?.campaign.message.title).toBe('Welcome');
+        expect(await learner.getMyCampaigns()).toEqual([]);
+        expect(await other.getMyCampaigns()).toEqual([]);
+        await admin.update({ campaignId: 'pilot-clr', updates: { message: { title: 'Edited' } } });
+        expect((await caller('campaign-admin').getMyCampaigns())[0]?.campaign.message.title).toBe(
+            'Welcome'
+        );
+        await learner.recordEvent({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId: first!.testId,
+        });
+        expect(await admin.getMyCampaigns()).toHaveLength(1);
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        const [latest] = await admin.getMyCampaigns();
+        expect(latest?.testId).not.toBe(first?.testId);
+        await admin.recordEvent({ campaignId: 'pilot-clr', event: 'shown', testId: first!.testId });
+        expect((await admin.getMyCampaigns())[0]?.testId).toBe(latest?.testId);
+        await admin.recordEvent({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId: latest!.testId,
+        });
+        expect(await admin.getMyCampaigns()).toEqual([]);
+        expect(await admin.getStats({ campaignId: 'pilot-clr' })).toMatchObject({
+            audience: 0,
+            shown: 0,
+            notified: 0,
+            clicked: 0,
+        });
+        expect((await admin.get({ campaignId: 'pilot-clr' })).status).toBe('draft');
+    });
+    it('keeps live campaigns and valid tests visible when another private snapshot is corrupt', async () => {
+        await admin.create(draft({ status: 'live', selfEnroll: true }));
+        await admin.create(draft({ id: 'valid-test' }));
+        await admin.sendTestToMe({ campaignId: 'valid-test' });
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        for (const message of ['{', JSON.stringify({ id: 'old', presentation: 'obsolete' })]) {
+            await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: 'campaign-admin'})-[test:CAMPAIGN_TEST]->(:Campaign {id: 'pilot-clr'})
+                 SET test.message = $message`,
+                { message }
+            );
+            const campaigns = await admin.getMyCampaigns();
+            expect(campaigns).toHaveLength(2);
+            expect(
+                campaigns.find(item => item.campaign.id === 'pilot-clr')?.testId
+            ).toBeUndefined();
+            expect(campaigns.find(item => item.campaign.id === 'valid-test')?.testId).toBeTruthy();
+        }
+    });
+    it('clears inactive message content and rejects missing active content on merged updates', async () => {
+        await admin.create(draft());
+        const notification = { title: 'Hello', body: 'Notification only' };
+        const updated = await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { channels: ['notify'], message: null, notification },
+        });
+        expect(updated.message).toBeUndefined();
+        await expect(
+            admin.update({ campaignId: 'pilot-clr', updates: { channels: ['inApp'] } })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(
+            admin.update({
+                campaignId: 'pilot-clr',
+                updates: {
+                    channels: ['inApp'],
+                    message: { title: 'Restored' },
+                    notification: null,
+                },
+            })
+        ).resolves.toMatchObject({ message: { title: 'Restored' } });
+    });
     it('test delivery does not increment stats and only targets the authenticated administrator', async () => {
         await admin.create(
-            draft({ channels: ['notify'], notification: { title: 'Test', body: 'Preview' } })
+            draft({
+                channels: ['notify'],
+                message: undefined,
+                notification: { title: 'Test', body: 'Preview' },
+            })
         );
         const queue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
         const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
@@ -999,6 +1112,243 @@ describe('campaign notification delivery state', () => {
         await expect(
             getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
         ).resolves.toBeUndefined();
+    });
+});
+
+describe('confirmed audience notification dispatch', () => {
+    const live = () =>
+        draft({
+            status: 'live',
+            channels: ['notify'],
+            notification: { title: 'Campaign notice', body: 'A test message' },
+        });
+    it('reviews both channels and invalidates confirmation when the primary email changes', async () => {
+        await admin.create(live());
+        await addLearner();
+        await admin.update({
+            campaignId: 'pilot-clr',
+            updates: {
+                channels: ['notify', 'email'],
+                email: { subject: 'News', title: 'News', body: 'News', ctaLabel: 'View' },
+            },
+        });
+        await neogma.queryRunner.run(`MATCH (p:Profile {profileId:'learner'})
+            CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {id:'review-email', type:'email',
+            value:'learner@example.com', isPrimary:true, isVerified:true})`);
+        const preview = await admin.previewDispatch({ campaignId: 'pilot-clr' });
+        expect(preview).toMatchObject({
+            recipientCount: 1,
+            notificationRecipientCount: 1,
+            emailRecipientCount: 1,
+        });
+        expect(preview.blockedReason).toBeUndefined();
+        await neogma.queryRunner.run(
+            `MATCH (e:ContactMethod {id:'review-email'}) SET e.value = 'changed@example.com'`
+        );
+        await expect(
+            admin.dispatch({ campaignId: 'pilot-clr', expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+    it('excludes push opt-outs from notification confirmation counts', async () => {
+        await admin.create(live());
+        await addLearner();
+        expect((await admin.previewDispatch({ campaignId: 'pilot-clr' })).recipientCount).toBe(1);
+        await learner.updateAnnouncementPreferences({ announcementPushOptOut: true });
+        const preview = await admin.previewDispatch({ campaignId: 'pilot-clr' });
+        expect(preview.recipientCount).toBe(0);
+        expect(preview.blockedReason).toBe('no_recipients');
+    });
+    const id = { campaignId: 'pilot-clr' };
+    const deliveryMocks = () => {
+        const enqueue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
+        const signer = vi
+            .spyOn(learnCardHelpers, 'getDidWebLearnCard')
+            .mockResolvedValue({ id: { did: () => 'did:web:brain.test' } } as never);
+        return {
+            enqueue,
+            restore: () => {
+                enqueue.mockRestore();
+                signer.mockRestore();
+            },
+        };
+    };
+    it('counts the same delivery-eligible members, excluding already notified and ineligible profiles', async () => {
+        const campaign = await admin.create(live());
+        await neogma.queryRunner.run(
+            `MATCH (c:Campaign {id: $id}), (p:Profile)
+            WHERE p.profileId IN $profiles CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            {
+                id: campaign.id,
+                profiles: [
+                    'learner',
+                    'other',
+                    'minor',
+                    'child',
+                    'unknown-dob',
+                    'managed-adult',
+                    'managed-service',
+                ],
+            }
+        );
+        await neogma.queryRunner
+            .run(`MATCH (owner:Profile {profileId: 'campaign-admin'}), (p:Profile)
+            WHERE p.profileId IN ['managed-adult', 'managed-service'] CREATE (p)-[:MANAGED_BY]->(owner)`);
+        await acknowledgeCampaignNotification({
+            type: 'ANNOUNCEMENT',
+            from: 'did:web:brain.test',
+            to: { profileId: 'other', did: did('other') },
+            data: { metadata: { campaignId: campaign.id, campaignCreatedAt: campaign.createdAt } },
+        });
+        const preview = await admin.previewDispatch(id);
+        expect(preview).toMatchObject({
+            audienceCount: 7,
+            recipientCount: 2,
+            alreadyNotifiedCount: 1,
+        });
+        expect(preview.previewToken).toMatch(/^[a-f0-9]{64}$/);
+        expect(await admin.previewDispatch(id)).toEqual(preview);
+        for (const profile of ['learner', 'managed-service'])
+            expect(
+                await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, profile)
+            ).toBeTruthy();
+        for (const profile of ['minor', 'child', 'unknown-dob', 'managed-adult', 'other'])
+            expect(
+                await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, profile)
+            ).toBeUndefined();
+        await admin.update({ ...id, updates: { excludeMinors: false } });
+        expect(await admin.previewDispatch(id)).toMatchObject({ recipientCount: 5 });
+    });
+    it('accepts the recipient limit and rejects larger previews and confirmations without enqueueing', async () => {
+        await admin.create(live());
+        await neogma.queryRunner.run(
+            `MATCH (c:Campaign {id: $campaignId})
+             UNWIND range(1, $count) AS index
+             CREATE (p:Profile {profileId: 'limit-' + toString(index), dob: '1990-01-01'})
+             CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            { ...id, count: int(MAX_CONFIRMED_DISPATCH_RECIPIENTS) }
+        );
+        const preview = await admin.previewDispatch(id);
+        expect(preview.recipientCount).toBe(MAX_CONFIRMED_DISPATCH_RECIPIENTS);
+        await addLearner();
+        const mocks = deliveryMocks();
+        try {
+            await expect(admin.previewDispatch(id)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+        } finally {
+            mocks.restore();
+        }
+    });
+    it.each([
+        [{ status: 'draft' }, 'not_live'],
+        [{ status: 'paused' }, 'not_live'],
+        [{ status: 'archived' }, 'not_live'],
+        [{ channels: ['inApp'], message: { title: 'In-app only' } }, 'notify_disabled'],
+        [{ startsAt: '2999-01-01T00:00:00Z' }, 'not_started'],
+        [{ endsAt: '2000-01-01T00:00:00Z' }, 'ended'],
+    ] as const)('explains non-dispatchable campaigns (%j)', async (updates, reason) => {
+        await admin.create({ ...live(), ...updates } as CreateCampaignInput);
+        const preview = await admin.previewDispatch(id);
+        expect(preview).toMatchObject({ blockedReason: reason, recipientCount: 0 });
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+    it('dispatches to the stored audience and requires a fresh eligible preview after delivery', async () => {
+        await admin.create(live());
+        await addLearner();
+        const mocks = deliveryMocks();
+        try {
+            const preview = await admin.previewDispatch(id);
+            expect(preview.recipientCount).toBe(1);
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).resolves.toHaveProperty('dispatchId');
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+            expect(mocks.enqueue.mock.calls[0][0]).toMatchObject({
+                to: { profileId: 'learner' },
+                type: 'ANNOUNCEMENT',
+            });
+            expect(await admin.getStats(id)).toMatchObject({ audience: 1, notified: 1 });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const empty = await admin.previewDispatch(id);
+            expect(empty).toMatchObject({
+                recipientCount: 0,
+                alreadyNotifiedCount: 1,
+                blockedReason: 'no_recipients',
+            });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: empty.previewToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+        } finally {
+            mocks.restore();
+        }
+    });
+    it('rejects stale recipient identities even when their count is unchanged', async () => {
+        await admin.create(live());
+        await addLearner();
+        const preview = await admin.previewDispatch(id);
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'})-[a:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id:$id}), (other:Profile {profileId:'other'}) DELETE a CREATE (other)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            { id: id.campaignId }
+        );
+        expect((await admin.previewDispatch(id)).recipientCount).toBe(preview.recipientCount);
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+    it('rejects a changed campaign definition and concurrent reuse of the confirmation', async () => {
+        await admin.create(live());
+        await addLearner();
+        const before = await admin.previewDispatch(id);
+        await admin.update({
+            ...id,
+            updates: { notification: { title: 'Changed', body: 'Changed' } },
+        });
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: before.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        const preview = await admin.previewDispatch(id);
+        const mocks = deliveryMocks();
+        try {
+            const results = await Promise.allSettled([
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken }),
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken }),
+            ]);
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+        } finally {
+            mocks.restore();
+        }
+    });
+    it('recovers from an enqueue failure with a fresh preview without marking a recipient notified', async () => {
+        await admin.create(live());
+        await addLearner();
+        const mocks = deliveryMocks();
+        mocks.enqueue.mockRejectedValueOnce(new Error('temporary transport failure'));
+        try {
+            const first = await admin.previewDispatch(id);
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: first.previewToken })
+            ).rejects.toThrow();
+            expect(await admin.getStats(id)).toMatchObject({ notified: 0 });
+            const next = await admin.previewDispatch(id);
+            expect(next.recipientCount).toBe(1);
+            expect(next.previewToken).not.toBe(first.previewToken);
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: next.previewToken })
+            ).resolves.toHaveProperty('dispatchId');
+            expect(await admin.getStats(id)).toMatchObject({ notified: 1 });
+        } finally {
+            mocks.restore();
+        }
     });
 });
 
@@ -1122,6 +1472,9 @@ describe('campaign email database boundaries', () => {
             )
         );
         expect(claims.filter(Boolean)).toHaveLength(1);
+        expect((await admin.previewDispatch({ campaignId: campaign.id })).emailRecipientCount).toBe(
+            0
+        );
         expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(0);
         await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, 'learner');
         await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, 'learner');
@@ -1149,6 +1502,9 @@ describe('campaign email database boundaries', () => {
         expect(
             await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
         ).toBeUndefined();
+        expect((await admin.previewDispatch({ campaignId: campaign.id })).emailRecipientCount).toBe(
+            0
+        );
     });
     it('keeps minors excluded from email even when the campaign relaxes the older age flag', async () => {
         const campaign = await setup();
