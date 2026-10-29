@@ -53,7 +53,16 @@ const renderReview = (
             <ContractUpdateReview {...props} />
         </TenantConfigProvider>
     );
-    return { ...props, unmount: view.unmount };
+    return {
+        ...props,
+        unmount: view.unmount,
+        rerender: (next: Partial<React.ComponentProps<typeof ContractUpdateReview>>) =>
+            view.rerender(
+                <TenantConfigProvider config={DEFAULT_LEARNCARD_TENANT_CONFIG}>
+                    <ContractUpdateReview {...props} {...next} />
+                </TenantConfigProvider>
+            ),
+    };
 };
 
 describe('ContractUpdateReview', () => {
@@ -184,6 +193,24 @@ describe('ContractUpdateReview', () => {
         expect((screen.getByLabelText('Turn on this option') as HTMLInputElement).checked).toBe(
             true
         );
+    });
+
+    it('uses refreshed saved choices before the holder edits a control', () => {
+        const view = renderReview({
+            initialEnabledOptionalKeys: ['write|credential|CERTIFICATES'],
+        });
+        expect(screen.getByRole('checkbox')).toBeChecked();
+        view.rerender({ initialEnabledOptionalKeys: [] });
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+
+    it('keeps a local decline when a background refresh supplies new defaults', () => {
+        const view = renderReview({
+            initialEnabledOptionalKeys: ['write|credential|CERTIFICATES'],
+        });
+        fireEvent.click(screen.getByRole('checkbox'));
+        view.rerender({ initialEnabledOptionalKeys: ['write|credential|CERTIFICATES'] });
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
     });
 
     it('shows the parent path before accepting when guardian approval is required', async () => {

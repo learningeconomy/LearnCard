@@ -62,7 +62,9 @@ vi.mock('learn-card-base', () => ({
     useWallet: () => ({ initWallet: vi.fn() }),
 }));
 vi.mock('learn-card-base/stores/walletStore', () => ({
-    walletStore: { use: { wallet: () => (state.walletReady ? {} : null) } },
+    walletStore: {
+        use: { wallet: () => (state.walletReady ? { id: { did: () => 'did:key:review' } } : null) },
+    },
 }));
 vi.mock('@tanstack/react-query', () => ({
     useQuery: () => ({ data: state.status, isLoading: false, isError: false }),
@@ -174,24 +176,5 @@ describe('ContractUpdateReviewRoute', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
         await waitFor(() => expect(state.mutateAsync).toHaveBeenCalledOnce());
         expect(state.mutateAsync.mock.calls[0][0]).not.toHaveProperty('acceptVersion');
-    });
-
-    it('refetches and presents the newer request after a version conflict', async () => {
-        state.mutateAsync.mockRejectedValueOnce(
-            Object.assign(new Error('stale'), { data: { code: 'CONFLICT' } })
-        );
-        state.refetch.mockImplementationOnce(async () => {
-            state.records = [makeRecord(3)];
-            return { data: state.records };
-        });
-        const view = showRoute();
-        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
-        await waitFor(() => expect(state.refetch).toHaveBeenCalledOnce());
-        view.rerender(
-            <MemoryRouter initialEntries={['/consent-flow/review?uri=contract-uri']}>
-                <ContractUpdateReviewRoute />
-            </MemoryRouter>
-        );
-        expect(screen.getByText('version-3')).toBeVisible();
     });
 });

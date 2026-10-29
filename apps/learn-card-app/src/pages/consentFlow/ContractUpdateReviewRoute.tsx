@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonSpinner } from '@ionic/react';
 import { useQuery } from '@tanstack/react-query';
@@ -29,9 +29,14 @@ const ContractUpdateReviewRoute: React.FC = () => {
     const history = useHistory();
     const uri = new URLSearchParams(location.search).get('uri') ?? '';
     const locale = useLocale();
-    const walletReady = Boolean(walletStore.use.wallet());
+    const readerDid = walletStore.use.wallet()?.id.did();
+    const walletReady = Boolean(readerDid);
     const waitingForWallet = Boolean(uri) && !walletReady;
     const { data: records, isLoading, refetch } = useConsentedContracts();
+    useEffect(() => {
+        // A restored cache can still contain pre-save defaults when a review is reopened.
+        if (uri && readerDid) void refetch();
+    }, [uri, readerDid, refetch]);
     const currentUser = useCurrentUser();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();

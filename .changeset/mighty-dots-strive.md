@@ -22,7 +22,7 @@ Dismiss Alerts when opening a contract-update review without waiting for read-st
 
 Use one shared request form with the original creation controls for creating and editing requests, without per-item purpose fields or added default-enabled checkboxes. Keep the overall update explanation separate. Replace JSON authoring with readable changes and Preview Update / Publish Update actions in the Contracts tab. Show an accessible help icon and meaningful existing-access/defaults disclosures.
 
-Start new optional review controls from their Opt-in/Opt-out settings without silently granting access. Use the edited request's defaults in previews, preserve saved declines when reopening, and reduce the extra spacing below the current version.
+Start new optional review controls from their Opt-in/Opt-out settings without silently granting access. Use the edited request's defaults in previews, refresh saved choices when reopening without overwriting active edits, and reduce the extra spacing below the current version.
 
 Separate Advanced Options from changes, published feedback, and actions. Add space below the current version while keeping the image's remove control in its original outside corner.
 

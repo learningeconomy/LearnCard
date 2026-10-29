@@ -20,7 +20,7 @@ Mixed updates use the strongest change kind in this table, from bottom to top.
 
 Optional additions never enable themselves. An update also does not reactivate a withdrawn connection or a consumed one-time request.
 
-In the review, a new **Opt-out** option starts checked and a new **Opt-in** option starts unchecked, in both the developer preview and the user's review. These are proposed selections, not grants: access changes only when the user saves. Reopening a handled review restores saved choices, including an option the user turned off.
+In the review, a new **Opt-out** option starts checked and a new **Opt-in** option starts unchecked, in both the developer preview and the user's review. These are proposed selections, not grants: access changes only when the user saves. Reopening a handled review refreshes saved choices, including an option the user turned off, rather than keeping cached defaults. A background refresh does not overwrite choices the user is currently editing.
 
 ## Preview, then save
 

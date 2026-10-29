@@ -52,7 +52,9 @@ export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProp
 }) => {
     const brandingConfig = useBrandingConfig();
     const locale = useLocale();
-    const [enabled, setEnabled] = useState<string[]>(initialEnabledOptionalKeys);
+    // Cached records may refresh after mount; follow them until the holder edits a choice.
+    const [chosenKeys, setChosenKeys] = useState<string[]>();
+    const enabled = chosenKeys ?? initialEnabledOptionalKeys;
     const [showUnchanged, setShowUnchanged] = useState(false);
     const [showContext, setShowContext] = useState(false);
     const [confirmDecline, setConfirmDecline] = useState(false);
@@ -97,9 +99,12 @@ export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProp
                 : mDynamic('consentUpdate.ui.unchangedDefault');
 
     const toggle = (key: string) =>
-        setEnabled(current =>
-            current.includes(key) ? current.filter(value => value !== key) : [...current, key]
-        );
+        setChosenKeys(current => {
+            const selected = current ?? initialEnabledOptionalKeys;
+            return selected.includes(key)
+                ? selected.filter(value => value !== key)
+                : [...selected, key];
+        });
     const submit = async (guardianConfirmed = false) => {
         if (readOnly || (doneOnly && !confirmDecline)) {
             onClose();
