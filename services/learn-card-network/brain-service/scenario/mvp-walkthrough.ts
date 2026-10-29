@@ -2,23 +2,29 @@
  * The EducationOS MVP walkthrough (WORKPLAN §1a) as an ordered step list, written only
  * against ScenarioPort so the live and in-process drivers run the same steps.
  *
- * Slice 1 runs F1–F2, S00–S12, N1, N4 and a minimal S17. S13–S16, N2, N3, O1 and N5 are
- * listed so the report shows them, and SKIP with reason 'slice 2'.
+ * Slice 1 covers fixtures, install, push binding and push issuance (F1–F2, S00–S12, N1, N4);
+ * slice 2 adds the learner's claims, the offer lane, consent withdrawal and the health flip
+ * (S13–S16, N2, N3, O1, N5, and in-process N6). S17 checks the whole audit trail.
  */
-import type { AuditEventView, ScenarioPort } from './port';
-import { DEMO_COURSE_ID, DEMO_LMS_SLUG, need, type ScenarioIds } from './core/ids';
+import type { AuditEventView, ClaimedCredentialView, ScenarioPort } from './port';
+import {
+    DEMO_COURSE_ID,
+    DEMO_LMS_SLUG,
+    need,
+    type ScenarioIssuer,
+    type ScenarioWallet,
+} from './core/ids';
 import {
     check,
     expectAuditSubsequence,
     expectDenied,
     expectOk,
+    toScenarioError,
     type ExpectedAudit,
 } from './core/expect';
 import { createReporter, type Reporter } from './core/report';
 import { runScenario, type RunSummary } from './core/run';
 import type { ScenarioOptions, Step, StepContext, StepResult } from './core/types';
-
-const SLICE_2 = 'slice 2';
 
 /** Brain and runner clocks can differ slightly; look a second before the run started. */
 const auditFloor = (context: StepContext): string =>
@@ -60,22 +66,40 @@ const labelDirectInLive = (context: StepContext): void => {
     if (context.port.driver === 'live') context.label('DIRECT');
 };
 
-const deferred = (
-    id: string,
-    title: string,
-    kind: Step['kind'],
-    via: Step['via'],
-    needs: (keyof ScenarioIds)[] = []
-): Step => ({
-    id,
-    title,
-    needs,
-    produces: [],
-    kind,
-    via,
-    deferred: SLICE_2,
-    run: async () => undefined,
-});
+/** Brain issues to the learner's did:web for push and to the presenting did:key for offers. */
+const isLearnersDid = (did: string | undefined, learner: ScenarioWallet): boolean =>
+    did === learner.did || Boolean(did?.endsWith(`:users:${learner.profileId}`));
+
+/**
+ * A credential the learner holds verifies, names the learner as subject and (live) the
+ * district issuer as issuer. In-process the test signer replaces the issuer, so the issuer
+ * is reported, not asserted, and the step is labelled MOCK-SIGNER.
+ */
+const expectLearnerCredential = (
+    context: StepContext,
+    credential: ClaimedCredentialView,
+    learner: ScenarioWallet,
+    issuer: ScenarioIssuer
+): void => {
+    check(credential.verified, `credential ${credential.id ?? ''} does not verify`);
+    check(
+        isLearnersDid(credential.subjectDid, learner),
+        `credential subject is ${credential.subjectDid ?? 'absent'}, expected ${learner.profileId}`
+    );
+    if (context.port.mockSigner) {
+        context.label('MOCK-SIGNER');
+        context.note(`issuer ${credential.issuer} (test signer; district issuer not asserted)`);
+        return;
+    }
+    check(
+        credential.issuer === issuer.did,
+        `credential issuer is ${credential.issuer}, expected the district issuer ${issuer.did}`
+    );
+};
+
+/** The partner-facing refusal, as the report shows it. */
+const describeRefusal = (outcome: { ok: true } | { ok: false; error: Error & { code: string } }) =>
+    outcome.ok ? 'CLAIMABLE' : `refused (${outcome.error.code} '${outcome.error.message}')`;
 
 export const MVP_STEPS: readonly Step[] = [
     {
@@ -541,17 +565,296 @@ export const MVP_STEPS: readonly Step[] = [
             );
         },
     },
-    deferred('S13', 'learner A claims the pushed credential', 'PRODUCT', 'WALLET'),
-    deferred('S14', 'revoke the push binding; approve an offer binding', 'PRODUCT', 'CONSOLE'),
-    deferred('S15', 'partner submits; claim offer returned (offer)', 'PRODUCT', 'PARTNER'),
-    deferred('N2', 'another wallet cannot claim the offer', 'NEGATIVE', 'WALLET'),
-    deferred('S16', 'learner A claims the offer', 'PRODUCT', 'WALLET'),
-    deferred('N3', 'withdrawn consent refuses the next submit', 'NEGATIVE', 'WALLET'),
-    deferred('O1', 'offer stays claimable after withdraw', 'OBSERVE', 'WALLET'),
+    {
+        id: 'S13',
+        title: 'learner A claims the pushed credential',
+        needs: ['learnerA', 'recordId', 'issuer'],
+        produces: [],
+        kind: 'PRODUCT',
+        via: 'WALLET',
+        run: async context => {
+            const { port, ids } = context;
+            const learnerA = need(ids, 'learnerA');
+            const recordId = need(ids, 'recordId');
+            const incoming = await port.incomingCredentials(learnerA);
+            const entry =
+                incoming.find(candidate => candidate.recordId === recordId) ??
+                incoming.find(candidate => candidate.uri === ids.credentialUri);
+            check(
+                entry,
+                `record ${recordId} is not among learner A's ${incoming.length} incoming credentials`
+            );
+            // Accept, then read it back: the stored copy is decrypted with the learner's key.
+            const claimed = await port.acceptCredential({ wallet: learnerA, uri: entry.uri });
+            if (claimed.unreadable) {
+                // Only the test signer may leave a credential the learner cannot open.
+                check(
+                    port.mockSigner,
+                    `learner A cannot read the credential: ${claimed.unreadable}`
+                );
+                context.label('MOCK-SIGNER');
+                return {
+                    status: 'WARN',
+                    reason: `accepted; decrypt and verify not checkable in-process: ${claimed.unreadable}`,
+                };
+            }
+            expectLearnerCredential(context, claimed, learnerA, need(ids, 'issuer'));
+            return undefined;
+        },
+    },
+    {
+        id: 'S14',
+        title: 'revoke the push binding; approve an offer binding',
+        needs: ['districtId', 'installId', 'issuer', 'bindingId', 'bindingRevision'],
+        produces: ['pushBindingId', 'offerBindingId'],
+        kind: 'PRODUCT',
+        via: 'CONSOLE',
+        run: async context => {
+            const { port, ids } = context;
+            const districtId = need(ids, 'districtId');
+            const revoked = await port.revokeBinding({
+                bindingId: need(ids, 'bindingId'),
+                expectedRevision: need(ids, 'bindingRevision'),
+            });
+            check(revoked.status === 'REVOKED', `push binding is ${revoked.status}`);
+            const proposed = await port.proposeBinding({
+                ecosystemId: districtId,
+                installId: need(ids, 'installId'),
+                issuer: need(ids, 'issuer'),
+                delivery: 'offer',
+            });
+            const preflight = await port.preflight({ bindingId: proposed.bindingId });
+            check(
+                preflight.satisfied,
+                `preflight unsatisfied: ${preflight.missing.map(item => item.code).join(', ')}`
+            );
+            const binding = await port.approveBinding({
+                bindingId: proposed.bindingId,
+                expectedRevision: preflight.bindingRevision,
+                preflightId: preflight.preflightId,
+                preflightHash: preflight.hash,
+            });
+            check(binding.status === 'ACTIVE', `offer binding is ${binding.status}`);
+            await expectAuditSince(context, districtId, [
+                'BINDING_REVOKED',
+                'BINDING_PROPOSED',
+                'BINDING_APPROVED',
+                'BINDING_ACTIVATED',
+            ]);
+            ids.pushBindingId = revoked.bindingId;
+            ids.offerBindingId = binding.bindingId;
+            ids.bindingId = binding.bindingId;
+            ids.bindingRevision = binding.revision;
+        },
+    },
+    {
+        id: 'S15',
+        title: 'partner submits a completion; claim offer returned (offer)',
+        needs: ['learnerA', 'offerBindingId', 'termsUri', 'partnerHealthy'],
+        produces: ['offerUri', 'offerRecordId'],
+        kind: 'PRODUCT',
+        via: 'PARTNER',
+        run: async context => {
+            const { port, ids } = context;
+            const released = expectOk(
+                await port.submit({
+                    subject: need(ids, 'learnerA'),
+                    completionId: completionFor(context, 'a2'),
+                    courseId: DEMO_COURSE_ID,
+                }),
+                'submit'
+            );
+            check(released.status === 'ACCEPTED', `release is ${released.status}`);
+            check(
+                released.issuance?.status === 'OFFERED',
+                `issuance is ${released.issuance?.status ?? 'absent'}, expected OFFERED`
+            );
+            const { offerUri } = released.issuance;
+            if (port.driver === 'live') {
+                // The link the partner shows the learner, from the demo LMS JSON (never HTML).
+                check(released.offerUrl, 'the demo LMS JSON carried no offerUrl');
+                check(
+                    released.offerUrl === offerUri ||
+                        released.offerUrl.includes(encodeURIComponent(offerUri)),
+                    `the demo LMS offerUrl does not carry brain's offer ${offerUri}`
+                );
+            } else {
+                context.note('offer link from the submitRecord result (no LMS in-process)');
+            }
+            ids.offerUri = released.offerUrl ?? offerUri;
+            ids.offerRecordId = released.recordId;
+        },
+    },
+    {
+        id: 'N2',
+        title: 'another wallet cannot claim the offer',
+        needs: ['offerUri', 'offerBindingId', 'districtId'],
+        produces: ['otherWallet'],
+        kind: 'NEGATIVE',
+        via: 'WALLET',
+        run: async context => {
+            const { port, ids } = context;
+            const offerBindingId = need(ids, 'offerBindingId');
+            const other = await port.ensureWallet('otherWallet');
+            const outcome = await port.claimOffer({
+                wallet: other,
+                offerUri: need(ids, 'offerUri'),
+            });
+            check(!outcome.ok, `wallet ${other.profileId} claimed learner A's offer`);
+            context.note(`refused with ${outcome.error.code} '${outcome.error.message}'`);
+            // Assert the audit event, not the (deliberately generic) error text.
+            check(
+                (await eventsSince(context, need(ids, 'districtId'))).some(
+                    event =>
+                        event.action === 'RECORD_CREDENTIAL_CLAIM_DENIED' &&
+                        event.bindingId === offerBindingId
+                ),
+                'no RECORD_CREDENTIAL_CLAIM_DENIED audit event for the offer binding'
+            );
+            ids.otherWallet = other;
+        },
+    },
+    {
+        id: 'S16',
+        title: 'learner A claims the offer; a second claim re-delivers it',
+        needs: ['learnerA', 'offerUri', 'offerRecordId', 'issuer', 'districtId'],
+        produces: ['offerClaimed'],
+        kind: 'PRODUCT',
+        via: 'WALLET',
+        run: async context => {
+            const { port, ids } = context;
+            const learnerA = need(ids, 'learnerA');
+            const offerUri = need(ids, 'offerUri');
+            const offerRecordId = need(ids, 'offerRecordId');
+            const first = expectOk(await port.claimOffer({ wallet: learnerA, offerUri }), 'claim');
+            expectLearnerCredential(context, first, learnerA, need(ids, 'issuer'));
+            const again = expectOk(
+                await port.claimOffer({ wallet: learnerA, offerUri }),
+                'second claim'
+            );
+            check(again.verified, 'the re-delivered credential does not verify');
+            check(
+                again.id === first.id && again.issuer === first.issuer,
+                `the second claim returned ${again.id ?? 'a credential without id'}, expected ${first.id ?? 'the first'}`
+            );
+            // Signed once: the re-delivery writes no second issuance.
+            const issued = (await eventsSince(context, need(ids, 'districtId'))).filter(
+                event =>
+                    event.action === 'RECORD_CREDENTIAL_ISSUED' &&
+                    event.afterSummary?.recordId === offerRecordId
+            );
+            check(
+                issued.length === 1 && issued[0]?.afterSummary?.deliveredVia === 'offer',
+                `expected one RECORD_CREDENTIAL_ISSUED (offer) for the record, saw ${issued.length}`
+            );
+            ids.offerClaimed = true;
+        },
+    },
+    {
+        id: 'N3',
+        title: 'withdrawn consent refuses the next submit; learner re-consents',
+        needs: ['learnerA', 'termsUri', 'contractUri', 'offerBindingId', 'partnerHealthy'],
+        produces: ['termsUri'],
+        kind: 'NEGATIVE',
+        via: 'WALLET',
+        run: async context => {
+            const { port, ids } = context;
+            const learnerA = need(ids, 'learnerA');
+            const offerBindingId = need(ids, 'offerBindingId');
+            await port.withdraw({ wallet: learnerA, termsUri: need(ids, 'termsUri') });
+            expectDenied(
+                await port.submit({
+                    subject: learnerA,
+                    completionId: completionFor(context, 'a-withdrawn'),
+                    courseId: DEMO_COURSE_ID,
+                }),
+                'CONSENT_DENIED',
+                'FORBIDDEN'
+            );
+            const floor = Date.parse(auditFloor(context));
+            const deny = (await port.consentDecisions({ bindingId: offerBindingId })).find(
+                decision =>
+                    decision.subjectProfileId === learnerA.profileId &&
+                    decision.decision === 'DENY' &&
+                    Date.parse(decision.occurredAt) >= floor
+            );
+            check(deny, 'no DENY ConsentDecisionRecord for learner A after withdraw');
+            context.note(`DENY reason codes: ${deny.reasonCodes.join(', ')}`);
+            // Re-consent so later steps run with live consent.
+            const consent = await port.consent({
+                wallet: learnerA,
+                contractUri: need(ids, 'contractUri'),
+                via: 'contract',
+            });
+            check(consent.termsUri, 're-consent returned no terms URI');
+            ids.termsUri = consent.termsUri;
+        },
+    },
+    {
+        id: 'O1',
+        title: 'offers after consent withdraw (observed only; policy not yet decided)',
+        needs: ['learnerA', 'termsUri', 'contractUri', 'offerUri', 'partnerHealthy'],
+        produces: ['termsUri'],
+        kind: 'OBSERVE',
+        via: 'WALLET',
+        // Owner decision 2026-10-29: OBSERVED only, never FAIL. Problems setting up the
+        // observation report SKIP with the reason.
+        run: async context => {
+            const { port, ids } = context;
+            const learnerA = need(ids, 'learnerA');
+            const contractUri = need(ids, 'contractUri');
+            const offered = await port.submit({
+                subject: learnerA,
+                completionId: completionFor(context, 'a-o1'),
+                courseId: DEMO_COURSE_ID,
+            });
+            const fresh =
+                offered.ok && offered.result.issuance?.status === 'OFFERED'
+                    ? (offered.result.offerUrl ?? offered.result.issuance.offerUri)
+                    : undefined;
+            if (!fresh) {
+                return {
+                    status: 'SKIP',
+                    reason: `could not create an unclaimed offer: ${
+                        offered.ok
+                            ? `issuance ${offered.result.issuance?.status ?? 'absent'}`
+                            : `${offered.error.code} '${offered.error.message}'`
+                    }`,
+                };
+            }
+            try {
+                await port.withdraw({ wallet: learnerA, termsUri: need(ids, 'termsUri') });
+            } catch (error) {
+                const failure = toScenarioError(error);
+                return { status: 'SKIP', reason: `withdraw failed: ${failure.message}` };
+            }
+            const unclaimed = await port.claimOffer({ wallet: learnerA, offerUri: fresh });
+            const claimed = await port.claimOffer({
+                wallet: learnerA,
+                offerUri: need(ids, 'offerUri'),
+            });
+            let reconsent = '';
+            try {
+                ids.termsUri = (
+                    await port.consent({ wallet: learnerA, contractUri, via: 'contract' })
+                ).termsUri;
+            } catch (error) {
+                reconsent = `; re-consent FAILED: ${toScenarioError(error).message}`;
+            }
+            return {
+                status: 'OBSERVED',
+                reason:
+                    `after withdraw: unclaimed offer ${describeRefusal(unclaimed)}; ` +
+                    `claimed offer (S15) re-delivery ${describeRefusal(claimed)}${reconsent}`,
+            };
+        },
+    },
     {
         id: 'N4',
         title: 'revoked binding refuses the next submit',
         needs: [
+            // N4 revokes the offer binding S14 left ACTIVE.
+            'offerBindingId',
             'bindingId',
             'bindingRevision',
             'learnerA',
@@ -590,19 +893,155 @@ export const MVP_STEPS: readonly Step[] = [
                 ),
                 'no BINDING_REVOKED audit event for the binding'
             );
-            // The DENY carries no bindingId (known gap), so match it by ecosystem and account.
+            const deny = events.find(
+                event =>
+                    event.action === 'RECORD_PROVISION_DENY' &&
+                    event.afterSummary?.serviceAccountId === serviceAccountId &&
+                    event.afterSummary?.reason === 'NO_ACTIVE_BINDING'
+            );
             check(
-                events.some(
-                    event =>
-                        event.action === 'RECORD_PROVISION_DENY' &&
-                        event.afterSummary?.serviceAccountId === serviceAccountId &&
-                        event.afterSummary?.reason === 'NO_ACTIVE_BINDING'
-                ),
+                deny,
                 'no RECORD_PROVISION_DENY (NO_ACTIVE_BINDING) audit event for the ServiceAccount'
+            );
+            // The denial is attributed to the binding that was just revoked.
+            check(
+                deny.bindingId === revoked.bindingId,
+                `the NO_ACTIVE_BINDING denial carries bindingId ${deny.bindingId ?? 'none'}, expected ${revoked.bindingId}`
             );
         },
     },
-    deferred('N5', 'health flip disables, one probe re-enables', 'NEGATIVE', 'BRAIN'),
+    {
+        id: 'N5',
+        title: 'health flip disables, one probe re-enables',
+        needs: ['serviceAccountId', 'partnerHealthy', 'learnerA'],
+        produces: [],
+        kind: 'NEGATIVE',
+        via: 'BRAIN',
+        run: async context => {
+            const { port, ids } = context;
+            if (port.healthFlipUnsupported) {
+                return { status: 'SKIP', reason: `${port.driver}: ${port.healthFlipUnsupported}` };
+            }
+            context.label('DEV-PROBE');
+            const serviceAccountId = need(ids, 'serviceAccountId');
+            const before = await port.readServiceAccount({ serviceAccountId });
+            await port.setPartnerHealthy(false);
+            try {
+                let probes = 0;
+                let probe = await port.probeHealth({ serviceAccountId });
+                // The failure threshold is brain config (default 3); stop well past it.
+                for (probes = 1; probe.status === 'ENABLED' && probes < 10; probes++) {
+                    check(!probe.blockedBy, `probe ${probes} blocked by ${probe.blockedBy}`);
+                    probe = await port.probeHealth({ serviceAccountId });
+                }
+                check(
+                    probe.status === 'DISABLED' && probe.disabledCause === 'HEALTH',
+                    `after ${probes} unhealthy probes the ServiceAccount is ${probe.status}` +
+                        (probe.disabledCause ? ` (${probe.disabledCause})` : '') +
+                        (probe.blockedBy ? `, probe blocked by ${probe.blockedBy}` : '')
+                );
+                context.note(
+                    `DISABLED(HEALTH) after ${probes} unhealthy probes (healthFailures ${probe.healthFailures})`
+                );
+                const refused = expectDenied(
+                    await port.submit({
+                        subject: need(ids, 'learnerA'),
+                        completionId: completionFor(context, 'a-unhealthy'),
+                        courseId: DEMO_COURSE_ID,
+                    }),
+                    ['NO_GRANT_FOR_SUBJECT', 'Invalid integration token']
+                );
+                context.note(`submit refused: ${refused.code} '${refused.message}'`);
+            } finally {
+                await port.setPartnerHealthy(true);
+            }
+            const recovered = await port.probeHealth({ serviceAccountId });
+            check(
+                !recovered.blockedBy,
+                `recovery probe blocked by ${recovered.blockedBy}: ${recovered.blockedDetail ?? ''}`
+            );
+            check(
+                recovered.status === 'ENABLED' && recovered.healthFailures === 0,
+                `one healthy probe left the ServiceAccount ${recovered.status} (healthFailures ${recovered.healthFailures})`
+            );
+            if (before && before.credentialGeneration !== recovered.credentialGeneration) {
+                context.note(
+                    `credentialGeneration ${before.credentialGeneration} → ${recovered.credentialGeneration}: the partner needs a new credential`
+                );
+            }
+            return undefined;
+        },
+    },
+    {
+        id: 'N6',
+        title: 'removing an install revokes and audits its record binding',
+        needs: ['rootEcosystemId', 'listingId', 'versionId'],
+        produces: ['cascadeDistrictId', 'cascadeBindingId'],
+        kind: 'NEGATIVE',
+        via: 'CONSOLE',
+        // Live would leave a removed scratch install in the developer's database each run.
+        drivers: ['in-process'],
+        run: async context => {
+            const { port, ids, runId } = context;
+            check(port.removeInstall, `the ${port.driver} driver cannot remove an install`);
+            // A scratch district, so the walkthrough's own install and Bindings are untouched.
+            const { ecosystemId } = await port.createDistrict({
+                parentEcosystemId: need(ids, 'rootEcosystemId'),
+                name: `Scenario cascade ${runId}`,
+                slug: `scenario-cascade-${runId}`,
+            });
+            const issuer = await port.provisionIssuer({ ecosystemId, name: 'Scenario Cascade' });
+            let intent = await port.plan({
+                ecosystemId,
+                listingId: need(ids, 'listingId'),
+                versionId: need(ids, 'versionId'),
+            });
+            intent = await port.apply(await port.approve(intent));
+            const target = await port.findInstallTarget({
+                ecosystemId,
+                intentId: intent.intentId,
+            });
+            check(target, `no INTEGRATION_INSTALL target for intent ${intent.intentId}`);
+            await port.governAndAccept({ ecosystemId });
+            const proposed = await port.proposeBinding({
+                ecosystemId,
+                installId: target.installId,
+                issuer,
+                delivery: 'push',
+            });
+            const preflight = await port.preflight({ bindingId: proposed.bindingId });
+            check(
+                preflight.satisfied,
+                `preflight unsatisfied: ${preflight.missing.map(item => item.code).join(', ')}`
+            );
+            const binding = await port.approveBinding({
+                bindingId: proposed.bindingId,
+                expectedRevision: preflight.bindingRevision,
+                preflightId: preflight.preflightId,
+                preflightHash: preflight.hash,
+            });
+            check(binding.status === 'ACTIVE', `binding is ${binding.status}, expected ACTIVE`);
+            // S17 checks the cascade's audit event even if the checks below fail.
+            ids.cascadeDistrictId = ecosystemId;
+            ids.cascadeBindingId = binding.bindingId;
+
+            const removed = await port.removeInstall({ intentId: intent.intentId });
+            check(
+                removed.phase === 'REMOVED',
+                `install intent is ${removed.phase ?? 'without a phase'}, expected REMOVED`
+            );
+            const revoked = (await eventsSince(context, ecosystemId)).find(
+                event => event.action === 'BINDING_REVOKED' && event.bindingId === binding.bindingId
+            );
+            check(revoked, `no BINDING_REVOKED audit event for ${binding.bindingId}`);
+            check(
+                revoked.intentId === intent.intentId &&
+                    revoked.afterSummary?.cause === 'INTENT_REMOVED',
+                `BINDING_REVOKED for ${binding.bindingId} is not attributed to the removal ` +
+                    `(intent ${revoked.intentId ?? 'none'}, cause ${String(revoked.afterSummary?.cause)})`
+            );
+        },
+    },
     {
         id: 'S17',
         title: 'audit trail shows every step in order',
@@ -626,26 +1065,73 @@ export const MVP_STEPS: readonly Step[] = [
             add('N1', ['RECORD_PROVISION_DENY']);
             add('S11', ['RECORD_PROVISION_ALLOW', 'RECORD_CREDENTIAL_ISSUED']);
             add('S12', ['RECORD_PROVISION_ALLOW']);
+            add('S14', [
+                'BINDING_REVOKED',
+                'BINDING_PROPOSED',
+                'BINDING_APPROVED',
+                'BINDING_ACTIVATED',
+            ]);
+            add('S15', ['RECORD_PROVISION_ALLOW', 'RECORD_CREDENTIAL_OFFERED']);
+            add('N2', ['RECORD_CREDENTIAL_CLAIM_DENIED']);
+            add('S16', ['RECORD_CREDENTIAL_ISSUED']);
+            add('N3', ['RECORD_PROVISION_DENY']);
             add('N4', ['BINDING_REVOKED', 'RECORD_PROVISION_DENY']);
+            add('N5', ['SERVICE_ACCOUNT_HEALTH_TRANSITION']);
             check(expected.length, 'no audited step passed; nothing to check');
 
             const events = await eventsSince(context, districtId);
             expectAuditSubsequence(events, expected, auditFloor(context));
             context.note(`matched ${expected.length} audit positions`);
 
-            // Known gaps (owner decision 2026-10-29: WARN now, FAIL once fixed).
-            const gaps: string[] = [];
-            if (passed(results, 'N4')) {
-                const deny = events
-                    .filter(event => event.action === 'RECORD_PROVISION_DENY')
-                    .find(event => event.afterSummary?.reason === 'NO_ACTIVE_BINDING');
-                if (deny && !deny.bindingId) gaps.push('DENY after revoke has no bindingId');
-            }
-            context.note(
-                'not exercised in slice 1: withdraw audit (N3), cascade-revoke BINDING_REVOKED'
+            // Formerly known gaps, fixed in brain: a revoke-time DENY names the revoked binding,
+            // and every revoke (operator, or cascade from N6) writes BINDING_REVOKED.
+            const unattributed = events.filter(
+                event =>
+                    event.action === 'RECORD_PROVISION_DENY' &&
+                    event.afterSummary?.reason === 'NO_ACTIVE_BINDING' &&
+                    !event.bindingId
             );
-            if (gaps.length)
-                return { status: 'WARN', reason: `known audit gaps: ${gaps.join('; ')}` };
+            check(
+                !unattributed.length,
+                `${unattributed.length} NO_ACTIVE_BINDING denial(s) carry no bindingId`
+            );
+            const revokedThisRun = [
+                passed(results, 'S14') ? ids.pushBindingId : undefined,
+                passed(results, 'N4') ? ids.offerBindingId : undefined,
+            ].filter((bindingId): bindingId is string => Boolean(bindingId));
+            const unaudited = revokedThisRun.filter(
+                bindingId =>
+                    !events.some(
+                        event => event.action === 'BINDING_REVOKED' && event.bindingId === bindingId
+                    )
+            );
+            check(!unaudited.length, `no BINDING_REVOKED audit event for ${unaudited.join(', ')}`);
+            // Cascade revokes: N6 (in-process only) removes a scratch install.
+            if (ids.cascadeDistrictId && ids.cascadeBindingId) {
+                const cascadeBindingId = ids.cascadeBindingId;
+                check(
+                    (await eventsSince(context, ids.cascadeDistrictId)).some(
+                        event =>
+                            event.action === 'BINDING_REVOKED' &&
+                            event.bindingId === cascadeBindingId &&
+                            event.afterSummary?.cause === 'INTENT_REMOVED'
+                    ),
+                    `no BINDING_REVOKED (cause INTENT_REMOVED) audit event for the cascade-revoked ${cascadeBindingId}`
+                );
+            } else {
+                context.note(
+                    `cascade revokes not checked: N6 did not reach the install removal ` +
+                        `(${context.port.driver} driver); record-release.spec.ts covers them`
+                );
+            }
+
+            // Known gap kept as WARN (owner decision 2026-10-29): fixing it touches ConsentFlow.
+            if (passed(results, 'N3') && !events.some(event => event.action.includes('WITHDRAW'))) {
+                return {
+                    status: 'WARN',
+                    reason: 'known audit gap: consent withdraw writes no audit event',
+                };
+            }
             return undefined;
         },
     },

@@ -87,6 +87,9 @@ export const walletDid = async (role: WalletRole): Promise<string> =>
 
 export const walletProfileId = (role: WalletRole): string => SCENARIO_PROFILE_IDS[role];
 
+/** The wallet's seed, for the in-process LearnCard that decrypts, verifies and signs as it. */
+export const walletSeed = (role: WalletRole): string => WALLET_SEEDS[role];
+
 /**
  * A long-lived health endpoint built on the shared `withHealthServer` helper: the server
  * stays up until `stop()`, so its URL can be pinned in the signed manifest (F2) and probed

@@ -357,6 +357,17 @@ export const createLivePort = async (
 
         probeHealth: async input => (await direct()).probeHealth(input),
 
+        healthFlipUnsupported:
+            'the live demo LMS has no unhealthy switch; stopping it would also break the ' +
+            'partner for later steps (N5 runs in-process)',
+
+        setPartnerHealthy: async () => {
+            throw new ScenarioError({
+                code: 'NOT_SUPPORTED',
+                message: 'the live driver cannot flip the demo LMS health endpoint',
+            });
+        },
+
         governAndAccept: async ({ ecosystemId }) =>
             (await direct()).governAndAccept({
                 ecosystemId,

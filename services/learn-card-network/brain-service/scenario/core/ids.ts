@@ -12,8 +12,11 @@ export const SCENARIO_SEEDS = {
     learnerA: 'd'.repeat(64),
     /** Learner B: a district member who never consents. */
     learnerB: 'b'.repeat(64),
-    /** A wallet that is neither learner (offer-claim negative). */
-    otherWallet: 'f'.repeat(64),
+    /**
+     * A wallet that is neither learner (offer-claim negative). Not 'f'*64: that seed is
+     * above the secp256k1 group order, and LearnCard's key derivation panics on it.
+     */
+    otherWallet: '7'.repeat(64),
     /** Publisher key that signs the Demo LMS manifest. */
     publisher: 'e'.repeat(64),
 } as const;
@@ -59,14 +62,27 @@ export type ScenarioIds = {
     partnerHealthy?: true;
     contractId?: string;
     contractUri?: string;
+    /** The record-provisioning Binding currently ACTIVE (push from S09, offer from S14). */
     bindingId?: string;
     bindingRevision?: number;
+    /** S09's push Binding, kept after S14 revokes it. */
+    pushBindingId?: string;
+    /** S14's offer Binding. */
+    offerBindingId?: string;
     termsUri?: string;
     /** The completion S11 submitted; S12 resubmits it for DUPLICATE. */
     completionId?: string;
     recordId?: string;
     credentialUri?: string;
+    /** The offer link exactly as the partner showed it (S15). */
     offerUri?: string;
+    offerRecordId?: string;
+    /** Set once learner A claimed the S15 offer (S16). */
+    offerClaimed?: true;
+    /** N6's scratch district, whose install is removed to cascade a Binding revoke. */
+    cascadeDistrictId?: string;
+    /** N6's record Binding, revoked by the install removal (not by an operator). */
+    cascadeBindingId?: string;
 };
 
 export class BlockedError extends Error {

@@ -8,8 +8,8 @@ import { createInProcessPort } from '../scenario/drivers/in-process/port';
 import { newRunId, runMvpWalkthrough } from '../scenario/mvp-walkthrough';
 import type { ScenarioPort } from '../scenario/port';
 
-/** Slice 1 steps the in-process driver runs; every one must PASS or WARN. */
-const SLICE_1 = [
+/** Steps the in-process driver runs; every one must PASS or WARN. */
+const MUST_PASS = [
     'F1',
     'F2',
     'S01',
@@ -25,12 +25,23 @@ const SLICE_1 = [
     'S10',
     'S11',
     'S12',
+    'S13',
+    'S14',
+    'S15',
+    'N2',
+    'S16',
+    'N3',
     'N4',
+    'N5',
+    'N6',
     'S17',
 ];
 
+/** Observations (owner decision 2026-10-29): reported, never a failure. */
+const OBSERVED = ['O1'];
+
 describe('scenario: EducationOS MVP walkthrough (in-process)', () => {
-    it('runs every slice-1 step without a FAIL', async () => {
+    it('runs every step without a FAIL', async () => {
         const runId = newRunId();
         let port: ScenarioPort | undefined;
         try {
@@ -45,11 +56,15 @@ describe('scenario: EducationOS MVP walkthrough (in-process)', () => {
                 .map(result => `${result.id} ${result.status}: ${result.reason}`);
             expect(failures).toEqual([]);
             const byId = new Map(summary.results.map(result => [result.id, result.status]));
-            const notPassed = SLICE_1.filter(id => {
+            const notPassed = MUST_PASS.filter(id => {
                 const status = byId.get(id);
                 return status !== 'PASS' && status !== 'WARN';
             }).map(id => `${id} ${byId.get(id) ?? 'missing'}`);
             expect(notPassed).toEqual([]);
+            const notObserved = OBSERVED.filter(id => byId.get(id) !== 'OBSERVED').map(
+                id => `${id} ${byId.get(id) ?? 'missing'}`
+            );
+            expect(notObserved).toEqual([]);
             expect(summary.exitCode).toBe(0);
         } finally {
             await port?.close();

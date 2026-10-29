@@ -7,8 +7,16 @@
  * Runs only under vitest (`bun run test:scenario`, or `bun run scenario:in-process` from the
  * repo root); it refuses any other NODE_ENV so it can never write to a developer database.
  */
-import { ConsentDecisionRecordValidator, ConsentFlowTermsValidator } from '@learncard/types';
+import {
+    ConsentDecisionRecordValidator,
+    ConsentFlowTermsValidator,
+    JWEValidator,
+    VCValidator,
+} from '@learncard/types';
 import { ServiceAccount, type StoredServiceAccount } from '@models';
+import { CLAIM_WORKFLOW_ID } from '@helpers/claim-offer.helpers';
+import { getLearnCard } from '@helpers/learnCard.helpers';
+import { signDidAuth } from '../../../test/helpers/did-auth';
 import { probeServiceAccountHealthNow } from '../../../src/dev/service-account-health-probe';
 import { metadataFor } from '../../../test/helpers/record-binding';
 import { attempt, ScenarioError } from '../../core/expect';
@@ -17,6 +25,7 @@ import type { ScenarioWallet, WalletRole } from '../../core/ids';
 import type {
     AuditEventView,
     BindingView,
+    ClaimedCredentialView,
     ConsentDecisionView,
     InstallIntentView,
     ScenarioPort,
@@ -36,6 +45,7 @@ import {
     userCaller,
     walletDid,
     walletProfileId,
+    walletSeed,
     type Caller,
 } from './arrange';
 
@@ -75,6 +85,37 @@ const toAccountView = (account: StoredServiceAccount): ServiceAccountView => ({
     credentialGeneration: account.credentialGeneration,
 });
 
+type SeedWallet = Awaited<ReturnType<typeof getLearnCard>>;
+
+/** Reads a credential the way a wallet does: issuer, subject, and whether its proof verifies. */
+const describeCredential = async (
+    wallet: SeedWallet,
+    raw: unknown
+): Promise<ClaimedCredentialView> => {
+    const vc = VCValidator.parse(raw);
+    const issuer = typeof vc.issuer === 'string' ? vc.issuer : (vc.issuer.id ?? '');
+    const subject = Array.isArray(vc.credentialSubject)
+        ? vc.credentialSubject[0]
+        : vc.credentialSubject;
+    const verification = await wallet.invoke.verifyCredential(vc, {}, true);
+    return {
+        id: vc.id,
+        issuer,
+        subjectDid: typeof subject?.id === 'string' ? subject.id : undefined,
+        verified: !verification.some(item => item.status === 'Failed'),
+    };
+};
+
+/** Accepts the raw exchange URL or the LearnCard /request?vc_request_url= wrapper. */
+const offerIdFrom = (link: string): string => {
+    const exchangeUrl = new URL(link).searchParams.get('vc_request_url') ?? link;
+    const offerId = new URL(exchangeUrl).pathname.split('/').pop();
+    if (!offerId) {
+        throw new ScenarioError({ code: 'BAD_OFFER', message: `no offer id in ${exchangeUrl}` });
+    }
+    return offerId;
+};
+
 /** The fields the Binding's issuance template maps (record-binding metadataFor). */
 const completionFields = (completionId: string, courseId: string): Record<string, string> => ({
     completionId,
@@ -105,6 +146,9 @@ export const createInProcessPort = async (
     const tokens = new Map<string, string>();
 
     const walletCaller = (wallet: ScenarioWallet): Promise<Caller> => userCaller(wallet.did);
+    /** The wallet's own LearnCard (same seed, same did:key): decrypts, verifies, signs VPs. */
+    const learnCardOf = (wallet: ScenarioWallet): Promise<SeedWallet> =>
+        getLearnCard(walletSeed(wallet.role));
 
     const exchange = async (serviceAccountId: string) => {
         const secret = secrets.get(serviceAccountId);
@@ -258,6 +302,22 @@ export const createInProcessPort = async (
                       });
             return account ? toAccountView(account) : null;
         },
+        removeInstall: async ({ intentId }) => {
+            const intent = await operator.installIntent.getInstallIntent({ intentId });
+            if (!intent) {
+                throw new ScenarioError({
+                    code: 'NOT_FOUND',
+                    message: `no install intent ${intentId}`,
+                });
+            }
+            return toIntentView(
+                await operator.installIntent.revokeInstallIntent({
+                    intentId,
+                    expectedStatusRevision: intent.statusRevision,
+                    phase: 'REMOVED',
+                })
+            );
+        },
 
         issueCredential: async ({ serviceAccountId }) => {
             const issued = await operator.installIntent.issueServiceAccountCredential({
@@ -272,6 +332,9 @@ export const createInProcessPort = async (
         exchangeToken: ({ serviceAccountId }) =>
             attempt(async () => ({ expiresIn: (await exchange(serviceAccountId)).expiresIn })),
         probeHealth: target => probeServiceAccountHealthNow(target),
+        setPartnerHealthy: async healthy => {
+            health.control.healthy = healthy;
+        },
 
         governAndAccept: ({ ecosystemId }) =>
             arrangeGovernance({ ecosystemId, ownerProfileId: OPERATOR.profileId, domain }),
@@ -344,15 +407,77 @@ export const createInProcessPort = async (
         withdraw: async ({ wallet, termsUri }) => {
             await (await walletCaller(wallet)).contracts.withdrawConsent({ uri: termsUri });
         },
-        incomingCredentials: async () => {
-            throw SLICE_2('incomingCredentials');
+        incomingCredentials: async wallet => {
+            const incoming = await (
+                await walletCaller(wallet)
+            ).credential.incomingCredentials({ limit: 50 });
+            return [...incoming]
+                .sort((a, b) => Date.parse(b.sent) - Date.parse(a.sent))
+                .map(entry => {
+                    const recordId = entry.metadata?.educationOsRecordId;
+                    return {
+                        uri: entry.uri,
+                        from: entry.from,
+                        recordId: typeof recordId === 'string' ? recordId : undefined,
+                    };
+                });
         },
-        acceptCredential: async () => {
-            throw SLICE_2('acceptCredential');
+        acceptCredential: async ({ wallet, uri }) => {
+            await (await walletCaller(wallet)).credential.acceptCredential({ uri });
+            // The stored credential is a JWE encrypted to the learner; only their key opens it.
+            const stored = await open.storage.resolve({ uri });
+            const learnCard = await learnCardOf(wallet);
+            const jwe = JWEValidator.safeParse(stored);
+            if (jwe.success && !jwe.data.recipients?.length) {
+                // The test signer encrypts to the learner's and owner's did:web, which do not
+                // resolve without a running brain, so the JWE carries no recipient at all.
+                return {
+                    issuer: '',
+                    verified: false,
+                    unreadable:
+                        'the test signer stored a JWE with no recipients (its did:web recipients ' +
+                        'do not resolve in-process), so no wallet can decrypt it',
+                };
+            }
+            const raw = jwe.success ? await learnCard.invoke.decryptDagJwe(jwe.data) : stored;
+            return describeCredential(learnCard, raw);
         },
-        claimOffer: async () => {
-            throw SLICE_2('claimOffer');
-        },
+        claimOffer: ({ wallet, offerUri }) =>
+            attempt(async () => {
+                const offerId = offerIdFrom(offerUri);
+                // The VC-API exchange as a wallet drives it: unauthenticated until the VP.
+                const participate = (await openCaller()).workflows.participateInExchange;
+                const request = await participate({
+                    localWorkflowId: CLAIM_WORKFLOW_ID,
+                    localExchangeId: offerId,
+                });
+                const challenge = request.verifiablePresentationRequest?.challenge;
+                if (!challenge) {
+                    throw new ScenarioError({
+                        code: 'NO_CHALLENGE',
+                        message: 'claim offer returned no DID-auth challenge',
+                    });
+                }
+                const learnCard = await learnCardOf(wallet);
+                const response = await participate({
+                    localWorkflowId: CLAIM_WORKFLOW_ID,
+                    localExchangeId: offerId,
+                    verifiablePresentation: await signDidAuth(
+                        learnCard,
+                        challenge,
+                        request.verifiablePresentationRequest?.domain ?? domain
+                    ),
+                });
+                const vcs = response.verifiablePresentation?.verifiableCredential;
+                const vc = Array.isArray(vcs) ? vcs[0] : vcs;
+                if (!vc) {
+                    throw new ScenarioError({
+                        code: 'NO_CREDENTIAL',
+                        message: 'claim response carried no credential',
+                    });
+                }
+                return describeCredential(learnCard, vc);
+            }),
 
         submit: ({ subject, completionId, courseId }) =>
             attempt(async (): Promise<SubmitView> => {

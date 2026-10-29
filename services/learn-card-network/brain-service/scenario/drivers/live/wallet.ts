@@ -5,7 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { z } from 'zod';
-import { ConsentFlowTermsValidator, VCValidator } from '@learncard/types';
+import { ConsentFlowTermsValidator, JWEValidator, VCValidator } from '@learncard/types';
 import { initLearnCard } from '@learncard/init';
 import { ScenarioError } from '../../core/expect';
 import {
@@ -176,6 +176,7 @@ export class WalletPool {
             true
         );
         return {
+            id: vc.id,
             issuer,
             subjectDid: typeof subject?.id === 'string' ? subject.id : undefined,
             verified: !verification.some(item => item.status === 'Failed'),
@@ -186,7 +187,45 @@ export class WalletPool {
         const wallet = await this.wallet(role);
         await wallet.invoke.acceptCredential(uri);
         // The stored credential is a JWE encrypted to the learner; read() decrypts it.
-        return this.describe(wallet, await wallet.read.get(uri));
+        let stored: unknown;
+        try {
+            stored = await wallet.read.get(uri);
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            return { issuer: '', verified: false, unreadable: `read failed: ${reason}` };
+        }
+        if (!stored) {
+            return {
+                issuer: '',
+                verified: false,
+                unreadable: await this.whyUnreadable(wallet, uri),
+            };
+        }
+        return this.describe(wallet, stored);
+    }
+
+    /**
+     * read.get returns undefined both for a missing object and for a JWE the wallet cannot
+     * decrypt (the LCN plugin swallows the decrypt error), so resolve the raw stored object
+     * to tell the two apart.
+     */
+    private async whyUnreadable(wallet: LearnCardWallet, uri: string): Promise<string> {
+        let raw: unknown;
+        try {
+            raw = await wallet.invoke.resolveFromLCN(uri);
+        } catch (error) {
+            const reason = error instanceof Error ? error.message : String(error);
+            return `nothing readable at ${uri} (resolve failed: ${reason})`;
+        }
+        const jwe = JWEValidator.safeParse(raw);
+        if (!jwe.success) return `nothing readable at ${uri} (stored object is not a credential)`;
+        const kids = (jwe.data.recipients ?? [])
+            .map(recipient => recipient.header?.kid)
+            .filter((kid): kid is string => Boolean(kid));
+        return (
+            `stored credential at ${uri} is a JWE this wallet cannot decrypt ` +
+            `(recipients: ${kids.length ? kids.join(', ') : 'none'}; wallet did: ${wallet.id.did()})`
+        );
     }
 
     async claimOffer(role: WalletRole, link: string): Promise<ClaimedCredentialView> {

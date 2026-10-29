@@ -81,14 +81,19 @@ const mvp = async (args: readonly string[]): Promise<number> => {
     const { createLivePort } = await import('./drivers/live/port');
     let port: ScenarioPort | undefined;
     // A signal skips `finally` and the 'exit' event, so close the port (stopping the
-    // spawned demo LMS) before exiting with the conventional 128 + signal number.
+    // spawned demo LMS) before exiting with the conventional 128 + signal number. Repeats
+    // are ignored while closing: under prove:demo-lms a Ctrl-C arrives twice (from the
+    // terminal's process group and forwarded by the parent).
+    let stopping = false;
     const onSignal = (signal: NodeJS.Signals): void => {
+        if (stopping) return;
+        stopping = true;
         const code = 128 + (osConstants.signals[signal] ?? 0);
         void (port?.close() ?? Promise.resolve())
             .catch(() => undefined)
             .finally(() => process.exit(code));
     };
-    for (const signal of SIGNALS) process.once(signal, onSignal);
+    for (const signal of SIGNALS) process.on(signal, onSignal);
     try {
         port = await createLivePort({ runId, keepLms: options.keepLms });
         const summary = await runMvpWalkthrough({ port, options, runId });

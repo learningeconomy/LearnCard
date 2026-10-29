@@ -129,10 +129,14 @@ export type SubmitInput = {
 export type IncomingCredentialView = { uri: string; recordId?: string; from?: string };
 
 export type ClaimedCredentialView = {
+    /** The credential's own id (deterministic per record), when it has one. */
+    id?: string;
     issuer: string;
     subjectDid?: string;
     /** Whether the wallet verified the credential's proof. */
     verified: boolean;
+    /** Set when the driver accepted the credential but could not read it; says why. */
+    unreadable?: string;
 };
 
 export type AuditEventView = {
@@ -199,6 +203,11 @@ export interface ScenarioPort {
     readServiceAccount(
         input: { serviceAccountId: string } | { installId: string }
     ): Promise<ServiceAccountView | null>;
+    /**
+     * Removes the install (revokeInstallIntent), which cascades the revoke of its Bindings.
+     * Only the in-process driver implements it: N6 removes a scratch install there.
+     */
+    removeInstall?(input: { intentId: string }): Promise<InstallIntentView>;
 
     // ── Partner credential and health (BRAIN) ────────────────────────────────────────
     /**
@@ -216,6 +225,13 @@ export interface ScenarioPort {
     probeHealth(
         input: { serviceAccountId: string } | { intentId: string }
     ): Promise<HealthProbeView>;
+    /**
+     * Why this driver cannot make the partner's health endpoint answer unhealthy, or
+     * undefined when `setPartnerHealthy` works (in-process: the health server's switch).
+     */
+    readonly healthFlipUnsupported?: string;
+    /** Makes the partner's health endpoint answer healthy or unhealthy (503). */
+    setPartnerHealthy(healthy: boolean): Promise<void>;
 
     // ── Governance and binding ───────────────────────────────────────────────────────
     /** DIRECT: governConsentContract + operator terms + acceptGovernanceConsentContract. */
