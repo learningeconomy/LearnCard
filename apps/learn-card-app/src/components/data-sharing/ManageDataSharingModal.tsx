@@ -36,6 +36,7 @@ import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContrac
 import { useAiConsentToggle } from '../../hooks/useAiConsentToggle';
 import TransP from '../../i18n/TransP';
 import { buildPermissionText } from './consentSummary';
+import { hasOpenNewOptionsWindow } from '@learncard/helpers';
 
 type ManageDataSharingModalProps = {
     onClose?: () => void;
@@ -306,8 +307,7 @@ export const ConsentedContractRow: React.FC<ConsentedContractRowProps> = ({
                     )}
                     {hasPendingUpdate
                         ? m['consentUpdate.needsReview']()
-                        : contract.newOptionsUntil &&
-                            new Date(contract.newOptionsUntil).getTime() > Date.now()
+                        : hasOpenNewOptionsWindow(contract.newOptionsUntil)
                           ? m['consentUpdate.newOption']()
                           : permissionText}
                 </p>

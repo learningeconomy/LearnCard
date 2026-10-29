@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonSpinner } from '@ionic/react';
 import { useQuery } from '@tanstack/react-query';
-import { buildContractUpdatePreview } from '@learncard/helpers';
+import { buildContractUpdatePreview, hasOpenNewOptionsWindow } from '@learncard/helpers';
 import {
     isConsentConflict,
     useConsentedContracts,
@@ -139,7 +139,8 @@ const ContractUpdateReviewRoute: React.FC = () => {
     }
 
     const alreadyHandled = record.consentedVersion >= latestUpdate.toVersion;
-    const hasPendingOptionalChoice = !alreadyHandled || Boolean(record.newOptionsUntil);
+    const hasPendingOptionalChoice =
+        !alreadyHandled || hasOpenNewOptionsWindow(record.newOptionsUntil);
     const initialEnabledOptionalKeys = hasPendingOptionalChoice
         ? getDefaultEnabledOptionalUpdateScopeKeys(contract.contract, latestUpdate.preview.rows)
         : getEnabledOptionalUpdateScopeKeys(record.terms, latestUpdate.preview.rows);

@@ -2,6 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type * as ContractHelpers from '@learncard/helpers';
 import ContractUpdateReviewRoute from './ContractUpdateReviewRoute';
 vi.mock('../../i18n', () => ({ useLocale: () => 'en' }));
 
@@ -69,7 +70,8 @@ vi.mock('learn-card-base/stores/walletStore', () => ({
 vi.mock('@tanstack/react-query', () => ({
     useQuery: () => ({ data: state.status, isLoading: false, isError: false }),
 }));
-vi.mock('@learncard/helpers', () => ({
+vi.mock('@learncard/helpers', async () => ({
+    ...(await vi.importActual<typeof ContractHelpers>('@learncard/helpers')),
     buildContractUpdatePreview: (input: {
         kind: string;
         name: string;

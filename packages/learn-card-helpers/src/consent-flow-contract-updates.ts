@@ -6,6 +6,12 @@ import type {
     ConsentFlowContractUpdatePreview,
 } from '@learncard/types';
 
+/** Whether a published optional-choice proposal window has not yet expired. */
+export const hasOpenNewOptionsWindow = (
+    newOptionsUntil: string | undefined,
+    now = Date.now()
+): boolean => Boolean(newOptionsUntil && Date.parse(newOptionsUntil) > now);
+
 export type ConsentFlowContractSnapshot = {
     contract: ConsentFlowContract;
     name: string;
@@ -131,137 +137,204 @@ export const classifyContractChange = (
     if (expandedOptional) return 'expanded_optional';
     return 'relaxed';
 };
-const CANONICAL_SCOPE_COPY: Record<string, { label: string; description: string }> = {
-    TRANSCRIPT: { label: 'Transcripts', description: 'Records of completed courses and learning.' },
+const CANONICAL_SCOPE_COPY: Record<
+    string,
+    { messageKey: string; label: string; description: string }
+> = {
+    TRANSCRIPT: {
+        messageKey: 'transcripts',
+        label: 'Transcripts',
+        description: 'Records of completed courses and learning.',
+    },
     TRANSCRIPTS: {
+        messageKey: 'transcripts',
         label: 'Transcripts',
         description: 'Records of completed courses and learning.',
     },
     CERTIFICATE: {
+        messageKey: 'certificates',
         label: 'Certificates',
         description: 'Credentials recognizing qualifications or completed learning.',
     },
     CERTIFICATES: {
+        messageKey: 'certificates',
         label: 'Certificates',
         description: 'Credentials recognizing qualifications or completed learning.',
     },
     ACHIEVEMENT: {
+        messageKey: 'achievements',
         label: 'Achievements',
         description: 'Milestones earned through effort, skill, or perseverance.',
     },
     ACHIEVEMENTS: {
+        messageKey: 'achievements',
         label: 'Achievements',
         description: 'Milestones earned through effort, skill, or perseverance.',
     },
     SKILL: {
+        messageKey: 'skills',
         label: 'Skills',
         description: 'Abilities developed through training, practice, or experience.',
     },
     SKILLS: {
+        messageKey: 'skills',
         label: 'Skills',
         description: 'Abilities developed through training, practice, or experience.',
     },
     'WORK HISTORY': {
+        messageKey: 'workHistory',
         label: 'Work History',
         description: 'Professional roles and activities over time.',
     },
     'LEARNING HISTORY': {
+        messageKey: 'learningHistory',
         label: 'Learning History',
         description: 'Structured programs of learning.',
     },
-    ID: { label: 'IDs', description: 'Credentials used to verify identity.' },
+    ID: { messageKey: 'ids', label: 'IDs', description: 'Credentials used to verify identity.' },
     'SOCIAL BADGE': {
+        messageKey: 'socialBadges',
         label: 'Social Badges',
         description: 'Digital labels recognizing participation or group membership.',
     },
     'SOCIAL BADGES': {
+        messageKey: 'socialBadges',
         label: 'Social Badges',
         description: 'Digital labels recognizing participation or group membership.',
     },
-    MEMBERSHIP: { label: 'Memberships', description: 'Records of memberships.' },
-    MEMBERSHIPS: { label: 'Memberships', description: 'Records of memberships.' },
+    MEMBERSHIP: {
+        messageKey: 'memberships',
+        label: 'Memberships',
+        description: 'Records of memberships.',
+    },
+    MEMBERSHIPS: {
+        messageKey: 'memberships',
+        label: 'Memberships',
+        description: 'Records of memberships.',
+    },
     ACCOMPLISHMENT: {
+        messageKey: 'accomplishments',
         label: 'Accomplishments',
         description: 'Collections of work that showcase skills and experience.',
     },
     ACCOMPLISHMENTS: {
+        messageKey: 'accomplishments',
         label: 'Accomplishments',
         description: 'Collections of work that showcase skills and experience.',
     },
     EXPERIENCES: {
+        messageKey: 'experiences',
         label: 'Experiences',
         description: 'Knowledge and skills gained through professional roles and activities.',
     },
     ACCOMMODATION: {
+        messageKey: 'accommodations',
         label: 'Accommodations',
         description: 'Adjustments made to support accessibility.',
     },
     ACCOMMODATIONS: {
+        messageKey: 'accommodations',
         label: 'Accommodations',
         description: 'Adjustments made to support accessibility.',
     },
     FAMILY: {
+        messageKey: 'family',
         label: 'Family',
         description: 'Family profiles connected through shared learning journeys.',
     },
     QUALIFICATIONS: {
+        messageKey: 'qualifications',
         label: 'Qualifications',
         description: 'Education, training, and professional qualifications.',
     },
-    GOALS: { label: 'Goals', description: 'Learning and career goals you want to achieve.' },
+    GOALS: {
+        messageKey: 'goals',
+        label: 'Goals',
+        description: 'Learning and career goals you want to achieve.',
+    },
     'PROFESSIONAL TITLE': {
+        messageKey: 'professionalTitle',
         label: 'Professional title',
         description: 'The title that describes your professional role.',
     },
     'ROLE EXPERIENCE': {
+        messageKey: 'roleExperience',
         label: 'Role experience',
         description: 'Experience gained in a particular professional role.',
     },
     'WORK EXPERIENCE': {
+        messageKey: 'workExperience',
         label: 'Work experience',
         description: 'Your work activities, responsibilities, and experience.',
     },
-    'PAY RATE': { label: 'Pay rate', description: 'Your pay amount and payment period.' },
+    'PAY RATE': {
+        messageKey: 'payRate',
+        label: 'Pay rate',
+        description: 'Your pay amount and payment period.',
+    },
     'WORK LIFE BALANCE': {
+        messageKey: 'workLifeBalance',
         label: 'Work-life balance',
         description: 'Your preferences for balancing work and personal life.',
     },
     'JOB STABILITY': {
+        messageKey: 'jobStability',
         label: 'Job stability',
         description: 'Your preferences for job security and stability.',
     },
     'SELF-ASSIGNED SKILLS': {
+        messageKey: 'selfAssignedSkills',
         label: 'Self-assigned skills',
         description: 'Skills you have added to your own profile.',
     },
     'AI-SUMMARY': {
+        messageKey: 'aiSummaries',
         label: 'AI summaries',
         description: 'Summaries of your AI-assisted learning sessions.',
     },
     'AI-TOPIC': {
+        messageKey: 'aiTopics',
         label: 'AI topics',
         description: 'Topics explored in your AI-assisted learning.',
     },
     'AI-ASSESSMENT': {
+        messageKey: 'aiAssessments',
         label: 'AI assessments',
         description: 'Assessments from your AI-assisted learning.',
     },
     'AI INSIGHT': {
+        messageKey: 'aiInsights',
         label: 'AI insights',
         description: 'Insights about your learning progress and skills.',
     },
     'LEARNING-PATHWAY': {
+        messageKey: 'learningPathways',
         label: 'Learning pathways',
         description: 'Plans and steps toward your learning goals.',
     },
 };
 
-const PERSONAL_SCOPE_COPY: Record<string, { label: string; description: string }> = {
-    NAME: { label: 'Name', description: 'Your name.' },
-    EMAIL: { label: 'Email', description: 'Your email address.' },
-    IMAGE: { label: 'Profile photo', description: 'Your profile photo.' },
-    'PROFILE IMAGE': { label: 'Profile photo', description: 'Your profile photo.' },
-    'PROFILE PHOTO': { label: 'Profile photo', description: 'Your profile photo.' },
+const PERSONAL_SCOPE_COPY: Record<
+    string,
+    { messageKey: string; label: string; description: string }
+> = {
+    NAME: { messageKey: 'name', label: 'Name', description: 'Your name.' },
+    EMAIL: { messageKey: 'email', label: 'Email', description: 'Your email address.' },
+    IMAGE: {
+        messageKey: 'profilePhoto',
+        label: 'Profile photo',
+        description: 'Your profile photo.',
+    },
+    'PROFILE IMAGE': {
+        messageKey: 'profilePhoto',
+        label: 'Profile photo',
+        description: 'Your profile photo.',
+    },
+    'PROFILE PHOTO': {
+        messageKey: 'profilePhoto',
+        label: 'Profile photo',
+        description: 'Your profile photo.',
+    },
 };
 
 const scopeCopy = (
@@ -273,10 +346,7 @@ const scopeCopy = (
     ];
     if (!copy) return { label: scope.key, description: '' };
     if (!translate) return copy;
-    const messageName = copy.label
-        .toLowerCase()
-        .replace(/[\s-]+([a-z])/g, (_, letter: string) => letter.toUpperCase());
-    const prefix = `consentUpdate.scope.${messageName}`;
+    const prefix = `consentUpdate.scope.${copy.messageKey}`;
     return {
         label: translate(`${prefix}.label`),
         description: translate(`${prefix}.description`),

@@ -1,6 +1,11 @@
 import { ConsentFlowContractChangesValidator } from '@learncard/types';
 import { describe, expect, it } from 'vitest';
-import { buildContractUpdatePreview, classifyContractChange, diffContractChange } from '../src';
+import {
+    buildContractUpdatePreview,
+    classifyContractChange,
+    diffContractChange,
+    hasOpenNewOptionsWindow,
+} from '../src';
 import type {
     ConsentFlowContract,
     ConsentFlowContractChangeKind,
@@ -91,6 +96,7 @@ const cases: Array<[string, Snapshot, Snapshot, string]> = [
         'relaxed',
     ],
     ['expiry added', snapshot(), snapshot({ expiresAt: '2030-01-01' }), 'requires_consent'],
+    ['expiry cleared', snapshot({ expiresAt: '2030-01-01' }), snapshot(), 'relaxed'],
     [
         'autoboost added by URI',
         snapshot(),
@@ -340,5 +346,18 @@ describe('ConsentFlowContractChangesValidator', () => {
             },
         };
         expect(ConsentFlowContractChangesValidator.parse(patch)).toEqual(patch);
+    });
+});
+
+describe('optional proposal window', () => {
+    const now = Date.parse('2026-11-01T12:00:00.000Z');
+    it.each([
+        ['future', '2026-11-01T12:00:00.001Z', true],
+        ['deadline', '2026-11-01T12:00:00.000Z', false],
+        ['expired', '2026-11-01T11:59:59.999Z', false],
+        ['invalid', 'not-a-date', false],
+        ['acknowledged', undefined, false],
+    ] as const)('handles the %s state', (_state, deadline, expected) => {
+        expect(hasOpenNewOptionsWindow(deadline, now)).toBe(expected);
     });
 });
