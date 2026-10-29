@@ -1,4 +1,20 @@
 {
+    "bulkSelection": {
+        "select": "تحديد",
+        "done": "تم",
+        "selected": "تم تحديد {{count}}",
+        "share": "مشاركة {{count}}",
+        "archive": "أرشفة {{count}}",
+        "restore": "استعادة {{count}}",
+        "delete": "حذف {{count}}",
+        "deleteConfirm": "حذف بيانات الاعتماد المحددة؟",
+        "deleteConfirmAction": "حذف",
+        "working": "جارٍ التنفيذ...",
+        "archiveSuccess": "تمت أرشفة بيانات الاعتماد",
+        "restoreSuccess": "تمت استعادة بيانات الاعتماد",
+        "deleteSuccess": "تم حذف بيانات الاعتماد",
+        "actionFailed": "تعذر تحديث بعض بيانات الاعتماد"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "لم تُقدَّم معلومات عن الأرصدة المكتسبة",
