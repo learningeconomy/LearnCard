@@ -264,6 +264,18 @@ export const getShareLinkRequestHashRuntimeEnvironment = () =>
         examplePath: 'services/learn-card-network/brain-service/.env.example',
     });
 
+const devToolsRuntimeEnvironmentSchema = z.object({
+    NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
+});
+
+/** Reads NODE_ENV at call time so dev-only tools refuse production even after startup. */
+export const getDevToolsRuntimeEnvironment = () =>
+    parseEnvironment(devToolsRuntimeEnvironmentSchema, process.env, {
+        project: 'brain-service dev tools',
+        source: 'process environment',
+        examplePath: 'services/learn-card-network/brain-service/.env.example',
+    });
+
 const inboxBatchRuntimeEnvironmentSchema = z.object({
     INBOX_QUEUE_URL: brainServiceEnvironmentShape.INBOX_QUEUE_URL,
     INBOX_DEAD_LETTER_QUEUE_URL: brainServiceEnvironmentShape.INBOX_DEAD_LETTER_QUEUE_URL,
