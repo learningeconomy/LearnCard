@@ -8,7 +8,10 @@ It is a demo, not a production LMS.
 
 - `GET /` shows a form: learner profile ID plus a course.
 - `POST /complete` exchanges the service-account secret for a five-minute bearer token
-  and calls `integrationService.submitRecord` with one completion record.
+  and calls `integrationService.submitRecord` with one completion record. With
+  `Accept: application/json` it answers `{ok, recordId, status, issuance, offerUrl}` or
+  brain's `{ok: false, code, message}` instead of the page; an optional `completionId`
+  form field replays a completion (the scenario runner uses both).
 - `GET /health` answers the platform health challenge. It verifies the pinned platform
   key, issuer, token type, audience (its own URL) and install identity, then echoes the
   `jti` (see `services/learn-card-network/brain-service/INTEGRATION-AUTH.md`).

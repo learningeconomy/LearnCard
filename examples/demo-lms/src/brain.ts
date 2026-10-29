@@ -52,18 +52,26 @@ const callTrpc = async <T>(
 
 let cached: { token: string; refreshAt: number } | undefined;
 
-/** Bearer tokens last five minutes; refresh a minute early. */
-const getToken = async (config: DemoLmsConfig): Promise<string> => {
-    if (cached && cached.refreshAt > Date.now()) return cached.token;
+type Refusal = { ok: false; code: string; message: string };
+
+const refusal = <T>(response: TrpcResponse<T>): Refusal => ({
+    ok: false,
+    code: response.error?.data?.code ?? 'UNKNOWN',
+    message: response.error?.message ?? 'Request failed',
+});
+
+/** Bearer tokens last five minutes; refresh a minute early. A refused exchange is passed through. */
+const getToken = async (config: DemoLmsConfig): Promise<{ ok: true; token: string } | Refusal> => {
+    if (cached && cached.refreshAt > Date.now()) return { ok: true, token: cached.token };
     const response = await callTrpc<{ token: string }>(
         config,
         'installIntent.exchangeServiceAccountToken',
         { serviceAccountId: config.serviceAccountId, secret: config.serviceAccountSecret }
     );
     const token = response.result?.data.token;
-    if (!token) throw new Error(`Token exchange failed: ${response.error?.message ?? 'unknown'}`);
+    if (!token) return refusal(response);
     cached = { token, refreshAt: Date.now() + 4 * 60_000 };
-    return token;
+    return { ok: true, token };
 };
 
 export const submitCompletion = async (
@@ -71,16 +79,16 @@ export const submitCompletion = async (
     subjectProfileId: string,
     fields: CompletionFields
 ): Promise<SubmitResult> => {
+    const token = await getToken(config);
+    if (!token.ok) return token;
     const response = await callTrpc<Released>(
         config,
         'integrationService.submitRecord',
         { subjectProfileId, fields },
-        await getToken(config)
+        token.token
     );
     if (response.result) return { ok: true, ...response.result.data };
-    return {
-        ok: false,
-        code: response.error?.data?.code ?? 'UNKNOWN',
-        message: response.error?.message ?? 'Request failed',
-    };
+    // A token minted before a credential generation bump is refused; mint a fresh one next time.
+    if (response.error?.data?.code === 'UNAUTHORIZED') cached = undefined;
+    return refusal(response);
 };
