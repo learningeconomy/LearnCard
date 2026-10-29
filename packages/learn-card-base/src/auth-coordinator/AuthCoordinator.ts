@@ -26,8 +26,13 @@ import {
 } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
+import type { MigrationIdentityVerdict, MigrationKeySource } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
+
+export const MIGRATION_IDENTITY_MISMATCH_MESSAGE =
+    "We couldn't safely upgrade your account because the sign-in key didn't match it. " +
+    'Nothing was changed. Please contact support (MIGRATION_IDENTITY_MISMATCH).';
 const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
 
 /**
@@ -869,7 +874,11 @@ export class AuthCoordinator {
                                         this.setState({
                                             status: 'needs_migration',
                                             authUser,
-                                            migrationData: { web3AuthKey: cachedKey },
+                                            migrationData: {
+                                                web3AuthKey: cachedKey,
+                                                source: 'cached',
+                                                expectedDid: serverStatus.primaryDid ?? undefined,
+                                            },
                                         });
 
                                         return this.state;
@@ -1021,9 +1030,19 @@ export class AuthCoordinator {
                 return this.state;
             }
 
-            // Case 2: Strategy says migration is needed
-            if (serverStatus.needsMigration && serverStatus.sssActivationState !== 'provisional') {
-                this.setState({ status: 'needs_migration', authUser });
+            // Case 2: Strategy says migration is needed. A provisional migration
+            // without this device's share is re-derived from the legacy key too:
+            // the server keeps that fallback until a recovery method activates SSS,
+            // and the account may have no confirmed method to recover with yet.
+            if (
+                serverStatus.needsMigration &&
+                (serverStatus.sssActivationState !== 'provisional' || !hasLocalKey)
+            ) {
+                this.setState({
+                    status: 'needs_migration',
+                    authUser,
+                    migrationData: { expectedDid: serverStatus.primaryDid ?? undefined },
+                });
                 return this.state;
             }
 
@@ -1240,6 +1259,48 @@ export class AuthCoordinator {
     }
 
     /**
+     * Decide whether a legacy key may be written as this account's SSS key.
+     * A DID the server already holds is authoritative; otherwise the app's
+     * verifier is asked (see AuthCoordinatorConfig.verifyMigrationIdentity).
+     */
+    private async checkMigrationIdentity(
+        privateKey: string,
+        did: string,
+        migrationData: Record<string, unknown>
+    ): Promise<'proceed' | 'mismatch' | 'defer'> {
+        const { expectedDid } = migrationData;
+
+        if (typeof expectedDid === 'string' && expectedDid) {
+            return expectedDid === did ? 'proceed' : 'mismatch';
+        }
+
+        const verify = this.config.verifyMigrationIdentity;
+
+        if (!verify) return 'proceed';
+
+        const source: MigrationKeySource = migrationData.source === 'cached' ? 'cached' : 'derived';
+
+        let verdict: MigrationIdentityVerdict;
+
+        try {
+            verdict = await verify({ privateKey, did, source });
+        } catch (e) {
+            log.warn('migration.identity.check_failed', {
+                source,
+                error: e instanceof Error ? e.name : 'unknown',
+            });
+            verdict = 'unknown';
+        }
+
+        if (verdict === 'match') return 'proceed';
+        if (verdict === 'mismatch') return 'mismatch';
+        if (source === 'cached') return 'defer';
+
+        log.warn('migration.identity.unanchored', { source });
+        return 'proceed';
+    }
+
+    /**
      * Migrate from a legacy key derivation strategy.
      * Only valid when state is 'needs_migration'.
      */
@@ -1249,9 +1310,43 @@ export class AuthCoordinator {
         }
 
         const authUser = this.state.authUser;
+        const migrationData = this.state.migrationData ?? {};
 
         try {
             this.setState({ status: 'deriving_key' });
+
+            const identity = await this.checkMigrationIdentity(privateKey, did, migrationData);
+
+            if (identity === 'mismatch') {
+                // Fail closed and non-retryable: retrying derives the same key, and
+                // writing it would bind the account to the wrong DID for good.
+                log.error('migration.identity.mismatch', {
+                    source: migrationData.source ?? 'unknown',
+                    anchor: migrationData.expectedDid ? 'server' : 'verifier',
+                });
+                this.setState({
+                    status: 'error',
+                    error: MIGRATION_IDENTITY_MISMATCH_MESSAGE,
+                    canRetry: false,
+                });
+                return this.state;
+            }
+
+            if (identity === 'defer') {
+                // Same outcome as an unreachable server on the cached-key path:
+                // keep using the key this device already holds and migrate on a
+                // later start, once the key can be checked.
+                log.warn('migration.identity.deferred', { source: 'cached' });
+                this.setState({
+                    status: 'ready',
+                    authUser,
+                    did,
+                    privateKey,
+                    authSessionValid: true,
+                    sssActivationState: null,
+                });
+                return this.state;
+            }
 
             const { token, providerType } = await this.getAuthCredentials();
 

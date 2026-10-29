@@ -24,6 +24,7 @@ import { getLogger } from '../logging/logger';
 const log = getLogger('auth-coordinator-provider');
 
 import type {
+    AuthCoordinatorConfig,
     AuthProvider,
     AuthProviderType,
     KeyDerivationCapabilities,
@@ -177,6 +178,12 @@ export interface AuthCoordinatorProviderProps {
      * See AuthCoordinatorConfig.legacyAccountThresholdMs for details.
      */
     legacyAccountThresholdMs?: number;
+
+    /**
+     * Confirms a legacy key belongs to the signed-in account before migration
+     * writes it. See AuthCoordinatorConfig.verifyMigrationIdentity.
+     */
+    verifyMigrationIdentity?: AuthCoordinatorConfig['verifyMigrationIdentity'];
 }
 
 /**
@@ -215,6 +222,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
+    verifyMigrationIdentity,
 }) => {
     // `idle` means storage/session restoration has finished without an account.
     // On the first render, even the no-op auth provider must await the native
@@ -224,6 +232,11 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         status: enabled ? 'authenticating' : 'idle',
     }));
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
+    // Read through a ref so a new callback identity never recreates the coordinator.
+    const verifyMigrationIdentityRef = useRef(verifyMigrationIdentity);
+    useEffect(() => {
+        verifyMigrationIdentityRef.current = verifyMigrationIdentity;
+    }, [verifyMigrationIdentity]);
     // Cold cached-key startup is deliberate. Once this mounted tab has seen a
     // live account, losing the provider must instead end that account session.
     const observedAuthSessionRef = useRef(false);
@@ -392,6 +405,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            verifyMigrationIdentity: verifyMigrationIdentityRef.current
+                ? check => verifyMigrationIdentityRef.current?.(check) ?? Promise.resolve('unknown')
+                : undefined,
             isEscrowEnrollmentAllowed: userKey =>
                 isEscrowRolloutEnabledFor({ tenantId: getAuthConfig().tenantId, userKey }),
         });

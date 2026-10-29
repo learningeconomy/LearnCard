@@ -37,7 +37,6 @@ import {
     useAuthCoordinatorAutoSetup,
     useIdleAuthCleanup,
     createWeb3AuthStrategy,
-    deriveWeb3AuthKey,
     registerKeyDerivationFactory,
     resolveKeyDerivation,
     resolveAuthProvider,
@@ -97,6 +96,7 @@ import type {
 } from '@learncard/sss-key-manager';
 import useSQLiteStorage from 'learn-card-base/hooks/useSQLiteStorage';
 import { createDeviceShareStorage } from 'learn-card-base/security/deviceShareStorage';
+import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
 import { getBespokeLearnCard, getSigningLearnCard } from 'learn-card-base/helpers/walletHelpers';
 import {
@@ -125,6 +125,11 @@ import {
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { createRecoveryPinActions } from './recoveryPinActions';
+import {
+    createMigrationIdentityVerifier,
+    deriveLegacyMigrationKey,
+    hasNetworkProfile,
+} from './migrationIdentity';
 import { runPasskeyRecoverySetup } from './passkeyRecoverySetup';
 
 import {
@@ -484,6 +489,9 @@ const AuthSessionManager: React.FC<{
     const recoverySetupOptionsRef = useRef<RecoverySetupOptions>({});
     const recoveryRequestCloseRef = useRef<(() => void) | null>(null);
     const wasNewUserRef = useRef(false);
+    // Unlike wasNewUserRef (cleared after wallet setup), stays set for the whole
+    // session so a new account is never also offered the returning-user prompt.
+    const sawNeedsSetupRef = useRef(false);
     // Set when a PIN-based recovery just succeeded, proving the user had a PIN
     // even on a new/forgotten device where the local prompt flag is absent.
     const recoveredViaEscrowRef = useRef<EscrowRecoveryKind | null>(null);
@@ -607,6 +615,7 @@ const AuthSessionManager: React.FC<{
     useEffect(() => {
         if (coordinator.state.status === 'needs_setup') {
             wasNewUserRef.current = true;
+            sawNeedsSetupRef.current = true;
         }
     }, [coordinator.state.status]);
 
@@ -635,6 +644,7 @@ const AuthSessionManager: React.FC<{
                 enrollment: readyEnrollment,
                 promptFlag: flag,
                 pinResetRequired: readyPinResetRequired && pinResetPromptedRef.current !== did,
+                newUserThisSession: sawNeedsSetupRef.current,
             });
             if (prompt.kind === 'pin-reset-required') {
                 pinResetPromptedRef.current = did;
@@ -648,6 +658,9 @@ const AuthSessionManager: React.FC<{
                 // No flag write, so skipping never shows the "PIN was reset" banner.
                 setRecoveryPinSetupReason('after-hold-recovery');
                 recoveredViaEscrowRef.current = null;
+            } else if (prompt.kind === 'first-time') {
+                // Never replace a prompt already on screen (e.g. after a hold recovery).
+                setRecoveryPinSetupReason(current => current ?? 'first-time');
             } else if (prompt.kind === 'reset-banner') {
                 setShowRecoveryPinReset(true);
             }
@@ -812,39 +825,18 @@ const AuthSessionManager: React.FC<{
 
         const extractAndInject = async (): Promise<void> => {
             try {
-                const w3a = authConfig.providerConfig.web3Auth ?? {};
-                // Preserve each app's existing token refresh policy, including
-                // native token retrieval through the provider abstraction.
-                const token = await authProvider.getIdToken(true);
-                if (!token) {
+                emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
+                const privateKey = await deriveLegacyMigrationKey(authProvider);
+                if (!privateKey) {
                     emitAuthError('web3auth:migration_key', 'No sign-in session available');
                     return;
                 }
-
-                emitAuthDebugEvent('web3auth:migration_key', 'Extracting account upgrade key');
-                const privateKey = await deriveWeb3AuthKey(
-                    {
-                        clientId: (w3a.clientId as string) ?? '',
-                        web3AuthNetwork: (w3a.network as string) ?? '',
-                        verifier: (w3a.verifierId as string) ?? '',
-                        usePnPKey: true,
-                        chainConfig: {
-                            rpcTarget: (w3a.rpcTarget as string) ?? 'https://rpc.ankr.com/eth',
-                        },
-                        isSessionCurrent: async uid => {
-                            const provider = resolveAuthProvider(getAuthConfig());
-                            if (!provider) return false;
-                            return (await provider.getCurrentUser())?.id === uid;
-                        },
-                    },
-                    token
-                );
 
                 // A sign-out or completed upgrade may occur while this tab waits.
                 const latestCoordinator = migrationCoordinatorRef.current;
                 if (latestCoordinator.state.status !== 'needs_migration') return;
                 emitAuthSuccess('web3auth:migration_key', 'Account upgrade key extracted');
-                latestCoordinator.setMigrationData({ web3AuthKey: privateKey });
+                latestCoordinator.setMigrationData({ web3AuthKey: privateKey, source: 'derived' });
             } catch {
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
@@ -2030,6 +2022,23 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
         return lc?.id.did() || '';
     }, []);
 
+    // Confirms a legacy key belongs to this account before migration writes it.
+    const verifyMigrationIdentity = useMemo(
+        () =>
+            createMigrationIdentityVerifier({
+                didFromPrivateKey,
+                deriveLegacyKey: async () =>
+                    authProvider ? deriveLegacyMigrationKey(authProvider) : null,
+                hasProfile: privateKey =>
+                    hasNetworkProfile({
+                        privateKey,
+                        networkUrl: networkStore.get.networkUrl(),
+                        headers: getTenantHeaders(),
+                    }),
+            }),
+        [didFromPrivateKey, authProvider]
+    );
+
     // DID-Auth VP signing — proves private key ownership to the server on write ops.
     // Uses getSigningLearnCard (no network) so did:key is used deterministically.
     const signDidAuthVp = useCallback(
@@ -2155,6 +2164,7 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
             clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
             onDebugEvent={handleDebugEvent}
             legacyAccountThresholdMs={5 * 60 * 1000}
+            verifyMigrationIdentity={verifyMigrationIdentity}
             // The coordinator is always enabled. To switch key derivation
             // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.
             // The old `coordinatorEnabled` kill-switch has been removed because
