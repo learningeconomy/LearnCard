@@ -23,7 +23,7 @@ const campaignDefinition = z
         name: z.string().trim().min(1).max(200),
         status: CampaignStatusValidator.default('draft'),
         channels,
-        message: inAppMessageValidator,
+        message: inAppMessageValidator.optional(),
         notification: notification.optional(),
         startsAt: timestamp.optional(),
         endsAt: timestamp.optional(),
@@ -36,9 +36,16 @@ const validDefinition = (
     value: Pick<
         z.output<typeof campaignDefinition>,
         'channels' | 'notification' | 'startsAt' | 'endsAt'
-    >,
+    > & { message?: unknown },
     ctx: z.RefinementCtx
 ): void => {
+    if (value.channels.includes('inApp') && !value.message) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['message'],
+            message: 'In-app requires a message',
+        });
+    }
     if (value.channels.includes('notify') && !value.notification) {
         ctx.addIssue({
             code: 'custom',
@@ -58,7 +65,7 @@ export const CampaignValidator = campaignDefinition
     })
     .superRefine(validDefinition)
     .superRefine((value, ctx) => {
-        if (value.message.id !== value.id) {
+        if (value.message && value.message.id !== value.id) {
             ctx.addIssue({
                 code: 'custom',
                 path: ['message', 'id'],
@@ -69,7 +76,7 @@ export const CampaignValidator = campaignDefinition
 
 export const CreateCampaignInputValidator = campaignDefinition
     .extend({
-        message: inAppMessageAuthoringValidator,
+        message: inAppMessageAuthoringValidator.optional(),
     })
     .superRefine(validDefinition);
 
@@ -81,7 +88,7 @@ export const CampaignUpdatesValidator = campaignDefinition
         status: CampaignStatusValidator.optional(),
         excludeMinors: z.boolean().optional(),
         selfEnroll: z.boolean().optional(),
-        message: inAppMessageAuthoringValidator.optional(),
+        message: inAppMessageAuthoringValidator.nullable().optional(),
         notification: notification.nullable().optional(),
         startsAt: timestamp.nullable().optional(),
         endsAt: timestamp.nullable().optional(),
@@ -171,15 +178,26 @@ export const CampaignUserStateValidator = z.object({
 });
 
 export const MyCampaignValidator = z.object({
-    campaign: campaignDefinition.pick({
-        id: true,
-        message: true,
-        startsAt: true,
-        endsAt: true,
-        selfEnroll: true,
-    }),
+    campaign: campaignDefinition
+        .pick({
+            id: true,
+            message: true,
+            startsAt: true,
+            endsAt: true,
+            selfEnroll: true,
+        })
+        .extend({ message: inAppMessageValidator }),
     state: CampaignUserStateValidator,
+    testId: z.uuid().optional(),
 });
+
+/** Private snapshot awaiting presentation to the administrator who requested it. */
+export const CampaignTestValidator = z.object({
+    id: z.uuid(),
+    campaignId: CampaignIdValidator,
+    message: inAppMessageValidator,
+});
+export type CampaignTest = z.output<typeof CampaignTestValidator>;
 
 export const CampaignStatsValidator = z.object({
     audience: z.number().int().nonnegative(),

@@ -139,7 +139,7 @@ describe('campaign lifecycle and access', () => {
         const campaign = await admin.create(
             draft({ message: { id: 'different', title: 'Welcome' } })
         );
-        expect(campaign.message.id).toBe('pilot-clr');
+        expect(campaign.message?.id).toBe('pilot-clr');
         await expect(admin.create(draft())).rejects.toMatchObject({ code: 'CONFLICT' });
         await expect(
             admin.update({ campaignId: campaign.id, updates: { channels: ['notify'] } })
@@ -837,8 +837,73 @@ describe('campaign notification delivery state', () => {
         ).resolves.toBeUndefined();
     });
 
+    it('keeps in-app tests private, durable, snapshot-based and separate from campaign state', async () => {
+        await admin.create(draft());
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        const [first] = await admin.getMyCampaigns();
+        expect(first?.testId).toBeTruthy();
+        expect(first?.campaign.message.title).toBe('Welcome');
+        expect(await learner.getMyCampaigns()).toEqual([]);
+        expect(await other.getMyCampaigns()).toEqual([]);
+        await admin.update({ campaignId: 'pilot-clr', updates: { message: { title: 'Edited' } } });
+        expect((await caller('campaign-admin').getMyCampaigns())[0]?.campaign.message.title).toBe(
+            'Welcome'
+        );
+        await learner.recordEvent({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId: first!.testId,
+        });
+        expect(await admin.getMyCampaigns()).toHaveLength(1);
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        const [latest] = await admin.getMyCampaigns();
+        expect(latest?.testId).not.toBe(first?.testId);
+        await admin.recordEvent({ campaignId: 'pilot-clr', event: 'shown', testId: first!.testId });
+        expect((await admin.getMyCampaigns())[0]?.testId).toBe(latest?.testId);
+        await admin.recordEvent({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId: latest!.testId,
+        });
+        expect(await admin.getMyCampaigns()).toEqual([]);
+        expect(await admin.getStats({ campaignId: 'pilot-clr' })).toMatchObject({
+            audience: 0,
+            shown: 0,
+            notified: 0,
+            clicked: 0,
+        });
+        expect((await admin.get({ campaignId: 'pilot-clr' })).status).toBe('draft');
+    });
+    it('clears inactive message content and rejects missing active content on merged updates', async () => {
+        await admin.create(draft());
+        const notification = { title: 'Hello', body: 'Notification only' };
+        const updated = await admin.update({
+            campaignId: 'pilot-clr',
+            updates: { channels: ['notify'], message: null, notification },
+        });
+        expect(updated.message).toBeUndefined();
+        await expect(
+            admin.update({ campaignId: 'pilot-clr', updates: { channels: ['inApp'] } })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        await expect(
+            admin.update({
+                campaignId: 'pilot-clr',
+                updates: {
+                    channels: ['inApp'],
+                    message: { title: 'Restored' },
+                    notification: null,
+                },
+            })
+        ).resolves.toMatchObject({ message: { title: 'Restored' } });
+    });
     it('test delivery does not increment stats and only targets the authenticated administrator', async () => {
-        await admin.create(draft({ notification: { title: 'Test', body: 'Preview' } }));
+        await admin.create(
+            draft({
+                channels: ['notify'],
+                message: undefined,
+                notification: { title: 'Test', body: 'Preview' },
+            })
+        );
         const queue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
         const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
             id: { did: () => 'did:web:brain.example' },

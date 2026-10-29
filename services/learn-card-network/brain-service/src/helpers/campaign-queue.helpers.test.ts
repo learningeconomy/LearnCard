@@ -4,6 +4,7 @@ import type { Campaign, LCNNotification } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
     getCampaign: vi.fn(),
+    queueTest: vi.fn(),
     pageAudience: vi.fn(),
     recipient: vi.fn(),
     acknowledge: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('@aws-sdk/client-sqs', () => ({
         constructor(public input: unknown) {}
     },
 }));
+vi.mock('@accesslayer/campaign/test', () => ({ queueCampaignInAppTest: mocks.queueTest }));
 vi.mock('@accesslayer/campaign/read', () => ({ getCampaign: mocks.getCampaign }));
 vi.mock('@accesslayer/campaign/audience', () => ({ pageCampaignAudience: mocks.pageAudience }));
 vi.mock('@accesslayer/campaign/delivery', () => ({
@@ -208,11 +210,35 @@ describe('campaign delivery acknowledgement', () => {
         expect(mocks.send).toHaveBeenCalledOnce();
     });
 
+    it('queues an in-app-only test without requiring or sending notification copy', async () => {
+        const privateCampaign = {
+            ...campaign,
+            channels: ['inApp'],
+            notification: undefined,
+            message: { id: campaign.id, title: 'Private' },
+        };
+        mocks.getCampaign.mockResolvedValue(privateCampaign);
+        await sendCampaignTestToMe(campaign.id, recipient('admin'));
+        expect(mocks.queueTest).toHaveBeenCalledWith(privateCampaign, 'admin', expect.any(String));
+        expect(mocks.enqueue).not.toHaveBeenCalled();
+    });
+    it('tests both selected channels using the same private test identity', async () => {
+        const privateCampaign = {
+            ...campaign,
+            channels: ['inApp', 'notify'],
+            message: { id: campaign.id, title: 'Private' },
+        };
+        mocks.getCampaign.mockResolvedValue(privateCampaign);
+        await sendCampaignTestToMe(campaign.id, recipient('admin'));
+        expect(mocks.queueTest.mock.calls[0]?.[2]).toBe(
+            mocks.enqueue.mock.calls[0]?.[0].data.metadata.campaignTestId
+        );
+    });
     it('test-to-me ignores status/audience, targets only the caller and distinguishes explicit tests', async () => {
         mocks.getCampaign.mockResolvedValue({
             ...campaign,
             status: 'archived',
-            channels: ['inApp'],
+            channels: ['notify'],
         });
         await sendCampaignTestToMe(campaign.id, recipient('admin'));
         await sendCampaignTestToMe(campaign.id, recipient('admin'));

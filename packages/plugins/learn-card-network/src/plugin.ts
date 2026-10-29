@@ -3362,9 +3362,13 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.campaigns.getMyCampaigns.query();
             },
-            recordCampaignEvent: async (_learnCard, campaignId, event) => {
+            recordCampaignEvent: async (_learnCard, campaignId, event, testId) => {
                 await ensureUser();
-                return client.campaigns.recordEvent.mutate({ campaignId, event });
+                return client.campaigns.recordEvent.mutate({
+                    campaignId,
+                    event,
+                    ...(testId ? { testId } : {}),
+                });
             },
             enrollInCampaign: async (_learnCard, campaignId) => {
                 await ensureUser();

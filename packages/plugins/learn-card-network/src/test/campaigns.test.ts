@@ -45,6 +45,18 @@ const mockClient = () => ({
 beforeEach(() => vi.clearAllMocks());
 
 describe('campaign network plugin methods', () => {
+    it('acknowledges a private test through the existing recordEvent endpoint', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        const testId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
+        await methods.recordCampaignEvent(wallet, 'pilot-clr', 'shown', testId);
+        expect(client.campaigns.recordEvent.mutate).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId,
+        });
+    });
     it('forwards every campaign operation to the correct typed procedure', async () => {
         const client = mockClient();
         vi.mocked(getClient).mockResolvedValue(client as never);

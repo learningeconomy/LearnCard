@@ -32,11 +32,19 @@ import type {
 export interface InAppMessageHostProps extends PresentationGateOptions {
     onEvent?: (event: InAppMessagePresentationEvent) => void;
     onOpenApp?: (listingId: string, path?: string) => void;
+    /** Account-bound private test; respects the presentation gate but records no engagement. */
+    testDelivery?: {
+        accountDid: string;
+        message: InAppMessage;
+        onShown: () => void;
+        onClose: () => void;
+    };
 }
 
 export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     onEvent,
     onOpenApp,
+    testDelivery,
     ...gateOptions
 }) => {
     const locale = useI18nLocale();
@@ -155,13 +163,22 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
     const realActive = candidate && messageKey && !closedIds.has(messageKey) ? candidate : null;
     const openingReady = opening.accountDid === credentialFacts.accountDid && opening.ready;
+    const pendingTest =
+        testDelivery &&
+        testDelivery.accountDid === accountDid &&
+        !closedIds.has(`${accountDid}:${testDelivery.message.id}`)
+            ? testDelivery.message
+            : null;
     const requested =
         override ??
-        (canPresent && openingReady ? (request ? (requestedMessage ?? null) : realActive) : null);
+        (canPresent && openingReady
+            ? (pendingTest ?? (request ? (requestedMessage ?? null) : realActive))
+            : null);
     // Preview overrides bypass targeting and frequency, never platform security policy.
     const active = requested && isInAppMessagePresentationSupported(requested) ? requested : null;
     const isOverride = Boolean(override);
-    const isDeepLink = !isOverride && Boolean(requestedMessage && request);
+    const isTest = !isOverride && Boolean(pendingTest && active === pendingTest);
+    const isDeepLink = !isOverride && !isTest && Boolean(requestedMessage && request);
     const localized = active ? localizeMessage(active, locale) : null;
     const emit = useCallback(
         (type: InAppMessagePresentationEvent['type'], details: MessageInteraction = {}) => {
@@ -171,19 +188,25 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
                     type,
                     messageId: active.id,
                     presentation: active.presentation,
-                    source: isOverride ? 'override' : isDeepLink ? 'deepLink' : 'flag',
+                    source: isOverride
+                        ? 'override'
+                        : isTest
+                          ? 'test'
+                          : isDeepLink
+                            ? 'deepLink'
+                            : 'flag',
                     ...details,
                 });
             } catch {
                 // Optional telemetry must never prevent presentation or dismissal.
             }
         },
-        [active, isOverride, isDeepLink]
+        [active, isOverride, isTest, isDeepLink]
     );
 
     // Retain a presented message after its own impression makes it ineligible.
     if (presented && !retained) setPresented(null);
-    if (!presented && active && !isOverride && !isDeepLink)
+    if (!presented && active && !isOverride && !isTest && !isDeepLink)
         setPresented({ message: active, accountDid });
 
     const close = useCallback(
@@ -196,6 +219,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
             }
 
             iamDebug('closed', { id });
+            if (isTest) testDelivery?.onClose();
             if (isDeepLink && request) clearInAppMessageRequest(request.token);
             setPresented(current =>
                 current?.message.id === id && current.accountDid === accountDid ? null : current
@@ -209,7 +233,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
                 return next;
             });
         },
-        [accountDid, override, isDeepLink, request]
+        [accountDid, override, isTest, testDelivery, isDeepLink, request]
     );
 
     const onShown = useCallback(() => {
@@ -236,13 +260,14 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
         // stability), so a transient boot/navigation flicker cannot burn a
         // "once" impression. If the gate's settle debounce is ever removed,
         // revisit this.
-        if (!isOverride) {
+        if (isTest) testDelivery?.onShown();
+        if (!isOverride && !isTest) {
             markMessageSeen(active.id, active.frequency, Date.now(), accountDid);
 
             if (isFatigueControlled(active)) recordBlockingShown(Date.now(), accountDid);
         }
         emit('shown');
-    }, [accountDid, active, isOverride, isDeepLink, request, emit]);
+    }, [accountDid, active, isOverride, isTest, testDelivery, isDeepLink, request, emit]);
 
     useLayoutEffect(() => {
         if (!active || (active.presentation !== 'story' && active.presentation !== 'iframe'))

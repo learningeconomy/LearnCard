@@ -123,6 +123,38 @@ describe('message host impressions', () => {
         vi.restoreAllMocks();
     });
 
+    it('gates private tests by account and route without engagement or fatigue state', async () => {
+        state.messages = [];
+        const testDelivery = {
+            accountDid: 'alice',
+            message: inAppMessageValidator.parse({
+                id: 'private-test',
+                title: 'Private test',
+                targeting: { role: ['never'] },
+            }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const onEvent = vi.fn();
+        const view = render(<InAppMessageHost testDelivery={testDelivery} onEvent={onEvent} />);
+        expect(screen.queryByText('Private test')).toBeNull();
+        expect(testDelivery.onShown).not.toHaveBeenCalled();
+        state.gate = true;
+        state.accountDid = 'bob';
+        view.rerender(<InAppMessageHost testDelivery={testDelivery} onEvent={onEvent} />);
+        expect(screen.queryByText('Private test')).toBeNull();
+        state.accountDid = 'alice';
+        view.rerender(<InAppMessageHost testDelivery={testDelivery} onEvent={onEvent} />);
+        const button = await screen.findByText('Private test');
+        expect(testDelivery.onShown).toHaveBeenCalledOnce();
+        expect(getMessageLastSeen('private-test', 'alice')).toBeFalsy();
+        expect(onEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ source: 'test', type: 'shown' })
+        );
+        fireEvent.click(button);
+        expect(testDelivery.onClose).toHaveBeenCalledOnce();
+        expect(screen.queryByText('Private test')).toBeNull();
+    });
     it('waits for the gate, bypasses targeting/trigger/seen/cap and localizes a requested message', async () => {
         const onEvent = vi.fn();
         const requested = inAppMessageValidator.parse({

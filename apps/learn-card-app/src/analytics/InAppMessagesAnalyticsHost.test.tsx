@@ -15,6 +15,9 @@ vi.mock('learn-card-base', () => ({
         return null;
     },
 }));
+vi.mock('../pages/campaigns/useCampaignTestDelivery', () => ({
+    useCampaignTestDelivery: () => undefined,
+}));
 vi.mock('./context', () => ({ useAnalytics: () => ({ track: state.track }) }));
 afterEach(() => {
     cleanup();
@@ -50,5 +53,6 @@ it('forwards only allowlisted metadata and excludes previews', () => {
         stepIndex: 1,
     });
     state.onEvent?.({ ...event, source: 'override' });
+    state.onEvent?.({ ...event, source: 'test' });
     expect(state.track).toHaveBeenCalledOnce();
 });

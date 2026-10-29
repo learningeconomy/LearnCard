@@ -42,6 +42,7 @@ import {
 import { enrollInCampaign, recordCampaignEvent } from '@accesslayer/campaign/state';
 import { dispatchCampaign } from '@helpers/campaign-queue.helpers';
 import { sendCampaignTestToMe } from '@helpers/campaign-notifications.helpers';
+import { getCampaignTests, acknowledgeCampaignTest } from '@accesslayer/campaign/test';
 
 const campaignAdminRoute = profileRouteWithoutInputCapture
     .meta({ requiredScope: 'campaigns:admin' })
@@ -168,18 +169,43 @@ export const campaignsRouter = t.router({
         .input(noInput)
         .output(z.array(MyCampaignValidator))
         .query(async ({ ctx }): Promise<MyCampaign[]> =>
-            trace('route', 'campaigns:getMyCampaigns', () =>
-                getLiveCampaignsForProfile(ctx.user.profile.profileId)
-            )
+            trace('route', 'campaigns:getMyCampaigns', async () => {
+                const profileId = ctx.user.profile.profileId;
+                const tests = isCampaignAdmin(profileId) ? await getCampaignTests(profileId) : [];
+                const campaigns = await getLiveCampaignsForProfile(profileId);
+                return [
+                    ...tests.map(test => ({
+                        campaign: { id: test.campaignId, message: test.message, selfEnroll: false },
+                        state: { shownCount: 0 },
+                        testId: test.id,
+                    })),
+                    ...campaigns,
+                ];
+            })
         ),
     recordEvent: campaignUserRoute
         .meta({ requiredScope: 'campaigns:write' })
-        .input(idInput.extend({ event: CampaignEventValidator }))
+        .input(idInput.extend({ event: CampaignEventValidator, testId: z.uuid().optional() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }): Promise<boolean> =>
-            trace('route', 'campaigns:recordEvent', () =>
-                recordCampaignEvent(ctx.user.profile.profileId, input.campaignId, input.event)
-            )
+            trace('route', 'campaigns:recordEvent', async () => {
+                if (input.testId) {
+                    if (!isCampaignAdmin(ctx.user.profile.profileId)) return false;
+                    // Private tests never write campaign engagement or audience state.
+                    return input.event === 'shown'
+                        ? acknowledgeCampaignTest(
+                              ctx.user.profile.profileId,
+                              input.campaignId,
+                              input.testId
+                          )
+                        : true;
+                }
+                return recordCampaignEvent(
+                    ctx.user.profile.profileId,
+                    input.campaignId,
+                    input.event
+                );
+            })
         ),
     enroll: campaignUserRoute
         .meta({ requiredScope: 'campaigns:write' })

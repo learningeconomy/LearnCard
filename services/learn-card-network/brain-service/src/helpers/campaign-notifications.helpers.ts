@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import type { Campaign, LCNNotification } from '@learncard/types';
 import { getCampaign } from '@accesslayer/campaign/read';
+import { queueCampaignInAppTest } from '@accesslayer/campaign/test';
 import {
     acknowledgeCampaignNotification,
     getCampaignDeliveryRecipient,
@@ -88,8 +89,19 @@ export const sendCampaignTestToMe = async (
     caller: LCNNotification['to']
 ): Promise<boolean> => {
     const campaign = await getCampaign(campaignId);
-    await enqueueCampaignNotification(
-        await buildCampaignNotification(campaign, caller, randomUUID())
-    );
+    const testId = randomUUID();
+    if (campaign.channels.includes('inApp') && !caller.profileId)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Test requires an administrator profile',
+        });
+    if (campaign.channels.includes('notify')) {
+        await enqueueCampaignNotification(
+            await buildCampaignNotification(campaign, caller, testId)
+        );
+    }
+    if (campaign.channels.includes('inApp') && caller.profileId) {
+        await queueCampaignInAppTest(campaign, caller.profileId, testId);
+    }
     return true;
 };
