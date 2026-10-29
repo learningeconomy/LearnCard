@@ -575,6 +575,7 @@ const NodeDetail: React.FC = () => {
     // `{ listing: null, error }` and we fall through to the legacy
     // `LaunchRow` which at least routes the learner to `/app/:id`
     // where the public-listing page can show an honest error state.
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const listingForNode = useListingForNode(node);
     const hasAppListingAction = resolved.kind === 'app-listing';
     const showAppListingCard =

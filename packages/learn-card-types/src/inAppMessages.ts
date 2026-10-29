@@ -335,10 +335,10 @@ export const inAppMessageLocalesValidator = z.record(
         .passthrough()
 );
 
-export const inAppMessageValidator = z
+export const inAppMessageAuthoringValidator = z
     .object({
         /** Stable identifier — used to persist dismissal / frequency state. */
-        id: z.string(),
+        id: z.string().optional(),
         /** Higher priority wins when multiple messages match. Default 0. */
         priority: z.number().default(0),
         /** When false, the message is required; iframe errors still allow a host-owned close. */
@@ -440,6 +440,8 @@ export const inAppMessageValidator = z
             }
         }
     });
+
+export const inAppMessageValidator = inAppMessageAuthoringValidator.safeExtend({ id: z.string() });
 export type InAppMessage = z.infer<typeof inAppMessageValidator>;
 
 export const inAppMessagesFlagValidator = z

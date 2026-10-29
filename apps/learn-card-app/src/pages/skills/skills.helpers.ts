@@ -249,7 +249,7 @@ export function groupCredentialsByCategorySkillsAndSubskills(
             ([key, credentials]) => {
                 const [category, skill] = key.split('|') as [
                     BoostCMSSKillsCategoryEnum,
-                    BoostCMSCategorySkillEnum
+                    BoostCMSCategorySkillEnum,
                 ];
                 return { category, skill, credentials };
             }
@@ -260,7 +260,7 @@ export function groupCredentialsByCategorySkillsAndSubskills(
                 const [category, skill, subSkill] = key.split('|') as [
                     BoostCMSSKillsCategoryEnum,
                     BoostCMSCategorySkillEnum,
-                    BoostCMSSubSkillEnum
+                    BoostCMSSubSkillEnum,
                 ];
                 return { category, skill, subSkill, credentials };
             }
@@ -323,7 +323,9 @@ export function aggregateCategorizedEntries(
         );
 
         // Attach the calculated totals directly to the aggregated array.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (aggregated as any).totalSkills = totalSkills;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (aggregated as any).totalSubskills = totalSubskills;
 
         // Return the category and the aggregated entries with totals.

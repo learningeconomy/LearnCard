@@ -24,6 +24,7 @@ const BoostCMSSkillCategoryTypeSwiper: React.FC<{
 
     const [prevEl] = useState<HTMLElement | null>(null);
     const [nextEl] = useState<HTMLElement | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [activeIndex, setActiveIndex] = useState<any>(null);
 
     const [hidePrevButton, setHidePrevButton] = useState<boolean>(initialSlideIndex === 0);

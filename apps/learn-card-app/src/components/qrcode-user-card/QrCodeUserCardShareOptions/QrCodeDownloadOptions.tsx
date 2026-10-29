@@ -204,6 +204,7 @@ const QrCodeUserCardShareOptions: React.FC<{
             return;
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- existing expression; rewriting it changes evaluation
         option === QrCodeDownloadOptionsEnum.saveToPhotos ? savePng() : savePdf();
     };
 
@@ -234,8 +235,8 @@ const QrCodeUserCardShareOptions: React.FC<{
                                 ? m['scanner.saveToPhotos']()
                                 : m['scanner.saveAsPhoto']()
                             : Capacitor.isNativePlatform()
-                            ? m['scanner.saveToFiles']()
-                            : m['scanner.saveAsFile']();
+                              ? m['scanner.saveToFiles']()
+                              : m['scanner.saveAsFile']();
                     let icon = <option.icon className="w-[35px] mr-2" />;
 
                     if (isSavingPng && option.type === QrCodeDownloadOptionsEnum.saveToPhotos) {

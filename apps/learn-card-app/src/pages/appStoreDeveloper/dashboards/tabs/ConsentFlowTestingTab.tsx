@@ -497,6 +497,7 @@ export const ConsentFlowTestingTab: React.FC<ConsentFlowTestingTabProps> = ({
                                     ]
                                 }
                                 components={[
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <code className="bg-gray-200 px-1 rounded-sm text-xs" />,
                                 ]}
                             />

@@ -75,7 +75,7 @@ impl SignedAuthorityRecord {
             return Err(LedgerError::Signature);
         }
         let signature = Signature::from_slice(&bytes).map_err(|_| LedgerError::Signature)?;
-        if signature.normalize_s().is_some() {
+        if signature.normalize_s() != signature {
             return Err(LedgerError::Signature);
         }
         key.verify_prehash(&self.signing_hash()?, &signature)

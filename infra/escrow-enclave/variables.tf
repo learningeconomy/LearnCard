@@ -36,7 +36,7 @@ variable "lca_api_security_group_id" {
 }
 
 variable "privatelink_allowed_principals" {
-  description = "Cross-account access: IAM principal ARNs (e.g. the lca-api account root) allowed to create an interface endpoint to the NLB. Connections still need manual acceptance. Set exactly one of this or lca_api_security_group_id."
+  description = "Cross-account access: IAM principal ARNs allowed to create an interface endpoint to the NLB: the reviewed endpoint creator (lca-api's CloudFormation deploy role or user), or an account root. Connections still need manual acceptance. Set exactly one of this or lca_api_security_group_id."
   type        = list(string)
   default     = []
 
@@ -46,8 +46,8 @@ variable "privatelink_allowed_principals" {
   }
 
   validation {
-    condition     = alltrue([for p in var.privatelink_allowed_principals : can(regex("^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:(root|role/.+)$", p))])
-    error_message = "privatelink_allowed_principals entries must be account-root or role ARNs; wildcards are not allowed."
+    condition     = alltrue([for p in var.privatelink_allowed_principals : can(regex("^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:(root|(role|user)/[A-Za-z0-9+=,.@_/-]+)$", p))])
+    error_message = "privatelink_allowed_principals entries must be account-root, role or user ARNs; wildcards are not allowed."
   }
 }
 

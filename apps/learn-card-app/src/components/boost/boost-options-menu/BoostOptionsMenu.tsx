@@ -72,6 +72,7 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
                 handleClose={closeModal}
                 boost={boost}
                 boostUri={boostUri || record?.uri}
+                credentialRecordUri={record?.uri}
                 categoryType={categoryType!}
                 onShareWithOtherCredentials={
                     flags?.shareMultipleEnabled === true &&

@@ -1,5 +1,5 @@
 import React from 'react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 import {
     Image,
@@ -43,7 +43,9 @@ export const getImageFromProfile = (profile: Profile): string => {
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
     dateFormat: string = 'dd MMM yyyy',
-    options: { uppercaseDate?: boolean } = { uppercaseDate: true }
+    options: { uppercaseDate?: boolean; dateType?: 'issuance' | 'awarded' } = {
+        uppercaseDate: true,
+    }
 ): CredentialInfo => {
     const { issuer, issuanceDate, validFrom } = credential;
 
@@ -57,12 +59,29 @@ export const getInfoFromCredential = (
 
     // Support both VC 2.0 (validFrom) and VC 1.0 (issuanceDate)
     // Gracefully handle missing dates
-    const dateValue = validFrom || issuanceDate;
+    const awardDateText = typeof credential.awardedDate === 'string' ? credential.awardedDate : '';
+    const awardedDate =
+        options.dateType === 'awarded' && awardDateText ? parseISO(awardDateText) : undefined;
+    const validAwardedDate = awardedDate && isValid(awardedDate) ? awardedDate : undefined;
+    const dateValue = validAwardedDate ?? (validFrom || issuanceDate);
     let createdAt = '';
 
     if (dateValue) {
         try {
-            createdAt = format(new Date(dateValue), dateFormat);
+            const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+            // Offset-less ISO values describe a calendar day. Only explicit
+            // instants need UTC conversion, matching the Details date helper.
+            // Inspect at most six suffix characters; never scan arbitrary input
+            // with a backtracking wildcard when looking for a timezone.
+            const hasAwardOffset =
+                validAwardedDate &&
+                (awardDateText.includes('T') || awardDateText.includes(' ')) &&
+                /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(awardDateText.slice(-6));
+            const displayDate =
+                validAwardedDate && hasAwardOffset
+                    ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+                    : date;
+            createdAt = format(displayDate, dateFormat);
             if (options.uppercaseDate) {
                 createdAt = createdAt.toUpperCase();
             }

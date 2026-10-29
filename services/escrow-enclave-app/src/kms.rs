@@ -9,9 +9,12 @@ use cms::{
     enveloped_data::{EnvelopedData, RecipientInfo},
 };
 use der::{asn1::ObjectIdentifier, Decode, Sequence};
-use p256::pkcs8::{EncodePrivateKey, EncodePublicKey};
+use p256::pkcs8::{EncodePrivateKey, EncodePublicKey as _};
 use rand_core::{OsRng, RngCore};
-use rsa::{pkcs8::spki::AlgorithmIdentifierOwned, Oaep, RsaPrivateKey};
+use rsa::{
+    pkcs8::{spki::AlgorithmIdentifierOwned, EncodePublicKey},
+    Oaep, RsaPrivateKey,
+};
 use sha2::Sha256;
 use thiserror::Error;
 use zeroize::Zeroizing;

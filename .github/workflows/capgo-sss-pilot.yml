@@ -1,0 +1,87 @@
+name: CapGo SSS Pilot
+
+# Manually upload a LearnCard OTA bundle built with the production tenant config
+# plus the `sss-pilot` overlay (apps/learn-card-app/environments/learncard/
+# config.sss-pilot.json): production APIs, SSS key derivation, nitro escrow. It
+# lets named testers migrate their own existing production accounts from
+# Web3Auth to SSS on real devices before everyone switches.
+#
+# The channel is `<defaultChannel>-sss-pilot-<suffix>` and is NOT
+# self-assignable: Capgo lists self-assignable channels to every install, so a
+# name is no access control. Add each tester's device to the channel in the
+# Capgo dashboard (device override; the device ID is in Version Info). Anyone on
+# the channel migrates their account permanently (same key and DID, so leaving
+# the channel is safe). The bundle includes the auth debug widget so testers
+# can compare DIDs.
+# Runbook: internal-docs/architecture/web3auth-sss-migration-runbook.md.
+
+on:
+    workflow_dispatch:
+        inputs:
+            channel_suffix:
+                description: Channel suffix (lowercase letters/digits, 12+ chars)
+                required: true
+                type: string
+
+concurrency:
+    group: capgo-sss-pilot
+    cancel-in-progress: false
+
+jobs:
+    prepare:
+        name: Compute pilot channel and version
+        runs-on: ubuntu-latest
+        outputs:
+            channel: ${{ steps.channel.outputs.channel }}
+            bundle_version: ${{ steps.version.outputs.bundle_version }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.2
+
+            - name: Validate channel suffix
+              env:
+                  SUFFIX: ${{ inputs.channel_suffix }}
+              run: |
+                  if [[ ! "$SUFFIX" =~ ^[a-z0-9]{12,}$ ]]; then
+                    echo "::error::channel_suffix must be 12+ lowercase letters/digits"
+                    exit 1
+                  fi
+
+            - name: Compute version-pinned pilot channel
+              id: channel
+              env:
+                  SUFFIX: ${{ inputs.channel_suffix }}
+              run: |
+                  DEFAULT_CHANNEL=$(bun tools/capgo/getCapgoChannel.js --app lca)
+                  echo "channel=${DEFAULT_CHANNEL}-sss-pilot-${SUFFIX}" >> "$GITHUB_OUTPUT"
+
+            - name: Compute pilot bundle version
+              id: version
+              run: |
+                  BASE_VERSION=$(bun -e "console.log(require('./apps/learn-card-app/package.json').version)")
+                  echo "bundle_version=${BASE_VERSION}-sss-pilot.${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+    upload:
+        name: Upload SSS pilot bundle
+        needs: prepare
+        uses: ./.github/workflows/capgo-upload.yml
+        with:
+            project: learn-card-app
+            app_id: com.learncard.app
+            version: ${{ needs.prepare.outputs.bundle_version }}
+            build_path: apps/learn-card-app/build
+            package_json: apps/learn-card-app/package.json
+            node_modules_path: node_modules
+            environment: learn-card-app-production
+            channel: ${{ needs.prepare.outputs.channel }}
+            tenant: learncard
+            stage: sss-pilot
+            self_assign: 'false'
+            enable_auth_debug_widget: 'true'
+        secrets:
+            CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}

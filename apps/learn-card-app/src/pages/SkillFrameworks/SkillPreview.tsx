@@ -108,7 +108,7 @@ const SkillPreview: React.FC<SkillPreviewProps> = ({
         let truncatedSecondLast = secondLast;
         const lastItemWidth = getTextWidth(lastItem);
         const ellipsisWidth = getTextWidth('... > ');
-        let maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
+        const maxSecondLastWidth = availableWidth - lastItemWidth - ellipsisWidth - 20; // 20px buffer
 
         if (getTextWidth(secondLast) > maxSecondLastWidth) {
             // Binary search for optimal truncation

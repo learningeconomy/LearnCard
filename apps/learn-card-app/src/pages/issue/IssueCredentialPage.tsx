@@ -52,7 +52,8 @@ import type { CredentialCategoryEnum } from 'learn-card-base';
 
 import { type VariableScope } from './components/DynamicFieldsSection';
 import { applyVariableValues } from './components/variableSubstitution';
-import { attachmentsToEvidence } from './components/mediaEvidence';
+import { attachmentsToEvidence, getSharedEvidenceForReview } from './components/mediaEvidence';
+import { getLongTextVariables } from './spreadsheet/longText';
 import type { SimpleMediaAttachment } from './components/MediaAttachments';
 import { useCredentialIdentity } from './components/useCredentialIdentity';
 import { mergeSkillAlignments, type ResolvedSkill } from './components/skillAlignment';
@@ -223,6 +224,8 @@ const IssueCredentialPage: React.FC = () => {
         () => (template ? extractVariablesByType(template).dynamic : []),
         [template]
     );
+    const longTextVariables = useMemo(() => getLongTextVariables(template), [template]);
+    const sharedEvidenceForReview = useMemo(() => getSharedEvidenceForReview(template), [template]);
 
     const roster = useIssueRoster({
         issuer: currentLCNUser?.profileId ?? '',
@@ -946,6 +949,8 @@ const IssueCredentialPage: React.FC = () => {
                 onAttachmentsChange={handleRecipientEvidenceChange}
                 recipients={recipients}
                 variables={dynamicVars}
+                longTextVariables={longTextVariables}
+                sharedEvidence={sharedEvidenceForReview}
                 dateVariables={[
                     template?.validFrom,
                     template?.validUntil,
@@ -1067,6 +1072,20 @@ const IssueCredentialPage: React.FC = () => {
                                 void roster.checkStatus();
                             }}
                             checking={roster.checking}
+                            onComplete={({ sent, failed, confirming, total }) => {
+                                // All-sent runs have a dedicated completion dialog.
+                                if (!failed && !confirming) return;
+                                presentToast(
+                                    m['issueFlow.sheet.reviewWorkspace.attentionToast']({
+                                        sent,
+                                        total,
+                                    }),
+                                    {
+                                        type: ToastTypeEnum.Error,
+                                        hasDismissButton: true,
+                                    }
+                                );
+                            }}
                         />
                     </div>
                 )}

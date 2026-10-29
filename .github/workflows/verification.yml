@@ -14,7 +14,10 @@ on:
             - '.github/workflows/verification.yml'
             - '.github/actions/setup/**'
             - 'scripts/check-verification-map.ts'
+            - 'scripts/verify-web-sqlite-build.mjs'
+            - 'scripts/verify-web-sqlite-build.test.mjs'
             - 'scripts/summarize-verification*.mjs'
+            - 'tests/smoketests/**'
             - 'package.json'
             - 'bun.lock'
             - '.nvmrc'
@@ -101,6 +104,11 @@ jobs:
             - name: Install Chromium and Linux libraries
               run: bunx playwright install --with-deps chromium
 
+            - name: Verify production SQLite browser bundle
+              run: |
+                  node --test scripts/verify-web-sqlite-build.test.mjs
+                  node scripts/verify-web-sqlite-build.mjs --output "$PRIVATE_LOG_DIR/sqlite-web-build" > "$PRIVATE_LOG_DIR/sqlite-web-build.log" 2>&1
+
             - name: Build and test message schemas
               working-directory: packages/learn-card-types
               run: |
@@ -159,6 +167,7 @@ jobs:
               env:
                   USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
               run: |
+                  # Message navigation, the catalog, and campaign authorization share this owned stack.
                   verify_args=(up --json --dir "$STACK_DIR")
                   if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
                     verify_args+=(--docker-builder lc-verification)
@@ -175,6 +184,13 @@ jobs:
               id: catalog
               run: |
                   bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
+
+            - name: Verify campaign SDK authorization boundaries
+              id: campaigns
+              run: |
+                  bun run --cwd apps/learn-card-app lc verify script \
+                    services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
+                    > "$PRIVATE_LOG_DIR/campaigns.log" 2>&1
 
             # Public proof handoff: selected media and sanitized rendering data only.
             - name: Stage proof media
@@ -217,7 +233,7 @@ jobs:
               if: ${{ always() }}
               env:
                   STARTUP_OUTCOME: ${{ steps.stack.outcome }}
-                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome }}
+                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}
                   VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
               run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"

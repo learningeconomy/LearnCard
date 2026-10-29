@@ -1,6 +1,6 @@
 {
     "name": "@learncard/escrow-canary",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "private": true,
     "type": "module",
     "scripts": {
@@ -12,7 +12,7 @@
         "@aws-sdk/client-secrets-manager": "^3.883.0",
         "@learncard/init": "workspace:*",
         "@learncard/sss-key-manager": "workspace:*",
-        "zod": "^3.22.4"
+        "zod": "4.6.6"
     },
     "devDependencies": {
         "@types/node": "^22.0.0",

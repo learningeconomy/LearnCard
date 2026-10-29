@@ -200,6 +200,7 @@ const TodayMode: React.FC = () => {
             ? recentCompletion.title
             : null;
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     useEffect(() => {
         if (!recentCompletion) return;
 

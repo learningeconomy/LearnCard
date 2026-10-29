@@ -104,7 +104,7 @@ const BoostCMSMediaPhotoUpload: React.FC<BoostCMSMediaPhotoUploadProps> = ({
                     type="text"
                     value={state.photos?.[currentIndex]?.title}
                     onIonInput={e => {
-                        let stateCopy = structuredClone(state.photos);
+                        const stateCopy = structuredClone(state.photos);
                         if (stateCopy[currentIndex]) {
                             stateCopy[currentIndex].title = e.detail.value as string;
                             setState(stateCopy);

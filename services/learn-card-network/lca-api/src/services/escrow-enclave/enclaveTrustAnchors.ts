@@ -28,6 +28,25 @@ Ztl5uoRwN99inHNWv1cnKGdNQgIwSoQgKs8uMnBUcfiB9ZR6xb98z/9athp5pDIE
 /KUv6cNmJtuCgPOJxC+4fVKl8xC3
 -----END CERTIFICATE-----
 `,
+    // Production CA, valid until 2029-10-26. SHA-256 C017B1482D96679D6F725F8A46A52DAC
+    // CE9921AB47B4FEDFDB4C814B38584859; source: SSM
+    // /learncard/escrow-enclave/production/ca-cert in account 934654685669.
+    'escrow-enclave.production.internal': `-----BEGIN CERTIFICATE-----
+MIICaDCCAe6gAwIBAgIUCMYQNgdrxBILfOeoVNOWuZBiG1cwCgYIKoZIzj0EAwMw
+VzEkMCIGA1UECgwbTGVhcm5pbmcgRWNvbm9teSBGb3VuZGF0aW9uMS8wLQYDVQQD
+DCZMZWFybkNhcmQgRXNjcm93IEVuY2xhdmUgUHJvZHVjdGlvbiBDQTAeFw0yNjEw
+MjcxOTE5MzBaFw0yOTEwMjYxOTE5MzBaMFcxJDAiBgNVBAoMG0xlYXJuaW5nIEVj
+b25vbXkgRm91bmRhdGlvbjEvMC0GA1UEAwwmTGVhcm5DYXJkIEVzY3JvdyBFbmNs
+YXZlIFByb2R1Y3Rpb24gQ0EwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARE/z2wlD3g
+oj5XyHZEJOjdffpvXHav9802AHod0h7QQP4NCLpw4Aofhx6+Qrx/le8KUGdu63V7
+948yzbrvW08XL20lmd2kFkb/23589kOzaTPeE1Ngs2y08n5cAkCdxWOjezB5MBIG
+A1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/BAQDAgEGMDQGA1UdHgEB/wQqMCig
+JjAkgiJlc2Nyb3ctZW5jbGF2ZS5wcm9kdWN0aW9uLmludGVybmFsMB0GA1UdDgQW
+BBTHUF7Yd+mLuA2XOthizgvTc8WW3zAKBggqhkjOPQQDAwNoADBlAjEAiFXqrpcc
+nR6ttLI4EEZ5qLMMGTksNypiTa+WyiUmJCtW3o6Luj9o/wlFXsFParINAjA8zeDx
+b1+05o+sCl0kQzEq1b2pN9/Xco5NQpMDfG2/BvKuSOVLhOQ1tdkZLo+uTgk=
+-----END CERTIFICATE-----
+`,
 };
 
 export const pinnedEnclaveCa = (baseUrl: string): string | undefined =>

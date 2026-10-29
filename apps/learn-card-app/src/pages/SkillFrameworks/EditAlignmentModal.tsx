@@ -157,6 +157,7 @@ const EditAlignmentModal: React.FC<EditAlignmentModalProps> = ({
             <div className="p-2">
                 <Picker
                     data={data}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     onEmojiSelect={(emoji: any) => {
                         setNode(prev => ({
                             ...prev,

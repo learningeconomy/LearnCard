@@ -45,6 +45,7 @@ export const useCredentialStatus = (
 
             // 1) Authoritative backend status (source of truth for revoke/suspend).
             try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 const getStatuses = (wallet as any)?.invoke?.getMyCredentialLifecycleStatuses as
                     | ((options: {
                           uris: string[];

@@ -1028,12 +1028,14 @@ const WhatIfMode: React.FC = () => {
     // Standout-label map — runs once per (pathway, results) change.
     // Cheap (linear in results.length, max ~5), and pulling it out of
     // render keeps each ScenarioCard pure on its props.
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const standoutLabels = useMemo(() => pickStandoutLabels(results), [results]);
 
     // Compare entry-point gating: only show when at least two
     // scenarios are convertible (otherwise there's nothing meaningful
     // to compare against). Counted from `convertibilityByScenarioId`
     // so the rule reflects the *live* pathway, not the static set.
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const convertibleCount = useMemo(() => {
         let n = 0;
         for (const r of results) {

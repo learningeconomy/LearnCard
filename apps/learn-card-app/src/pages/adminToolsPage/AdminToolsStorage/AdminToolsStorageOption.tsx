@@ -107,6 +107,7 @@ const AdminToolsStorageOption: React.FC<{ option: AdminToolOption; showFooter?: 
                 const networkOption = networkOptionsList.find(
                     (o: NetworkOption) => o.type === selectedOption.type
                 );
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
                 networkStore.set.networkUrl(networkOption?.endpoint!);
             }
 

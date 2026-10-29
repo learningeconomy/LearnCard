@@ -5,12 +5,12 @@ The app store lists partner apps. Visitors who choose **Get** are asked to sign 
 ## Sub-features
 
 - `apps-public-sign-in-intent`: signed out, `/app/<listingId>` → **Get**/**Install** → `Sign in to continue` → **Continue** → `/login`, which shows that you'll be taken back to the app.
-- `apps-browse-detail`: Apps → **Browse more** → `/launchpad/browse?tab=All` → the listing row → **Get** opens the detail (`#right-modal`) with **About** and **Install**.
+- `apps-browse-detail`: Apps → **Browse More** → `/launchpad/browse?tab=All` → the listing row → **Get** opens the detail (`#right-modal`) with **About** and **Install**.
 - `apps-install-persist-launch`: **Install** → `Install App` consent showing **Request Identity** → **Install** → the detail shows **Open** → immediate reload, without waiting for the list/cache persister → learner SDK confirms that exact listing is installed and the reloaded list still shows **Open**. **Open** embeds the real example; its **Request Identity** click must produce a matching host response containing the learner's DID and a nonempty JWT. The existing DIDKit verifier must validate its signature, the click's challenge, and the partner app's audience against the local stack.
 
 ## How to get to it (user POV)
 
-- Sidebar **Apps** (`/launchpad`) → **Browse more**.
+- Sidebar **Apps** (`/launchpad`) → **Browse More**.
 - A shared listing link: `/app/<listingId>`.
 
 ## Driving it with lc verify

@@ -184,6 +184,7 @@ const BoostAFriendPage: React.FC = () => {
             }
 
             setStep('celebrate');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (err: any) {
             setError(getFriendlyIssueError(err, recipientMode).message);
         } finally {
@@ -339,12 +340,12 @@ const BoostAFriendPage: React.FC = () => {
         stylePacks,
         categoryFallback,
         currentLCNUser,
-        ,
         locale,
     ]);
 
     const celebrateCard = celebrateCredential && (
         <BoostEarnedCard
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             credential={celebrateCredential as any}
             categoryType={BoostCategoryOptionsEnum.socialBadge}
             boostPageViewMode={BoostPageViewMode.Card}

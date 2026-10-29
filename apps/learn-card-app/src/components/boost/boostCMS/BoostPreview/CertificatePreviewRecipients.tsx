@@ -10,7 +10,7 @@ type CertificatePreviewRecipientsProps = {
 const CertificatePreviewRecipients: React.FC<CertificatePreviewRecipientsProps> = ({
     recipients,
 }) => {
-    let _recipients = filterBoostRecipients(recipients);
+    const _recipients = filterBoostRecipients(recipients);
 
     return (
         <div className="flex items-center">

@@ -9,6 +9,7 @@ import * as m from '../../paraglide/messages.js';
 type LearnCardFooterProps = {
     hideShare?: boolean;
     buttonText?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     icon?: any;
     buttonAction?: () => void;
 };

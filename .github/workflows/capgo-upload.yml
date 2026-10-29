@@ -64,6 +64,11 @@ on:
                 required: false
                 type: string
                 default: 'true'
+            enable_auth_debug_widget:
+                description: Build with the auth debug widget on ('true'), overriding the environment var. Empty keeps the var.
+                required: false
+                type: string
+                default: ''
         secrets:
             CAPGO_TOKEN:
                 required: true
@@ -125,7 +130,7 @@ jobs:
               env:
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ vars.VITE_NODE_ENV }}
-                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
+                  VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ inputs.enable_auth_debug_widget || vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}

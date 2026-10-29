@@ -150,7 +150,9 @@ export type SkillFramework = {
     name: string;
     image?: string;
     description?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     networks?: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     admins?: any[];
 
     skills: SkillFrameworkNode[];

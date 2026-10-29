@@ -16,8 +16,10 @@ import GrowSkillsModal, { type GrowSkillsTab } from './GrowSkillsModal';
 import GrowSkillsAiSessionItem from './GrowSkillsAiSessionItem';
 import { useGrowSkillsContent } from './useGrowSkillsContent';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type GrowSkillsPathwaysHomeProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
     const { newModal } = useModal();
 
@@ -49,6 +51,7 @@ const GrowSkillsPathwaysHome: React.FC<GrowSkillsPathwaysHomeProps> = ({}) => {
                     <p className="text-[14px] font-poppins text-grayscale-700">
                         <TransP
                             m={m['growSkills.description']}
+                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                             components={[<strong />, <strong />, <strong />]}
                         />
                     </p>

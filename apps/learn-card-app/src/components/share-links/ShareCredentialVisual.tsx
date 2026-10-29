@@ -20,10 +20,12 @@ const CredentialBadgeNew = lazy(
 /** Render the shared original without applying issuer edits or exposing owner actions. */
 export const ShareCredentialVisual = ({
     credential,
+    category,
     proof,
     endorsements,
 }: {
     credential: VC;
+    category?: string;
     proof?: ProofState;
     endorsements: VC[];
 }) => {
@@ -38,6 +40,8 @@ export const ShareCredentialVisual = ({
               ? m['shareLinks.failed']()
               : m['shareLinks.unavailable']();
     const displayCredential = unwrapBoostCredential(credential);
+    const resolvedCategory = (category ||
+        getDefaultCategoryForCredential(credential)) as BoostCategoryOptionsEnum;
     return (
         <button
             type="button"
@@ -48,11 +52,7 @@ export const ShareCredentialVisual = ({
                         <CredentialPreview
                             credential={credential}
                             sharedOriginal
-                            categoryType={
-                                getDefaultCategoryForCredential(
-                                    credential
-                                ) as BoostCategoryOptionsEnum
-                            }
+                            categoryType={resolvedCategory}
                             titleOverride={credentialText(credential).name}
                             issuerOverride={credentialText(credential).issuer}
                             customThumbComponent={
@@ -61,11 +61,7 @@ export const ShareCredentialVisual = ({
                                     backgroundImage=""
                                     backgroundColor=""
                                     credential={displayCredential}
-                                    boostType={
-                                        getDefaultCategoryForCredential(
-                                            credential
-                                        ) as BoostCategoryOptionsEnum
-                                    }
+                                    boostType={resolvedCategory}
                                     achievementType={getAchievementType(credential)}
                                     badgeThumbnail={getImageUrlFromCredential(credential)}
                                     fallbackCircleText={credentialText(credential).name}

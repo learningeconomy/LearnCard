@@ -9,6 +9,7 @@ import {
     parseSavedShareLinkMetadata,
     prepareShare,
     prepareShareUpdate,
+    prepareShareMetadataUpdate,
     proofState,
     readShareAddress,
     resolveExpiryIso,
@@ -51,6 +52,7 @@ const mockWallet = () =>
             })),
             createDagJwe: vi.fn().mockResolvedValue(jwe),
             decryptDagJwe: vi.fn(),
+            getShareLinkOwnerContent: vi.fn(),
             verifyCredential: vi
                 .fn()
                 .mockResolvedValue({ checks: ['proof'], warnings: [], errors: [] }),
@@ -111,6 +113,42 @@ describe('share publication boundary', () => {
             proofPurpose: 'authentication',
         });
     });
+    it('signs manual categories in click order and leaves original credentials unchanged', async () => {
+        const wallet = mockWallet();
+        const secondCredential = { ...fixtureCredential, id: 'urn:credential:two' };
+        vi.mocked(wallet.read.get).mockImplementation(async ref =>
+            ref === 'first' ? fixtureCredential : secondCredential
+        );
+        const prepared = await prepareShare(wallet, ['first', 'second'], 'Title', '', undefined, {
+            credentialCategories: ['Achievement', null],
+        });
+        const payload = (await decryptSharePayload({
+            shareId: prepared.input.id,
+            contentVersion: 1,
+            key: prepared.key,
+            envelope: prepared.input.envelope,
+        })) as {
+            presentation: {
+                lcCredentialCategories: (string | null)[];
+                verifiableCredential: VC[];
+            };
+        };
+        expect(payload.presentation.lcCredentialCategories).toEqual(['Achievement', null]);
+        expect(payload.presentation.verifiableCredential).toEqual([
+            fixtureCredential,
+            secondCredential,
+        ]);
+        expect(fixtureCredential).toEqual(expect.objectContaining({ id: 'urn:credential:one' }));
+    });
+    it('rejects category arrays that cannot bind one-to-one to selected refs before signing', async () => {
+        const wallet = mockWallet();
+        await expect(
+            prepareShare(wallet, ['first', 'second'], 'Title', '', undefined, {
+                credentialCategories: ['Passport'],
+            })
+        ).rejects.toThrow('credential-categories');
+        expect(wallet.invoke.issuePresentation).not.toHaveBeenCalled();
+    });
     it.each([[], Array(51).fill('source'), ['source', 'source']])(
         'rejects empty, oversized and duplicate selections',
         async refs => {
@@ -170,7 +208,7 @@ describe('share publication boundary', () => {
             ['private:credential'],
             'Updated title',
             '',
-            { passcode: '86428642', notifyOnView: false }
+            { passcode: '86428642', notifyOnView: false, credentialCategories: ['Achievement'] }
         );
 
         expect(updated.key).toBe(key);
@@ -188,12 +226,72 @@ describe('share publication boundary', () => {
             contentVersion: 3,
             key,
             envelope: updated.input.envelope!,
-        })) as { contentVersion: number };
+        })) as {
+            contentVersion: number;
+            presentation: { lcCredentialCategories: (string | null)[] };
+        };
+        expect(payload.presentation.lcCredentialCategories).toEqual(['Achievement']);
         expect(payload.contentVersion).toBe(3);
         expect(wallet.invoke.createDagJwe).toHaveBeenCalledWith(
             expect.objectContaining({ latest: { contentVersion: 3, key } }),
             ['did:example:owner']
         );
+    });
+    it('preserves the existing signed presentation on metadata-only updates', async () => {
+        const wallet = mockWallet();
+        const original = await prepareShare(
+            wallet,
+            ['private:credential'],
+            'Title',
+            '',
+            undefined,
+            {
+                credentialCategories: ['Achievement'],
+            }
+        );
+        vi.mocked(wallet.invoke.getShareLinkOwnerContent).mockResolvedValue({
+            id: original.input.id,
+            contentVersion: 1,
+            envelope: original.input.envelope,
+        } as never);
+        const updated = await prepareShareMetadataUpdate(
+            wallet,
+            {
+                id: original.input.id,
+                title: 'Title',
+                selectedCount: 1,
+                version: 1,
+                contentVersion: 1,
+                status: 'active',
+                contentState: 'finalized',
+                createdAt: original.payload.createdAt,
+                updatedAt: original.payload.createdAt,
+                expiresAt: null,
+                stoppedAt: null,
+                lastViewedAt: null,
+                passcodeProtected: false,
+                notifyOnView: false,
+                minorPolicy: {
+                    isMinor: false,
+                    policyResolved: true,
+                    defaultExpiryDays: 365,
+                    viewCountingEnabled: true,
+                },
+            } as never,
+            {
+                protocol: 'lc-share-recovery/v1',
+                shareId: original.input.id,
+                ownerProfileId: 'owner',
+                createdAt: original.payload.createdAt,
+                latest: { contentVersion: 1, key: original.key },
+                selection: [{ ref: 'private:credential', order: 0 }],
+                endorsements: [],
+            },
+            'Renamed',
+            ''
+        );
+        expect(updated.payload.presentation).toEqual(original.payload.presentation);
+        expect(wallet.invoke.issuePresentation).toHaveBeenCalledTimes(1);
     });
 });
 it('rejects an oversized selection before it can be sent', async () => {

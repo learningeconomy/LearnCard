@@ -108,6 +108,16 @@ const SSS_DB_NAME = 'lcb-sss-keys';
 const DEFAULT_DEVICE_SHARE_ID = 'sss-device-share';
 const MAX_RECONCILIATION_HISTORY = 5;
 
+/**
+ * OFF by default. Every input to the uncarryable-PIN inference (recovery methods,
+ * share version, PIN state) comes from lca-api, so a compromised API could forge it
+ * for a healthy PIN account and have the client sign away the PIN path (Custard7's
+ * PR #1815 review). With it off the strategy returns `pin-reset-required` and the
+ * app asks the user to set a new PIN. Enabling it needs an independently trustworthy
+ * recovery signal and security sign-off: POST_RECOVERY_ESCROW_REPAIR_DESIGN.md, Q1.
+ */
+export const DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN = false;
+
 export interface SSSStorageFunctions {
     storeDeviceShare: (share: string, id?: string) => Promise<void>;
     getDeviceShare: (id?: string) => Promise<string | null>;
@@ -124,6 +134,22 @@ export interface SSSStrategyConfig {
 
     /** Report enrollment failures without logging recovery material. */
     onEscrowError?: (err: unknown) => void;
+
+    /**
+     * Nitro repair only: when the signed authority still has a PIN but lca-api holds
+     * no PIN to carry (an identity-recovery rebind deleted it), sign a PIN `clear`
+     * instead of a `carry` that lca-api would reject with PRECONDITION_FAILED.
+     * Defaults to {@link DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN} (off). Do not enable
+     * without security sign-off: POST_RECOVERY_ESCROW_REPAIR_DESIGN.md, open question Q1.
+     */
+    autoClearUncarryablePin?: boolean;
+
+    /**
+     * Called once after every committed automatic PIN clear
+     * ({@link SSSStrategyConfig.autoClearUncarryablePin}). Must not throw; defaults
+     * to a console warning. Never receives the DID, email or PIN material.
+     */
+    onEscrowPinAutoCleared?: (event: EscrowPinAutoClearedEvent) => void;
 
     /** Server URL for key share operations */
     serverUrl: string;
@@ -193,9 +219,18 @@ const describeHttpStatus = (response: Response): string =>
     response.statusText ? `${response.status} ${response.statusText}` : `${response.status}`;
 
 type EscrowEnrollmentResult =
-    | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' }
+    | { enrolled: false; reason: 'disabled' | 'opted-out' | 'not-enrolled' | 'pin-reset-required' }
     | { enrolled: true; changed: false }
-    | { enrolled: true; changed: true; shareVersion: number };
+    | { enrolled: true; changed: true; shareVersion: number; pinCleared?: 'automatic' };
+
+/** Telemetry for an automatic post-rebind PIN clear. Carries no DID, email or PIN data. */
+export interface EscrowPinAutoClearedEvent {
+    type: 'escrow.pin.auto_cleared';
+    /** Share version the PIN-free enrollment was committed at. */
+    shareVersion: number;
+    /** Share version the signed authority was still active at (pre-rebind). */
+    authorityShareVersion: number | null;
+}
 
 /** HTTP failure metadata without potentially sensitive server response text. */
 export class EscrowRequestError extends Error {
@@ -1440,6 +1475,26 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
+    /** Report a committed automatic PIN clear so the caller can prompt for a new PIN. */
+    const withAutoClear = (
+        shareVersion: number,
+        autoClearedFrom: { authorityShareVersion: number | null } | undefined
+    ): EscrowEnrollmentResult => {
+        if (!autoClearedFrom) return { enrolled: true, changed: true, shareVersion };
+        try {
+            const event: EscrowPinAutoClearedEvent = {
+                type: 'escrow.pin.auto_cleared',
+                shareVersion,
+                authorityShareVersion: autoClearedFrom.authorityShareVersion,
+            };
+            if (config.onEscrowPinAutoCleared) config.onEscrowPinAutoCleared(event);
+            else console.warn('SSS: escrow PIN cleared automatically', event);
+        } catch {
+            console.warn('SSS: escrow event reporting failed');
+        }
+        return { enrolled: true, changed: true, shareVersion, pinCleared: 'automatic' };
+    };
+
     const ensureEscrowEnrollmentUnguarded = async (
         self: SSSKeyDerivationStrategy,
         params: Parameters<NonNullable<SSSKeyDerivationStrategy['ensureEscrowEnrollment']>>[0],
@@ -1448,6 +1503,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         allowDisabledEnrollment = false
     ): Promise<EscrowEnrollmentResult> => {
         let clearPinForEnrollment = forceRotate || params.options?.clearPin === true;
+        let autoClearedFrom: { authorityShareVersion: number | null } | undefined;
         if (!config.escrow?.enabled) return { enrolled: false, reason: 'disabled' };
         const pin = params.options?.pin;
         const recoveryEmail = params.options?.recoveryEmail ?? '';
@@ -1512,6 +1568,39 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 current.envelope?.keyId === verifiedKey.keyId;
             if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
             hasPin = current.hasPin;
+            // After an identity-recovery rebind lca-api has no PIN left to carry, so an
+            // automatic carry/keep can only fail.
+            const uncarryablePin =
+                !clearPinForEnrollment &&
+                current.status === 'active' &&
+                current.hasPin &&
+                pin === undefined &&
+                !currentlyEnrolled &&
+                status.escrowPin?.state === 'none';
+            // Opt-in only (design doc Q1): sign a clear instead. Rebind evidence: the
+            // signed authority is still active at an older share version, and lca-api
+            // lists no confirmed escrow method at any version. All but the authority
+            // are lca-api claims, so this is forgeable by a compromised API.
+            if (
+                uncarryablePin &&
+                (config.autoClearUncarryablePin ?? DEFAULT_AUTO_CLEAR_UNCARRYABLE_PIN) &&
+                current.shareVersion !== null &&
+                status.shareVersion !== null &&
+                current.shareVersion < status.shareVersion &&
+                !status.recoveryMethods.some(
+                    method =>
+                        method.type === 'escrow' &&
+                        (Boolean(method.confirmedAt) ||
+                            ('confirmationStatus' in method &&
+                                method.confirmationStatus === 'confirmed'))
+                )
+            ) {
+                clearPinForEnrollment = true;
+                autoClearedFrom = { authorityShareVersion: current.shareVersion };
+            } else if (uncarryablePin) {
+                // Never rotate or sign here: only a user-chosen PIN (`set`) resolves it.
+                return { enrolled: false, reason: 'pin-reset-required' };
+            }
         }
         // A current, PIN-free enrollment already satisfies a clear request
         // (e.g. post-recovery repair after direct enrollment succeeded).
@@ -1568,7 +1657,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     recoveryLanguage
                 );
                 unenrolledRotation = undefined;
-                return { enrolled: true, changed: true, shareVersion: retry.shareVersion };
+                return withAutoClear(retry.shareVersion, autoClearedFrom);
             }
             // Verify the enclave before rotating: a bad attestation must not burn
             // a share version (and, repeated, the retained auth-share history).
@@ -1627,7 +1716,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 recoveryLanguage
             );
             unenrolledRotation = undefined;
-            return { enrolled: true, changed: true, shareVersion };
+            return withAutoClear(shareVersion, autoClearedFrom);
         } catch (err) {
             // A background repair the caller never asked for must not surface as
             // a hard failure (mirrors tryEnrollEscrow's existing swallow-and-report
@@ -2062,6 +2151,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 escrowPin: data.escrowPin,
                 escrowStale: data.escrowStale,
                 sssActivationState: data.sssActivationState ?? 'active',
+                ...(typeof data.priorEscrowEnrollment === 'boolean'
+                    ? { priorEscrowEnrollment: data.priorEscrowEnrollment }
+                    : {}),
             };
         },
 
@@ -2149,7 +2241,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     escrowPin: status.escrowPin,
                     staleReason: status.escrowStale,
                 };
-            return { state: enrolled ? 'enrolled' : 'not-enrolled', escrowPin: status.escrowPin };
+            if (enrolled) return { state: 'enrolled', escrowPin: status.escrowPin };
+            // A rebind leaves escrow methods `pending`, which /keys/auth-share omits but
+            // reports as priorEscrowEnrollment; flag them so the caller can request a
+            // prior-enrollment repair instead of a first-time enrollment. Older servers
+            // lack the field, so fall back to the (confirmed-only) method list.
+            const priorEscrowMethod =
+                status.priorEscrowEnrollment ??
+                status.recoveryMethods.some(method => method.type === 'escrow');
+            return {
+                state: 'not-enrolled',
+                escrowPin: status.escrowPin,
+                ...(priorEscrowMethod ? { priorEscrowMethod: true } : {}),
+            };
         },
 
         async disableEscrowRecovery(params): Promise<void> {
@@ -2257,6 +2361,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 if (result.enrolled) return result;
                 if (result.reason === 'not-enrolled')
                     throw new Error('Escrow enrollment did not complete');
+                if (result.reason === 'pin-reset-required')
+                    throw new Error('Set a new recovery PIN to turn on automatic recovery.');
                 return { enrolled: false as const, reason: result.reason };
             });
         },

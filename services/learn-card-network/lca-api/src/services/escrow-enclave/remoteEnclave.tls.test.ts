@@ -60,6 +60,16 @@ describe('remote enclave TLS trust', () => {
         );
         expect(pinnedEnclaveCa('https://enclave-host.internal')).toBeUndefined();
     });
+
+    it('pins a distinct production CA by hostname only', () => {
+        const production = pinnedEnclaveCa('https://escrow-enclave.production.internal:8443');
+
+        expect(production).toContain('BEGIN CERTIFICATE');
+        expect(production).not.toEqual(
+            pinnedEnclaveCa('https://escrow-enclave.staging.internal:8443')
+        );
+        expect(pinnedEnclaveCa('https://production.internal:8443')).toBeUndefined();
+    });
 });
 
 describe('remote enclave connection recovery', () => {

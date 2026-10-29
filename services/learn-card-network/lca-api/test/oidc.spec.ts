@@ -6,6 +6,7 @@ import { issueLoginTicket, redeemLoginTicket } from '../src/cache/login-tickets'
 import cache from '@cache';
 import { GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 import { getOidcSigningKey, resetOidcSigningKeyForTests } from '../src/helpers/oidc.helpers';
+import { ACCESS_TOKEN_PREFIX } from '../src/helpers/login-ticket.helpers';
 
 const { env, entries, sendSecret } = vi.hoisted(() => ({
     sendSecret: vi.fn(),
@@ -188,8 +189,12 @@ beforeEach(async () => {
     });
 });
 afterEach(async () => {
-    await app.close();
-    vi.restoreAllMocks();
+    try {
+        await app.close();
+    } finally {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    }
 });
 
 describe('OIDC provider', () => {
@@ -397,6 +402,11 @@ describe('OIDC provider', () => {
     it.each<BasicMode>(['encoded', 'raw', false])(
         'exchanges a code using Basic=%s and verifies RS256 through served JWKS',
         async basic => {
+            // Freeze wall-clock time only; Fastify's I/O timers keep running normally.
+            // expires_in is remaining time, so an uncontrolled second boundary can
+            // make it 299 even though the signed JWT lifetime is exactly 300 seconds.
+            vi.useFakeTimers({ toFake: ['Date'] });
+            vi.setSystemTime(new Date('2026-10-14T12:00:00.999Z'));
             const response = await exchange(await code(), {}, basic);
             expect(response.statusCode).toBe(200);
             const tokens = response.json();
@@ -427,6 +437,35 @@ describe('OIDC provider', () => {
             expect(response.headers.pragma).toBe('no-cache');
         }
     );
+    it('reports 299 seconds remaining when access-token persistence crosses a second', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        const start = new Date('2026-10-14T12:00:00.999Z');
+        vi.setSystemTime(start);
+        const set = cache.set.bind(cache);
+        vi.spyOn(cache, 'set').mockImplementation(async (...args) => {
+            const result = await set(...args);
+            if (args[0].startsWith(ACCESS_TOKEN_PREFIX)) {
+                // Advance after JWT signing, before expires_in is calculated.
+                vi.setSystemTime(start.getTime() + 1);
+            }
+            return result;
+        });
+
+        const response = await exchange(await code());
+        expect(response.statusCode).toBe(200);
+        const tokens = response.json();
+        const jwks = createLocalJWKSet((await app.inject('/oidc/jwks')).json());
+        const options = { issuer: env.OIDC_ISSUER, audience: env.OIDC_CLIENT_ID };
+        const { payload } = await jwtVerify(tokens.id_token, jwks, options);
+        expect(payload.exp! - payload.iat!).toBe(300);
+        expect(tokens.expires_in).toBe(299);
+
+        // The clock control must not hide an extended JWT lifetime.
+        vi.setSystemTime(payload.exp! * 1000);
+        await expect(jwtVerify(tokens.id_token, jwks, options)).rejects.toMatchObject({
+            code: 'ERR_JWT_EXPIRED',
+        });
+    });
     it('URL-decodes Basic client credentials', async () => {
         env.OIDC_CLIENT_SECRET = 'a+b:c %';
         expect((await exchange(await code(), {}, 'encoded')).statusCode).toBe(200);

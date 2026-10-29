@@ -11,6 +11,7 @@ import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack'
 
 export const LearnCardIDWallpaperSelect: React.FC<{
     idBackgroundImage: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     handleSetState: (key: string, value: any) => void;
 }> = ({ idBackgroundImage, handleSetState }) => {
     const [wallpaper, setWallpaper] = useState<string>(idBackgroundImage ?? '');

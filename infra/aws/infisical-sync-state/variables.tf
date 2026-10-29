@@ -46,3 +46,15 @@ variable "noncurrent_version_retention_days" {
     error_message = "Keep superseded state versions for at least 30 days."
   }
 }
+
+variable "config_auditor_role_arns" {
+  description = "Compliance scanner roles (e.g. Sprinto) allowed to read bucket configuration but not state objects"
+  type        = list(string)
+  default     = []
+  validation {
+    condition = alltrue([
+      for arn in var.config_auditor_role_arns : can(regex("^arn:aws:iam::[0-9]{12}:role/[A-Za-z0-9+=,.@_/-]+$", arn))
+    ])
+    error_message = "Provide exact IAM role ARNs (no wildcards)."
+  }
+}

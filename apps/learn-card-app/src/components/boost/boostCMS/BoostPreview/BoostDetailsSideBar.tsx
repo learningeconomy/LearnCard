@@ -19,6 +19,7 @@ import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
 import PreviewVerificationBox from './PreviewVerificationBox';
+import { formatCredentialAwardedDate } from 'learn-card-base/helpers/credentialHelpers';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -81,6 +82,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMMM DD, YYYY', {
         uppercaseDate: false,
     });
+
+    const awardedDate = formatCredentialAwardedDate(credential);
 
     const activityStartDate = credential?.credentialSubject?.activityStartDate;
     const activityEndDate = credential?.credentialSubject?.activityEndDate;
@@ -147,7 +150,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             </span>
                         )}
 
-                        {!isMediaDisplay && (
+                        {!isMediaDisplay && awardedDate && (
                             <span
                                 className={`text-grayscale-600 font-poppins text-[12px] font-semibold w-full ${
                                     description || dateRangeText
@@ -155,7 +158,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                                         : ''
                                 }`}
                             >
-                                Awarded on {createdAt}
+                                {m['boost.cms.preview.awardedOn']({ date: awardedDate })}
                             </span>
                         )}
                         {!isMediaDisplay && expirationDate && (

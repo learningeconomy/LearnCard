@@ -14,7 +14,7 @@ const finalBuildObj = {
     metafile: true,
     format: 'cjs',
     outdir: 'dist',
-    target: 'node20',
+    target: 'node24',
     external: ['snappy', '@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'],
     plugins,
     minify: true,

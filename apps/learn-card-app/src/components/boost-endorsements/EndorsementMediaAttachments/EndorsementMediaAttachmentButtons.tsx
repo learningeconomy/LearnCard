@@ -53,7 +53,7 @@ export const EndorsementMediaAttachmentButtons: React.FC<{
 
             <div className="w-full flex flex-wrap items-center justify-center">
                 {endorsementMediaOptions.map(({ id, type, color, Icon }) => {
-                    let styles = '';
+                    const styles = '';
 
                     const handleMediaSelect = () => {
                         if (type === EndorsementMediaOptionsEnum.photo) {

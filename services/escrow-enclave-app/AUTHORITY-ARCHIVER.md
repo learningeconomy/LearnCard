@@ -70,7 +70,10 @@ the legacy records table. `monitor.tf` connects that stream, not the authority.
 
 `storage.tf` uses a shared data CMK (`aws_kms_key.s3`) for audit/artifacts and the
 authority table. It delegates key access through IAM, unlike the attestation-gated
-escrow and credential CMKs. `variables.tf` defaults to **2555 days (~7 years)**,
+escrow and credential CMKs; its policy reserves `PutKeyPolicy`/`ScheduleKeyDeletion`/
+`DisableKey`/`DisableKeyRotation` for `escrow-kms-admin` and MFA root, and
+`EscrowKmsGovernanceChange` watches it. That protects availability against other
+IAM principals only, not the MFA admin. `variables.tf` defaults to **2555 days (~7 years)**,
 matching the production-review retention concern; its validation permits as little
 as one day. COMPLIANCE does not protect availability of the KMS key.
 
@@ -618,7 +621,7 @@ present. Historical prose is retained outside this document's two requested link
 | `infra/escrow-enclave/authority.tf:55–77`; `ledger.tf:43–44`                                                  | Authority has no stream; only legacy records have NEW_AND_OLD_IMAGES.                                                                                                                   |
 | `monitor/src/authority.rs:150–179`; `app/AUDIT-COVERAGE.md:87–94`                                             | Current table-only enumeration cannot detect coherent full purge; RPC signatures are not a durable archive.                                                                             |
 | `monitor/src/aws.rs:233`; `monitor/src/lib.rs:291–315`                                                        | Legacy divergence check fetches expected current objects; it does not enumerate all S3 versions in reverse.                                                                             |
-| `infra/escrow-enclave/storage.tf:18–43,99–106`; `variables.tf:238–252`                                        | Shared IAM-delegated storage CMK and configurable 2555-day default; Object Lock alone neither protects key availability nor enforces seven years in production.                         |
+| `infra/escrow-enclave/storage.tf:18–98,131–142`; `variables.tf:238–252`                                       | Shared IAM-delegated storage CMK and configurable 2555-day default; Object Lock alone neither protects key availability nor enforces seven years in production.                         |
 | `app/README.md`, “HeadStore / P3.3 parent obligations”; `app/PRODUCTION.md:378–387`; `app/ROLLOUT.md:173–179` | README says activate kill switch; operational runbooks explicitly make that a human action, not monitor automation. This proposal preserves that decision.                              |
 | `app/ROLLOUT.md:47–54`; `app/README.md:8–16`; `app/ENROLLMENT-AUTHORITY.md:100–130`                           | Older blanket claims that authority is unwired/carry unsigned are historical; configured mode now installs AuthorityEnrollment and signed intent. Unconfigured mode still fails closed. |
 | `app/PRODUCTION.md:9–16`                                                                                      | The archiver is the unbuilt retention gate, not the only outstanding launch condition: live verification, soak and residual-risk approval still matter.                                 |

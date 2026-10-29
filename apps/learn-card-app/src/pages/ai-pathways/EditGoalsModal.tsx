@@ -6,8 +6,10 @@ import {
 } from './ai-pathways-skill-profile/SkillProfileStep1';
 import { Plus, X } from 'lucide-react';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type EditGoalsModalProps = {};
 
+// eslint-disable-next-line no-empty-pattern -- dropping the empty destructure removes the implicit non-null argument check
 const EditGoalsModal: React.FC<EditGoalsModalProps> = ({}) => {
     const { closeModal } = useModal();
     const [goalInput, setGoalInput] = useState('');

@@ -1,0 +1,7 @@
+{
+    "_comment": "Production Web3Auth -> SSS pilot for VetPass (web only; VetPass has no Capgo channel). Escrow stays off: the production enclave is provisioned for the learncard tenant. See internal-docs/architecture/web3auth-sss-migration-runbook.md.",
+    "stage": "production",
+    "auth": {
+        "keyDerivation": "sss"
+    }
+}

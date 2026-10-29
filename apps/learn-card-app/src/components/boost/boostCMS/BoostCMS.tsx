@@ -211,6 +211,7 @@ const BoostCMS: React.FC<BoostCMSProps> = ({
         };
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const [customTypes, setCustomTypes] = useState<any>(initialCustomBoostTypesState);
     const [currentStep, setCurrentStep] = useState<BoostCMSStepsEnum>(BoostCMSStepsEnum.create);
     const [isLoading, setIsLoading] = useState<boolean>(false);

@@ -93,6 +93,8 @@ services:
             AWS_SECRET_ACCESS_KEY: notARealSecretKey
             NOTIFICATIONS_QUEUE_POLL_URL: http://elasticmq:9324/notifications
             NOTIFICATIONS_QUEUE_URL: http://elasticmq:9324/notifications
+            SKILL_EMBEDDING_BEDROCK_ENABLED: 'false'
+            SKILL_EMBEDDING_BEDROCK_READ_ENABLED: 'false'
             SKILL_EMBEDDING_GOOGLE_API_KEY: ''
             SKILL_EMBEDDING_GOOGLE_MODEL: gemini-embedding-001
             APP_STORE_ADMIN_PROFILE_IDS: testa

@@ -28,12 +28,12 @@ graph TD
 
 ### What each layer does
 
-| Layer | Responsibility |
-|---|---|
-| **BaseAuthCoordinatorProvider** | Creates `AuthCoordinator` instance, calls `initialize()`, exposes `AuthCoordinatorContextValue` via `useAuthCoordinator()` |
-| **AuthSessionManager** | Calls `useAuthCoordinatorAutoSetup()`, initializes wallet on `ready`, fetches LCN profile, bridges legacy stores |
-| **AppAuthContext.Provider** | Merges base context with app-enriched values (`wallet`, `lcnProfile`, `walletReady`, etc.) |
-| **Overlays** | Renders `RecoveryFlowModal` on `needs_recovery`, error overlay on `error`, stalled migration overlay, recovery setup prompt for new users |
+| Layer                           | Responsibility                                                                                                                            |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **BaseAuthCoordinatorProvider** | Creates `AuthCoordinator` instance, calls `initialize()`, exposes `AuthCoordinatorContextValue` via `useAuthCoordinator()`                |
+| **AuthSessionManager**          | Calls `useAuthCoordinatorAutoSetup()`, initializes wallet on `ready`, fetches LCN profile, bridges legacy stores                          |
+| **AppAuthContext.Provider**     | Merges base context with app-enriched values (`wallet`, `lcnProfile`, `walletReady`, etc.)                                                |
+| **Overlays**                    | Renders `RecoveryFlowModal` on `needs_recovery`, error overlay on `error`, stalled migration overlay, recovery setup prompt for new users |
 
 ---
 
@@ -79,8 +79,8 @@ const authUser = authUserStore.use.currentUser();
 const authConfig = getAuthConfig();
 
 const authProvider = useMemo(
-    () => authUser ? resolveAuthProvider(authConfig) : null,
-    [authUser, authConfig.authProvider],
+    () => (authUser ? resolveAuthProvider(authConfig) : null),
+    [authUser, authConfig.authProvider]
 );
 ```
 
@@ -143,7 +143,7 @@ import { AuthCoordinatorProvider as BaseAuthCoordinatorProvider } from 'learn-ca
     onDebugEvent={handleDebugEvent}
 >
     <AuthSessionManager>{children}</AuthSessionManager>
-</BaseAuthCoordinatorProvider>
+</BaseAuthCoordinatorProvider>;
 ```
 
 ### 5. Build AuthSessionManager
@@ -159,8 +159,12 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
     useAuthCoordinatorAutoSetup(coordinator, {
         generatePrivateKey: generateEd25519PrivateKey,
         didFromPrivateKey,
-        onReady: (privateKey, did) => { /* log */ },
-        onError: (error) => { /* log */ },
+        onReady: (privateKey, did) => {
+            /* log */
+        },
+        onError: error => {
+            /* log */
+        },
     });
 
     // Initialize wallet when coordinator reaches 'ready'
@@ -226,29 +230,35 @@ const AuthSessionManager: React.FC<{ children: React.ReactNode }> = ({ children 
 
 Both apps follow the same pattern but differ in feature scope:
 
-| Feature | LearnCard App (LCA) | Scouts |
-|---|---|---|
-| **Recovery overlays** | RecoveryFlowModal + RecoverySetupModal | None (no recovery UI yet) |
-| **Stalled migration overlay** | Yes (30s timeout) | No |
-| **Debug events** | Full `authDebugEvents` system + widget | Console logging only |
-| **Recovery setup prompt** | Yes (after first-time setup) | No |
-| **Legacy `initLoading` bridge** | Yes (dual-signal with `useFirebase`) | Yes (simpler) |
-| **LCN profile fetching** | Yes | Yes |
-| **Web3Auth migration** | Yes (verifier: `learnCard-firebase-cyan-mainnet`) | Yes (verifier: `scoutPass-firebase-cyan-mainnet`) |
-| **Push token sync** | Yes | Yes |
+| Feature                         | LearnCard App (LCA)                                                                                           | Scouts                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **Recovery overlays**           | RecoveryFlowModal + RecoverySetupModal                                                                        | None (no recovery UI yet)                         |
+| **Stalled migration overlay**   | Yes (8s without a key)                                                                                        | Yes                                               |
+| **Debug events**                | Full `authDebugEvents` system + widget                                                                        | Console logging only                              |
+| **Recovery setup prompt**       | Yes (after first-time setup)                                                                                  | No                                                |
+| **Legacy `initLoading` bridge** | Yes (dual-signal with `useFirebase`)                                                                          | Yes (simpler)                                     |
+| **LCN profile fetching**        | Yes                                                                                                           | Yes                                               |
+| **Web3Auth migration**          | Yes (tenant `auth.web3Auth`; production: `testnet` / `learncardapp-firebase`), with `verifyMigrationIdentity` | Yes (verifier: `scoutPass-firebase-cyan-mainnet`) |
+| **Push token sync**             | Yes                                                                                                           | Yes                                               |
 
 ---
 
 ## Environment Variables
 
+> **Stale:** auth and key derivation now come from tenant config
+> (`auth.provider`, `auth.keyDerivation`, `auth.sss.*` in
+> `apps/learn-card-app/environments/<tenant>/config*.json`). The variables below
+> are not read by the LearnCard app. See
+> `internal-docs/architecture/web3auth-sss-migration-runbook.md`.
+
 Set these in your `.env` file or deployment environment:
 
-| Variable | Type | Default | Description |
-|---|---|---|---|
-| `REACT_APP_AUTH_PROVIDER` | `'firebase' \| 'supertokens' \| 'keycloak' \| 'oidc'` | `'firebase'` | Which auth provider to use |
-| `REACT_APP_KEY_DERIVATION_PROVIDER` | `'sss' \| 'web3auth'` | `'sss'` | Which key derivation strategy |
-| `REACT_APP_SSS_SERVER_URL` | `string` | `'http://localhost:5100/api'` | Server URL for key share operations |
-| `REACT_APP_ENABLE_EMAIL_BACKUP_SHARE` | `'true' \| 'false'` | `'true'` | Whether to send a backup share to the user's email during key setup |
+| Variable                              | Type                                                  | Default                       | Description                                                         |
+| ------------------------------------- | ----------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------- |
+| `REACT_APP_AUTH_PROVIDER`             | `'firebase' \| 'supertokens' \| 'keycloak' \| 'oidc'` | `'firebase'`                  | Which auth provider to use                                          |
+| `REACT_APP_KEY_DERIVATION_PROVIDER`   | `'sss' \| 'web3auth'`                                 | `'sss'`                       | Which key derivation strategy                                       |
+| `REACT_APP_SSS_SERVER_URL`            | `string`                                              | `'http://localhost:5100/api'` | Server URL for key share operations                                 |
+| `REACT_APP_ENABLE_EMAIL_BACKUP_SHARE` | `'true' \| 'false'`                                   | `'true'`                      | Whether to send a backup share to the user's email during key setup |
 
 These are read by `getAuthConfig()` in `packages/learn-card-base/src/config/authConfig.ts`.
 
@@ -338,10 +348,18 @@ export function createCustomStrategy(): KeyDerivationStrategy {
     return {
         name: 'custom',
 
-        async hasLocalKey(): Promise<boolean> { /* ... */ },
-        async getLocalKey(): Promise<string | null> { /* ... */ },
-        async storeLocalKey(key: string): Promise<void> { /* ... */ },
-        async clearLocalKeys(): Promise<void> { /* ... */ },
+        async hasLocalKey(): Promise<boolean> {
+            /* ... */
+        },
+        async getLocalKey(): Promise<string | null> {
+            /* ... */
+        },
+        async storeLocalKey(key: string): Promise<void> {
+            /* ... */
+        },
+        async clearLocalKeys(): Promise<void> {
+            /* ... */
+        },
 
         async splitKey(privateKey: string): Promise<{ localKey: string; remoteKey: string }> {
             // Your key-splitting logic
@@ -376,9 +394,15 @@ This hook watches the coordinator state and automatically handles two cases:
 ```ts
 useAuthCoordinatorAutoSetup(coordinator, {
     generatePrivateKey: generateEd25519PrivateKey,
-    didFromPrivateKey: async (pk) => { /* ... */ },
-    onReady: (privateKey, did) => { /* ... */ },
-    onError: (error) => { /* ... */ },
+    didFromPrivateKey: async pk => {
+        /* ... */
+    },
+    onReady: (privateKey, did) => {
+        /* ... */
+    },
+    onError: error => {
+        /* ... */
+    },
 });
 ```
 

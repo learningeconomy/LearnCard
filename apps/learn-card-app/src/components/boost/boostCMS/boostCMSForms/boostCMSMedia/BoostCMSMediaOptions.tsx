@@ -13,7 +13,7 @@ import * as m from '../../../../../paraglide/messages.js';
 type BoostCMSMediaOptionsProps = {
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     displayType?: BoostCMSAppearanceDisplayTypeEnum;
     showCloseButton?: boolean;
     hideCloseButton?: boolean;

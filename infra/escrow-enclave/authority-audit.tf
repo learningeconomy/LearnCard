@@ -46,6 +46,25 @@ resource "aws_cloudwatch_metric_alarm" "authority_integrity" {
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.monitor.arn]
 }
+# Rate signal, not integrity: the monitor emits one datum per account per sweep
+# while >= 2 owner-signed PIN clears fall inside its 30-day lookback. A period
+# longer than the sweep interval keeps the alarm in ALARM (one notification)
+# instead of flapping between sweeps.
+resource "aws_cloudwatch_metric_alarm" "authority_repeated_pin_clear" {
+  count               = var.enable_enrollment_authority ? 1 : 0
+  alarm_name          = "${local.name_prefix}-AuthorityRepeatedPinClear"
+  alarm_description   = "An escrow account cleared its recovery PIN repeatedly; check lca-api for induced post-recovery PIN clears."
+  namespace           = "LearnCard/EscrowLedger"
+  metric_name         = "AuthorityRepeatedPinClear"
+  dimensions          = { Tenant = var.monitor_tenant }
+  statistic           = "Sum"
+  period              = 3600
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.monitor.arn]
+}
 resource "aws_cloudwatch_metric_alarm" "authority_heartbeat" {
   count               = var.enable_enrollment_authority ? 1 : 0
   alarm_name          = "${local.name_prefix}-authority-sweep-missing"

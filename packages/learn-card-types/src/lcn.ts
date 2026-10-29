@@ -55,6 +55,11 @@ export const LCNProfileValidator = z.object({
     email: z.string().optional().describe('Contact email address for the profile. (deprecated)'),
     image: z.string().optional().describe('Profile image URL for the profile.'),
     heroImage: z.string().optional().describe('Hero image URL for the profile.'),
+    linkedInOrganizationId: z
+        .string()
+        .regex(/^\d+$/)
+        .optional()
+        .describe('Numeric LinkedIn organization ID.'),
     websiteLink: z.string().optional().describe('Website link for the profile.'),
     isServiceProfile: z
         .boolean()
@@ -101,6 +106,7 @@ export const LCNPublicProfileValidator = LCNProfileValidator.pick({
     shortBio: true,
     image: true,
     heroImage: true,
+    linkedInOrganizationId: true,
     type: true,
     isServiceProfile: true,
     display: true,

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.5.3",
+    "version": "1.6.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -28,10 +28,11 @@
         "start-p-5000": "PORT=5000 serverless offline --httpPort 5000 --websocketPort 5001 --lambdaPort 5002 --albPort 5003 --config serverless-local.yml",
         "dev": "bun --conditions=development --watch src/docker-entry.ts",
         "start:docker": "bun --conditions=development src/docker-entry.ts",
-        "serverless-deploy": "node scripts/check-seed-encryption-infrastructure.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && serverless deploy",
+        "serverless-deploy": "node scripts/check-seed-encryption-infrastructure.mjs && node ../../../scripts/prepare-didkit-native-layer.cjs && node scripts/verify-node24-layer.cjs && serverless deploy",
         "serverless-deploy-scouts": "serverless deploy --config serverless-scouts.yml",
         "test:oidc:e2e": "node test/oidc-e2e/run.mjs",
-        "typecheck:oidc:e2e": "tsc --noEmit -p test/oidc-e2e/tsconfig.json"
+        "typecheck:oidc:e2e": "tsc --noEmit -p test/oidc-e2e/tsconfig.json",
+        "typecheck:bedrock": "tsc --noEmit -p tsconfig.bedrock.json"
     },
     "keywords": [],
     "author": "WeLibrary, LLC (www.welibrary.io)",
@@ -49,14 +50,16 @@
         "serverless": "3.40.0",
         "serverless-certificate-creator": "^1.6.0",
         "serverless-domain-manager": "^6.4.4",
-        "serverless-esbuild": "1.55.0",
+        "serverless-esbuild": "1.57.2",
         "serverless-http": "3.2.0",
         "serverless-offline": "^14.4.0",
         "serverless-prune-plugin": "^2.1.0",
         "shx": "^0.3.4",
-        "@playwright/test": "^1.42.0"
+        "@playwright/test": "^1.42.0",
+        "@types/pngjs": "^6.0.5"
     },
     "dependencies": {
+        "@aws-sdk/client-bedrock-runtime": "^3.1139.0",
         "@aws-sdk/client-kms": "^3.1139.0",
         "@aws-sdk/client-secrets-manager": "^3.1139.0",
         "@fastify/cors": "^11.2.0",
@@ -96,11 +99,13 @@
         "mongodb": "^6.2.0",
         "multiformats": "^11.0.1",
         "node-forge": "^1.4.0",
-        "openai": "^4.55.7",
+        "openai": "6.47.0",
         "postmark": "^4.0.5",
         "trpc-to-openapi": "^3.1.0",
         "uuid": "^14.0.0",
-        "zod": "4.4.3"
+        "zod": "4.6.6",
+        "pngjs": "^7.0.0",
+        "@aws/bedrock-token-generator": "1.1.0"
     },
     "repository": {
         "type": "git",

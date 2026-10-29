@@ -121,6 +121,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
             onSuccess?.(contractUri);
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (e: any) {
             presentToast(`Failed to create contract: ${e.message}`, {
                 type: ToastTypeEnum.Error,
@@ -134,12 +135,14 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     const handlePreview = () => {
         if (contract.needsGuardianConsent) {
             newModal(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 <FullScreenGameFlow contractDetails={contract as any} isPreview />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {
             newModal(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 <FullScreenConsentFlow contractDetails={contract as any} isPreview />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
@@ -281,7 +284,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
 
                     <ContractCategoryMultiSelect
                         values={contract.contract.read.credentials.categories}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onChange={updateReadCredentials('categories') as any}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         setContract={setContract as any}
                         mode="read"
                     />
@@ -455,7 +460,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
 
                     <ContractCategoryMultiSelect
                         values={contract.contract.write.credentials.categories}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onChange={updateWriteCredentials('categories') as any}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         setContract={setContract as any}
                         mode="write"
                     />

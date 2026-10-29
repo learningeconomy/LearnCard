@@ -12,6 +12,7 @@ const BoostCMSIDCard: React.FC<{
 }> = ({ state, setState, idClassName, idFooterClassName }) => {
     const currentUser = useCurrentUser();
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let backgroundStyles = {};
 
     if (state?.appearance?.idBackgroundImage) {

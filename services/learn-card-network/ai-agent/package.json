@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ai-agent-service",
-    "version": "0.0.11",
+    "version": "0.0.12",
     "private": true,
     "description": "Production LearnCard AI agent service with DID-authenticated wallet, memory, and assistant APIs.",
     "main": "dist/index.js",
@@ -43,7 +43,7 @@
         "express-rate-limit": "^8.0.1",
         "mongodb": "^6.2.0",
         "openai": "^4.55.7",
-        "zod": "4.1.13"
+        "zod": "4.6.6"
     },
     "devDependencies": {
         "@trigger.dev/build": "4.5.9",

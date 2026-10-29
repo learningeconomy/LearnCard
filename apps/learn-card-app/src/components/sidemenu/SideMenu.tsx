@@ -108,6 +108,7 @@ const SideMenu: React.FC<{ branding: BrandingEnum.learncard }> = ({
     return (
         <IonMenu contentId="main" swipeGesture menuId="appSideMenu" disabled={false}>
             <IonContent
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 style={{ ['--background' as any]: '#ffffff' }}
                 className="lc-side-menu-content"
             >

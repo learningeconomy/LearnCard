@@ -73,6 +73,7 @@ export interface BrandingConfig {
     image: string;
     shortBio: string;
     bio: string;
+    linkedInOrganizationId?: string;
     display: Record<string, unknown>;
 }
 

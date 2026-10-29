@@ -134,6 +134,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
 
                         <ContractCategoryMultiSelect
                             values={contract.contract.read.credentials.categories}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             onChange={updateReadCredentials('categories') as any}
                         />
                     </fieldset>
@@ -143,6 +144,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
 
                         <MultiTextInput
                             values={contract.contract.read.personal}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             onChange={updateRead('personal') as any}
                             buttonText="New Personal Info"
                         />
@@ -157,6 +159,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
 
                         <ContractCategoryMultiSelect
                             values={contract.contract.write.credentials.categories}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             onChange={updateWriteCredentials('categories') as any}
                         />
                     </fieldset>
@@ -166,6 +169,7 @@ const CustomWalletCreateContract: React.FC<CustomWalletCreateContractProps> = ({
 
                         <MultiTextInput
                             values={contract.contract.write.personal}
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             onChange={updateWrite('personal') as any}
                             buttonText="New Personal Info"
                         />

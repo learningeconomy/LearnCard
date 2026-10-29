@@ -62,6 +62,7 @@ const AiSessionLoader: React.FC<{
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let app = null;
     if (appSelection?.answer) {
         app = aiPassportApps.find(app => app.id === Number(appSelection?.answer));

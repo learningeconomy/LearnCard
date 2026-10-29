@@ -57,6 +57,7 @@ const PostConsentFlowActivityFeed: React.FC<PostConsentFlowActivityFeedProps> = 
         isPending,
     } = useTermsTransactions(consentedContract?.uri);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '300px', [
         transactionsData?.pages?.[0]?.records?.length,
     ]);

@@ -35,12 +35,13 @@ type BoostSearchProps = {
     handleCloseModal: () => void;
     buttonText?: string;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     boostCredential: VC | UnsignedVC;
     boostUri: string;
     profileId: string;
     state: ShortBoostState; //parent state storing issued to
     setState: React.Dispatch<React.SetStateAction<ShortBoostState>>; // action for setting parent state
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     history: any;
     onSave?: () => void;
 };

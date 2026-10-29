@@ -19,7 +19,7 @@ import useTheme from '../../theme/hooks/useTheme';
 const SubHeaderActionMenu: React.FC<{
     handleCloseModal: () => void;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     handleSelfIssue: () => void;
     handleShareCreds: () => void;
 }> = ({ handleCloseModal, showCloseButton = true, title, handleSelfIssue, handleShareCreds }) => {

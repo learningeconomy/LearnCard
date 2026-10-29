@@ -34,6 +34,7 @@ export const PassportActivityFeed: React.FC = () => {
     const { data, isPending, isError, isFetching, hasNextPage, fetchNextPage } =
         usePassportActivities();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(sentinelRef as any, '300px', [data?.pages?.length]);
     useEffect(() => {
         if (onScreen && hasNextPage) fetchNextPage();

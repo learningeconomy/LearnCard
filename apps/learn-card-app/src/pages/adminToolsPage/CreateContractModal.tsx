@@ -360,6 +360,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
             setTimeout(() => {
                 const handleRecover = () => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     setContract(recoveredState as any);
                     setAutoBoostUris(recoveredAutoBoostUris ?? []);
                     clearRecoveredState();
@@ -673,6 +674,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <h4>Credentials</h4>
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.read.credentials.categories}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                     onChange={updateReadCredentials('categories') as any}
                                     setContract={setContract}
                                     mode="read"
@@ -690,6 +692,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
 
                                 <MultiTextInput
                                     values={contract.contract.read.personal}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                     onChange={updateRead('personal') as any}
                                     buttonText="New Personal Info"
                                     style="admin-dashboard"
@@ -705,6 +708,7 @@ const CreateContractModal: React.FC<CreateContractModalProps> = ({
                                 <ContractCategoryMultiSelect
                                     values={contract.contract.write.credentials.categories}
                                     setContract={setContract}
+                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                     onChange={updateWriteCredentials('categories') as any}
                                     mode="write"
                                     hideVerifiableDataOnWrite

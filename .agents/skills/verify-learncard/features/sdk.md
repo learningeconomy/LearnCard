@@ -9,6 +9,7 @@ Developers use `@learncard/init` and its plugins to get a DID-backed wallet, iss
 - `sdk-presentation`: `newPresentation` → `issuePresentation` → another wallet's `verifyPresentation` has no errors.
 - `sdk-cloud-roundtrip`: `store.LearnCloud.uploadEncrypted` → `index.LearnCloud.add` → `read.get(uri)` deep-equals the credential, and the index lists it.
 - `sdk-boost-send-accept`: `createBoost` → `sendBoost` → the recipient's `getIncomingCredentials` → `acceptCredential` → `getReceivedCredentials`; Neo4j shows one `CREDENTIAL_SENT`→`CREDENTIAL_RECEIVED` with a null status (claimed); `getBoostRecipients` lists the recipient.
+- `sdk-share-preview-lifecycle`: publish public metadata, reject unauthenticated deletion and another profile's refresh/deletion, reject URI rebinding, refresh metadata for the same URI, audit creation/update timestamps, and remove previews through owner or profile deletion.
 
 ## How to get to it (user POV)
 
@@ -23,6 +24,7 @@ Preconditions:
 - **Run.** `$LCV run sdk --dir /tmp/lcv` → `sdk: passed`; `sdk/NNN-sdk-signed-credential.json` and `NNN-sdk-boost-graph.json` are evidence.
 - **Your new method.** `$LCV script -e 'const lc = await v.sdk(v.actors.issuer); return await lc.invoke.<yourMethod>(…);' --dir /tmp/lcv`. Assert the effect from a second wallet (`v.sdk(v.actors.recipient)`) or `v.db.neo4j(…)`.
 - **Graph check by hand.** `$LCV db --dir /tmp/lcv neo4j "MATCH (a:Profile)-[:CREDENTIAL_SENT]->(c)-[r:CREDENTIAL_RECEIVED]->(b:Profile) RETURN a.profileId, b.profileId, r.status LIMIT 10"`.
+- **Preview ownership.** The journey calls the real preview routes and Neo4j: public responses contain only name/issuer/image, another actor cannot mutate/delete the record, and an attempted URI rebind leaves the original card intact. Same-URI refresh preserves `createdAt` and advances `updatedAt`.
 
 ## Gotchas
 
@@ -30,3 +32,4 @@ Preconditions:
 - Local boosts aren't in the production trust registry. The harness passes a `trustedBoostRegistry` data URL that trusts only this owned stack's Brain DID (`v.stack.brainDid`).
 - Cypher `collect()` drops nulls, so count null statuses with `sum(CASE WHEN r.status IS NULL …)`.
 - The app files credentials by `achievementType` (`CATEGORY_MAP`), not by `createBoost`'s `category`: `Badge` → Social Badge.
+- Share preview URI matching is not proof that the publisher owns the underlying presentation or its issuer claims.

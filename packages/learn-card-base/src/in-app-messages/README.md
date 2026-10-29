@@ -818,6 +818,20 @@ in-app-messages/
 └── __tests__/predicates.test.ts
 ```
 
+## Campaigns (server foundation)
+
+LC-2265 adds server-managed campaign definitions, metadata audiences and shared engagement
+state. It does **not** yet merge campaigns into this host, dispatch notifications, or require
+the in-app messages V2 stack. App integration follows in LC-2267; delivery follows in LC-2266.
+
+See the [campaign authoring guide](../../../../services/learn-card-network/brain-service/src/accesslayer/campaign/README.md)
+for each audience source, tRPC examples, SDK methods, lifecycle and privacy rules. The intended
+two-layer model is server selection (for example a dedicated transcript-sending profile with
+`metadata: { kind: 'transcript' }`) followed by device confirmation of issuer and CLR type on
+the same credential. Self-enrollment reveals campaign membership, not decrypted credential
+contents; authors must minimize what that membership reveals. The implemented age policy
+includes missing DOBs and still requires product/legal sign-off.
+
 ## Testing
 
 ```bash

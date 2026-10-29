@@ -1,5 +1,5 @@
 output "nlb_dns_name" {
-  description = "DNS name of the internal Network Load Balancer fronting the escrow enclave-host ASG. lca-api's remote enclave client should target https://<nlb_dns_name>:8443."
+  description = "DNS name of the internal Network Load Balancer fronting the escrow enclave-host ASG. Same-VPC mode only: lca-api targets https://<nlb_dns_name>:8443. In PrivateLink mode it targets the pinned TLS hostname (https://escrow-enclave.<env>.internal:8443) via its own endpoint and private zone."
   value       = aws_lb.enclave_host.dns_name
 }
 

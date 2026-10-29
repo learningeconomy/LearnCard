@@ -22,6 +22,37 @@ pub const MAX_PARTITIONS: usize = 50_000;
 /// (policy/authority.rs) — the monitor independently re-derives this gate
 /// from signed events rather than trusting the stored HoldItem's own fields.
 const RELEASE_WARNING_MIN_GAP_MS: u64 = 24 * 60 * 60 * 1000;
+/// Owner-signed PIN clears (configured -> not configured) per account within
+/// the lookback before the sweep reports AuthorityRepeatedPinClear. One clear
+/// is the expected post-recovery repair (the client may sign it automatically);
+/// a second within the window is not, and may mean lca-api is inducing clears.
+pub const REPEATED_PIN_CLEAR_THRESHOLD: usize = 2;
+pub const REPEATED_PIN_CLEAR_WINDOW_MS: u64 = 30 * 24 * 60 * 60 * 1000;
+
+/// Facts from a verified account history that feed rate-based (not integrity) alarms.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct AccountAudit {
+    /// Signed trusted-time upper bound of every committed PIN clear, in order.
+    pub pin_clears_hi_ms: Vec<u64>,
+}
+
+impl AccountAudit {
+    /// True when enough PIN clears fall inside the lookback ending at `now_ms`.
+    pub fn repeated_pin_clear(&self, now_ms: u64) -> bool {
+        let since = now_ms.saturating_sub(REPEATED_PIN_CLEAR_WINDOW_MS);
+        self.pin_clears_hi_ms
+            .iter()
+            .filter(|&&hi| hi >= since)
+            .count()
+            >= REPEATED_PIN_CLEAR_THRESHOLD
+    }
+}
+
+fn now_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+}
 
 /// Tracks per-hold state derived only from signed ledger events, never from
 /// the unauthenticated stored HoldItem row (cross-checked against it below).
@@ -164,7 +195,7 @@ impl<B: AuthorityBackend> Monitor<B> {
             match verify_account(&self.tenant, &config.generation, &pk, &rows, &config.trust) {
                 Err(Error::Integrity) => self.alarm(Metric::AuthorityIntegrityFailure).await?,
                 Err(error) => return Err(error),
-                Ok(()) => {
+                Ok(audit) => {
                     if rows
                         .iter()
                         .find(|r| r.sk == "ENROLLMENT")
@@ -172,6 +203,12 @@ impl<B: AuthorityBackend> Monitor<B> {
                         != after.as_ref()
                     {
                         self.alarm(Metric::AuthorityIntegrityFailure).await?;
+                    } else if audit.repeated_pin_clear(now_ms()) {
+                        // Metric only: the CloudWatch alarm notifies once per episode
+                        // instead of an SNS message on every sweep inside the window.
+                        self.backend
+                            .metric(Metric::AuthorityRepeatedPinClear)
+                            .await?;
                     }
                 }
             }
@@ -188,7 +225,7 @@ pub fn verify_account(
     pk: &str,
     rows: &[Row],
     trust: &AuthorityTrust,
-) -> Result<()> {
+) -> Result<AccountAudit> {
     if rows.len() > MAX_ACCOUNT_ROWS
         || rows.iter().map(|r| r.payload.len()).sum::<usize>() > MAX_ACCOUNT_BYTES
     {
@@ -262,9 +299,14 @@ pub fn verify_account(
     let mut latest_requests = BTreeMap::new();
     let mut holds: BTreeMap<&str, HoldTrack> = BTreeMap::new();
     let mut intent_digest = None;
+    let mut audit = AccountAudit::default();
     for (offset, (execution, event)) in executions.values().enumerate() {
         check(event.revisions.operation.get() == offset as u64 + 1)?;
         transition(previous, event)?;
+        // transition() only lets an owner Enroll/Replace change the PIN generation.
+        if event.previous_pin.is_some_and(|pin| pin.configured) && !event.pin.configured {
+            audit.pin_clears_hi_ms.push(event.time.interval.hi_ms);
+        }
         if matches!(
             event.kind,
             Kind::Enroll | Kind::Replace | Kind::Carry | Kind::Disable
@@ -404,7 +446,8 @@ pub fn verify_account(
             ItemValue::Enrollment(_) => return Err(Error::Integrity),
         }
     }
-    check(latest_requests.is_empty() && holds.is_empty())
+    check(latest_requests.is_empty() && holds.is_empty())?;
+    Ok(audit)
 }
 
 fn transition(old: Option<&AuthorityEvent>, new: &AuthorityEvent) -> Result<()> {

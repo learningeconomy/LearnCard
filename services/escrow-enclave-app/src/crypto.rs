@@ -10,7 +10,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use hkdf::Hkdf;
 use p256::{
     ecdh::diffie_hellman,
-    elliptic_curve::sec1::ToEncodedPoint,
+    elliptic_curve::{sec1::ToSec1Point, Generate},
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     PublicKey, SecretKey,
 };
@@ -333,7 +333,7 @@ pub fn escrow_blob_identity(envelope: &EscrowEnvelope) -> Result<[u8; 32], Crypt
         return Err(CryptoError::Invalid("ephemeralPublicKey"));
     }
     let public = PublicKey::from_sec1_bytes(&point).map_err(|_| CryptoError::Key)?;
-    let encoded = public.to_encoded_point(false);
+    let encoded = public.to_sec1_point(false);
     let salt = decode(&envelope.salt)?;
     let iv = decode(&envelope.iv)?;
     let ciphertext = decode(&envelope.ciphertext)?;
@@ -381,7 +381,7 @@ fn aes_key(
 
 /// Generate an extractable P-256 pair in the same formats as WebCrypto.
 pub fn generate_escrow_key_pair() -> Result<EscrowKeyPair, CryptoError> {
-    let secret = SecretKey::random(&mut OsRng);
+    let secret = SecretKey::try_generate().map_err(|_| CryptoError::Key)?;
     let public = secret
         .public_key()
         .to_public_key_der()
@@ -402,7 +402,7 @@ fn encrypt(
     identifier(key_id, "keyId")?;
     let public = PublicKey::from_public_key_der(&decode_key(spki, "publicKey")?)
         .map_err(|_| CryptoError::Key)?;
-    let secret = SecretKey::random(&mut OsRng);
+    let secret = SecretKey::try_generate().map_err(|_| CryptoError::Key)?;
     let mut salt = [0u8; 32];
     let mut iv = [0u8; 12];
     OsRng.fill_bytes(&mut salt);
@@ -413,8 +413,7 @@ fn encrypt(
         version: ESCROW_ENVELOPE_VERSION,
         algorithm: ESCROW_ALGORITHM.into(),
         key_id: key_id.into(),
-        ephemeral_public_key: STANDARD
-            .encode(secret.public_key().to_encoded_point(false).as_bytes()),
+        ephemeral_public_key: STANDARD.encode(secret.public_key().to_sec1_point(false).as_bytes()),
         salt: STANDARD.encode(salt),
         iv: STANDARD.encode(iv),
         ciphertext: String::new(),
@@ -723,7 +722,7 @@ mod tests {
         let public = PublicKey::from_sec1_bytes(&point).unwrap();
         let negated = PublicKey::from_affine(-*public.as_affine()).unwrap();
         let mut twin = envelope.clone();
-        twin.ephemeral_public_key = STANDARD.encode(negated.to_encoded_point(false).as_bytes());
+        twin.ephemeral_public_key = STANDARD.encode(negated.to_sec1_point(false).as_bytes());
         twin
     }
 

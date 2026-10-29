@@ -40,6 +40,7 @@ import { LCNProfile } from '@learncard/types';
 import { useGetAiInsightsServicesContract } from '../learner-insights/learner-insights.helpers';
 
 type AiInsightsNotificationProps = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     notification: any;
     claimStatus?: boolean;
     handleArchive?: () => void;
@@ -65,6 +66,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     // current user contract (student -> teacher) -> (teacher -> student)
     // teacher sends request to student after accepting shared insights request
     const { contractUri: currentUserContractUri } = useGetAiInsightsServicesContract(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
         currentLCNUser?.did!,
         true
     );
@@ -106,6 +108,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     );
 
     // Ref for the element that we want to detect whether on screen
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const ref: any = useRef<HTMLDivElement>();
     // Call the hook passing in ref and root margin
     // In this case it would only be considered onScreen if more ...
@@ -148,6 +151,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
         : `${unclaimedButtonStyles} bg-emerald-600!`;
 
     const issueDate = moment(notification?.sent).format('MMMM DD YYYY');
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let buttonText: string = '';
 
     const expiredRequest =
@@ -197,7 +201,7 @@ const AiInsightsNotification: React.FC<AiInsightsNotificationProps> = ({
     }
 
     const isArchived = false;
-    let title = notification?.message?.body || notification?.message?.title;
+    const title = notification?.message?.body || notification?.message?.title;
 
     const handleArchiveAction = () => {
         handleArchive?.();

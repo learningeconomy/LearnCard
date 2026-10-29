@@ -51,6 +51,7 @@ const BoostEarnedIDList: React.FC<{
     const noSearchResults = searchResults?.length === 0;
     const searchResultsCount = searchResults?.length;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [
         records?.pages?.[0]?.records?.length,
     ]);
@@ -94,6 +95,7 @@ const BoostEarnedIDList: React.FC<{
         try {
             await earnedBoostsRefetch?.();
         } catch (e) {
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error, please try again.');
         }
     };

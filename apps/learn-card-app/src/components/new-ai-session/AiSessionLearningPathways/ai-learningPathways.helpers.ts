@@ -12,6 +12,7 @@ export const getLearningPathways = (sessions: VC[]) => {
         if (!summaryInfo?.nextSteps?.length) return [];
 
         const { summary, learned, skills, nextSteps } = summaryInfo;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         return nextSteps.map((ns: any) => ({
             title: ns.title,
             description: ns.description,
@@ -27,16 +28,13 @@ export const getLearningPathways = (sessions: VC[]) => {
 export const learningPathwaysQueryKey = (sessionUri?: string) =>
     ['useGetLearningPathwaysForSession', sessionUri] as const;
 
-export const fetchLearningPathwaysForSession = async (
-    wallet: any,
-    sessionUri: string
-) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
+export const fetchLearningPathwaysForSession = async (wallet: any, sessionUri: string) => {
     const learningPathways = await wallet.invoke.getBoostChildren(sessionUri, {
         numberOfGenerations: 1,
         query: {
             category:
-                categoryMetadata[CredentialCategoryEnum.aiPathway]
-                    .contractCredentialTypeOverride,
+                categoryMetadata[CredentialCategoryEnum.aiPathway].contractCredentialTypeOverride,
         },
         limit: 100,
     });
@@ -46,6 +44,7 @@ export const fetchLearningPathwaysForSession = async (
 
             return {
                 boost,
+                // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
                 learningPathway: boost.boost.learningPathway?.step!,
             };
         })

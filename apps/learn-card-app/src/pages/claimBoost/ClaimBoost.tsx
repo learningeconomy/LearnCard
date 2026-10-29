@@ -240,6 +240,7 @@ const ClaimBoost: React.FC<{
 
             setBoost(boostVC);
             verify(boostVC);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (error: any) {
             log.error(error);
         } finally {

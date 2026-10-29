@@ -151,7 +151,31 @@ data "aws_iam_policy_document" "state" {
     condition {
       test     = "ArnNotLike"
       variable = "aws:PrincipalArn"
-      values   = var.admin_principal_arn_patterns
+      values   = concat(var.admin_principal_arn_patterns, var.config_auditor_role_arns)
+    }
+  }
+
+  # Compliance scanners may read bucket configuration only: never objects (state),
+  # writes, or policy changes. They also have no access to the state KMS key.
+  dynamic "statement" {
+    for_each = length(var.config_auditor_role_arns) > 0 ? [1] : []
+    content {
+      sid         = "AuditorsReadConfigurationOnly"
+      effect      = "Deny"
+      not_actions = local.auditor_config_read_actions
+      resources = [
+        aws_s3_bucket.state.arn,
+        "${aws_s3_bucket.state.arn}/*",
+      ]
+      principals {
+        type        = "*"
+        identifiers = ["*"]
+      }
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = var.config_auditor_role_arns
+      }
     }
   }
 

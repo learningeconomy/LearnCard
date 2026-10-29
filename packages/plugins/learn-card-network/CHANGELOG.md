@@ -1,5 +1,32 @@
 # learn-card-core
 
+## 3.2.0
+
+### Minor Changes
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign definitions, admin-managed metadata audiences, age-aware self-enrollment and shared engagement state. Expose typed campaign APIs and network plugin methods without enabling notification delivery or app rendering.
+
+    Campaign audiences always exclude profiles with missing, empty, or malformed birthdays. Self-enrollment requires a known adult birthday.
+
+    Require live or paused campaigns to be archived before deletion. Rejected campaign events leave profile properties unchanged, and audience metadata filters are limited to 20 keys.
+
+- [#1777](https://github.com/learningeconomy/LearnCard/pull/1777) [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2245] Add issuer LinkedIn organization IDs, stable certification IDs, and opt-in localized social previews. Keep each preview bound to one encrypted presentation so a new share does not replace an earlier card; refresh metadata in place and recreate deleted references. Audit publisher and creation/update times, support owner/profile cleanup, preserve decryptable card URLs, and isolate private updates to their exact share record.
+
+    Extract stable UUIDs from recognized LearnCard credential addresses to fit LinkedIn's certification ID field, retain other complete IDs only within the 80-character limit, and preserve family record identity independently of loaded pages. Use only eligible credential/achievement artwork for public previews, never recipient-photo fallbacks. Enable posting only after explicit preview publication succeeds and associate the disabled action with its consent explanation. Keep unresolved issuer placeholders out of LinkedIn organization names.
+
+    Keep the share-preview request type in a type-only network-plugin import so consumers using `verbatimModuleSyntax` can typecheck.
+
+### Patch Changes
+
+- [#1633](https://github.com/learningeconomy/LearnCard/pull/1633) [`867e5ff3e8e755ce56206b9c062b8d30156f89c1`](https://github.com/learningeconomy/LearnCard/commit/867e5ff3e8e755ce56206b9c062b8d30156f89c1) Thanks [@goblincore](https://github.com/goblincore)! - Deduplicate concurrent lookups of the same profile within a network client, while keeping subsequent reads fresh and allowing failed lookups to retry.
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - feat(campaigns): add audience management and shared engagement state [LC-2265]
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/network-brain-client@2.6.0
+    - @learncard/helpers@1.7.1
+    - @learncard/core@9.4.41
+
 ## 3.1.4
 
 ### Patch Changes

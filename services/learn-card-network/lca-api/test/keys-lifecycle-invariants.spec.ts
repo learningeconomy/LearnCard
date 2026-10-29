@@ -676,6 +676,82 @@ describe('P0-1 provisional SSS activation', () => {
     });
 });
 
+describe('P0-1 provisional purge spares escrow-enrolled migrations', () => {
+    const expiredMigration = (
+        email: string,
+        uid: string,
+        did: string,
+        escrow: { blob: boolean; method?: 'confirmed' | 'pending' }
+    ): MongoUserKeyType => {
+        const key = makeUserKey(email, uid, did, 'migrated-share');
+
+        Object.assign(key, {
+            keyProvider: 'web3auth' as const,
+            sssActivationState: 'provisional' as const,
+            provisionalCreatedAt: new Date(Date.now() - PROVISIONAL_MIGRATION_TTL_MS - 1_000),
+            recoveryMethods: escrow.method
+                ? [
+                      {
+                          type: 'escrow' as const,
+                          createdAt: new Date(),
+                          confirmationStatus: escrow.method,
+                          ...(escrow.method === 'confirmed' ? { confirmedAt: new Date() } : {}),
+                          shareVersion: 1,
+                      },
+                  ]
+                : [],
+            // Only presence matters to the purge filter.
+            ...(escrow.blob
+                ? { escrowBlob: { shareVersion: 1 } as unknown as MongoUserKeyType['escrowBlob'] }
+                : {}),
+        });
+
+        return key;
+    };
+
+    it.each([
+        ['confirmed escrow enrollment', false, { blob: true, method: 'confirmed' as const }],
+        [
+            'escrow blob without a confirmed method',
+            true,
+            { blob: true, method: 'pending' as const },
+        ],
+        ['confirmed method without a blob', true, { blob: false, method: 'confirmed' as const }],
+    ])('%s → purged: %s', async (_name, purged, escrow) => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `escrow-purge-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const { learnCard } = await getUser('5'.repeat(64));
+        const collection = getUserKeysCollection();
+
+        await collection.insertOne(expiredMigration(email, uid, learnCard.id.did(), escrow));
+
+        try {
+            const result = await getClient().keys.getAuthShare({
+                authToken: makeMockToken(email, uid),
+                providerType: 'firebase',
+            });
+            const stored = await collection.findOne({
+                authProviders: { $elemMatch: { type: 'firebase', id: uid } },
+            });
+
+            if (purged) {
+                expect(result?.authShare).toBeNull();
+                expect(stored?.authShare).toBeUndefined();
+                expect(stored?.escrowBlob).toBeUndefined();
+                expect(stored?.sssActivationState).toBeUndefined();
+            } else {
+                expect(stored?.authShare?.encryptedData).toBe('migrated-share');
+                expect(stored?.escrowBlob).toBeDefined();
+                expect(stored?.sssActivationState).toBe('provisional');
+                expect(stored?.keyProvider).toBe('web3auth');
+            }
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+});
+
 describe('P0-6 fresh DID authorization', () => {
     it('issues short-lived challenges that can only be consumed once', async () => {
         const did = `did:key:${randomUUID()}`;

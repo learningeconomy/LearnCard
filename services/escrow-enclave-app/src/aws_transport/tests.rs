@@ -1,13 +1,12 @@
 use super::*;
+use crate::nsm::{certificate_builder, validity, TestProfile};
 use crate::time::{TimeError, TimeEvidence, TimeFuture};
-use der::{asn1::Ia5String, Encode};
 use p384::ecdsa::{DerSignature, SigningKey};
 use x509_cert::{
-    builder::{Builder, CertificateBuilder, Profile},
+    builder::Builder,
+    der::{asn1::Ia5String, Encode},
     ext::pkix::{name::GeneralName, SubjectAltName},
     name::Name,
-    spki::SubjectPublicKeyInfoOwned,
-    time::{Time, Validity},
 };
 
 const START: u64 = 1_577_836_800;
@@ -70,32 +69,19 @@ fn certificates() -> (
     let root_key = SigningKey::from_slice(&[1; 48]).unwrap();
     let leaf_key = SigningKey::from_slice(&[2; 48]).unwrap();
     let root_name: Name = "CN=TEST ONLY AWS transport root".parse().unwrap();
-    let validity = Validity {
-        not_before: Time::try_from(UNIX_EPOCH + Duration::from_secs(START)).unwrap(),
-        not_after: Time::try_from(UNIX_EPOCH + Duration::from_secs(END)).unwrap(),
-    };
-    let root = CertificateBuilder::new(
-        Profile::Root,
-        1u32.into(),
-        validity,
-        root_name.clone(),
-        SubjectPublicKeyInfoOwned::from_key(*root_key.verifying_key()).unwrap(),
-        &root_key,
-    )
-    .unwrap()
-    .build::<DerSignature>()
-    .unwrap();
-    let mut leaf = CertificateBuilder::new(
-        Profile::Leaf {
+    let validity = validity(START, END).unwrap();
+    let root = certificate_builder(TestProfile::Root(root_name.clone()), 1, validity, &root_key)
+        .unwrap()
+        .build::<_, DerSignature>(&root_key)
+        .unwrap();
+    let mut leaf = certificate_builder(
+        TestProfile::Leaf {
+            subject: "CN=kms.us-east-1.amazonaws.com".parse().unwrap(),
             issuer: root_name,
-            enable_key_agreement: false,
-            enable_key_encipherment: false,
         },
-        2u32.into(),
+        2,
         validity,
-        "CN=kms.us-east-1.amazonaws.com".parse().unwrap(),
-        SubjectPublicKeyInfoOwned::from_key(*leaf_key.verifying_key()).unwrap(),
-        &root_key,
+        &leaf_key,
     )
     .unwrap();
     leaf.add_extension(&SubjectAltName(vec![
@@ -103,7 +89,11 @@ fn certificates() -> (
         GeneralName::DnsName(Ia5String::new("localhost").unwrap()),
     ]))
     .unwrap();
-    let leaf = leaf.build::<DerSignature>().unwrap().to_der().unwrap();
+    let leaf = leaf
+        .build::<_, DerSignature>(&root_key)
+        .unwrap()
+        .to_der()
+        .unwrap();
     let mut roots = RootCertStore::empty();
     roots
         .add(CertificateDer::from(root.to_der().unwrap()))

@@ -6,6 +6,7 @@ on:
         paths:
             - 'packages/open-api-lcn-clients/**'
             - '.github/workflows/open-api*.yml'
+            - '.github/tests/test-sdk-security-floors.test.sh'
             - 'services/learn-card-network/brain-service/src/openapi.ts'
             - 'services/learn-card-network/brain-service/src/routes/**'
             - 'services/learn-card-network/brain-service/scripts/export-openapi.ts'
@@ -19,6 +20,39 @@ permissions:
     contents: read
 
 jobs:
+    python-dependency-resolution:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ['3.11', '3.12']
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+                  persist-credentials: false
+            - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Test regeneration security floors
+              run: bash .github/tests/test-sdk-security-floors.test.sh
+            - name: Resolve runtime and test dependencies together (including transitives)
+              run: |
+                  python -m pip install --dry-run --ignore-installed --report "$RUNNER_TEMP/python-resolution.json" \
+                    ./packages/open-api-lcn-clients/python-client \
+                    -r packages/open-api-lcn-clients/python-client/test-requirements.txt
+                  python - "$RUNNER_TEMP/python-resolution.json" <<'PYTHON'
+                  import json
+                  import sys
+                  from pip._vendor.packaging.version import Version
+                  report = json.load(open(sys.argv[1]))
+                  versions = {item['metadata']['name'].lower(): item['metadata']['version'] for item in report['install']}
+                  for name, floor in [('filelock', '4.2.1'), ('virtualenv', '21.14.13')]:
+                      assert Version(versions[name]) >= Version(floor), (name, versions[name])
+                      print(f"Python {sys.version.split()[0]}: {name}=={versions[name]}")
+                  PYTHON
+
     python-contracts:
         runs-on: ubuntu-latest
         timeout-minutes: 15

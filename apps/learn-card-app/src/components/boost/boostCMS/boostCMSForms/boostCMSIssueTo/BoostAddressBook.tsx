@@ -493,6 +493,7 @@ export const BoostAddressBook: React.FC<BoostAddressBookProps> = ({
                             >
                                 {recipients?.map(recipient => {
                                     return (
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         <IonItem
                                             lines="none"
                                             className={`w-[95%] max-w-[600px] ion-no-border px-[4px] flex items-center justify-between notificaion-list-item py-[8px]`}

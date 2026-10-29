@@ -45,19 +45,19 @@ Every feature file has an H1 and a one-paragraph summary, then exactly these H2s
 
 ## Features
 
-| Feature        | Surface               | Recipe                                       | Entries                                                                                                                 |
-| -------------- | --------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `account`      | web                   | [Sign-in & account](account.md)              | `auth-public-email-entry`, `auth-developer-seed`, `auth-onboarding`, `auth-sign-out`                                    |
-| `language`     | web                   | [Language switching](language.md)            | `locale-login-switch`, `locale-login-persistence`, `locale-sidebar-switch`                                              |
-| `credentials`  | web                   | [Boosting & claiming badges](credentials.md) | `wallet-self-issue`, `wallet-detail-persistence`, `wallet-peer-claim`                                                   |
-| `sharing`      | web                   | [Credential share links](sharing.md)         | `share-menu-copy`, `share-anonymous-view`                                                                               |
-| `contacts`     | web                   | [Contacts & connections](contacts.md)        | `contacts-search`, `contacts-request`, `contacts-accept`, `contacts-mutual`                                             |
-| `app-store`    | web + Partner Connect | [App store](app-store.md)                    | `apps-public-sign-in-intent`, `apps-browse-detail`, `apps-install-persist-launch`                                       |
-| `sdk`          | SDK                   | [LearnCard SDK](sdk.md)                      | `sdk-identity`, `sdk-issue-verify`, `sdk-presentation`, `sdk-cloud-roundtrip`, `sdk-boost-send-accept`                  |
-| `cli`          | CLI                   | [`learncard` CLI](cli.md)                    | `cli-send`, `cli-recipient-claims`, `cli-status`, `cli-verify`                                                          |
-| `sdk-to-app`   | cross-surface         | [SDK issuer → app learner](sdk-to-app.md)    | `cross-sdk-send`, `cross-app-claim`, `cross-app-wallet-detail`, `cross-sdk-observes-claim`                              |
-| `consent-flow` | cross-surface         | [ConsentFlow](consent-flow.md)               | `consent-partner-contract`, `consent-app-door`, `consent-app-accept`, `consent-partner-reads`, `consent-partner-issues` |
-| `docs`         | docs                  | [Docs quickstart](docs.md)                   | `docs-snippets-in-sync`, `docs-quickstart-send`, `docs-quickstart-received`                                             |
+| Feature        | Surface               | Recipe                                       | Entries                                                                                                                                           |
+| -------------- | --------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `account`      | web                   | [Sign-in & account](account.md)              | `auth-public-email-entry`, `auth-developer-seed`, `auth-onboarding`, `auth-sign-out`                                                              |
+| `language`     | web                   | [Language switching](language.md)            | `locale-login-switch`, `locale-login-persistence`, `locale-sidebar-switch`                                                                        |
+| `credentials`  | web                   | [Boosting & claiming badges](credentials.md) | `wallet-self-issue`, `wallet-detail-persistence`, `wallet-peer-claim`                                                                             |
+| `sharing`      | web                   | [Credential share links](sharing.md)         | `share-menu-copy`, `share-public-preview-isolation`, `share-deleted-preview-recovery`, `share-endorsed-preview-stability`, `share-anonymous-view` |
+| `contacts`     | web                   | [Contacts & connections](contacts.md)        | `contacts-search`, `contacts-request`, `contacts-accept`, `contacts-mutual`                                                                       |
+| `app-store`    | web + Partner Connect | [App store](app-store.md)                    | `apps-public-sign-in-intent`, `apps-browse-detail`, `apps-install-persist-launch`                                                                 |
+| `sdk`          | SDK                   | [LearnCard SDK](sdk.md)                      | `sdk-identity`, `sdk-issue-verify`, `sdk-presentation`, `sdk-cloud-roundtrip`, `sdk-boost-send-accept`, `sdk-share-preview-lifecycle`             |
+| `cli`          | CLI                   | [`learncard` CLI](cli.md)                    | `cli-send`, `cli-recipient-claims`, `cli-status`, `cli-verify`                                                                                    |
+| `sdk-to-app`   | cross-surface         | [SDK issuer → app learner](sdk-to-app.md)    | `cross-sdk-send`, `cross-app-claim`, `cross-app-wallet-detail`, `cross-sdk-observes-claim`                                                        |
+| `consent-flow` | cross-surface         | [ConsentFlow](consent-flow.md)               | `consent-partner-contract`, `consent-app-door`, `consent-app-accept`, `consent-partner-reads`, `consent-partner-issues`                           |
+| `docs`         | docs                  | [Docs quickstart](docs.md)                   | `docs-snippets-in-sync`, `docs-quickstart-send`, `docs-quickstart-received`                                                                       |
 
 ## Not covered yet (and what each needs)
 
@@ -69,6 +69,7 @@ Drive these with `$LCV script` when your change touches them, and record what yo
 - **Boost CMS / `/issue` authoring, claim links (`/claim/boost`), OID4VCI/OID4VP, CHAPI.** Reachable through `script`. OID4VC interop has its own suites in `tests/openid4vc-*`.
 - **Families/guardian flows, Pathways, skills frameworks, resume builder.** Reachable through `script`. Skill frameworks need `bun run skill-frameworks seed` against the stack.
 - **ScoutPass (`apps/scouts`).** A separate app that this stack does not serve.
+- **In-app messages** (banners, modals, stories, iframe/native-bridge content, app destinations and deep links, `packages/learn-card-base/src/in-app-messages/`). Preview-only recipes exist: `$LCV script "$PWD/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir /tmp/lcv` (the hosted workflow runs this one) and `examples/verify-story.mjs`, both through Dev Debug → Messages. Flag-delivered messages and OS handoff need staging or device QA.
 - **Native (Capacitor iOS/Android), push notifications, Capgo OTA.** Need devices or emulators; browser runs prove nothing native.
 - **Escrow enclave services, xAPI/LRS, file uploads.** Not in the verification compose set.
 

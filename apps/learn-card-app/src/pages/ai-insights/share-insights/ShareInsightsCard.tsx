@@ -5,6 +5,7 @@ import { ProfilePicture, useCurrentUser, useGetCurrentUserRole } from 'learn-car
 
 import { useSkillsCount } from '../../../hooks/useSkillsCount';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 export const ShareInsightsCard: React.FC<{}> = () => {
     const currentUser = useCurrentUser();
 

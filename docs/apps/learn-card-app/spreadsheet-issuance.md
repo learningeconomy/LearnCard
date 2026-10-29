@@ -14,6 +14,14 @@ Use **Issue Credentials** to send one credential template to several people with
 
 Evidence links and uploaded files become standard Open Badges Evidence entries. Importing a link does not fetch its contents.
 
+Open a person’s credential preview to check the mapped values before issuing. Unsigned previews show **Preview** rather than a verification result. Ordinary evidence URLs appear as links; recognized video links keep their video presentation. **Awarded on** uses the mapped awarded date, falling back to the issuance date for credentials without one.
+
+In **Review people**, personalized and imported description text uses a multiline editor, including columns added to an existing description. Expand an individual field for more room; the counter shows its 2,000-character authoring limit. Oversized imported or pasted values remain intact and must be corrected before sending or retrying. The counter measures what you enter in each input, excluding surrounding template text. The completed credential may be longer; this authoring limit comes from the app, not the Open Badges specification.
+
+**Evidence for everyone** shows the shared files and links from the main editor. They remain included for every recipient. **Extra evidence for this person** adds evidence only for that row; it does not replace the shared evidence.
+
+When every delivery is confirmed, a run started on this page opens a compact **All credentials sent** dialog with a brief celebration and the successful count. Choose **View delivery status** to inspect each recipient or **Done** to dismiss it; the green summary and saved run remain on the page. Failed or unconfirmed deliveries instead show **Delivery needs attention** with the appropriate review actions. Queued work waits for completion, and unconfirmed deliveries must be checked before retrying. Reopening a completed saved run keeps its summary without replaying the celebration. Definite failures can produce an attention notification.
+
 ```mermaid
 flowchart LR
     Upload[Upload or paste] --> Review[Review and fix rows]

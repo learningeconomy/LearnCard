@@ -208,6 +208,7 @@ export const BoostEarnedIDCard: React.FC<BoostEarnedIDCardProps> = ({
             handleClose: () => closeModal(),
             boost: credential,
             boostUri: record?.uri,
+            credentialRecordUri: record?.uri,
             categoryType,
             onBackButtonClick: goBack
                 ? () => {

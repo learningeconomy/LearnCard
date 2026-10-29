@@ -347,7 +347,9 @@ const ManageSkills: React.FC<ManageSkillsProps> = ({
                         setFrameworkApproved(false);
 
                         // Recursively add IDs to all skills and subskills
-                        const addIdsToNodes = (nodes: any[]): any[] => {
+                        const addIdsToNodes = (
+                            nodes: SkillFrameworkNode[]
+                        ): SkillFrameworkNode[] => {
                             return nodes.map(node => ({
                                 ...node,
                                 id: node.id || generateSkillId(),

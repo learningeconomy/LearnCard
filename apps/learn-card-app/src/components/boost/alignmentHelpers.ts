@@ -11,9 +11,11 @@ export const getFrameworkIdAndSkillIdFromUrl = (url: string) => {
 };
 
 // Derive alignments from a VC: prefer OBv3 alignment if present; fallback to legacy skills
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const deriveAlignmentsFromVC = (vc: any): (BoostCMSAlignment & { id: string })[] => {
     // OBv3 uses 'alignment' (singular), not 'alignments' (plural)
     const vcAlignments: (BoostCMSAlignment & { id: string })[] =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         vc?.credentialSubject?.achievement?.alignment?.map((a: any) => {
             const { frameworkId: frameworkIdFromUrl, skillId: skillIdFromUrl } =
                 getFrameworkIdAndSkillIdFromUrl(a.targetUrl ?? '');
@@ -53,6 +55,7 @@ export const extractSkillIdsFromAlignments = (
             }
 
             // Check if alignment has id directly (from SkillFrameworkNode)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const alignment = a as any;
             if (alignment.id) {
                 skillId = alignment.id;

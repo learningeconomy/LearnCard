@@ -649,7 +649,143 @@ describe('AuthCoordinator', () => {
             );
         });
 
+        describe('automatic PIN clear prompt', () => {
+            const run = async (result: unknown) => {
+                const ensureEscrowEnrollment = vi.fn().mockResolvedValue(result);
+                const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                    state: 'enrolled',
+                    escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+                });
+                const clearEscrowPin = vi.fn().mockResolvedValue(undefined);
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        ensureEscrowEnrollment,
+                        getEscrowEnrollmentState,
+                        clearEscrowPin,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({ escrowEnrollment: 'enrolled' })
+                );
+                return coordinator;
+            };
+            it('flags an automatic clear until the prompt is acknowledged once', async () => {
+                const coordinator = await run({
+                    enrolled: true,
+                    changed: true,
+                    shareVersion: 3,
+                    pinCleared: 'automatic',
+                });
+                // Survives the enrollment publish that follows the repair.
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'ready',
+                    escrowEnrollment: 'enrolled',
+                    escrowPinAutoCleared: true,
+                });
+                coordinator.acknowledgeEscrowPinAutoClear();
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinAutoCleared', true);
+            });
+            it('does not flag a repair that did not clear the PIN automatically', async () => {
+                const coordinator = await run({ enrolled: true, changed: true, shareVersion: 3 });
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinAutoCleared', true);
+            });
+            it('does not flag an explicit user PIN clear', async () => {
+                const coordinator = await run({ enrolled: true, changed: false });
+                await coordinator.clearEscrowPin();
+                expect(coordinator.getState()).not.toHaveProperty('escrowPinAutoCleared', true);
+            });
+        });
+
+        it('publishes pin-reset-required for a prompt until the user sets a new PIN', async () => {
+            const ensureEscrowEnrollment = vi
+                .fn()
+                .mockResolvedValue({ enrolled: false, reason: 'pin-reset-required' });
+            const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                state: 'not-enrolled',
+                escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+            });
+            const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+            const { coordinator } = setup({
+                keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState, setEscrowPin },
+                config: { signDidAuthVp: vi.fn() },
+            });
+            await coordinator.initialize();
+            await vi.waitFor(() =>
+                expect(coordinator.getState()).toMatchObject({
+                    escrowEnrollment: 'not-enrolled',
+                    escrowPinResetRequired: true,
+                })
+            );
+            expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
+            ensureEscrowEnrollment.mockResolvedValue({ enrolled: true, changed: false });
+            getEscrowEnrollmentState.mockResolvedValue({
+                state: 'enrolled',
+                escrowPin: { state: 'enabled', enabled: true, attemptsRemaining: 5 },
+            });
+            await coordinator.setEscrowPin('135790');
+            expect(setEscrowPin).toHaveBeenCalledTimes(1);
+            expect(coordinator.getState()).not.toHaveProperty('escrowPinResetRequired', true);
+        });
+
         describe('staged rollout gate (isEscrowEnrollmentAllowed)', () => {
+            describe('post-recovery repair after reload (no in-memory marker)', () => {
+                const run = async (enrollmentState: unknown) => {
+                    const ensureEscrowEnrollment = vi
+                        .fn()
+                        .mockResolvedValue({ enrolled: true, changed: true, shareVersion: 3 });
+                    const getEscrowEnrollmentState = vi.fn().mockResolvedValue(enrollmentState);
+                    const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(false);
+                    const { coordinator } = setup({
+                        keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                        config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() => expect(getEscrowEnrollmentState).toHaveBeenCalled());
+                    await vi.waitFor(() => expect(isEscrowEnrollmentAllowed).toHaveBeenCalled());
+                    return ensureEscrowEnrollment;
+                };
+                it('requests a prior-enrollment repair for a leftover pending escrow method outside rollout', async () => {
+                    const ensureEscrowEnrollment = await run({
+                        state: 'not-enrolled',
+                        escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 },
+                        priorEscrowMethod: true,
+                    });
+                    await vi.waitFor(() =>
+                        expect(ensureEscrowEnrollment).toHaveBeenCalledWith(
+                            expect.objectContaining({
+                                options: expect.objectContaining({
+                                    requirePriorEnrollment: true,
+                                }),
+                            })
+                        )
+                    );
+                });
+                it('keeps a never-enrolled account gated outside rollout', async () => {
+                    const ensureEscrowEnrollment = await run({ state: 'not-enrolled' });
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                    expect(ensureEscrowEnrollment).not.toHaveBeenCalled();
+                });
+                it('never asks to repair an opted-out account', async () => {
+                    const ensureEscrowEnrollment = vi.fn();
+                    const getEscrowEnrollmentState = vi
+                        .fn()
+                        .mockResolvedValue({ state: 'opted-out', priorEscrowMethod: true });
+                    const { coordinator } = setup({
+                        keyDerivation: { ensureEscrowEnrollment, getEscrowEnrollmentState },
+                        config: {
+                            signDidAuthVp: vi.fn(),
+                            isEscrowEnrollmentAllowed: vi.fn().mockResolvedValue(false),
+                        },
+                    });
+                    await coordinator.initialize();
+                    await vi.waitFor(() => expect(getEscrowEnrollmentState).toHaveBeenCalled());
+                    await new Promise(resolve => setTimeout(resolve, 25));
+                    for (const [params] of ensureEscrowEnrollment.mock.calls)
+                        expect(params.options?.requirePriorEnrollment).toBeUndefined();
+                });
+            });
             it('supersedes a failed recovery clear-PIN repair when a new PIN is set', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()
@@ -2187,6 +2323,364 @@ describe('AuthCoordinator', () => {
         });
     });
 
+    // -----------------------------------------------------------------------
+    // migrate() — identity guard
+    // -----------------------------------------------------------------------
+
+    describe('migrate() identity guard', () => {
+        const noRecord: ServerKeyStatus = {
+            exists: false,
+            needsMigration: false,
+            primaryDid: null,
+            recoveryMethods: [],
+            authShare: null,
+            shareVersion: null,
+        };
+
+        const legacyUser: AuthUser = {
+            ...mockUser,
+            createdAt: new Date(Date.now() - 60 * 60 * 1000),
+        };
+
+        const writes = (keyDerivation: KeyDerivationStrategy) => [
+            keyDerivation.storeAuthShare,
+            keyDerivation.storeLocalKey,
+            keyDerivation.markMigrated,
+        ];
+
+        const derivedSetup = (
+            verifyMigrationIdentity?: AuthCoordinatorConfig['verifyMigrationIdentity']
+        ) =>
+            setup({
+                authProvider: { getCurrentUser: vi.fn().mockResolvedValue(legacyUser) },
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(noRecord),
+                },
+                config: { legacyAccountThresholdMs: 5 * 60 * 1000, verifyMigrationIdentity },
+            });
+
+        const cachedSetup = (
+            verifyMigrationIdentity: AuthCoordinatorConfig['verifyMigrationIdentity'],
+            serverStatus: ServerKeyStatus = noRecord
+        ) =>
+            setup({
+                keyDerivation: { fetchServerKeyStatus: vi.fn().mockResolvedValue(serverStatus) },
+                config: {
+                    getCachedPrivateKey: vi.fn().mockResolvedValue('cached-pk'),
+                    didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zCached'),
+                    verifyMigrationIdentity,
+                },
+            });
+
+        it('refuses without writing when the key does not match the DID the server holds', async () => {
+            const verifyMigrationIdentity = vi.fn();
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                        primaryDid: 'did:key:zServer',
+                    } satisfies ServerKeyStatus),
+                },
+                config: { verifyMigrationIdentity },
+            });
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('other-key', 'did:key:zOther');
+
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            if (result.status === 'error') {
+                expect(result.error).toContain('MIGRATION_IDENTITY_MISMATCH');
+            }
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+            // The server's DID is authoritative; the app verifier is not consulted.
+            expect(verifyMigrationIdentity).not.toHaveBeenCalled();
+        });
+
+        it('refuses without writing when the verifier reports a mismatch', async () => {
+            const verifyMigrationIdentity = vi.fn().mockResolvedValue('mismatch');
+            const { coordinator, keyDerivation } = derivedSetup(verifyMigrationIdentity);
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+            const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+            expect(verifyMigrationIdentity).toHaveBeenCalledWith({
+                privateKey: 'derived-key',
+                did: 'did:key:zDerived',
+                source: 'derived',
+            });
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+        });
+
+        it.each(['match', 'unknown'] as const)(
+            'migrates a derived key when the verifier reports %s',
+            async verdict => {
+                const { coordinator, keyDerivation } = derivedSetup(
+                    vi.fn().mockResolvedValue(verdict)
+                );
+
+                await coordinator.initialize();
+                expect(coordinator.getState().status).toBe('needs_migration');
+                coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+                const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+                expect(result).toMatchObject({
+                    status: 'ready',
+                    sssActivationState: 'provisional',
+                });
+                expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+            }
+        );
+
+        it('treats a throwing verifier as unknown', async () => {
+            const { coordinator, keyDerivation } = derivedSetup(
+                vi.fn().mockRejectedValue(new Error('network down'))
+            );
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+            const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+            expect(result.status).toBe('ready');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+        });
+
+        it('defers a cached key it cannot verify: ready on that key, nothing written', async () => {
+            const { coordinator, keyDerivation } = cachedSetup(
+                vi.fn().mockResolvedValue('unknown')
+            );
+
+            const initial = await coordinator.initialize();
+            expect(initial).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { web3AuthKey: 'cached-pk', source: 'cached' },
+            });
+
+            const result = await coordinator.migrate('cached-pk', 'did:key:zCached');
+
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zCached',
+                privateKey: 'cached-pk',
+                sssActivationState: null,
+            });
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+        });
+
+        it("drops another account's cached key and waits for a derived one", async () => {
+            const { coordinator, keyDerivation } = cachedSetup(
+                vi.fn().mockResolvedValue('mismatch')
+            );
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('cached-pk', 'did:key:zCached');
+
+            expect(result.status).toBe('needs_migration');
+            if (result.status === 'needs_migration') {
+                expect(result.migrationData?.web3AuthKey).toBeUndefined();
+                expect(result.migrationData?.source).toBeUndefined();
+            }
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+        });
+
+        it('also drops a cached key that conflicts with the server DID', async () => {
+            const { coordinator, keyDerivation } = cachedSetup(vi.fn(), {
+                ...defaultServerStatus,
+                needsMigration: true,
+                primaryDid: 'did:key:zServer',
+            });
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('cached-pk', 'did:key:zCached');
+
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zServer' },
+            });
+            for (const write of writes(keyDerivation)) expect(write).not.toHaveBeenCalled();
+
+            // The derived key for the signed-in account then migrates normally.
+            coordinator.setMigrationData({ web3AuthKey: 'derived-key', source: 'derived' });
+            const derived = await coordinator.migrate('derived-key', 'did:key:zServer');
+            expect(derived.status).toBe('ready');
+        });
+
+        it('keeps the unchecked behavior when no verifier is configured', async () => {
+            const { coordinator, keyDerivation } = derivedSetup();
+
+            await coordinator.initialize();
+            const result = await coordinator.migrate('derived-key', 'did:key:zDerived');
+
+            expect(result.status).toBe('ready');
+            expect(keyDerivation.storeAuthShare).toHaveBeenCalled();
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    // initialize() — provisional migration on a device without its share
+    // -----------------------------------------------------------------------
+
+    describe('initialize() — provisional migration without a local share', () => {
+        const provisionalStatus: ServerKeyStatus = {
+            ...defaultServerStatus,
+            needsMigration: true,
+            primaryDid: 'did:key:zLegacy',
+            sssActivationState: 'provisional',
+        };
+
+        it('re-derives the legacy key instead of asking for recovery, bound to the server DID', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zLegacy' },
+            });
+        });
+
+        it('still connects normally on the device that holds the share', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(true),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+                config: { didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zLegacy') },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zLegacy',
+                sssActivationState: 'provisional',
+            });
+        });
+
+        it('re-derives a provisional account whose local share is stale', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(true),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+                config: { didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zOtherShare') },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(keyDerivation.clearLocalKeys).toHaveBeenCalledWith({ preservePending: true });
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zLegacy', provisionalRederive: true },
+            });
+        });
+
+        it('uses the re-derived key without re-splitting shares', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'legacy-key', source: 'derived' });
+            const result = await coordinator.migrate('legacy-key', 'did:key:zLegacy');
+
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zLegacy',
+                privateKey: 'legacy-key',
+                sssActivationState: 'provisional',
+            });
+            expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+            expect(keyDerivation.storeLocalKey).not.toHaveBeenCalled();
+            expect(keyDerivation.markMigrated).not.toHaveBeenCalled();
+        });
+
+        it('refuses a re-derived key that does not match the server DID', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            coordinator.setMigrationData({ web3AuthKey: 'wrong-key', source: 'derived' });
+            const result = await coordinator.migrate('wrong-key', 'did:key:zWrong');
+
+            expect(result).toMatchObject({ status: 'error', canRetry: false });
+            expect(keyDerivation.storeAuthShare).not.toHaveBeenCalled();
+        });
+
+        it('falls back to the recovery state it replaced', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            const result = coordinator.fallBackToRecovery();
+
+            expect(result).toMatchObject({
+                status: 'needs_recovery',
+                recoveryReason: 'new_device',
+                sssActivationState: 'provisional',
+                expectedDid: 'did:key:zLegacy',
+            });
+            // Single use: a second call leaves the state alone.
+            expect(coordinator.fallBackToRecovery()).toBe(result);
+        });
+
+        it('does not offer a recovery fallback to a non-provisional migration', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const initial = await coordinator.initialize();
+            expect(initial.status).toBe('needs_migration');
+            if (initial.status === 'needs_migration') {
+                expect(initial.migrationData?.provisionalRederive).toBeUndefined();
+            }
+            expect(coordinator.fallBackToRecovery().status).toBe('needs_migration');
+        });
+
+        it('does not re-derive an active (non-legacy) account', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        sssActivationState: 'provisional',
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(result).toMatchObject({
+                status: 'needs_recovery',
+                recoveryReason: 'new_device',
+            });
+        });
+    });
+
     describe('activate()', () => {
         it('commits a provisional ready state and marks it active', async () => {
             const activate = vi.fn().mockResolvedValue(undefined);
@@ -2255,7 +2749,10 @@ describe('AuthCoordinator', () => {
             expect(state.status).toBe('needs_migration');
 
             if (state.status === 'needs_migration') {
-                expect(state.migrationData).toEqual({ web3AuthKey: 'extracted-key-abc' });
+                expect(state.migrationData).toEqual({
+                    expectedDid: 'did:key:zOld',
+                    web3AuthKey: 'extracted-key-abc',
+                });
             }
 
             // Verify onStateChange was called with the updated state
@@ -2279,6 +2776,7 @@ describe('AuthCoordinator', () => {
 
             if (state.status === 'needs_migration') {
                 expect(state.migrationData).toEqual({
+                    expectedDid: 'did:key:zOld',
                     web3AuthKey: 'key-1',
                     extraInfo: 'something',
                 });

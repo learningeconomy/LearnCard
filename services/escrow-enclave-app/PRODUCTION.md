@@ -264,8 +264,10 @@ Create **`escrow-production`** (build/sign only) and
   the storage CMK and require regional S3 plus the artifact object encryption
   context (or bucket ARN for S3 Bucket Keys). Null omits all KMS grants for an
   SSE-S3 bucket, but the current core bucket/workflow require SSE-KMS. Never pass
-  the escrow/credential CMK. The core storage key delegates to IAM; its policy
-  does not need changing. Bucket-Key context is bucket-wide, while S3 access
+  the escrow/credential CMK. The core storage key delegates use to IAM, so its
+  policy needs no publisher change (it reserves only `PutKeyPolicy`,
+  `ScheduleKeyDeletion`, `DisableKey` and `DisableKeyRotation` for
+  `escrow-kms-admin` and MFA root). Bucket-Key context is bucket-wide, while S3 access
   remains prefix-restricted.
 - Both authority-guardrail SCPs were inspected: neither denies these object/KMS
   operations; bucket reconfiguration, authority and monitor takeover remain
@@ -291,6 +293,12 @@ workflow's use of the publish environment. Protect this workflow with required
 security review; environment reviewers must inspect workflow/ref and artifact
 evidence before approving the separate upload job. Test build-token rejection and
 publish-token success before enabling uploads; never retain raw tokens as evidence.
+Every production build job first attempts `AssumeRoleWithWebIdentity` on
+`ESCROW_PUBLISH_ROLE_ARN` with its own token and fails unless AWS returns
+`AccessDenied`. STS also denies nonexistent roles, so the publish job asserts the
+build checked the exact role it then assumes; its successful assumption is the
+success half (CloudTrail evidence). Set `ESCROW_PUBLISH_ROLE_ARN` in **both**
+production environments.
 
 **Claim compatibility:** AWS does not expose arbitrary GitHub JWT claims as IAM
 condition keys; `token.actions.githubusercontent.com:job_workflow_ref` and
@@ -427,8 +435,16 @@ The kill switch remains manual, not an automatic monitor side effect.
 
 Create a production lca-api interface endpoint for the module's endpoint-service
 output, allow only the reviewed endpoint creator, and manually accept the exact
-connection. Configure private DNS/TLS hostname and endpoint SG access from the
+connection. lca-api's serverless.yml creates the endpoint, its SG and the private
+zone when `ESCROW_ENCLAVE_ENDPOINT_SERVICE_NAME` and `ESCROW_ENCLAVE_HOSTNAME` are
+set together on its GitHub environment; CloudFormation calls as the deploy
+identity, so that ARN (not the account root) is `privatelink_allowed_principals`. Configure private DNS/TLS hostname and endpoint SG access from the
 production Lambda ENIs. An allowed principal does not create/accept the endpoint.
+Expected pages to reconcile with the change record: the apply that adds the
+connection notification (`EscrowPrivateLinkChange` for
+`CreateVpcEndpointConnectionNotification`), the endpoint's `Connect` notification,
+and your acceptance (`Accept` plus `EscrowPrivateLinkChange`). Accept only the exact
+endpoint ID from lca-api's stack in the expected owner account.
 
 ```sh
 aws cloudwatch describe-alarms --alarm-name-prefix escrow-enclave-production
@@ -493,18 +509,20 @@ fail-closed cases with approved disposable identities.
 
 ### 9. [operator] Production configuration and rollout gate
 
-Review `services/learn-card-network/lca-api/config/config.production.json` for
-non-secret `ESCROW_ENCLAVE_MODE=remote` and `ESCROW_RELEASE_KILL_SWITCH=true` at
-cutover. This branch has **no API PCR-pin configuration field**: do not invent one
+`ESCROW_ENCLAVE_MODE` and `ESCROW_RELEASE_KILL_SWITCH` are GitHub environment
+toggles on `learn-card-app-api-production` (never stage JSON; enforced by
+`escrowDeployment.test.ts`): keep the mode unset and the kill switch `true` until
+cutover. The enclave CA is pinned per hostname in `enclaveTrustAnchors.ts`, a
+reviewed code change, not `NODE_EXTRA_CA_CERTS`. This branch has **no API PCR-pin configuration field**: do not invent one
 in that file. The production **tenant config** pins live at
 `auth.sss.escrowEnclaveMeasurements`; copy only verified production tuples there
 and select `auth.sss.escrowEnclaveMode=nitro` only after approval. Keep automatic
-rollout at zero. Internal URL/token and CA delivery belong in the runtime secrets/
-deployment configuration, not checked-in stage JSON. Explicit environment overrides
+rollout at zero. The internal URL (`https://escrow-enclave.production.internal:8443`)
+and bearer token belong in the runtime secrets bundle, not checked-in stage JSON. Explicit environment overrides
 win over stage config; inspect the effective deployment without printing secrets.
 
 ```sh
-jq '{ESCROW_ENCLAVE_MODE, ESCROW_RELEASE_KILL_SWITCH}' services/learn-card-network/lca-api/config/config.production.json
+gh api repos/<OWNER>/<REPO>/environments/learn-card-app-api-production/variables --paginate -q '.variables[] | select(.name | startswith("ESCROW_")) | "\(.name)=\(.value)"'
 jq '.auth.sss | {escrowEnclaveMode, escrowEnclaveMeasurements}' '<PRODUCTION_TENANT_CONFIG_JSON>'
 ```
 

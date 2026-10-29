@@ -24,6 +24,7 @@ import { getLogger } from '../logging/logger';
 const log = getLogger('auth-coordinator-provider');
 
 import type {
+    AuthCoordinatorConfig,
     AuthProvider,
     AuthProviderType,
     KeyDerivationCapabilities,
@@ -73,6 +74,8 @@ export interface AuthCoordinatorContextValue {
     /** Changes only after setup AND activation succeed; consumers refresh method counts. */
     recoverySetupRevision: number;
     setMigrationData: (data: Record<string, unknown>) => void;
+    /** Leave a provisional re-derive for recovery (see AuthCoordinator.fallBackToRecovery). */
+    fallBackToRecovery: () => void;
     recover: (input: unknown) => Promise<void>;
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
     getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
@@ -83,6 +86,7 @@ export interface AuthCoordinatorContextValue {
     enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
     setEscrowPin: AuthCoordinator['setEscrowPin'];
     clearEscrowPin: AuthCoordinator['clearEscrowPin'];
+    acknowledgeEscrowPinAutoClear: AuthCoordinator['acknowledgeEscrowPinAutoClear'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -176,6 +180,12 @@ export interface AuthCoordinatorProviderProps {
      * See AuthCoordinatorConfig.legacyAccountThresholdMs for details.
      */
     legacyAccountThresholdMs?: number;
+
+    /**
+     * Confirms a legacy key belongs to the signed-in account before migration
+     * writes it. See AuthCoordinatorConfig.verifyMigrationIdentity.
+     */
+    verifyMigrationIdentity?: AuthCoordinatorConfig['verifyMigrationIdentity'];
 }
 
 /**
@@ -214,6 +224,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
+    verifyMigrationIdentity,
 }) => {
     // `idle` means storage/session restoration has finished without an account.
     // On the first render, even the no-op auth provider must await the native
@@ -223,6 +234,11 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         status: enabled ? 'authenticating' : 'idle',
     }));
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
+    // Read through a ref so a new callback identity never recreates the coordinator.
+    const verifyMigrationIdentityRef = useRef(verifyMigrationIdentity);
+    useEffect(() => {
+        verifyMigrationIdentityRef.current = verifyMigrationIdentity;
+    }, [verifyMigrationIdentity]);
     // Cold cached-key startup is deliberate. Once this mounted tab has seen a
     // live account, losing the provider must instead end that account session.
     const observedAuthSessionRef = useRef(false);
@@ -391,6 +407,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            verifyMigrationIdentity: verifyMigrationIdentityRef.current
+                ? check => verifyMigrationIdentityRef.current?.(check) ?? Promise.resolve('unknown')
+                : undefined,
             isEscrowEnrollmentAllowed: userKey =>
                 isEscrowRolloutEnabledFor({ tenantId: getAuthConfig().tenantId, userKey }),
         });
@@ -479,6 +498,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         coordinatorRef.current.setMigrationData(data);
     }, []);
 
+    const fallBackToRecovery = useCallback(() => {
+        coordinatorRef.current?.fallBackToRecovery();
+    }, []);
+
     const recover = useCallback(async (input: unknown) => {
         if (!coordinatorRef.current) {
             throw new Error('Coordinator not initialized');
@@ -537,6 +560,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     const clearEscrowPin = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.clearEscrowPin();
+    }, []);
+    const acknowledgeEscrowPinAutoClear = useCallback(() => {
+        coordinatorRef.current?.acknowledgeEscrowPinAutoClear();
     }, []);
     const getEscrowEnrollmentState = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
@@ -683,6 +709,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resetRecoverySetup,
             recoverySetupRevision,
             setMigrationData,
+            fallBackToRecovery,
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
@@ -693,6 +720,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             enableEscrowRecovery,
             setEscrowPin,
             clearEscrowPin,
+            acknowledgeEscrowPinAutoClear,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -730,6 +758,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resetRecoverySetup,
             recoverySetupRevision,
             setMigrationData,
+            fallBackToRecovery,
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
@@ -740,6 +769,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             enableEscrowRecovery,
             setEscrowPin,
             clearEscrowPin,
+            acknowledgeEscrowPinAutoClear,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,

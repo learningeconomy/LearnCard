@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core';
-import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { ensureReactQueryTableExists, getLogger, sqliteStore } from 'learn-card-base';
+import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 import { waitForSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
 import localforage from 'localforage';
 import { createQueryPersister } from './createQueryPersister';
@@ -8,13 +8,14 @@ import { createQueryPersister } from './createQueryPersister';
 const log = getLogger('cache');
 const isNative = Capacitor.isNativePlatform();
 const SQLITE_READY_TIMEOUT_MS = 10_000;
+type NativeDatabase = NonNullable<ReturnType<typeof sqliteStore.get.db>>;
 
 /**
  * Native initialization runs in FullApp's effects and signals readiness even on failure.
  * Wait for it before restoring; never consult a second store, including after a reload.
  * A failed/timed-out initialization rejects persistence rather than claiming a durable save.
  */
-const getNativeDatabase = async (): Promise<SQLiteDBConnection> => {
+const getNativeDatabase = async (): Promise<NativeDatabase> => {
     if (!sqliteStore.get.db()) {
         let timeout: number | undefined;
         try {
@@ -37,18 +38,12 @@ const getNativeDatabase = async (): Promise<SQLiteDBConnection> => {
     return db;
 };
 
-const withNativeDatabase = async <T>(
-    operation: (db: SQLiteDBConnection) => Promise<T>
-): Promise<T> => {
+const withNativeDatabase = async <T>(operation: (db: NativeDatabase) => Promise<T>): Promise<T> => {
     const db = await getNativeDatabase();
-    await ensureReactQueryTableExists(db);
-    const isOpen = await db.isDBOpen();
-    if (!isOpen.result) await db.open();
-    try {
-        return await operation(db);
-    } finally {
-        if (!isOpen.result) await db.close();
-    }
+    return withSQLiteDatabase(db, async connection => {
+        await ensureReactQueryTableExists(connection);
+        return operation(connection);
+    });
 };
 
 export const { persister, persistNow: persistQueryCacheNow } = createQueryPersister(

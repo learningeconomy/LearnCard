@@ -54,6 +54,7 @@ const BoostErrorsDisplay: React.FC<{
 export default BoostErrorsDisplay;
 
 export const ErrorBoundaryFallback: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     error?: any;
 }> = ({ error }) => {
     const { colors } = useTheme();

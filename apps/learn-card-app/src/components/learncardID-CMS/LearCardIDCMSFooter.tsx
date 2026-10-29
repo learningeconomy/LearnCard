@@ -16,7 +16,7 @@ export const LearnCardIDCMSFooter: React.FC<{
 }> = ({ user, learnCardID, handleSave, handleCloseModal }) => {
     const { newModal, closeModal } = useModal();
 
-    let actionButtonColor = 'bg-grayscale-900';
+    const actionButtonColor = 'bg-grayscale-900';
 
     return (
         <IonFooter

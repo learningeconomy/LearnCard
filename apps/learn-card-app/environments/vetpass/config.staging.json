@@ -8,6 +8,11 @@
         "lcaApi": "https://staging.api.learncard.app/trpc",
         "xapi": "https://staging.network.learncard.com/xapi"
     },
+    "auth": {
+        "sss": {
+            "serverUrl": "https://staging.api.learncard.app/api"
+        }
+    },
     "features": {
         "useSeededSkillFrameworks": true
     },

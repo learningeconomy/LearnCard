@@ -1,4 +1,5 @@
 import React from 'react';
+import { useT } from '../../i18n';
 
 import CertificateCornerIcon from './CertificateCornerIcon';
 import CertificateImageDisplay from './CertificateImageDisplay';
@@ -68,6 +69,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     hideFrontFaceDetails,
     onVerifierClick,
 }) => {
+    const t = useT();
     const {
         title = '',
         createdAt,
@@ -75,7 +77,10 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         issuee: _issuee = '',
         credentialSubject,
         imageUrl,
-    } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
+    } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
+        uppercaseDate: false,
+        dateType: 'awarded',
+    });
 
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
@@ -218,7 +223,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                             </>
                         )}
                     </span>
-                    {!hideIssueDate && <span className="font-jacques">Awarded on {createdAt}</span>}
+                    {!hideIssueDate && createdAt && (
+                        <span className="font-jacques">
+                            {t('credential.awardedOn', { date: createdAt })}
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-[10px] items-center">

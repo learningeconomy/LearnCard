@@ -127,6 +127,20 @@
                 "script": "test:integration"
             }
         },
+        "test:campaigns": {
+            "executor": "nx:run-script",
+            "cache": false,
+            "dependsOn": ["^build"],
+            "inputs": [
+                "source",
+                "tests",
+                "{projectRoot}/vitest.campaigns.config.ts",
+                "{projectRoot}/test-setup.ts"
+            ],
+            "options": {
+                "script": "test:campaigns"
+            }
+        },
         "test:boost-recipients": {
             "executor": "nx:run-script",
             "cache": false,

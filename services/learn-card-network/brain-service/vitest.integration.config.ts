@@ -19,6 +19,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
             CREDENTIAL_REFRESH_ENABLED: 'true',
             LOGIN_PROVIDER_DID: 'did:key:z6Mko9uYxDPk2BetRRziLz1xHN8nR5zQWdNjytKNDPcygHJP',
             APP_STORE_ADMIN_PROFILE_IDS: 'app-store-admin',
+            CAMPAIGN_ADMIN_PROFILE_IDS: 'campaign-admin',
             TRACE_CONSOLE: 'false',
         },
     },

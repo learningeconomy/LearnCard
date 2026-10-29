@@ -37,9 +37,9 @@ export const BoostPreviewBody: React.FC<BoostPreviewBodyProps> = ({
 }) => {
     const currentUser = useCurrentUser();
 
-    let _recipients = filterBoostRecipients(recipients);
+    const _recipients = filterBoostRecipients(recipients);
 
-    let count =
+    const count =
         typeof recipientCountOverride === 'number'
             ? recipientCountOverride
             : (_recipients?.length ?? 0);

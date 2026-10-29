@@ -91,6 +91,34 @@ describe('shared credential cache identity', () => {
         ).resolves.toBe(credentialBRecord);
     });
 
+    it('reuses a published preview instead of an older private-only presentation', async () => {
+        const privateRecord = {
+            credentialId: 'urn:uuid:credential-a',
+            uri: 'presentation:private',
+            randomSeed: 'private-seed',
+            pin: '1111',
+        };
+        const otherCredential = {
+            ...privateRecord,
+            credentialId: 'urn:uuid:credential-b',
+            publicPreviewId: 'preview:b',
+            uri: 'presentation:other',
+        };
+        const publishedRecord = {
+            ...privateRecord,
+            publicPreviewId: 'preview:a',
+            uri: 'presentation:published',
+        };
+
+        await expect(
+            findMatchingSharedCredentialIndex(
+                [privateRecord, otherCredential, publishedRecord],
+                'urn:uuid:credential-a',
+                true
+            )
+        ).resolves.toBe(publishedRecord);
+    });
+
     it('keeps the legacy record-only identity for unsigned credentials', () => {
         expect(getSharedCredentialIndexQueries('lc:credential:unsigned')).toEqual([
             {

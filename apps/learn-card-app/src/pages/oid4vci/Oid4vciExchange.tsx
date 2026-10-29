@@ -572,8 +572,11 @@ interface WalletOidcInvoke {
             // Storage-side overrides forwarded to `storeAcceptedCredentials`.
             // Typed loosely here because we don't import the VC shape from the
             // plugin and the helper is the source of truth.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             category?: string | ((vc: any, index: number) => string);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             title?: string | ((vc: any, index: number) => string | undefined);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             imgUrl?: string | ((vc: any, index: number) => string | undefined);
         }
     ) => Promise<AcceptedCredentialResult & StoreAcceptedCredentialsResult>;
@@ -641,7 +644,9 @@ const persistAcceptedCredentials = async (
  *     real human-readable title.
  */
 const buildStoreOptions = () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     category: (vc: any) => getDefaultCategoryForCredential(vc),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     title: (vc: any) => getCredentialName(vc) || getCredentialSubjectName(vc) || undefined,
 });
 

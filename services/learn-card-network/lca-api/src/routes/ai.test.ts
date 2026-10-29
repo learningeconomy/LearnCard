@@ -1,103 +1,80 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-    SKILL_ICON_MAX_CHARACTERS_PER_REQUEST,
-    SKILL_ICON_MAX_NAMES_PER_REQUEST,
-} from '@learncard/types';
+import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
-const mocks = vi.hoisted(() => ({
-    create: vi.fn(),
+const { generate } = vi.hoisted(() => ({ generate: vi.fn() }));
+vi.mock('@environment', () => ({ environment: {} }));
+vi.mock('filestack-js', () => ({ init: vi.fn() }));
+vi.mock('@helpers/bedrockGeneration', () => ({
+    createBedrockClient: vi.fn(() => ({})),
+    generateStructuredOutput: generate,
 }));
-
-vi.mock('@environment', () => ({ environment: { OPENAI_API_KEY: 'test-key' } }));
-vi.mock('openai', () => ({
-    default: class {
-        chat = { completions: { create: mocks.create } };
-    },
-}));
-vi.mock('filestack-js', () => ({ init: () => ({}) }));
-vi.mock('@routes', async () => {
-    const { initTRPC } = await import('@trpc/server');
-    const t = initTRPC.create();
-    return { t, didAndChallengeRoute: t.procedure };
+// Capture route resolvers without booting Mongo, Redis, Firebase or the HTTP server.
+vi.mock('@routes', () => {
+    const procedure = {
+        meta: () => procedure,
+        input: () => procedure,
+        output: () => procedure,
+        query: (resolver: unknown) => resolver,
+    };
+    return { t: { router: (routes: unknown) => routes }, didAndChallengeRoute: procedure };
 });
-
 import { aiRouter } from './ai';
 
-const caller = aiRouter.createCaller({ user: { did: 'did:example:123' } } as never);
-
-const respondWithIcons = (): void => {
-    mocks.create.mockImplementation(async ({ messages }: { messages: { content: string }[] }) => {
-        const names = [...messages[1]!.content.matchAll(/^- (.*)$/gm)].map(match => match[1]);
-
-        return {
-            choices: [
-                {
-                    message: {
-                        content: JSON.stringify({
-                            items: names.map(name => ({ name, icon: '🎯' })),
-                        }),
-                    },
-                },
-            ],
+const routes = aiRouter as unknown as Record<
+    string,
+    (params: { input: unknown; ctx?: unknown }) => Promise<unknown>
+>;
+describe('LCA generation route contracts', () => {
+    it('uses Sol for boost generation and preserves locale and schema', async () => {
+        const output = {
+            title: 'Título',
+            description: 'Descripción',
+            category: 'Achievement',
+            type: 'Badge',
+            narrative: 'Narración',
         };
+        generate.mockResolvedValueOnce(output);
+        expect(
+            await routes.generateBoostInfo!({ input: { description: 'Synthetic', locale: 'es' } })
+        ).toEqual(output);
+        const params = generate.mock.calls.at(-1)![1];
+        expect(params.task).toBe('reasoning');
+        expect(params.instructions).toContain('Spanish');
+        expect(params.schema.parse(output)).toEqual(output);
+        expect(() => params.schema.parse({ ...output, category: 'Invented' })).toThrow();
     });
-};
-
-describe('generateSkillIcons input validation', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-        respondWithIcons();
+    it('uses Sol for hierarchy reasoning and keeps the flattened API shape', async () => {
+        generate.mockResolvedValueOnce({
+            digital: [{ skill: 'cybersecurity', subskills: ['dataPrivacy'] }],
+        });
+        expect(await routes.generateBoostSkills!({ input: { description: 'Synthetic' } })).toEqual([
+            { category: 'digital', skill: 'cybersecurity', subskills: ['dataPrivacy'] },
+        ]);
+        expect(generate.mock.calls.at(-1)![1].task).toBe('reasoning');
     });
-
-    it('accepts a batch at both limits', async () => {
-        const names = Array.from({ length: SKILL_ICON_MAX_NAMES_PER_REQUEST }, (_, i) =>
-            `${i}`.padStart(
-                SKILL_ICON_MAX_CHARACTERS_PER_REQUEST / SKILL_ICON_MAX_NAMES_PER_REQUEST,
-                'x'
-            )
+    it('uses Luna for icon mapping and keeps missing-name fallback and requested-name filtering', async () => {
+        generate.mockResolvedValueOnce({
+            items: [
+                { name: 'Typing', icon: '⌨️' },
+                { name: 'Extra', icon: '🎯' },
+            ],
+        });
+        expect(
+            await routes.generateSkillIcons!({ input: { names: ['Typing', 'Planning'] } })
+        ).toEqual({ Typing: '⌨️', Planning: '⭐' });
+        const params = generate.mock.calls.at(-1)![1];
+        expect(params.task).toBe('formatting');
+        expect(() =>
+            (params.schema as z.ZodType).parse({
+                items: [{ name: 'Typing', icon: 'too long for icon' }],
+            })
+        ).toThrow();
+    });
+    it('propagates provider failures rather than manufacturing an icon success', async () => {
+        const error = new Error('AI generation unavailable');
+        generate.mockRejectedValueOnce(error);
+        await expect(routes.generateSkillIcons!({ input: { names: ['Typing'] } })).rejects.toBe(
+            error
         );
-
-        const result = await caller.generateSkillIcons({ names });
-
-        expect(Object.keys(result)).toHaveLength(SKILL_ICON_MAX_NAMES_PER_REQUEST);
-        expect(mocks.create).toHaveBeenCalledTimes(1);
-    });
-
-    it('rejects too many names with BAD_REQUEST before calling the model', async () => {
-        const names = Array.from(
-            { length: SKILL_ICON_MAX_NAMES_PER_REQUEST + 1 },
-            (_, i) => `s${i}`
-        );
-
-        await expect(caller.generateSkillIcons({ names })).rejects.toMatchObject({
-            code: 'BAD_REQUEST',
-        });
-        expect(mocks.create).not.toHaveBeenCalled();
-    });
-
-    it('rejects names totalling more than the character limit with BAD_REQUEST', async () => {
-        const names = ['a'.repeat(SKILL_ICON_MAX_CHARACTERS_PER_REQUEST), 'b'];
-
-        await expect(caller.generateSkillIcons({ names })).rejects.toMatchObject({
-            code: 'BAD_REQUEST',
-        });
-        expect(mocks.create).not.toHaveBeenCalled();
-    });
-
-    it('rejects a single name over the character limit', async () => {
-        const names = ['a'.repeat(SKILL_ICON_MAX_CHARACTERS_PER_REQUEST + 1)];
-
-        await expect(caller.generateSkillIcons({ names })).rejects.toMatchObject({
-            code: 'BAD_REQUEST',
-        });
-    });
-
-    it('still rejects empty lists and empty names', async () => {
-        await expect(caller.generateSkillIcons({ names: [] })).rejects.toMatchObject({
-            code: 'BAD_REQUEST',
-        });
-        await expect(caller.generateSkillIcons({ names: [''] })).rejects.toMatchObject({
-            code: 'BAD_REQUEST',
-        });
     });
 });

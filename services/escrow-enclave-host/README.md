@@ -227,10 +227,11 @@ oversize/truncation, a connected UDP socket filters source, total lifetime is 2s
 
 User-data already orders the unit after allocator and KMS vsock-proxy. Supply
 the additional configuration before starting it; add `LimitCORE=0` and a bounded
-`MemoryMax`, `TasksMax`, file-descriptor limit. The existing NLB health check is
-**TCP**, not HTTP: a listening 8444 socket alone is accepted even when `/health`
-returns 503. Change the NLB check to HTTP `/health` in an infra follow-up before
-rollout. This crate does not modify infra. Real Linux/vsock/AWS/TLS deployment and
+`MemoryMax`, `TasksMax`, file-descriptor limit. The NLB target group checks HTTP
+`GET /health` on 8444 (matcher 200, `infra/escrow-enclave/nlb.tf`) and the ASG uses
+ELB health, so a 503 `/health` takes the instance out of service. `/health` reflects
+enclave readiness only: it stays 200 when the host cannot parse a newer enclave's
+responses, so roll the host and EIF from the same build. This crate does not modify infra. Real Linux/vsock/AWS/TLS deployment and
 readiness must be verified in staging; native compilation is not that verification.
 
 ## Verification
@@ -240,6 +241,18 @@ cargo fmt --check && cargo clippy -- -D warnings && cargo test
 cargo audit
 cargo build --release
 ```
+
+Deployable binaries come from `.github/workflows/escrow-enclave-eif.yml`, which builds this crate
+twice from the same commit as the EIF and signs `hostSha256` alongside `eifSha256`. The same build
+runs locally (needs Docker; linux/amd64 under emulation on Apple Silicon):
+
+```sh
+services/escrow-enclave-host/scripts/build-host.sh --out /tmp/escrow-host
+```
+
+It builds in the pinned `amazonlinux:2023` amd64 image (glibc 2.34) with the `rust-toolchain.toml`
+toolchain via `cargo build --release --locked`, and writes the binary, its `.sha256`, and
+`host-build.json`. Deploy only a binary taken from the same run's artifact as the EIF.
 
 Default-features are disabled on AWS config/DynamoDB/S3: `default-https-client`
 selects hyper 1.x/rustls 0.23, not the legacy rustls 0.21/h2 0.3 stack. Commit

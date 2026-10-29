@@ -31,6 +31,22 @@ data "aws_caller_identity" "current" {
 }
 
 locals {
-  account_id  = data.aws_caller_identity.current.account_id
+  account_id = data.aws_caller_identity.current.account_id
+  auditor_config_read_actions = [
+    "s3:GetBucketVersioning",
+    "s3:GetBucketPublicAccessBlock",
+    "s3:GetBucketPolicy",
+    "s3:GetBucketPolicyStatus",
+    "s3:GetEncryptionConfiguration",
+    "s3:GetBucketOwnershipControls",
+    "s3:GetLifecycleConfiguration",
+    "s3:GetBucketLogging",
+    "s3:GetBucketTagging",
+    "s3:GetBucketLocation",
+    "s3:GetBucketAcl",
+    "s3:GetBucketObjectLockConfiguration",
+    "s3:GetReplicationConfiguration",
+    "s3:ListBucket",
+  ]
   bucket_name = "learncard-infisical-sync-tfstate-${local.account_id}-${var.aws_region}"
 }

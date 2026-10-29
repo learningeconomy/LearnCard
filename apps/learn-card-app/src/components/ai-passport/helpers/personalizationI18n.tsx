@@ -87,6 +87,7 @@ export const PersonalizationQuestionTitle: React.FC<{
     return (
         <TransP
             m={fn as Parameters<typeof TransP>[0]['m']}
+            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
             components={[<span className="font-semibold" />]}
         />
     );

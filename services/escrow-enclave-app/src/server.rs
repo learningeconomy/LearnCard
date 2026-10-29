@@ -241,7 +241,7 @@ impl Service<'_> {
                         public_key: Some(
                             self.policy
                                 .ledger_public_key()
-                                .to_encoded_point(false)
+                                .to_sec1_point(false)
                                 .as_bytes()
                                 .to_vec(),
                         ),
