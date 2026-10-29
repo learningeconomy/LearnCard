@@ -2,7 +2,7 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-primary_region = 'sea'
+primary_region = 'sjc'
 
 [env]
   AWS_REGION = "us-east-1"
