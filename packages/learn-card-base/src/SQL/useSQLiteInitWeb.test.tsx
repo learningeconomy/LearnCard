@@ -28,7 +28,7 @@ vi.mock('@capacitor-community/sqlite', () => ({
         }
     },
 }));
-vi.mock('jeep-sqlite/loader', () => ({ defineCustomElements: mocks.define }));
+vi.mock('jeep-sqlite/dist/components/jeep-sqlite', () => ({ defineCustomElement: mocks.define }));
 vi.mock('../stores/sqliteStore', () => ({
     sqliteStore: {
         get: { sqlite: () => mocks.nativeOwner },
@@ -70,6 +70,22 @@ describe('web SQLite initialization boundary', () => {
         const hook = renderHook(() => useSQLiteInitWeb());
         await waitFor(() => expect(mocks.setDb).toHaveBeenCalledWith({ database: 'web-only' }));
         expect(mocks.define).toHaveBeenCalledOnce();
+        expect(mocks.connection.initWebStore).toHaveBeenCalledOnce();
+        hook.unmount();
+    });
+
+    it('initializes storage when another mount already registered the component', async () => {
+        mocks.platform = 'web';
+        vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+        if (!customElements.get('jeep-sqlite')) {
+            customElements.define('jeep-sqlite', class extends HTMLElement {});
+        }
+        mocks.define.mockImplementation(() => {
+            throw new Error('Component was already registered');
+        });
+        const hook = renderHook(() => useSQLiteInitWeb());
+        await waitFor(() => expect(mocks.setDb).toHaveBeenCalledWith({ database: 'web-only' }));
+        expect(mocks.define).not.toHaveBeenCalled();
         expect(mocks.connection.initWebStore).toHaveBeenCalledOnce();
         hook.unmount();
     });
