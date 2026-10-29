@@ -6,7 +6,10 @@ const path = require('node:path');
 const test = require('node:test');
 const yaml = require('js-yaml');
 
-const { resolveDeployRange } = require('../../scripts/resolve-deploy-range.cjs');
+const {
+    resolveDeployRange,
+    getDeploymentChangeFlags,
+} = require('../../scripts/resolve-deploy-range.cjs');
 
 const root = path.resolve(__dirname, '../..');
 const workflowSource = readFileSync(path.join(root, '.github/workflows/deploy.yml'), 'utf8');
@@ -133,7 +136,9 @@ test('release range retains displaced package/native changes and ignores staging
         [brain]: manifest('1.1.0'),
         [native]: 'export const version = 2;',
     });
-    const staging = f.commit('staging-only success', { 'README.md': 'staging work' });
+    const staging = f.commit('staging-only dependency edit', {
+        [frontend]: JSON.stringify({ version: '1.0.0', dependencies: { example: '2.0.0' } }),
+    });
     f.commit('chore(release): current release', { [lca]: manifest('1.1.0') });
     const range = await resolveDeployRange(
         f.options(
@@ -146,6 +151,11 @@ test('release range retains displaced package/native changes and ignores staging
 
     // Execute the actual workflow's package/native selection, not a test copy.
     const output = path.join(f.cwd, 'outputs');
+    mkdirSync(path.join(f.cwd, 'scripts'));
+    writeFileSync(
+        path.join(f.cwd, 'scripts/resolve-deploy-range.cjs'),
+        readFileSync(path.join(root, 'scripts/resolve-deploy-range.cjs'))
+    );
     const step = workflow.jobs['determine-affected'].steps.find(
         step => step.id === 'check_versions'
     );
@@ -160,6 +170,23 @@ test('release range retains displaced package/native changes and ignores staging
     assert.match(flags, /lca_api_changed=true/);
     assert.match(flags, /native_plugin_changed=true/);
     assert.match(flags, /lca_app_changed=false/);
+});
+
+test('an actual app version bump selects publishing, while dependency-only edits do not', t => {
+    const f = fixture(t);
+    const dependencyEdit = f.commit('app dependency update', {
+        [frontend]: JSON.stringify({ version: '1.0.0', dependencies: { example: '2.0.0' } }),
+    });
+    assert.equal(
+        getDeploymentChangeFlags({ base: f.initial, head: dependencyEdit, cwd: f.cwd })
+            .lca_app_changed,
+        false
+    );
+    const bump = f.commit('chore(release): app version bump', { [frontend]: manifest('1.1.0') });
+    assert.equal(
+        getDeploymentChangeFlags({ base: f.initial, head: bump, cwd: f.cwd }).lca_app_changed,
+        true
+    );
 });
 
 test('paginates past successful runs in the wrong deployment mode', async t => {
@@ -229,6 +256,27 @@ test('bounded history exhaustion uses a full-tree range rather than the last com
     assert.equal(f.calls.length, 10);
 });
 
+for (const reason of ['no-success', 'API-error', 'history-limit']) {
+    test(`production ${reason} stops before any blanket publishing selection`, async t => {
+        const f = fixture(t);
+        f.commit('chore(release): current release', { [brain]: manifest('1.1.0') });
+        const pages =
+            reason === 'API-error'
+                ? new Error('unavailable history')
+                : reason === 'history-limit'
+                  ? Array.from({ length: 10 }, () =>
+                        Array.from({ length: 100 }, () =>
+                            run(f.initial, { event: 'workflow_dispatch' })
+                        )
+                    )
+                  : [[]];
+        await assert.rejects(
+            resolveDeployRange(f.options(pages, true)),
+            /No trusted production-release Deploy baseline/
+        );
+    });
+}
+
 test('the test runner can use the full-tree fallback in its own independent clone', async t => {
     const f = fixture(t);
     const range = await resolveDeployRange(f.options([[]]));
@@ -251,6 +299,10 @@ test('all automatic consumers share one range; manual dispatch still bypasses se
     const range = determine.steps.find(step => step.id === 'range');
     assert.equal(range.if, "github.event_name != 'workflow_dispatch'");
     assert.deepEqual(determine.permissions, { contents: 'read', actions: 'read' });
+    assert.equal(
+        determine.outputs.is_release,
+        "${{ job.status == 'success' && steps.check_release.outputs.is_release || 'false' }}"
+    );
     assert.equal(determine.outputs.base, '${{ steps.range.outputs.base }}');
     assert.equal(determine.outputs.head, '${{ steps.range.outputs.head }}');
     for (const id of ['affected', 'check_versions']) {

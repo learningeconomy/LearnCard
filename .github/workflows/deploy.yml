@@ -84,7 +84,8 @@ jobs:
             affected: ${{ steps.affected.outputs.affected }}
             base: ${{ steps.range.outputs.base }}
             head: ${{ steps.range.outputs.head }}
-            is_release: ${{ steps.check_release.outputs.is_release }}
+            # always()-based publishers must not run after range selection fails.
+            is_release: ${{ job.status == 'success' && steps.check_release.outputs.is_release || 'false' }}
             is_manual: ${{ steps.check_manual.outputs.is_manual }}
             # For production releases, check which services have version changes
             brain_service_changed: ${{ steps.check_versions.outputs.brain_service_changed }}
@@ -192,50 +193,8 @@ jobs:
                   NX_BASE: ${{ steps.range.outputs.base }}
                   NX_HEAD: ${{ steps.range.outputs.head }}
               run: |
-                  # Include package/native changes from displaced or failed runs.
-                  CHANGED_FILES=$(git diff --name-only "$NX_BASE" "$NX_HEAD")
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/brain-service/package.json"; then
-                    echo "brain_service_changed=true" >> $GITHUB_OUTPUT
-                    echo "Brain service version changed"
-                  else
-                    echo "brain_service_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/learn-cloud-service/package.json"; then
-                    echo "learn_cloud_changed=true" >> $GITHUB_OUTPUT
-                    echo "LearnCloud version changed"
-                  else
-                    echo "learn_cloud_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/lca-api/package.json"; then
-                    echo "lca_api_changed=true" >> $GITHUB_OUTPUT
-                    echo "LCA API version changed"
-                  else
-                    echo "lca_api_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/ai-agent/package.json"; then
-                    echo "ai_agent_changed=true" >> $GITHUB_OUTPUT
-                    echo "AI Agent service version changed"
-                  else
-                    echo "ai_agent_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
-                    echo "lca_app_changed=true" >> $GITHUB_OUTPUT
-                    echo "LearnCard App version changed"
-                  else
-                    echo "lca_app_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -qE "packages/plugins/didkit-plugin-node/(native|src)/"; then
-                    echo "native_plugin_changed=true" >> $GITHUB_OUTPUT
-                    echo "Native DIDKit plugin changed - will wait for prebuilds"
-                  else
-                    echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
-                  fi
+                  # A package-file edit alone is not a version bump.
+                  node scripts/resolve-deploy-range.cjs changes "$NX_BASE" "$NX_HEAD"
 
             - name: Determine Deployment Environments
               id: set-env
