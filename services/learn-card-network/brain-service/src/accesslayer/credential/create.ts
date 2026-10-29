@@ -9,10 +9,10 @@ import { Credential, CredentialInstance } from '@models';
 
 export const storeCredential = async (
     input: UnsignedVC | VC | JWE | IssuedCredential,
-    transaction?: Transaction
+    transaction?: Transaction,
+    credentialId?: string
 ): Promise<CredentialInstance> => {
-    const id = uuid();
-
+    const id = credentialId ?? uuid();
     const issued = isIssuedCredential(input);
     const credential = issued ? input.credential : input;
     // Fail if an internal issuance result lost its metadata. Pre-signed wire

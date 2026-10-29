@@ -45,6 +45,9 @@ export const BoostClaimLinkCacheValueValidator = z.object({
     claimLinkSA: BoostClaimLinkSigningAuthorityValidator,
     options: BoostClaimLinkOptionsValidator,
     generatorProfileId: z.string().optional(),
+    generation: z.string().optional(),
+    expiresAt: z.number().optional(),
+    completedRequests: z.record(z.string(), z.boolean()).optional(),
 });
 export type BoostClaimLinkCacheValueType = z.infer<typeof BoostClaimLinkCacheValueValidator>;
 

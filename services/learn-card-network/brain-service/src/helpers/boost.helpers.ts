@@ -33,6 +33,7 @@ import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
+import { neogma } from '@instance';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
@@ -50,6 +51,14 @@ import { DbTermsType } from 'types/consentflowcontract';
 import { appendBitstringStatusListEntries } from './status-list.helpers';
 import { getIssuedCredentialPayload } from './issuedCredentialStatus.helpers';
 import type { IssuedCredential } from '../types/credential';
+
+/** No commit was attempted: the caller can safely retry this claim's storage. */
+export class ClaimLinkStorageRejectedError extends Error {
+    constructor(cause: unknown) {
+        super('Claim-link storage transaction was rolled back', { cause });
+        this.name = 'ClaimLinkStorageRejectedError';
+    }
+}
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -138,9 +147,11 @@ export const sendBoost = async ({
     autoAcceptCredential = false,
     contractTerms,
     metadata,
+    listingId,
     activityId,
     integrationId,
-    listingId,
+    credentialId,
+    atomicClaimLink = false,
 }: {
     from: CredentialIssuer;
     to: ProfileType;
@@ -154,6 +165,8 @@ export const sendBoost = async ({
     activityId?: string;
     integrationId?: string;
     listingId?: string;
+    credentialId?: string;
+    atomicClaimLink?: boolean;
 }): Promise<string> => {
     return trace(
         'boost',
@@ -178,42 +191,77 @@ export const sendBoost = async ({
             }
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
-            const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
-            );
-
-            const tasks = [
-                createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(
-                    from,
-                    to,
-                    credentialInstance,
-                    metadata,
-                    activityId,
-                    integrationId
-                ),
-            ];
-
-            if (listingId) {
-                tasks.push(
-                    createListingSentCredentialRelationship(
-                        listingId,
+            const credentialInstance = await traceDb('storeCredential', async () => {
+                if (!atomicClaimLink) {
+                    return storeCredential(credential, undefined, credentialId);
+                }
+                const session = neogma.driver.session();
+                const transaction = session.beginTransaction();
+                let commitStarted = false;
+                try {
+                    const stored = await storeCredential(credential, transaction, credentialId);
+                    await createBoostInstanceOfRelationship(stored, boost, transaction);
+                    await createSentCredentialRelationship(
+                        from,
+                        to,
+                        stored,
+                        metadata,
+                        activityId,
+                        integrationId,
+                        transaction
+                    );
+                    commitStarted = true;
+                    await transaction.commit();
+                    return stored;
+                } catch (error) {
+                    try {
+                        await transaction.rollback();
+                    } catch {
+                        // Rollback failure must not replace the original storage/commit outcome.
+                    }
+                    if (!commitStarted) throw new ClaimLinkStorageRejectedError(error);
+                    throw error;
+                } finally {
+                    await session.close();
+                }
+            });
+            if (!atomicClaimLink) {
+                const tasks = [
+                    createBoostInstanceOfRelationship(credentialInstance, boost),
+                    createSentCredentialRelationship(
+                        from,
                         to,
                         credentialInstance,
                         metadata,
                         activityId,
                         integrationId
-                    )
-                );
-            }
+                    ),
+                ];
 
-            if (contractTerms) {
-                tasks.push(
-                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
-                );
-            }
+                if (listingId) {
+                    tasks.push(
+                        createListingSentCredentialRelationship(
+                            listingId,
+                            to,
+                            credentialInstance,
+                            metadata,
+                            activityId,
+                            integrationId
+                        )
+                    );
+                }
 
-            await traceDb('createRelationships', () => Promise.all(tasks));
+                if (contractTerms) {
+                    tasks.push(
+                        createCredentialIssuedViaContractRelationship(
+                            credentialInstance,
+                            contractTerms
+                        )
+                    );
+                }
+
+                await traceDb('createRelationships', () => Promise.all(tasks));
+            }
 
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
@@ -274,7 +322,9 @@ export const issueClaimLinkBoost = async (
     domain: string,
     from: CredentialIssuer,
     to: ProfileType,
-    signingAuthorityForUser: SigningAuthorityForUserType
+    signingAuthorityForUser: SigningAuthorityForUserType,
+    credentialId?: string,
+    onStorageStart?: () => void
 ): Promise<string> => {
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
@@ -287,12 +337,10 @@ export const issueClaimLinkBoost = async (
 
     setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
-    // Embed the boostURI into the boost credential for verification purposes.
     if (boostCredential.type.includes('BoostCredential')) {
         boostCredential.boostId = boostURI;
     }
 
-    // Inject OBv3 skill alignments based on boost's framework/skills
     await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost, domain);
 
     const vc = await issueCredentialWithSigningAuthority(
@@ -302,6 +350,7 @@ export const issueClaimLinkBoost = async (
         domain,
         true
     );
+    onStorageStart?.();
 
     return sendBoost({
         from,
@@ -311,6 +360,8 @@ export const issueClaimLinkBoost = async (
         domain,
         skipNotification: true,
         autoAcceptCredential: true,
+        credentialId,
+        atomicClaimLink: true,
     });
 };
 

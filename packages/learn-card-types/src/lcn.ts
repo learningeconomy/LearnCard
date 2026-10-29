@@ -447,6 +447,19 @@ export const LCNBoostClaimLinkOptionsValidator = z.object({
 });
 export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
 
+/** Confirmed terminal claim-link conditions; missing historical metadata is unavailable, not expired. */
+export const ClaimLinkTerminalReasonValidator = z.enum(['expired', 'exhausted', 'unavailable']);
+export type ClaimLinkTerminalReason = z.infer<typeof ClaimLinkTerminalReasonValidator>;
+
+/** Reconciliation always precedes repeating an interrupted claim mutation. */
+export const ClaimLinkRequestStatusValidator = z.discriminatedUnion('status', [
+    z.object({ status: z.literal('absent') }),
+    z.object({ status: z.literal('pending') }),
+    z.object({ status: z.literal('complete'), credentialUri: z.string() }),
+    z.object({ status: z.literal('terminal'), reason: ClaimLinkTerminalReasonValidator }),
+]);
+export type ClaimLinkRequestStatus = z.infer<typeof ClaimLinkRequestStatusValidator>;
+
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),
 });

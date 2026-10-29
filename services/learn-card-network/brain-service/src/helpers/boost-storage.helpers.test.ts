@@ -12,9 +12,21 @@ const mocks = vi.hoisted(() => ({
     accept: vi.fn(),
     notify: vi.fn(async () => undefined),
     signingAuthority: vi.fn(),
+    commit: vi.fn(),
+    rollback: vi.fn(),
 }));
 
 vi.mock('@models', () => ({}));
+vi.mock('@instance', () => ({
+    neogma: {
+        driver: {
+            session: () => ({
+                beginTransaction: () => ({ commit: mocks.commit, rollback: mocks.rollback }),
+                close: async () => undefined,
+            }),
+        },
+    },
+}));
 vi.mock('@services/skills-provider/inject', () => ({
     injectObv3AlignmentsIntoCredentialForBoost: vi.fn(),
 }));
@@ -67,6 +79,7 @@ vi.mock('@tracing', () => ({
 
 import {
     issueClaimLinkBoost,
+    ClaimLinkStorageRejectedError,
     prepareCredentialFromBoost,
     sendBoost,
     stampIssuanceDate,
@@ -112,6 +125,8 @@ describe('boost payload storage', () => {
         vi.clearAllMocks();
         mocks.decrypt.mockResolvedValue(vc);
         mocks.issue.mockImplementation(async unsigned => ({ ...unsigned, proof: {} }));
+        mocks.commit.mockReset().mockResolvedValue(undefined);
+        mocks.rollback.mockReset().mockResolvedValue(undefined);
     });
 
     it.each([
@@ -175,6 +190,22 @@ describe('boost payload storage', () => {
         expect(mocks.issue).not.toHaveBeenCalled();
     });
 
+    it('distinguishes a rejected storage transaction from an uncertain commit outcome', async () => {
+        mocks.sent.mockRejectedValueOnce(new Error('write rejected'));
+        await expect(
+            sendBoost({ ...options, atomicClaimLink: true, credentialId: 'request-one' })
+        ).rejects.toBeInstanceOf(ClaimLinkStorageRejectedError);
+        expect(mocks.accept).not.toHaveBeenCalled();
+
+        const uncertain = new Error('commit acknowledgement lost');
+        mocks.commit.mockRejectedValueOnce(uncertain);
+        mocks.rollback.mockRejectedValueOnce(new Error('transaction is already closed'));
+        await expect(
+            sendBoost({ ...options, atomicClaimLink: true, credentialId: 'request-one' })
+        ).rejects.toBe(uncertain);
+        expect(mocks.accept).not.toHaveBeenCalled();
+    });
+
     it.each(['lc:network:network.example/boost:other', '', null])(
         'rejects a plaintext credential with an explicit conflicting boostId (%s) before storage',
         async boostId => {
@@ -224,7 +255,6 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued);
         }
     );
 

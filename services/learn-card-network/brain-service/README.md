@@ -2,6 +2,19 @@
 
 This service exposes the LearnCard Network API and local Neo4j-backed skills flows.
 
+## Recoverable claim links
+
+`boost.claimBoostWithLink` accepts an optional `requestId`; `boost.claimBoostWithLinkStatus` reconciles the same authenticated recipient, Boost URI, challenge, and request ID. SDK consumers call `getClaimBoostWithLinkStatus`. Deploy this producer before an app that requires the status procedure; existing two-argument SDK claims remain supported.
+
+- A durable, uniquely constrained `ClaimLinkRequest` reserves one operation per context. A deterministic credential ID and an explicit Neo4j transaction keep the credential, Boost instance, and sent relationship together. Recovery of a stored-but-unaccepted credential uses the existing `acceptCredential` path, including authorization, hooks, and revocation checks.
+- A completed receipt returns the original credential URI before checking current link availability. Link-use accounting is idempotent for that credential and scoped to the original link generation; finishing an older request cannot consume a replacement link's capacity.
+- Redis availability checks propagate connection failures. Expired/exhausted evidence is retained for 30 days after the terminal condition; missing evidence means unavailable, not an invented expiration. The live link's usage counter and completed-request ledger are updated together by compare-and-set.
+- An active or uncertain operation without a provable result remains `pending`. There is no age-based takeover or blind re-signing. Definitive failures before storage can release the reservation; an uncertain commit cannot. A process crash with no provable durable result requires operator investigation, not a new request ID or deletion of an old reservation.
+
+Collection indexing is still a separate, user-authenticated LearnCloud write. A successful network claim does not prove that collection saving or display refresh succeeded.
+
+Focused checks from this directory: `bun run test -- src/cache/claim-links.test.ts src/helpers/boost-storage.helpers.test.ts src/accesslayer/credential/create.test.ts`. `bunx vitest run --config vitest.claim-links.config.ts` exercises receipt recovery and concurrency against its own disposable Neo4j container and requires Docker.
+
 ## Live consent data for AI consumers
 
 `getConsentedDataForDid` returns data from live grants and authorized one-time grants (`oneTime: true`, stored with `status: 'stale'`) between the authenticated contract owner and the requested profile. Withdrawn grants and other stale grants are excluded. Term, contract and category expirations are enforced; empty expiry values mean no expiry, while malformed nonempty dates never authorize access. One-time means a fixed sharing grant, not a destructive read-once API; withdrawal still revokes subsequent retrieval. Malformed legacy terms are omitted rather than authorizing data or failing every grant in the response.

@@ -2037,10 +2037,19 @@ export async function getLearnCardNetworkPlugin(
                 });
             },
 
-            claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
+            claimBoostWithLink: async (_learnCard, boostUri, challenge, requestId) => {
                 await ensureUser();
 
-                return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
+                return client.boost.claimBoostWithLink.mutate({ boostUri, challenge, requestId });
+            },
+            getClaimBoostWithLinkStatus: async (_learnCard, boostUri, challenge, requestId) => {
+                await ensureUser();
+
+                return client.boost.claimBoostWithLinkStatus.query({
+                    boostUri,
+                    challenge,
+                    requestId,
+                });
             },
 
             send: async (_learnCard, input) => {

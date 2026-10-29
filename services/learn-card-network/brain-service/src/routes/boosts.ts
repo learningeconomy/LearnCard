@@ -41,6 +41,7 @@ import {
     PrepareRefreshableSendResult,
     AllocateCredentialStatusInputValidator,
     AllocatedBitstringStatusListEntryValidator,
+    ClaimLinkRequestStatusValidator,
 } from '@learncard/types';
 import {
     isVC2Format,
@@ -107,6 +108,7 @@ import {
     isProfileBoostOwner,
     sendBoost,
     issueClaimLinkBoost,
+    ClaimLinkStorageRejectedError,
     isDraftBoost,
     isEditableBoost,
     isBoostViewableByClaimLink,
@@ -158,6 +160,8 @@ import {
     getClaimLinkSAInfoForBoost,
     getClaimLinkGeneratorProfileId,
     useClaimLinkForBoost,
+    getClaimLinkAvailability,
+    getClaimLinkGeneration,
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb, getManagedDidWeb, getProfileIdFromString } from '@helpers/did.helpers';
@@ -172,6 +176,12 @@ import {
     replaceAlignedSkillsForBoost,
 } from '@accesslayer/boost/relationships/create';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
+import {
+    getClaimLinkRequestCredentialId,
+    recoverClaimLinkRequest,
+    releaseClaimLinkRequestOwner,
+    reserveClaimLinkRequest,
+} from '@accesslayer/claim-link-request';
 import { neogma } from '@instance';
 import {
     removeBoostAsParent,
@@ -4209,45 +4219,66 @@ export const boostsRouter = t.router({
             },
             requiredScope: 'boosts:write',
         })
-        .input(z.object({ boostUri: z.string(), challenge: z.string() }))
+        .input(
+            z.object({
+                boostUri: z.string(),
+                challenge: z.string(),
+                requestId: z.string().min(1).optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, challenge } = input;
-
-            const [claimLinkSA, boost, generatorProfileId] = await Promise.all([
-                getClaimLinkSAInfoForBoost(boostUri, challenge),
-                getBoostByUri(boostUri),
-                getClaimLinkGeneratorProfileId(boostUri, challenge),
-            ]);
-
-            if (!claimLinkSA) {
+            const { boostUri, challenge, requestId } = input;
+            const request = requestId
+                ? {
+                      profileId: profile.profileId,
+                      boostUri,
+                      challenge,
+                      requestId,
+                      domain: ctx.domain,
+                  }
+                : undefined;
+            if (request) {
+                const previous = await recoverClaimLinkRequest(request, useClaimLinkForBoost);
+                if (previous.status === 'complete') return previous.credentialUri;
+                if (previous.status === 'pending') {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: 'Claim request is still being resolved.',
+                    });
+                }
+            }
+            const availability = await getClaimLinkAvailability(boostUri, challenge);
+            if (availability !== 'available') {
                 throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: `Challenge not found for ${boostUri}`,
+                    code: 'PRECONDITION_FAILED',
+                    message: `Claim link is ${availability}.`,
                 });
             }
-
+            const [claimLinkSA, boost, generatorProfileId, claimLinkGeneration] = await Promise.all(
+                [
+                    getClaimLinkSAInfoForBoost(boostUri, challenge),
+                    getBoostByUri(boostUri),
+                    getClaimLinkGeneratorProfileId(boostUri, challenge),
+                    getClaimLinkGeneration(boostUri, challenge),
+                ]
+            );
+            if (!claimLinkSA)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Claim link is unavailable.' });
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
-
             if (!(await isBoostViewableByClaimLink(boost))) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'This boost is not currently viewable by claim link.',
                 });
             }
-
             const boostOwner = await getBoostOwner(boost);
-
-            if (!boostOwner) {
+            if (!boostOwner)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
-            }
-
-            // Use the generator's profile for SA lookup if available, fall back to boost owner
             const saOwner = generatorProfileId
                 ? ((await getProfileByProfileId(generatorProfileId)) ?? boostOwner)
                 : boostOwner;
-
             const saOwnerProfile: ProfileType =
                 'profileId' in saOwner ? saOwner : getBoostOwnerProfile(saOwner);
             const saOwnerIssuer =
@@ -4260,84 +4291,126 @@ export const boostsRouter = t.router({
                             listing: saOwner.listing,
                             ownerProfile: saOwner.ownerProfile,
                         };
-
             const signingAuthority = await getSigningAuthorityForUserByName(
                 saOwnerProfile,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
-
-            if (!signingAuthority) {
+            if (!signingAuthority)
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Could not find signing authority for boost',
                 });
+            const claimRequest = request
+                ? {
+                      ...request,
+                      issuerProfileId: saOwnerProfile.profileId,
+                      ownerToken: uuid(),
+                      claimLinkGeneration,
+                  }
+                : undefined;
+            if (claimRequest && !(await reserveClaimLinkRequest(claimRequest)).acquired) {
+                const previous = await recoverClaimLinkRequest(claimRequest, useClaimLinkForBoost);
+                if (previous.status === 'complete') return previous.credentialUri;
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Claim request is still being resolved.',
+                });
             }
-
-            // Log DELIVERED activity first to get activityId for chaining (outside try for catch access)
-            const activityId = await logCredentialSent({
-                actorProfileId: saOwnerProfile.profileId,
-                recipientType: 'profile',
-                recipientIdentifier: profile.profileId,
-                recipientProfileId: profile.profileId,
-                boostUri,
-                source: 'claimLink',
-            });
-
+            let storageStarted = false;
             try {
-                const sentBoostUri = await issueClaimLinkBoost(
-                    boost,
-                    ctx.domain,
-                    saOwnerIssuer,
-                    profile,
-                    signingAuthority
-                );
-
-                // Log CLAIMED immediately since autoAcceptCredential: true in issueClaimLinkBoost
-                await logCredentialClaimed({
-                    activityId,
+                const activityId = await logCredentialSent({
                     actorProfileId: saOwnerProfile.profileId,
                     recipientType: 'profile',
                     recipientIdentifier: profile.profileId,
                     recipientProfileId: profile.profileId,
                     boostUri,
-                    credentialUri: sentBoostUri,
                     source: 'claimLink',
                 });
-
-                try {
+                const sentBoostUri = await issueClaimLinkBoost(
+                    boost,
+                    ctx.domain,
+                    saOwnerIssuer,
+                    profile,
+                    signingAuthority,
+                    request
+                        ? getClaimLinkRequestCredentialId(
+                              profile.profileId,
+                              boostUri,
+                              challenge,
+                              request.requestId
+                          )
+                        : undefined,
+                    () => {
+                        storageStarted = true;
+                    }
+                );
+                if (request) {
+                    const result = await recoverClaimLinkRequest(request, useClaimLinkForBoost);
+                    if (result.status !== 'complete')
+                        throw new Error('Claim acceptance is not confirmed');
+                } else {
                     await useClaimLinkForBoost(boostUri, challenge);
-                } catch (e) {
-                    console.error('Problem using useClaimLinkForBoost', e);
                 }
-
-                return sentBoostUri;
-            } catch (e) {
-                console.error('Unable to issueClaimLinkBoost', e);
-
-                // Log FAILED activity - the activityId was already generated above
+                // Activity reporting cannot undo an established claim or make the learner issue it again.
                 try {
-                    await logCredentialFailed({
+                    await logCredentialClaimed({
                         activityId,
                         actorProfileId: saOwnerProfile.profileId,
                         recipientType: 'profile',
                         recipientIdentifier: profile.profileId,
                         recipientProfileId: profile.profileId,
                         boostUri,
+                        credentialUri: sentBoostUri,
                         source: 'claimLink',
-                        metadata: {
-                            error: e instanceof Error ? e.message : 'Unknown error',
-                        },
                     });
-                } catch (logError) {
-                    console.error('Failed to log credential failed activity:', logError);
+                } catch {
+                    console.error('Claim-link activity reporting failed after acceptance');
                 }
-
+                return sentBoostUri;
+            } catch (error) {
+                if (claimRequest) {
+                    await releaseClaimLinkRequestOwner(
+                        claimRequest,
+                        !storageStarted || error instanceof ClaimLinkStorageRejectedError
+                    );
+                }
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: 'Could not issue boost with claim link.',
+                    message: 'Could not complete the claim-link request.',
                 });
             }
+        }),
+    claimBoostWithLinkStatus: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/claim/status',
+                tags: ['Boosts'],
+                summary: 'Get claim-link request status',
+                description: 'Check the result of an authenticated claim-link operation.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({ boostUri: z.string(), challenge: z.string(), requestId: z.string().min(1) })
+        )
+        .output(ClaimLinkRequestStatusValidator)
+        .query(async ({ ctx, input }) => {
+            const previous = await recoverClaimLinkRequest(
+                {
+                    profileId: ctx.user.profile.profileId,
+                    ...input,
+                    domain: ctx.domain,
+                },
+                useClaimLinkForBoost
+            );
+            if (previous.status !== 'absent') return previous;
+            const availability = await getClaimLinkAvailability(input.boostUri, input.challenge);
+            return availability === 'available'
+                ? previous
+                : { status: 'terminal' as const, reason: availability };
         }),
 
     makeBoostParent: profileRoute
