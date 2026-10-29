@@ -1,15 +1,16 @@
 export type AddressSpec = {
-    streetAddress?: string | undefined,
-    addressLocality?: string | undefined,
-    addressRegion?: string | undefined,
-    addressCountry?: string | undefined,
-    postalCode?: string | undefined,
+    streetAddress?: string | undefined;
+    addressLocality?: string | undefined;
+    addressRegion?: string | undefined;
+    addressCountry?: string | undefined;
+    postalCode?: string | undefined;
     geo?: {
         latitude?: number | undefined;
         longitude?: number | undefined;
-    }
-}
+    };
+};
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
 export const formatLocationObject = (placeDetails: any): AddressSpec => {
     const cityComponent = placeDetails.address_components.find(component =>
         component.types.includes('locality')

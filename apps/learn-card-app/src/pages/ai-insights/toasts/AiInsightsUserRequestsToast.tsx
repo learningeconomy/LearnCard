@@ -62,7 +62,9 @@ export const AiInsightsUserRequestsToast: React.FC<{
                                 userName: currentLCNUser?.displayName ?? '',
                             }}
                             components={[
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 <span className="font-semibold" />,
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 <span className="font-semibold" />,
                             ]}
                         />

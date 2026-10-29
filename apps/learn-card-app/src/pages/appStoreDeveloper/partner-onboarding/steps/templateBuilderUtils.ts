@@ -4,8 +4,8 @@
  */
 
 import { CredentialTemplate, BrandingConfig, TemplateBoostMeta } from '../types';
-import { 
-    OBv3CredentialTemplate, 
+import {
+    OBv3CredentialTemplate,
     extractDynamicVariables,
     getBlankTemplate,
     staticField,
@@ -25,7 +25,11 @@ export type ExtendedTemplate = CredentialTemplate & {
 export type ValidationStatus = 'unknown' | 'validating' | 'valid' | 'invalid' | 'dirty';
 
 // Convert legacy CredentialTemplate to OBv3CredentialTemplate
-export const legacyToOBv3 = (legacy: CredentialTemplate, issuerName?: string, issuerImage?: string): OBv3CredentialTemplate => {
+export const legacyToOBv3 = (
+    legacy: CredentialTemplate,
+    issuerName?: string,
+    issuerImage?: string
+): OBv3CredentialTemplate => {
     const template = getBlankTemplate();
 
     // Set basic info
@@ -50,7 +54,9 @@ export const legacyToOBv3 = (legacy: CredentialTemplate, issuerName?: string, is
     template.credentialSubject.achievement.description = staticField(legacy.description || '');
 
     if (legacy.achievementType) {
-        template.credentialSubject.achievement.achievementType = staticField(legacy.achievementType);
+        template.credentialSubject.achievement.achievementType = staticField(
+            legacy.achievementType
+        );
     }
 
     // Convert legacy fields to OBv3 format
@@ -75,7 +81,10 @@ export const legacyToOBv3 = (legacy: CredentialTemplate, issuerName?: string, is
 };
 
 // Convert OBv3CredentialTemplate back to legacy CredentialTemplate format for storage
-export const obv3ToLegacy = (obv3: OBv3CredentialTemplate, existingTemplate?: CredentialTemplate): CredentialTemplate => {
+export const obv3ToLegacy = (
+    obv3: OBv3CredentialTemplate,
+    existingTemplate?: CredentialTemplate
+): CredentialTemplate => {
     const dynamicVars = extractDynamicVariables(obv3);
 
     // Build fields array from dynamic variables
@@ -122,7 +131,10 @@ export const generateMasterTemplate = (
     Object.entries(columnMappings).forEach(([columnName, fieldType]) => {
         if (fieldType === 'skip') return;
 
-        const varName = columnName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        const varName = columnName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_|_$/g, '');
         const displayName = columnName.replace(/[^a-zA-Z0-9]+/g, ' ').trim();
 
         // Handle credential-level fields
@@ -176,14 +188,16 @@ export const generateMasterTemplate = (
         }
 
         // For alignment, evidence, result, subject, related, and custom fields
-        if (fieldType.startsWith('alignment.') || 
-            fieldType.startsWith('evidence.') || 
-            fieldType.startsWith('result.') || 
-            fieldType.startsWith('subject.') || 
+        if (
+            fieldType.startsWith('alignment.') ||
+            fieldType.startsWith('evidence.') ||
+            fieldType.startsWith('result.') ||
+            fieldType.startsWith('subject.') ||
             fieldType.startsWith('related.') ||
             fieldType.startsWith('achievement.') ||
             fieldType === 'custom' ||
-            fieldType === 'credential.inLanguage') {
+            fieldType === 'credential.inLanguage'
+        ) {
             template.customFields.push({
                 id: `custom_${varName}`,
                 key: staticField(displayName),
@@ -193,7 +207,10 @@ export const generateMasterTemplate = (
     });
 
     // Add issuance-level fields based on their type (dynamic or system)
-    const issuanceFieldDefs = ISSUANCE_FIELDS.reduce((acc, f) => ({ ...acc, [f.id]: f }), {} as Record<string, typeof ISSUANCE_FIELDS[number]>);
+    const issuanceFieldDefs = ISSUANCE_FIELDS.reduce(
+        (acc, f) => ({ ...acc, [f.id]: f }),
+        {} as Record<string, (typeof ISSUANCE_FIELDS)[number]>
+    );
 
     Object.entries(issuanceFieldsIncluded).forEach(([fieldId, included]) => {
         if (!included) return;
@@ -236,8 +253,15 @@ export const generateMasterTemplate = (
     });
 
     // Find a name column mapped to achievement.name for the template name
-    const nameColumn = Object.entries(columnMappings).find(([_, type]) => type === 'achievement.name')?.[0];
-    const nameVarName = nameColumn ? nameColumn.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') : 'course_name';
+    const nameColumn = Object.entries(columnMappings).find(
+        ([_, type]) => type === 'achievement.name'
+    )?.[0];
+    const nameVarName = nameColumn
+        ? nameColumn
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '_')
+              .replace(/^_|_$/g, '')
+        : 'course_name';
     template.name = dynamicField(nameVarName, 'Course Completion');
     template.description = staticField('Master template for course completion credentials');
 
@@ -403,7 +427,11 @@ export const generateChildBoostForCourse = (
                 if (!template.credentialSubject.achievement.tag) {
                     template.credentialSubject.achievement.tag = [];
                 }
-                const tags = value.split(',').map(t => t.trim()).filter(Boolean);
+                // eslint-disable-next-line no-case-declarations -- adding a block changes the binding scope across cases
+                const tags = value
+                    .split(',')
+                    .map(t => t.trim())
+                    .filter(Boolean);
                 template.credentialSubject.achievement.tag.push(...tags);
                 break;
 
@@ -418,7 +446,10 @@ export const generateChildBoostForCourse = (
     });
 
     // Create alignment entry if any alignment fields were mapped
-    if (Object.keys(alignmentData).length > 0 && (alignmentData.targetName || alignmentData.targetUrl)) {
+    if (
+        Object.keys(alignmentData).length > 0 &&
+        (alignmentData.targetName || alignmentData.targetUrl)
+    ) {
         if (!template.credentialSubject.achievement.alignment) {
             template.credentialSubject.achievement.alignment = [];
         }
@@ -427,8 +458,12 @@ export const generateChildBoostForCourse = (
             id: `alignment_${Date.now()}`,
             targetName: staticField(alignmentData.targetName || ''),
             targetUrl: staticField(alignmentData.targetUrl || ''),
-            ...(alignmentData.targetDescription && { targetDescription: staticField(alignmentData.targetDescription) }),
-            ...(alignmentData.targetFramework && { targetFramework: staticField(alignmentData.targetFramework) }),
+            ...(alignmentData.targetDescription && {
+                targetDescription: staticField(alignmentData.targetDescription),
+            }),
+            ...(alignmentData.targetFramework && {
+                targetFramework: staticField(alignmentData.targetFramework),
+            }),
             ...(alignmentData.targetCode && { targetCode: staticField(alignmentData.targetCode) }),
         });
     }
@@ -459,7 +494,9 @@ export const generateChildBoostForCourse = (
             id: `result_${Date.now()}`,
             ...(resultData.value && { value: staticField(resultData.value) }),
             ...(resultData.status && { status: staticField(resultData.status) }),
-            ...(resultData.achievedLevel && { achievedLevel: staticField(resultData.achievedLevel) }),
+            ...(resultData.achievedLevel && {
+                achievedLevel: staticField(resultData.achievedLevel),
+            }),
         });
     }
 
@@ -497,7 +534,9 @@ export const generateChildBoostForCourse = (
             id: `related_${Date.now()}`,
             targetName: staticField(relatedData.id || 'Related Achievement'),
             targetUrl: staticField(relatedData.id || ''),
-            ...(relatedData.version && { targetDescription: staticField(`Version: ${relatedData.version}`) }),
+            ...(relatedData.version && {
+                targetDescription: staticField(`Version: ${relatedData.version}`),
+            }),
         });
     }
 
@@ -595,7 +634,8 @@ export const createBoostMeta = (
                 required: false,
                 variableName: varName,
             })),
-            achievementType: obv3Template.credentialSubject.achievement.achievementType?.value || 'Achievement',
+            achievementType:
+                obv3Template.credentialSubject.achievement.achievementType?.value || 'Achievement',
             version: TEMPLATE_META_VERSION,
         },
         isMasterTemplate: template.isMasterTemplate,

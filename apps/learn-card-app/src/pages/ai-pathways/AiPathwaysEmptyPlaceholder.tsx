@@ -16,7 +16,7 @@ export const AiPathwaysEmptyPlaceholder: React.FC = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
 
-    let title = isLoggedIn
+    const title = isLoggedIn
         ? m['aiPathways.discovery.noPathwaysYet']()
         : m['aiPathways.discovery.joinToUnlock']({ brand: brandingConfig?.name ?? '' });
     const text = isLoggedIn

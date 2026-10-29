@@ -29,11 +29,13 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
         const ids: Array<{ boostId: string; credType: 'global' | 'national' }> = [];
 
         troopIds?.globalAdmin?.forEach(credential => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const boostId = (credential as any)?.boostId;
             if (boostId) ids.push({ boostId, credType: 'global' });
         });
 
         troopIds?.nationalAdmin?.forEach(credential => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const boostId = (credential as any)?.boostId;
             if (boostId) ids.push({ boostId, credType: 'national' });
         });
@@ -69,6 +71,7 @@ const SkillsFrameworkNetworkSelector: React.FC<SkillsFrameworkNetworkSelectorPro
             resolvedNetworks.push({
                 uri: boostId,
                 name: boost.name || (credType === 'global' ? 'Global Network' : 'National Network'),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 image: (boost.meta as any)?.image,
                 type: credType === 'global' ? 'Global Network' : 'National Network',
             });

@@ -3043,7 +3043,8 @@
             "preview": {
                 "criteria": "المعايير",
                 "certificate": "شهادة",
-                "id": "معرف"
+                "id": "معرف",
+                "awardedOn": "مُنحت في {{date}}"
             },
             "loading": {
                 "issuing": "جارٍ إصدار Boost...",
@@ -4056,7 +4057,9 @@
             "lifecycle": {
                 "revoked": "ملغاة",
                 "suspended": "معلقة"
-            }
+            },
+            "awardedOn": "مُنحت في {{date}}",
+            "awardedOnBy": "مُنحت في {{date}} بواسطة"
         }
     },
     "skills": {
@@ -4943,6 +4946,19 @@
             "maxClaims": "الحد الأقصى للمطالبات (اختياري)",
             "unlimited": "غير محدود"
         }
+    },
+    "credentialShare": {
+        "copyLink": "نسخ الرابط",
+        "publicPreviewPersistent": "تم نشر المعاينة العامة وقد تظل متاحة. قد تحتفظ منصات التواصل بنسخ منها حتى بعد تغيير إعدادات المشاركة.",
+        "publicPreviewPrivate": "تعرض المعاينة العامة اسم بيانات الاعتماد والجهة المُصدرة والصورة. وقد تظل متاحة بعد نشرها، كما قد تحتفظ منصات التواصل بنسخ منها. وتبقى بقية البيانات مشفرة.",
+        "issuerUnavailable": "تفاصيل الجهة المُصدرة غير متاحة. لا يزال بإمكانك مشاركة الرابط المشفر.",
+        "enablePreview": "تفعيل المعاينة العامة",
+        "publishingPreview": "جارٍ نشر المعاينة...",
+        "addToLinkedIn": "إضافة إلى LinkedIn",
+        "postToLinkedIn": "النشر على LinkedIn",
+        "linkedInOrgId": "معرّف مؤسسة LinkedIn (اختياري)",
+        "linkedInOrgIdHelp": "اعثر على المعرّف الرقمي في عنوان URL لصفحة إدارة LinkedIn. أدخل الرقم لا اسم الصفحة، واتركه فارغًا لإزالته.",
+        "linkedInOrgIdError": "أدخل أرقامًا فقط."
     },
     "developerPortal": {
         "shell": {
@@ -9717,7 +9733,8 @@
         },
         "preview": {
             "willLook": "هكذا ستبدو شهادتك.",
-            "pickToStart": "اختر نوعًا لتبدأ تصميم شهادتك."
+            "pickToStart": "اختر نوعًا لتبدأ تصميم شهادتك.",
+            "verificationPending": "يتم التحقق بعد إصدارها."
         },
         "err": {
             "network": "مشكلة في الاتصال. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.",
@@ -9869,7 +9886,32 @@
                 "evidence": "رابط الدليل",
                 "awardedDate": "تاريخ المنح"
             },
-            "numberFormatConflict": "يحتوي هذا العمود على تنسيقات أرقام مختلفة. اختر التنسيق الصحيح أو صحح الجدول."
+            "numberFormatConflict": "يحتوي هذا العمود على تنسيقات أرقام مختلفة. اختر التنسيق الصحيح أو صحح الجدول.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} حرف",
+                "expand": "توسيع",
+                "collapse": "طي",
+                "expandField": "توسيع {{field}}",
+                "collapseField": "طي {{field}}",
+                "descriptionTooLong": "استخدم {{limit}} حرفًا كحد أقصى لهذا الحقل.",
+                "sharedEvidence": "أدلة للجميع",
+                "sharedEvidenceHelp": "تُضمّن لكل شخص. عدّل هذه العناصر في قسم الأدلة والوسائط.",
+                "noSharedEvidence": "لم تُضف أدلة للجميع بعد.",
+                "personalEvidenceHelp": "تُرسل الأدلة المضافة في الصف إلى ذلك الشخص فقط.",
+                "personalEvidence": "أدلة إضافية لهذا الشخص",
+                "personalEvidenceFor": "رابط دليل إضافي لـ {{name}}",
+                "personalAttachments": "ملفات وروابط لهذا الشخص ({{count}})",
+                "evidenceFor": "أدلة لـ {{name}}",
+                "rowEvidenceHelp": "لهذا الشخص فقط؛ وتبقى الأدلة المشتركة مضمّنة.",
+                "allSent": "تم إرسال جميع بيانات الاعتماد",
+                "attention": "الإرسال يحتاج إلى مراجعة",
+                "completionCount": "تم إرسال {{sent}} من {{total}} بنجاح.",
+                "completionHelp": "راجع حالة الإرسال أو ابدأ بيانات اعتماد أخرى.",
+                "confirmationHelp": "بعض عمليات الإرسال غير مؤكدة. تحقق من حالتها قبل المحاولة مجددًا.",
+                "failureHelp": "راجع عمليات الإرسال الفاشلة، ثم أعد محاولة تلك العمليات فقط.",
+                "attentionToast": "تم إرسال {{sent}} من {{total}}. راجع عمليات الإرسال المتبقية.",
+                "successToast": "اكتمل الإرسال: تم إرسال {{count}}."
+            }
         },
         "importOptions": {
             "uploadTitle": "رفع ملف",

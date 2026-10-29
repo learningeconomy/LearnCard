@@ -14,6 +14,8 @@ const PROVIDER_SECRETS = [
     'MESSAGEBIRD_AUTH_TOKEN',
     'SENTRY_DSN',
     'POSTHOG_API_KEY',
+    // LC-2206: legacy Google skill-search read and legacy vector writes; remove after the
+    // Nova read flag has been on for the rollback window.
     'SKILL_EMBEDDING_GOOGLE_API_KEY',
     'SKILLS_PROVIDER_API_KEY',
     'TWILIO_ACCOUNT_SID',
@@ -24,6 +26,7 @@ const PROVIDER_SECRETS = [
     'CREDENTIAL_REFRESH_DIGEST_SECRET',
     'SHARE_LINK_REQUEST_HASH_SECRET',
     'APP_STORE_ADMIN_PROFILE_IDS',
+    'CAMPAIGN_ADMIN_PROFILE_IDS',
     'LOGIN_PROVIDER_DID',
     'NOTIFICATIONS_SERVICE_WEBHOOK_URL',
 ];

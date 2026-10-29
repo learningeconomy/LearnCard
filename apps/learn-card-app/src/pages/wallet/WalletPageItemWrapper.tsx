@@ -34,7 +34,9 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
     const { categoryId: categoryType } = walletPageItem;
     const viewMode = passportPageStore.use.viewMode();
 
-    let hasNewCredentials = newCredsStore.use.hasNewCredentials(categoryType as CredentialCategory);
+    const hasNewCredentials = newCredsStore.use.hasNewCredentials(
+        categoryType as CredentialCategory
+    );
 
     const enableCategoryCount =
         categoryType !== CredentialCategoryEnum.aiInsight &&

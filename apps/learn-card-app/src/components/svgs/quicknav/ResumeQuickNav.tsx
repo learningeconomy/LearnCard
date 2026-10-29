@@ -21,24 +21,24 @@ const ResumeQuickNav: React.FC<{ className?: string }> = ({ className = '' }) =>
             <path
                 d="M44.6742 42.7813L29.2617 42.7812"
                 stroke="#353E64"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
             <path
                 d="M44.6742 35.0879H35.4492"
                 stroke="#353E64"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
             <path d="M36.9238 3.17773V20.9997H53.2502" fill="#E2E3E9" />
             <path
                 d="M36.9238 4.67773V21.8829H52.6191"
                 stroke="#353E64"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
             <rect x="4.75" y="15.25" width="25" height="25" rx="12.5" fill="white" />
             <rect
@@ -48,7 +48,7 @@ const ResumeQuickNav: React.FC<{ className?: string }> = ({ className = '' }) =>
                 height="25"
                 rx="12.5"
                 stroke="#353E64"
-                stroke-width="2.5"
+                strokeWidth="2.5"
             />
             <path
                 d="M17.25 30.6211C13.6095 30.6211 10.5 31.1951 10.5 33.491C10.5 35.7878 13.5901 36.382 17.25 36.382C20.8905 36.382 24 35.8089 24 33.5121C24 31.2153 20.9107 30.6211 17.25 30.6211"
@@ -62,9 +62,9 @@ const ResumeQuickNav: React.FC<{ className?: string }> = ({ className = '' }) =>
             <path
                 d="M17 9.74971V9.16491C17 7.97484 17.4725 6.83351 18.3134 5.992C19.1544 5.15049 20.295 4.67773 21.4844 4.67773H37.1797L52.875 20.3829V48.0623C52.875 49.2524 52.4025 50.3938 51.5616 51.2353C50.7206 52.0768 49.58 52.5495 48.3906 52.5495H21.4844C20.295 52.5495 19.1544 52.0768 18.3134 51.2353C17.4725 50.3938 17 49.2524 17 48.0623V45.7497"
                 stroke="#353E64"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
             />
         </svg>
     );

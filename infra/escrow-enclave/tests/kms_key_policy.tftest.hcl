@@ -568,6 +568,32 @@ run "rejects_neither_access_mode" {
   expect_failures = [var.privatelink_allowed_principals]
 }
 
+run "privatelink_accepts_the_named_deploy_user" {
+  command = plan
+
+  # lca-api's endpoint is created by CloudFormation as its IAM deploy user.
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:user/lcn"]
+  }
+
+  assert {
+    condition     = aws_vpc_endpoint_service.enclave_host[0].allowed_principals == toset(["arn:aws:iam::206533012615:user/lcn"])
+    error_message = "PrivateLink mode must allow exactly the named endpoint creator"
+  }
+}
+
+run "rejects_user_wildcards" {
+  command = plan
+
+  variables {
+    lca_api_security_group_id      = null
+    privatelink_allowed_principals = ["arn:aws:iam::206533012615:user/*"]
+  }
+
+  expect_failures = [var.privatelink_allowed_principals]
+}
+
 run "rejects_wildcard_principals" {
   command = plan
 
@@ -682,4 +708,52 @@ override_resource {
 }
 override_resource {
   target = aws_cloudwatch_event_target.trail_tamper
+}
+
+run "storage_key_reserves_destructive_administration" {
+  command = apply
+
+  # The storage CMK encrypts the sealed escrow key object and authority table:
+  # any IAM admin disabling/deleting it would destroy escrow material.
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.s3_kms_key_policy.json).Statement : s
+      if try(s.Sid, "") == "DenyDestructiveAdministrationExceptKmsAdmin" && s.Effect == "Deny" && s.Principal.AWS == "*" &&
+      toset(s.Action) == toset(["kms:PutKeyPolicy", "kms:ScheduleKeyDeletion", "kms:DisableKey", "kms:DisableKeyRotation"]) &&
+      toset(s.Condition.ArnNotEquals["aws:PrincipalArn"]) == toset(["arn:aws:iam::123456789012:role/escrow-kms-admin", "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"])
+    ]) == 1
+    error_message = "Only escrow-kms-admin and root may change the storage CMK's policy, disable it, stop rotation or schedule deletion"
+  }
+
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.s3_kms_key_policy.json).Statement : s
+      if try(s.Sid, "") == "DenyRootDestructiveAdministrationWithoutMfa" && s.Effect == "Deny" &&
+      toset(s.Action) == toset(["kms:PutKeyPolicy", "kms:ScheduleKeyDeletion", "kms:DisableKey", "kms:DisableKeyRotation"]) &&
+      s.Condition.ArnEquals["aws:PrincipalArn"] == "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" &&
+      s.Condition.BoolIfExists["aws:MultiFactorAuthPresent"] == "false"
+    ]) == 1
+    error_message = "Root's storage-CMK destructive administration must require MFA, as on the escrow and credentials CMKs"
+  }
+
+  assert {
+    condition = length([
+      for s in jsondecode(data.aws_iam_policy_document.s3_kms_key_policy.json).Statement : s
+      if s.Effect == "Deny" && anytrue([for a in flatten([s.Action]) : contains(["kms:Decrypt", "kms:GenerateDataKey", "kms:Encrypt", "kms:CreateGrant", "kms:*"], a)])
+    ]) == 0
+    error_message = "The storage CMK must keep IAM-delegated use: S3 SSE, DynamoDB SSE grants, host, monitor and publisher rely on it"
+  }
+}
+override_resource {
+  target = aws_vpc_endpoint_connection_notification.enclave_host
+}
+override_resource {
+  target = aws_cloudwatch_event_rule.privatelink_governance
+  values = { arn = "arn:aws:events:us-east-1:123456789012:rule/privatelink-governance" }
+}
+override_resource {
+  target = aws_cloudwatch_event_target.privatelink_governance
+}
+override_resource {
+  target = aws_cloudwatch_metric_alarm.nlb_healthy_hosts
 }

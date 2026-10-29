@@ -21,6 +21,7 @@ import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
 import PreviewVerificationBox from './PreviewVerificationBox';
+import { formatCredentialAwardedDate } from 'learn-card-base/helpers/credentialHelpers';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -31,6 +32,7 @@ import CredentialVerificationDisplay, {
 import { CredentialCategoryEnum, useModal, DisplayTypeEnum } from 'learn-card-base';
 import { VC, UnsignedVC, VerificationItem } from '@learncard/types';
 import moment from 'moment';
+import * as m from '../../../../paraglide/messages.js';
 
 type BoostDetailsSideMenuProps = {
     credential: VC;
@@ -73,6 +75,8 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
     const { createdAt } = getInfoFromCredential(credential, 'MMMM DD YYYY', {
         uppercaseDate: false,
     });
+
+    const awardedDate = formatCredentialAwardedDate(credential);
 
     const activityStartDate = credential?.credentialSubject?.activityStartDate;
     const activityEndDate = credential?.credentialSubject?.activityEndDate;
@@ -146,7 +150,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                             </span>
                         )}
 
-                        {!isMediaDisplay && (
+                        {!isMediaDisplay && awardedDate && (
                             <span
                                 className={`text-grayscale-600 font-poppins text-[12px] font-semibold w-full ${
                                     description || dateRangeText
@@ -154,7 +158,7 @@ const BoostDetailsSideMenu: React.FC<BoostDetailsSideMenuProps> = ({
                                         : ''
                                 }`}
                             >
-                                Awarded on {createdAt}
+                                {m['boost.cms.preview.awardedOn']({ date: awardedDate })}
                             </span>
                         )}
                     </TruncateTextBox>

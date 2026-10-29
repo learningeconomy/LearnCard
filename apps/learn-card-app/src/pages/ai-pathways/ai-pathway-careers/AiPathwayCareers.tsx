@@ -15,6 +15,7 @@ import ExploreRoles from '../ExploreRoles';
 
 const AiPathwayCareers: React.FC<{
     careerKeywords?: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     occupations?: any[];
     isLoading?: boolean;
 }> = ({ careerKeywords = [], occupations = [], isLoading = false }) => {

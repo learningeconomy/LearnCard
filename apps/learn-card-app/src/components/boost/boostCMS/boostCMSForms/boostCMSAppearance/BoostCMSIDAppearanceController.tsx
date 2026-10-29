@@ -15,7 +15,9 @@ const BoostCMSIDAppearanceController: React.FC<{
     state: BoostCMSState;
     setState?: React.Dispatch<React.SetStateAction<BoostCMSState>>;
     boostUserType?: BoostUserTypeEnum;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     customTypes?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setCustomTypes?: React.Dispatch<any>;
     disabled?: boolean;
     handleCategoryAndTypeChange?: (

@@ -41,6 +41,7 @@ export const FamilyCMSColorPicker: React.FC<{
     const [color, setColor] = useState<string>(_color ?? '#353E64');
     const { newModal, closeModal } = useModal();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (key: string, value: any) => {
         setState(prevState => {
             return {

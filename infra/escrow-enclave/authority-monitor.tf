@@ -38,7 +38,7 @@ locals {
     }
     credential_key = {
       source = ["aws.kms"], "detail-type" = ["AWS API Call via CloudTrail"],
-      detail = { eventSource = ["kms.amazonaws.com"], eventName = ["PutKeyPolicy", "CreateGrant", "DisableKey", "ScheduleKeyDeletion"], requestParameters = { keyId = [try(aws_kms_key.credentials[0].key_id, "disabled"), try(aws_kms_key.credentials[0].arn, "disabled")] } }
+      detail = { eventSource = ["kms.amazonaws.com"], eventName = local.kms_governance_events, requestParameters = { keyId = [try(aws_kms_key.credentials[0].key_id, "disabled"), try(aws_kms_key.credentials[0].arn, "disabled")] } }
     }
     console = { "detail-type" = ["AWS Console Sign In via CloudTrail"], detail = { eventName = ["ConsoleLogin"] } }
     root    = { "detail-type" = ["AWS API Call via CloudTrail", "AWS Console Sign In via CloudTrail"], detail = { userIdentity = { type = ["Root"] } } }

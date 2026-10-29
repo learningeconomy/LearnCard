@@ -148,7 +148,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                 {state.progress && (
                                     <p className="text-sm text-cyan-700">
                                         {state.progress.fetched.toLocaleString()}
-                                        {/* eslint-disable-next-line i18next/no-literal-string -- counter separator SKIP */}
                                         <span aria-hidden="true"> / </span>
                                         {state.progress.total.toLocaleString()}
                                     </p>

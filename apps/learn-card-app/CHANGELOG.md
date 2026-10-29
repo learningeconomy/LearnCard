@@ -1,5 +1,51 @@
 # Changelog
 
+## 1.100.6
+
+### Patch Changes
+
+- [#1773](https://github.com/learningeconomy/LearnCard/pull/1773) [`eb3ff0177cfeeac012b996cae4d13622efe4053a`](https://github.com/learningeconomy/LearnCard/commit/eb3ff0177cfeeac012b996cae4d13622efe4053a) Thanks [@goblincore](https://github.com/goblincore)! - Wait and retry document uploads when extraction capacity is busy, with bounded backoff, cancellation, and localized feedback. Stop waiting on account changes or when the upload screen closes, and preserve results from requests already accepted for extraction.
+
+- [#1788](https://github.com/learningeconomy/LearnCard/pull/1788) [`5c1cc2d52589fd3548c1f729614a1e663486dcb3`](https://github.com/learningeconomy/LearnCard/commit/5c1cc2d52589fd3548c1f729614a1e663486dcb3) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2258] Preserve Passport categories across private-link previews and shared collections, including wallet-index categories such as Work Experience, Resume, and Professional Title. Ignore unrecognized category hints and infer their display category from the original credential. Use a static own-key lookup for category hints instead of scanning the allowlist for each credential.
+
+- [#1816](https://github.com/learningeconomy/LearnCard/pull/1816) [`616d4e3bf506aa14852e66c0423f232906e2c339`](https://github.com/learningeconomy/LearnCard/commit/616d4e3bf506aa14852e66c0423f232906e2c339) Thanks [@goblincore](https://github.com/goblincore)! - Correct unsigned credential preview labels, ordinary evidence link types, and mapped award dates on desktop and mobile.
+
+    Keep calendar award dates consistent across timezones and recognize uploaded MP4, MOV, and WebM evidence from file metadata.
+
+    Retain verification for signed credentials in preview mode and recognize direct HTTP(S) video-file evidence links.
+
+- [#1822](https://github.com/learningeconomy/LearnCard/pull/1822) [`2632ee46db2f5433af040c41daab71d4ff5d06d7`](https://github.com/learningeconomy/LearnCard/commit/2632ee46db2f5433af040c41daab71d4ff5d06d7) Thanks [@goblincore](https://github.com/goblincore)! - Improve recipient review with expandable descriptions and a visible 2,000-character authoring limit, shared versus personal evidence summaries, and explicit issuance completion feedback.
+
+- [#1783](https://github.com/learningeconomy/LearnCard/pull/1783) [`8ca7c2e41ebc59c9e921fe1af9a01320483a50a9`](https://github.com/learningeconomy/LearnCard/commit/8ca7c2e41ebc59c9e921fe1af9a01320483a50a9) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2255] Improve Phone Number Login Error Handling and Verification Code Flow
+
+- [#1803](https://github.com/learningeconomy/LearnCard/pull/1803) [`d3b26c1d7a154997e10f64bc825c5be40635cc2a`](https://github.com/learningeconomy/LearnCard/commit/d3b26c1d7a154997e10f64bc825c5be40635cc2a) Thanks [@leif-squeak](https://github.com/apps/leif-squeak)! - fix(claim): avoid duplicate VC-API completion requests
+
+- [#1729](https://github.com/learningeconomy/LearnCard/pull/1729) [`af3e0abb8e4e247c0ff1c7076b1ffa6e58256a9f`](https://github.com/learningeconomy/LearnCard/commit/af3e0abb8e4e247c0ff1c7076b1ffa6e58256a9f) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2262]: Add credential targeting and triggers to in-app messages
+
+- [#1526](https://github.com/learningeconomy/LearnCard/pull/1526) [`9be748a0487b79ce4c2d43b7039824928a92dfcc`](https://github.com/learningeconomy/LearnCard/commit/9be748a0487b79ce4c2d43b7039824928a92dfcc) Thanks [@Custard7](https://github.com/Custard7)! - Allow users to zoom LearnCard in web browsers while preserving native viewport behavior and one main landmark per page.
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - feat(campaigns): add audience management and shared engagement state [LC-2265]
+
+- [#1763](https://github.com/learningeconomy/LearnCard/pull/1763) [`eabb09dd327580b6157e65a20c2533ddea1f7b47`](https://github.com/learningeconomy/LearnCard/commit/eabb09dd327580b6157e65a20c2533ddea1f7b47) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2263] - Add Stories & Iframe in-app message presentations
+
+- [#1777](https://github.com/learningeconomy/LearnCard/pull/1777) [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2245] Add issuer LinkedIn organization IDs, stable certification IDs, and opt-in localized social previews. Keep each preview bound to one encrypted presentation so a new share does not replace an earlier card; refresh metadata in place and recreate deleted references. Audit publisher and creation/update times, support owner/profile cleanup, preserve decryptable card URLs, and isolate private updates to their exact share record.
+
+    Extract stable UUIDs from recognized LearnCard credential addresses to fit LinkedIn's certification ID field, retain other complete IDs only within the 80-character limit, and preserve family record identity independently of loaded pages. Use only eligible credential/achievement artwork for public previews, never recipient-photo fallbacks. Enable posting only after explicit preview publication succeeds and associate the disabled action with its consent explanation. Keep unresolved issuer placeholders out of LinkedIn organization names.
+
+    Keep the share-preview request type in a type-only network-plugin import so consumers using `verbatimModuleSyntax` can typecheck.
+
+- [#1745](https://github.com/learningeconomy/LearnCard/pull/1745) [`eb2150a8a50dfc2a002b8829f732da25a8bd775d`](https://github.com/learningeconomy/LearnCard/commit/eb2150a8a50dfc2a002b8829f732da25a8bd775d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2259 & LC-2256] Fix credential names, caret symbol, preview button
+
+- Updated dependencies [[`616d4e3bf506aa14852e66c0423f232906e2c339`](https://github.com/learningeconomy/LearnCard/commit/616d4e3bf506aa14852e66c0423f232906e2c339), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/react@3.0.1
+    - @learncard/credential-library@2.1.4
+    - @learncard/helpers@1.7.1
+    - @learncard/lca-api-plugin@2.0.12
+    - @learncard/ler-rs-plugin@0.1.32
+    - @learncard/open-badge-v2-plugin@1.1.42
+    - @learncard/render-method-plugin@12.0.0
+    - @learncard/sss-key-manager@0.2.4
+
 ## 1.100.5
 
 ### Patch Changes

@@ -77,9 +77,15 @@ jobs:
     determine-affected:
         name: Determine Affected Projects
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            actions: read
         outputs:
             affected: ${{ steps.affected.outputs.affected }}
-            is_release: ${{ steps.check_release.outputs.is_release }}
+            base: ${{ steps.range.outputs.base }}
+            head: ${{ steps.range.outputs.head }}
+            # always()-based publishers must not run after range selection fails.
+            is_release: ${{ job.status == 'success' && steps.check_release.outputs.is_release || 'false' }}
             is_manual: ${{ steps.check_manual.outputs.is_manual }}
             # For production releases, check which services have version changes
             brain_service_changed: ${{ steps.check_versions.outputs.brain_service_changed }}
@@ -140,6 +146,32 @@ jobs:
               if: github.event_name != 'workflow_dispatch'
               run: git fetch --no-tags --prune origin main
 
+            - name: Select last successful deployment range
+              if: github.event_name != 'workflow_dispatch'
+              id: range
+              uses: actions/github-script@v8
+              env:
+                  IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
+              with:
+                  # Retry transient API failures before using the conservative fallback.
+                  retries: 3
+                  script: |
+                      const { resolveDeployRange } = require('./scripts/resolve-deploy-range.cjs');
+                      const range = await resolveDeployRange({
+                        github,
+                        repo: context.repo,
+                        head: context.sha,
+                        runId: context.runId,
+                        release: process.env.IS_RELEASE === 'true',
+                        warn: message => core.warning(message),
+                      });
+                      core.setOutput('base', range.base);
+                      core.setOutput('head', range.head);
+                      await core.summary.addHeading('Deployment comparison range').addTable([
+                        [{ data: 'Field', header: true }, { data: 'Value', header: true }],
+                        ...Object.entries(range).map(([key, value]) => [key, value]),
+                      ]).write();
+
             - name: Use Composite Setup Action
               if: github.event_name != 'workflow_dispatch'
               uses: ./.github/actions/setup
@@ -147,60 +179,24 @@ jobs:
             - name: Get Affected List
               if: github.event_name != 'workflow_dispatch'
               id: affected
+              env:
+                  NX_BASE: ${{ steps.range.outputs.base }}
+                  NX_HEAD: ${{ steps.range.outputs.head }}
               run: |
                   set -o pipefail
-                  affected="$(bunx nx show projects --affected --base=HEAD~1 --head=HEAD | paste -sd, -)"
+                  affected="$(bunx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD" | paste -sd, -)"
                   echo "affected=$affected" >> "$GITHUB_OUTPUT"
                   echo "Affected projects: $affected"
 
             - name: Check version changes for release
               if: github.event_name != 'workflow_dispatch'
               id: check_versions
+              env:
+                  NX_BASE: ${{ steps.range.outputs.base }}
+                  NX_HEAD: ${{ steps.range.outputs.head }}
               run: |
-                  # Check which packages had version changes in this commit
-                  CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/brain-service/package.json"; then
-                    echo "brain_service_changed=true" >> $GITHUB_OUTPUT
-                    echo "Brain service version changed"
-                  else
-                    echo "brain_service_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/learn-cloud-service/package.json"; then
-                    echo "learn_cloud_changed=true" >> $GITHUB_OUTPUT
-                    echo "LearnCloud version changed"
-                  else
-                    echo "learn_cloud_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/lca-api/package.json"; then
-                    echo "lca_api_changed=true" >> $GITHUB_OUTPUT
-                    echo "LCA API version changed"
-                  else
-                    echo "lca_api_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "services/learn-card-network/ai-agent/package.json"; then
-                    echo "ai_agent_changed=true" >> $GITHUB_OUTPUT
-                    echo "AI Agent service version changed"
-                  else
-                    echo "ai_agent_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -q "apps/learn-card-app/package.json"; then
-                    echo "lca_app_changed=true" >> $GITHUB_OUTPUT
-                    echo "LearnCard App version changed"
-                  else
-                    echo "lca_app_changed=false" >> $GITHUB_OUTPUT
-                  fi
-
-                  if echo "$CHANGED_FILES" | grep -qE "packages/plugins/didkit-plugin-node/(native|src)/"; then
-                    echo "native_plugin_changed=true" >> $GITHUB_OUTPUT
-                    echo "Native DIDKit plugin changed - will wait for prebuilds"
-                  else
-                    echo "native_plugin_changed=false" >> $GITHUB_OUTPUT
-                  fi
+                  # A package-file edit alone is not a version bump.
+                  node scripts/resolve-deploy-range.cjs changes "$NX_BASE" "$NX_HEAD"
 
             - name: Determine Deployment Environments
               id: set-env
@@ -365,6 +361,10 @@ jobs:
               with:
                   fetch-depth: 0
 
+            # Ensure the full-tree fallback also resolves in this runner's clone.
+            - name: Prepare full-tree comparison fallback
+              run: git hash-object -t tree -w --stdin </dev/null
+
             - name: Download native plugin binary
               uses: actions/download-artifact@v4
               with:
@@ -386,8 +386,10 @@ jobs:
                   # Matches test.yml; a large squash can make most projects affected.
                   timeout_minutes: 20
                   max_attempts: 3
-                  command: bunx nx affected --target=test --base=HEAD~1 --head=HEAD
+                  command: bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
               env:
+                  NX_BASE: ${{ needs.determine-affected.outputs.base }}
+                  NX_HEAD: ${{ needs.determine-affected.outputs.head }}
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
@@ -517,13 +519,16 @@ jobs:
                   SERVERLESS_REGION: ${{ vars.SERVERLESS_REGION }}
                   SERVERLESS_SERVICE_NAME: ${{ vars.SERVERLESS_SERVICE_NAME }}
                   APP_STORE_ADMIN_PROFILE_IDS: ${{ vars.APP_STORE_ADMIN_PROFILE_IDS }}
+                  CAMPAIGN_ADMIN_PROFILE_IDS: ${{ vars.CAMPAIGN_ADMIN_PROFILE_IDS }}
                   # Optional per-stage runtime-secrets bundle id. When set, the bundle
                   # supplies the credentials below and serverless.function-env.cjs omits the
                   # GitHub fallbacks. Non-secret per-stage config (DOMAIN_NAME, SENTRY_ENV,
                   # POSTMARK_FROM_EMAIL, MESSAGEBIRD_ORIGINATOR, CLIENT_APP_DOMAIN_NAME,
                   # the SHARE_LINK_MAINTENANCE_* trust/maintenance values, OIDC_TRUSTED_ISSUERS,
                   # OIDC_EXPECTED_AUDIENCE, CREDENTIAL_REFRESH_ENABLED / _NOTIFICATION_WINDOW_HOURS,
-                  # SKILL_EMBEDDING_GOOGLE_MODEL) is checked in under config/, not passed here.
+                  # SKILL_EMBEDDING_BEDROCK_* / SKILL_EMBEDDING_DIMENSION / SKILL_EMBEDDING_GOOGLE_MODEL)
+                  # is checked in under config/, not passed here. Nova skill embeddings use the Lambda
+                  # role (SigV4); the Google key below serves the legacy read path (LC-2206).
                   RUNTIME_SECRETS_ID: ${{ vars.RUNTIME_SECRETS_ID }}
                   CONFIG_TENANT: ${{ matrix.tenant || 'learncard' }}
                   # Credential fallbacks: used only when RUNTIME_SECRETS_ID is unset.
@@ -691,6 +696,11 @@ jobs:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
+            - name: Set up LCA Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version: 24.12.0
+
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
@@ -803,6 +813,9 @@ jobs:
         uses: ./.github/workflows/open-api-generator.yml
         with:
             affected: ${{ needs.determine-affected.outputs.affected }}
+        secrets:
+            E2E_RUNNER_APP_ID: ${{ secrets.E2E_RUNNER_APP_ID }}
+            E2E_RUNNER_PRIVATE_KEY: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
 
     # ============================================================================
     # FRONTEND DEPLOYMENTS
@@ -1449,6 +1462,12 @@ jobs:
                   fs.writeFileSync(path, `${JSON.stringify(pkg, null, 4)}\n`);
                   '
 
+            # Native artifacts publish in a separate workflow. Hold dependent
+            # packages until the exact wrapper and every supported binding are public.
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
             - name: Publish Registry Packages
               run: bunx changeset publish
     # ============================================================================
@@ -1730,7 +1749,13 @@ jobs:
 
             # The native prebuild workflow publishes independently of Deploy.
             # Trigger installs this external package from npm, not the checkout.
-            - name: Wait for Trigger native package publication
+            - name: Wait for native registry publication
+              timeout-minutes: 46
+              run: node scripts/wait-for-didkit-registry.mjs
+
+            # Publication waiting has its own budget; keep the fresh Linux install
+            # and runtime verification after all native artifacts are available.
+            - name: Verify Trigger native package installation
               timeout-minutes: 16
               run: node scripts/wait-for-trigger-native-package.mjs
 

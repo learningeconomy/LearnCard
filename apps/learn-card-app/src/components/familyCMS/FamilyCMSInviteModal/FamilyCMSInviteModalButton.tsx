@@ -78,6 +78,7 @@ const FamilyCMSInviteModalButton: React.FC<FamilyCMSInviteModalButtonProps> = ({
         setState(prevState => {
             return {
                 ...prevState,
+                // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                 childAccounts: [...prevState?.childAccounts, childAccount],
             };
         });

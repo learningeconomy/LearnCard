@@ -1,6 +1,11 @@
 import { environment } from '@environment';
 import { neogma } from '@instance';
 import { contractEventMaintenanceSchema } from '@helpers/contract-event-maintenance.helpers';
+import {
+    LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY,
+    buildSkillEmbeddingVectorIndexQuery,
+    resolveSkillEmbeddingGeneration,
+} from '../config/skillEmbedding';
 
 import { Boost } from './Boost';
 import { Profile } from './Profile';
@@ -17,6 +22,7 @@ import { CredentialActivity } from './CredentialActivity';
 import { CredentialRefresh } from './CredentialRefresh';
 import { StatusList } from './StatusList';
 import { ContactMethod } from './ContactMethod';
+import { Campaign } from './Campaign';
 import { ensureCredentialRefreshConstraints } from './credential-refresh-constraints';
 
 // Ensure CredentialActivity model is registered by referencing it
@@ -139,14 +145,22 @@ ContactMethod.addRelationships({
     profile: { model: Profile, direction: 'in', name: 'HAS_CONTACT_METHOD' },
 });
 
+Campaign.addRelationships({
+    audience: { model: Profile, direction: 'in', name: 'IN_CAMPAIGN_AUDIENCE' },
+    state: { model: Profile, direction: 'in', name: 'CAMPAIGN_STATE' },
+});
+
 const shouldCreateIndices =
     environment.NODE_ENV === 'production' || !environment.NEO4J_SKIP_INDICES;
 
 const indexQueries = [
+    'CREATE CONSTRAINT campaign_id_unique IF NOT EXISTS FOR (c:Campaign) REQUIRE c.id IS UNIQUE',
+    'CREATE INDEX campaign_status_idx IF NOT EXISTS FOR (c:Campaign) ON (c.status)',
     'CREATE CONSTRAINT consent_event_id IF NOT EXISTS FOR (e:ConsentFlowEvent) REQUIRE e.id IS UNIQUE',
     'CREATE CONSTRAINT consent_delivery_id IF NOT EXISTS FOR (d:ConsentFlowEventDelivery) REQUIRE d.id IS UNIQUE',
     ...contractEventMaintenanceSchema,
     'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)',
+    'CREATE CONSTRAINT credential_share_preview_id_unique IF NOT EXISTS FOR (p:CredentialSharePreview) REQUIRE p.id IS UNIQUE',
     'CREATE INDEX profile_did_idx IF NOT EXISTS FOR (p:Profile) ON (p.did)',
     'CREATE TEXT INDEX profileId_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.profileId)',
     'CREATE TEXT INDEX profile_displayname_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.displayName)',
@@ -181,7 +195,19 @@ const indexQueries = [
     'CREATE TEXT INDEX skill_framework_name_text_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.name)',
     'CREATE INDEX skill_id_idx IF NOT EXISTS FOR (s:Skill) ON (s.id)',
     'CREATE TEXT INDEX skill_statement_text_idx IF NOT EXISTS FOR (s:Skill) ON (s.statement)',
-    "CREATE VECTOR INDEX skill_embedding_vector_idx IF NOT EXISTS FOR (s:Skill) ON (s.embedding) OPTIONS {indexConfig: {`vector.dimensions`: 768, `vector.similarity_function`: 'cosine'}}",
+    // LC-2206: the legacy Google 768-dim index (main's DDL, unchanged) stays because semantic
+    // search reads it until SKILL_EMBEDDING_BEDROCK_READ_ENABLED is on, and flipping the flag
+    // back off is the rollback. The post-rollback-window cleanup drops it.
+    LEGACY_GOOGLE_SKILL_EMBEDDING_VECTOR_INDEX_QUERY,
+    // One vector index per Nova embedding generation (1024 dims by default), written regardless
+    // of the read flag.
+    buildSkillEmbeddingVectorIndexQuery(
+        resolveSkillEmbeddingGeneration({
+            modelId: environment.SKILL_EMBEDDING_BEDROCK_MODEL_ID,
+            dimension: environment.SKILL_EMBEDDING_DIMENSION,
+            region: environment.SKILL_EMBEDDING_BEDROCK_REGION,
+        })
+    ),
     'CREATE CONSTRAINT tag_slug_unique IF NOT EXISTS FOR (t:Tag) REQUIRE (t.slug) IS UNIQUE',
     'CREATE TEXT INDEX tag_name_text_idx IF NOT EXISTS FOR (t:Tag) ON (t.name)',
     'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)',
@@ -293,5 +319,7 @@ export * from './AppManifestVersion';
 export * from './AppStoreListing';
 export * from './CredentialActivity';
 export * from './CredentialRefresh';
+export * from './CredentialSharePreview';
 export * from './ShareLink';
 export * from './StatusList';
+export * from './Campaign';
