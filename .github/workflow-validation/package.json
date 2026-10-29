@@ -1,0 +1,13 @@
+{
+    "name": "learncard-workflow-validation",
+    "private": true,
+    "version": "1.0.0",
+    "actionlintVersion": "1.7.12",
+    "scripts": {
+        "check": "node check.cjs",
+        "test": "node --test check.test.cjs"
+    },
+    "dependencies": {
+        "js-yaml": "4.3.2"
+    }
+}
