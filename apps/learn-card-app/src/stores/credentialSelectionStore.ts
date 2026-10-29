@@ -1,6 +1,6 @@
 import { createStore } from '@udecode/zustood';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
-import type { CredentialListCategory } from 'learn-card-base/types/credential-records';
+import type { CredentialListCategory, LCR } from 'learn-card-base/types/credential-records';
 
 export type CredentialSelectionContext = 'passport' | 'archived';
 
