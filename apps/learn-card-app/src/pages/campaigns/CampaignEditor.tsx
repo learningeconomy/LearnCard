@@ -475,7 +475,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         )}
                         {saved && (
                             <>
-                                <div className="space-y-3 border-t border-grayscale-200 pt-4">
+                                <div className="flex flex-col gap-4 border-t border-grayscale-200 pt-4">
                                     <button
                                         type="button"
                                         className={`${buttonClass} w-full`}
