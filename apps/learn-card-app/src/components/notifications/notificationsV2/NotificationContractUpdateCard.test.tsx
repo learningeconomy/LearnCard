@@ -40,7 +40,8 @@ const OpenAlerts = ({ children }: { children: React.ReactNode }) => {
     const { newModal } = useModal();
     return (
         <button
-            onClick={() =>
+            onClick={() => {
+                newModal(<section aria-label="Underlying modal">Underlying</section>);
                 newModal(
                     <section aria-label="Alerts">{children}</section>,
                     {},
@@ -48,8 +49,8 @@ const OpenAlerts = ({ children }: { children: React.ReactNode }) => {
                         desktop: ModalTypes.Right,
                         mobile: ModalTypes.Right,
                     }
-                )
-            }
+                );
+            }}
         >
             Open Alerts
         </button>
@@ -98,7 +99,10 @@ describe('NotificationContractUpdateCard', () => {
             '/consent-flow/review?uri=https%3A%2F%2Fexample.test%2Fcontract'
         );
         expect(state.update).toHaveBeenCalledOnce();
-        await waitFor(() => expect(screen.queryByRole('region', { name: 'Alerts' })).toBeNull());
+        await waitFor(() => {
+            expect(screen.queryByRole('region', { name: 'Alerts' })).toBeNull();
+            expect(screen.queryByRole('region', { name: 'Underlying modal' })).toBeNull();
+        });
         resolveUpdate();
     });
 

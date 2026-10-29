@@ -13,7 +13,7 @@ type Props = { notification: NotificationType; handleArchive?: () => void | Prom
 
 const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleArchive }) => {
     const history = useHistory();
-    const { closeModal } = useModal();
+    const { closeAllModals } = useModal();
     const locale = useLocale();
     const { mutateAsync: updateNotification } = useUpdateNotification();
     const [dismissing, setDismissing] = useState(false);
@@ -62,7 +62,7 @@ const NotificationContractUpdateCard: React.FC<Props> = ({ notification, handleA
 
     const openReview = async () => {
         if (!data?.contractUri) return;
-        closeModal();
+        closeAllModals();
         history.push(`/consent-flow/review?uri=${encodeURIComponent(data.contractUri)}`);
         if (notification._id) {
             try {
