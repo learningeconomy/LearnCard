@@ -232,7 +232,7 @@ export const CampaignAudience: React.FC<{
                     <Field label="Audience source JSON" htmlFor="audience-source-json">
                         <textarea
                             id="audience-source-json"
-                            className={`${inputClass} font-mono`}
+                            className={`${inputClass} font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace]`}
                             rows={6}
                             value={sourceJson}
                             onChange={e => setSourceJson(e.target.value)}

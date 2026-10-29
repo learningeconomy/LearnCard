@@ -27,3 +27,17 @@ Run the focused model/component tests with `bun run --cwd apps/learn-card-app te
 Run `PW_MOCK_PORT=3027 PW_RECORD_VIDEO=true bun run --cwd apps/learn-card-app test-mock -- campaigns.mocked.spec.ts --workers=1` for the real UI against synthetic mocked services, including a 10,000-row upload and mobile layout. For local Chromium QA, run from the app directory: `PW_MOCK_PORT=3028 PW_RECORD_VIDEO=true bunx playwright test --config=playwright.campaigns.config.ts`. Never use recording mode or production notification endpoints for these tests. Network simulations are not proof of backend delivery.
 
 The repository's full `lc verify` owned-stack gate requires Linux. On macOS use the secret-free LearnCard Verification workflow on the exact branch head, retaining its result separately from mocked browser evidence. The catalog does not yet include this new composer; do not describe a generic catalog pass as composer-specific end-to-end proof.
+
+## Studio layout
+
+The collection supports server-side status filters, desktop table rows and compact mobile cards.
+The editor groups details, message JSON and schedule/eligibility beside a preview/testing panel.
+The message overview is a text summary; **Preview message** opens the existing real renderer.
+New drafts generate a stable ID automatically. **Advanced settings · Campaign ID** allows a
+custom ID before saving; saved IDs remain immutable and campaign names stay editable.
+Validation appears for edited fields, with JSON paths retained, rather than showing errors on
+an untouched draft. The same shared schema still blocks invalid saves.
+
+Desktop layout uses explicit 1200px/1440px variants because this app does not define `lg`/`xl`.
+Secondary buttons declare solid borders to preserve them through Ionic's reset. The synthetic
+browser suite checks these properties and captures desktop/mobile list and editor screenshots.
