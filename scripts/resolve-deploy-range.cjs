@@ -68,9 +68,16 @@ const resolveDeployRange = async ({
             });
             runs = response.data.workflow_runs;
             if (!Array.isArray(runs)) throw new Error('Invalid workflow history response.');
-        } catch {
+        } catch (error) {
             // An API/permission failure must not silently drop undeployed changes.
-            return fullTree('history-unavailable');
+            // Keep HTTP diagnostics in the summary/error without exposing raw
+            // transport messages, request headers or other credential details.
+            const status = error?.status;
+            const reason =
+                Number.isInteger(status) && status >= 400 && status <= 599
+                    ? `history-unavailable-http-${status}`
+                    : 'history-unavailable';
+            return fullTree(reason);
         }
 
         for (const run of runs) {

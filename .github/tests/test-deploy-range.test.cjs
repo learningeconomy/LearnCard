@@ -236,6 +236,35 @@ for (const reason of ['no-success', 'API-error', 'missing-object']) {
     });
 }
 
+for (const status of [403, 429, 503]) {
+    for (const release of [false, true]) {
+        test(`HTTP ${status} diagnoses ${release ? 'production failure' : 'staging fallback'} without raw transport details`, async t => {
+            const f = fixture(t);
+            f.commit(release ? 'chore(release): current release' : 'current push', {
+                [frontend]: manifest('1.1.0'),
+            });
+            const error = Object.assign(new Error('private transport detail'), { status });
+            const options = f.options(error, release);
+            const reason = `history-unavailable-http-${status}`;
+            if (release) {
+                await assert.rejects(resolveDeployRange(options), error => {
+                    assert.match(error.message, /No trusted production-release Deploy baseline/);
+                    assert.ok(error.message.includes(reason));
+                    assert.doesNotMatch(error.message, /private transport detail/);
+                    return true;
+                });
+            } else {
+                const range = await resolveDeployRange(options);
+                assert.equal(range.source, 'full-tree');
+                assert.equal(range.reason, reason);
+                assert.equal(f.git('cat-file', '-t', range.base), 'tree');
+                assert.ok(f.warnings[0].includes(reason));
+                assert.doesNotMatch(f.warnings[0], /private transport detail/);
+            }
+        });
+    }
+}
+
 test('rejects a head or mode mismatch before consulting deployment history', async t => {
     const f = fixture(t);
     const options = f.options([[]]);
