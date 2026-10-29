@@ -81,6 +81,7 @@ jobs:
             channel: ${{ needs.prepare.outputs.channel }}
             tenant: learncard
             stage: sss-pilot
+            stage_in_build: ${{ 'true' }}
             self_assign: ${{ 'false' }}
             enable_auth_debug_widget: ${{ 'true' }}
         secrets:
