@@ -6,18 +6,20 @@ name: CapGo SSS Pilot
 # lets named testers migrate their own existing production accounts from
 # Web3Auth to SSS on real devices before everyone switches.
 #
-# The channel is `<defaultChannel>-sss-pilot-<suffix>`. It must be
-# self-assignable for the in-app switcher (Version Info > Advanced > Switch
-# update channel), so pick an unguessable suffix and share it only with
-# testers. Anyone on the channel migrates their account permanently (it stays
-# on the same key and DID, so returning to "Production (Latest)" is safe).
+# The channel is `<defaultChannel>-sss-pilot-<suffix>` and is NOT
+# self-assignable: Capgo lists self-assignable channels to every install, so a
+# name is no access control. Add each tester's device to the channel in the
+# Capgo dashboard (device override; the device ID is in Version Info). Anyone on
+# the channel migrates their account permanently (same key and DID, so leaving
+# the channel is safe). The bundle includes the auth debug widget so testers
+# can compare DIDs.
 # Runbook: internal-docs/architecture/web3auth-sss-migration-runbook.md.
 
 on:
     workflow_dispatch:
         inputs:
             channel_suffix:
-                description: Unguessable channel suffix (lowercase letters/digits, 12+ chars)
+                description: Channel suffix (lowercase letters/digits, 12+ chars)
                 required: true
                 type: string
 
@@ -79,6 +81,7 @@ jobs:
             channel: ${{ needs.prepare.outputs.channel }}
             tenant: learncard
             stage: sss-pilot
-            self_assign: 'true'
+            self_assign: 'false'
+            enable_auth_debug_widget: 'true'
         secrets:
             CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}

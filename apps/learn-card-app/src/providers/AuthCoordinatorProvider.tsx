@@ -821,7 +821,28 @@ const AuthSessionManager: React.FC<{
             return;
         if (!authProvider) return;
 
+        const migrationData = coordinator.state.migrationData ?? {};
+        // A cached key is already being migrated (and checked against Web3Auth).
+        if (migrationData.web3AuthKey) return;
+
         migrationKeyFetchedRef.current = true;
+
+        // A provisional account re-derives only when nothing better is at hand:
+        // a QR-delivered share is picked up from recovery, and a failed derivation
+        // returns to recovery instead of the stalled-upgrade screen.
+        const canFallBack = migrationData.canFallBackToRecovery === true;
+
+        if (canFallBack && window.sessionStorage.getItem('qr_login_device_share')) {
+            coordinator.fallBackToRecovery();
+            return;
+        }
+
+        const fallBack = (): void => {
+            const latestCoordinator = migrationCoordinatorRef.current;
+            if (canFallBack && latestCoordinator.state.status === 'needs_migration') {
+                latestCoordinator.fallBackToRecovery();
+            }
+        };
 
         const extractAndInject = async (): Promise<void> => {
             try {
@@ -829,6 +850,7 @@ const AuthSessionManager: React.FC<{
                 const privateKey = await deriveLegacyMigrationKey(authProvider);
                 if (!privateKey) {
                     emitAuthError('web3auth:migration_key', 'No sign-in session available');
+                    fallBack();
                     return;
                 }
 
@@ -841,6 +863,7 @@ const AuthSessionManager: React.FC<{
                 // Provider and Torus errors can embed credentials. Shared strategy
                 // diagnostics retain safe outcome metadata; never forward raw errors.
                 emitAuthError('web3auth:migration_key', 'Could not prepare account upgrade');
+                fallBack();
             }
         };
 

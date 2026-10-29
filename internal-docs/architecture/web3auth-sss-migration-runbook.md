@@ -32,9 +32,11 @@ Safety checks in code (learn-card-base `AuthCoordinator.migrate()`):
     nothing written. A wrong first DID would be permanent: lca-api refuses later
     writes from another DID, and the 30-day purge keeps the stored DID.
 
-- **Provisional on a new device.** A provisional migrated account with no share
-  on this device re-derives its Web3Auth key, bound to the server DID, instead
-  of landing on a recovery screen with no confirmed methods.
+- **Provisional on a new device.** A provisional migrated account whose share
+  is missing or stale on this device re-derives its Web3Auth key, bound to the
+  server DID, instead of landing on a recovery screen with no confirmed
+  methods. If the derivation fails, or a QR-login share is waiting, it falls
+  back to that recovery screen.
 - **PIN prompt (LAUNCH-DECISIONS P-a).** Escrow-enrolled accounts without a PIN
   get the first-time prompt once per device.
 
@@ -58,31 +60,39 @@ Safety checks in code (learn-card-base `AuthCoordinator.migrate()`):
 
 LearnCard native, via `.github/workflows/capgo-sss-pilot.yml` (production
 config + `learncard/config.sss-pilot.json`: SSS, nitro escrow, 100% rollout on
-that channel only).
+that channel only; built with the auth debug widget on).
 
-1. Run the workflow with an unguessable `channel_suffix`. The channel is
-   self-assignable (required by the in-app switcher), so treat the name as a
-   secret.
-2. On the device: side menu → version line → Advanced → Switch update channel →
-   enter `<defaultChannel>-sss-pilot-<suffix>`, then reload.
+1. Run the workflow with a `channel_suffix`. The channel is **not**
+   self-assignable: Capgo lists self-assignable channels to every install, so a
+   channel name is no access control.
+2. Get each tester's device ID (side menu → version line → Version Info), then
+   assign that device to `<defaultChannel>-sss-pilot-<suffix>` with a device
+   override in the Capgo dashboard and reload the app. If the device does not
+   pick up the bundle, link it explicitly:
+   `capgo channel set <channel> --bundle <version> com.learncard.app` (without
+   `--self-assign`). Neither step has been exercised yet; confirm on the first
+   device.
 3. Use an **existing** account only. Accounts created on the pilot get random
    keys that Web3Auth builds cannot derive.
-4. Check, before and after: the DID in the auth debug tab is unchanged;
+4. Check, before and after: the DID in the auth debug panel is unchanged;
    credentials and profile are present; signing in on a second device works
-   (provisional: silent re-derive; after a PIN: recovery). Once step 9 is live:
+   (provisional: silent re-derive, or the recovery screen if Web3Auth fails or a
+   QR-login share is waiting; after a PIN: recovery). Once step 9 is live:
    escrow enrollment, PIN prompt, PIN recovery.
 5. Watch logs for `migration.identity.mismatch` (must be zero),
    `migration.identity.unanchored` (rate should match accounts without a
    profile; near 100% means a wrong `web3Auth` block) and
    `migration.identity.deferred`.
-6. To leave: switch to "Production (Latest)". Migrated accounts keep the same
-   key, so Web3Auth builds still open them.
+6. To leave: remove the device override. Migrated accounts keep the same key,
+   so Web3Auth builds still open them. When the pilot ends, delete the channel.
 
 VetPass has no Capgo channel. Its overlay (`vetpass/config.sss-pilot.json`, SSS
-without escrow) applies only to a web host whose first label is `sss-pilot`,
-which needs a Netlify alias plus Firebase authorized-domain and Web3Auth origin
-entries. Escrow for VetPass is undecided: the production enclave is configured
-for the `learncard` tenant.
+without escrow) applies only to a web host whose first label is `sss-pilot`.
+That host needs a `tenant-registry.json` entry mapping it to `vetpass`
+(unregistered hosts resolve to the `learncard` tenant, and would get the
+LearnCard pilot overlay instead), a Netlify alias, and Firebase
+authorized-domain and Web3Auth origin entries. Escrow for VetPass is
+undecided: the production enclave is configured for the `learncard` tenant.
 
 ## Switching everyone
 

@@ -2527,11 +2527,73 @@ describe('AuthCoordinator', () => {
                     hasLocalKey: vi.fn().mockResolvedValue(true),
                     fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
                 },
+                config: { didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zLegacy') },
             });
 
             const result = await coordinator.initialize();
 
-            expect(result.status).not.toBe('needs_migration');
+            expect(result).toMatchObject({
+                status: 'ready',
+                did: 'did:key:zLegacy',
+                sssActivationState: 'provisional',
+            });
+        });
+
+        it('re-derives a provisional account whose local share is stale', async () => {
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(true),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+                config: { didFromPrivateKey: vi.fn().mockResolvedValue('did:key:zOtherShare') },
+            });
+
+            const result = await coordinator.initialize();
+
+            expect(keyDerivation.clearLocalKeys).toHaveBeenCalledWith({ preservePending: true });
+            expect(result).toMatchObject({
+                status: 'needs_migration',
+                migrationData: { expectedDid: 'did:key:zLegacy', canFallBackToRecovery: true },
+            });
+        });
+
+        it('falls back to the recovery state it replaced', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    hasLocalKey: vi.fn().mockResolvedValue(false),
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue(provisionalStatus),
+                },
+            });
+
+            await coordinator.initialize();
+            const result = coordinator.fallBackToRecovery();
+
+            expect(result).toMatchObject({
+                status: 'needs_recovery',
+                recoveryReason: 'new_device',
+                sssActivationState: 'provisional',
+                expectedDid: 'did:key:zLegacy',
+            });
+            // Single use: a second call leaves the state alone.
+            expect(coordinator.fallBackToRecovery()).toBe(result);
+        });
+
+        it('does not offer a recovery fallback to a non-provisional migration', async () => {
+            const { coordinator } = setup({
+                keyDerivation: {
+                    fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                        ...defaultServerStatus,
+                        needsMigration: true,
+                    } satisfies ServerKeyStatus),
+                },
+            });
+
+            const initial = await coordinator.initialize();
+            expect(initial.status).toBe('needs_migration');
+            if (initial.status === 'needs_migration') {
+                expect(initial.migrationData?.canFallBackToRecovery).toBeUndefined();
+            }
+            expect(coordinator.fallBackToRecovery().status).toBe('needs_migration');
         });
 
         it('does not re-derive an active (non-legacy) account', async () => {

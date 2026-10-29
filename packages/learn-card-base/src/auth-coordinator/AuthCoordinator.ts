@@ -73,6 +73,7 @@ import type {
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
+    ServerKeyStatus,
     SssActivationState,
     UnifiedAuthState,
 } from './types';
@@ -119,6 +120,8 @@ export class AuthCoordinator {
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
+    /** Recovery state replaced by a provisional re-derive; see needRecovery(). */
+    private recoveryFallback: UnifiedAuthState | null = null;
     private stopEscrowPolling?: () => void;
 
     static readonly ESCROW_STATUS_REFRESH_MS = 60_000;
@@ -803,6 +806,7 @@ export class AuthCoordinator {
      */
     async initialize(): Promise<UnifiedAuthState> {
         if (this.endingSession) return this.state;
+        this.recoveryFallback = null;
         try {
             // --- Private-key-first path ---
             if (this.config.getCachedPrivateKey && this.config.didFromPrivateKey) {
@@ -1030,14 +1034,8 @@ export class AuthCoordinator {
                 return this.state;
             }
 
-            // Case 2: Strategy says migration is needed. A provisional migration
-            // without this device's share is re-derived from the legacy key too:
-            // the server keeps that fallback until a recovery method activates SSS,
-            // and the account may have no confirmed method to recover with yet.
-            if (
-                serverStatus.needsMigration &&
-                (serverStatus.sssActivationState !== 'provisional' || !hasLocalKey)
-            ) {
+            // Case 2: Strategy says migration is needed
+            if (serverStatus.needsMigration && serverStatus.sssActivationState !== 'provisional') {
                 this.setState({
                     status: 'needs_migration',
                     authUser,
@@ -1048,17 +1046,7 @@ export class AuthCoordinator {
 
             // Case 3: Server has key but no local component — needs recovery
             if (!hasLocalKey) {
-                this.setState({
-                    status: 'needs_recovery',
-                    authUser,
-                    recoveryMethods,
-                    recoveryReason: 'new_device',
-                    escrowPin: serverStatus.escrowPin,
-                    maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
-                    sssActivationState: serverStatus.sssActivationState ?? null,
-                    expectedDid: serverStatus.primaryDid ?? undefined,
-                });
-                return this.state;
+                return this.needRecovery(authUser, recoveryMethods, serverStatus, 'new_device');
             }
 
             // Case 4: Has both local and server keys — try to connect
@@ -1067,17 +1055,12 @@ export class AuthCoordinator {
             const localKey = await this.keyDerivation.getLocalKey();
 
             if (!localKey || !serverStatus.authShare) {
-                this.setState({
-                    status: 'needs_recovery',
+                return this.needRecovery(
                     authUser,
                     recoveryMethods,
-                    recoveryReason: 'missing_server_data',
-                    escrowPin: serverStatus.escrowPin,
-                    maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
-                    sssActivationState: serverStatus.sssActivationState ?? null,
-                    expectedDid: serverStatus.primaryDid ?? undefined,
-                });
-                return this.state;
+                    serverStatus,
+                    'missing_server_data'
+                );
             }
 
             let privateKey = await this.keyDerivation.reconstructKey(
@@ -1106,17 +1089,12 @@ export class AuthCoordinator {
                         log.warn('DID mismatch - stale local key detected');
                         await this.keyDerivation.clearLocalKeys({ preservePending: true });
 
-                        this.setState({
-                            status: 'needs_recovery',
+                        return this.needRecovery(
                             authUser,
                             recoveryMethods,
-                            recoveryReason: 'stale_local_key',
-                            escrowPin: serverStatus.escrowPin,
-                            maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
-                            sssActivationState: serverStatus.sssActivationState ?? null,
-                            expectedDid: serverStatus.primaryDid,
-                        });
-                        return this.state;
+                            serverStatus,
+                            'stale_local_key'
+                        );
                     }
                 } else if (this.keyDerivation.reconcileShares) {
                     const reconciled = await this.keyDerivation.reconcileShares({
@@ -1256,6 +1234,62 @@ export class AuthCoordinator {
             ...this.state,
             migrationData: { ...this.state.migrationData, ...data },
         });
+    }
+
+    /**
+     * Enter `needs_recovery`, except for a provisional migration from Web3Auth:
+     * the server keeps that legacy fallback until a recovery method activates
+     * SSS, and the account may have no confirmed method yet, so its legacy key
+     * is re-derived instead (bound to the server DID). The recovery state is
+     * kept for `fallBackToRecovery()` in case the legacy key can't be derived.
+     */
+    private needRecovery(
+        authUser: AuthUser,
+        recoveryMethods: RecoveryMethodInfo[],
+        serverStatus: ServerKeyStatus,
+        recoveryReason: RecoveryReason
+    ): UnifiedAuthState {
+        const recovery: UnifiedAuthState = {
+            status: 'needs_recovery',
+            authUser,
+            recoveryMethods,
+            recoveryReason,
+            escrowPin: serverStatus.escrowPin,
+            maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+            sssActivationState: serverStatus.sssActivationState ?? null,
+            expectedDid: serverStatus.primaryDid ?? undefined,
+        };
+
+        if (serverStatus.needsMigration && serverStatus.sssActivationState === 'provisional') {
+            this.recoveryFallback = recovery;
+            this.setState({
+                status: 'needs_migration',
+                authUser,
+                migrationData: {
+                    expectedDid: serverStatus.primaryDid ?? undefined,
+                    canFallBackToRecovery: true,
+                },
+            });
+            return this.state;
+        }
+
+        this.setState(recovery);
+        return this.state;
+    }
+
+    /**
+     * Leave a provisional re-derive (see `needRecovery`) for the recovery state
+     * it replaced, e.g. when Web3Auth is unavailable or a QR-login share is
+     * waiting. No-op in any other state.
+     */
+    fallBackToRecovery(): UnifiedAuthState {
+        if (this.state.status === 'needs_migration' && this.recoveryFallback) {
+            const recovery = this.recoveryFallback;
+            this.recoveryFallback = null;
+            this.setState(recovery);
+        }
+
+        return this.state;
     }
 
     /**

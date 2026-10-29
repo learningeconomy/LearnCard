@@ -74,6 +74,8 @@ export interface AuthCoordinatorContextValue {
     /** Changes only after setup AND activation succeed; consumers refresh method counts. */
     recoverySetupRevision: number;
     setMigrationData: (data: Record<string, unknown>) => void;
+    /** Leave a provisional re-derive for recovery (see AuthCoordinator.fallBackToRecovery). */
+    fallBackToRecovery: () => void;
     recover: (input: unknown) => Promise<void>;
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
     getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
@@ -496,6 +498,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         coordinatorRef.current.setMigrationData(data);
     }, []);
 
+    const fallBackToRecovery = useCallback(() => {
+        coordinatorRef.current?.fallBackToRecovery();
+    }, []);
+
     const recover = useCallback(async (input: unknown) => {
         if (!coordinatorRef.current) {
             throw new Error('Coordinator not initialized');
@@ -703,6 +709,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resetRecoverySetup,
             recoverySetupRevision,
             setMigrationData,
+            fallBackToRecovery,
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
@@ -751,6 +758,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resetRecoverySetup,
             recoverySetupRevision,
             setMigrationData,
+            fallBackToRecovery,
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
