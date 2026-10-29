@@ -26,8 +26,12 @@ export const getFeaturableCredentialUri = (
 export const isCredentialFeatured = (featuredUris: readonly string[], uri: string): boolean =>
     featuredUris.includes(uri);
 
+export const normalizeFeaturedCredentialUris = (featuredUris: readonly string[]): string[] => [
+    ...new Set(featuredUris),
+];
+
 export const hasFeaturedCapacity = (featuredUris: readonly string[]): boolean =>
-    featuredUris.length < MAX_FEATURED_CREDENTIALS;
+    normalizeFeaturedCredentialUris(featuredUris).length < MAX_FEATURED_CREDENTIALS;
 
 /**
  * Appends `uri` to the ordered selection. Existing order is preserved and an already
@@ -37,12 +41,13 @@ export const addFeaturedCredential = (
     featuredUris: readonly string[],
     uri: string
 ): string[] | undefined => {
-    if (isCredentialFeatured(featuredUris, uri)) return [...featuredUris];
-    if (!hasFeaturedCapacity(featuredUris)) return undefined;
+    const current = normalizeFeaturedCredentialUris(featuredUris);
+    if (isCredentialFeatured(current, uri)) return current;
+    if (!hasFeaturedCapacity(current)) return undefined;
 
-    return [...featuredUris, uri];
+    return [...current, uri];
 };
 
 /** Removes `uri` from the ordered selection, keeping the remaining order intact. */
 export const removeFeaturedCredential = (featuredUris: readonly string[], uri: string): string[] =>
-    featuredUris.filter(featuredUri => featuredUri !== uri);
+    normalizeFeaturedCredentialUris(featuredUris).filter(featuredUri => featuredUri !== uri);

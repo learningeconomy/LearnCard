@@ -1489,6 +1489,53 @@ describe('Profiles', () => {
             }
         );
 
+        it.each([
+            { highlightedCredentials: ['lc:boost:1', 'lc:boost:5', 'lc:boost:3'] },
+            { highlightedCredentials: ['lc:boost:2'] },
+            { highlightedCredentials: [] },
+        ])(
+            'should replace highlightedCredentials exactly when shortened to $highlightedCredentials',
+            async ({ highlightedCredentials }) => {
+                await userA.clients.fullAuth.profile.updateProfile({
+                    highlightedCredentials: [
+                        'lc:boost:5',
+                        'lc:boost:3',
+                        'lc:boost:1',
+                        'lc:boost:4',
+                        'lc:boost:2',
+                    ],
+                });
+
+                await userA.clients.fullAuth.profile.updateProfile({ highlightedCredentials });
+
+                const privateProfile = await userA.clients.fullAuth.profile.getProfile();
+                const publicProfile = await noAuthClient.profile.getOtherProfile({
+                    profileId: 'usera',
+                });
+                expect(privateProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+                expect(publicProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+            }
+        );
+
+        it.each([
+            { highlightedCredentials: ['lc:boost:3', 'lc:boost:1', 'lc:boost:2'] },
+            { highlightedCredentials: [] },
+        ])(
+            'should preserve highlightedCredentials $highlightedCredentials when updating unrelated fields',
+            async ({ highlightedCredentials }) => {
+                await userA.clients.fullAuth.profile.updateProfile({ highlightedCredentials });
+
+                await userA.clients.fullAuth.profile.updateProfile({ displayName: 'Updated name' });
+
+                const privateProfile = await userA.clients.fullAuth.profile.getProfile();
+                const publicProfile = await noAuthClient.profile.getOtherProfile({
+                    profileId: 'usera',
+                });
+                expect(privateProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+                expect(publicProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+            }
+        );
+
         it('should reject updating highlightedCredentials with a sixth URI', async () => {
             await expect(
                 userA.clients.fullAuth.profile.updateProfile({

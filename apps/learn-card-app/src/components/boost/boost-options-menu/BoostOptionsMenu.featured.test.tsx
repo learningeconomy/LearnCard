@@ -204,6 +204,50 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('Feature on Profile menu entry', () => {
+    it('allows featuring when five stored entries contain only four unique URIs', async () => {
+        state.profile = makeProfile([
+            'lc:boost:3',
+            'lc:boost:1',
+            'lc:boost:3',
+            'lc:boost:2',
+            'lc:boost:4',
+        ]);
+        const { handleCloseModal } = renderMenu();
+        const entry = await screen.findByRole('button', { name: 'Feature on Profile' });
+        expect(entry).not.toHaveAttribute('aria-disabled');
+
+        fireEvent.click(entry);
+
+        await waitFor(() => expect(handleCloseModal).toHaveBeenCalledTimes(1));
+        expect(state.updateProfile).toHaveBeenCalledWith({
+            highlightedCredentials: [
+                'lc:boost:3',
+                'lc:boost:1',
+                'lc:boost:2',
+                'lc:boost:4',
+                BOOST_URI,
+            ],
+        });
+    });
+
+    it('removes all occurrences of a featured URI and normalizes the remaining selection', async () => {
+        state.profile = makeProfile([
+            'lc:boost:3',
+            BOOST_URI,
+            'lc:boost:3',
+            'lc:boost:1',
+            BOOST_URI,
+        ]);
+        const { handleCloseModal } = renderMenu();
+
+        fireEvent.click(await screen.findByRole('button', { name: 'Remove from Profile' }));
+
+        await waitFor(() => expect(handleCloseModal).toHaveBeenCalledTimes(1));
+        expect(state.updateProfile).toHaveBeenCalledWith({
+            highlightedCredentials: ['lc:boost:3', 'lc:boost:1'],
+        });
+    });
+
     it('offers to feature an earned boost credential that is not featured yet', async () => {
         renderMenu();
 
@@ -435,6 +479,41 @@ describe('useFeaturedCredentials', () => {
 
         return { client, ...hook };
     };
+
+    it('exposes unique URIs in first-occurrence order when the profile contains duplicates', async () => {
+        state.profile = makeProfile([
+            'lc:boost:3',
+            'lc:boost:1',
+            'lc:boost:3',
+            'lc:boost:2',
+            'lc:boost:1',
+        ]);
+        const { result } = renderFeatured();
+        await waitFor(() => expect(result.current.hasProfile).toBe(true));
+
+        const selection = result.current.featuredUris;
+
+        expect(selection).toEqual(['lc:boost:3', 'lc:boost:1', 'lc:boost:2']);
+        expect(result.current.canFeatureMore).toBe(true);
+    });
+
+    it.each(['featureCredential', 'unfeatureCredential'] as const)(
+        'rewrites duplicates when %s would otherwise leave the selection unchanged',
+        async action => {
+            state.profile = makeProfile(['lc:boost:3', 'lc:boost:1', 'lc:boost:3']);
+            const { result } = renderFeatured();
+            await waitFor(() => expect(result.current.hasProfile).toBe(true));
+            const uri = action === 'featureCredential' ? 'lc:boost:3' : BOOST_URI;
+
+            await act(async () => {
+                await result.current[action](uri);
+            });
+
+            expect(state.updateProfile).toHaveBeenCalledExactlyOnceWith({
+                highlightedCredentials: ['lc:boost:3', 'lc:boost:1'],
+            });
+        }
+    );
 
     it('exposes the ordered selection from the cached profile', async () => {
         const { result } = renderFeatured();

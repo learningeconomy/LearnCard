@@ -7,6 +7,7 @@ import {
     addFeaturedCredential,
     hasFeaturedCapacity,
     isCredentialFeatured,
+    normalizeFeaturedCredentialUris,
     removeFeaturedCredential,
 } from '../boost-options-menu/featuredCredentials.helpers';
 
@@ -32,7 +33,8 @@ export const useFeaturedCredentials = () => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
 
-    const featuredUris = profile?.highlightedCredentials ?? EMPTY_FEATURED_URIS;
+    const storedUris = profile?.highlightedCredentials ?? EMPTY_FEATURED_URIS;
+    const featuredUris = normalizeFeaturedCredentialUris(storedUris);
 
     const persistFeaturedCredentials = async (highlightedCredentials: string[]) => {
         const switchedDid = switchedProfileStore.get.switchedDid() ?? '';
@@ -68,18 +70,23 @@ export const useFeaturedCredentials = () => {
 
     const { mutateAsync, isPending } = useMutation({
         mutationFn: async ({ uri, action }: { uri: string; action: 'feature' | 'unfeature' }) => {
-            const current = profile?.highlightedCredentials ?? [];
+            const current = featuredUris;
+            const selectionIsNormalized = current.length === storedUris.length;
 
             if (action === 'unfeature') {
                 const next = removeFeaturedCredential(current, uri);
 
-                return next.length === current.length ? current : persistFeaturedCredentials(next);
+                return selectionIsNormalized && next.length === current.length
+                    ? current
+                    : persistFeaturedCredentials(next);
             }
 
             const next = addFeaturedCredential(current, uri);
             if (!next) throw new FeaturedCredentialsLimitError();
 
-            return next.length === current.length ? current : persistFeaturedCredentials(next);
+            return selectionIsNormalized && next.length === current.length
+                ? current
+                : persistFeaturedCredentials(next);
         },
     });
 

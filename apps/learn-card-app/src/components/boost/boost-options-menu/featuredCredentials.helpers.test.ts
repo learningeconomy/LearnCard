@@ -66,6 +66,33 @@ describe('getFeaturableCredentialUri', () => {
 });
 
 describe('featured credential selection helpers', () => {
+    it('counts only unique URIs when the stored selection contains duplicates', () => {
+        const current = [...fiveUris.slice(0, 4), 'lc:boost:2'];
+
+        const capacity = hasFeaturedCapacity(current);
+
+        expect(capacity).toBe(true);
+    });
+
+    it.each([
+        ['lc:boost:5', [...fiveUris.slice(0, 4), 'lc:boost:5']],
+        ['lc:boost:2', fiveUris.slice(0, 4)],
+    ])('normalizes the ordered selection when adding %s', (uri, expected) => {
+        const current = ['lc:boost:1', 'lc:boost:2', 'lc:boost:1', 'lc:boost:3', 'lc:boost:4'];
+
+        const next = addFeaturedCredential(current, uri);
+
+        expect(next).toEqual(expected);
+    });
+
+    it('normalizes remaining URIs when removing from a duplicate selection', () => {
+        const current = ['lc:boost:3', 'lc:boost:1', 'lc:boost:3', 'lc:boost:2', 'lc:boost:1'];
+
+        const next = removeFeaturedCredential(current, 'lc:boost:1');
+
+        expect(next).toEqual(['lc:boost:3', 'lc:boost:2']);
+    });
+
     it('reports whether a URI is featured and whether there is room for more', () => {
         expect(isCredentialFeatured(['lc:boost:1'], 'lc:boost:1')).toBe(true);
         expect(isCredentialFeatured(['lc:boost:1'], 'lc:boost:2')).toBe(false);
