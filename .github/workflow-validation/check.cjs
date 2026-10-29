@@ -54,11 +54,9 @@ const validate = (root, executable = process.env.ACTIONLINT || 'actionlint') => 
     if (errors.length) return { status: 1, output: errors.join('\n') };
 
     const version = spawnSync(executable, ['-version'], { encoding: 'utf8' });
-    if (
-        version.error ||
-        version.status !== 0 ||
-        version.stdout.split('\n')[0].trim() !== `v${actionlintVersion}`
-    ) {
+    // Release archives report 1.x.y; Go module builds report v1.x.y.
+    const reportedVersion = version.stdout?.split('\n')[0].trim().replace(/^v/, '');
+    if (version.error || version.status !== 0 || reportedVersion !== actionlintVersion) {
         return {
             status: 1,
             output: `Install actionlint v${actionlintVersion}; set ACTIONLINT to its executable if needed.`,
