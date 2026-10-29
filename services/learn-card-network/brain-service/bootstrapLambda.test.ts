@@ -28,14 +28,13 @@ const LAMBDA_APP_HANDLERS = [
     'inboxMaintenanceHandler',
 ] as const;
 
-vi.mock('./lambdaApp', () =>
-    Object.fromEntries(LAMBDA_APP_HANDLERS.map(name => [name, mocks.handler]))
-);
-
 beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     mocks.bootstrap.mockReturnValue(mocks.getApp);
+    mocks.getApp.mockResolvedValue(
+        Object.fromEntries(LAMBDA_APP_HANDLERS.map(name => [name, mocks.handler]))
+    );
     mocks.handler.mockResolvedValue({ statusCode: 200 });
     mocks.migrate.mockResolvedValue(undefined);
 });
@@ -56,7 +55,6 @@ it('does not serve a request until legacy access is migrated', async () => {
             finishMigration = resolve;
         })
     );
-    mocks.bootstrap.mockImplementation(({ importApp }) => importApp);
     const lambda = await import('./lambda');
     let finished = false;
     const request = lambda
@@ -71,12 +69,42 @@ it('does not serve a request until legacy access is migrated', async () => {
     expect(finished).toBe(true);
 });
 
-it('rejects requests when migration cannot reach the database', async () => {
+it('retries a failed migration and serves concurrent and subsequent healthy requests', async () => {
     const failure = new Error('Database unavailable');
-    mocks.migrate.mockRejectedValue(failure);
-    mocks.bootstrap.mockImplementation(({ importApp }) => importApp);
+    let finishMigration!: () => void;
+    mocks.migrate
+        .mockRejectedValueOnce(failure)
+        .mockImplementationOnce(
+            () =>
+                new Promise<void>(resolve => {
+                    finishMigration = resolve;
+                })
+        )
+        .mockResolvedValue(undefined);
     const lambda = await import('./lambda');
     await expect(
         lambda.trpcHandler({} as APIGatewayProxyEventV2, {} as Context, vi.fn())
     ).rejects.toBe(failure);
+
+    let firstFinished = false;
+    let secondFinished = false;
+    const first = lambda
+        .trpcHandler({} as APIGatewayProxyEventV2, {} as Context, vi.fn())
+        .finally(() => {
+            firstFinished = true;
+        });
+    const second = lambda.openApiHandler({} as never, {} as never, vi.fn()).finally(() => {
+        secondFinished = true;
+    });
+    await vi.waitFor(() => expect(mocks.migrate).toHaveBeenCalledTimes(2));
+    expect(firstFinished).toBe(false);
+    expect(secondFinished).toBe(false);
+    finishMigration();
+    await Promise.all([first, second]);
+    expect(mocks.migrate).toHaveBeenCalledTimes(2);
+
+    await expect(
+        lambda.trpcHandler({} as APIGatewayProxyEventV2, {} as Context, vi.fn())
+    ).resolves.toEqual({ statusCode: 200 });
+    expect(mocks.migrate).toHaveBeenCalledTimes(2);
 });

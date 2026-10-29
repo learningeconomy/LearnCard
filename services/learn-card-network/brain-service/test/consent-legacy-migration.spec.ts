@@ -43,11 +43,29 @@ describe('legacy contract startup migration', () => {
             { ids: [id, malformedId], malformedId }
         );
         await neogma.queryRunner.run(
+            `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'}) DELETE migration`
+        );
+        await neogma.queryRunner.run(
             `MATCH (terms:ConsentFlowTerms {id:$id}) SET terms.consentedVersion=null`,
             { id: getIdFromUri(termsUri) }
         );
         try {
             await migrateLegacyConsentFlowContracts();
+            const incompleteMarker = await neogma.queryRunner.run(
+                `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'})
+                 RETURN migration.completedAt AS completedAt`
+            );
+            expect(incompleteMarker.records).toHaveLength(0);
+            await neogma.queryRunner.run(
+                `MATCH (contract:ConsentFlowContract {id:$id}) DETACH DELETE contract`,
+                { id: malformedId }
+            );
+            await migrateLegacyConsentFlowContracts();
+            const completeMarker = await neogma.queryRunner.run(
+                `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'})
+                 RETURN migration.completedAt AS completedAt`
+            );
+            expect(completeMarker.records).toHaveLength(1);
             await migrateLegacyConsentFlowContracts();
             expect((await getConsentFlowContractVersionRecord(id, 1))?.contract).toEqual(
                 normalContract
@@ -75,6 +93,9 @@ describe('legacy contract startup migration', () => {
             await neogma.queryRunner.run(
                 `MATCH (contract:ConsentFlowContract {id:$id}) DETACH DELETE contract`,
                 { id: malformedId }
+            );
+            await neogma.queryRunner.run(
+                `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'}) DELETE migration`
             );
         }
     });

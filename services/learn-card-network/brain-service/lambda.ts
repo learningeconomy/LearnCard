@@ -12,55 +12,68 @@ const getApplication = bootstrapLambda<LambdaApp>({
         ? process.env.LAMBDA_STAGE
         : process.env.CONFIG_STAGE,
     // Stage configuration must be installed before importing database-bound modules.
-    importApp: async () => {
-        const application = await import('./lambdaApp');
-        const { migrateLegacyConsentFlowContracts } =
-            await import('./src/helpers/consentflow-legacy-migration.helpers');
-        // All handlers await this readiness gate before serving version-aware requests.
-        await migrateLegacyConsentFlowContracts();
-        return application;
-    },
+    importApp: () => import('./lambdaApp'),
 });
 
+let migrationReadiness: Promise<void> | undefined;
+const ensureMigrationReady = async () => {
+    if (!migrationReadiness) {
+        const migration = import('./src/helpers/consentflow-legacy-migration.helpers').then(
+            ({ migrateLegacyConsentFlowContracts }) => migrateLegacyConsentFlowContracts()
+        );
+        migrationReadiness = migration;
+        migration.catch(() => {
+            if (migrationReadiness === migration) migrationReadiness = undefined;
+        });
+    }
+    await migrationReadiness;
+};
+
+const getReadyApplication = async () => {
+    const application = await getApplication();
+    await ensureMigrationReady();
+    return application;
+};
+
 export const trpcHandler = async (...args: Parameters<LambdaApp['trpcHandler']>) =>
-    (await getApplication()).trpcHandler(...args);
+    (await getReadyApplication()).trpcHandler(...args);
 
 export const openApiHandler = async (...args: Parameters<LambdaApp['openApiHandler']>) =>
-    (await getApplication()).openApiHandler(...args);
+    (await getReadyApplication()).openApiHandler(...args);
 
 export const _trpcHandler = async (...args: Parameters<LambdaApp['_trpcHandler']>) =>
-    (await getApplication())._trpcHandler(...args);
+    (await getReadyApplication())._trpcHandler(...args);
 
 export const _openApiHandler = async (...args: Parameters<LambdaApp['_openApiHandler']>) =>
-    (await getApplication())._openApiHandler(...args);
+    (await getReadyApplication())._openApiHandler(...args);
 
 export const swaggerUiHandler = async (...args: Parameters<LambdaApp['swaggerUiHandler']>) =>
-    (await getApplication()).swaggerUiHandler(...args);
+    (await getReadyApplication()).swaggerUiHandler(...args);
 
 export const skillsViewerHandler = async (...args: Parameters<LambdaApp['skillsViewerHandler']>) =>
-    (await getApplication()).skillsViewerHandler(...args);
+    (await getReadyApplication()).skillsViewerHandler(...args);
 
 export const statusListsHandler = async (...args: Parameters<LambdaApp['statusListsHandler']>) =>
-    (await getApplication()).statusListsHandler(...args);
+    (await getReadyApplication()).statusListsHandler(...args);
 
 export const credentialRefreshHandler = async (
     ...args: Parameters<LambdaApp['credentialRefreshHandler']>
-) => (await getApplication()).credentialRefreshHandler(...args);
+) => (await getReadyApplication()).credentialRefreshHandler(...args);
 
 export const inboxQueueWorker = async (...args: Parameters<LambdaApp['inboxQueueWorker']>) =>
-    (await getApplication()).inboxQueueWorker(...args);
+    (await getReadyApplication()).inboxQueueWorker(...args);
 
 export const inboxQueueDispatcher = async (
     ...args: Parameters<LambdaApp['inboxQueueDispatcher']>
-) => (await getApplication()).inboxQueueDispatcher(...args);
+) => (await getReadyApplication()).inboxQueueDispatcher(...args);
 
 export const inboxDeadLetterWorker = async (
     ...args: Parameters<LambdaApp['inboxDeadLetterWorker']>
-) => (await getApplication()).inboxDeadLetterWorker(...args);
+) => (await getReadyApplication()).inboxDeadLetterWorker(...args);
 
 export const notificationsWorker = async (...args: Parameters<LambdaApp['notificationsWorker']>) =>
-    (await getApplication()).notificationsWorker(...args);
+    (await getReadyApplication()).notificationsWorker(...args);
 
 export const inboxMaintenanceHandler = async (
     ...args: Parameters<LambdaApp['inboxMaintenanceHandler']>
-) => (await getApplication()).inboxMaintenanceHandler(...args);
+) => (await getReadyApplication()).inboxMaintenanceHandler(...args);

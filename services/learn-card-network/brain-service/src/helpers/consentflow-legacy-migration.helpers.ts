@@ -5,6 +5,12 @@ import { ConsentFlowContractValidator } from '@learncard/types';
 import type { ConsentFlowContract } from '@learncard/types';
 /** Backfills v1 snapshots and legacy consent markers idempotently. */
 export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
+    const marker = await neogma.queryRunner.run(
+        `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'})
+         WHERE migration.completedAt IS NOT NULL
+         RETURN migration.completedAt AS completedAt`
+    );
+    if (marker.records.length > 0) return;
     const legacy = await neogma.queryRunner.run(`
         MATCH (contract:ConsentFlowContract)
         WHERE contract.currentVersion IS NULL
@@ -20,7 +26,8 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
                [config IN rawAutoboosts WHERE config IS NOT NULL] AS autoboosts,
                writers
     `);
-
+    let skippedCount = 0;
+    const skipped: { contractId: string; reason: string }[] = [];
     for (const record of legacy.records) {
         const properties = record.get('properties') as Record<string, unknown>;
         const contractProps = Object.fromEntries(
@@ -34,10 +41,9 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
                 inflateObject<Record<string, unknown>>(contractProps)
             );
         } catch {
-            // Bad historical input must not prevent healthy requests from starting.
-            console.warn('Skipping malformed legacy ConsentFlow contract', {
-                contractId: String(properties.id),
-            });
+            skippedCount += 1;
+            if (skipped.length < 25)
+                skipped.push({ contractId: String(properties.id), reason: 'invalid_contract' });
             continue;
         }
         const autoboosts = record.get('autoboosts') as StoredAutoBoost[];
@@ -81,7 +87,6 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
             }
         );
     }
-
     await neogma.queryRunner.run(`
         MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(:ConsentFlowContractVersion {version:1})
         WHERE contract.currentVersion IS NULL
@@ -96,6 +101,18 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
         MATCH (terms:ConsentFlowTerms)
         WHERE terms.status='stale'
         SET terms.status='consumed'
+    `);
+    if (skippedCount) {
+        console.warn('Skipped malformed legacy ConsentFlow contracts', {
+            count: skippedCount,
+            contracts: skipped,
+            truncated: skippedCount > skipped.length,
+        });
+        return;
+    }
+    await neogma.queryRunner.run(`
+        MERGE (migration:ConsentFlowContractMigration {id:'legacy-v1'})
+        SET migration.completedAt=coalesce(migration.completedAt, toString(datetime()))
     `);
 };
 
