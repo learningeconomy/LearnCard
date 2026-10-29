@@ -74,9 +74,9 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
     if (!db) return null;
     const filter = userFilter();
     // A known account must never inherit another account's key after a miss.
-    // Before identity hydration, restore only if exactly one populated row exists.
-    // LIMIT 2 detects ambiguity without loading every stored key.
-    const keyQuery = `SELECT privateKey FROM users ${filter.clause || 'WHERE 1 = 1'}
+    // Before identity hydration, restore only if exactly one distinct populated key exists.
+    // Legacy rows may repeat the same key; LIMIT 2 detects conflicting key values.
+    const keyQuery = `SELECT DISTINCT privateKey FROM users ${filter.clause || 'WHERE 1 = 1'}
         AND privateKey IS NOT NULL AND privateKey != '' LIMIT 2`;
 
     for (let attempt = 0; attempt < 3; attempt++) {

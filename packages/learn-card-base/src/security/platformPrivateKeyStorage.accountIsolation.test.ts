@@ -125,6 +125,15 @@ describe.each(['android', 'ios'])('%s account key isolation', platform => {
         expect(await readKey()).toBeNull();
     });
 
+    it('does not join an email-only legacy key to a hydrated uid row without a key', async () => {
+        insertUser({ email: 'account-a@example.test' }, 'synthetic-key-a');
+        insertUser({ uid: 'account-a', email: 'account-a@example.test' }, null);
+        mocks.user = { uid: 'account-a', email: 'account-a@example.test' };
+
+        expect(await readKey()).toBeNull();
+        expect(query.mock.calls.every(([, values]) => values?.[0] === 'account-a')).toBe(true);
+    });
+
     it.each([null, {}, { uid: '', verifierId: '', email: '' }])(
         'restores one unambiguous key before identity hydration (%s)',
         async user => {
@@ -139,6 +148,34 @@ describe.each(['android', 'ios'])('%s account key isolation', platform => {
 
     it('returns missing when there are no stored keys before identity hydration', async () => {
         insertUser({ uid: 'keyless' }, null);
+
+        expect(await readKey()).toBeNull();
+    });
+
+    it('restores a single key repeated across legacy rows before identity hydration', async () => {
+        insertUser({ email: 'account-a@example.test' }, 'synthetic-key-a');
+        insertUser({ uid: 'account-a', email: 'account-a@example.test' }, 'synthetic-key-a');
+
+        expect(await readKey()).toBe('synthetic-key-a');
+    });
+
+    it.each(['uid', 'verifierId', 'email'] as const)(
+        'restores identical duplicate keys only within the matching %s scope',
+        async identifier => {
+            insertUser({ [identifier]: 'account-b' }, 'synthetic-key-b');
+            insertUser({ [identifier]: 'account-a' }, 'synthetic-key-a');
+            insertUser({ [identifier]: 'account-a' }, 'synthetic-key-a');
+            mocks.user = { [identifier]: 'account-a' };
+
+            expect(await readKey()).toBe('synthetic-key-a');
+            expect(query.mock.calls.every(([, values]) => values?.[0] === 'account-a')).toBe(true);
+        }
+    );
+
+    it('detects a conflicting key after repeated identical rows before identity hydration', async () => {
+        insertUser({ uid: 'account-a' }, 'synthetic-key-a');
+        insertUser({ uid: 'account-a' }, 'synthetic-key-a');
+        insertUser({ uid: 'account-b' }, 'synthetic-key-b');
 
         expect(await readKey()).toBeNull();
     });
