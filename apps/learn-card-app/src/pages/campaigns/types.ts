@@ -39,3 +39,16 @@ export interface CampaignForm {
     excludeMinors: boolean;
     selfEnroll: boolean;
 }
+
+export interface CampaignSectionProps {
+    step?: string;
+    title: string;
+    description?: string;
+}
+
+export interface CampaignToggleProps {
+    label: string;
+    description: string;
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+}

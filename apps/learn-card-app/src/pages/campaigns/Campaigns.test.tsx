@@ -88,6 +88,34 @@ afterEach(() => {
 });
 
 describe('campaign composer', () => {
+    it('starts quietly with an automatic ID and preserves it while editing', async () => {
+        const api = apiMock();
+        mount(api, '/admin/campaigns?create=1');
+        const name = await screen.findByLabelText('Name');
+        const id = screen.getByLabelText('Campaign ID') as HTMLInputElement;
+        const generated = id.value;
+        expect(generated).toMatch(/^campaign-[a-f0-9-]+$/);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        fireEvent.change(name, { target: { value: 'Welcome back' } });
+        expect(id).toHaveValue(generated);
+        fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+        await waitFor(() =>
+            expect(api.campaignsCreate).toHaveBeenCalledWith(
+                expect.objectContaining({ id: generated, name: 'Welcome back' })
+            )
+        );
+    });
+    it('filters through the server instead of only filtering loaded pages', async () => {
+        const api = apiMock();
+        mount(api, '/admin/campaigns');
+        fireEvent.click(await screen.findByRole('button', { name: 'Paused', exact: true }));
+        await waitFor(() =>
+            expect(api.campaignsList).toHaveBeenCalledWith(
+                expect.objectContaining({ status: 'paused', limit: 20 })
+            )
+        );
+    });
+
     it('loads a saved campaign named new without confusing it with draft creation', async () => {
         const api = apiMock();
         api.campaignsGet.mockResolvedValue({ ...campaign(), id: 'new', name: 'Existing new ID' });

@@ -100,6 +100,9 @@ test.describe('campaign composer @mocked', () => {
             timeout: 90_000,
         });
         await page.getByRole('link', { name: 'Create campaign' }).click();
+        await expect(page.getByRole('alert')).toHaveCount(0);
+        await page.screenshot({ path: 'test-results/campaign-create-desktop.png', fullPage: true });
+        await page.getByText('Advanced settings · Campaign ID', { exact: true }).click();
         await page.getByLabel('Campaign ID').fill('composer-local-qa');
         await page.getByLabel('Name', { exact: true }).fill('Composer local QA');
         await page.getByLabel('Message JSON').fill('{');
@@ -116,7 +119,9 @@ test.describe('campaign composer @mocked', () => {
         await page.getByLabel('Notification title').fill('Synthetic test');
         await page.getByLabel('Notification body').fill('Only a mocked test send');
         await page.getByRole('button', { name: 'Preview message' }).click();
-        await expect(page.getByText('Local preview only', { exact: true })).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: 'Local preview only', exact: true })
+        ).toBeVisible();
         await expect(
             page.getByRole('heading', { name: 'Local preview only' }).locator('../../..')
         ).toHaveCSS('opacity', '1');
@@ -127,6 +132,7 @@ test.describe('campaign composer @mocked', () => {
         await expect(
             page.getByRole('button', { name: 'Send Notifications — unavailable' })
         ).toBeDisabled();
+        await page.screenshot({ path: 'test-results/campaign-editor-desktop.png', fullPage: true });
         await page.getByLabel('Audience CSV (did column or single column)').setInputFiles({
             name: 'synthetic.csv',
             mimeType: 'text/csv',
@@ -172,6 +178,11 @@ test.describe('campaign composer @mocked', () => {
         await expect(page.getByText('Campaign is archived.')).toBeVisible();
         expect(dispatches).toBe(0);
         expect(events).toBe(0);
+        await page.getByRole('link', { name: 'Back to campaigns' }).click();
+        await expect(page.getByRole('link', { name: 'Composer local QA' })).toBeVisible();
+        await page.screenshot({ path: 'test-results/campaign-list-mobile.png', fullPage: true });
+        await page.setViewportSize({ width: 1440, height: 1000 });
+        await page.screenshot({ path: 'test-results/campaign-list-desktop.png', fullPage: true });
     });
     test('non-admin sees only not found', async ({ page }) => {
         const mock = await installNetwork(page);

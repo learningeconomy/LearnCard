@@ -20,6 +20,14 @@ describe('campaign authoring contracts', () => {
             selfEnroll: false,
         });
     });
+    it('generates valid, distinct IDs for new drafts', () => {
+        const first = initialForm();
+        const second = initialForm();
+        expect(first.id).not.toBe(second.id);
+        expect(validateForm({ ...first, name: 'Automatically identified' }).data?.id).toBe(
+            first.id
+        );
+    });
     it('reports field paths, malformed JSON and missing notification copy', () => {
         expect(validateForm({ ...valid(), messageJson: '{' }).errors[0]).toMatch(/^message:/);
         expect(
@@ -59,7 +67,7 @@ describe('campaign authoring contracts', () => {
         });
     });
     it('previews an unsaved message using renderer defaults and a local id', () => {
-        expect(previewMessage(initialForm())).toMatchObject({
+        expect(previewMessage({ ...initialForm(), id: '' })).toMatchObject({
             success: true,
             data: { id: 'composer-preview', title: 'Your campaign message' },
         });
