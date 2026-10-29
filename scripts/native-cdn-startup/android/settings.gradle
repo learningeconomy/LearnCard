@@ -1,3 +1,0 @@
-pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
-rootProject.name = 'DisposableCdnStartupMeasurement'
-include ':app'

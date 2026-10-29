@@ -23,7 +23,7 @@ export const useSQLiteInitWeb = () => {
                 const { defineCustomElement } =
                     await import('jeep-sqlite/dist/components/jeep-sqlite');
                 if (stopped) return;
-                defineCustomElement();
+                if (!customElements.get('jeep-sqlite')) defineCustomElement();
                 element = document.createElement('jeep-sqlite');
                 document.body.appendChild(element);
                 await customElements.whenDefined('jeep-sqlite');

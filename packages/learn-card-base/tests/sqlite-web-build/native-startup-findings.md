@@ -58,4 +58,4 @@ The proxy is a restricted-network control, not a model of every real outage. One
 - Probes retain method names/timings only, not SQLite arguments/results. Raw JSON, logs, APKs and signing material remain private. Exploratory pilots and invalid proxy controls are excluded.
 - These observations do not establish iOS, physical-device, release-build, battery/CPU, authenticated offline, or production service behavior. No statistical equivalence or device-wide performance guarantee is claimed.
 
-Reproduction and cleanup: [README](README.md).
+These were one-off development measurements, not a maintained regression suite. The measurement proxy, APK preparation scripts and Android probe were removed after review. Their original implementation remains in commit `9c459118f`; retained regression coverage is described in the [production bundle README](README.md).
