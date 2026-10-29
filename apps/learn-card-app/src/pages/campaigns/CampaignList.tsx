@@ -26,8 +26,11 @@ const metrics = [
 const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, campaign }) => {
     const stats = useCampaignStats(api, campaign.id);
     return (
-        <tr className="grid grid-cols-2 gap-y-4 border-t border-grayscale-200 p-5 transition-colors hover:bg-grayscale-10 lg:table-row lg:p-0">
-            <th scope="row" className="col-span-2 text-left lg:py-5 lg:pl-6 lg:pr-3">
+        <tr className="grid grid-cols-2 gap-y-4 border-t border-grayscale-200 p-5 transition-colors hover:bg-grayscale-10 min-[1200px]:table-row min-[1200px]:p-0">
+            <th
+                scope="row"
+                className="col-span-2 text-left min-[1200px]:py-5 min-[1200px]:pl-6 min-[1200px]:pr-3"
+            >
                 <Link
                     className="group inline-flex items-center gap-3 text-sm font-semibold text-grayscale-900 focus-visible:outline-emerald-600"
                     to={`/admin/campaigns/${encodeURIComponent(campaign.id)}`}
@@ -40,10 +43,10 @@ const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, 
                     />
                 </Link>
             </th>
-            <td className="lg:px-3 lg:py-5">
+            <td className="min-[1200px]:px-3 min-[1200px]:py-5">
                 <StatusPill status={campaign.status} />
             </td>
-            <td className="text-xs text-grayscale-600 lg:px-3 lg:py-5">
+            <td className="text-xs text-grayscale-600 min-[1200px]:px-3 min-[1200px]:py-5">
                 <div className="flex flex-wrap gap-1.5">
                     {campaign.channels.map(channel => (
                         <span
@@ -56,10 +59,12 @@ const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, 
                 </div>
             </td>
             {metrics.map(([key, label]) => (
-                <td key={key} className="text-sm tabular-nums lg:px-3 lg:py-5">
-                    <span className="mb-1 block text-xs text-grayscale-500 lg:hidden">{label}</span>
+                <td key={key} className="text-sm tabular-nums min-[1200px]:px-3 min-[1200px]:py-5">
+                    <span className="mb-1 block text-xs text-grayscale-600 min-[1200px]:hidden">
+                        {label}
+                    </span>
                     {stats.isError ? (
-                        <span className="text-xs text-grayscale-500">Unavailable</span>
+                        <span className="text-xs text-grayscale-600">Unavailable</span>
                     ) : stats.data ? (
                         stats.data[key].toLocaleString()
                     ) : (
@@ -69,7 +74,7 @@ const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, 
                     )}
                 </td>
             ))}
-            <td className="col-span-2 text-xs text-grayscale-500 lg:py-5 lg:pl-3 lg:pr-6">
+            <td className="col-span-2 text-xs text-grayscale-600 min-[1200px]:py-5 min-[1200px]:pl-3 min-[1200px]:pr-6">
                 <time
                     dateTime={campaign.updatedAt}
                     title={new Date(campaign.updatedAt).toLocaleString()}
@@ -102,7 +107,7 @@ export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
                 <div className="flex items-center gap-3">
                     <CampaignMark />
                     <div>
-                        <p className="mb-1 text-xs font-medium uppercase tracking-widest text-grayscale-500">
+                        <p className="mb-1 text-xs font-medium uppercase tracking-widest text-grayscale-600">
                             Campaign studio
                         </p>
                         <h1 className="text-2xl font-semibold tracking-tight">Campaigns</h1>
@@ -194,11 +199,11 @@ export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
                 )}
                 {campaigns.length > 0 && (
                     <div className="overflow-hidden rounded-[20px] border border-grayscale-200 bg-white">
-                        <table className="block w-full text-sm lg:table">
+                        <table className="block w-full text-sm min-[1200px]:table">
                             <caption className="sr-only">
                                 Campaigns and current membership and engagement stats
                             </caption>
-                            <thead className="hidden bg-grayscale-100 lg:table-header-group">
+                            <thead className="hidden bg-grayscale-100 min-[1200px]:table-header-group">
                                 <tr>
                                     {[
                                         'Name',
@@ -217,13 +222,13 @@ export const CampaignList: React.FC<{ api: CampaignApi }> = ({ api }) => {
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="block lg:table-row-group">
+                            <tbody className="block min-[1200px]:table-row-group">
                                 {campaigns.map(campaign => (
                                     <CampaignRow key={campaign.id} campaign={campaign} api={api} />
                                 ))}
                             </tbody>
                         </table>
-                        <div className="border-t border-grayscale-200 px-6 py-4 text-xs leading-relaxed text-grayscale-500">
+                        <div className="border-t border-grayscale-200 px-6 py-4 text-xs leading-relaxed text-grayscale-600">
                             Notified counts inbox storage acknowledgements. Stored members are not
                             an exact send count.
                         </div>

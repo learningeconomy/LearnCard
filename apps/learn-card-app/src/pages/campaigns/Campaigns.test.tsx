@@ -44,7 +44,9 @@ const campaign = (): Campaign => {
 const apiMock = () =>
     ({
         campaignsIsAdmin: vi.fn().mockResolvedValue(true),
-        campaignsList: vi.fn().mockResolvedValue({ records: [campaign()], hasMore: false }),
+        campaignsList: vi
+            .fn<CampaignApi['campaignsList']>()
+            .mockResolvedValue({ records: [campaign()], hasMore: false }),
         campaignsGet: vi.fn().mockResolvedValue(campaign()),
         campaignsCreate: vi.fn().mockResolvedValue(campaign()),
         campaignsUpdate: vi.fn().mockResolvedValue(campaign()),

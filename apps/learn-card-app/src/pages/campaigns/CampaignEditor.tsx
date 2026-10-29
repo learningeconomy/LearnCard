@@ -146,7 +146,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                     <div className="flex min-w-0 items-center gap-3">
                         <CampaignMark />
                         <div className="min-w-0">
-                            <p className="mb-1 text-xs font-medium uppercase tracking-widest text-grayscale-500">
+                            <p className="mb-1 text-xs font-medium uppercase tracking-widest text-grayscale-600">
                                 Campaign studio
                             </p>
                             <h1
@@ -158,7 +158,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className="text-xs text-grayscale-500">
+                        <span className="text-xs text-grayscale-600">
                             {dirty
                                 ? 'Unsaved changes'
                                 : saved
@@ -171,7 +171,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
             </header>
             {action.error && <Notice error>{action.error}</Notice>}
             {action.success && <Notice>{action.success}</Notice>}
-            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid items-start gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_340px] min-[1440px]:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="min-w-0 space-y-5">
                     <section className={panelClass}>
                         <SectionHeading
@@ -217,7 +217,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                             <IonIcon
                                                 icon={icon}
                                                 aria-hidden="true"
-                                                className={`mt-0.5 shrink-0 text-xl ${form[key] ? 'text-emerald-700' : 'text-grayscale-500'}`}
+                                                className={`mt-0.5 shrink-0 text-xl ${form[key] ? 'text-emerald-700' : 'text-grayscale-600'}`}
                                             />
                                             <span className="min-w-0 flex-1">
                                                 <span className="block text-sm font-medium">
@@ -246,14 +246,14 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     <Field label="Campaign ID" htmlFor="campaign-id">
                                         <input
                                             id="campaign-id"
-                                            className={`${inputClass} font-mono`}
+                                            className={`${inputClass} font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace]`}
                                             value={form.id}
                                             disabled={Boolean(saved)}
                                             onChange={e => set('id', e.target.value)}
                                             autoComplete="off"
                                         />
                                     </Field>
-                                    <p className="text-xs leading-relaxed text-grayscale-500">
+                                    <p className="text-xs leading-relaxed text-grayscale-600">
                                         Generated for you. Use 3–64 lowercase letters, numbers or
                                         hyphens; locked after saving.
                                     </p>
@@ -286,7 +286,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         Message JSON
                                     </label>
                                     <span
-                                        className={`text-xs ${preview?.success ? 'text-emerald-700' : 'text-grayscale-500'}`}
+                                        className={`text-xs ${preview?.success ? 'text-emerald-700' : 'text-grayscale-600'}`}
                                     >
                                         {preview?.success ? 'Valid message' : 'Check your JSON'}
                                     </span>
@@ -295,7 +295,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     id="campaign-json"
                                     spellCheck={false}
                                     rows={12}
-                                    className="block w-full resize-y bg-white p-4 font-mono text-sm leading-relaxed text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+                                    className="block w-full resize-y bg-white p-4 font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace] text-sm leading-relaxed text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
                                     value={form.messageJson}
                                     onChange={e => set('messageJson', e.target.value)}
                                     aria-describedby="campaign-validation"
@@ -394,7 +394,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         )}
                     </div>
                 </div>
-                <aside className="min-w-0 space-y-5 lg:sticky lg:top-6">
+                <aside className="min-w-0 space-y-5 min-[1200px]:sticky min-[1200px]:top-6">
                     <section className="overflow-hidden rounded-[20px] border border-grayscale-200 bg-white">
                         <div className="bg-grayscale-100 p-6">
                             <div className="mb-5 flex items-center justify-between text-xs text-grayscale-600">
@@ -437,7 +437,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                             >
                                 Close preview
                             </button>
-                            <p className="text-center text-xs leading-relaxed text-grayscale-500">
+                            <p className="text-center text-xs leading-relaxed text-grayscale-600">
                                 Opens the real message. Buttons remain interactive; preview activity
                                 is not counted.
                             </p>
@@ -469,7 +469,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                             )}
                         </button>
                         {!validation.data && !archived && (
-                            <p className="text-xs leading-relaxed text-grayscale-500">
+                            <p className="text-xs leading-relaxed text-grayscale-600">
                                 Complete the campaign name, selected channels and message to save.
                             </p>
                         )}
@@ -490,7 +490,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         Send Test to Me
                                     </button>
                                     {!saved.channels.includes('notify') && (
-                                        <p className="text-xs text-grayscale-500">
+                                        <p className="text-xs text-grayscale-600">
                                             Enable Inbox / push notification and save to send a
                                             test.
                                         </p>
@@ -524,7 +524,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                             Archive
                                         </button>
                                     </div>
-                                    <p className="text-xs leading-relaxed text-grayscale-500">
+                                    <p className="text-xs leading-relaxed text-grayscale-600">
                                         Going live makes in-app messages available within their
                                         schedule. Notifications are sent separately.
                                     </p>

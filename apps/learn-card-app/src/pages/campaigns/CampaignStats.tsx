@@ -21,7 +21,7 @@ export const CampaignStatsPanel: React.FC<{ api: CampaignApi; id: string }> = ({
                     title="Campaign stats"
                     description="See how your audience engages with this campaign."
                 />
-                <span className="inline-flex items-center gap-2 text-xs text-grayscale-500">
+                <span className="inline-flex items-center gap-2 text-xs text-grayscale-600">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     Refreshes every 30 seconds
                 </span>
@@ -33,7 +33,7 @@ export const CampaignStatsPanel: React.FC<{ api: CampaignApi; id: string }> = ({
                 </Notice>
             )}
             {stats.data && (
-                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-7">
+                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 min-[1440px]:grid-cols-7">
                     {Object.entries(stats.data).map(([key, value]) => (
                         <div
                             key={key}
@@ -53,7 +53,7 @@ export const CampaignStatsPanel: React.FC<{ api: CampaignApi; id: string }> = ({
                     ))}
                 </dl>
             )}
-            <p className="text-xs leading-relaxed text-grayscale-500">
+            <p className="text-xs leading-relaxed text-grayscale-600">
                 Stored members are not an exact send count. Notified counts inbox storage
                 acknowledgements, not device receipt.
             </p>

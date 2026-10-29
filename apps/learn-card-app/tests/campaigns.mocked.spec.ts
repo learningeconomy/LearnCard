@@ -11,6 +11,7 @@ import type {
 
 test.describe('campaign composer @mocked', () => {
     test('admin draft, validation, preview, imports, test send and lifecycle', async ({ page }) => {
+        await page.setViewportSize({ width: 1440, height: 1000 });
         const mock = await installNetwork(page);
         let saved: Campaign | undefined;
         const members = new Set<string>();
@@ -101,6 +102,13 @@ test.describe('campaign composer @mocked', () => {
         });
         await page.getByRole('link', { name: 'Create campaign' }).click();
         await expect(page.getByRole('alert')).toHaveCount(0);
+        const previewPanel = page.getByRole('button', { name: 'Preview message' });
+        const nameInput = page.getByLabel('Name', { exact: true });
+        const nameBounds = await nameInput.boundingBox();
+        const previewBounds = await previewPanel.boundingBox();
+        expect(previewBounds!.x).toBeGreaterThan(nameBounds!.x + nameBounds!.width);
+        await expect(page.getByLabel('Message JSON')).toHaveCSS('font-family', /monospace/);
+        await expect(previewPanel).toHaveCSS('border-style', 'solid');
         await page.screenshot({ path: 'test-results/campaign-create-desktop.png', fullPage: true });
         await page.getByText('Advanced settings · Campaign ID', { exact: true }).click();
         await page.getByLabel('Campaign ID').fill('composer-local-qa');
@@ -132,6 +140,9 @@ test.describe('campaign composer @mocked', () => {
         await expect(
             page.getByRole('button', { name: 'Send Notifications — unavailable' })
         ).toBeDisabled();
+        await page
+            .getByRole('heading', { name: 'Edit campaign', exact: true })
+            .scrollIntoViewIfNeeded();
         await page.screenshot({ path: 'test-results/campaign-editor-desktop.png', fullPage: true });
         await page.getByLabel('Audience CSV (did column or single column)').setInputFiles({
             name: 'synthetic.csv',
@@ -182,6 +193,7 @@ test.describe('campaign composer @mocked', () => {
         await expect(page.getByRole('link', { name: 'Composer local QA' })).toBeVisible();
         await page.screenshot({ path: 'test-results/campaign-list-mobile.png', fullPage: true });
         await page.setViewportSize({ width: 1440, height: 1000 });
+        await expect(page.getByRole('columnheader', { name: 'Stored members' })).toBeVisible();
         await page.screenshot({ path: 'test-results/campaign-list-desktop.png', fullPage: true });
     });
     test('non-admin sees only not found', async ({ page }) => {

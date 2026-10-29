@@ -8,7 +8,7 @@ const interactionClass =
     'inline-flex items-center justify-center gap-2 py-3 px-4 rounded-[20px] font-medium text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed';
 export const inputClass =
     'w-full min-w-0 py-3 px-4 border border-grayscale-300 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white disabled:bg-grayscale-100 disabled:text-grayscale-600';
-export const buttonClass = `${interactionClass} border border-grayscale-300 bg-white text-grayscale-700 hover:bg-grayscale-100`;
+export const buttonClass = `${interactionClass} border border-solid border-grayscale-300 bg-white text-grayscale-700 hover:bg-grayscale-100`;
 export const primaryClass = `${interactionClass} bg-grayscale-900 text-white hover:bg-grayscale-800`;
 export const textButtonClass = `${interactionClass} text-grayscale-600 hover:bg-grayscale-100 hover:text-grayscale-900`;
 export const panelClass =
@@ -24,7 +24,7 @@ export const StatusPill: React.FC<{ status: CampaignStatus }> = ({ status }) => 
     <span
         className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
             status === 'live'
-                ? 'bg-emerald-50 text-emerald-700'
+                ? 'bg-emerald-50 text-emerald-900'
                 : status === 'paused'
                   ? 'bg-amber-50 text-amber-800'
                   : 'bg-grayscale-100 text-grayscale-700'
