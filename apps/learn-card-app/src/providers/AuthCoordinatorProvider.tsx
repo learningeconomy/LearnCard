@@ -830,7 +830,7 @@ const AuthSessionManager: React.FC<{
         // A provisional account re-derives only when nothing better is at hand:
         // a QR-delivered share is picked up from recovery, and a failed derivation
         // returns to recovery instead of the stalled-upgrade screen.
-        const canFallBack = migrationData.canFallBackToRecovery === true;
+        const canFallBack = migrationData.provisionalRederive === true;
 
         if (canFallBack && window.sessionStorage.getItem('qr_login_device_share')) {
             coordinator.fallBackToRecovery();

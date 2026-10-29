@@ -28,15 +28,20 @@ Safety checks in code (learn-card-base `AuthCoordinator.migrate()`):
     - a derived key is a `match` if a network profile exists for its DID, and
       `unknown` if not (users who never finished onboarding have no profile).
 
-    A mismatch ends in a non-retryable error (`MIGRATION_IDENTITY_MISMATCH`) with
-    nothing written. A wrong first DID would be permanent: lca-api refuses later
-    writes from another DID, and the 30-day purge keeps the stored DID.
+    A cached key that fails either check (another account's key left on the
+    device) is dropped and the signed-in account's key is derived instead. A
+    derived key that fails ends in a non-retryable error
+    (`MIGRATION_IDENTITY_MISMATCH`). Either way nothing is written first: a wrong
+    first DID would be permanent, since lca-api refuses later writes from another
+    DID and the 30-day purge keeps the stored DID.
 
 - **Provisional on a new device.** A provisional migrated account whose share
-  is missing or stale on this device re-derives its Web3Auth key, bound to the
-  server DID, instead of landing on a recovery screen with no confirmed
-  methods. If the derivation fails, or a QR-login share is waiting, it falls
-  back to that recovery screen.
+  is missing or stale on this device re-derives its Web3Auth key and, once it
+  matches the server DID, uses it **without writing**: no re-split, so the
+  first device's share and any escrow seal stay current. This device gets a
+  share from its next explicit share update (e.g. setting the PIN). If the
+  derivation fails, or a QR-login share is waiting, it falls back to the
+  recovery screen it replaced.
 - **PIN prompt (LAUNCH-DECISIONS P-a).** Escrow-enrolled accounts without a PIN
   get the first-time prompt once per device.
 

@@ -1240,8 +1240,9 @@ export class AuthCoordinator {
      * Enter `needs_recovery`, except for a provisional migration from Web3Auth:
      * the server keeps that legacy fallback until a recovery method activates
      * SSS, and the account may have no confirmed method yet, so its legacy key
-     * is re-derived instead (bound to the server DID). The recovery state is
-     * kept for `fallBackToRecovery()` in case the legacy key can't be derived.
+     * is re-derived instead, checked against the server DID and used without
+     * writing (see migrate()). The recovery state is kept for
+     * `fallBackToRecovery()` in case the legacy key can't be derived.
      */
     private needRecovery(
         authUser: AuthUser,
@@ -1267,7 +1268,7 @@ export class AuthCoordinator {
                 authUser,
                 migrationData: {
                     expectedDid: serverStatus.primaryDid ?? undefined,
-                    canFallBackToRecovery: true,
+                    provisionalRederive: true,
                 },
             });
             return this.state;
@@ -1351,6 +1352,18 @@ export class AuthCoordinator {
 
             const identity = await this.checkMigrationIdentity(privateKey, did, migrationData);
 
+            if (identity === 'mismatch' && migrationData.source === 'cached') {
+                // The device-wide key cache holds another account's key. Drop it for
+                // this attempt and derive the signed-in account's key instead; reaching
+                // `ready` re-persists the right key, so later starts are normal.
+                log.warn('migration.identity.cached_key_replaced', {
+                    anchor: migrationData.expectedDid ? 'server' : 'verifier',
+                });
+                const { web3AuthKey: _key, source: _source, ...rest } = migrationData;
+                this.setState({ status: 'needs_migration', authUser, migrationData: rest });
+                return this.state;
+            }
+
             if (identity === 'mismatch') {
                 // Fail closed and non-retryable: retrying derives the same key, and
                 // writing it would bind the account to the wrong DID for good.
@@ -1378,6 +1391,22 @@ export class AuthCoordinator {
                     privateKey,
                     authSessionValid: true,
                     sssActivationState: null,
+                });
+                return this.state;
+            }
+
+            if (migrationData.provisionalRederive === true) {
+                // Already migrated (provisionally) from another device, and the key
+                // matches the server DID. Use it without re-splitting: a new split would
+                // strand the other device's share and rotate under any escrow seal.
+                // This device gets a share from the next explicit share update.
+                this.setState({
+                    status: 'ready',
+                    authUser,
+                    did,
+                    privateKey,
+                    authSessionValid: true,
+                    sssActivationState: 'provisional',
                 });
                 return this.state;
             }
