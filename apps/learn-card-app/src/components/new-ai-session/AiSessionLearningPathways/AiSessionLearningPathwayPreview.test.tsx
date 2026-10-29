@@ -13,7 +13,7 @@ const closeAllModals = vi.hoisted(() => vi.fn());
 const closeModal = vi.hoisted(() => vi.fn());
 
 vi.mock('learn-card-base', () => ({
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI: 'lc:contract:learncard-ai',
+    getLearnCardAiPassportContractUri: () => 'lc:contract:learncard-ai',
     useModal: () => ({ closeAllModals, closeModal }),
 }));
 vi.mock('learn-card-base/helpers/networkHelpers', () => ({

@@ -17,10 +17,12 @@ This PR introduced a **dedicated LearnCard AI ConsentFlow contract** that is sep
 
 ### LearnCard AI Passport Contract
 
-- **URI**: `lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b`
+- **URI (production)**: `lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b`
+- **URI (staging)**: `lc:network:staging.network.learncard.com/trpc:contract:9eade6a7-7181-4509-b805-d26e30a8f7f1` (owner `did:web:staging.network.learncard.com:users:learn-cloud`)
 - **Location**: `packages/learn-card-base/src/constants/aiPassport.ts`
 - **Purpose**: Scoped access to My Skill Profile verifiable data categories for AI features
-- **Detection**: `isLearnCardAiPassportContractUri(contractUri)` helper
+- **Resolution**: `getLearnCardAiPassportContractUri()` returns the staging URI when the network store points at `staging.network.learncard.com`, otherwise the production URI. Auto-consent runs on production and staging (`hasLearnCardAiPassportContract()`).
+- **Detection**: `isLearnCardAiPassportContractUri(contractUri)` helper (matches either URI)
 
 Previously, both network consent and AI consent shared a single contract. Separating them means:
 

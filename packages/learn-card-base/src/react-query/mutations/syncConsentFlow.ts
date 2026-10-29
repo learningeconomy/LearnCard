@@ -16,7 +16,7 @@ import { CredentialMetadata } from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { useAcceptCredentialMutation } from './mutations';
 import { ConsentFlowContractDetails, ConsentFlowTerms } from '@learncard/types';
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { queueAiInsightCredentialRefresh } from './ai-passport';
 import { getLogger } from '../../logging/logger';
 import { getAcceptLifecycleRejection, LifecycleRejection } from './consentFlowLifecycle';
@@ -230,7 +230,7 @@ export const useSyncConsentContractsMutation = () => {
                             categoryMap as Record<string, string[]>,
                             audience.audienceVersion
                         );
-                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                        if (isLearnCardAiPassportContractUri(contract.uri)) {
                             await queueAiInsightCredentialRefresh({
                                 wallet: learnCard,
                                 queryClient,

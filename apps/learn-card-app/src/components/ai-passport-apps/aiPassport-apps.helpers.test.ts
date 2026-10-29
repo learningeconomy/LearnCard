@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('learn-card-base', () => ({
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI: 'lc:contract:learncard-ai',
+    getLearnCardAiPassportContractUri: () => 'lc:contract:learncard-ai',
 }));
 vi.mock('learn-card-base/helpers/networkHelpers', () => ({
     isProductionNetwork: () => false,

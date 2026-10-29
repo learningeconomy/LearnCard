@@ -29,7 +29,7 @@ import { getOrCreateSharedUriForWallet } from './useSharedUrisInTerms';
 import { loadContractAudience } from './consentAudience';
 import { getOrFetchConsentedContracts } from './useConsentedContracts';
 import { queueAiInsightCredentialRefresh } from 'learn-card-base/react-query/mutations/ai-passport';
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from 'learn-card-base/constants/aiPassport';
+import { isLearnCardAiPassportContractUri } from 'learn-card-base/constants/aiPassport';
 import { getLogger } from '../logging/logger';
 import {
     addCredentialSummary,
@@ -272,7 +272,7 @@ export const useWallet = () => {
                             category,
                         });
 
-                        if (contract.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI) {
+                        if (isLearnCardAiPassportContractUri(contract.uri)) {
                             logWalletSync('Queueing AI Passport refresh', {
                                 ownerDid: contract.owner.did,
                                 contractUri: contract.uri,

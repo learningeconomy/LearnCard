@@ -1,4 +1,4 @@
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI, LaunchPadAppListItem } from 'learn-card-base';
+import { getLearnCardAiPassportContractUri, LaunchPadAppListItem } from 'learn-card-base';
 import { isProductionNetwork } from 'learn-card-base/helpers/networkHelpers';
 import { networkStore } from 'learn-card-base/stores/NetworkStore';
 
@@ -21,10 +21,13 @@ export enum AiPassportAppStoreIDs {
     learncardapp = '1635841898',
 }
 
-export enum AiPassportAppContractUri {
-    gemini = 'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85',
-    learncardapp = LEARNCARD_AI_PASSPORT_CONTRACT_URI,
-}
+// learncardapp resolves per network on read (staging vs production consent contract).
+export const AiPassportAppContractUri = {
+    gemini: 'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85',
+    get learncardapp(): string {
+        return getLearnCardAiPassportContractUri();
+    },
+};
 
 /** @deprecated Use `isProductionNetwork` from `learn-card-base/helpers/networkHelpers` instead. */
 export const areAiPassportAppsAvailable = (): boolean => isProductionNetwork();
@@ -41,7 +44,9 @@ export const aiPassportApps: (LaunchPadAppListItem & { url: string })[] = [
         handleView: () => {},
         type: AiPassportAppsEnum.learncardapp,
         appStoreID: AiPassportAppStoreIDs.learncardapp,
-        contractUri: AiPassportAppContractUri.learncardapp,
+        get contractUri() {
+            return AiPassportAppContractUri.learncardapp;
+        },
         privacyPolicyUrl: 'https://openai.com/policies/row-privacy-policy/',
         url: networkStore.get.aiServiceUrl(),
     },

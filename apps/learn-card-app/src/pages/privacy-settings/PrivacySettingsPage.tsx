@@ -19,7 +19,7 @@ import {
     useBrandingConfig,
     useAiFeatureGate,
     ToastTypeEnum,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     ModalTypes,
     useModal,
 } from 'learn-card-base';
@@ -195,7 +195,7 @@ const PrivacySettingsPage: React.FC = () => {
 
     const hasAiConsent = contracts.some(
         consent =>
-            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
             consent?.status !== 'withdrawn'
     );
 

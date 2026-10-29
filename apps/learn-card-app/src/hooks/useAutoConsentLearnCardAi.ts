@@ -11,7 +11,7 @@ import { CurrentUser, useWallet, useCurrentUser, useWithdrawConsent } from 'lear
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { getOrFetchConsentedContracts } from 'learn-card-base';
 import { getTermsWithSharedUrisForWallet } from 'learn-card-base';
-import { isProductionNetwork } from 'learn-card-base';
+import { hasLearnCardAiPassportContract } from 'learn-card-base';
 
 import {
     AiPassportAppsEnum,
@@ -51,8 +51,8 @@ export const useAutoConsentLearnCardAi = () => {
     const autoConsentLearnCardAi = useCallback(
         async ({ enabled, userOverrides }: AutoConsentOptions) => {
             if (!enabled) return false;
-            // Prod-only contract (does not exist off-prod); mirrors useNetworkConsentMutation gate.
-            if (!isProductionNetwork()) return false;
+            // The LearnCard AI contract exists on production and staging only.
+            if (!hasLearnCardAiPassportContract()) return false;
             if (autoConsentInFlight) return autoConsentInFlight;
 
             const run = (async () => {

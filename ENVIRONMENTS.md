@@ -129,35 +129,38 @@ production DID and consent contract. So `ai-passport-api-staging` must set these
 passes as `flyctl deploy --env` overrides. The job fails if one is missing or equals the
 production value, or if `FLY_APP_NAME` is a production app.
 
-| Var                             | Overrides                   | Value                                                                    |
-| ------------------------------- | --------------------------- | ------------------------------------------------------------------------ |
-| `AIP_LEARNCARD_DID_WEB`         | `LEARNCARD_DID_WEB`         | Staging AI Passport `did:web` (TBD — must resolve to the staging `SEED`) |
-| `AIP_LEARNCARD_CONTRACT_URI`    | `LEARNCARD_CONTRACT_URI`    | Staging consent contract URI (TBD — created by the staging DID)          |
-| `AIP_AWS_ROLE_ARN`              | `AWS_ROLE_ARN`              | `arn:aws:iam::<account>:role/<staging-privacy-runtime>` (placeholder)    |
-| `AIP_BEDROCK_GUARDRAIL_ID`      | `BEDROCK_GUARDRAIL_ID`      | Staging Guardrail ID (placeholder)                                       |
-| `AIP_BEDROCK_GUARDRAIL_VERSION` | `BEDROCK_GUARDRAIL_VERSION` | Published numeric version (not `DRAFT`) (placeholder)                    |
-| `AIP_DOMAIN`                    | `DOMAIN`                    | Staging app origin                                                       |
-| `AIP_CORS_ORIGINS`              | `CORS_ORIGINS`              | Staging app origin(s)                                                    |
-| `AIP_LEARNCARD_NETWORK_URL`     | `LEARNCARD_NETWORK_URL`     | Optional; staging LearnCard Network tRPC URL                             |
-| `AIP_LEARNCARD_CLOUD_URL`       | `LEARNCARD_CLOUD_URL`       | Optional; staging LearnCloud URL                                         |
-| `AIP_LCA_URL`                   | `LCA_URL`                   | Optional; staging LearnCard app URL                                      |
+| Var                             | Overrides                   | Value                                                                                          |
+| ------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------- |
+| `AIP_LEARNCARD_DID_WEB`         | `LEARNCARD_DID_WEB`         | `did:web:staging.network.learncard.com:users:learn-cloud` (must resolve to the staging `SEED`) |
+| `AIP_LEARNCARD_CONTRACT_URI`    | `LEARNCARD_CONTRACT_URI`    | `lc:network:staging.network.learncard.com/trpc:contract:9eade6a7-7181-4509-b805-d26e30a8f7f1`  |
+| `AIP_AWS_ROLE_ARN`              | `AWS_ROLE_ARN`              | `arn:aws:iam::<account>:role/<staging-privacy-runtime>` (placeholder)                          |
+| `AIP_BEDROCK_GUARDRAIL_ID`      | `BEDROCK_GUARDRAIL_ID`      | Staging Guardrail ID (placeholder)                                                             |
+| `AIP_BEDROCK_GUARDRAIL_VERSION` | `BEDROCK_GUARDRAIL_VERSION` | Published numeric version (not `DRAFT`) (placeholder)                                          |
+| `AIP_DOMAIN`                    | `DOMAIN`                    | Staging app origin                                                                             |
+| `AIP_CORS_ORIGINS`              | `CORS_ORIGINS`              | Staging app origin(s)                                                                          |
+| `AIP_LEARNCARD_NETWORK_URL`     | `LEARNCARD_NETWORK_URL`     | Optional; staging LearnCard Network tRPC URL (`https://staging.network.learncard.com/trpc`)    |
+| `AIP_LEARNCARD_CLOUD_URL`       | `LEARNCARD_CLOUD_URL`       | Optional; staging LearnCloud URL (`https://staging.cloud.learncard.com/trpc`)                  |
+| `AIP_LCA_URL`                   | `LCA_URL`                   | Optional; staging LearnCard app URL                                                            |
 
 The staging `SEED` is a Fly secret on the staging app (`fly secrets set SEED=... -a <app>`),
-generated fresh for staging and never the production seed; its `did:web` is what goes in
-`AIP_LEARNCARD_DID_WEB`. Don't also set the Guardrail or role values as Fly secrets on the
+never the production seed; its `did:web` is what goes in `AIP_LEARNCARD_DID_WEB`. The staging
+consent contract (`9eade6a7-…`) was created on the staging network by `learn-cloud`, so the
+staging `SEED` must be the one behind `did:web:staging.network.learncard.com:users:learn-cloud`.
+The LearnCard app picks the matching contract from its network URL
+(`packages/learn-card-base/src/constants/aiPassport.ts`), so staging builds need no extra var. Don't also set the Guardrail or role values as Fly secrets on the
 staging app: a Fly secret with the same name takes precedence over `--env`, so the guard here would check one value while the app
 ran another. The staging role's trust policy must allow the staging Fly app's OIDC identity.
 
 ### App environments
 
-| Key                   | Type   | Purpose                                                                         |
-| --------------------- | ------ | ------------------------------------------------------------------------------- |
-| `NETLIFY_SITE_ID`     | var    | Target Netlify site for that environment                                        |
-| `NETLIFY_AUTH_TOKEN`  | secret | Netlify token with deploy rights                                                |
-| `PUBLIC_BACKEND_URL`  | var    | Backend origin baked into the build (staging: the staging Fly app)              |
-| `PUBLIC_DOMAIN`       | var    | This site's origin                                                              |
-| `PUBLIC_LCA_URL`      | var    | LearnCard app URL. Required for staging                                         |
-| `PUBLIC_CONTRACT_URI` | var    | Consent contract. Required for staging, must match `AIP_LEARNCARD_CONTRACT_URI` |
+| Key                   | Type   | Purpose                                                                                                                                                                         |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NETLIFY_SITE_ID`     | var    | Target Netlify site for that environment                                                                                                                                        |
+| `NETLIFY_AUTH_TOKEN`  | secret | Netlify token with deploy rights                                                                                                                                                |
+| `PUBLIC_BACKEND_URL`  | var    | Backend origin baked into the build (staging: the staging Fly app)                                                                                                              |
+| `PUBLIC_DOMAIN`       | var    | This site's origin                                                                                                                                                              |
+| `PUBLIC_LCA_URL`      | var    | LearnCard app URL. Required for staging                                                                                                                                         |
+| `PUBLIC_CONTRACT_URI` | var    | Consent contract. Required for staging, must match `AIP_LEARNCARD_CONTRACT_URI` (`lc:network:staging.network.learncard.com/trpc:contract:9eade6a7-7181-4509-b805-d26e30a8f7f1`) |
 
 The Netlify site's base directory is `apps/ai-passport` (`apps/ai-passport/netlify.toml`).
 Disable branch auto-publishing so CI is the only publisher; deploy previews can stay on
