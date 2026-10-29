@@ -189,7 +189,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     onChange={e => set('name', e.target.value)}
                                 />
                             </Field>
-                            <fieldset>
+                            <fieldset className="pb-5">
                                 <legend className="mb-2 text-xs font-medium text-grayscale-700">
                                     Channels
                                 </legend>
