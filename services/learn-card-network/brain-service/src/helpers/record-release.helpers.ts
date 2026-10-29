@@ -272,14 +272,29 @@ export const submitProvisionedRecord = async (
         if (!authorityScopes.length) deny(reason);
 
         reason = 'NO_ACTIVE_BINDING';
-        const bindings = (await listBindingsByEcosystem(claims.ecosystemId)).filter(
+        const lanes = (await listBindingsByEcosystem(claims.ecosystemId)).filter(
             candidate =>
-                candidate.status === 'ACTIVE' &&
                 candidate.capability === 'record-provisioning' &&
                 candidate.provider.resourceId === claims.installId &&
                 candidate.capabilityMetadata?.mode === 'TRANSACTIONAL'
         );
-        if (bindings.length !== 1) deny(reason);
+        const bindings = lanes.filter(candidate => candidate.status === 'ACTIVE');
+        if (bindings.length !== 1) {
+            // With no ACTIVE lane (e.g. after a revoke), attribute the denial to the install's
+            // most recently revoked lane so it shows on that Binding's trail. PROPOSED or
+            // APPROVED lanes never served the partner, so they are not candidates. Several
+            // ACTIVE lanes are ambiguous and stay unattributed.
+            if (!bindings.length) {
+                bindingId = lanes
+                    .filter(candidate => candidate.status === 'REVOKED')
+                    .reduce<(typeof lanes)[number] | undefined>(
+                        (latest, candidate) =>
+                            !latest || candidate.updatedAt > latest.updatedAt ? candidate : latest,
+                        undefined
+                    )?.bindingId;
+            }
+            deny(reason);
+        }
         const binding = bindings[0]!;
         const metadata = binding.capabilityMetadata;
         bindingId = binding.bindingId;

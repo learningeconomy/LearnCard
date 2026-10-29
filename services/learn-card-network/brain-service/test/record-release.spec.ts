@@ -15,6 +15,7 @@ import { purgeExpiredProvisionedRecords } from '@helpers/record-release.helpers'
 import { retryRecordIssuance } from '@helpers/issuers/retry';
 import { resolveIssuerAdapter } from '@helpers/issuers/registry';
 import { resolveRecordLaneGaps } from '@accesslayer/binding/record-lane';
+import { revokeBinding as revokeBindingRecord } from '@accesslayer/binding/write';
 import { setupServiceAccount, partnerClient } from './helpers/service-account.helpers';
 import { makeListingInput } from './helpers/app-store.helpers';
 import { createSignedListingVersionForKind } from './helpers/manifest.helpers';
@@ -371,10 +372,85 @@ describe('Record provisioning release (ADR-012 Transactional)', () => {
         const audit = await neogma.queryRunner.run(
             `MATCH (a:InstallIntentAuditEvent {action: 'RECORD_PROVISION_DENY'})
              WHERE a.afterSummary CONTAINS $learnerId AND a.afterSummary CONTAINS 'NO_ACTIVE_BINDING'
-             RETURN count(a) AS count`,
+             RETURN a.bindingId AS bindingId`,
             { learnerId }
         );
-        expect(Number(audit.records[0]?.get('count'))).toBe(1);
+        // The denial is attributed to the revoked Binding, so it shows on that Binding's trail.
+        expect(audit.records.map(row => row.get('bindingId'))).toEqual([binding.bindingId]);
+    });
+
+    it('attributes a post-revoke denial to the revoked lane, not a newer PROPOSED one', async () => {
+        const { partner, learnerId, binding, client, ecosystem, installId, issuer } = await setup();
+        await client.installIntent.revokeBinding({
+            bindingId: binding.bindingId,
+            expectedRevision: binding.revision,
+        });
+        const proposed = await client.installIntent.proposeBinding({
+            ecosystemId: ecosystem.id,
+            capability: 'record-provisioning',
+            provider: {
+                resourceType: 'INTEGRATION_INSTALL',
+                resourceId: installId,
+                ecosystemId: ecosystem.id,
+            },
+            consumer: {
+                resourceType: 'ECOSYSTEM',
+                resourceId: ecosystem.id,
+                ecosystemId: ecosystem.id,
+            },
+            capabilityMetadata: metadataFor(issuer),
+        });
+        await expect(
+            partner.integrationService.submitRecord({
+                subjectProfileId: learnerId,
+                fields: record(),
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        const audit = await neogma.queryRunner.run(
+            `MATCH (a:InstallIntentAuditEvent {action: 'RECORD_PROVISION_DENY'})
+             WHERE a.afterSummary CONTAINS $learnerId AND a.afterSummary CONTAINS 'NO_ACTIVE_BINDING'
+             RETURN a.bindingId AS bindingId`,
+            { learnerId }
+        );
+        expect(proposed.bindingId).not.toBe(binding.bindingId);
+        expect(audit.records.map(row => row.get('bindingId'))).toEqual([binding.bindingId]);
+    });
+
+    it('revokes and audits the record Binding when the install is removed', async () => {
+        const { binding, intentId } = await setup();
+        await reconcileInstallIntent(intentId, { operation: 'remove' });
+        const result = await neogma.queryRunner.run(
+            `MATCH (b:Binding {bindingId: $bindingId})
+             OPTIONAL MATCH (a:InstallIntentAuditEvent {action: 'BINDING_REVOKED', bindingId: $bindingId})
+             RETURN b.status AS status, collect(a.intentId) AS intents,
+                    collect(a.afterSummary) AS summaries`,
+            { bindingId: binding.bindingId }
+        );
+        const row = result.records[0]!;
+        expect(row.get('status')).toBe('REVOKED');
+        expect(row.get('intents')).toEqual([intentId]);
+        expect(JSON.parse(String(row.get('summaries')[0]))).toMatchObject({
+            status: 'REVOKED',
+            cause: 'INTENT_REMOVED',
+        });
+    });
+
+    it('repairs a missing BINDING_REVOKED when a cascade revoke was not audited', async () => {
+        const { binding, intentId } = await setup();
+        // Models a remove pass that revoked the Binding and then failed before auditing it.
+        await revokeBindingRecord(binding.bindingId, binding.revision);
+        await reconcileInstallIntent(intentId, { operation: 'remove' });
+        const result = await neogma.queryRunner.run(
+            `MATCH (a:InstallIntentAuditEvent {action: 'BINDING_REVOKED', bindingId: $bindingId})
+             RETURN a.intentId AS intentId, a.afterSummary AS summary`,
+            { bindingId: binding.bindingId }
+        );
+        expect(result.records.map(row => row.get('intentId'))).toEqual([intentId]);
+        expect(JSON.parse(String(result.records[0]?.get('summary')))).toMatchObject({
+            status: 'REVOKED',
+            cause: 'INTENT_REMOVED',
+            repaired: true,
+        });
     });
 
     it('denies undeclared fields and subjects outside the install tree', async () => {

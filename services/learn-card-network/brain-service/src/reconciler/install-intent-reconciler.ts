@@ -16,7 +16,10 @@ import { TRPCError } from '@trpc/server';
 import { traceInternal } from '@tracing';
 import { WalletManifestValidator } from '@learncard/types';
 
-import { createInstallIntentAuditEvent } from '@accesslayer/install-intent/audit';
+import {
+    createInstallIntentAuditEvent,
+    getInstallIntentAuditEvents,
+} from '@accesslayer/install-intent/audit';
 import { readInstallIntentById } from '@accesslayer/install-intent/intent-read';
 import { writeInstallIntentStatus } from '@accesslayer/install-intent/intent-status';
 import { readListingVersionById } from '@accesslayer/listing-version/read';
@@ -769,18 +772,65 @@ const runAuthPass = async (
     return markReady(intent, actor, now);
 };
 
-const cascadeIntentBindingRevocations = async (intent: InstallIntentRecordType): Promise<void> => {
+const cascadeIntentBindingRevocations = async (
+    intent: InstallIntentRecordType,
+    actor?: Pick<ReconcileOptions, 'actorDid' | 'actorProfileId'>
+): Promise<void> => {
     const targetIds = new Set(expectedTargetDescriptors(intent).map(target => target.id));
-    const bindings = await listBindingsByEcosystem(intent.ecosystemId);
+    const targets = (await listBindingsByEcosystem(intent.ecosystemId)).filter(
+        binding =>
+            targetIds.has(binding.provider.resourceId) || targetIds.has(binding.consumer.resourceId)
+    );
 
-    for (const binding of bindings) {
-        if (
-            binding.status !== 'REVOKED' &&
-            (targetIds.has(binding.provider.resourceId) ||
-                targetIds.has(binding.consumer.resourceId))
-        ) {
-            await revokeBindingRecord(binding.bindingId, binding.revision);
+    // The revoke and its audit event are separate writes. If an earlier remove pass revoked a
+    // Binding but failed before auditing it, the retry repairs the gap here: the operator
+    // revokeBinding route always audits, so a REVOKED target with no BINDING_REVOKED event
+    // was revoked by this cascade.
+    const revokedTargets = targets.filter(binding => binding.status === 'REVOKED');
+    const audited = new Set(
+        revokedTargets.length
+            ? (await getInstallIntentAuditEvents({ ecosystemId: intent.ecosystemId }))
+                  .filter(event => event.action === 'BINDING_REVOKED')
+                  .map(event => event.bindingId)
+            : []
+    );
+
+    for (const binding of targets) {
+        if (binding.status === 'REVOKED') {
+            if (audited.has(binding.bindingId)) continue;
+            await createInstallIntentAuditEvent({
+                action: 'BINDING_REVOKED',
+                actorProfileId: actor?.actorProfileId,
+                actorDid: actor?.actorDid,
+                intentId: intent.intentId,
+                ecosystemId: binding.ecosystemId,
+                bindingId: binding.bindingId,
+                afterSummary: {
+                    status: binding.status,
+                    revision: binding.revision,
+                    cause: 'INTENT_REMOVED',
+                    repaired: true,
+                },
+            });
+            continue;
         }
+
+        const revoked = await revokeBindingRecord(binding.bindingId, binding.revision);
+        // Audited like an operator revoke (revokeBinding route), attributed to the intent.
+        await createInstallIntentAuditEvent({
+            action: 'BINDING_REVOKED',
+            actorProfileId: actor?.actorProfileId,
+            actorDid: actor?.actorDid,
+            intentId: intent.intentId,
+            ecosystemId: revoked.ecosystemId,
+            bindingId: revoked.bindingId,
+            beforeSummary: { status: binding.status, revision: binding.revision },
+            afterSummary: {
+                status: revoked.status,
+                revision: revoked.revision,
+                cause: 'INTENT_REMOVED',
+            },
+        });
     }
 };
 
@@ -810,7 +860,7 @@ const runRemovePass = async (
     await maybeConsumeInjectedFailure(current.intentId, 'remove');
 
     await revokeIntentServiceAccounts(current);
-    await cascadeIntentBindingRevocations(current);
+    await cascadeIntentBindingRevocations(current, actor);
 
     let retiring = false;
     const retainedObligations = new Set<string>();
