@@ -35,6 +35,7 @@ export const EndorsementFullView: React.FC<{
     categoryType?: CredentialCategoryEnum; // endorsement parent credential category
 
     endorsement: VC | BoostEndorsement; // endorsement credential
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     metadata?: any; // additonal endorsement metadata -> index record
 
     mode?: EndorsementModeEnum;
@@ -131,6 +132,7 @@ export const EndorsementFullView: React.FC<{
     const getAttachments = (
         attachmentType: EndorsementMediaOptionsEnum
     ): EndorsementMediaAttachment[] => {
+        // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
         let attachments = [];
 
         if (endorsement?.mediaAttachments?.length > 0) {

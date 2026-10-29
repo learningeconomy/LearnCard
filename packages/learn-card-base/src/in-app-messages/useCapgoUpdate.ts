@@ -7,12 +7,7 @@ import { iamDebug } from './debug';
 const log = getLogger('in-app-messages-capgo');
 
 export type CapgoUpdateStatus =
-    | 'idle'
-    | 'checking'
-    | 'downloading'
-    | 'applying'
-    | 'uptodate'
-    | 'error';
+    'idle' | 'checking' | 'downloading' | 'applying' | 'uptodate' | 'error';
 
 export interface CapgoUpdateState {
     status: CapgoUpdateStatus;
@@ -33,17 +28,19 @@ const INITIAL: CapgoUpdateState = {
     error: null,
 };
 
-export const useCapgoUpdate = (): CapgoUpdateState & { startUpdate: () => Promise<void> } => {
+export const useCapgoUpdate = (): CapgoUpdateState & {
+    startUpdate: (onComplete?: () => void) => Promise<void>;
+} => {
     const [state, setState] = useState<CapgoUpdateState>(INITIAL);
     const runningRef = useRef(false);
 
-    const startUpdate = useCallback(async () => {
-        if (runningRef.current) return;
+    const performUpdate = useCallback(async (): Promise<boolean> => {
+        if (runningRef.current) return false;
 
         if (!Capacitor.isNativePlatform()) {
             setState({ ...INITIAL, status: 'uptodate' });
 
-            return;
+            return true;
         }
 
         runningRef.current = true;
@@ -63,7 +60,7 @@ export const useCapgoUpdate = (): CapgoUpdateState & { startUpdate: () => Promis
                 iamDebug('capgo:uptodate');
                 setState({ ...INITIAL, status: 'uptodate' });
 
-                return;
+                return true;
             }
 
             iamDebug('capgo:downloading', { version });
@@ -94,21 +91,31 @@ export const useCapgoUpdate = (): CapgoUpdateState & { startUpdate: () => Promis
             // non-reloading update path is ever introduced, this needs a
             // success state or the spinner will hang forever.
             await CapacitorUpdater.set({ id: bundle.id });
+            return true;
         } catch (err) {
             const message = (err as { message?: string })?.message ?? '';
 
             if (isUpToDateError(message)) {
                 setState({ ...INITIAL, status: 'uptodate' });
+                return true;
             } else {
                 log.warn('capgo update failed', err);
                 iamDebug('capgo:error', { message });
                 setState(s => ({ ...s, status: 'error', error: message || 'Update failed' }));
+                return false;
             }
         } finally {
             removeProgress?.();
             runningRef.current = false;
         }
     }, []);
+
+    const startUpdate = useCallback(
+        async (onComplete?: () => void): Promise<void> => {
+            if (await performUpdate()) onComplete?.();
+        },
+        [performUpdate]
+    );
 
     return { ...state, startUpdate };
 };

@@ -9,6 +9,22 @@ provider "aws" {
 }
 locals {
   authority_event_patterns = { for name, pattern in {
+    unexpected_write = {
+      source = ["aws.dynamodb"], "detail-type" = ["AWS API Call via CloudTrail"],
+      detail = {
+        eventSource  = ["dynamodb.amazonaws.com"], eventCategory = ["Data"], readOnly = [false, "false"],
+        resources    = { ARN = [local.authority_table_arn] },
+        userIdentity = { arn = [{ "anything-but" = try(aws_iam_user.authority_writer[0].arn, "disabled") }] }
+      }
+    }
+    denied_write = {
+      source = ["aws.dynamodb"], "detail-type" = ["AWS API Call via CloudTrail"],
+      detail = {
+        eventSource = ["dynamodb.amazonaws.com"], eventCategory = ["Data"], readOnly = [false, "false"],
+        resources   = { ARN = [local.authority_table_arn] },
+        errorCode   = [{ prefix = "AccessDenied" }]
+      }
+    }
     access_keys = {
       source = ["aws.iam"], "detail-type" = ["AWS API Call via CloudTrail"],
       # Account-wide also catches IAM-user self-service calls omitting userName.
@@ -22,7 +38,7 @@ locals {
     }
     credential_key = {
       source = ["aws.kms"], "detail-type" = ["AWS API Call via CloudTrail"],
-      detail = { eventSource = ["kms.amazonaws.com"], eventName = ["PutKeyPolicy", "CreateGrant", "DisableKey", "ScheduleKeyDeletion"], requestParameters = { keyId = [try(aws_kms_key.credentials[0].key_id, "disabled"), try(aws_kms_key.credentials[0].arn, "disabled")] } }
+      detail = { eventSource = ["kms.amazonaws.com"], eventName = local.kms_governance_events, requestParameters = { keyId = [try(aws_kms_key.credentials[0].key_id, "disabled"), try(aws_kms_key.credentials[0].arn, "disabled")] } }
     }
     console = { "detail-type" = ["AWS Console Sign In via CloudTrail"], detail = { eventName = ["ConsoleLogin"] } }
     root    = { "detail-type" = ["AWS API Call via CloudTrail", "AWS Console Sign In via CloudTrail"], detail = { userIdentity = { type = ["Root"] } } }
@@ -33,6 +49,14 @@ resource "aws_cloudwatch_event_rule" "authority_governance" {
   for_each      = local.authority_event_patterns
   name          = "${local.name_prefix}-authority-${each.key}"
   event_pattern = each.value
+  lifecycle {
+    # The unexpected_write exemption must be the real writer ARN; never let the
+    # try() fallback render a pattern that pages on every legitimate write.
+    precondition {
+      condition     = each.key != "unexpected_write" || length(aws_iam_user.authority_writer) == 1
+      error_message = "unexpected_write requires the authority writer IAM user; its ARN is the only exempt caller."
+    }
+  }
 }
 resource "aws_cloudwatch_event_target" "authority_governance" {
   for_each = local.authority_event_patterns

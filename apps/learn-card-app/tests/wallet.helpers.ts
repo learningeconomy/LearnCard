@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- existing ambient type reference
 /// <reference path="./global.d.ts" />
 
 import { initLearnCard } from '@learncard/init';

@@ -12,11 +12,11 @@ export const AiPassportAppProfileConnectedViewHeader: React.FC<{ app: LaunchPadA
 
     return (
         <div className="rounded-t-[24px] flex flex-col border-solid border-white border-[3px]">
-            <div className="w-full flex items-center justify-center flex-col bg-opacity-70 rounded-t-[20px] backdrop-blur-[5px] bg-white">
+            <div className="w-full flex items-center justify-center flex-col  rounded-t-[20px] backdrop-blur-[5px] bg-white/70">
                 <div className="w-full relative flex items-center justify-center flex-col pt-[25px]">
                     <div className="h-[100px] w-[100px] mr-2 rounded-[20px] overflow-hidden">
                         <img
-                            className="w-full h-full object-cover bg-white rounded-[20px] overflow-hidden border-[1px] border-solid"
+                            className="w-full h-full object-cover bg-white rounded-[20px] overflow-hidden border border-solid"
                             alt={`${app?.name} logo`}
                             src={img}
                         />

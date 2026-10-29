@@ -42,7 +42,7 @@ export const LaunchPadSearch: React.FC<LaunchPadSearchProps> = ({
                         onIonInput={e => setSearchInput(e.detail.value ?? '')}
                         onIonFocus={onFocus}
                         onIonBlur={onBlur}
-                        className="bg-grayscale-200 text-grayscale-800 rounded-[10px] !py-[4px] font-normal !font-notoSans text-[17px] !pl-[44px]"
+                        className="bg-grayscale-200 text-grayscale-800 rounded-[10px] py-[4px]! font-normal !font-notoSans text-[17px] pl-[44px]!"
                     />
                 </div>
                 {/*Going to hide this button for now until it gets hooked up to the new app system*/}

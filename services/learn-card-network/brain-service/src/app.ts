@@ -19,6 +19,7 @@ import { skillFrameworksRouter, SkillFrameworksRouter } from '@routes/skill-fram
 import { skillsRouter, SkillsRouter } from '@routes/skills';
 import { integrationsRouter, IntegrationsRouter } from '@routes/integrations';
 import { appStoreRouter, AppStoreRouter } from '@routes/app-store';
+import { campaignsRouter, CampaignsRouter } from '@routes/campaigns';
 import { activityRouter, ActivityRouter } from '@routes/activity';
 import { federationRouter, FederationRouter } from '@routes/federation';
 import { ecosystemsRouter, EcosystemsRouter } from '@routes/ecosystems';
@@ -32,6 +33,10 @@ import {
 } from '@routes/integration-service';
 import { shareLinksRouter, ShareLinksRouter } from '@routes/share-links';
 import { publicShareLinksRouter, PublicShareLinksRouter } from '@routes/public-share-links';
+import {
+    credentialSharePreviewsRouter,
+    CredentialSharePreviewsRouter,
+} from '@routes/credential-share-previews';
 
 /** For end-to-end testing, only available in test environment */
 import { testRouter, TestRouter } from '@routes/test';
@@ -61,6 +66,7 @@ export const appRouter = t.router<{
     skills: SkillsRouter;
     integrations: IntegrationsRouter;
     appStore: AppStoreRouter;
+    campaigns: CampaignsRouter;
     activity: ActivityRouter;
     federation: FederationRouter;
     ecosystem: EcosystemsRouter;
@@ -71,6 +77,7 @@ export const appRouter = t.router<{
     integrationService: IntegrationServiceRouter;
     shareLinks: ShareLinksRouter;
     publicShareLinks: PublicShareLinksRouter;
+    credentialSharePreviews: CredentialSharePreviewsRouter;
     test?: TestRouter;
     bench?: BenchRouter;
 }>({
@@ -93,6 +100,7 @@ export const appRouter = t.router<{
     skills: skillsRouter,
     integrations: integrationsRouter,
     appStore: appStoreRouter,
+    campaigns: campaignsRouter,
     activity: activityRouter,
     federation: federationRouter,
     ecosystem: ecosystemsRouter,
@@ -103,6 +111,7 @@ export const appRouter = t.router<{
     integrationService: integrationServiceRouter,
     shareLinks: shareLinksRouter,
     publicShareLinks: publicShareLinksRouter,
+    credentialSharePreviews: credentialSharePreviewsRouter,
     test: environment.IS_E2E_TEST ? testRouter : undefined,
     bench: environment.ENABLE_BENCH_ROUTES ? benchRouter : undefined,
 });

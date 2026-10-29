@@ -30,6 +30,7 @@ const BoostCMSMemberOptions: React.FC<{
 
     const [showAbout, setShowAbout] = useState<boolean>(true);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -66,7 +67,7 @@ const BoostCMSMemberOptions: React.FC<{
                 <button onClick={() => setShowAbout(!showAbout)}>
                     <CaretLeft
                         className={`h-auto w-3 text-grayscale-800 ${
-                            showAbout ? 'rotate-[-90deg]' : 'rotate-180'
+                            showAbout ? '-rotate-90' : 'rotate-180'
                         }`}
                     />
                 </button>
@@ -105,6 +106,7 @@ const BoostCMSMemberOptions: React.FC<{
                         </h1>
                         {memberOptions?.map(option => {
                             return (
+                                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                 <div className="w-full flex items-center justify-between py-[8px]">
                                     <p className="text-grayscale-900 font-medium w-10/12">
                                         {option?.text}

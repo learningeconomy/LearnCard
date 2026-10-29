@@ -121,6 +121,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
             onSuccess?.(contractUri);
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         } catch (e: any) {
             presentToast(`Failed to create contract: ${e.message}`, {
                 type: ToastTypeEnum.Error,
@@ -134,12 +135,14 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     const handlePreview = () => {
         if (contract.needsGuardianConsent) {
             newModal(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 <FullScreenGameFlow contractDetails={contract as any} isPreview />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {
             newModal(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 <FullScreenConsentFlow contractDetails={contract as any} isPreview />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
@@ -169,7 +172,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-v3-6">
                 {/* Image Upload */}
                 <div className="flex items-start gap-4">
                     <div className="relative">
@@ -202,7 +205,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         )}
                     </div>
 
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-v3-3">
                         {/* Name */}
                         <input
                             type="text"
@@ -213,7 +216,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                     'developerPortal.components.createConsentContractModal.contractName'
                                 ]() + ' *'
                             }
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
 
                         {/* Subtitle */}
@@ -224,7 +227,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                             placeholder={m[
                                 'developerPortal.components.createConsentContractModal.subtitle'
                             ]()}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                         />
                     </div>
                 </div>
@@ -241,7 +244,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         placeholder={m[
                             'developerPortal.components.createConsentContractModal.descriptionPlaceholder'
                         ]()}
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[80px] resize-none"
+                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[80px] resize-none"
                     />
                 </div>
 
@@ -260,7 +263,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                         placeholder={m[
                             'developerPortal.components.createConsentContractModal.reasonPlaceholder'
                         ]()}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                     />
                 </div>
 
@@ -281,7 +284,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
 
                     <ContractCategoryMultiSelect
                         values={contract.contract.read.credentials.categories}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onChange={updateReadCredentials('categories') as any}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         setContract={setContract as any}
                         mode="read"
                     />
@@ -347,7 +352,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
 
                         {/* Active personal fields */}
                         {Object.entries(contract.contract.read.personal).length > 0 && (
-                            <div className="space-y-2 mb-3">
+                            <div className="space-y-v3-2 mb-3">
                                 {Object.entries(contract.contract.read.personal).map(
                                     ([field, config]) => (
                                         <div
@@ -412,7 +417,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                 placeholder={m[
                                     'developerPortal.components.createConsentContractModal.customFieldName'
                                 ]()}
-                                className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                             />
 
                             <button
@@ -455,7 +460,9 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
 
                     <ContractCategoryMultiSelect
                         values={contract.contract.write.credentials.categories}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         onChange={updateWriteCredentials('categories') as any}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         setContract={setContract as any}
                         mode="write"
                     />
@@ -482,7 +489,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                     </button>
 
                     {showAdvanced && (
-                        <div className="px-4 pb-4 space-y-4 border-t border-gray-100">
+                        <div className="px-4 pb-4 space-y-v3-4 border-t border-gray-100">
                             {/* Redirect URL */}
                             <div className="pt-4">
                                 <label className="block text-sm font-medium text-gray-600 mb-1">
@@ -496,7 +503,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                                     value={contract.redirectUrl || ''}
                                     onChange={e => updateSlice('redirectUrl', e.target.value)}
                                     placeholder="https://yourapp.com/callback"
-                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                                 />
 
                                 <p className="text-xs text-gray-400 mt-1">
@@ -557,7 +564,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
             </div>
 
             {/* Footer Buttons */}
-            <div className="mt-6 space-y-3">
+            <div className="mt-6 space-y-v3-3">
                 {/* Preview Button */}
                 <button
                     type="button"

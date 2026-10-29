@@ -47,10 +47,12 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
     const [pendingCredential, setPendingCredential] = useState<{
         credentialUri: string;
         boostUri?: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         credential?: any;
     } | null>(null);
 
     const handleCredentialIssued = useCallback(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (credentialUri: string, boostUri?: string, credential?: any) => {
             setPendingCredential({ credentialUri, boostUri, credential });
         },
@@ -140,6 +142,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
         const wrapped: typeof baseHandlers = {};
 
         for (const [action, handler] of Object.entries(baseHandlers)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             wrapped[action as keyof typeof baseHandlers] = async (context: any) => {
                 const eventId = addDiagnosticEvent(action, context.payload);
 
@@ -248,6 +251,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                                                 LAUNCH_TYPE_INFO[listing.launch_type]?.labelKey
                                             ),
                                         }}
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<strong />]}
                                     />
                                 </p>
@@ -315,7 +319,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                         {/* Iframe Container */}
                         <div className="flex-1 relative min-h-0">
                             {isLoading && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50 z-10">
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-br/srgb from-indigo-50 to-blue-50 z-10">
                                     <div className="flex flex-col items-center gap-4">
                                         <div className="relative">
                                             <div className="w-16 h-16 border-4 border-indigo-200 rounded-full" />
@@ -351,7 +355,7 @@ export const AppPreviewModal: React.FC<AppPreviewModalProps> = ({ listing, onClo
                         </div>
 
                         {/* Diagnostics Panel */}
-                        <div className="flex-shrink-0 border-t border-gray-300">
+                        <div className="shrink-0 border-t border-gray-300">
                             <DiagnosticsPanel
                                 events={diagnosticEvents}
                                 requestedPermissions={requestedPermissions}

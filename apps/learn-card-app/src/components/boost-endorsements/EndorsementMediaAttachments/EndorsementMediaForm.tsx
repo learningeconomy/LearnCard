@@ -35,7 +35,9 @@ export const EndorsementMediaForm: React.FC<{
                 <TransP
                     m={m['endorsement.media.addAny']}
                     components={[
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <span className="font-semibold" />,
                     ]}
                 />

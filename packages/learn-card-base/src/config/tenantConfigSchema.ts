@@ -110,7 +110,7 @@ export type TenantKeycloakConfig = z.infer<typeof tenantKeycloakConfigSchema>;
 
 export const tenantSSSConfigSchema = z
     .object({
-        serverUrl: urlOrPlaceholder().default('https://api.learncard.app/trpc'),
+        serverUrl: urlOrPlaceholder().default('https://api.learncard.app/api'),
         escrowRelayPublicKey: z.string().default(''),
         escrowRelayKeyId: z.string().default(''),
         escrowEnclaveMode: z.enum(['off', 'software', 'nitro']).default('off'),
@@ -485,7 +485,8 @@ export const tenantConfigSchema = z
         email: tenantEmailConfigSchema.optional(),
         native: tenantNativeConfigSchema.optional(),
         ecosystem: tenantEcosystemConfigSchema.optional(),
-        registries: tenantRegistriesConfigSchema.default({}),
+        // Parse an absent block so each registry field receives its declared default.
+        registries: tenantRegistriesConfigSchema.prefault({}),
     })
     .passthrough();
 

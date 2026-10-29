@@ -1,5 +1,10 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { isEncrypted, isVC2Format } from '@learncard/helpers';
+import {
+    CredentialFieldError,
+    isEncrypted,
+    isVC2Format,
+    materializeCredentialFields,
+} from '@learncard/helpers';
 import { TRPCError } from '@trpc/server';
 import {
     VC,
@@ -85,6 +90,29 @@ export const isBoostViewableByClaimLink = async (boost: BoostInstance): Promise<
     if (typeof canView === 'boolean') return canView;
 
     return true;
+};
+
+/**
+ * Stamps the issuance time onto a credential built from a Boost template.
+ *
+ * A template's own issuanceDate/validFrom is when the template was written, not when this
+ * credential is issued, and templates created through the API are not date-validated: a
+ * malformed value (e.g. "2025-10-19+053008:18:16") makes DIDKit refuse to sign. VC 2.0
+ * templates get validFrom and lose any leftover issuanceDate, which the VC 2.0 context doesn't
+ * define (DIDKit rejects it as an undefined JSON-LD term). VC 1.1 templates get issuanceDate.
+ */
+export const stampIssuanceDate = <T extends UnsignedVC | VC>(
+    credential: T,
+    now: string = new Date().toISOString()
+): T => {
+    if (isVC2Format(credential)) {
+        credential.validFrom = now;
+        delete credential.issuanceDate;
+    } else {
+        credential.issuanceDate = now;
+    }
+
+    return credential;
 };
 
 export const convertCredentialToBoostTemplateJSON = (
@@ -255,6 +283,8 @@ export const issueClaimLinkBoost = async (
 
     boostCredential.issuer = signingAuthorityForUser.relationship.did;
 
+    stampIssuanceDate(boostCredential);
+
     setCredentialSubjectIds(boostCredential, getDidWeb(domain, to.profileId));
 
     // Embed the boostURI into the boost credential for verification purposes.
@@ -331,17 +361,20 @@ export const prepareCredentialFromBoost = async (
         boostJsonString = renderBoostTemplate(boostJsonString, mergedTemplateData);
     }
 
-    const credential = parseRenderedTemplate<UnsignedVC>(boostJsonString);
+    let credential: UnsignedVC;
+    try {
+        credential = materializeCredentialFields(
+            parseRenderedTemplate<UnsignedVC>(boostJsonString)
+        ) as UnsignedVC;
+    } catch (error) {
+        if (error instanceof CredentialFieldError)
+            throw new TRPCError({ code: 'BAD_REQUEST', message: error.message, cause: error });
+        throw error;
+    }
 
     appendTemplateEvidenceToCredential(credential, mergedTemplateData, allowAutoAppendEvidence);
 
-    // Set issuance date based on VC version
-    const now = new Date().toISOString();
-    if (isVC2Format(credential)) {
-        credential.validFrom = now;
-    } else {
-        credential.issuanceDate = now;
-    }
+    stampIssuanceDate(credential);
 
     // Set issuer if provided
     if (issuerDid) {
@@ -432,7 +465,16 @@ export const appendTemplateEvidenceToCredential = (
     // EvidenceFile subterms — otherwise the signer fails later with an opaque
     // JSON-LD key-expansion error. Surface a clear message instead so the
     // caller can prompt the user to republish the boost.
-    if (!credentialContextSupportsDynamicEvidence(credential)) {
+    const usesEvidenceExtensions = normalizedTemplateEvidence.some(item => {
+        if (!item || typeof item !== 'object') return false;
+        const evidence = item as Record<string, unknown>;
+        const types = Array.isArray(evidence.type) ? evidence.type : [evidence.type];
+        return (
+            types.includes('EvidenceFile') ||
+            ['fileName', 'fileType', 'fileSize'].some(key => key in evidence)
+        );
+    });
+    if (usesEvidenceExtensions && !credentialContextSupportsDynamicEvidence(credential)) {
         throw new TRPCError({
             code: 'PRECONDITION_FAILED',
             message:

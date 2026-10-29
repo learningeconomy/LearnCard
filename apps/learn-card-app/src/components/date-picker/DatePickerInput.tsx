@@ -91,7 +91,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                     aria-haspopup="dialog"
                     className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-600 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                         error ? 'login-input-email-error' : ''
-                    } ${disabled ? '!opacity-70 cursor-not-allowed' : ''}`}
+                    } ${disabled ? 'opacity-70! cursor-not-allowed' : ''}`}
                     onClick={e => {
                         e.preventDefault();
                         if (disabled) return;
@@ -124,7 +124,7 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                             </div>,
                             {
                                 sectionClassName:
-                                    '!bg-transparent !border-none !shadow-none !rounded-none',
+                                    'bg-transparent! border-none! shadow-none! rounded-none!',
                             },
                             {
                                 desktop: ModalTypes.Center,
@@ -166,12 +166,12 @@ const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 ariaInvalid={ariaInvalid ? 'true' : undefined}
                 className={`w-full flex items-center justify-between bg-grayscale-100 text-grayscale-900 placeholder:text-grayscale-400 rounded-[15px] font-poppins font-normal px-[16px] py-[16px] tracking-wider text-base ${
                     error ? 'login-input-email-error' : ''
-                } ${disabled ? '!opacity-70 cursor-not-allowed' : ''}`}
+                } ${disabled ? 'opacity-70! cursor-not-allowed' : ''}`}
                 disabled={disabled}
             />
             <Calendar
                 aria-hidden="true"
-                className={`pointer-events-none absolute end-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px] ${
+                className={`pointer-events-none absolute inset-e-[16px] top-[50%] -translate-y-1/2 text-grayscale-700 w-[24px] ${
                     disabled ? 'opacity-50' : ''
                 }`}
             />

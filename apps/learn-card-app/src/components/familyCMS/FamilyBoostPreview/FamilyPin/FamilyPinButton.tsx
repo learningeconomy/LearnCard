@@ -12,7 +12,7 @@ export const FamilyPinButton: React.FC<{
     return (
         <button
             onClick={onClick}
-            className={`flex items-center justify-between w-full mb-2 border-solid border-b-[2px] pb-4 border-grayscale-100 ${className}`}
+            className={`flex items-center justify-between w-full mb-2 border-solid border-b-2 pb-4 border-grayscale-100 ${className}`}
         >
             <div className="flex">
                 <span className="mr-3 min-h-[40px] min-w-[40px] flex items-center justify-center">

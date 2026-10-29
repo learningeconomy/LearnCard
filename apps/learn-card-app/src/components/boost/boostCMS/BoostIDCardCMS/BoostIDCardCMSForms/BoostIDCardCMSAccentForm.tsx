@@ -14,6 +14,7 @@ const BoostIDCardAccentForm: React.FC<{
 }> = ({ state, setState, disabled = false }) => {
     const { newModal, closeModal } = useModal();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -56,7 +57,7 @@ const BoostIDCardAccentForm: React.FC<{
                     onChange={handleColorChange}
                 />
             </div>,
-            { className: '!bg-transparent !shadow-none' },
+            { className: 'bg-transparent! shadow-none!' },
             { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
         );
     };

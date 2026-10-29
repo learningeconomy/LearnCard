@@ -1,32 +1,56 @@
-import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import * as m from '../paraglide/messages.js';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-upload-file');
+// Keep retry correlation through manager close/reopen, without retaining document bytes.
+const fileExtractionAttempts = new Map<string, FileExtractionAttempt>();
 
 import {
     checklistStore,
     useUploadFileMutation,
     useWallet,
-    // useSyncConsentFlow,
-    switchedProfileStore,
+    useAiFeatureGate,
     useGetCheckListStatus,
     UploadTypesEnum,
     newCredsStore,
     CredentialCategory,
     useToast,
-    useModal,
     ToastTypeEnum,
-    getCategoryForCredential,
     categoryMetadata,
     useSyncAllCredentialsToContractsMutation,
 } from 'learn-card-base';
-import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
-import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import {
+    createFileExtractionAttempt,
+    FileExtractionError,
+    recordFilePersistenceDiagnostic,
+    type FileExtractionAttempt,
+} from 'learn-card-base/helpers/fileExtraction';
 import { useUploadVcFromText } from './useUploadVcFromText';
+import { useAiInsightCredentialMutation } from 'learn-card-base/hooks/useAiInsightCredential';
+import type { UnsignedVC } from '@learncard/types';
+import {
+    FileUploadPersistenceError,
+    type ArtifactProcessingResult,
+    type FileUploadOutcome,
+} from './uploadFile.types';
+import type {
+    ParsedFileCredential,
+    RawArtifactCredential,
+} from 'learn-card-base/types/file-extraction';
 import { addCertificateAttachment } from './certificateAttachment';
+
+// Weak keys preserve IDs through manager remounts without retaining discarded draft data.
+const fileDraftIds = new WeakMap<UnsignedVC, string>();
+const getDraftId = (vc: UnsignedVC): string => {
+    if (vc.id) return vc.id;
+    const existing = fileDraftIds.get(vc);
+    if (existing) return existing;
+    const id = `urn:uuid:${crypto.randomUUID()}`;
+    fileDraftIds.set(vc, id);
+    return id;
+};
 
 export type RawArtifactType = {
     id: string;
@@ -41,19 +65,6 @@ export const getFormattedFileSize = (sizeInBytes: number): string => {
     if (sizeInBytes < 1024) return `${sizeInBytes} B`;
     if (sizeInBytes < 1024 * 1024) return `${(sizeInBytes / 1024).toFixed(1)} KB`;
     return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-const TYPE_LABEL: Record<UploadTypesEnum, string> = {
-    [UploadTypesEnum.Resume]: 'Resume',
-    [UploadTypesEnum.Certificate]: 'Certificate',
-    [UploadTypesEnum.Diploma]: 'Diploma',
-    [UploadTypesEnum.Transcript]: 'Transcript',
-    [UploadTypesEnum.RawVC]: 'Credential',
-};
-
-const formatTypeLabel = (type: UploadTypesEnum, { plural = false }: { plural?: boolean } = {}) => {
-    const base = TYPE_LABEL[type] ?? type;
-    return plural ? `${base}s` : base;
 };
 
 const formatFileNameList = (filenames: (string | undefined)[]): string => {
@@ -87,6 +98,8 @@ const FILE_UPLOAD_ERROR_TOAST_OPTIONS = {
     hasX: true,
     duration: 5000,
 } as const;
+
+const FILE_CREDENTIAL_SAVE_OPTIONS = { deferContractSync: true };
 
 const TOAST_PAUSE_MS = 100;
 
@@ -131,40 +144,78 @@ export const toBase64 = (file: File): Promise<string> => {
 
 export const useUploadFile = (uploadType: UploadTypesEnum) => {
     const { initWallet, storeAndAddVCToWallet } = useWallet();
-    const { mutateAsync: uploadFile } = useUploadFileMutation(uploadType);
-    // const { refetch: fetchNewContractCredentials } = useSyncConsentFlow();
-    const switchedDid = switchedProfileStore.use.switchedDid();
-    const queryClient = useQueryClient();
+    const { mutateAsync: uploadFile } = useUploadFileMutation();
     const { refetchCheckListStatus } = useGetCheckListStatus();
     const { presentToast } = useToast();
-    const { closeModal } = useModal();
     const syncAll = useSyncAllCredentialsToContractsMutation();
     const aiInsightMutation = useAiInsightCredentialMutation();
+    const { isAiEnabled, isLoading: aiGateLoading } = useAiFeatureGate();
 
     const { uploadVcFromText } = useUploadVcFromText();
 
     // state for single file upload
     const [file, setFile] = useState<{ type: string; size: string; name: string } | null>(null);
     const [base64Data, setBase64Data] = useState<string>('');
-    const [rawArtifactCredential, setRawArtifactCredential] = useState<any>(null);
+    const [rawArtifactCredential, setRawArtifactCredential] =
+        useState<RawArtifactCredential | null>(null);
 
     // state for multiple file uploads
     const [files, setFiles] = useState<{ type: string; size: string; name: string }[]>([]);
     const [base64Datas, setBase64Datas] = useState<string[]>([]);
-    const [rawArtifactCredentials, setRawArtifactCredentials] = useState<any[]>([]);
+    const [rawArtifactCredentials, setRawArtifactCredentials] = useState<RawArtifactCredential[]>(
+        []
+    );
 
+    const capacityWait = useRef(new AbortController());
+    const capacityWaiters = useRef(new Set<symbol>());
+    const waitMounted = useRef(true);
+    const [isWaitingForCapacity, setIsWaitingForCapacity] = useState(false);
+    useEffect(() => {
+        waitMounted.current = true;
+        capacityWait.current = new AbortController();
+        return () => {
+            waitMounted.current = false;
+            capacityWait.current.abort();
+        };
+    }, []);
+    // Cancel all foreground waits in this manager; accepted requests keep running.
+    const cancelCapacityWait = () => {
+        capacityWaiters.current.clear();
+        capacityWait.current.abort();
+        capacityWait.current = new AbortController();
+        setIsWaitingForCapacity(false);
+    };
+
+    const savedArtifactUris = useRef(new Map<string, string>());
+    const expectedResumeUris = useRef(new Map<string, string | null>());
+    const savedCredentialUris = useRef(
+        new Map<string, { uri: string; category: CredentialCategory }>()
+    );
+    const extractionAttempts = useRef(fileExtractionAttempts);
+    const preparedArtifacts = useRef(new Map<string, { vc: unknown; credentialUri: string }>());
+    const [fileUploadOutcomes, setFileUploadOutcomes] = useState<FileUploadOutcome[]>([]);
+    const extractedCounts = useRef(new Map<string, number>());
+    const credentialOrigins = useRef(new Map<string, string>());
+    const pendingSelections = useRef(new Map<string, UnsignedVC[]>());
+    const inFlightExtractions = useRef(new Map<string, Promise<ArtifactProcessingResult>>());
+    const isParsing = checklistStore.useTracked.isParsing()[uploadType];
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [parsedCredentials, setParsedCredentials] = useState<
-        Array<{ vc: any; metadata?: { name?: string; category?: string } }>
-    >([]);
+    const [isSavingSelection, setIsSavingSelection] = useState(false);
+    const [parsedCredentials, setParsedCredentials] = useState<ParsedFileCredential[]>([]);
 
-    const fetchNewContractCredentials = () =>
-        queryClient.refetchQueries({
-            queryKey: ['useSyncConsentFlow', switchedDid ?? ''],
-        });
-
-    const getFile = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: string) => {
+    const getFile = async (
+        event: React.ChangeEvent<HTMLInputElement>,
+        uploadType: UploadTypesEnum
+    ) => {
+        if (
+            isUploading ||
+            isParsing ||
+            isSaving ||
+            isSavingSelection ||
+            !event.target.files?.length
+        )
+            return;
         setIsUploading(true);
         setBase64Data('');
         setRawArtifactCredential(null);
@@ -180,13 +231,17 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             const fileInfo = getFileInfo(file);
 
             const rawArtifactCredential = await createRawArtifactVC(file, walletDid, uploadType);
+            setParsedCredentials([]);
+            setFileUploadOutcomes([]);
+            if (uploadType !== UploadTypesEnum.RawVC)
+                checklistStore.set.setPendingReview(uploadType, null);
             setFile(fileInfo);
             setBase64Data(rawArtifactCredential.rawArtifact.data);
             setRawArtifactCredential(rawArtifactCredential);
 
             return { fileInfo, rawArtifactCredential };
-        } catch (error) {
-            log.error('getFile::error', error);
+        } catch {
+            log.error('file.prepare.failed');
             presentToast(m['passport.buildMyLearnCard.uploadError.singleMessage'](), {
                 ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
                 title: m['passport.buildMyLearnCard.uploadError.title'](),
@@ -201,6 +256,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         e: React.ChangeEvent<HTMLInputElement>,
         uploadType: UploadTypesEnum
     ) => {
+        if (isUploading || isParsing || isSaving || isSavingSelection || !e.target.files?.length)
+            return;
         setIsUploading(true);
         setBase64Datas([]);
         setRawArtifactCredentials([]);
@@ -241,6 +298,12 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 result => result.rawArtifactCredential
             );
 
+            if (successfulUploads.length) {
+                setParsedCredentials([]);
+                setFileUploadOutcomes([]);
+                if (uploadType !== UploadTypesEnum.RawVC)
+                    checklistStore.set.setPendingReview(uploadType, null);
+            }
             setFiles(fileInfos);
             setBase64Datas(successfulUploads.map(result => result.base64Data));
             setRawArtifactCredentials(rawArtifactCredentials);
@@ -265,8 +328,8 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             }
 
             return { fileInfos, rawArtifactCredentials };
-        } catch (error) {
-            log.error('getFiles::error', error);
+        } catch {
+            log.error('file.prepare.failed');
             presentToast(m['passport.buildMyLearnCard.uploadError.multipleMessage'](), {
                 ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
                 title: m['passport.buildMyLearnCard.uploadError.title'](),
@@ -278,7 +341,7 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
 
     const getJsonFiles = async (
         event: React.ChangeEvent<HTMLInputElement>,
-        onFail?: (error: any) => void
+        onFail?: (errors: string[]) => void
     ) => {
         try {
             setIsUploading(true);
@@ -301,10 +364,11 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
                 fileArray.map(async file => {
                     const fileInfo = getFileInfo(file);
                     try {
-                        const aggregate = (await uploadVcFromText(file, {
+                        const aggregate = await uploadVcFromText(file, {
                             fileInfo,
                             uploadType,
-                        }))!!;
+                        });
+                        if (!aggregate) throw new Error('Credential import did not complete.');
 
                         addedTotal += aggregate.addedCount;
                         failedTotal += aggregate.failedCount;
@@ -407,8 +471,13 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
             checklistStore.set.updateIsParsing(uploadType, false);
 
             let message = `Something went wrong uploading your ${uploadType}.`;
-            if (typeof error === 'object' && error !== null && 'message' in error) {
-                message = (error as any).message ?? message;
+            if (
+                typeof error === 'object' &&
+                error !== null &&
+                'message' in error &&
+                typeof error.message === 'string'
+            ) {
+                message = error.message;
             }
 
             setTimeout(() => {
@@ -424,449 +493,650 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         }
     };
 
-    const saveFile = async (rawArtifactCredential: any, uploadType: UploadTypesEnum) => {
-        try {
-            setIsSaving(true);
-
-            const wallet = await initWallet();
-            const vc = await wallet.invoke.issueCredential(rawArtifactCredential);
-            const credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(vc);
-
-            const record = await wallet?.index?.LearnCloud?.get({
-                category: uploadType,
-            });
-
-            const recordUri = record?.[0]?.uri as string;
-
-            // there is only 1 resume stored at any given time
-            // so if a resume is already stored, update it
-            if (recordUri && uploadType === UploadTypesEnum.Resume) {
-                await wallet.index.LearnCloud.update(record?.[0]?.id as string, {
-                    uri: credentialUri as string,
-                });
-            } else {
-                await wallet.index.LearnCloud.add({
-                    id: uuid(),
-                    uri: credentialUri as string,
-                    category: uploadType,
-                });
-            }
-
-            setIsSaving(false);
-
-            return { vc, credentialUri };
-        } catch (error) {
-            setIsSaving(false);
-            log.error('saveFile::error', error);
-        }
-    };
-
-    /**
-     * Parse a single file without storing anything. Call storeSelectedCredentials after user review.
-     */
-    const fetchParsedCredentials = async (
-        fileType: UploadTypesEnum
-    ): Promise<Array<{ vc: any; metadata?: any }>> => {
-        try {
-            checklistStore.set.updateIsParsing(fileType, true);
-            const wallet = await initWallet();
-            const did = wallet?.id?.did();
-            if (!base64Data) {
-                log.warn('fetchParsedCredentials: no file data, call getFile() first');
-                checklistStore.set.updateIsParsing(fileType, false);
-                return [];
-            }
-            const vcs = await uploadFile({ did, file: base64Data ?? '', fileType });
-            checklistStore.set.updateIsParsing(fileType, false);
-            const results = vcs?.vcs ?? [];
-            setParsedCredentials(results);
-            return results;
-        } catch (error) {
-            checklistStore.set.updateIsParsing(fileType, false);
-            log.error('fetchParsedCredentials::error', error);
-            throw error;
-        }
-    };
-
-    /**
-     * Parse multiple files (e.g. transcripts) without storing anything.
-     */
-    const fetchParsedCredentialsFromFiles = async (
-        fileType: UploadTypesEnum
-    ): Promise<Array<{ vc: any; metadata?: any }>> => {
-        try {
-            checklistStore.set.updateIsParsing(fileType, true);
-            const wallet = await initWallet();
-            const did = wallet?.id?.did();
-            if (!did) throw new Error('Could not get wallet DID');
-
-            const allVcs: Array<{ vc: any; metadata?: any }> = [];
-            for (const rawVC of rawArtifactCredentials) {
-                const vcs = await uploadFile({
-                    did,
-                    file: rawVC?.rawArtifact?.data ?? '',
-                    fileType,
-                });
-                allVcs.push(...(vcs?.vcs ?? []));
-            }
-
-            checklistStore.set.updateIsParsing(fileType, false);
-            setParsedCredentials(allVcs);
-            return allVcs;
-        } catch (error) {
-            checklistStore.set.updateIsParsing(fileType, false);
-            log.error('fetchParsedCredentialsFromFiles::error', error);
-            throw error;
-        }
-    };
-
-    /**
-     * Store the raw artifact(s) + only the user-selected VCs. Call after review step.
-     * If selectedVcs is empty, only the raw artifact is stored (checklist marks complete, no credentials extracted).
-     * If rawArtifactVc is null/undefined, this will throw — ensure getFile() was called first.
-     */
-    const storeSelectedCredentials = async (
-        selectedVcs: any[],
-        rawArtifactVc: any,
-        fileType: UploadTypesEnum,
-        additionalRawArtifacts?: any[]
+    const saveFile = async (
+        rawArtifactCredential: RawArtifactCredential,
+        uploadType: UploadTypesEnum
     ) => {
+        setIsSaving(true);
         try {
-            await saveFile(rawArtifactVc, fileType);
+            const cacheKey = rawArtifactCredential?.id;
+            const cachedUri = cacheKey ? savedArtifactUris.current.get(cacheKey) : undefined;
+            if (cachedUri) return { credentialUri: cachedUri };
 
-            if (additionalRawArtifacts?.length) {
-                for (const rac of additionalRawArtifacts) {
-                    await saveFile(rac, fileType);
+            const wallet = await initWallet();
+            const resumeRecords =
+                uploadType === UploadTypesEnum.Resume
+                    ? await wallet.index.LearnCloud.get(
+                          { category: uploadType },
+                          { cache: 'skip-cache' }
+                      )
+                    : [];
+            const currentResume = resumeRecords?.[0];
+            if (currentResume?.uri && cacheKey) {
+                const currentCredential = await wallet.read.get(currentResume.uri);
+                if (currentCredential?.id === cacheKey) {
+                    savedArtifactUris.current.set(cacheKey, currentResume.uri);
+                    return { credentialUri: currentResume.uri };
                 }
             }
-
-            let recordsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
-
-            if (selectedVcs.length > 0) {
-                const wallet = await initWallet();
-                const issuedVCs = await Promise.all(
-                    selectedVcs.map(async vc => {
-                        const credentialWithAttachment = addCertificateAttachment(
-                            vc,
-                            rawArtifactVc
-                        );
-                        const issuedVc = await wallet.invoke.issueCredential(
-                            credentialWithAttachment
-                        );
-                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
-                            issuedVc
-                        );
-                        return { uri, category };
-                    })
-                );
-
-                recordsByCategory = issuedVCs.reduce<Partial<Record<CredentialCategory, string[]>>>(
-                    (records, { category, uri }) => {
-                        if (!uri) return records;
-                        const existing = records[category] ?? [];
-                        records[category] = [...existing, uri];
-                        return records;
-                    },
-                    {}
-                );
-
-                newCredsStore.set.addNewCreds(recordsByCategory);
-            }
-
-            // Background sync — don't block toast on these
-            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
-            syncAll.mutate();
-            aiInsightMutation.mutate();
-            setParsedCredentials([]);
-
-            const totalCredentials = selectedVcs.length;
-            const categories = Object.keys(recordsByCategory);
-            const filenames = [rawArtifactVc, ...(additionalRawArtifacts ?? [])].map(
-                (r: any) => r?.rawArtifact?.fileName
-            );
-            const fileCount = filenames.filter(Boolean).length;
-            const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
-            const fileList = formatFileNameList(filenames);
-            const categoryList = formatCategoryList(categories);
-
-            setTimeout(() => {
-                if (totalCredentials === 0) {
-                    presentToast(
-                        `No credentials could be extracted from ${
-                            fileCount > 1 ? 'these files' : 'this file'
-                        }.`,
-                        {
-                            title: `${typeLabel} ${fileList} saved`,
-                            ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
-                            autoDismiss: false,
-                        }
+            if (cacheKey && uploadType === UploadTypesEnum.Resume) {
+                if (
+                    expectedResumeUris.current.has(cacheKey) &&
+                    expectedResumeUris.current.get(cacheKey) !== (currentResume?.uri ?? null)
+                ) {
+                    throw new FileUploadPersistenceError(
+                        'artifact_save',
+                        m['passport.buildMyLearnCard.managers.saveOutcomeError']()
                     );
-                } else {
-                    presentToast(`Successfully added to ${categoryList}.`, {
-                        title: `${totalCredentials} credential${
-                            totalCredentials > 1 ? 's' : ''
-                        } parsed from ${fileList}`,
-                        ...SUCCESS_TOAST_OPTIONS,
-                    });
                 }
-            }, TOAST_PAUSE_MS);
-        } catch (error) {
-            log.error('storeSelectedCredentials::error', error);
-            setTimeout(() => {
-                presentToast(`Something went wrong saving your credentials.`, {
-                    title: 'Error',
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Error,
-                    hasX: true,
-                    duration: 5000,
+                expectedResumeUris.current.set(cacheKey, currentResume?.uri ?? null);
+            }
+
+            const recordId = cacheKey ?? uuid();
+            const existingRecord =
+                uploadType === UploadTypesEnum.Resume
+                    ? undefined
+                    : (
+                          await wallet.index.LearnCloud.get(
+                              { id: recordId },
+                              { cache: 'skip-cache' }
+                          )
+                      )?.[0];
+            if (existingRecord?.uri) {
+                if (cacheKey) savedArtifactUris.current.set(cacheKey, existingRecord.uri);
+                return { credentialUri: existingRecord.uri };
+            }
+
+            let prepared = cacheKey ? preparedArtifacts.current.get(cacheKey) : undefined;
+            if (!prepared) {
+                const vc = await wallet.invoke.issueCredential(rawArtifactCredential);
+                const credentialUri = await wallet?.store?.LearnCloud?.uploadEncrypted?.(vc);
+                if (!credentialUri) throw new Error('The uploaded document could not be saved.');
+                prepared = { vc, credentialUri };
+                if (cacheKey) preparedArtifacts.current.set(cacheKey, prepared);
+            }
+            const indexed =
+                currentResume?.uri && uploadType === UploadTypesEnum.Resume
+                    ? await wallet.index.LearnCloud.update(currentResume.id, {
+                          uri: prepared.credentialUri,
+                      })
+                    : await wallet.index.LearnCloud.add({
+                          id: recordId,
+                          uri: prepared.credentialUri,
+                          category: uploadType,
+                      });
+            if (indexed !== true) throw new Error('The uploaded document could not be indexed.');
+            if (cacheKey) savedArtifactUris.current.set(cacheKey, prepared.credentialUri);
+            const attempt = cacheKey ? extractionAttempts.current.get(cacheKey) : undefined;
+            if (attempt)
+                recordFilePersistenceDiagnostic({
+                    attempt,
+                    fileType: uploadType,
+                    outcome: 'success',
+                    stage: 'artifact_save',
+                    extractedCount: cacheKey ? (extractedCounts.current.get(cacheKey) ?? 0) : 0,
+                    selectedCount: 0,
+                    storedCount: 0,
                 });
-            }, 500);
+            return { vc: prepared.vc, credentialUri: prepared.credentialUri };
+        } catch (error) {
+            log.error('file.artifact_save.failed');
+            const key = rawArtifactCredential?.id;
+            const attempt = key ? extractionAttempts.current.get(key) : undefined;
+            if (attempt)
+                recordFilePersistenceDiagnostic({
+                    attempt,
+                    fileType: uploadType,
+                    outcome: 'failed',
+                    stage: 'artifact_save',
+                    extractedCount: key ? (extractedCounts.current.get(key) ?? 0) : 0,
+                    selectedCount: 0,
+                    storedCount: 0,
+                });
+            throw error;
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const parseFile = async (fileType: UploadTypesEnum) => {
+    const storeSelectedCredentials = async (
+        selectedVcs: UnsignedVC[],
+        rawArtifactVc: RawArtifactCredential | null | undefined,
+        fileType: UploadTypesEnum,
+        additionalRawArtifacts: RawArtifactCredential[] = []
+    ) => {
+        if (!rawArtifactVc) throw new Error('Uploaded document is unavailable.');
+        setIsSavingSelection(true);
         try {
-            checklistStore.set.updateIsParsing(fileType, true);
-            const wallet = await initWallet();
-            const did = wallet?.id?.did();
-
-            const vcs = await uploadFile({ did, file: base64Data ?? '', fileType });
-
-            await saveFile(rawArtifactCredential, fileType);
-
-            let recordsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
-
-            if (vcs?.vcs?.length > 0) {
-                const issuedVCs = await Promise.all(
-                    vcs.vcs.map(async ({ vc }) => {
-                        const credentialWithAttachment = addCertificateAttachment(
-                            vc,
-                            rawArtifactCredential
-                        );
-                        const issuedVc = await wallet.invoke.issueCredential(
-                            credentialWithAttachment
-                        );
-                        const { credentialUri: uri, category } = await storeAndAddVCToWallet(
-                            issuedVc
-                        );
-                        return { uri, category };
-                    })
-                );
-
-                // Group VCs by category and update the store
-                recordsByCategory = issuedVCs.reduce<Partial<Record<CredentialCategory, string[]>>>(
-                    (records, { category, uri }) => {
-                        if (!uri) return records;
-
-                        const key = category;
-                        const existing = records[key] ?? [];
-                        records[key] = [...existing, uri];
-                        return records;
-                    },
-                    {}
-                );
-
-                // Update the store with the new credentials
-                newCredsStore.set.addNewCreds(recordsByCategory);
+            const restoredCounts: Record<string, number> = {};
+            for (const entry of parsedCredentials) {
+                const artifactId = entry.artifactId ?? rawArtifactVc.id;
+                credentialOrigins.current.set(getDraftId(entry.vc), artifactId);
+                if (entry.attempt) extractionAttempts.current.set(artifactId, entry.attempt);
+                restoredCounts[artifactId] = (restoredCounts[artifactId] ?? 0) + 1;
             }
-
-            const totalCredentials = vcs?.vcs?.length ?? 0;
-            const categories = Object.keys(recordsByCategory);
-
-            // Background sync — don't block toast on these
-            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
-            syncAll.mutate();
-            aiInsightMutation.mutate();
-            checklistStore.set.updateIsParsing(fileType, false);
-            closeModal();
-
-            const typeLabel = formatTypeLabel(fileType);
-            const filename = rawArtifactCredential?.rawArtifact?.fileName;
-            const fileList = formatFileNameList([filename]);
-            const categoryList = formatCategoryList(categories);
-
-            setTimeout(() => {
-                if (totalCredentials === 0) {
-                    presentToast(`No credentials could be extracted from this file.`, {
-                        title: `${typeLabel} ${fileList} saved`,
-                        ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
-                        autoDismiss: false,
-                    });
-                } else {
-                    presentToast(`Successfully added to ${categoryList}.`, {
-                        title: `${totalCredentials} credential${
-                            totalCredentials > 1 ? 's' : ''
-                        } parsed from ${fileList}`,
-                        ...SUCCESS_TOAST_OPTIONS,
-                    });
+            const previousById = new Map(fileUploadOutcomes.map(item => [item.artifact.id, item]));
+            const artifacts = [rawArtifactVc, ...additionalRawArtifacts].filter(artifact => {
+                const previous = previousById.get(artifact.id);
+                if (
+                    previous?.status === 'empty' ||
+                    (previous?.extractionStatus === 'extraction_failed' &&
+                        previous.originalSaved === false)
+                ) {
+                    return false;
                 }
-            }, TOAST_PAUSE_MS);
-        } catch (error) {
-            checklistStore.set.updateIsParsing(fileType, false);
-            log.error('handleSaveResume::error', error);
-            setTimeout(() => {
-                presentToast(`Something went wrong uploading your ${fileType}.`, {
-                    title: 'Error',
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Error,
-                    hasX: true,
-                    duration: 5000,
-                });
-            }, 500);
-        }
-    };
-
-    const parseFiles = async (fileType: UploadTypesEnum) => {
-        if (!checklistStore.get.isParsing()[fileType]) {
-            checklistStore.set.updateIsParsing(fileType, true);
-        }
-
-        const total = rawArtifactCredentials.length;
-        let settled = 0;
-
-        // Called: Called when a file finishes processing (success or failure).
-        // Increments the settled count and resets the parsing state when all files are done.
-        const onFileSettled = () => {
-            settled += 1;
-            if (settled >= total) {
-                checklistStore.set.updateIsParsing(fileType, false);
+                // Restored reviews may still contain sources with no candidates.
+                return !parsedCredentials.length || Object.hasOwn(restoredCounts, artifact.id);
+            });
+            if (!artifacts.length) {
+                return { extractedCount: 0, selectedCount: 0, storedCount: 0, artifactUris: [] };
             }
-        };
-
-        try {
-            const wallet = await initWallet();
-            const did = wallet?.id?.did();
-            if (!did) throw new Error('Could not get wallet DID');
-
-            const aggregateRecordsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
-            const filenamesWithCreds: string[] = [];
-            const filenamesWithoutCreds: string[] = [];
-
-            // Process files sequentially to avoid race conditions
-            for (const rawVC of rawArtifactCredentials) {
-                const fname = rawVC?.rawArtifact?.fileName;
+            const artifactById = new Map(artifacts.map(artifact => [artifact.id, artifact]));
+            if (fileType !== UploadTypesEnum.RawVC) {
+                for (const receipt of checklistStore.get.pendingReview()[fileType]
+                    ?.storedArtifacts ?? []) {
+                    if (artifactById.has(receipt.id))
+                        savedArtifactUris.current.set(receipt.id, receipt.uri);
+                }
+            }
+            const failures = new Map<string, 'artifact_save' | 'credential_save'>();
+            const artifactUris: string[] = [];
+            const credentialsByCategory: Partial<Record<CredentialCategory, string[]>> = {};
+            const selectedByArtifact: Record<string, number> = {};
+            const storedByArtifact: Record<string, number> = {};
+            const selectedDrafts: UnsignedVC[] = [];
+            for (const artifact of artifacts) pendingSelections.current.set(artifact.id, []);
+            for (const vc of selectedVcs) {
+                const key = getDraftId(vc);
+                const artifactId = credentialOrigins.current.get(key) ?? rawArtifactVc.id;
+                if (!artifactById.has(artifactId)) continue;
+                const draft = vc.id ? vc : { ...vc, id: key };
+                selectedDrafts.push(draft);
+                pendingSelections.current.get(artifactId)?.push(draft);
+            }
+            for (const artifact of artifacts) {
+                if (!extractedCounts.current.has(artifact.id)) {
+                    extractedCounts.current.set(artifact.id, restoredCounts[artifact.id] ?? 0);
+                }
                 try {
-                    const vcs = await uploadFile({
-                        did,
-                        file: rawVC?.rawArtifact?.data ?? '',
-                        fileType,
-                    });
+                    const saved = await saveFile(artifact, fileType);
+                    artifactUris.push(saved.credentialUri);
+                } catch {
+                    failures.set(artifact.id, 'artifact_save');
+                }
+            }
 
-                    await saveFile(rawVC, fileType);
-
-                    if (vcs?.vcs?.length > 0) {
-                        if (fname) filenamesWithCreds.push(fname);
-                        const issuedVCs = await Promise.all(
-                            vcs.vcs.map(async ({ vc }) => {
-                                const credentialWithAttachment = addCertificateAttachment(
-                                    vc,
-                                    rawVC
+            const wallet = await initWallet();
+            let storedCount = 0;
+            for (const vc of selectedDrafts) {
+                const key = getDraftId(vc);
+                const artifactId = credentialOrigins.current.get(key) ?? rawArtifactVc.id;
+                selectedByArtifact[artifactId] = (selectedByArtifact[artifactId] ?? 0) + 1;
+                if (failures.get(artifactId) === 'artifact_save') continue;
+                try {
+                    let stored = savedCredentialUris.current.get(key);
+                    if (!stored) {
+                        const existing = (
+                            await wallet.index.LearnCloud.get<{ category: string }>(
+                                { id: key },
+                                { cache: 'skip-cache' }
+                            )
+                        )?.[0];
+                        if (existing?.uri) {
+                            if (
+                                typeof existing.category !== 'string' ||
+                                !Object.hasOwn(categoryMetadata, existing.category)
+                            ) {
+                                throw new Error(
+                                    'The saved credential category could not be resolved.'
                                 );
-                                const issuedVc = await wallet.invoke.issueCredential(
-                                    credentialWithAttachment
-                                );
-                                const { credentialUri: uri, category } =
-                                    await storeAndAddVCToWallet(issuedVc);
-                                return { uri, category };
-                            })
-                        );
-
-                        // Group VCs by category and update the store
-                        const recordsByCategory = issuedVCs.reduce<
-                            Partial<Record<CredentialCategory, string[]>>
-                        >((records, { category, uri }) => {
-                            if (!uri) return records;
-
-                            const key = category;
-                            const existing = records[key] ?? [];
-                            records[key] = [...existing, uri];
-                            return records;
-                        }, {});
-
-                        // Update the store with the new credentials
-                        newCredsStore.set.addNewCreds(recordsByCategory);
-
-                        // Merge into aggregate for the toast
-                        for (const [cat, uris] of Object.entries(recordsByCategory)) {
-                            const existing =
-                                aggregateRecordsByCategory[cat as CredentialCategory] ?? [];
-                            aggregateRecordsByCategory[cat as CredentialCategory] = [
-                                ...existing,
-                                ...uris,
+                            }
+                            stored = {
+                                uri: existing.uri,
+                                // The key is validated against the registered wallet categories.
+                                category: existing.category as CredentialCategory,
+                            };
+                        } else {
+                            const source = artifactById.get(artifactId) ?? rawArtifactVc;
+                            const issued = await wallet.invoke.issueCredential(
+                                addCertificateAttachment(vc, source)
+                            );
+                            const saved = await storeAndAddVCToWallet(
+                                issued,
+                                FILE_CREDENTIAL_SAVE_OPTIONS
+                            );
+                            if (saved.result !== true || !saved.credentialUri) {
+                                throw new Error('A selected credential could not be saved.');
+                            }
+                            stored = {
+                                uri: saved.credentialUri,
+                                // The wallet helper derives categories from the registered category map.
+                                category: saved.category as CredentialCategory,
+                            };
+                            credentialsByCategory[stored.category] = [
+                                ...(credentialsByCategory[stored.category] ?? []),
+                                stored.uri,
                             ];
                         }
-                    } else if (fname) {
-                        filenamesWithoutCreds.push(fname);
+                        savedCredentialUris.current.set(key, stored);
                     }
-
-                    onFileSettled();
-                } catch (error) {
-                    log.error('Error processing file:', error);
-                    onFileSettled();
-                    // Continue with next file even if one fails
+                    storedCount += 1;
+                    storedByArtifact[artifactId] = (storedByArtifact[artifactId] ?? 0) + 1;
+                } catch {
+                    failures.set(artifactId, 'credential_save');
                 }
             }
 
-            const allCategoryValues = Object.values(aggregateRecordsByCategory);
-            const totalCredentials = allCategoryValues.reduce((sum, uris) => sum + uris.length, 0);
-            const categories = Object.keys(aggregateRecordsByCategory);
-            const filenames = rawArtifactCredentials.map(r => r?.rawArtifact?.fileName);
-
-            // Background sync — don't block toast on these
-            fetchNewContractCredentials().catch(err =>
-                log.error('fetchNewContractCredentials failed', err)
-            );
-            refetchCheckListStatus().catch(err => log.error('refetchCheckListStatus failed', err));
-            syncAll.mutate();
-            aiInsightMutation.mutate();
-            closeModal();
-
-            const fileCount = filenames.filter(Boolean).length;
-            const typeLabel = formatTypeLabel(fileType, { plural: fileCount > 1 });
-            const fileList = formatFileNameList(filenames);
-            const fileListWithCreds = formatFileNameList(filenamesWithCreds);
-            const fileListWithoutCreds = formatFileNameList(filenamesWithoutCreds);
-            const categoryList = formatCategoryList(categories);
-
-            setTimeout(() => {
-                if (totalCredentials === 0) {
-                    presentToast(
-                        `No credentials could be extracted from ${
-                            fileCount > 1 ? 'these files' : 'this file'
-                        }.`,
-                        {
-                            title: `${typeLabel} ${fileList} saved`,
-                            ...FILE_UPLOAD_ERROR_TOAST_OPTIONS,
-                            autoDismiss: false,
-                        }
-                    );
-                } else {
-                    const tail =
-                        filenamesWithoutCreds.length > 0
-                            ? ` No credentials were parsed from ${fileListWithoutCreds}.`
-                            : '';
-                    presentToast(`Successfully added to ${categoryList}.${tail}`, {
-                        title: `${totalCredentials} credential${
-                            totalCredentials > 1 ? 's' : ''
-                        } parsed from ${fileListWithCreds}`,
-                        ...SUCCESS_TOAST_OPTIONS,
+            if (Object.keys(credentialsByCategory).length)
+                newCredsStore.set.addNewCreds(credentialsByCategory);
+            for (const artifact of artifacts) {
+                const attempt = extractionAttempts.current.get(artifact.id);
+                if (
+                    attempt &&
+                    selectedByArtifact[artifact.id] &&
+                    failures.get(artifact.id) !== 'artifact_save'
+                ) {
+                    recordFilePersistenceDiagnostic({
+                        attempt,
+                        fileType,
+                        outcome: failures.has(artifact.id) ? 'failed' : 'success',
+                        stage: 'credential_save',
+                        extractedCount: extractedCounts.current.get(artifact.id) ?? 0,
+                        selectedCount: selectedByArtifact[artifact.id] ?? 0,
+                        storedCount: storedByArtifact[artifact.id] ?? 0,
                     });
                 }
-            }, TOAST_PAUSE_MS);
-        } catch (error) {
-            log.error('Error in parseFiles:', error);
-            checklistStore.set.updateIsParsing(fileType, false);
-            setTimeout(() => {
-                presentToast(`Something went wrong uploading your ${fileType}.`, {
-                    title: 'Error',
-                    hasDismissButton: true,
-                    type: ToastTypeEnum.Error,
-                    hasX: true,
-                    duration: 5000,
+            }
+            setFileUploadOutcomes(current => {
+                const previousById = new Map(current.map(item => [item.artifact.id, item]));
+                const updates = artifacts.map(artifact => {
+                    const previous = previousById.get(artifact.id);
+                    const extractedCount = extractedCounts.current.get(artifact.id) ?? 0;
+                    const extractionStatus = previous?.extractionStatus;
+                    const status: FileUploadOutcome['status'] = failures.has(artifact.id)
+                        ? 'save_failed'
+                        : extractionStatus === 'extraction_failed'
+                          ? 'extraction_failed'
+                          : extractionStatus === 'empty'
+                            ? 'empty'
+                            : 'stored';
+                    return {
+                        artifact,
+                        status,
+                        extractionStatus,
+                        failureCode: previous?.failureCode,
+                        originalSaved: savedArtifactUris.current.has(artifact.id),
+                        extractedCount,
+                        failedStage: failures.get(artifact.id),
+                        selectedCount: selectedByArtifact[artifact.id] ?? 0,
+                        storedCount: storedByArtifact[artifact.id] ?? 0,
+                        message: failures.has(artifact.id)
+                            ? failures.get(artifact.id) === 'artifact_save'
+                                ? m['passport.buildMyLearnCard.managers.saveOutcomeError']()
+                                : m[
+                                      'passport.buildMyLearnCard.managers.credentialSaveOutcomeError'
+                                  ]()
+                            : undefined,
+                    };
                 });
-            }, 500);
-            throw error;
+                return [...current.filter(item => !artifactById.has(item.artifact.id)), ...updates];
+            });
+            if (artifactUris.length || storedCount) {
+                void refetchCheckListStatus().catch(() =>
+                    log.error('file.checklist_refresh.failed')
+                );
+                // Sharing and insights follow confirmed writes without blocking the save UI.
+                void syncAll
+                    .mutateAsync()
+                    .then(() => aiInsightMutation.mutate())
+                    .catch(() => log.error('file.background_sync.failed'));
+            }
+            if (failures.size) {
+                const stage = [...failures.values()].includes('artifact_save')
+                    ? 'artifact_save'
+                    : 'credential_save';
+                throw new FileUploadPersistenceError(
+                    stage,
+                    stage === 'artifact_save'
+                        ? m['passport.buildMyLearnCard.managers.saveOutcomeError']()
+                        : m['passport.buildMyLearnCard.managers.credentialSaveOutcomeError']()
+                );
+            }
+            const extractedCount = artifacts.reduce(
+                (count, artifact) => count + (extractedCounts.current.get(artifact.id) ?? 0),
+                0
+            );
+            for (const artifact of artifacts) pendingSelections.current.delete(artifact.id);
+            setParsedCredentials(current =>
+                current.filter(entry => !artifactById.has(entry.artifactId ?? rawArtifactVc.id))
+            );
+            if (fileType !== UploadTypesEnum.RawVC) {
+                const pending = checklistStore.get.pendingReview()[fileType];
+                if (pending) {
+                    const remaining = pending.credentials.filter(
+                        entry => !artifactById.has(entry.artifactId ?? pending.rawArtifact.id)
+                    );
+                    const sources = [
+                        pending.rawArtifact,
+                        ...(pending.additionalRawArtifacts ?? []),
+                    ].filter(source => remaining.some(entry => entry.artifactId === source.id));
+                    checklistStore.set.setPendingReview(
+                        fileType,
+                        remaining.length && sources[0]
+                            ? {
+                                  credentials: remaining,
+                                  rawArtifact: sources[0],
+                                  additionalRawArtifacts: sources.slice(1),
+                                  storedArtifacts: pending.storedArtifacts?.filter(receipt =>
+                                      sources.some(source => source.id === receipt.id)
+                                  ),
+                              }
+                            : null
+                    );
+                }
+            }
+            return {
+                extractedCount,
+                selectedCount: selectedDrafts.length,
+                storedCount,
+                artifactUris,
+            };
+        } finally {
+            setIsSavingSelection(false);
         }
+    };
+
+    /** Empty and blocked requests stay unsaved; disabled AI preserves original-only uploads. */
+    const processArtifact = (
+        artifact: RawArtifactCredential,
+        fileType: UploadTypesEnum
+    ): Promise<ArtifactProcessingResult> => {
+        const active = inFlightExtractions.current.get(artifact.id);
+        if (active) return active;
+        const task = (async (): Promise<ArtifactProcessingResult> => {
+            let failureCode: string | undefined;
+            const originalOnly = !aiGateLoading && !isAiEnabled;
+            if (originalOnly) {
+                const empty = fileUploadOutcomes.find(
+                    item => item.artifact.id === artifact.id && item.status === 'empty'
+                );
+                if (empty) return { credentials: [], outcome: empty };
+            }
+            try {
+                if (aiGateLoading) throw new FileExtractionError('AI_GATE_LOADING');
+                if (!isAiEnabled) throw new FileExtractionError('CONSENT_DENIED');
+                const previous =
+                    extractionAttempts.current.get(artifact.id) ??
+                    parsedCredentials.find(entry => entry.artifactId === artifact.id)?.attempt;
+                let attempt: FileExtractionAttempt;
+                try {
+                    attempt = createFileExtractionAttempt(previous);
+                } catch {
+                    throw new FileExtractionError('INPUT_INVALID');
+                }
+                extractionAttempts.current.set(artifact.id, attempt);
+                if (extractionAttempts.current.size > 200) {
+                    const oldest = extractionAttempts.current.keys().next().value;
+                    if (oldest) extractionAttempts.current.delete(oldest);
+                }
+                const wallet = await initWallet();
+                const waiter = Symbol();
+                const result = await uploadFile({
+                    did: wallet.id.did(),
+                    file: artifact.rawArtifact.data,
+                    fileType,
+                    attempt,
+                    waitSignal: capacityWait.current.signal,
+                    onAttempt: nextAttempt => {
+                        attempt = nextAttempt;
+                        extractionAttempts.current.set(artifact.id, nextAttempt);
+                    },
+                    onWaiting: (waiting: boolean) => {
+                        if (!waitMounted.current) return;
+                        if (waiting) capacityWaiters.current.add(waiter);
+                        else capacityWaiters.current.delete(waiter);
+                        setIsWaitingForCapacity(capacityWaiters.current.size > 0);
+                    },
+                });
+                const credentials: ParsedFileCredential[] = result.vcs.map(entry => {
+                    // Service IDs can repeat across uploads; retries reuse this review's ID.
+                    const id = `urn:uuid:${crypto.randomUUID()}`;
+                    const vc = { ...entry.vc, id };
+                    credentialOrigins.current.set(id, artifact.id);
+                    return { ...entry, vc, artifactId: artifact.id, attempt };
+                });
+                extractedCounts.current.set(artifact.id, credentials.length);
+                return {
+                    credentials,
+                    outcome: {
+                        artifact,
+                        status: credentials.length ? 'review' : 'empty',
+                        extractionStatus: credentials.length ? 'review' : 'empty',
+                        extractedCount: credentials.length,
+                        failureCode: credentials.length
+                            ? undefined
+                            : (result.processing.code ?? 'ZERO_STRUCTURED_ITEMS'),
+                        originalSaved: savedArtifactUris.current.has(artifact.id),
+                    },
+                };
+            } catch (error) {
+                if (error instanceof FileExtractionError && error.code === 'UPLOAD_CANCELLED')
+                    throw error;
+                failureCode = error instanceof FileExtractionError ? error.code : undefined;
+            }
+            extractedCounts.current.set(artifact.id, 0);
+            const originalSaved = savedArtifactUris.current.has(artifact.id);
+            if (
+                failureCode === 'UPLOAD_BUSY' ||
+                failureCode === 'NO_READABLE_TEXT' ||
+                failureCode === 'AI_GATE_LOADING' ||
+                (failureCode === 'CONSENT_DENIED' && !originalOnly) ||
+                failureCode === 'RESPONSE_INVALID' ||
+                failureCode === 'INPUT_INVALID' ||
+                failureCode === 'FILE_TOO_LARGE' ||
+                failureCode === 'CONTENT_REJECTED'
+            ) {
+                const extractionStatus =
+                    failureCode === 'NO_READABLE_TEXT' ? 'empty' : 'extraction_failed';
+                return {
+                    credentials: [],
+                    outcome: {
+                        artifact,
+                        status: extractionStatus,
+                        extractionStatus,
+                        extractedCount: 0,
+                        failureCode,
+                        originalSaved,
+                    },
+                };
+            }
+            setFileUploadOutcomes(current => [
+                ...current.filter(item => item.artifact.id !== artifact.id),
+                {
+                    artifact,
+                    status: 'saving_original',
+                    extractionStatus: 'extraction_failed',
+                    failureCode,
+                    originalSaved,
+                    extractedCount: 0,
+                },
+            ]);
+            try {
+                await saveFile(artifact, fileType);
+                return {
+                    credentials: [],
+                    outcome: {
+                        artifact,
+                        status: 'extraction_failed',
+                        extractionStatus: 'extraction_failed',
+                        extractedCount: 0,
+                        failureCode,
+                        originalSaved: true,
+                    },
+                };
+            } catch {
+                return {
+                    credentials: [],
+                    outcome: {
+                        artifact,
+                        status: 'save_failed',
+                        extractionStatus: 'extraction_failed',
+                        failedStage: 'artifact_save',
+                        extractedCount: 0,
+                        failureCode,
+                        originalSaved: savedArtifactUris.current.has(artifact.id),
+                        message: m['passport.buildMyLearnCard.managers.saveOutcomeError'](),
+                    },
+                };
+            }
+        })().finally(() => {
+            inFlightExtractions.current.delete(artifact.id);
+        });
+        inFlightExtractions.current.set(artifact.id, task);
+        return task;
+    };
+
+    const processArtifacts = async (
+        artifacts: RawArtifactCredential[],
+        fileType: UploadTypesEnum
+    ): Promise<ParsedFileCredential[]> => {
+        checklistStore.set.updateIsParsing(fileType, true);
+        const results: ArtifactProcessingResult[] = [];
+        const waitSignal = capacityWait.current.signal;
+        try {
+            for (const artifact of artifacts) {
+                const result = await processArtifact(artifact, fileType);
+                results.push(result);
+                setFileUploadOutcomes(current => [
+                    ...current.filter(item => item.artifact.id !== artifact.id),
+                    result.outcome,
+                ]);
+            }
+            const credentials = results.flatMap(result => result.credentials);
+            setParsedCredentials(credentials);
+            setFileUploadOutcomes(results.map(result => result.outcome));
+            if (results.some(result => result.outcome.status === 'extraction_failed')) {
+                void refetchCheckListStatus().catch(() =>
+                    log.error('file.checklist_refresh.failed')
+                );
+            }
+            return credentials;
+        } catch (error) {
+            if (!(error instanceof FileExtractionError) || error.code !== 'UPLOAD_CANCELLED')
+                throw error;
+            const cancelled = new Set(artifacts.map(artifact => artifact.id));
+            // Only a foreground Cancel keeps partial results; session changes still discard them.
+            const completedResults = waitSignal.aborted && waitMounted.current ? results : [];
+            const completed = new Set(completedResults.map(result => result.outcome.artifact.id));
+            const credentials = completedResults.flatMap(result => result.credentials);
+            setParsedCredentials(credentials);
+            setFileUploadOutcomes(current =>
+                // Keep completed reviews and saved originals; discard the cancelled wait.
+                current.filter(
+                    item =>
+                        !cancelled.has(item.artifact.id) ||
+                        completed.has(item.artifact.id) ||
+                        item.originalSaved
+                )
+            );
+            return credentials;
+        } finally {
+            checklistStore.set.updateIsParsing(fileType, false);
+        }
+    };
+
+    const fetchParsedCredentials = async (
+        fileType: UploadTypesEnum
+    ): Promise<ParsedFileCredential[]> => {
+        if (!rawArtifactCredential) throw new Error('Uploaded document is unavailable.');
+        return processArtifacts([rawArtifactCredential], fileType);
+    };
+
+    const fetchParsedCredentialsFromFiles = (
+        fileType: UploadTypesEnum
+    ): Promise<ParsedFileCredential[]> => processArtifacts(rawArtifactCredentials, fileType);
+
+    const retryFileExtraction = async (
+        artifact: RawArtifactCredential,
+        fileType: UploadTypesEnum,
+        savedArtifactUri?: string
+    ): Promise<ArtifactProcessingResult> => {
+        checklistStore.set.updateIsParsing(fileType, true);
+        if (savedArtifactUri) savedArtifactUris.current.set(artifact.id, savedArtifactUri);
+        try {
+            const result = await processArtifact(artifact, fileType);
+            const credentials = [
+                ...parsedCredentials.filter(entry => entry.artifactId !== artifact.id),
+                ...result.credentials,
+            ];
+            setParsedCredentials(credentials);
+            setFileUploadOutcomes(current => [
+                ...current.filter(item => item.artifact.id !== artifact.id),
+                result.outcome,
+            ]);
+            if (result.credentials.length && fileType !== UploadTypesEnum.RawVC) {
+                const pending = checklistStore.get.pendingReview()[fileType];
+                const candidates = [
+                    artifact,
+                    ...(pending
+                        ? [pending.rawArtifact, ...(pending.additionalRawArtifacts ?? [])]
+                        : []),
+                    ...rawArtifactCredentials,
+                ];
+                const needed = new Set(credentials.map(entry => entry.artifactId));
+                const sources = [
+                    ...new Map(
+                        candidates
+                            .filter(source => source && needed.has(source.id))
+                            .map(source => [source.id, source])
+                    ).values(),
+                ];
+                const [first, ...rest] = sources;
+                const storedArtifacts = new Map(
+                    (pending?.storedArtifacts ?? []).map(receipt => [receipt.id, receipt.uri])
+                );
+                for (const [id, uri] of savedArtifactUris.current) {
+                    if (needed.has(id)) storedArtifacts.set(id, uri);
+                }
+                checklistStore.set.setPendingReview(fileType, {
+                    credentials,
+                    rawArtifact: first,
+                    additionalRawArtifacts: rest,
+                    storedArtifacts: [...storedArtifacts].map(([id, uri]) => ({ id, uri })),
+                });
+            }
+            if (result.outcome.status !== 'review') {
+                void refetchCheckListStatus().catch(() =>
+                    log.error('file.checklist_refresh.failed')
+                );
+            }
+            return { credentials, outcome: result.outcome };
+        } finally {
+            checklistStore.set.updateIsParsing(fileType, false);
+        }
+    };
+
+    const retryFileSave = async (artifact: RawArtifactCredential, fileType: UploadTypesEnum) => {
+        const selection = pendingSelections.current.get(artifact.id);
+        if (selection) {
+            await storeSelectedCredentials(selection, artifact, fileType);
+            return;
+        }
+        await saveFile(artifact, fileType);
+        setFileUploadOutcomes(current =>
+            current.map(item =>
+                item.artifact.id === artifact.id
+                    ? {
+                          ...item,
+                          status: item.extractionStatus ?? 'empty',
+                          failedStage: undefined,
+                          originalSaved: true,
+                          message: undefined,
+                      }
+                    : item
+            )
+        );
+        void refetchCheckListStatus().catch(() => log.error('file.checklist_refresh.failed'));
     };
 
     return {
@@ -879,20 +1149,42 @@ export const useUploadFile = (uploadType: UploadTypesEnum) => {
         getFile,
         getJsonFiles,
         getFiles,
-        saveFile,
-        parseFile,
-        parseFiles,
         isUploading,
-        isSaving,
+        isSaving: isSaving || isSavingSelection,
+        isParsing,
+        isWaitingForCapacity,
+        cancelCapacityWait,
         parsedCredentials,
         setParsedCredentials,
         fetchParsedCredentials,
         fetchParsedCredentialsFromFiles,
         storeSelectedCredentials,
+        fileUploadOutcomes,
+        clearFileUploadOutcome: (artifactId: string) => {
+            const previous = fileUploadOutcomes.find(item => item.artifact.id === artifactId);
+            setFileUploadOutcomes(current =>
+                current.filter(item => item.artifact.id !== artifactId)
+            );
+            // Restore only this outcome if an optimistic deletion fails.
+            return () => {
+                if (!previous) return;
+                setFileUploadOutcomes(current =>
+                    current.some(item => item.artifact.id === artifactId)
+                        ? current
+                        : [...current, previous]
+                );
+            };
+        },
+        retryFileExtraction,
+        retryFileSave,
     };
 };
 
-export const createRawArtifactVC = async (file: File, did: string, uploadType: string) => {
+export const createRawArtifactVC = async (
+    file: File,
+    did: string,
+    uploadType: string
+): Promise<RawArtifactCredential> => {
     const { name, type, size } = getFileInfo(file);
     const base64Data = await toBase64(file);
 

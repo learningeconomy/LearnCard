@@ -120,6 +120,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },
             websiteLink: { type: 'string', required: false },
+            linkedInOrganizationId: { type: 'string', required: false },
             isServiceProfile: { type: 'boolean', required: false },
             type: { type: 'string', required: false },
             'organization.institutionType': { type: 'string', required: false },

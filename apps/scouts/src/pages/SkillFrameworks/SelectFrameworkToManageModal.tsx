@@ -31,7 +31,7 @@ const SelectFrameworkToManageModalContent: React.FC<SelectFrameworkToManageModal
             newModal(
                 <CreateFrameworkModal />,
                 {
-                    sectionClassName: '!bg-transparent !shadow-none',
+                    sectionClassName: 'bg-transparent! shadow-none!',
                 },
                 { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
             );
@@ -70,7 +70,7 @@ const SelectFrameworkToManageModalContent: React.FC<SelectFrameworkToManageModal
                                     newModal(
                                         <ManageSkills initialFrameworkId={framework.id} />,
                                         {
-                                            sectionClassName: '!bg-transparent !shadow-none',
+                                            sectionClassName: 'bg-transparent! shadow-none!',
                                         },
                                         { desktop: ModalTypes.Right, mobile: ModalTypes.FullScreen }
                                     );

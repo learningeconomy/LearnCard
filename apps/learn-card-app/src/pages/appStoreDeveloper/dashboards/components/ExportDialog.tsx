@@ -138,7 +138,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                 </div>
 
                 {state.isExporting ? (
-                    <div className="space-y-4">
+                    <div className="space-y-v3-4">
                         <div className="flex items-center gap-3 p-4 bg-cyan-50 rounded-xl">
                             <Loader2 className="w-6 h-6 text-cyan-600 animate-spin" />
                             <div className="flex-1">
@@ -148,7 +148,6 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                                 {state.progress && (
                                     <p className="text-sm text-cyan-700">
                                         {state.progress.fetched.toLocaleString()}
-                                        {/* eslint-disable-next-line i18next/no-literal-string -- counter separator SKIP */}
                                         <span aria-hidden="true"> / </span>
                                         {state.progress.total.toLocaleString()}
                                     </p>
@@ -171,9 +170,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                         </button>
                     </div>
                 ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-v3-5">
                         <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl min-h-[76px]">
-                            <Download className="w-6 h-6 text-gray-600 flex-shrink-0" />
+                            <Download className="w-6 h-6 text-gray-600 shrink-0" />
                             <div className="min-w-0">
                                 <p className="text-sm text-gray-500">
                                     {m['developerPortal.dashboards.export.description']()}
@@ -216,7 +215,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                             </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-v3-4">
                             {/* App Listing Filter */}
                             {appListings && appListings.length > 0 && (
                                 <div>

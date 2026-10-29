@@ -58,6 +58,7 @@ import GlassCard from '../../pages/privacy-settings/components/GlassCard';
 import { useTheme } from '../../theme/hooks/useTheme';
 import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
+import { persistQueryCacheNow } from '../../helpers/queryPersistence';
 
 const getStateValidator = () =>
     z.object({
@@ -182,7 +183,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 handleCloseModal={closeModal}
                 showNotificationsModal={showNotificationsModal}
             />,
-            { hideButton: true, sectionClassName: '!max-w-[400px]' },
+            { hideButton: true, sectionClassName: 'max-w-[400px]!' },
             { desktop: ModalTypes.Cancel, mobile: ModalTypes.Cancel }
         );
     };
@@ -245,10 +246,11 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
     };
 
     const handleLCNetworkProfileUpdate = async () => {
+        const switchedDid = switchedProfileStore.get.switchedDid() ?? '';
         const wallet = await initWallet();
 
         if (lcNetworkProfile && lcNetworkProfile?.profileId) {
-            const updatedProfile = await wallet?.invoke?.updateProfile({
+            const updatedProfile = await wallet.invoke.updateProfile({
                 displayName: name ?? '',
                 image: photo ?? '',
                 notificationsWebhook: getNotificationsEndpoint(),
@@ -258,10 +260,30 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             });
             log.info('updatedProfile::res', updatedProfile);
 
-            // useGetProfile caches for 5 min and expects mutations to invalidate it.
-            // Without this, the reopened form (and displayName/image synced via
-            // useGetCurrentLCNUser) shows stale values, making saves appear to "not stick".
-            await queryClient.invalidateQueries({ queryKey: ['getProfile'] });
+            if (!updatedProfile) throw new Error('Network profile update failed');
+
+            // updateProfile refreshes this wallet's private self-profile cache. Read
+            // that same instance instead of refetching through a potentially replaced wallet.
+            const savedProfile = await wallet.invoke.getProfile();
+            if (!savedProfile) throw new Error('Updated network profile is unavailable');
+
+            const ownProfileKey = ['getProfile', switchedDid, undefined];
+            await queryClient.cancelQueries({
+                predicate: query =>
+                    query.queryKey[0] === 'getProfile' &&
+                    ((query.queryKey[1] === switchedDid && !query.queryKey[2]) ||
+                        query.queryKey[2] === lcNetworkProfile.profileId),
+            });
+            queryClient.setQueryData(ownProfileKey, savedProfile);
+            // Public lookups must refetch without copying private self-profile fields.
+            await queryClient.invalidateQueries({
+                predicate: query =>
+                    query.queryKey[0] === 'getProfile' &&
+                    query.queryKey[2] === lcNetworkProfile.profileId,
+            });
+            // Query invalidation does not wait for the throttled disk write. Do not
+            // announce success until reload can hydrate the saved self-profile.
+            await persistQueryCacheNow(queryClient);
 
             if (role === LearnCardRolesEnum.teacher) {
                 getAiInsightsContractUri().catch(err => {
@@ -306,7 +328,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             </div>,
             {
                 sectionClassName:
-                    '!bg-transparent !border-none !shadow-none !rounded-none !max-w-[600px] !mx-auto',
+                    'bg-transparent! border-none! shadow-none! rounded-none! max-w-[600px]! mx-auto!',
             },
             {
                 desktop: ModalTypes.Center,
@@ -343,7 +365,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                 photoUrl: photo ?? '',
             });
 
-            handleStorageUpdate();
+            await handleStorageUpdate();
 
             // update LC network profile
             await handleLCNetworkProfileUpdate();
@@ -403,7 +425,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                         await handleLCNetworkProfileUpdate();
 
                         // update sqlite + context store
-                        handleStorageUpdate();
+                        await handleStorageUpdate();
 
                         setIsLoading(false);
                         presentToast(m['profile.saved'](), {
@@ -473,9 +495,9 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
             <h1 className="sr-only">{title}</h1>
             {/* Aurora Background */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-indigo-400/10 blur-[120px]" />
-                <div className="absolute top-[40%] -right-[20%] w-[60%] h-[60%] rounded-full bg-emerald-400/10 blur-[100px]" />
-                <div className="absolute -bottom-[20%] left-[20%] w-[80%] h-[80%] rounded-full bg-rose-400/10 blur-[120px]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] rounded-full bg-indigo-400/10 blur-[120px]" />
+                <div className="absolute top-[40%] right-[-20%] w-[60%] h-[60%] rounded-full bg-emerald-400/10 blur-[100px]" />
+                <div className="absolute bottom-[-20%] left-[20%] w-[80%] h-[80%] rounded-full bg-rose-400/10 blur-[120px]" />
             </div>
 
             <div className="relative z-10 flex-1 overflow-y-auto pb-6">
@@ -547,7 +569,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                     aria-describedby={
                                         errors.name ? 'user-profile-name-error' : undefined
                                     }
-                                    className={`w-full rounded-[10px] bg-grayscale-100 px-[15px] py-3 font-poppins text-[14px] leading-[130%] text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
+                                    className={`w-full rounded-[10px] bg-grayscale-100 px-[15px] py-3 font-poppins text-[14px] leading-[130%] text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent ${
                                         errors.name ? 'ring-1 ring-red-500' : ''
                                     }`}
                                 />
@@ -643,7 +665,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                     />,
                                                     {
                                                         sectionClassName:
-                                                            '!bg-transparent !border-none !shadow-none !rounded-none',
+                                                            'bg-transparent! border-none! shadow-none! rounded-none!',
                                                     },
                                                     {
                                                         desktop: ModalTypes.Center,
@@ -660,7 +682,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                     <img
                                                         src={`https://flagcdn.com/36x27/${country.toLowerCase()}.png`}
                                                         alt=""
-                                                        className="w-[24px] h-[18px] object-cover rounded-sm shadow-sm"
+                                                        className="w-[24px] h-[18px] object-cover rounded-xs shadow-xs"
                                                     />
                                                     {countryNames.of(country) ??
                                                         (countries as Record<string, string>)[
@@ -705,7 +727,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                                         />,
                                                         {
                                                             sectionClassName:
-                                                                '!max-w-[600px] !mx-auto !max-h-[90%]',
+                                                                'max-w-[600px]! mx-auto! max-h-[90%]!',
                                                         },
                                                         {
                                                             mobile: ModalTypes.Center,
@@ -866,7 +888,7 @@ const UserProfileUpdateForm: React.FC<UserProfileUpdateFormProps> = ({
                                 aria-haspopup="dialog"
                                 onClick={() =>
                                     newModal(<ExportSeedPhraseModal />, {
-                                        sectionClassName: '!max-w-[450px]',
+                                        sectionClassName: 'max-w-[450px]!',
                                     })
                                 }
                                 className="flex items-center justify-between px-5 py-4 hover:bg-grayscale-50/50 transition-colors rounded-t-[20px]"

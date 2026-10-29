@@ -40,7 +40,7 @@ export const LaunchPadAppList: React.FC<{ apps: LaunchPadAppListItem[] }> = ({ a
                 lines="none"
                 className="w-[95%] max-w-[600px] ion-no-border px-[12px] py-[16px] border-gray-200 border-b-2 last:border-b-0 flex items-center justify-between notificaion-list-item"
             >
-                <div className="flex items-center justify-start w-[100%]">
+                <div className="flex items-center justify-start w-full">
                     <div className="rounded-lg shadow-3xl overflow-hidden w-[50px] h-[50px] mr-3 min-w-[50px] min-h-[50px]">
                         <img className="w-full h-full object-cover" src={app?.img} alt={app.name} />
                     </div>
@@ -74,7 +74,7 @@ export const LaunchPadAppList: React.FC<{ apps: LaunchPadAppListItem[] }> = ({ a
     });
 
     return (
-        <IonList lines="none" className="flex flex-col items-center justify-center w-[100%] pb-14">
+        <IonList lines="none" className="flex flex-col items-center justify-center w-full pb-14">
             {appItems}
             <LaunchPadBecomeAnApp />
         </IonList>

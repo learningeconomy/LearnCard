@@ -62,6 +62,16 @@ variable "sending_domain" {
   }
 }
 
+variable "email_dmarc_policy" {
+  type        = string
+  default     = "none"
+  description = "Sending-domain DMARC policy. Preserve monitor-only staging; promote production after alignment and report review."
+  validation {
+    condition     = contains(["none", "quarantine", "reject"], var.email_dmarc_policy)
+    error_message = "email_dmarc_policy must be none, quarantine, or reject."
+  }
+}
+
 variable "email_dmarc_report_address" {
   type        = string
   default     = null

@@ -95,6 +95,7 @@ const NotificationCredentialStatusCard: React.FC<NotificationCredentialStatusCar
                 showFooter={false}
                 showBoostFooter
                 acceptCredentialCompleted
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 notification={notification as any}
                 onDismiss={() => closeModal()}
                 hideEndorsementRequestCard

@@ -92,6 +92,8 @@ export type { HistoricalEscrowEvidence } from './escrow-authority.types';
 export type { EscrowRecoveryExpectations } from '@learncard/types';
 export {
     verifyEscrowAuthorityState,
+    verifyEscrowHoldState,
+    verifyEscrowCodeDelivery,
     verifyEscrowEnrollmentCommit,
     createEscrowEnrollmentIntent,
     resolveEscrowEnrollmentAction,
@@ -175,7 +177,11 @@ export {
     EscrowRequestError,
 } from './sss-strategy';
 
-export type { SSSStorageFunctions, SSSStrategyConfig } from './sss-strategy';
+export type {
+    EscrowPinAutoClearedEvent,
+    SSSStorageFunctions,
+    SSSStrategyConfig,
+} from './sss-strategy';
 
 export {
     generateEphemeralKeypair,

@@ -164,14 +164,17 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
 
     const _isClr = isClrCredential(credential);
     const linkedCredentialCount = _isClr ? getClrLinkedCredentialCounts(credential) : 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrAchievements: any[] =
         _isClr && Array.isArray(credential?.credentialSubject?.achievement)
             ? credential.credentialSubject.achievement
             : [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrAssociations: any[] =
         _isClr && Array.isArray(credential?.credentialSubject?.association)
             ? credential.credentialSubject.association
             : [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const clrDisplayType = (credential as any)?.display?.displayType;
 
     const customLinkedCredentialsComponent =
@@ -199,6 +202,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
     // A credential that fails verification because it's revoked can't be claimed
     // (the backend rejects acceptCredential with "Credential has been revoked").
     const isRevoked = vcVerifications.some(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (v: any) =>
             v?.status !== 'Success' &&
             /revoked/i.test(`${v?.message ?? ''} ${v?.details ?? ''} ${v?.check ?? ''}`)
@@ -536,7 +540,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                 renderMethodCredential={credential as VC}
             />,
             {
-                className: '!bg-transparent',
+                className: 'bg-transparent!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
@@ -612,7 +616,7 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                     </>
                                 )}
                                 {selectedImage && (
-                                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                    <div className="fixed inset-0 bg-black/50  flex items-center justify-center z-50">
                                         <div className="relative max-w-full max-h-[80vh]">
                                             <img
                                                 src={selectedImage}
@@ -624,9 +628,9 @@ export const BoostClaimCard: React.FC<BoostClaimCardProps> = ({
                                 )}
                                 {!credential && isLoading && (
                                     <section className="flippy-wrapper-container">
-                                        <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
-                                            <div className="w-full flex-grow h-full flex items-center justify-center bg-white">
-                                                <section className="loading-spinner-container flex flex-col items-center justify-center h-[100%] w-full opacity-50 ">
+                                        <section className="flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-full max-h-[600px] min-h-[600px] p-7 w-full rounded-3xl shadow-3xl bg-white vc-display-card-full-container">
+                                            <div className="w-full grow h-full flex items-center justify-center bg-white">
+                                                <section className="loading-spinner-container flex flex-col items-center justify-center h-full w-full opacity-50 ">
                                                     <IonSpinner
                                                         role="status"
                                                         aria-label={m['common.loading']()}

@@ -17,6 +17,7 @@ export const AiPathwaySessionsItem: React.FC<{
     const history = useHistory();
     const fireEngagement = useEngagementSignal();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStart = (item: any) => {
         if (!item?.topicUri || !item?.pathwayUri) return;
 
@@ -34,7 +35,7 @@ export const AiPathwaySessionsItem: React.FC<{
     return (
         <div
             role="button"
-            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border-[1px] border-grayscale-200 rounded-xl"
+            className="w-full flex flex-col items-start justify-start px-4 py-2 gap-1 border-solid border border-grayscale-200 rounded-xl"
             onClick={() =>
                 handleStart({
                     title,

@@ -66,7 +66,7 @@ const BoostShareableQRCode: React.FC<BoostShareableQRCodeProps> = ({
                     />
                 )}
                 {isFamily && (
-                    <div className="w-full !mb-10">
+                    <div className="w-full mb-10!">
                         <FamilyCrest
                             containerClassName="z-9999"
                             imageClassName="w-[90px]"

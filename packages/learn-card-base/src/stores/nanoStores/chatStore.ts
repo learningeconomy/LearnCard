@@ -206,6 +206,7 @@ export function resetChatSessionStores() {
  * Useful when starting a new session or logging out.
  */
 export function resetChatStores() {
+    clearStartTopicInFlight();
     resetChatSessionStores();
     threads.set([]);
     chatInputText.set('');
@@ -1292,6 +1293,7 @@ export function sendMessage(content: string) {
 
 // Function to start a new topic using a topic URI
 export async function startTopicWithUri(topicUri: string) {
+    clearStartTopicInFlight();
     resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
@@ -1374,6 +1376,7 @@ const waitForSocketConnection = (): Promise<void> => {
 
 // Function to start a new learning pathway with topic and pathway URIs
 export async function startLearningPathway(topicUri: string, pathwayUri: string) {
+    clearStartTopicInFlight();
     resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
@@ -1427,8 +1430,82 @@ export async function startLearningPathway(topicUri: string, pathwayUri: string)
     sendWhenReady(messageToSend);
 }
 
-// Function to initiate a new session plan for a topic
-export async function startTopic(topic: string, mode: AiSessionMode = AiSessionMode.tutor) {
+/**
+ * The single start_topic currently in flight. `key` identifies the start (caller DID, topic
+ * and mode); `promise` settles once that start has been sent, has failed, or was cancelled.
+ * `cancelled` is set when something else takes over the session, so the stale run bails out
+ * before it sends instead of opening a second backend session.
+ */
+type StartTopicInFlight = {
+    key: string;
+    startedAt: number;
+    cancelled: boolean;
+    promise: Promise<void>;
+};
+
+let startTopicInFlight: StartTopicInFlight | null = null;
+
+/**
+ * How long an identical startTopic call may join an in-flight start. Remount double-starts land
+ * within milliseconds; past this, a retry is treated as explicit and starts fresh, so a hung
+ * auth negotiation cannot trap every same-topic retry on the stuck promise.
+ */
+const START_TOPIC_JOIN_WINDOW_MS = 10_000;
+
+/**
+ * Drop the in-flight startTopic and stop it from sending. Called from every other session
+ * entry point, disconnectWebSocket and resetChatStores, so a later startTopic with the same
+ * args runs its own reset/disconnect instead of joining a stale promise. Returns whether a
+ * start was cancelled.
+ */
+function clearStartTopicInFlight(): boolean {
+    if (!startTopicInFlight) return false;
+
+    startTopicInFlight.cancelled = true;
+    startTopicInFlight = null;
+
+    return true;
+}
+
+// Function to initiate a new session plan for a topic.
+// Concurrent identical calls (e.g. a remount before the socket opens) share one start_topic
+// send; otherwise both would flush from the same onopen and create two backend sessions.
+// A call with different args cancels the in-flight start, so the last start wins.
+export function startTopic(
+    topic: string,
+    mode: AiSessionMode = AiSessionMode.tutor
+): Promise<void> {
+    const key = JSON.stringify([auth.get().did ?? null, topic, mode]);
+    const inFlight = startTopicInFlight;
+
+    if (inFlight?.key === key) {
+        if (Date.now() - inFlight.startedAt < START_TOPIC_JOIN_WINDOW_MS) return inFlight.promise;
+    }
+
+    clearStartTopicInFlight();
+
+    const entry: StartTopicInFlight = {
+        key,
+        startedAt: Date.now(),
+        cancelled: false,
+        promise: Promise.resolve(),
+    };
+
+    const promise = runStartTopic(topic, mode, entry).finally(() => {
+        if (startTopicInFlight === entry) startTopicInFlight = null;
+    });
+
+    entry.promise = promise;
+    startTopicInFlight = entry;
+
+    return promise;
+}
+
+async function runStartTopic(
+    topic: string,
+    mode: AiSessionMode,
+    entry: StartTopicInFlight
+): Promise<void> {
     resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
@@ -1442,14 +1519,18 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
         return;
     }
 
-    disconnectWebSocket();
+    // startTopic already cancelled any displaced start. closeWebSocket, not disconnectWebSocket,
+    // so this run does not count as a standalone cancel and clear its own loading flags.
+    closeWebSocket();
     await ensureChatAiPassportAuth(did);
+    if (entry.cancelled) return;
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         try {
             await connectWebSocket();
             await waitForSocketConnection();
         } catch (error) {
+            if (entry.cancelled) return;
             log.error('WebSocket connection failed, cannot start topic:', error);
             isTyping.set(false);
             isLoading.set(false);
@@ -1460,6 +1541,8 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
             return;
         }
     }
+
+    if (entry.cancelled) return;
 
     const messageToSend = {
         action: 'start_topic',
@@ -1473,6 +1556,7 @@ export async function startTopic(topic: string, mode: AiSessionMode = AiSessionM
 }
 
 export async function startInsightsSession(topic: string, initialText?: string) {
+    clearStartTopicInFlight();
     resetChatSessionStores();
     isTyping.set(true);
     isLoading.set(true);
@@ -1631,8 +1715,19 @@ export function getWebSocket() {
     return ws;
 }
 
-// Gracefully close the WebSocket and prevent auto-reconnect
+// Gracefully close the WebSocket and prevent auto-reconnect. Also cancels any in-flight
+// startTopic, so a remount's startTopic runs fresh instead of joining a stale start.
+// A cancelled start bails out silently, so clear its loading flags here. Doing it now rather
+// than when the stale run resumes means it can never clear a newer session's flags.
 export function disconnectWebSocket() {
+    if (clearStartTopicInFlight()) {
+        isTyping.set(false);
+        isLoading.set(false);
+    }
+    closeWebSocket();
+}
+
+function closeWebSocket() {
     clearSessionStartWatchdog();
     shouldReconnect = false;
     connectionGeneration += 1;

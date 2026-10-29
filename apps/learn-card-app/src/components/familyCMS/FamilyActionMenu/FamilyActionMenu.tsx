@@ -167,7 +167,7 @@ export const FamilyActionMenu: React.FC<{
         //     onClick: () => {
         //         closeModal();
         //         newModal(<LeaveFamily credential={credential} boostUri={boostUri} />, {
-        //             sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+        //             sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
         //         });
         //     },
         // },
@@ -178,7 +178,7 @@ export const FamilyActionMenu: React.FC<{
         //     onClick: () => {
         //         closeModal();
         //         newModal(<DeleteFamily credential={credential} boostUri={boostUri} />, {
-        //             sectionClassName: '!bg-transparent !border-none !shadow-none !rounded-none',
+        //             sectionClassName: 'bg-transparent! border-none! shadow-none! rounded-none!',
         //         });
         //     },
         // },
@@ -192,7 +192,7 @@ export const FamilyActionMenu: React.FC<{
                     <li
                         key={id}
                         onClick={() => onClick?.()}
-                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-[2px] last:border-0 cursor-pointer"
+                        className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 border-b-grayscale-100 border-b-solid border-b-2 last:border-0 cursor-pointer"
                     >
                         <p className="text-grayscale-900">{title}</p>
                         {icon}

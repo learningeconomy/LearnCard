@@ -1,4 +1,4 @@
-import { UnsignedVC, VC } from '@learncard/types';
+import { VC } from '@learncard/types';
 import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { UploadTypesEnum } from 'learn-card-base';
@@ -13,6 +13,8 @@ import {
 import { getLogger } from '../../logging/logger';
 import { addActiveLocaleToUrl } from '../../i18n';
 import { aiPassportFetch } from '../../helpers/aiPassportAuth';
+import { extractFileCredentials } from '../../helpers/fileExtraction';
+import type { FileExtractionAttempt } from '../../types/file-extraction';
 const log = getLogger('ai-passport');
 
 const aiInsightCredentialQueryKey = ['useAiInsightCredential'];
@@ -167,44 +169,16 @@ export const useFinishAssessmentMutation = () => {
     });
 };
 
-export const useUploadFileMutation = (fileType: UploadTypesEnum) => {
+export const useUploadFileMutation = () => {
     return useMutation({
-        mutationFn: async ({
-            did,
-            file,
-            fileType,
-        }: {
+        mutationFn: (input: {
             did: string;
             file: string;
             fileType: UploadTypesEnum;
-        }) => {
-            try {
-                const response = await aiPassportFetch(
-                    addActiveLocaleToUrl(
-                        `${networkStore.get.aiServiceUrl()}/credentials/parse-file`
-                    ),
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ file, fileType }),
-                    },
-                    did
-                );
-
-                const responseJson: {
-                    vcs: { vc: UnsignedVC; metadata: { name: string; category: string } }[];
-                    error?: string;
-                } = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(responseJson?.error || 'Unknown server error');
-                }
-
-                return responseJson;
-            } catch (error) {
-                log.error('Failed to upload resume:', error);
-                throw new Error(error as string);
-            }
-        },
+            attempt?: FileExtractionAttempt;
+            waitSignal?: AbortSignal;
+            onWaiting?: (waiting: boolean) => void;
+            onAttempt?: (attempt: FileExtractionAttempt) => void;
+        }) => extractFileCredentials(input),
     });
 };

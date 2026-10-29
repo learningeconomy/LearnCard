@@ -9,6 +9,6 @@
  * dependency footprint (crypto, IndexedDB, etc.).
  */
 
-export { createWeb3AuthStrategy } from './createWeb3AuthStrategy';
+export { createWeb3AuthStrategy, deriveWeb3AuthKey } from './createWeb3AuthStrategy';
 
 export type { Web3AuthStrategyConfig } from './createWeb3AuthStrategy';

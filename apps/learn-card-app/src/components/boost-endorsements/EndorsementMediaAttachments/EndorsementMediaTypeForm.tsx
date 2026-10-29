@@ -102,6 +102,7 @@ const EndorsementMediaTypeForm: React.FC<{
                         <img
                             alt="Uploaded Image Preview"
                             className="max-h-[250px]"
+                            // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain -- removing the assertion widens the type and needs a real null check
                             src={media?.url!}
                             onClick={handleImageSelect}
                             referrerPolicy="no-referrer"

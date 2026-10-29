@@ -18,7 +18,7 @@ const isoDaysAgo = (days: number): string => {
     return d.toISOString();
 };
 
-const record = (over: Partial<any> = {}) => ({
+const record = (over: Record<string, unknown> = {}) => ({
     id: 'a1',
     activityId: 'x1',
     eventType: 'CREATED',
@@ -241,6 +241,18 @@ describe('isHiddenActivity', () => {
         expect(isHiddenActivity('AI Sessions')).toBe(true);
         expect(isHiddenActivity('ai-topic')).toBe(true);
         expect(isHiddenActivity('Pay Rate')).toBe(true);
+    });
+    it('hides both uploaded resumes and published Resume Builder credentials', () => {
+        expect(isHiddenActivity('resume')).toBe(true);
+        expect(isHiddenActivity('Resume')).toBe(true);
+    });
+    it.each([
+        ['certificate', 'Certificate'],
+        ['transcript', 'Transcript'],
+        ['diploma', 'Diploma'],
+    ])('hides source uploads in %s without hiding issued %s credentials', (source, issued) => {
+        expect(isHiddenActivity(source)).toBe(true);
+        expect(isHiddenActivity(issued)).toBe(false);
     });
     it('shows normal and unknown categories', () => {
         expect(isHiddenActivity('Social Badge')).toBe(false);

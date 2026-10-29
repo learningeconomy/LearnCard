@@ -1,5 +1,47 @@
 # learn-card-types
 
+## 5.24.0
+
+### Minor Changes
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign definitions, admin-managed metadata audiences, age-aware self-enrollment and shared engagement state. Expose typed campaign APIs and network plugin methods without enabling notification delivery or app rendering.
+
+    Campaign audiences always exclude profiles with missing, empty, or malformed birthdays. Self-enrollment requires a known adult birthday.
+
+    Require live or paused campaigns to be archived before deletion. Rejected campaign events leave profile properties unchanged, and audience metadata filters are limited to 20 keys.
+
+- [#1777](https://github.com/learningeconomy/LearnCard/pull/1777) [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2245] Add issuer LinkedIn organization IDs, stable certification IDs, and opt-in localized social previews. Keep each preview bound to one encrypted presentation so a new share does not replace an earlier card; refresh metadata in place and recreate deleted references. Audit publisher and creation/update times, support owner/profile cleanup, preserve decryptable card URLs, and isolate private updates to their exact share record.
+
+    Extract stable UUIDs from recognized LearnCard credential addresses to fit LinkedIn's certification ID field, retain other complete IDs only within the 80-character limit, and preserve family record identity independently of loaded pages. Use only eligible credential/achievement artwork for public previews, never recipient-photo fallbacks. Enable posting only after explicit preview publication succeeds and associate the disabled action with its consent explanation. Keep unresolved issuer placeholders out of LinkedIn organization names.
+
+    Keep the share-preview request type in a type-only network-plugin import so consumers using `verbatimModuleSyntax` can typecheck.
+
+### Patch Changes
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - feat(campaigns): add audience management and shared engagement state [LC-2265]
+
+## 5.23.2
+
+### Patch Changes
+
+- [#1727](https://github.com/learningeconomy/LearnCard/pull/1727) [`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch skill icon generation to fit request limits. `ai.generateSkillIcons` now rejects requests over 100 names or 2,500 total characters with BAD_REQUEST, and clients split large skill frameworks into batches under those limits.
+
+    `@learncard/lca-api-client` now caps batched GET URLs at 8,192 characters (`maxURLLength`), so concurrent queries like those icon batches are sent as separate requests instead of being merged into one URL that API Gateway rejects with HTTP 431.
+
+- [#1720](https://github.com/learningeconomy/LearnCard/pull/1720) [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c) Thanks [@goblincore](https://github.com/goblincore)! - Import spreadsheets from the Issue import modal and choose column mappings for independent grades, numeric credits, standard Evidence, awarded dates, and description text. Preserve source cells across type changes, zero credits across editor round trips, and the original awarded date independently of issuance time. Use shared field materialization in previews, queued issuance, and local profile signing without modifying signed credentials.
+
+    The network plugin and brain-service now coerce declared OBv3/CLR credit fields to finite numbers and normalize awarded dates to UTC before signing. Blank credit and optional award-date fields are omitted; malformed nonblank fields are rejected (BAD_REQUEST in brain-service). Calendar days use midnight UTC, while timestamps require complete seconds and an explicit timezone. Offset spelling is normalized while preserving the instant; signed credentials are left unchanged.
+
+    Bound XLSX archive expansion and member counts before spreadsheet parsing, isolate workbook parsing in a browser worker with a deadline, and stop CSV parsing at its row/column/cell budgets. Retry cold concurrent API/worker schema creation through Neo4j managed write transactions.
+
+## 5.23.1
+
+### Patch Changes
+
+- [#1712](https://github.com/learningeconomy/LearnCard/pull/1712) [`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c) Thanks [@goblincore](https://github.com/goblincore)! - Allow optional proof creation timestamps for the standardized ECDSA, EdDSA and BBS Data Integrity cryptosuites without rewriting signed payloads.
+
+    Handle one-shot CHAPI events safely across account changes, allow cancellation during exchanges, deduplicate exact reopened offers using account-scoped fingerprints of the full signed payload, and avoid retrying consumed acknowledgements or cancellations. Preserve distinct same-ID credential revisions and explain that partial saves remain after cancellation. Keep storage diagnostics useful without logging private credential payloads or counterparty messages.
+
 ## 5.23.0
 
 ### Minor Changes

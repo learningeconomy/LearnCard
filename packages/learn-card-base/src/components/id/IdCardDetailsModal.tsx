@@ -85,7 +85,7 @@ const IdCardDetailsModal: React.FC<{ handleModal: () => void; data: LCR }> = ({
                             )}
                             subjectInitials={nameAbbr}
                             subjectInitialsClass={
-                                'w-[70px] h-[70px] bg-yellow-500 uppercase flex-shrink-0'
+                                'w-[70px] h-[70px] bg-yellow-500 uppercase shrink-0'
                             }
                             userName={userName}
                             userImage={userImgUrl}

@@ -98,7 +98,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
                 }
                 handleColorChange={handleColorChange}
             />,
-            { className: '!bg-transparent !shadow-none' },
+            { className: 'bg-transparent! shadow-none!' },
             { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
         );
     };
@@ -113,6 +113,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
         return;
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (propName: string, value: any) => {
         setState(prevState => {
             return {
@@ -155,6 +156,7 @@ const BoostCMSAppearanceForm: React.FC<BoostCMSAppearanceFormProps> = ({
             )?.title ?? '';
     }
 
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formBackgroundColor: string = '';
     let formTitle: string = '';
 

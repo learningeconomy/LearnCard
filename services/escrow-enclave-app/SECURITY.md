@@ -4,6 +4,26 @@ This document provides a comprehensive security overview of the Escrow Enclave s
 
 ## System Overview and Trust Boundaries
 
+**2026-10-16 hold evidence update:** returned SES failures no longer discard a
+durably created hold. Response-only, ledger-signed delivery evidence binds its
+unchanged digest; `codeSent: false` includes ambiguous acceptance. It never starts
+the seven-day wait or changes the send/guess budgets. A lost whole response or
+outer timeout remains an availability risk. The new bearer-authenticated
+`/v1/hold-state` read signs a caller nonce and the exact hold identity, generation,
+state, confirmation/warning times and remaining guesses. Persisted state does not
+record send acceptance, so reads conservatively report `unknown`, not success
+inferred from a throttle. Clients must verify against attested ledger evidence and
+fresh nonces; a signature is not an assurance of subsequent state stability.
+
+`codeMismatch`, `codeExpired`, and `codeLocked` disclose only public policy outcomes
+after hold-binding checks. They reveal no digits, secret hashes or unmetered
+equality oracle; the fifth failed guess locks, expired attempts remain consumed,
+and malformed/binding failures remain generic. Bearer-only cancellation still
+permits a compromised API to cause durable DoS, not disclosure. See
+[ENROLLMENT-AUTHORITY §§11–12](ENROLLMENT-AUTHORITY.md#11-hold-delivery-evidence-and-state-reads-2026-10-16)
+for wire details, new-host-first compatibility, the unchanged persisted format,
+and the recommended future owner-signature cancellation design (not implemented).
+
 **PR 2 / Design 2 status:** the enrollment blocker is resolved **only in configured
 authority mode**, with the measured authority/credential configuration, attested
 writer unsealing, both verified Organizations guardrails, owner intent verification,
@@ -67,6 +87,32 @@ flowchart TD
 - **D4 (KMS Recipient Flow):** The enclave generates a boot-time RSA-2048 recipient keypair. First boot calls `GenerateDataKey(KeySpec=AES_256, Recipient=NSM attestation)` with `{purpose:escrow-enclave-key,keyId}` context; subsequent boots call `Decrypt` with the same context and Recipient. Both reject any Plaintext field (including empty), require nonempty recipient ciphertext, and accept exactly 32 seed bytes after CMS opening. Generation additionally requires a nonempty CiphertextBlob for persistence. Domain-separated HKDF-SHA256 binds keyId and rejection-samples the escrow P-256 scalar; the seed/scalar buffers zeroize. No `Encrypt` operation exists in the enclave. No sealed-format migration is supported: Nitro never ran in production and the prior `nitro,kms` build did not compile. Deploy with a fresh restricted CMK, or prove it has never allowed attacker-known ciphertext generation: newly denying Encrypt does not invalidate pre-existing host-known 32-byte-seed ciphertexts.
 - **D7 (KMS Key Policy):** The KMS key policy uses one statement per released measurement tuple. It requires an exact match on PCR0, PCR1, and PCR2 simultaneously to prevent cross-combination of measurements.
 - **D10 (Key Admin Residual Risk):** An MFA-authenticated key admin can theoretically rewrite the KMS key policy to remove attestation gates. This residual risk is mitigated by mandatory two-person PR review and CloudTrail alarms, rather than an immutable key policy.
+- **R-AUTHORITY-ROLLBACK (security acceptance required):** Until the
+  [authority archiver](AUTHORITY-ARCHIVER.md) ships, a coherent authority-table
+  rollback/purge by an attacker who already broke the admin boundary is detected
+  through CloudTrail data-event write alarms and governance/trail-tamper alarms,
+  **not independent archived authority history**. Table-only sweeps cannot detect
+  coherent loss of all historical rows. These are best-effort signals, not a
+  guaranteed detection deadline: a stolen writer identity can evade the nonwriter
+  filter, and a trusted organization/MFA admin can weaken policies or detection.
+  COMPLIANCE locks delivered log versions, not future logging or KMS availability.
+  Explicit security acceptance is required before launch without the archiver;
+  implement it before the 50% rollout stage, or sooner if security rejects this
+  risk. Same-generation rollback remains forbidden.
+
+**Fixed monitoring gap (deployment and drills still required):** operator
+read-only verification on **2026-10-20** found no escrow staging CloudTrail trail,
+including shadow trails, and no organization trail. The organization's only trail
+was single-account in management. CloudTrail event history showed **36
+PutKeyPolicy events in 90 days** during image rolls, while EventBridge
+`TriggeredRules = 0` over **60 days** for kms-governance and all six authority-*
+rules. Those governance alarms had never fired: without an enabled trail,
+EventBridge did not receive the required `AWS API Call via CloudTrail` events.
+Bootstrap now defines the missing multi-region management/data trail with locked
+log storage; core adds authority-write and trail-tamper rules. Nothing is applied
+by this PR. Do not treat this code fix as deployed mitigation until the
+[staging drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only) pass.
+
 - **D11 (RSA/Marvin Rationale):** The `rsa` crate has a known timing side-channel (Marvin). This is accepted because the CMS blob only arrives inside the enclave's own TLS session to KMS, meaning the host cannot submit chosen ciphertexts.
 - **D12 (Software Mode Blocked in Production):** The client guard (`getEscrowStrategyConfig` in `packages/learn-card-base/src/config/authConfig.ts`) downgrades `software` mode to `off` for production tenants (`learncard`, `vetpass`, `scoutpass`) whenever the resolved tenant config's deploy `stage` is `production` — which is also the fail-closed default for a missing or unrecognized stage. The guard keys on this deploy `stage`, not the Vite build mode (`IS_PRODUCTION`, i.e. `mode === 'production'`): staging deployments are Vite production-mode builds too (`apps/learn-card-app`'s `build` script runs `vite build` under `STAGE=staging`), so `IS_PRODUCTION` alone can't tell a staging deploy from production. Staging deliberately runs the software enclave (host-trusted, dev/test only) per #1565, with `stage: 'staging'` baked into the tenant config by `prepare-native-config.ts --stage staging` (learn-card-app) or the equivalent `VITE_NODE_ENV`-driven overlay (scouts). Independently, the enclave binary enforces this server-side: `--emulate` (software mode) is feature-gated behind `fake-nsm`/`fake-kms`/`fake-time`/`fake-ledger`, which a production `--features nitro,kms` build excludes, so that compiled binary refuses `--emulate` before binding.
 - **D13 (Audit design):** Legacy mode retains its bounded per-blob ledger and `Carried` genesis. Configured mode instead stores per-DID authority state, bounded per-hold/operation rows and immutable execution receipts with signed proposals. No legacy history is imported. Proposed events and post-commit signatures have different domain tags; a proposal is never commit proof. The independent monitor verifies authenticated table evidence and continuity, not parent readback. Time intervals remain processing evidence, not authenticated upper bounds on receipt time.
@@ -239,7 +285,7 @@ When the enclave code changes, the EIF measurements (PCRs) change. To rotate wit
 
 1. **Build N+1:** The CI workflow (`.github/workflows/escrow-enclave-eif.yml`) builds the EIF twice and verifies reproducibility. The resulting `measurements.json` is committed to `security/escrow-measurements.json`.
 2. **Add N+1:** Update `infra/escrow-enclave/variables.tf` (or tfvars) to include both N and N+1 measurements. Apply the Terraform change (requires two-person review and MFA).
-3. **Roll ASG:** Update the ASG to deploy the N+1 image.
+3. **Roll ASG:** Update the ASG to deploy the N+1 image. **Ship a matching host binary in the same roll.** The host links the enclave crate's wire types and returns `503 unavailable` for any enclave response it cannot parse, after the enclave has already committed the operation (2026-10-23 staging finding below). Rebuild `escrow-enclave-host` from the EIF's commit whenever `wire.rs` changed since the deployed host's commit.
 4. **Update Clients:** Publish the new measurements to the tenant config so clients accept N+1 attestations.
 5. **Retire N:** Once all instances and clients are updated, remove the N measurement from the Terraform configuration and apply.
 
@@ -308,7 +354,7 @@ queue cannot guarantee bounded revocation latency. Unconfigured mode remains una
     - **Same-process rollback fix (H1):** carry and rewrap both call the existing Policy ledger's stateful `observe`, not stateless `verify_chain`. This retains high-water marks and rejects empty/truncated chains and forks after the process has observed or signed a newer head. The source chain is read-only in storage, but observation mutates enclave memory. The same-instance regression spends three attempts and refuses both empty and truncated views on both paths.
 - **Residual rollback caveat (legacy only):** the legacy parent-ledger path retains D3's limitations. Configured recovery does not use that history for freshness or PIN budgets. A privileged authority-table restore/purge or credential/key-policy compromise is outside the host-adversary guarantee; restore requires a new measured generation and two-person approval, never Mongo/history bootstrap or same-generation rollback.
 - **RESOLVED-BLOB-IDENTITY-MALLEABILITY:** The v1 envelope does not authenticate the ephemeral point, and P-256 ECDH yields the same shared x-coordinate for `Q` and `-Q`, so both decrypt identically. Blob identity (`crypto::escrow_blob_identity`) is therefore SHA-256 over a domain tag and length-prefixed decoded fields (version, algorithm, keyId, the point's x-coordinate only, salt, IV, ciphertext), not the serialized JSON. A negated-point twin or base64/JSON alias maps to the same chain, hold binding and Carried record. lca-api computes the same value (`services/escrow-enclave/blobIdentity.ts`), pinned by a shared golden vector over `escrow-vectors.json`. Any other change to the ciphertext, salt or IV fails AES-GCM authentication.
-- **BLOCKER-ATTACK-C — resolved when configured, not an unconditional launch approval (PR 3):** A Hold-policy `create_hold` now always starts `AwaitingConfirmation`, never the old unconfirmed `Pending` — the enclave sends an 8-digit, 30-minute, CSPRNG one-time code to the blob-bound `recoveryEmail` (in `recoveryLanguage`, one of en/es/fr/ar) and fails the whole request closed if either is missing, so a compromised lca-api that only controls the recipient key can no longer silently start a releasable hold. `confirm-hold` binds the caller's `client_ephemeral_public_key` to the signed hold record (rejecting a guess from any other recipient key even with the correct code), caps guesses at 5, and `resend-code` replaces the prior code outright (old code stops matching, guess counter resets) subject to a per-DID throttle (3 sends / 24h, 60s minimum gap). Release requires **both** a matched confirmation **and** a `send-release-warning` recorded at least 24h earlier — independently re-derived and enforced by the ledger monitor from signed events, never trusted from the stored `HoldItem` row's own timestamps (`escrow-ledger-monitor/src/authority.rs`). `cancel` remains valid from `AwaitingConfirmation` or `Pending` (idempotent on retry) but not once `Released`. PIN-policy holds are entirely unaffected (never enter `AwaitingConfirmation`; same fast-release path as before). Email wording is fixed, measured-image content only — no links, no images. Only the code message states "only enter this code if you started this recovery"; the started and release-warning messages instead tell the recipient to open the app and cancel the recovery if they didn't start it, naming a display brand mapped from the tenant label (`email.rs`'s `brand_name`) — relayed through the existing `enable_enclave_email`/vsock-proxy infrastructure with a dedicated, scope-limited `email-sender` IAM credential (SES `SendEmail` only, from the single approved address). See `AUDIT-COVERAGE.md`'s "Recovery boundary / attack C" row for the full offline test inventory. **Remaining operator gates, not closed by this implementation:** real SES delivery/bounce handling, the email vsock relay on real Nitro hardware, and a full live 7-day-since-confirmation soak — see `STAGING.md`.
+- **BLOCKER-ATTACK-C — resolved when configured, not an unconditional launch approval (PR 3):** A Hold-policy `create_hold` now always starts `AwaitingConfirmation`, never the old unconfirmed `Pending` — the enclave sends an 8-digit, 30-minute, CSPRNG one-time code to the blob-bound `recoveryEmail` (in `recoveryLanguage`, one of en/es/fr/ar) and fails the whole request closed if either is missing, so a compromised lca-api that only controls the recipient key can no longer silently start a releasable hold. `confirm-hold` binds the caller's `client_ephemeral_public_key` to the signed hold record (rejecting a guess from any other recipient key even with the correct code), caps guesses at 5, and `resend-code` replaces the prior code outright (old code stops matching, guess counter resets) subject to a per-DID throttle (3 sends / 24h, 60s minimum gap). Release requires **both** a matched confirmation **and** a `send-release-warning` recorded at least 24h earlier — independently re-derived and enforced by the ledger monitor from signed events, never trusted from the stored `HoldItem` row's own timestamps (`escrow-ledger-monitor/src/authority.rs`). `cancel` remains valid from `AwaitingConfirmation` or `Pending` (idempotent on retry) but not once `Released`. PIN-policy holds are entirely unaffected (never enter `AwaitingConfirmation`; same fast-release path as before). Email wording is fixed, measured-image content only — no links, no images. Only the code message states "only enter this code if you started this recovery"; the started and release-warning messages instead tell the recipient to open the app and cancel the recovery if they didn't start it, naming a display brand mapped from the tenant label (`email.rs`'s `brand_name`) — relayed through the existing `enable_enclave_email`/vsock-proxy infrastructure with a dedicated, scope-limited `email-sender` IAM credential (SES `SendEmail` only, from the single approved address). See `AUDIT-COVERAGE.md`'s "Recovery boundary / attack C" row for the full offline test inventory. **Remaining operator gates, not closed by this implementation:** real SES bounce handling, an operator inbox confirmation of the code email, and a full live 7-day-since-confirmation soak — see `STAGING.md`. The email vsock relay on real Nitro hardware and SES delivery of code emails were exercised on 2026-10-23 ([Staging verification](#staging-verification-2026-10-23)).
 
 **Independent persistence checks (M9):** INSERT requires a head captured before
 the chain read (valid prefix, at least the inserted sequence), and exact signed S3
@@ -318,6 +364,17 @@ Sweeps paginate both heads and records (25 items/page, at most 10,000 pages per
 table), detect record partitions lacking heads, and emit SweepCompleted only after
 both scans finish. Operational errors/cap exhaustion fail the invocation, not a
 fabricated empty result. Fully suppressed evidence remains outside detection.
+
+## Staging Verification (2026-10-23)
+
+Account `217358003896`, image `v79ea1bd7` (CI run 40021189082, commit `79ea1bd78`), host binary built from the same commit. Old measurement `v36742286` remains allowed until the jackson+wait3 hold (started on the old image) releases on the new one.
+
+- **N+1 roll:** the KMS key policies gained the new tuple without removing the old one. The new enclave runs non-debug with the new PCRs, and `/keys/escrow/attestation` reports key id `escrow-staging-v1` with the already-pinned public key (the existing sealed key unsealed). Monitor trust gained the new measurement digest. Canary tier 1 failed `pcr` until its measurements were updated, then passed. Tier 2 passed.
+- **Drill 1 (non-writer write to the authority table):** denied; both governance alerts delivered.
+- **Drill 2 (`PutKeyPolicy` during the roll):** `EscrowKmsGovernanceChange` fired once with no failed invocations; SNS reported delivery. **Gap (since fixed in `monitor.tf`):** the rule matched only the escrow CMK, so the same apply's credentials-key policy change raised no alert. It now also matches the credentials CMK, plus `AccessDenied` attempts on these KMS events, which can log `requestParameters: null`. The rule now also watches the storage CMK (which encrypts the sealed key object and authority table), `CancelKeyDeletion`/`DisableKeyRotation`, and `Create/Update/DeleteAlias` on the three escrow aliases. Re-run this drill after applying, including a storage-key change.
+- **Drill 3 (SSO tamper attempts):** `StopLogging` and `PutBucketPolicy` (sent with the current policy) were denied, logging stayed on, and both paged `EscrowCloudTrailTamper` with no failed invocations. **Finding (fixed in #1792):** an SCP-denied `StopLogging` is recorded with `requestParameters: null`, which the original rule never matched. A denied S3 `PutBucketPolicy` keeps `requestParameters.bucketName`. Three attack C runs of real vault writes raised no governance or tamper alert.
+- **Attack C (`scripts/staging-attack-c.ts`, live):** a bearer-only create-hold returned a hold whose signed state read back `awaitingConfirmation` with 5 attempts. Guesses 1–4 were refused with `codeMismatch` and 5–6 with `codeLocked`; attempts read back 0. Unconfirmed release was refused (`policy`) and the hold stayed `awaitingConfirmation`. Cancellation returned a verified commit and read back `cancelled`. SES reported each code email delivered; the operator inbox check was skipped (`--skip-inbox-check`). The script's stated gaps still apply: SES delivery is not provable from enclave state, and vault cancel is bearer-only.
+- **Finding (fixed in the roll):** the first roll kept the Oct 15 host binary. That host predated #1714/#1744 and could not parse the new enclave's create-hold response. Create-hold returned `503 unavailable` in under a second after the hold had committed and the code email had been sent. PIN holds were unaffected. Rebuilding the host from `79ea1bd78` fixed it; see the rotation procedure above.
 
 ## Staging Adversarial Verification (2026-10-05)
 

@@ -6,6 +6,29 @@ SCP, Nitro boot, SNS delivery, or elapsed seven-day soak result.
 
 ## Must-have coverage
 
+### Hold evidence regressions (2026-10-16)
+
+- Vault `failed_code_send_returns_signed_hold_and_resend_remains_available` covers
+  rejected/unknown SES results, signed failure evidence, no premature release, and
+  resend followed by confirmation. Existing resend tests retain daily/gap limits.
+- `confirmation_errors_distinguish_budget_expiry_and_mismatch_without_refunding`
+  checks mismatch/expiry/lock outcomes, the fifth failure and the unchanged budget.
+- `pre_roll_confirmed_hold_survives_restart_reconfirm_release_and_cancel` freezes
+  the old strict HoldItem schema, proves identical serialized bytes in both
+  directions, and exercises a restarted policy's reconfirm/release/cancel paths
+  plus nonce-bound pending/terminal state snapshots. This is not inspection of the
+  real pending staging hold or a real seven-day soak.
+- Host `contracts.rs` verifies bearer rejection and nonce forwarding for hold-state,
+  new error forwarding, and opt-in delivery evidence preserving old API hold DTOs.
+- SDK `escrow-authority.test.ts` verifies signed delivery and state snapshots,
+  rejecting nonce replay, wrong scope/digest/key/kind and invalid public bounds;
+  strategy tests preserve only allowlisted refusal reasons. API tests cover failed
+  delivery persistence and sanitized tRPC errors; panel tests cover resend access
+  and all three actionable messages.
+- No persisted send-success history is claimed: hold-state reports `unknown` for
+  email holds. Whole-request loss reconciliation and owner-signed cancellation are
+  not implemented. No new live AWS/Nitro/email delivery verification was performed.
+
 This checklist maps **every** must-have bullet in ENROLLMENT-AUTHORITY.md §8.
 “Offline” means the named deterministic model/transport tests, not a claim that
 every possible scheduler interleaving or live IAM policy has been exercised.
@@ -57,6 +80,18 @@ every possible scheduler interleaving or live IAM policy has been exercised.
 | Read-only observer, default-disabled no-op, host/org-admin exclusion                               | `infra/escrow-enclave/tests/authority.tftest.hcl`; bootstrap `authority-guardrail/tests/guardrail.tftest.hcl` tests both attached SCPs and monitor takeover boundaries                                                       |
 
 ## Boundaries not overstated
+
+CloudTrail coverage is structurally checked by bootstrap
+`tests/cloudtrail.tftest.hcl` (all management events, exact authority ARNs,
+write-only selectors, COMPLIANCE retention, SourceArn delivery, dedicated key),
+`authority-guardrail/tests/guardrail.tftest.hcl` (trail/bucket denies, exact admin
+exceptions and both SCP size limits), and core `tests/authority.tftest.hcl`
+(nonwriter/AccessDenied patterns, fixed SNS messages and DLQ authorization).
+These are offline checks, not proof of AWS event delivery. The account's missing
+trail previously left governance alarms inert; see the dated evidence in
+[SECURITY.md](SECURITY.md) and mandatory [live drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only).
+Independent archived authority history remains deferred until before 50% rollout,
+subject to security acceptance of R-AUTHORITY-ROLLBACK for earlier stages.
 
 - The monitor authenticates proposals with security-owned key/measurement pins and
   correlates them with authenticated authority-table receipts. It does not decrypt

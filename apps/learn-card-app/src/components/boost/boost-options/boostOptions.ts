@@ -224,7 +224,7 @@ export const boostVCTypeOptions = {
             ShapeIcon: Circle,
             shapeColor: 'text-cyan-400 w-[35px] h-[35px]',
             WalletIcon: ExperiencesIcon,
-            iconStyles: 'h-[35px] w-[35px] !top-[46%]',
+            iconStyles: 'h-[35px] w-[35px] top-[46%]!',
         },
         // {
         //     id: 7,
@@ -263,7 +263,7 @@ export const boostVCTypeOptions = {
             type: BoostCategoryOptionsEnum.id,
             ShapeIcon: Hexagon,
             shapeColor: 'text-blue-400 w-[45px] h-[45px]',
-            iconStyles: 'h-[33px] w-[33px] !top-[55%]',
+            iconStyles: 'h-[33px] w-[33px] top-[55%]!',
             WalletIcon: IDsIcon,
         },
     ],
@@ -272,6 +272,7 @@ export const boostVCTypeOptions = {
 export const CATEGORY_TO_SUBCATEGORY_LIST: {
     [key: BoostCategoryOptionsEnum | string]: {
         title: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         type: any;
     }[];
 } = {

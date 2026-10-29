@@ -19,6 +19,7 @@ import TruncateTextBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails
 import VerificationsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/VerificationsBox';
 import MediaAttachmentsBox from 'apps/learn-card-app/src/pages/ids/view-id/IdDetails/MediaAttachmentBoxCerts';
 import PreviewVerificationBox from './PreviewVerificationBox';
+import { formatCredentialAwardedDate } from 'learn-card-base/helpers/credentialHelpers';
 
 import { useGetVCInfo, boostPreviewStore, BoostPreviewTabsEnum } from 'learn-card-base';
 
@@ -82,6 +83,8 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
         uppercaseDate: false,
     });
 
+    const awardedDate = formatCredentialAwardedDate(credential);
+
     const activityStartDate = credential?.credentialSubject?.activityStartDate;
     const activityEndDate = credential?.credentialSubject?.activityEndDate;
     const dateRangeText =
@@ -113,12 +116,12 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     const isMediaDisplay = displayType === DisplayTypeEnum.Media;
 
     const credentialVerificationDisplay = (
-        <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t-[1px] border-solid border-grayscale-200 pt-[10px]">
+        <div className="w-full flex items-center justify-start text-sm text-grayscale-600 font-semibold border-t border-solid border-grayscale-200 pt-[10px]">
             <CredentialVerificationDisplay
                 credential={credential}
-                iconClassName="!w-[20px] !h-[20px] mr-1"
+                iconClassName="w-[20px]! h-[20px]! mr-1"
                 showText
-                className="!capitalize !text-grayscale-900 text-sm"
+                className="capitalize! text-grayscale-900! text-sm"
             />
             &nbsp;on {createdAt}
         </div>
@@ -147,15 +150,15 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
                             </span>
                         )}
 
-                        {!isMediaDisplay && (
+                        {!isMediaDisplay && awardedDate && (
                             <span
-                                className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                                className={`text-grayscale-600 font-poppins text-[12px] font-semibold w-full ${
                                     description || dateRangeText
-                                        ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
+                                        ? 'pt-[10px] border-t border-solid border-grayscale-200'
                                         : ''
                                 }`}
                             >
-                                Awarded on {createdAt}
+                                {m['boost.cms.preview.awardedOn']({ date: awardedDate })}
                             </span>
                         )}
                         {!isMediaDisplay && expirationDate && (
@@ -270,7 +273,7 @@ const BoostDetailsSideBar: React.FC<BoostDetailsSideBarProps> = ({
     };
 
     return (
-        <aside className="bg-white bg-opacity-70 h-full max-w-full min-w-[375px] px-[20px]">
+        <aside className="bg-white/70  h-full max-w-full min-w-[375px] px-[20px]">
             <BoostFooterLayout
                 className="h-full"
                 footerProps={isMobile ? { handleBack: handleClose } : undefined}

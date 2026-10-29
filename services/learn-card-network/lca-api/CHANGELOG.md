@@ -1,5 +1,63 @@
 # @welibraryos/lca-api-service
 
+## 1.6.0
+
+### Minor Changes
+
+- [#1684](https://github.com/learningeconomy/LearnCard/pull/1684) [`c836310bafa663a4b18db3525b03c720f5b60117`](https://github.com/learningeconomy/LearnCard/commit/c836310bafa663a4b18db3525b03c720f5b60117) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Move LCA boost and skill generation to Bedrock through the OpenAI Responses SDK, using GPT-6.1 Sol for boost copy and skills and GPT-6 Luna for icon mapping. Deployment requires Bedrock access for the Lambda execution role; text generation no longer uses OPENAI_API_KEY. Image generation also moves to Bedrock (Stable Image Core `stability.stable-image-core-v1:1` in us-west-2) by default, with DALL-E only as an explicit `IMAGE_PROVIDER=openai` fallback.
+
+### Patch Changes
+
+- [#1829](https://github.com/learningeconomy/LearnCard/pull/1829) [`1a9678c68da326853c3a3baccbd90f3a8c342bb1`](https://github.com/learningeconomy/LearnCard/commit/1a9678c68da326853c3a3baccbd90f3a8c342bb1) Thanks [@Custard7](https://github.com/Custard7)! - Pin the production escrow enclave CA for `escrow-enclave.production.internal`, so the remote enclave transport can reach production over PrivateLink once escrow is enabled there. Escrow stays off in production until `ESCROW_ENCLAVE_MODE` is set.
+
+- [#1684](https://github.com/learningeconomy/LearnCard/pull/1684) [`c836310bafa663a4b18db3525b03c720f5b60117`](https://github.com/learningeconomy/LearnCard/commit/c836310bafa663a4b18db3525b03c720f5b60117) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Generate images with Amazon Bedrock Stable Image Core by default, preserving the image URL API. DALL-E remains available as an explicit IMAGE_PROVIDER=openai fallback, which is now the only use of OPENAI_API_KEY.
+
+    Image failures now log a sanitized `image_generation_failure` record (no prompt, provider message or credentials), map Bedrock throttling/quota errors (including HTTP 400 ServiceQuotaExceededException) to 429, unavailable and timeouts to 503 and content-filter rejections to 400, and retry throttling at most twice with jitter inside the deadline.
+
+- [#1827](https://github.com/learningeconomy/LearnCard/pull/1827) [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7) Thanks [@leif-squeak](https://github.com/apps/leif-squeak)! - Upgrade the pinned `zod` dependency to 4.6.6 to pick up the upstream security fix.
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/types@5.24.0
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/helpers@1.7.1
+    - @learncard/core@9.4.41
+    - @learncard/init@2.5.6
+    - @learncard/did-web-plugin@1.1.41
+    - @learncard/didkit-plugin-node@0.3.6
+    - @learncard/sss-key-manager@0.2.4
+
+## 1.5.3
+
+### Patch Changes
+
+- [#1727](https://github.com/learningeconomy/LearnCard/pull/1727) [`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch skill icon generation to fit request limits. `ai.generateSkillIcons` now rejects requests over 100 names or 2,500 total characters with BAD_REQUEST, and clients split large skill frameworks into batches under those limits.
+
+    `@learncard/lca-api-client` now caps batched GET URLs at 8,192 characters (`maxURLLength`), so concurrent queries like those icon batches are sent as separate requests instead of being merged into one URL that API Gateway rejects with HTTP 431.
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/helpers@1.7.0
+    - @learncard/core@9.4.40
+    - @learncard/init@2.5.5
+    - @learncard/did-web-plugin@1.1.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/didkit-plugin-node@0.3.5
+    - @learncard/sss-key-manager@0.2.3
+
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+    - @learncard/helpers@1.6.3
+    - @learncard/init@2.5.4
+    - @learncard/did-web-plugin@1.1.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/didkit-plugin-node@0.3.4
+    - @learncard/sss-key-manager@0.2.2
+
 ## 1.5.1
 
 ### Patch Changes

@@ -135,6 +135,26 @@ describe('decidePinPromptAfterReady', () => {
         });
     });
 
+    it('asks for a new PIN when repair requires a PIN reset, even while unenrolled', () => {
+        for (const recoveredVia of [null, 'hold', 'pin'] as const)
+            expect(
+                decidePinPromptAfterReady({
+                    ...base,
+                    recoveredVia,
+                    enrollment: 'not-enrolled',
+                    pinResetRequired: true,
+                })
+            ).toEqual({ kind: 'pin-reset-required' });
+        expect(
+            decidePinPromptAfterReady({
+                ...base,
+                recoveredVia: null,
+                pinResetRequired: true,
+                pinEnabled: true,
+            })
+        ).toEqual({ kind: 'none' });
+    });
+
     it('offers a PIN after waiting out the hold, even if a PIN was set before', () => {
         expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'hold' })).toEqual({
             kind: 'after-hold-recovery',
@@ -148,6 +168,21 @@ describe('decidePinPromptAfterReady', () => {
         expect(
             decidePinPromptAfterReady({ ...base, recoveredVia: 'hold', enrollment: 'not-enrolled' })
         ).toEqual({ kind: 'none' });
+    });
+
+    it('offers the hold prompt when asynchronous enrollment becomes known', () => {
+        const recovery = { recoveredVia: 'hold', promptFlag: null } as const;
+        expect(
+            decidePinPromptAfterReady({ ...recovery, enrollment: undefined, pinEnabled: undefined })
+        ).toEqual({ kind: 'none' });
+        // The provider consumes recoveredVia only when showing the prompt (or a working PIN).
+        expect(
+            decidePinPromptAfterReady({ ...recovery, enrollment: 'enrolled', pinEnabled: false })
+        ).toEqual({ kind: 'after-hold-recovery' });
+        // Once consumed, a device that never asked falls back to the one-time prompt.
+        expect(decidePinPromptAfterReady({ ...base, recoveredVia: null })).toEqual({
+            kind: 'first-time',
+        });
     });
 
     it('waits until PIN status is known and never prompts when a PIN works', () => {
@@ -164,8 +199,40 @@ describe('decidePinPromptAfterReady', () => {
         expect(
             decidePinPromptAfterReady({ ...base, recoveredVia: null, promptFlag: 'set' })
         ).toEqual({ kind: 'reset-banner' });
-        expect(decidePinPromptAfterReady({ ...base, recoveredVia: null })).toEqual({
-            kind: 'none',
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: null, promptFlag: 'skipped' })
+        ).toEqual({ kind: 'none' });
+    });
+
+    describe('first-time prompt for accounts not created this session (e.g. migrated)', () => {
+        it('asks an enrolled account without a PIN once per device', () => {
+            expect(decidePinPromptAfterReady({ ...base, recoveredVia: null })).toEqual({
+                kind: 'first-time',
+            });
+            for (const promptFlag of ['skipped', 'set'] as const)
+                expect(
+                    decidePinPromptAfterReady({ ...base, recoveredVia: null, promptFlag }).kind
+                ).not.toBe('first-time');
+        });
+
+        it('leaves accounts created this session to new-user setup', () => {
+            expect(
+                decidePinPromptAfterReady({ ...base, recoveredVia: null, newUserThisSession: true })
+            ).toEqual({ kind: 'none' });
+        });
+
+        it('stays inside the escrow rollout: never asks unless enrolled', () => {
+            for (const enrollment of ['not-enrolled', 'disabled', 'stale', undefined])
+                expect(
+                    decidePinPromptAfterReady({ ...base, recoveredVia: null, enrollment })
+                ).toEqual({ kind: 'none' });
+        });
+
+        it('never asks while PIN status is unknown or a PIN works', () => {
+            for (const pinEnabled of [undefined, true])
+                expect(
+                    decidePinPromptAfterReady({ ...base, recoveredVia: null, pinEnabled })
+                ).toEqual({ kind: 'none' });
         });
     });
 });

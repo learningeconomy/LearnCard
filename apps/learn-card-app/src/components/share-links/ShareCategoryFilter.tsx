@@ -62,7 +62,7 @@ export const ShareCategoryFilter = ({
                 aria-haspopup="dialog"
                 aria-controls={open ? 'share-category-panel' : undefined}
                 onClick={() => setOpen(current => !current)}
-                className={`flex h-full min-h-11 items-center justify-center gap-2 rounded-[20px] border px-3 sm:px-4 py-2.5 text-sm font-medium text-grayscale-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${value ? 'bg-emerald-50 border-emerald-300' : 'bg-grayscale-100 border-transparent hover:bg-grayscale-200'}`}
+                className={`flex h-full min-h-11 items-center justify-center gap-2 rounded-[20px] border px-3 sm:px-4 py-2.5 text-sm font-medium text-grayscale-700 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 ${value ? 'bg-emerald-50 border-emerald-300' : 'bg-grayscale-100 border-transparent hover:bg-grayscale-200'}`}
             >
                 <IonIcon aria-hidden="true" icon={filterOutline} className="h-5 w-5" />
                 <span className="hidden sm:inline">{m['passport.activity.filter']()}</span>
@@ -71,7 +71,10 @@ export const ShareCategoryFilter = ({
                 )}
             </button>
             {open && (
-                <div ref={panel} className="absolute end-0 top-full z-20 mt-2 w-[320px] max-w-full">
+                <div
+                    ref={panel}
+                    className="absolute inset-e-0 top-full z-20 mt-2 w-[320px] max-w-full"
+                >
                     <ActivityFilterPopover
                         id="share-category-panel"
                         selected={(value || 'all') as CredentialCategoryEnum | 'all'}

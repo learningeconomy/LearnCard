@@ -36,12 +36,13 @@ export const AiSessionTypeSelector: React.FC<{
         selectedApp?.id ? true : false
     );
     const selectedAppAiTopics = aiTopics?.filter(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         (topic: any) => topic?.contractUri === selectedApp?.contractUri
     );
     const disableRevisitButton = selectedApp ? selectedAppAiTopics?.length === 0 : false; // if app is selected, disable if no topics for that app
 
     return (
-        <div className="w-full flex flex-col gap-[20px] items-center justify-center bg-white ion-padding !py-[30px] px-[20px]">
+        <div className="w-full flex flex-col gap-[20px] items-center justify-center bg-white ion-padding py-[30px]! px-[20px]">
             <button
                 className={`bg-${primaryColor} text-xl text-white flex items-center justify-center font-semibold py-[12px] rounded-full w-full shadow-soft-bottom max-w-[375px]`}
                 onClick={() => {

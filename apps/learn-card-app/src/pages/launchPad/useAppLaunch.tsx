@@ -1,4 +1,6 @@
 import React, { useMemo } from 'react';
+import { useHistory } from 'react-router-dom';
+import { buildEmbedUrlWithPath } from './buildEmbedUrlWithPath';
 import type { AppStoreListing, InstalledApp } from '@learncard/types';
 
 import { useModal, ModalTypes, useWallet } from 'learn-card-base';
@@ -23,6 +25,11 @@ type UseAppLaunchArgs = {
     onInstallSuccess?: () => void;
 };
 
+export interface AppLaunchOptions {
+    path?: string;
+    replace?: boolean;
+}
+
 /**
  * Shared "open an installed app" behavior for the app store.
  *
@@ -34,6 +41,7 @@ type UseAppLaunchArgs = {
  * to call from a surface that isn't already inside a modal.
  */
 const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseAppLaunchArgs) => {
+    const history = useHistory();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.Right,
         mobile: ModalTypes.Right,
@@ -58,9 +66,8 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
     const { userAge, isChildProfile } = useGuardianGate();
 
     // Separate min_age (hard block) from age_rating (soft block with guardian approval)
-    const listingAny = listing as any;
-    const minAge: number | undefined = listingAny.min_age;
-    const ageRating: string | undefined = listingAny.age_rating;
+    const minAge = listing.min_age;
+    const ageRating = listing.age_rating;
 
     // Hard block: min_age violation (hide app entirely, block installation)
     // Only applies when userAge is known
@@ -103,7 +110,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                 </div>
 
                 <div className="flex-1 p-6 overflow-auto">
-                    <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex flex-col items-center text-center space-y-v3-4">
                         <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center">
                             <ShieldAlert className="w-10 h-10 text-red-600" />
                         </div>
@@ -127,7 +134,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                             <p className="text-sm text-grayscale-600">
                                 {renderParts(
                                     m['launchpad.ageRestriction.requiresAge'].parts({
-                                        age: minAge,
+                                        age: minAge ?? 0,
                                     }),
                                     { strong: <strong /> }
                                 )}
@@ -157,7 +164,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                 </div>
             </div>,
             {
-                sectionClassName: '!max-w-[500px]',
+                sectionClassName: 'max-w-[500px]!',
                 hideButton: true,
             },
             { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
@@ -178,7 +185,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                             contractDetails={contract}
                             redirectUrl={redirectUrl}
                         />,
-                        { sectionClassName: '!bg-transparent !shadow-none' },
+                        { sectionClassName: 'bg-transparent! shadow-none!' },
                         { desktop: ModalTypes.Center, mobile: ModalTypes.FullScreen }
                     );
                     return;
@@ -207,14 +214,15 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
                         unsignedDelegateCredential
                     );
 
-                    const unsignedDidAuthVp = await wallet.invoke.newPresentation(
-                        delegateCredential
-                    );
+                    const unsignedDidAuthVp =
+                        await wallet.invoke.newPresentation(delegateCredential);
 
-                    const vp = (await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
+                    const vp = await wallet.invoke.issuePresentation(unsignedDidAuthVp, {
                         proofPurpose: 'authentication',
                         proofFormat: 'jwt',
-                    })) as any as string;
+                    });
+                    if (typeof vp !== 'string')
+                        throw new Error('Expected a signed JWT presentation');
 
                     urlObj.searchParams.set('vp', vp);
                 }
@@ -243,7 +251,7 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
             newModal(
                 <EmbedIframeModal
                     embedUrl={launchConfig.url}
-                    appId={(listing as any).slug || listing.listing_id}
+                    appId={listing.slug || listing.listing_id}
                     appName={listing.display_name}
                     launchConfig={launchConfig}
                     isInstalled={isInstalled || !!installedAt}
@@ -259,10 +267,31 @@ const useAppLaunch = ({ listing, isInstalled = false, onInstallSuccess }: UseApp
         }
     };
 
-    const handleLaunch = async () => {
+    const handleLaunch = async (options: AppLaunchOptions = {}) => {
         // Hard block: min_age violation - show blocked modal
         if (isHardBlocked) {
             showAgeBlockedModal();
+            return;
+        }
+
+        if (options.path !== undefined || options.replace) {
+            if (
+                listing.launch_type !== 'EMBEDDED_IFRAME' ||
+                !buildEmbedUrlWithPath(launchConfig.url, options.path, window.location.origin)
+            )
+                return;
+            const destination = {
+                pathname: `/apps/${encodeURIComponent(listing.slug || listing.listing_id)}`,
+                state: {
+                    embedUrl: launchConfig.url,
+                    appName: listing.display_name,
+                    launchConfig,
+                    isInstalled: isInstalled || Boolean(installedAt),
+                    path: options.path,
+                },
+            };
+            if (options.replace) history.replace(destination);
+            else history.push(destination);
             return;
         }
 

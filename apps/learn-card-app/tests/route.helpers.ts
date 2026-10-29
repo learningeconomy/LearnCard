@@ -48,15 +48,45 @@ export const mockDidKitWasmForContext = async (context: BrowserContext) => {
     });
 };
 
+export type MockFeatureFlags = Record<string, { value: unknown }>;
+
 export const mockLaunchDarkly = async (
-    page: Page,
-    testFlags: { [key: string]: { value: any } }
-) => {
-    await page.route(/.*\.launchdarkly\..*/, route => {
-        route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify(testFlags),
-        });
+    target: Page | BrowserContext,
+    testFlags: MockFeatureFlags = {}
+): Promise<void> => {
+    const flags = {
+        inAppMessages: { value: { messages: [] } },
+        inAppMessagesV2: { value: { messages: [] } },
+        ...testFlags,
+    };
+
+    await target.route(/.*\.launchdarkly\..*/, async route => {
+        const request = route.request();
+        const url = new URL(request.url());
+        const headers = {
+            'access-control-allow-origin': request.headers().origin ?? '*',
+            'access-control-allow-credentials': 'true',
+            'access-control-allow-methods': 'GET, POST, REPORT, OPTIONS',
+            'access-control-allow-headers':
+                request.headers()['access-control-request-headers'] ?? '*',
+        };
+
+        if (request.method() === 'OPTIONS') {
+            await route.fulfill({ status: 204, headers });
+        } else if (url.hostname.startsWith('clientstream.')) {
+            await route.fulfill({
+                contentType: 'text/event-stream',
+                headers,
+                body: `retry: 60000\nevent: put\ndata: ${JSON.stringify(flags)}\n\n`,
+            });
+        } else if (url.pathname.startsWith('/sdk/eval')) {
+            await route.fulfill({ json: flags, headers });
+        } else if (url.pathname.startsWith('/sdk/goals/')) {
+            await route.fulfill({ json: [], headers });
+        } else if (url.hostname.startsWith('events.')) {
+            await route.fulfill({ status: 202, body: '', headers });
+        } else {
+            await route.abort('blockedbyclient');
+        }
     });
 };

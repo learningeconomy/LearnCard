@@ -48,6 +48,7 @@ import {
     getEscrowEnclave,
     getEscrowBlobStaleReason,
     EscrowPolicyError,
+    EscrowCodeError,
     EscrowBlobError,
     EscrowPinMismatchError,
     EscrowUnavailableError,
@@ -418,6 +419,26 @@ describe('authority enrollment persistence', () => {
         const stored = await findEscrowHoldById(started.holdId);
         expect(stored?.requiresConfirmation).toBe(true);
         expect(stored?.startedNotificationPending).toBe(false);
+    });
+    it('persists an awaiting-confirmation hold even when code delivery failed', async () => {
+        await enroll();
+        const enclave = getEscrowEnclave();
+        const create = enclave.createHold.bind(enclave);
+        const delivery = { codeSent: false, proof: { ...receipt, kind: 'snapshot' as const } };
+        vi.spyOn(enclave, 'createHold').mockImplementation(async input => ({
+            ...(await create(input)),
+            delivery,
+        }));
+        __setEscrowEnclaveForTests(
+            Object.assign(enclave, { confirmHold: async () => ({ success: true as const }) })
+        );
+        const started = await start();
+        expect(started.codeSent).toBe(false);
+        expect(started.delivery).toEqual(delivery);
+        const stored = await findEscrowHoldById(started.holdId);
+        expect(stored?.holdRecord).toEqual(started.holdRecord);
+        expect(stored?.requiresConfirmation).toBe(true);
+        expect(stored?.confirmedAt).toBeUndefined();
     });
     it('persists a cancellation commit receipt before clearing the durable pending marker', async () => {
         await enroll();
@@ -1464,6 +1485,27 @@ describe('P2-c confirmRecovery reconciliation', () => {
     }));
     beforeEach(() => idempotentConfirmHold.mockClear());
 
+    it.each(['codeMismatch', 'codeExpired', 'codeLocked'] as const)(
+        'returns sanitized confirmation reason %s without confirming',
+        async reason => {
+            const { hold, resumeToken } = await createConfirmableHold();
+            const enclave = getEscrowEnclave();
+            enclave.confirmHold = vi.fn().mockRejectedValue(new EscrowCodeError(reason));
+            try {
+                await expect(
+                    getClient().escrow.confirmRecovery({
+                        holdId: hold._id,
+                        resumeToken,
+                        code: '12345678',
+                    })
+                ).rejects.toMatchObject({ code: 'FORBIDDEN', message: reason });
+                expect((await findEscrowHoldById(hold._id))?.confirmedAt).toBeUndefined();
+            } finally {
+                delete enclave.confirmHold;
+            }
+        }
+    );
+
     it('allows the SDK commit-to-v2-snapshot readback without a second persistence or deadline shift', async () => {
         const { hold, resumeToken } = await createConfirmableHold();
         const snapshotReceipt = {
@@ -1908,9 +1950,13 @@ describe('escrow PIN release', () => {
     it('burns a mismatched hold; a new hold with the correct PIN succeeds', async () => {
         await enrollPin();
         const first = await startPin();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
         await expect(completePin(first, wrongProof)).rejects.toMatchObject({
             code: 'FORBIDDEN',
             message: 'Incorrect PIN. 9 attempts left.',
+        });
+        expect(warn).toHaveBeenCalledExactlyOnceWith('[LCA escrow] enclave operation failed', {
+            reason: 'pin_mismatch',
         });
         expect(await findEscrowHoldById(first.holdId)).toMatchObject({
             status: 'cancelled',
@@ -2257,6 +2303,25 @@ describe('escrow PIN release', () => {
         expect(hold.resumeToken).toBeTruthy();
         expect((await findEscrowHoldById(pin.holdId))?.status).toBe('pending');
         expect((await getClient().escrow.getStatus(auth)).hold?.holdId).toBe(hold.holdId);
+    });
+
+    it('logs an unexpected non-PIN mismatch once without refunding a PIN attempt', async () => {
+        await enroll();
+        const hold = await start();
+        advanceToRelease(hold);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        const refund = vi.spyOn(models, 'refundEscrowPinAttempt');
+        vi.spyOn(getEscrowEnclave(), 'releaseEscrow').mockRejectedValueOnce(
+            new EscrowPinMismatchError()
+        );
+        await expect(getClient().escrow.completeRecovery(resume(hold))).rejects.toMatchObject({
+            code: 'INTERNAL_SERVER_ERROR',
+        });
+        expect(warn).toHaveBeenCalledExactlyOnceWith('[LCA escrow] enclave operation failed', {
+            reason: 'pin_mismatch',
+        });
+        expect(refund).not.toHaveBeenCalled();
+        expect(await findEscrowHoldById(hold.holdId)).toMatchObject({ status: 'pending' });
     });
 
     it.each([new EscrowUnavailableError(), new EscrowBlobError()])(

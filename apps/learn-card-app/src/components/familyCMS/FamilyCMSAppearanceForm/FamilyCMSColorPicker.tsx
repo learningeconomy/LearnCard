@@ -41,6 +41,7 @@ export const FamilyCMSColorPicker: React.FC<{
     const [color, setColor] = useState<string>(_color ?? '#353E64');
     const { newModal, closeModal } = useModal();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (key: string, value: any) => {
         setState(prevState => {
             return {
@@ -65,7 +66,7 @@ export const FamilyCMSColorPicker: React.FC<{
                 color={color}
                 handleColorChange={handleColorChange}
             />,
-            { className: '!bg-transparent !shadow-none' },
+            { className: 'bg-transparent! shadow-none!' },
             { mobile: ModalTypes.Center, desktop: ModalTypes.Center }
         );
     };
@@ -109,7 +110,7 @@ export const FamilyCMSColorPicker: React.FC<{
                         type="text"
                     />
 
-                    <Eyedropper className="absolute w-[30px] h-[30px] end-2 text-grayscale-900" />
+                    <Eyedropper className="absolute w-[30px] h-[30px] inset-e-2 text-grayscale-900" />
                 </div>
             </div>
         </div>

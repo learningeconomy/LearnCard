@@ -87,28 +87,46 @@ export type EscrowRecoveryKind = 'pin' | 'hold';
 export type PinPromptAfterReady =
     | { kind: 'after-recovery' }
     | { kind: 'after-hold-recovery' }
+    | { kind: 'pin-reset-required' }
+    | { kind: 'first-time' }
     | { kind: 'reset-banner' }
     | { kind: 'none' };
 
 /**
  * Decides which PIN prompt (if any) to show once the account is ready without a
  * working PIN. PIN prompts only make sense while escrow recovery is enrolled.
+ *
+ * `first-time` covers enrolled accounts this device has never asked, e.g. users
+ * migrated from Web3Auth, who skip the new-user setup that owns the prompt for
+ * accounts created in this session. Asking only enrolled accounts keeps the
+ * escrow rollout gate in charge of who sees it.
  */
 export const decidePinPromptAfterReady = ({
     recoveredVia,
     pinEnabled,
     enrollment,
     promptFlag,
+    pinResetRequired = false,
+    newUserThisSession = false,
 }: {
     recoveredVia: EscrowRecoveryKind | null;
     pinEnabled: boolean | undefined;
     enrollment: string | undefined;
     promptFlag: string | null | undefined;
+    /** Repair stopped because only a new user-chosen PIN can restore automatic recovery. */
+    pinResetRequired?: boolean;
+    /** The account was created in this session; new-user setup prompts instead. */
+    newUserThisSession?: boolean;
 }): PinPromptAfterReady => {
     if (pinEnabled !== false) return { kind: 'none' };
+    if (pinResetRequired) return { kind: 'pin-reset-required' };
     if (recoveredVia === 'pin') return { kind: 'after-recovery' };
     if (recoveredVia === 'hold') {
         return enrollment === 'enrolled' ? { kind: 'after-hold-recovery' } : { kind: 'none' };
     }
-    return promptFlag === 'set' ? { kind: 'reset-banner' } : { kind: 'none' };
+    if (promptFlag === 'set') return { kind: 'reset-banner' };
+    if (promptFlag == null && enrollment === 'enrolled' && !newUserThisSession) {
+        return { kind: 'first-time' };
+    }
+    return { kind: 'none' };
 };

@@ -68,6 +68,17 @@ To add a tenant, add its stage files to each service and register them in
 Stage files are committed and world-readable in the repo. Treat anything you
 would not publish as a secret and keep it out of them.
 
+### GitHub Actions automation credentials
+
+The runtime bundles above contain values consumed by deployed services. CI-only
+GitHub credentials remain GitHub Actions secrets. For example, generated SDK PRs
+reuse the repository's existing `E2E_RUNNER_APP_ID` and `E2E_RUNNER_PRIVATE_KEY`,
+also used by release-PR automation. The Deploy workflow explicitly passes those
+two secrets to the SDK workflow, which mints a short-lived, repository-scoped App
+token for PR writes. They do not belong in a service runtime bundle or generated
+client. Changing this workflow wiring does not require adding or rotating a
+deployed-service secret.
+
 ### lca-api escrow settings
 
 | Setting                                                                                                                                                | Source                                                       |
@@ -83,6 +94,18 @@ and the default role's scoped bundle-read grant. Run any escrow-enabled stage in
 bundle mode: remote escrow without a bundle leaves almost no headroom under
 Lambda's 4 KB environment limit. When enabling escrow on a bundle stage, add its
 credentials to the bundle; GitHub fallback secrets are ignored there.
+
+### Campaign administration (brain-service)
+
+`CAMPAIGN_ADMIN_PROFILE_IDS` is an optional comma-separated authorization allowlist
+of network profile IDs. Configure it in the private runtime secrets bundle (or the
+local environment); do not put real administrator IDs in committed stage files.
+Whitespace is trimmed. An empty/unset value grants nobody campaign administration.
+In non-bundle Lambda deployments it is forwarded like `APP_STORE_ADMIN_PROFILE_IDS`.
+No administrators or production campaigns are enabled by this change.
+
+LC-2265 adds setup, audiences and engagement state only. Dispatch settings and queue
+configuration belong to LC-2266; this setting does not enable notification delivery.
 
 ## Quick Start
 
@@ -298,9 +321,34 @@ no `DeleteSecret`; do not replace it with `secretsmanager:*`.
 
 ### Create the six sync integrations
 
-Create **six** Many-To-One auto-sync integrations — one per `(service, stage)`
-pair — each mapping an Infisical source folder to a single AWS secret. Use these
-settings on every integration:
+Runtime bundles live in a dedicated Infisical project, **LearnCard Runtime**,
+separate from the hand-organized LearnCard and ScoutPass projects that
+`pull-env.sh` reads. Its project ID (shown in the project's settings; supply it as
+`TF_VAR_infisical_project_id`, never commit it) is the `sts:ExternalId` the sync
+roles trust.
+
+There is one sync role, and one project-level AWS connection, per **service
+stage**, each limited by IAM to that stage's bundles in both regions:
+
+| AWS connection                      | Role                                      | May write                              |
+| ----------------------------------- | ----------------------------------------- | -------------------------------------- |
+| `learncard-aws-runtime-secrets-dev` | `learncard-infisical-sync-production-dev` | `<service>/dev/runtime-secrets`        |
+| `learncard-aws-runtime-secrets`     | `learncard-infisical-sync-production`     | `<service>/production/runtime-secrets` |
+
+Syncs from the `staging` environment use the dev connection; syncs from `prod`
+use the production connection. A staging sync therefore cannot read (import) or
+overwrite a production bundle, whatever folder or initial behavior it is given.
+
+Within a stage, tenants are separated by region, not IAM: either connection can
+reach both LearnCard (us-east-1) and ScoutPass (eu-west-1) bundles for its stage.
+Creating or editing syncs and connections is therefore limited to the project's
+admins; keep project membership to the people who run deploys, and grant others
+read-only roles scoped to folders if they need access.
+
+Create one Many-To-One auto-sync integration per `(tenant, service, stage)`,
+each mapping an Infisical source folder to a single AWS secret: six for
+LearnCard (us-east-1) and six for ScoutPass (eu-west-1). Use these settings on
+every integration:
 
 - **Sync behavior**: Many-To-One (all keys in the source folder → one JSON
   SecretString).
@@ -316,22 +364,30 @@ Infisical environment → stage mapping:
 
 Folder → AWS secret mapping:
 
-| Infisical source folder  | AWS Secrets Manager secret                    |
-| ------------------------ | --------------------------------------------- |
-| `/lca-api/runtime`       | `lca-api/<stage>/runtime-secrets`             |
-| `/brain-service/runtime` | `brain-service/<stage>/runtime-secrets`       |
-| `/cloud-service/runtime` | `learn-cloud-service/<stage>/runtime-secrets` |
+| Infisical source folder (LearnCard Runtime) | AWS Secrets Manager secret                    | Region      |
+| ------------------------------------------- | --------------------------------------------- | ----------- |
+| `/learncard/lca-api/runtime`                | `lca-api/<stage>/runtime-secrets`             | `us-east-1` |
+| `/learncard/brain-service/runtime`          | `brain-service/<stage>/runtime-secrets`       | `us-east-1` |
+| `/learncard/cloud-service/runtime`          | `learn-cloud-service/<stage>/runtime-secrets` | `us-east-1` |
+| `/scouts/lca-api/runtime`                   | `lca-api/<stage>/runtime-secrets`             | `eu-west-1` |
+| `/scouts/brain-service/runtime`             | `brain-service/<stage>/runtime-secrets`       | `eu-west-1` |
+| `/scouts/cloud-service/runtime`             | `learn-cloud-service/<stage>/runtime-secrets` | `eu-west-1` |
 
-With `staging` and `prod` each covering all three services, that is the full set
-of six integrations.
+ScoutPass reuses the same secret names because its services deploy to the same
+stage names in a different region; the region (plus admin-only sync creation)
+keeps the two tenants apart.
 
-These `/runtime` folders are dedicated sync sources to create, not the existing
-CLI export folders. `scripts/pull-env.sh` currently exports
-`/LearnCard/lca-api`, `/LearnCard/brain-service`, and `/LearnCard/cloud-service`;
-it does not export `/runtime`. Populate the sync sources with private runtime
-keys without disrupting those existing `.env` exports. In particular, the
-Infisical service name is `cloud-service`, while the AWS name is
-`learn-cloud-service`.
+These folders already exist in `staging` and `prod`; the project's `dev`
+environment is unused. They are dedicated sync sources, separate from the CLI
+export folders (`/LearnCard/lca-api`, `/LearnCard/brain-service`,
+`/LearnCard/cloud-service`) in the LearnCard project, which `scripts/pull-env.sh`
+keeps reading unchanged. The Infisical service name is `cloud-service`, while the
+AWS name is `learn-cloud-service`.
+
+When a bundle already exists in AWS (for example `lca-api/dev/runtime-secrets`),
+create its sync with initial behavior **Import, prioritize destination** so the
+existing keys are copied into the folder instead of overwritten. Use **Overwrite
+destination** only for bundles that do not exist yet, after populating the folder.
 
 ### Per-environment cutover
 
@@ -366,6 +422,11 @@ Optional provider credentials `SKILLS_PROVIDER_API_KEY`, `TWILIO_ACCOUNT_SID`, a
 `TWILIO_AUTH_TOKEN` also belong in the bundle, never stage files.
 Both checked-in Brain stages enable credential refresh, so include its digest secret;
 active share links also require the stable request-hash secret (at least 32 bytes).
+Nova skill embeddings (LC-2206) need no credential: Brain calls Amazon Nova 2 Multimodal
+Embeddings on Bedrock with its Lambda execution role (SigV4). Keep
+`SKILL_EMBEDDING_GOOGLE_API_KEY` in the bundle while semantic search reads the legacy Google
+index (`SKILL_EMBEDDING_BEDROCK_READ_ENABLED` is `false` in every checked-in stage) and through
+the rollback window after the flag is flipped; the LC-2206 cleanup removes it.
 
 LearnCloud's bundle holds `LEARN_CLOUD_SEED`, `LEARN_CLOUD_MONGO_URI`,
 `LEARN_CLOUD_MONGO_DB_NAME`, `RSA_PRIVATE_KEY`, `RSA_PUBLIC_KEY`, `JWT_SIGNING_KEY`,
@@ -481,7 +542,7 @@ The deploy step no longer forwards them (nor `DOMAIN_NAME`, `SENTRY_ENV`,
 `SERVER_URL`, `POSTMARK_FROM_EMAIL`, `MESSAGEBIRD_ORIGINATOR`,
 `CLIENT_APP_DOMAIN_NAME`, `OIDC_TRUSTED_ISSUERS`, `OIDC_EXPECTED_AUDIENCE`,
 `CREDENTIAL_REFRESH_ENABLED` / `_NOTIFICATION_WINDOW_HOURS`,
-`SKILL_EMBEDDING_GOOGLE_MODEL`, and the other captured stage keys). Existing
+`SKILL_EMBEDDING_BEDROCK_*` / `SKILL_EMBEDDING_DIMENSION` / `SKILL_EMBEDDING_GOOGLE_MODEL`, and the other captured stage keys). Existing
 `SEED` / `LEARN_CLOUD_SEED` and the other credential secrets remain unchanged as
 fallbacks used only when `RUNTIME_SECRETS_ID` is unset.
 

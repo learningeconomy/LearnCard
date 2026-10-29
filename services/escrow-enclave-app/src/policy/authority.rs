@@ -77,6 +77,67 @@ impl EnrollmentSource for AuthorityEnrollment {
 pub type AuthorityMutation = crate::wire::v1::AuthorityMutationResponse;
 
 impl<'a> Policy<'a> {
+    /// A nonce-bound read of the exact committed hold, including terminal states.
+    pub async fn authority_read_hold(
+        &self,
+        did: &str,
+        hold: &SignedHoldRecord,
+        nonce: &str,
+    ) -> Result<SignedAuthorityRecord, ErrorCode> {
+        identifier(&hold.hold.hold_id)?;
+        if did.len() > 8192
+            || did != hold.hold.did
+            || nonce.len() != 64
+            || !nonce
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        {
+            return Err(ErrorCode::Policy);
+        }
+        let authority = self.authority()?;
+        let snapshot = authority
+            .store
+            .load(
+                &authority.binding(did),
+                "snapshot",
+                Some(&hold.hold.hold_id),
+            )
+            .await
+            .map_err(|_| ErrorCode::Unavailable)?;
+        let item = snapshot.hold.ok_or(ErrorCode::Policy)?;
+        let digest = hold_hash(&self.tenant, hold)?;
+        if item.signed_hold_digest != digest || item.created_revision.get() != hold.ledger_seq {
+            return Err(ErrorCode::Policy);
+        }
+        // The unchanged durable schema records send attempts, not SES acceptance.
+        // Never infer successful delivery from the throttle or possession of a hash.
+        let send_status = if hold.hold.release_policy == ReleasePolicy::Pin {
+            "notRequired"
+        } else {
+            "unknown"
+        };
+        self.ledger
+            .sign_authority_record(
+                RecordKind::Snapshot,
+                &serde_json::to_vec(&(
+                    "learncard-authority-hold-state-v3",
+                    nonce,
+                    &self.tenant,
+                    &authority.generation,
+                    did,
+                    &item.hold_id,
+                    hex::encode(digest),
+                    item.status,
+                    item.confirmed_hi_ms,
+                    item.release_warning_sent_hi_ms,
+                    MAX_CODE_GUESSES.saturating_sub(item.code_guesses_used),
+                    send_status,
+                ))
+                .map_err(|_| ErrorCode::Policy)?,
+            )
+            .map_err(ledger_error)
+    }
+
     pub fn authority_enabled(&self) -> bool {
         self.authority.is_some()
     }
@@ -406,7 +467,7 @@ impl<'a> Policy<'a> {
     pub(crate) async fn authority_create_hold(
         &mut self,
         req: CreateHoldRequest<'_>,
-    ) -> Result<SignedHoldRecord, ErrorCode> {
+    ) -> Result<(SignedHoldRecord, Option<crate::wire::v1::CodeDelivery>), ErrorCode> {
         identifier(req.hold_id)?;
         identifier(req.request_id)?;
         validate_client_key(req.client_ephemeral_public_key)?;
@@ -516,19 +577,36 @@ impl<'a> Policy<'a> {
         // "resend". confirm-hold is the only thing that can ever advance this
         // hold, and it independently verifies the code, so an unsent/lost code
         // simply can never be confirmed; the hold does not advance.
-        if awaits_confirmation {
+        let delivery = if awaits_confirmation {
             let email = self.email.ok_or(ErrorCode::Unavailable)?;
             let code = code.ok_or(ErrorCode::Policy)?;
-            email
+            let code_sent = email
                 .send(
                     blob.recovery_email.as_deref().ok_or(ErrorCode::Policy)?,
                     blob.recovery_language.as_deref().ok_or(ErrorCode::Policy)?,
                     EmailMessage::OneTimeCode { code },
                 )
                 .await
-                .map_err(|_| ErrorCode::Unavailable)?;
-        }
-        Ok(signed)
+                .is_ok();
+            let proof = self
+                .ledger
+                .sign_authority_record(
+                    RecordKind::Snapshot,
+                    &serde_json::to_vec(&(
+                        "learncard-authority-code-delivery-v1",
+                        &self.tenant,
+                        &authority.generation,
+                        hex::encode(hash),
+                        code_sent,
+                    ))
+                    .map_err(|_| ErrorCode::Policy)?,
+                )
+                .map_err(ledger_error)?;
+            Some(crate::wire::v1::CodeDelivery { code_sent, proof })
+        } else {
+            None
+        };
+        Ok((signed, delivery))
     }
 
     async fn authority_verified_hold(
@@ -975,7 +1053,7 @@ impl<'a> Policy<'a> {
         let expires = item.code_expires_lo_ms.ok_or(ErrorCode::Policy)?;
         let code_hash = item.code_hash.ok_or(ErrorCode::Policy)?;
         if item.code_guesses_used >= MAX_CODE_GUESSES {
-            return Err(ErrorCode::Policy);
+            return Err(ErrorCode::CodeLocked);
         }
         after.revisions = after
             .revisions
@@ -987,6 +1065,7 @@ impl<'a> Policy<'a> {
         let confirmed_hi_ms = time.interval.hi_ms;
         let supplied = hold_code_hash(&hold.hold_id, &hold.client_ephemeral_public_key, req.code)?;
         let matched = !expired && bool::from(supplied.ct_eq(&code_hash));
+        let exhausted = item.code_guesses_used >= MAX_CODE_GUESSES;
         if matched {
             item.status = HoldStatus::Pending;
             item.code_hash = None;
@@ -1012,7 +1091,13 @@ impl<'a> Policy<'a> {
             return Err(ErrorCode::Unavailable);
         }
         if !matched {
-            return Err(ErrorCode::Policy);
+            return Err(if exhausted {
+                ErrorCode::CodeLocked
+            } else if expired {
+                ErrorCode::CodeExpired
+            } else {
+                ErrorCode::CodeMismatch
+            });
         }
         // Best-effort: the code confirmation above is the security control;
         // this notification is informational and does not gate (or

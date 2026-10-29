@@ -1,5 +1,162 @@
 # Changelog
 
+## 1.100.6
+
+### Patch Changes
+
+- [#1773](https://github.com/learningeconomy/LearnCard/pull/1773) [`eb3ff0177cfeeac012b996cae4d13622efe4053a`](https://github.com/learningeconomy/LearnCard/commit/eb3ff0177cfeeac012b996cae4d13622efe4053a) Thanks [@goblincore](https://github.com/goblincore)! - Wait and retry document uploads when extraction capacity is busy, with bounded backoff, cancellation, and localized feedback. Stop waiting on account changes or when the upload screen closes, and preserve results from requests already accepted for extraction.
+
+- [#1788](https://github.com/learningeconomy/LearnCard/pull/1788) [`5c1cc2d52589fd3548c1f729614a1e663486dcb3`](https://github.com/learningeconomy/LearnCard/commit/5c1cc2d52589fd3548c1f729614a1e663486dcb3) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2258] Preserve Passport categories across private-link previews and shared collections, including wallet-index categories such as Work Experience, Resume, and Professional Title. Ignore unrecognized category hints and infer their display category from the original credential. Use a static own-key lookup for category hints instead of scanning the allowlist for each credential.
+
+- [#1816](https://github.com/learningeconomy/LearnCard/pull/1816) [`616d4e3bf506aa14852e66c0423f232906e2c339`](https://github.com/learningeconomy/LearnCard/commit/616d4e3bf506aa14852e66c0423f232906e2c339) Thanks [@goblincore](https://github.com/goblincore)! - Correct unsigned credential preview labels, ordinary evidence link types, and mapped award dates on desktop and mobile.
+
+    Keep calendar award dates consistent across timezones and recognize uploaded MP4, MOV, and WebM evidence from file metadata.
+
+    Retain verification for signed credentials in preview mode and recognize direct HTTP(S) video-file evidence links.
+
+- [#1822](https://github.com/learningeconomy/LearnCard/pull/1822) [`2632ee46db2f5433af040c41daab71d4ff5d06d7`](https://github.com/learningeconomy/LearnCard/commit/2632ee46db2f5433af040c41daab71d4ff5d06d7) Thanks [@goblincore](https://github.com/goblincore)! - Improve recipient review with expandable descriptions and a visible 2,000-character authoring limit, shared versus personal evidence summaries, and explicit issuance completion feedback.
+
+- [#1783](https://github.com/learningeconomy/LearnCard/pull/1783) [`8ca7c2e41ebc59c9e921fe1af9a01320483a50a9`](https://github.com/learningeconomy/LearnCard/commit/8ca7c2e41ebc59c9e921fe1af9a01320483a50a9) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2255] Improve Phone Number Login Error Handling and Verification Code Flow
+
+- [#1803](https://github.com/learningeconomy/LearnCard/pull/1803) [`d3b26c1d7a154997e10f64bc825c5be40635cc2a`](https://github.com/learningeconomy/LearnCard/commit/d3b26c1d7a154997e10f64bc825c5be40635cc2a) Thanks [@leif-squeak](https://github.com/apps/leif-squeak)! - fix(claim): avoid duplicate VC-API completion requests
+
+- [#1729](https://github.com/learningeconomy/LearnCard/pull/1729) [`af3e0abb8e4e247c0ff1c7076b1ffa6e58256a9f`](https://github.com/learningeconomy/LearnCard/commit/af3e0abb8e4e247c0ff1c7076b1ffa6e58256a9f) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2262]: Add credential targeting and triggers to in-app messages
+
+- [#1526](https://github.com/learningeconomy/LearnCard/pull/1526) [`9be748a0487b79ce4c2d43b7039824928a92dfcc`](https://github.com/learningeconomy/LearnCard/commit/9be748a0487b79ce4c2d43b7039824928a92dfcc) Thanks [@Custard7](https://github.com/Custard7)! - Allow users to zoom LearnCard in web browsers while preserving native viewport behavior and one main landmark per page.
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - feat(campaigns): add audience management and shared engagement state [LC-2265]
+
+- [#1763](https://github.com/learningeconomy/LearnCard/pull/1763) [`eabb09dd327580b6157e65a20c2533ddea1f7b47`](https://github.com/learningeconomy/LearnCard/commit/eabb09dd327580b6157e65a20c2533ddea1f7b47) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: [LC-2263] - Add Stories & Iframe in-app message presentations
+
+- [#1777](https://github.com/learningeconomy/LearnCard/pull/1777) [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2245] Add issuer LinkedIn organization IDs, stable certification IDs, and opt-in localized social previews. Keep each preview bound to one encrypted presentation so a new share does not replace an earlier card; refresh metadata in place and recreate deleted references. Audit publisher and creation/update times, support owner/profile cleanup, preserve decryptable card URLs, and isolate private updates to their exact share record.
+
+    Extract stable UUIDs from recognized LearnCard credential addresses to fit LinkedIn's certification ID field, retain other complete IDs only within the 80-character limit, and preserve family record identity independently of loaded pages. Use only eligible credential/achievement artwork for public previews, never recipient-photo fallbacks. Enable posting only after explicit preview publication succeeds and associate the disabled action with its consent explanation. Keep unresolved issuer placeholders out of LinkedIn organization names.
+
+    Keep the share-preview request type in a type-only network-plugin import so consumers using `verbatimModuleSyntax` can typecheck.
+
+- [#1745](https://github.com/learningeconomy/LearnCard/pull/1745) [`eb2150a8a50dfc2a002b8829f732da25a8bd775d`](https://github.com/learningeconomy/LearnCard/commit/eb2150a8a50dfc2a002b8829f732da25a8bd775d) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-2259 & LC-2256] Fix credential names, caret symbol, preview button
+
+- Updated dependencies [[`616d4e3bf506aa14852e66c0423f232906e2c339`](https://github.com/learningeconomy/LearnCard/commit/616d4e3bf506aa14852e66c0423f232906e2c339), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/react@3.0.1
+    - @learncard/credential-library@2.1.4
+    - @learncard/helpers@1.7.1
+    - @learncard/lca-api-plugin@2.0.12
+    - @learncard/ler-rs-plugin@0.1.32
+    - @learncard/open-badge-v2-plugin@1.1.42
+    - @learncard/render-method-plugin@12.0.0
+    - @learncard/sss-key-manager@0.2.4
+
+## 1.100.5
+
+### Patch Changes
+
+- [#1659](https://github.com/learningeconomy/LearnCard/pull/1659) [`6ce7894920aa756231168950779e600a93d5a7d5`](https://github.com/learningeconomy/LearnCard/commit/6ce7894920aa756231168950779e600a93d5a7d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Require challenge-based authentication for external AI Passport consent callbacks, including contract-provided redirects. Validate known destinations before saving consent and only report success after returned destinations and proofs are checked. Preserve in-app consent, relative navigation, and unrelated delegated consent integrations, including tenants with placeholder AI service configuration. Show a refresh-and-sign-in recovery message for rejected legacy callbacks.
+
+    Before release, confirm supported LearnCard and AI Passport versions and rollback plans no longer require legacy unchallenged callbacks. Already-running clients must refresh and sign in again to acquire this cleanup.
+
+- [#1694](https://github.com/learningeconomy/LearnCard/pull/1694) [`5005858e8ffaebb83ae6be53908cd36b9ff3adf8`](https://github.com/learningeconomy/LearnCard/commit/5005858e8ffaebb83ae6be53908cd36b9ff3adf8) Thanks [@goblincore](https://github.com/goblincore)! - Prevent login from stalling after logout while other app tabs remain open. Preserve Firebase-managed database connections and clear authenticated sessions through Firebase sign-out. Add safe ScoutPass login diagnostics.
+
+    Coordinate Web3Auth account setup across browser tabs so Firebase sign-in propagation does not reuse a token concurrently. Validate restored account identity and replace raw provider errors with safe sign-in messages.
+
+    Clear stale account state when sign-out propagates to an already-open tab, without reopening its cached account or changing cold offline startup behavior.
+
+    Bound queued Web3Auth lock acquisition without interrupting an active SDK operation, and verify Firebase sign-out removed this app's persisted user with a bounded, read-only diagnostic check.
+
+- [#1769](https://github.com/learningeconomy/LearnCard/pull/1769) [`62a8c3e281e5ced669161a7144d34f3e17cbeae8`](https://github.com/learningeconomy/LearnCard/commit/62a8c3e281e5ced669161a7144d34f3e17cbeae8) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2202] Clarify extraction and confirmed save outcomes, keep saved originals accessible, avoid empty source credentials, and improve save responsiveness. Revalidate development assets to avoid stale Brave caches.
+
+    Open empty or unreadable uploads from their feedback filename without saving a source credential. Preview supported filename extensions when device MIME types are missing or generic, while rejecting explicit HTML/SVG types.
+
+    Keep blank files out of mixed and reopened reviews, preserve saved documents when processing is blocked, and localize extraction errors and retry actions.
+
+    Keep readable legacy originals accessible alongside removable unavailable records, refresh document lists without stale cached results, and verify a résumé's identity before deleting it.
+
+    Hide original-document records consistently from Recently Added and its full credential list without hiding issued credentials or published résumés.
+
+    Preserve original-only uploads when AI is disabled, without calling the model or offering extraction retry; loading settings and service refusals leave saved originals unchanged.
+
+    Keep CLI logging usable before SDK artifacts are built by separating operational diagnostics from SDK-backed credential validators.
+
+- [#1718](https://github.com/learningeconomy/LearnCard/pull/1718) [`d40cb07be34fbd7fcb078eadd84b0c0df97a937a`](https://github.com/learningeconomy/LearnCard/commit/d40cb07be34fbd7fcb078eadd84b0c0df97a937a) Thanks [@goblincore](https://github.com/goblincore)! - Import and edit spreadsheet recipients on the Issue page, issue through durable inbox batches, and recover interrupted runs from IndexedDB without resending successful or unconfirmed rows. Support standard Open Badges Evidence without requiring LearnCard extension contexts.
+
+    All sends to specific people now require local IndexedDB recovery and Web Locks, including picker-only profile sends. Signing out clears local recovery records for privacy; accepted server work can continue. Restore issue lifecycle analytics, add dismissible saved-run reminders and receipt-only delivery checks, and reject edits to submitted rows with a clear message. Import XLSX content without counting formatting-only trailing ranges against row limits.
+
+    Evidence attachments retain standard names and URLs but omit unsupported EvidenceFile, fileName, and fileType extensions in every issuance mode, including single sends. Changing credential type keeps recipient values for review instead of clearing imported data.
+
+- [#1720](https://github.com/learningeconomy/LearnCard/pull/1720) [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c) Thanks [@goblincore](https://github.com/goblincore)! - Import spreadsheets from the Issue import modal and choose column mappings for independent grades, numeric credits, standard Evidence, awarded dates, and description text. Preserve source cells across type changes, zero credits across editor round trips, and the original awarded date independently of issuance time. Use shared field materialization in previews, queued issuance, and local profile signing without modifying signed credentials.
+
+    The network plugin and brain-service now coerce declared OBv3/CLR credit fields to finite numbers and normalize awarded dates to UTC before signing. Blank credit and optional award-date fields are omitted; malformed nonblank fields are rejected (BAD_REQUEST in brain-service). Calendar days use midnight UTC, while timestamps require complete seconds and an explicit timezone. Offset spelling is normalized while preserving the instant; signed credentials are left unchanged.
+
+    Bound XLSX archive expansion and member counts before spreadsheet parsing, isolate workbook parsing in a browser worker with a deadline, and stop CSV parsing at its row/column/cell budgets. Retry cold concurrent API/worker schema creation through Neo4j managed write transactions.
+
+- [#1743](https://github.com/learningeconomy/LearnCard/pull/1743) [`7ff06628cd51fdb19ab66db335284fec143d249c`](https://github.com/learningeconomy/LearnCard/commit/7ff06628cd51fdb19ab66db335284fec143d249c) Thanks [@goblincore](https://github.com/goblincore)! - Migrate styles to Tailwind 4.3. The published React styles now require Safari/iOS 16.4+, Chrome/Edge/Android WebView 111+, or Firefox 128+; this raises the supported browser floor and requires a major release of `@learncard/react`.
+
+    Keep importing `dist/main.css` for card styles and optionally `dist/base.css` for the global reset. Card palette and font utilities retain literal values rather than inheriting host Tailwind tokens. Existing global utility class names remain subject to the normal stylesheet cascade. See the package README for migration and native release requirements.
+
+- [#1659](https://github.com/learningeconomy/LearnCard/pull/1659) [`6ce7894920aa756231168950779e600a93d5a7d5`](https://github.com/learningeconomy/LearnCard/commit/6ce7894920aa756231168950779e600a93d5a7d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Preserve the new-session chatbot after inline consent, validate the selected consent destination, and clarify how to restart AI Passport sign-in.
+
+- Updated dependencies [[`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c), [`7ff06628cd51fdb19ab66db335284fec143d249c`](https://github.com/learningeconomy/LearnCard/commit/7ff06628cd51fdb19ab66db335284fec143d249c)]:
+    - @learncard/helpers@1.7.0
+    - @learncard/react@3.0.0
+    - @learncard/credential-library@2.1.3
+    - @learncard/lca-api-plugin@2.0.11
+    - @learncard/ler-rs-plugin@0.1.31
+    - @learncard/open-badge-v2-plugin@1.1.41
+    - @learncard/render-method-plugin@11.0.0
+    - @learncard/sss-key-manager@0.2.3
+
+## Unreleased
+
+- LC-2202: Add per-file extraction feedback, reviewed retry, and confirmed save counts for résumés, certificates, transcripts and diplomas. Empty results and files with no readable text no longer create placeholder “Raw Artifact” credentials, including in mixed batches and reopened reviews. Transient processing failures preserve accessible originals. Retry failed persistence without duplicating confirmed writes or replacing a newer saved résumé.
+- LC-2202: Remove a document and its upload feedback together immediately on deletion. Restore both if deletion fails, without replacing other files' outcomes.
+- LC-2202: Show extraction failures immediately with inline original-save progress instead of keeping the extraction overlay open during storage.
+- LC-2202: Consolidate upload success into a single document card with confirmed credential counts, filename-to-open, and delete. Move Update/Add More below saved documents and remove the separate success and Open/Download/Try Again boxes.
+- LC-2202: Tighten the gap before Add in the empty résumé upload state while preserving spacing below saved documents.
+- LC-2202: Hide uploaded original-document records from Recently Added and its full credential list without hiding extracted credentials or published résumés.
+- LC-2202: Finish selected-credential saving after confirmed storage instead of waiting for per-credential sharing. Synchronize consented sharing once in the background, then refresh insights.
+- LC-2202: Open empty/unreadable uploads from their feedback filename without creating a saved source credential. Preview supported extensions when a device supplies a missing/generic MIME type, without overriding explicit HTML/SVG types.
+- LC-2202: Leave saved documents unchanged while AI settings are loading or processing requests are rejected/incompatible. Preserve original-only uploads when AI is disabled, without model calls or futile extraction retries. Localize failure reasons.
+- LC-2202: Isolate unavailable originals without hiding valid or readable legacy documents. Keep unavailable records deletable, refresh saved documents without stale index results, and protect newer résumés from stale deletion.
+- LC-2202: Keep unexpected résumé processing errors visible outside credential review, and distinguish save errors without hiding the review or exposing internal error text.
+- LC-2202: Give each new extraction review independent draft identities so repeated service IDs cannot drop edits or associate credentials with another file. Preserve those identities across save retries.
+
+## 1.100.4
+
+### Patch Changes
+
+- [#1741](https://github.com/learningeconomy/LearnCard/pull/1741) [`b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229`](https://github.com/learningeconomy/LearnCard/commit/b26df6a11a5ab4daa5cbfdfe2a28f0b7508d9229) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Persist saved profile changes before navigation without forcing profile refetches on every mount. Keep browser query-cache storage on localforage and native storage on SQLite across initialization and reload; native persistence failures never fall back to a stale second store. Revalidate installed apps after reload and apply nested tenant registry defaults correctly.
+
+    Add the disposable `lc verify` workflow with maintained user journeys, clean-checkout preparation, independently allocated service ports, confined local-service access, interruption-safe evidence, and ownership-checked crash recovery. Repair cold-start Vite loading, pin Astro's compatible Zod dependency, and load the example's CommonJS dependency correctly during server rendering. Build credential share links from the active tenant's configured host instead of the fixed development port.
+
+    Allow CLI schema/help loading before generated snippets exist; generate snippets atomically and load token snippets only when needed.
+
+- [#1757](https://github.com/learningeconomy/LearnCard/pull/1757) [`e8fc3ba93e289521b281ceb5dd87c39450244413`](https://github.com/learningeconomy/LearnCard/commit/e8fc3ba93e289521b281ceb5dd87c39450244413) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: make names optional after Apple sign-in in LearnCard and ScoutPass
+
+## 1.100.3
+
+### Patch Changes
+
+- [#1754](https://github.com/learningeconomy/LearnCard/pull/1754) [`7f68afd7f3bf30a07d42c18929ca90e1983825b7`](https://github.com/learningeconomy/LearnCard/commit/7f68afd7f3bf30a07d42c18929ca90e1983825b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LC-2284: perf(scouts): only look up troop ID status when the boost menu opens, and cache recipient lists
+
+## 1.100.2
+
+### Patch Changes
+
+- [#1712](https://github.com/learningeconomy/LearnCard/pull/1712) [`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c) Thanks [@goblincore](https://github.com/goblincore)! - Allow optional proof creation timestamps for the standardized ECDSA, EdDSA and BBS Data Integrity cryptosuites without rewriting signed payloads.
+
+    Handle one-shot CHAPI events safely across account changes, allow cancellation during exchanges, deduplicate exact reopened offers using account-scoped fingerprints of the full signed payload, and avoid retrying consumed acknowledgements or cancellations. Preserve distinct same-ID credential revisions and explain that partial saves remain after cancellation. Keep storage diagnostics useful without logging private credential payloads or counterparty messages.
+
+- [#1721](https://github.com/learningeconomy/LearnCard/pull/1721) [`dc780c9ebf94cecec66116da7faa8f2f9482d3c4`](https://github.com/learningeconomy/LearnCard/commit/dc780c9ebf94cecec66116da7faa8f2f9482d3c4) Thanks [@Custard7](https://github.com/Custard7)! - Fix crashes when a credential has a missing or unknown category. Category metadata lookups now fall back to Achievement.
+
+- Updated dependencies []:
+    - @learncard/credential-library@2.1.2
+    - @learncard/helpers@1.6.3
+    - @learncard/lca-api-plugin@2.0.10
+    - @learncard/ler-rs-plugin@0.1.30
+    - @learncard/open-badge-v2-plugin@1.1.40
+    - @learncard/render-method-plugin@10.0.1
+    - @learncard/react@2.12.11
+    - @learncard/sss-key-manager@0.2.2
+
 ## 1.100.1
 
 ### Patch Changes

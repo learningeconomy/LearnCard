@@ -1,5 +1,32 @@
 # @learncard/openid4vc-plugin
 
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies [[`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198)]:
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/core@9.4.41
+    - @learncard/vc-plugin@1.6.7
+
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/vc-plugin@1.6.6
+
+## 0.3.12
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/core@9.4.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/vc-plugin@1.6.5
+
 ## 0.3.11
 
 ### Patch Changes

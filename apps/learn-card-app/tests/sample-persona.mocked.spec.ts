@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { initLearnCard } from '@learncard/init';
 import { getBundle, getFixture, prepareFixture } from '@learncard/credential-library';
 
@@ -104,16 +103,6 @@ test.describe('Sample persona @mocked', () => {
         });
         const trpc = await installNetwork(page);
         let hasSample = false;
-
-        // Challenge refill sizes are randomized by the SDK. Exact HAR replay can
-        // miss these requests and leave a wallet without its network profile.
-        trpc.on(
-            'utilities.getChallenges',
-            () =>
-                Array.from({ length: 100 }, () =>
-                    randomUUID()
-                ) satisfies BrainOutputs['utilities']['getChallenges']
-        );
 
         const userProfile = {
             profileId: TEST_USER_PROFILE_ID,
@@ -248,6 +237,7 @@ test.describe('Sample persona @mocked', () => {
         await waitForAuthenticatedState(page, {
             path: '/wallet',
             profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'commit',
         });
 
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
@@ -261,7 +251,8 @@ test.describe('Sample persona @mocked', () => {
         });
         await expect(removeButton).toBeVisible({ timeout: 30_000 });
 
-        await page.reload();
+        // The button below proves app readiness; unrelated resources need not finish loading.
+        await page.reload({ waitUntil: 'commit' });
         await expect(page.getByRole('button', { name: /Build My LearnCard/ })).toBeVisible({
             timeout: 30_000,
         });
@@ -289,6 +280,7 @@ test.describe('Sample persona @mocked', () => {
         await waitForAuthenticatedState(page, {
             path: '/wallet',
             profileId: TEST_USER_PROFILE_ID,
+            waitUntil: 'commit',
         });
         await page.getByRole('button', { name: /Build My LearnCard/ }).click();
 

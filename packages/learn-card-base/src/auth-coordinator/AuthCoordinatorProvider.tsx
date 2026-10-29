@@ -19,8 +19,12 @@ import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
 import { createRecoverySetupRunner, type RecoverySetupRunner } from './recoverySetup';
 import { getAuthConfig } from '../config/authConfig';
 import { isEscrowRolloutEnabledFor } from '../config/escrowRollout';
+import { getLogger } from '../logging/logger';
+
+const log = getLogger('auth-coordinator-provider');
 
 import type {
+    AuthCoordinatorConfig,
     AuthProvider,
     AuthProviderType,
     KeyDerivationCapabilities,
@@ -50,6 +54,9 @@ export interface AuthCoordinatorContextValue {
     /** Whether the auth provider session (e.g. Firebase JWT) is currently valid */
     authSessionValid: boolean;
 
+    /** A previously confirmed session ended in this mounted tab (not anonymous startup). */
+    hasEndedAuthSession?: boolean;
+
     /** Declarative feature flags from the active key derivation strategy */
     capabilities: KeyDerivationCapabilities;
 
@@ -67,6 +74,8 @@ export interface AuthCoordinatorContextValue {
     /** Changes only after setup AND activation succeed; consumers refresh method counts. */
     recoverySetupRevision: number;
     setMigrationData: (data: Record<string, unknown>) => void;
+    /** Leave a provisional re-derive for recovery (see AuthCoordinator.fallBackToRecovery). */
+    fallBackToRecovery: () => void;
     recover: (input: unknown) => Promise<void>;
     startEscrowRecovery: AuthCoordinator['startEscrowRecovery'];
     getEscrowRecoveryStatus: AuthCoordinator['getEscrowRecoveryStatus'];
@@ -77,6 +86,7 @@ export interface AuthCoordinatorContextValue {
     enableEscrowRecovery: AuthCoordinator['enableEscrowRecovery'];
     setEscrowPin: AuthCoordinator['setEscrowPin'];
     clearEscrowPin: AuthCoordinator['clearEscrowPin'];
+    acknowledgeEscrowPinAutoClear: AuthCoordinator['acknowledgeEscrowPinAutoClear'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -170,6 +180,12 @@ export interface AuthCoordinatorProviderProps {
      * See AuthCoordinatorConfig.legacyAccountThresholdMs for details.
      */
     legacyAccountThresholdMs?: number;
+
+    /**
+     * Confirms a legacy key belongs to the signed-in account before migration
+     * writes it. See AuthCoordinatorConfig.verifyMigrationIdentity.
+     */
+    verifyMigrationIdentity?: AuthCoordinatorConfig['verifyMigrationIdentity'];
 }
 
 /**
@@ -208,6 +224,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     onDebugEvent,
     enabled = true,
     legacyAccountThresholdMs,
+    verifyMigrationIdentity,
 }) => {
     // `idle` means storage/session restoration has finished without an account.
     // On the first render, even the no-op auth provider must await the native
@@ -217,6 +234,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         status: enabled ? 'authenticating' : 'idle',
     }));
     const coordinatorRef = useRef<AuthCoordinator | null>(null);
+    // Read through a ref so a new callback identity never recreates the coordinator.
+    const verifyMigrationIdentityRef = useRef(verifyMigrationIdentity);
+    useEffect(() => {
+        verifyMigrationIdentityRef.current = verifyMigrationIdentity;
+    }, [verifyMigrationIdentity]);
+    // Cold cached-key startup is deliberate. Once this mounted tab has seen a
+    // live account, losing the provider must instead end that account session.
+    const observedAuthSessionRef = useRef(false);
+    const sessionEndedRef = useRef(false);
+    const [hasEndedAuthSession, setHasEndedAuthSession] = useState(false);
     const [recoverySetupIdentity, setRecoverySetupIdentity] = useState<object>({});
     const recoverySetupIdentityRef = useRef(recoverySetupIdentity);
     const recoverySetupAccountRef = useRef<{
@@ -319,9 +346,18 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         }
 
         let stale = false;
+        if (authProvider) {
+            sessionEndedRef.current = false;
+        } else if (observedAuthSessionRef.current) {
+            sessionEndedRef.current = true;
+        }
 
         const handleStateChange = (newState: UnifiedAuthState) => {
             if (stale) return;
+            setHasEndedAuthSession(sessionEndedRef.current);
+            if ('authUser' in newState && newState.authUser?.id) {
+                observedAuthSessionRef.current = true;
+            }
 
             if (newState.status === 'ready') {
                 const previous = recoverySetupAccountRef.current;
@@ -371,6 +407,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             onLogout,
             clearPendingEscrowRecovery,
             legacyAccountThresholdMs,
+            verifyMigrationIdentity: verifyMigrationIdentityRef.current
+                ? check => verifyMigrationIdentityRef.current?.(check) ?? Promise.resolve('unknown')
+                : undefined,
             isEscrowEnrollmentAllowed: userKey =>
                 isEscrowRolloutEnabledFor({ tenantId: getAuthConfig().tenantId, userKey }),
         });
@@ -392,7 +431,15 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             handleStateChange({ status: 'authenticating' });
         }
 
-        coordinator.initialize();
+        if (!authProvider && sessionEndedRef.current) {
+            // Firebase can clear auth in this tab after another tab signs out.
+            // Re-running cached-key initialization would recreate `ready` from
+            // this tab's in-memory key even though the account signed out.
+            handleStateChange({ status: 'idle' });
+            log.info('Auth session ended; cached account resume skipped');
+        } else {
+            coordinator.initialize();
+        }
 
         return () => {
             stale = true;
@@ -417,6 +464,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     ]);
 
     const initialize = useCallback(async () => {
+        if (sessionEndedRef.current) return;
         if (coordinatorRef.current) {
             await coordinatorRef.current.initialize();
         }
@@ -448,6 +496,10 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             throw new Error('Coordinator not initialized');
         }
         coordinatorRef.current.setMigrationData(data);
+    }, []);
+
+    const fallBackToRecovery = useCallback(() => {
+        coordinatorRef.current?.fallBackToRecovery();
     }, []);
 
     const recover = useCallback(async (input: unknown) => {
@@ -509,6 +561,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.clearEscrowPin();
     }, []);
+    const acknowledgeEscrowPinAutoClear = useCallback(() => {
+        coordinatorRef.current?.acknowledgeEscrowPinAutoClear();
+    }, []);
     const getEscrowEnrollmentState = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.getEscrowEnrollmentState();
@@ -559,6 +614,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     }, []);
 
     const retry = useCallback(async () => {
+        if (sessionEndedRef.current) return;
         if (coordinatorRef.current) {
             await coordinatorRef.current.retry();
         }
@@ -642,6 +698,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             privateKey,
             did,
             authSessionValid,
+            hasEndedAuthSession,
             capabilities: keyDerivation.capabilities,
             keyDerivation,
             initialize,
@@ -652,6 +709,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resetRecoverySetup,
             recoverySetupRevision,
             setMigrationData,
+            fallBackToRecovery,
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
@@ -662,6 +720,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             enableEscrowRecovery,
             setEscrowPin,
             clearEscrowPin,
+            acknowledgeEscrowPinAutoClear,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -689,6 +748,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             privateKey,
             did,
             authSessionValid,
+            hasEndedAuthSession,
             keyDerivation,
             initialize,
             setupNewKey,
@@ -698,6 +758,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             resetRecoverySetup,
             recoverySetupRevision,
             setMigrationData,
+            fallBackToRecovery,
             recover,
             startEscrowRecovery,
             getEscrowRecoveryStatus,
@@ -708,6 +769,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             enableEscrowRecovery,
             setEscrowPin,
             clearEscrowPin,
+            acknowledgeEscrowPinAutoClear,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,

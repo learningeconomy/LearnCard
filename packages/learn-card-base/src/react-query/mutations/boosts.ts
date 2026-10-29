@@ -6,12 +6,12 @@ import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
     CredentialCategoryEnum,
-    getBaseUrl,
     getCategoryForCredential,
     queueAiInsightCredentialRefresh,
     switchedProfileStore,
     useDeleteCredentialRecord,
     useGetProfile,
+    useTenantBaseUrl,
     useWallet,
     VC_WITH_URI,
 } from 'learn-card-base';
@@ -33,9 +33,11 @@ import {
     getEndorsementsForVC,
 } from 'learn-card-base/helpers/credentialHelpers';
 import {
+    buildCredentialShareUrl,
     findMatchingSharedCredentialIndex,
     getSharedCredentialIndexQueries,
     insertItem,
+    publishSharePreview,
 } from './mutation.helpers';
 import { convertAttachmentsToEvidence } from '../../components/boost/boost';
 import { v4 as uuidv4 } from 'uuid';
@@ -46,6 +48,7 @@ import { getLogger } from '../../logging/logger';
 const log = getLogger('boosts');
 
 type SharedCredentialsIndex = {
+    _id?: string;
     type: 'shared-credentials';
     sharedCredentialUri: string;
     sharedCredentialKey?: string;
@@ -53,6 +56,7 @@ type SharedCredentialsIndex = {
     pin: string;
     randomSeed: string;
     uri: string;
+    publicPreviewId?: string;
 };
 
 export const baseBoostShareRouteName = 'share-boost';
@@ -60,6 +64,7 @@ export const baseBoostShareRouteName = 'share-boost';
 /* creates a VP that wraps a boost, returns a published vp and a sharable link*/
 export const useShareBoostMutation = () => {
     const { initWallet } = useWallet();
+    const tenantBaseUrl = useTenantBaseUrl();
 
     return useMutation({
         mutationFn: async ({
@@ -67,13 +72,15 @@ export const useShareBoostMutation = () => {
             credentialId: requestedCredentialId,
             credentialUri,
             shareRouteName = baseBoostShareRouteName,
+            publicPreview,
         }: {
             credential: VC | UnsignedVC;
             credentialUri: string;
             credentialId?: string;
             shareRouteName?: string;
+            publicPreview?: { name: string; issuer: string; image?: string };
         }) => {
-            const baseUrl = getBaseUrl();
+            const baseUrl = new URL(tenantBaseUrl).host;
 
             // get current index data stored on ceramic for user
             // currentUser's wallet
@@ -105,12 +112,52 @@ export const useShareBoostMutation = () => {
             }
 
             const endorsementVCs: VC[] = await getEndorsementsForVC(myWallet, credential, 'public');
+            const withPublicPreview = async (
+                link: string,
+                index: SharedCredentialsIndex
+            ): Promise<string> => {
+                if (!publicPreview) return link;
+
+                return publishSharePreview(
+                    link,
+                    publicPreview,
+                    index.publicPreviewId,
+                    input => myWallet.invoke.publishCredentialSharePreview(input),
+                    async previewId => {
+                        const storedIndex = index._id
+                            ? index
+                            : (
+                                  await myWallet.invoke.learnCloudRead<SharedCredentialsIndex>({
+                                      randomSeed: index.randomSeed,
+                                  })
+                              ).find(
+                                  record =>
+                                      record.uri === index.uri &&
+                                      record.sharedCredentialUri === index.sharedCredentialUri &&
+                                      record.credentialId === index.credentialId
+                              );
+                        if (!storedIndex?._id) {
+                            throw new Error('Unable to find the shared credential index');
+                        }
+                        // Multi-field encrypted filters match alternatives; only _id isolates a row.
+                        return myWallet.invoke.learnCloudUpdate<SharedCredentialsIndex>(
+                            { _id: storedIndex._id },
+                            { publicPreviewId: previewId }
+                        );
+                    },
+                    previewId => myWallet.invoke.deleteCredentialSharePreview(previewId)
+                );
+            };
 
             //If it already exists than we don't have to do it all again....
             if (extantCredentialIndex && endorsementVCs.length === 0) {
-                const link = `https://${baseUrl}/${shareRouteName}?uri=${extantCredentialIndex?.uri}&seed=${extantCredentialIndex?.randomSeed}&pin=${extantCredentialIndex?.pin}`;
+                const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
+                    uri: extantCredentialIndex.uri,
+                    seed: extantCredentialIndex.randomSeed,
+                    pin: extantCredentialIndex.pin,
+                });
                 return {
-                    link,
+                    link: await withPublicPreview(link, extantCredentialIndex),
                 };
             }
 
@@ -158,7 +205,7 @@ export const useShareBoostMutation = () => {
 
             if (!publishedVpUri) throw new Error('Unable to publish VP');
 
-            await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>({
+            const newIndex: SharedCredentialsIndex = {
                 sharedCredentialUri: credentialUri,
                 ...(credentialId ? { credentialId } : {}),
                 ...sharedCredentialIndexQueries[0],
@@ -166,11 +213,16 @@ export const useShareBoostMutation = () => {
                 randomSeed: randomKey,
                 uri: publishedVpUri,
                 type: 'shared-credentials',
+            };
+            await myWallet.invoke.learnCloudCreate<SharedCredentialsIndex>(newIndex);
+            const link = buildCredentialShareUrl(baseUrl, shareRouteName, {
+                uri: publishedVpUri,
+                seed: randomKey,
+                pin,
             });
-            const link = `https://${baseUrl}/${shareRouteName}?uri=${publishedVpUri}&seed=${randomKey}&pin=${pin}`;
 
             return {
-                link,
+                link: await withPublicPreview(link, newIndex),
             };
         },
     });

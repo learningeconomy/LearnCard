@@ -90,10 +90,16 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     const { initWallet } = useWallet();
     const { currentLCNUser, refetch: refetchCurrentUser } = useGetCurrentLCNUser();
     const { presentToast } = useToast();
+    const storedLinkedInOrganizationId = branding
+        ? branding.linkedInOrganizationId || ''
+        : currentLCNUser?.linkedInOrganizationId || '';
 
     const [displayName, setDisplayName] = useState(branding?.displayName || '');
     const [image, setImage] = useState(branding?.image || '');
     const [shortBio, setShortBio] = useState(branding?.shortBio || '');
+    const [linkedInOrganizationId, setLinkedInOrganizationId] = useState(
+        storedLinkedInOrganizationId
+    );
     const [bio, setBio] = useState(branding?.bio || '');
 
     const [display, setDisplay] = useState<ProfileDisplay>(
@@ -146,6 +152,10 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
         }
     }, [currentLCNUser, branding]);
 
+    useEffect(() => {
+        setLinkedInOrganizationId(storedLinkedInOrganizationId);
+    }, [currentLCNUser?.profileId, storedLinkedInOrganizationId]);
+
     const { handleFileSelect: handleProfileImageUpload, isLoading: profileImageUploading } =
         useImageUpload({
             fileType: IMAGE_MIME_TYPES,
@@ -174,6 +184,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     };
 
     const handleSaveProfile = async () => {
+        if (!/^\d*$/.test(linkedInOrganizationId)) return;
         setIsSaving(true);
 
         try {
@@ -184,6 +195,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                 image,
                 shortBio,
                 bio,
+                linkedInOrganizationId: linkedInOrganizationId || '',
                 display: {
                     backgroundColor: display.backgroundColor,
                     backgroundImage: display.backgroundImage,
@@ -211,6 +223,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                 image,
                 shortBio,
                 bio,
+                linkedInOrganizationId: linkedInOrganizationId || undefined,
                 display: display as Record<string, unknown>,
             };
 
@@ -236,7 +249,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-800">
@@ -254,7 +267,12 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
 
                 <button
                     onClick={handleSaveProfile}
-                    disabled={!isDirty || isSaving || !displayName.trim()}
+                    disabled={
+                        !isDirty ||
+                        isSaving ||
+                        !displayName.trim() ||
+                        !/^\d*$/.test(linkedInOrganizationId)
+                    }
                     className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                     {isSaving ? (
@@ -267,7 +285,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             </div>
 
             {/* Profile Image */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center">
                         <ImageIcon className="w-5 h-5 text-pink-600" />
@@ -328,7 +346,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             </div>
 
             {/* Profile Info */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
                         <User className="w-5 h-5 text-emerald-600" />
@@ -344,7 +362,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                     </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             {m['developerPortal.dashboards.tabs.branding.displayName']()}{' '}
@@ -359,7 +377,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 setIsDirty(true);
                             }}
                             placeholder="e.g., AARP Skills Builder"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
                     </div>
 
@@ -378,8 +396,46 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                             placeholder={m[
                                 'developerPortal.dashboards.tabs.branding.shortBioPlaceholder'
                             ]()}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden"
                         />
+                    </div>
+
+                    <div>
+                        <label
+                            htmlFor="issuer-linkedin-organization-id"
+                            className="mb-1 block text-sm font-medium text-grayscale-700"
+                        >
+                            {m['credentialShare.linkedInOrgId']()}
+                        </label>
+                        <input
+                            id="issuer-linkedin-organization-id"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={linkedInOrganizationId}
+                            aria-invalid={!/^\d*$/.test(linkedInOrganizationId)}
+                            aria-describedby="issuer-linkedin-organization-id-help issuer-linkedin-organization-id-error"
+                            onChange={event => {
+                                setLinkedInOrganizationId(event.target.value);
+                                setIsDirty(true);
+                            }}
+                            className="w-full rounded-xl border border-grayscale-200 bg-white px-4 py-3 text-grayscale-900 placeholder:text-grayscale-400 outline-hidden focus:border-transparent focus-visible:ring-2 focus-visible:ring-emerald-500"
+                        />
+                        <p
+                            id="issuer-linkedin-organization-id-help"
+                            className="mt-1 text-sm text-grayscale-600"
+                        >
+                            {m['credentialShare.linkedInOrgIdHelp']()}
+                        </p>
+                        {!/^\d*$/.test(linkedInOrganizationId) && (
+                            <p
+                                id="issuer-linkedin-organization-id-error"
+                                role="alert"
+                                className="mt-1 text-sm text-red-700"
+                            >
+                                {m['credentialShare.linkedInOrgIdError']()}
+                            </p>
+                        )}
                     </div>
 
                     <div>
@@ -397,14 +453,14 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                 'developerPortal.dashboards.tabs.branding.fullBioPlaceholder'
                             ]()}
                             rows={3}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none resize-none"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-hidden resize-none"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Card Colors */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
                         <Palette className="w-5 h-5 text-violet-600" />
@@ -458,7 +514,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                     }));
                                     setIsDirty(true);
                                 }}
-                                className="w-10 h-10 rounded cursor-pointer"
+                                className="w-10 h-10 rounded-sm cursor-pointer"
                             />
 
                             <input
@@ -489,7 +545,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
                                     setDisplay(prev => ({ ...prev, accentColor: e.target.value }));
                                     setIsDirty(true);
                                 }}
-                                className="w-10 h-10 rounded cursor-pointer"
+                                className="w-10 h-10 rounded-sm cursor-pointer"
                             />
 
                             <input
@@ -507,7 +563,7 @@ export const BrandingTab: React.FC<BrandingTabProps> = ({ branding, onUpdate }) 
             </div>
 
             {/* Card Background Image */}
-            <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            <div className="p-4 bg-gray-50 rounded-xl space-y-v3-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-cyan-100 rounded-xl flex items-center justify-center">
                         <CreditCard className="w-5 h-5 text-cyan-600" />

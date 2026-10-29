@@ -14,8 +14,6 @@ import {
     QRCodeScannerOverlay,
     PushNotificationListener,
     useIsLoggedIn,
-    sqliteStore,
-    ensureReactQueryTableExists,
     ModalsProvider,
     useSQLiteInitWeb,
     lazyWithRetry,
@@ -33,62 +31,14 @@ import NetworkListener from './components/network-listener/NetworkListener';
 import UserProfileSetupListener from './components/user-profile/UserProfileSetupListener';
 import { QRCodeScannerStore } from 'learn-card-base';
 import * as m from './paraglide/messages.js';
+import { queryCacheStorage } from './helpers/queryPersistence';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
 const persister = createAsyncStoragePersister({
-    storage: {
-        getItem: async key => {
-            const db = sqliteStore.get.db();
-
-            if (!db) return;
-
-            await ensureReactQueryTableExists(db);
-
-            await db.open();
-
-            const result = await db.query(`SELECT cache FROM reactQuery WHERE id="${key}";`);
-
-            await db.close();
-
-            if (result.values?.length === 0) return;
-
-            return result.values![0].cache;
-        },
-        setItem: async (key, value) => {
-            const db = sqliteStore.get.db();
-
-            if (!db) return;
-
-            await ensureReactQueryTableExists(db);
-
-            await db.open();
-            await db.executeSet([
-                {
-                    statement:
-                        'INSERT INTO reactQuery (id, cache) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET cache=excluded.cache;',
-                    values: [key, value],
-                },
-            ]);
-
-            await db.close();
-        },
-        removeItem: async key => {
-            const db = sqliteStore.get.db();
-
-            if (!db) return;
-
-            await ensureReactQueryTableExists(db);
-
-            await db.open();
-
-            await db.execute(`DELETE FROM reactQuery WHERE id="${key}";`);
-
-            await db.close();
-        },
-    },
+    storage: queryCacheStorage,
 });
 
 setupIonicReact({ swipeBackEnabled: false });

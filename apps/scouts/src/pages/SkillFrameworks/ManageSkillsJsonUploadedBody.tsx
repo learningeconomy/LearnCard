@@ -232,7 +232,7 @@ const ManageSkillsJsonUploadedBody: React.FC<ManageSkillsJsonUploadedBodyProps> 
                                         />,
                                         {
                                             sectionClassName:
-                                                '!bg-transparent !shadow-none !overflow-visible',
+                                                'bg-transparent! shadow-none! overflow-visible!',
                                         },
                                         { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
                                     );

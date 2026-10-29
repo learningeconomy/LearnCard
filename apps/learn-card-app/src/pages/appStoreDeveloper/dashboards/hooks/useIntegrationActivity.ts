@@ -235,6 +235,7 @@ export function useIntegrationActivity(
         initialPageParam: undefined as string | undefined,
         queryFn: async ({ pageParam }) => {
             const wallet = await initWallet();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const result = await (wallet.invoke as any).getMyActivities?.({
                 limit,
                 cursor: pageParam,
@@ -259,12 +260,13 @@ export function useIntegrationActivity(
         ],
         queryFn: async () => {
             const wallet = await initWallet();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const result = await (wallet.invoke as any).getActivityStats?.({
                 boostUris: boostUri
                     ? [boostUri]
                     : !integrationId && !listingId && boostUris.length > 0
-                    ? boostUris
-                    : undefined,
+                      ? boostUris
+                      : undefined,
                 integrationId,
                 listingId,
                 boostUri,

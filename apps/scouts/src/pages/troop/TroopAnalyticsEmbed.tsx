@@ -115,12 +115,12 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
             <section className="flex flex-col w-full h-full bg-white">
                 <button
                     type="button"
-                    className="self-end m-4 px-4 py-2 rounded bg-grayscale-300 hover:bg-grayscale-400"
+                    className="self-end m-4 px-4 py-2 rounded-sm bg-grayscale-300 hover:bg-grayscale-400"
                     onClick={handleClose}
                 >
                     {m['troops.analytics.close']()}
                 </button>
-                <p className="text-center text-red-500 flex-grow flex items-center justify-center">
+                <p className="text-center text-red-500 grow flex items-center justify-center">
                     {m['troops.analytics.desktop']()}
                 </p>
             </section>
@@ -131,20 +131,20 @@ const TroopAnalyticsEmbed: React.FC<TroopAnalyticsEmbedProps> = ({
         <section className="flex flex-col w-full h-full bg-white">
             <button
                 type="button"
-                className="self-end m-4 px-4 py-2 rounded bg-grayscale-300 hover:bg-grayscale-400"
+                className="self-end m-4 px-4 py-2 rounded-sm bg-grayscale-300 hover:bg-grayscale-400"
                 onClick={handleClose}
             >
                 {m['troops.analytics.close']()}
             </button>
 
             {error && (
-                <p className="text-center text-red-500 flex-grow flex items-center justify-center">
+                <p className="text-center text-red-500 grow flex items-center justify-center">
                     {error}
                 </p>
             )}
 
             {!error && !iframeUrl && (
-                <p className="text-center flex-grow flex items-center justify-center">
+                <p className="text-center grow flex items-center justify-center">
                     {m['common.loading']()}
                 </p>
             )}

@@ -23,7 +23,7 @@ const ClrTranscriptSourceField = <T,>({
     };
 
     return (
-        <div className="space-y-1">
+        <div className="space-y-v3-1">
             <p className="text-xs font-medium text-grayscale-700">{label}</p>
             <p className="text-sm text-grayscale-900 leading-relaxed">
                 {stringifyValue(field.value)}

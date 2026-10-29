@@ -152,7 +152,7 @@ const AddressBookSelectionModal: React.FC<AddressBookSelectionModalProps> = ({
                 {selectedGroup?.toLowerCase().includes(search.toLowerCase()) && (
                     <button
                         onClick={() => handleSelectingContactGroup('all')}
-                        className="relative flex bg-white border-solid border-grayscale-200 border-[1px] rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
+                        className="relative flex bg-white border-solid border-grayscale-200 border rounded-[30px] p-[5px] pt-[10px] pl-[10px] w-full max-w-[550px] mt-[15px]"
                     >
                         <AllContactsIcon />
                         <div className="flex flex-col items-start ml-2">

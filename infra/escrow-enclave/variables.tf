@@ -36,7 +36,7 @@ variable "lca_api_security_group_id" {
 }
 
 variable "privatelink_allowed_principals" {
-  description = "Cross-account access: IAM principal ARNs (e.g. the lca-api account root) allowed to create an interface endpoint to the NLB. Connections still need manual acceptance. Set exactly one of this or lca_api_security_group_id."
+  description = "Cross-account access: IAM principal ARNs allowed to create an interface endpoint to the NLB: the reviewed endpoint creator (lca-api's CloudFormation deploy role or user), or an account root. Connections still need manual acceptance. Set exactly one of this or lca_api_security_group_id."
   type        = list(string)
   default     = []
 
@@ -46,8 +46,23 @@ variable "privatelink_allowed_principals" {
   }
 
   validation {
-    condition     = alltrue([for p in var.privatelink_allowed_principals : can(regex("^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:(root|role/.+)$", p))])
-    error_message = "privatelink_allowed_principals entries must be account-root or role ARNs; wildcards are not allowed."
+    condition     = alltrue([for p in var.privatelink_allowed_principals : can(regex("^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:(root|(role|user)/[A-Za-z0-9+=,.@_/-]+)$", p))])
+    error_message = "privatelink_allowed_principals entries must be account-root, role or user ARNs; wildcards are not allowed."
+  }
+}
+
+variable "host_ami_id" {
+  description = "Reviewed regional AL2023 x86_64 host AMI. Required in production; null preserves staging's latest-AL2023 SSM lookup. Changes require a deliberate host roll."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.environment != "production" || var.host_ami_id != null
+    error_message = "Production requires an explicit pinned host_ami_id; latest AMI lookup is staging-only."
+  }
+  validation {
+    condition     = var.host_ami_id == null || can(regex("^ami-[0-9a-f]{17}$", var.host_ami_id))
+    error_message = "host_ami_id must be an AMI ID (ami- followed by 17 lowercase hexadecimal characters)."
   }
 }
 

@@ -56,6 +56,10 @@ function = "interact"
 path = "/__tenant-config"
 function = "tenant-config"
 
+[[edge_functions]]
+path = "/share-boost"
+function = "share-boost"
+
 
 [[headers]]
 for = "/.well-known/apple-app-site-association"

@@ -91,7 +91,7 @@ const CancelRecoveryPage: React.FC = () => {
             className="min-h-screen bg-grayscale-100 flex items-center justify-center p-4 font-poppins"
             style={{ paddingTop: 'var(--ion-safe-area-top, 0px)' }}
         >
-            <div className="w-full max-w-md bg-white rounded-[20px] shadow-sm p-8 space-y-5 animate-fade-in-up">
+            <div className="w-full max-w-md bg-white rounded-[20px] shadow-xs p-8 space-y-v3-5 animate-fade-in-up">
                 {status === 'error' && errorMessage && (
                     <div className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5">
                         <IonIcon
@@ -103,7 +103,7 @@ const CancelRecoveryPage: React.FC = () => {
                 )}
 
                 {status === 'invalid' ? (
-                    <div className="space-y-5 text-center">
+                    <div className="space-y-v3-5 text-center">
                         <div>
                             <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
                                 {m['recovery.cancel.invalidLink.title']()}
@@ -117,7 +117,7 @@ const CancelRecoveryPage: React.FC = () => {
                         </button>
                     </div>
                 ) : status === 'success' ? (
-                    <div className="space-y-5 text-center">
+                    <div className="space-y-v3-5 text-center">
                         <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
                             <IonIcon icon={checkmarkCircleOutline} className="text-2xl" />
                         </div>
@@ -134,7 +134,7 @@ const CancelRecoveryPage: React.FC = () => {
                         </button>
                     </div>
                 ) : status === 'neutral' ? (
-                    <div className="space-y-5 text-center">
+                    <div className="space-y-v3-5 text-center">
                         <div>
                             <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
                                 {m['recovery.cancel.expired.title']()}
@@ -148,7 +148,7 @@ const CancelRecoveryPage: React.FC = () => {
                         </button>
                     </div>
                 ) : (
-                    <div className="space-y-5 text-center">
+                    <div className="space-y-v3-5 text-center">
                         <div>
                             <h1 className="text-xl font-semibold text-grayscale-900 mb-1">
                                 {m['recovery.cancel.confirm.title']()}
@@ -157,7 +157,7 @@ const CancelRecoveryPage: React.FC = () => {
                                 {m['recovery.cancel.confirm.body']()}
                             </p>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-v3-3">
                             <button
                                 className={buttonClass}
                                 onClick={handleCancel}

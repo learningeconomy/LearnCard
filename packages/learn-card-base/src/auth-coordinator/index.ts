@@ -25,6 +25,7 @@ export {
 } from './AuthCoordinatorProvider';
 
 export { useAuthCoordinatorAutoSetup } from './useAuthCoordinatorAutoSetup';
+export { useIdleAuthCleanup } from './useIdleAuthCleanup';
 export type { AutoSetupConfig } from './useAuthCoordinatorAutoSetup';
 
 // Shared overlay components for coordinator states
@@ -43,6 +44,9 @@ export type {
     AuthProviderType,
     AuthUser,
     AuthCoordinatorConfig,
+    MigrationIdentityCheck,
+    MigrationIdentityVerdict,
+    MigrationKeySource,
     KeyDerivationCapabilities,
     KeyDerivationStrategy,
     ServerKeyStatus,

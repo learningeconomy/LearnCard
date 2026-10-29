@@ -72,10 +72,10 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-v3-6">
             {/* Ready to Launch Banner */}
-            <div className="flex items-start gap-4 p-5 bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl">
-                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm">
+            <div className="flex items-start gap-4 p-5 bg-linear-to-br/srgb from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl">
+                <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-xs">
                     <Rocket className="w-7 h-7 text-emerald-600" />
                 </div>
 
@@ -96,7 +96,7 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     {m['developerPortal.onboarding.production.setupComplete']()}
                 </h3>
 
-                <div className="space-y-3">
+                <div className="space-y-v3-3">
                     {setupChecklist.map((item, index) => (
                         <div key={index} className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -117,9 +117,8 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     {m['developerPortal.onboarding.production.whatHappens']()}
                 </h3>
 
-                <ul className="text-sm text-blue-700 space-y-2">
+                <ul className="text-sm text-blue-700 space-y-v3-2">
                     <li className="flex items-start gap-2">
-                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                         <span className="text-blue-400 mt-0.5" aria-hidden="true">
                             •
                         </span>
@@ -127,7 +126,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     </li>
 
                     <li className="flex items-start gap-2">
-                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                         <span className="text-blue-400 mt-0.5" aria-hidden="true">
                             •
                         </span>
@@ -135,7 +133,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     </li>
 
                     <li className="flex items-start gap-2">
-                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                         <span className="text-blue-400 mt-0.5" aria-hidden="true">
                             •
                         </span>
@@ -156,7 +153,7 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
             {/* Confirmation Modal */}
             {showConfirmation && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-v3-5">
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center">
                                 <PartyPopper className="w-7 h-7 text-emerald-600" />
@@ -174,7 +171,7 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
                         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                             <div className="flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
 
                                 <div className="text-sm text-amber-800">
                                     <p className="font-medium mb-1">
@@ -182,9 +179,8 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                             'developerPortal.onboarding.production.confirmWarning'
                                         ]()}
                                     </p>
-                                    <ul className="space-y-1 text-amber-700">
+                                    <ul className="space-y-v3-1 text-amber-700">
                                         <li className="flex items-start gap-2">
-                                            {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                                             <span className="text-amber-700" aria-hidden="true">
                                                 •
                                             </span>
@@ -195,7 +191,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                             </span>
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                                             <span className="text-amber-700" aria-hidden="true">
                                                 •
                                             </span>
@@ -206,7 +201,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                             </span>
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                                             <span className="text-amber-700" aria-hidden="true">
                                                 •
                                             </span>

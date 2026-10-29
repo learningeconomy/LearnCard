@@ -114,6 +114,7 @@ const UpdateProfileInputValidator = z.object({
     image: z.string().optional(),
     heroImage: z.string().optional(),
     websiteLink: z.string().optional(),
+    linkedInOrganizationId: z.string().regex(/^\d*$/).optional(),
     type: z.string().optional(),
     email: z.string().optional(),
     notificationsWebhook: z.string().optional(),
@@ -606,6 +607,7 @@ export const profilesRouter = t.router({
                 image,
                 heroImage,
                 websiteLink,
+                linkedInOrganizationId,
                 type,
                 email,
                 notificationsWebhook,
@@ -669,6 +671,11 @@ export const profilesRouter = t.router({
             if (typeof bio === 'string') actualUpdates.bio = bio;
             if (typeof heroImage === 'string') actualUpdates.heroImage = heroImage;
             if (typeof websiteLink === 'string') actualUpdates.websiteLink = websiteLink;
+            if (typeof linkedInOrganizationId === 'string') {
+                // Neo4j removes a property when SET += receives null.
+                (actualUpdates as Record<string, unknown>).linkedInOrganizationId =
+                    linkedInOrganizationId || null;
+            }
             if (typeof type === 'string') actualUpdates.type = type;
             if (typeof notificationsWebhook === 'string')
                 actualUpdates.notificationsWebhook = notificationsWebhook;

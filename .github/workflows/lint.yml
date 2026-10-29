@@ -8,6 +8,9 @@ concurrency:
     group: lint-${{ github.head_ref || github.ref }}
     cancel-in-progress: true
 
+permissions:
+    contents: read
+
 jobs:
     Prettier:
         runs-on: ubuntu-latest
@@ -81,6 +84,9 @@ jobs:
             - name: Test lint project discovery
               run: node --test scripts/lint-workspace.test.mjs
 
+            - name: Test proof publisher (offline fixtures)
+              run: node --test scripts/proof.test.mjs
+
             - name: Run workspace lint
               run: bun run lint:workspace
 
@@ -131,7 +137,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -175,7 +181,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -204,7 +210,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -222,7 +228,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -237,7 +243,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 

@@ -1,5 +1,56 @@
 # @learncard/vc-api-service
 
+## 1.0.11
+
+### Patch Changes
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762)]:
+    - @learncard/types@5.24.0
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/core@9.4.41
+    - @learncard/didkey-plugin@1.1.41
+    - @learncard/encryption-plugin@1.1.41
+    - @learncard/learn-card-plugin@1.2.41
+    - @learncard/vc-plugin@1.6.7
+    - @learncard/vc-templates-plugin@1.1.41
+    - @learncard/crypto-plugin@1.1.41
+    - @learncard/dynamic-loader-plugin@1.1.41
+    - @learncard/expiration-plugin@1.2.41
+
+## 1.0.10
+
+### Patch Changes
+
+- Updated dependencies [[`bf329d9fb188f32fa715bfc7200397030ec9b385`](https://github.com/learningeconomy/LearnCard/commit/bf329d9fb188f32fa715bfc7200397030ec9b385), [`3231ed0b37d9af8c8e49c17f89b62778aec34f5c`](https://github.com/learningeconomy/LearnCard/commit/3231ed0b37d9af8c8e49c17f89b62778aec34f5c)]:
+    - @learncard/types@5.23.2
+    - @learncard/core@9.4.40
+    - @learncard/didkey-plugin@1.1.40
+    - @learncard/didkit-plugin@1.10.5
+    - @learncard/encryption-plugin@1.1.40
+    - @learncard/learn-card-plugin@1.2.40
+    - @learncard/vc-plugin@1.6.6
+    - @learncard/vc-templates-plugin@1.1.40
+    - @learncard/crypto-plugin@1.1.40
+    - @learncard/dynamic-loader-plugin@1.1.40
+    - @learncard/expiration-plugin@1.2.40
+
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [[`9018e3173393f2ec9645286edd99bb80aa3b2c6c`](https://github.com/learningeconomy/LearnCard/commit/9018e3173393f2ec9645286edd99bb80aa3b2c6c)]:
+    - @learncard/types@5.23.1
+    - @learncard/core@9.4.39
+    - @learncard/didkey-plugin@1.1.39
+    - @learncard/didkit-plugin@1.10.4
+    - @learncard/encryption-plugin@1.1.39
+    - @learncard/learn-card-plugin@1.2.39
+    - @learncard/vc-plugin@1.6.5
+    - @learncard/vc-templates-plugin@1.1.39
+    - @learncard/crypto-plugin@1.1.39
+    - @learncard/dynamic-loader-plugin@1.1.39
+    - @learncard/expiration-plugin@1.2.39
+
 ## 1.0.8
 
 ### Patch Changes

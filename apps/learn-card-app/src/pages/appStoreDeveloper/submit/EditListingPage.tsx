@@ -359,7 +359,7 @@ export const EditListingPage: React.FC = () => {
                                     isLocked ? 'opacity-60 pointer-events-none select-none' : ''
                                 }
                             >
-                                <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6 space-y-5">
+                                <div className="bg-white rounded-[20px] border border-grayscale-200 p-6 mb-6 space-y-v3-5">
                                     <h2 className="text-base font-semibold text-grayscale-900">
                                         Your listing
                                     </h2>
@@ -404,7 +404,7 @@ export const EditListingPage: React.FC = () => {
                             {!isDesktop && <div className="mt-6">{preview}</div>}
 
                             <div
-                                className="sticky bottom-0 z-10 mt-6 pt-3 bg-gradient-to-t from-white via-white to-white/0"
+                                className="sticky bottom-0 z-10 mt-6 pt-3 bg-linear-to-t/srgb from-white via-white to-white/0"
                                 style={{
                                     paddingBottom: 'calc(1rem + var(--ion-safe-area-bottom, 0px))',
                                 }}

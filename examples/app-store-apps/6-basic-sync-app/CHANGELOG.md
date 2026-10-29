@@ -1,5 +1,29 @@
 # @learncard/app-store-demo-basic-sync
 
+## 1.0.20
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.6
+    - @learncard/partner-connect@0.6.3
+
+## 1.0.19
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.5
+    - @learncard/partner-connect@0.6.2
+
+## 1.0.18
+
+### Patch Changes
+
+- Updated dependencies []:
+    - @learncard/init@2.5.4
+    - @learncard/partner-connect@0.6.1
+
 ## 1.0.17
 
 ### Patch Changes
