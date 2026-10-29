@@ -1,11 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { createServer } from 'node:http';
-import { importJWK, jwtVerify } from 'jose';
 import type { IntegrationManifest } from '@learncard/types';
-import {
-    serviceAccountSigningPublicKey,
-    INTEGRATION_PROBE_TYPE,
-} from '@helpers/service-account-auth.helpers';
 import * as integrationHealth from '@helpers/service-account-health.helpers';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { IntegrationScopeRequest } from '@learncard/types';
@@ -35,6 +29,7 @@ import { getClient } from './helpers/getClient';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 import { makeListingInput } from './helpers/app-store.helpers';
 import { createSignedListingVersionForKind } from './helpers/manifest.helpers';
+import { withHealthServer } from './helpers/health-server';
 
 const treeScope: IntegrationScopeRequest = {
     resource: 'group',
@@ -115,47 +110,6 @@ afterEach(async () => {
 });
 
 describe('ServiceAccount authenticated enable gate and health — §10.2 #5', () => {
-    const withHealthServer = async (
-        run: (endpoint: string, control: { healthy: boolean; probes: number }) => Promise<void>
-    ) => {
-        const control = { healthy: true, probes: 0 };
-        const key = await importJWK(serviceAccountSigningPublicKey(), 'EdDSA');
-        let endpoint = '';
-        const server = createServer(async (request, response) => {
-            control.probes++;
-            try {
-                const token = request.headers['x-educationos-health-challenge'];
-                if (typeof token !== 'string') throw new Error('No challenge');
-                const { payload } = await jwtVerify(token, key, {
-                    algorithms: ['EdDSA'],
-                    typ: INTEGRATION_PROBE_TYPE,
-                    audience: endpoint,
-                    issuer: 'educationos-platform',
-                });
-                if (!control.healthy) {
-                    response.writeHead(503).end();
-                    return;
-                }
-                response.setHeader('x-educationos-health-response', payload.jti!);
-                response.writeHead(200).end();
-            } catch {
-                response.writeHead(401).end();
-            }
-        });
-        await new Promise<void>(resolve => server.listen(0, 'localhost', resolve));
-        const address = server.address();
-        if (!address || typeof address === 'string') throw new Error('Missing server port');
-        endpoint = `http://localhost:${address.port}/health`;
-        try {
-            await run(endpoint, control);
-        } finally {
-            server.closeAllConnections();
-            await new Promise<void>((resolve, reject) =>
-                server.close(error => (error ? reject(error) : resolve()))
-            );
-        }
-    };
-
     it('fails closed without a credential, without scoped healthUrl, and with invalid config', async () => {
         const fixture = await setup([treeScope], { endpoints: {} });
         await reconcileInstallIntent(fixture.intent.intentId);

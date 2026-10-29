@@ -9,8 +9,8 @@ import { governConsentContract } from '@accesslayer/consentflowcontract/governan
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { CONSENT_WORKFLOW_ID } from '@helpers/consent-exchange.helpers';
 import { getClient } from './helpers/getClient';
+import { signDidAuth } from './helpers/did-auth';
 
-const DOMAIN = 'localhost%3A3000';
 const client = getClient();
 
 const setup = async (governed = true) => {
@@ -78,19 +78,6 @@ const participate = (exchangeId: string, verifiablePresentation?: VP) =>
         localExchangeId: exchangeId,
         verifiablePresentation,
     });
-
-const signDidAuth = async (
-    wallet: Awaited<ReturnType<typeof getLearnCard>>,
-    challenge: string
-): Promise<VP> => {
-    const vp = await wallet.invoke.getDidAuthVp({
-        challenge,
-        domain: DOMAIN,
-        proofPurpose: 'authentication',
-    });
-    if (typeof vp === 'string') throw new Error('Expected a JSON-LD presentation');
-    return vp;
-};
 
 const learnerTerms = async (learnerId: string, contractId: string) => {
     const result = await neogma.queryRunner.run(

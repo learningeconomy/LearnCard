@@ -36,6 +36,7 @@ import {
     finalizeRecordClaim,
     leaseRecordClaim,
 } from '@helpers/claim-offer.helpers';
+import { signDidAuth } from './helpers/did-auth';
 
 const DOMAIN = 'localhost%3A3000';
 type Wallet = Awaited<ReturnType<typeof getLearnCard>>;
@@ -213,16 +214,6 @@ const challengeFor = async (offerId: string): Promise<string> => {
     const challenge = request.verifiablePresentationRequest?.challenge;
     if (!challenge) throw new Error('Missing challenge');
     return challenge;
-};
-
-const signDidAuth = async (wallet: Wallet, challenge: string): Promise<VP> => {
-    const vp = await wallet.invoke.getDidAuthVp({
-        challenge,
-        domain: DOMAIN,
-        proofPurpose: 'authentication',
-    });
-    if (typeof vp === 'string') throw new Error('Expected a JSON-LD presentation');
-    return vp;
 };
 
 const claim = async (offerId: string, wallet: Wallet): Promise<VC> => {

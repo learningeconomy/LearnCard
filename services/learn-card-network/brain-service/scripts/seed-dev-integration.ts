@@ -48,6 +48,8 @@ import * as dotenv from 'dotenv';
 
 import type { IntegrationManifest } from '@learncard/types';
 
+import { buildIntegrationManifest } from '../test/helpers/demo-lms-manifest';
+
 dotenv.config();
 
 // src/instance.ts requires NEO4J_* with no defaults, but the sibling dev scripts
@@ -283,40 +285,22 @@ const main = async (): Promise<void> => {
         console.log(`  Integration node:    ${integration.id} (created)`);
     }
 
-    const unsignedManifest: Omit<IntegrationManifest, 'signature'> = {
+    const unsignedManifest = buildIntegrationManifest({
         apiVersion: apiVersion as IntegrationManifest['apiVersion'],
         id: manifestId,
         version: manifestVersion,
-        listingKind: 'INTEGRATION',
         publisherDid,
         category: category as IntegrationManifest['category'],
-        scopes: scopeVerbs.map(verb => {
-            const [resource, action] = verb.split(':');
-            if (!resource || !action)
-                throw new Error(`--scopes entry "${verb}" must be resource:action`);
-            return {
-                resource,
-                action,
-                selectorKind: 'tree' as const,
-                selectorValue: '$installEcosystemId',
-                // Unchanged default text keeps previously seeded manifests byte-identical.
-                reason:
-                    verb === 'group:sync'
-                        ? `Sync ${category} data for the installing ecosystem`
-                        : `${resource}:${action} for the installing ecosystem (${category})`,
-            };
-        }),
+        scopeVerbs,
         consentRequirements: consentRequirements as IntegrationManifest['consentRequirements'],
-        capabilities: {
-            provided: provided as IntegrationManifest['capabilities']['provided'],
-            consumed: consumed as IntegrationManifest['capabilities']['consumed'],
-        },
-        supportedRecordClasses: recordClasses as IntegrationManifest['supportedRecordClasses'],
-        extensionPoints: [],
+        provided: provided as IntegrationManifest['capabilities']['provided'],
+        consumed: consumed as IntegrationManifest['capabilities']['consumed'],
+        recordClasses: recordClasses as IntegrationManifest['supportedRecordClasses'],
         subscribes,
         consoleSurfaces,
-        endpoints: { healthUrl, connectUrl },
-    };
+        healthUrl,
+        connectUrl,
+    });
 
     const manifest = await signManifestWithDidKey<IntegrationManifest>(
         unsignedManifest,

@@ -11,8 +11,6 @@
 
 import { createProfile } from '@accesslayer/profile/create';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
-import { createEcosystem } from '@accesslayer/ecosystem/create';
-import { getEcosystemById } from '@accesslayer/ecosystem/read';
 import { grantEcosystemMembership } from '@accesslayer/ecosystem/membership';
 import { createAppStoreListing } from '@accesslayer/app-store-listing/create';
 import { readAppStoreListingById } from '@accesslayer/app-store-listing/read';
@@ -23,6 +21,9 @@ import { createSignedListingVersionForKind } from './manifest.helpers';
 import type { EcosystemRole } from '@learncard/types';
 
 import { makeListingInput } from './app-store.helpers';
+import { ensureEcosystemWithId } from './ecosystem-with-id';
+
+export { ensureEcosystemWithId };
 
 export type PlannableAppFixture = {
     ecosystemId: string;
@@ -52,60 +53,6 @@ export const ensureProfile = async (profileId: string, did: string): Promise<voi
     await createProfile({ profileId, did, displayName: profileId } as Parameters<
         typeof createProfile
     >[0]);
-};
-
-/**
- * Ecosystems are normally created with a generated `eco_<uuid>` id, but dev
- * tooling pins a well-known id (console-bff `dev/policies.json` rootEcosystemId).
- * Creating one via `createEcosystem` and re-pointing its id keeps every derived
- * field (pathIds/slugPath/depth/rootEcosystemId) correct, which a bare
- * `MERGE (e:Ecosystem {id})` does not.
- */
-export const ensureEcosystemWithId = async (input: {
-    ecosystemId: string;
-    slug: string;
-    name: string;
-    ownerProfileId: string;
-}): Promise<string> => {
-    const existing = await getEcosystemById(input.ecosystemId);
-
-    if (existing) {
-        await neogma.queryRunner.run(
-            `MATCH (e:Ecosystem { id: $ecosystemId })
-             SET e.name = coalesce(e.name, $name),
-                 e.slug = coalesce(e.slug, $slug),
-                 e.status = coalesce(e.status, 'ACTIVE'),
-                 e.ownerProfileId = coalesce(e.ownerProfileId, $ownerProfileId),
-                 e.settings = coalesce(e.settings, '{}'),
-                 e.pathIds = coalesce(e.pathIds, [$ecosystemId]),
-                 e.slugPath = coalesce(e.slugPath, [$slug]),
-                 e.depth = coalesce(e.depth, 0),
-                 e.rootEcosystemId = coalesce(e.rootEcosystemId, $ecosystemId),
-                 e.createdAt = coalesce(e.createdAt, $now),
-                 e.updatedAt = $now`,
-            { ...input, now: new Date().toISOString() }
-        );
-
-        return input.ecosystemId;
-    }
-
-    const created = await createEcosystem({
-        name: input.name,
-        slug: input.slug,
-        description: undefined,
-        parentEcosystemId: null,
-        ownerProfileId: input.ownerProfileId,
-        settings: {},
-        status: 'ACTIVE',
-    } as Parameters<typeof createEcosystem>[0]);
-
-    await neogma.queryRunner.run(
-        `MATCH (e:Ecosystem { id: $generatedId })
-         SET e.id = $ecosystemId, e.pathIds = [$ecosystemId], e.rootEcosystemId = $ecosystemId`,
-        { generatedId: created.id, ecosystemId: input.ecosystemId }
-    );
-
-    return input.ecosystemId;
 };
 
 export const ensureListedListing = async (input: {
