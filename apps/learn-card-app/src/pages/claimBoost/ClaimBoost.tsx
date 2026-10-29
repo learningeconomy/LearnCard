@@ -7,7 +7,7 @@ import moment from 'moment';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('claim-boost');
 
-import { IonPage, IonSpinner, useIonModal, useIonAlert, IonRow } from '@ionic/react';
+import { IonPage, IonSpinner } from '@ionic/react';
 
 // import MainHeader from '../../components/main-header/MainHeader';
 import BoostFooterLayout from '../../components/accessibility/AccessibleBoostFooterLayout';
@@ -15,12 +15,9 @@ import AccessibleCredentialCard from '../../components/accessibility/AccessibleC
 import VCDisplayCardWrapper2 from 'learn-card-base/components/vcmodal/VCDisplayCardWrapper2';
 import RenderMethodDisplay from '../../components/render-method/RenderMethodDisplay';
 import ClaimBoostLoggedOutPrompt from 'learn-card-base/components/boost/claimBoostLoggedOutPrompt/ClaimBoostLoggedOutPrompt';
-import ClaimBoostLoading from './ClaimBoostLoading';
 import BoostDetailsSideMenu from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideMenu';
 import BoostDetailsSideBar from '../../components/boost/boostCMS/BoostPreview/BoostDetailsSideBar';
-import CredentialVerificationDisplay, {
-    getInfoFromCredential,
-} from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
+import CredentialVerificationDisplay from 'learn-card-base/components/CredentialBadge/CredentialVerificationDisplay';
 
 import {
     useWallet,
@@ -56,6 +53,13 @@ import useLCNGatedAction from '../../components/network-prompts/hooks/useLCNGate
 import { useUploadVcFromText } from '../../hooks/useUploadVcFromText';
 import { useClaimSuccessToast } from '../../feedback/useClaimSuccessToast';
 import { useDuplicateCredentialGuard } from '../../components/credentials/duplicate-credential/useDuplicateCredentialGuard';
+import {
+    getClaimRequest,
+    recoverClaim,
+    type ClaimAttempt,
+    type ClaimProgress,
+} from './claimRecovery';
+import { getSavedClaimRecord, saveClaimToCollection } from './claimCollection';
 
 import { getEmojiFromDidString, getUserHandleFromDid } from 'learn-card-base/helpers/walletHelpers';
 import { VC, VerificationItem } from '@learncard/types';
@@ -154,8 +158,7 @@ const ClaimBoost: React.FC<{
     const queryClient = useQueryClient();
     const query = usePathQuery();
     const isLoggedIn = useIsLoggedIn();
-    const { initWallet, addVCtoWallet } = useWallet();
-    const [presentAlert, dismissAlert] = useIonAlert();
+    const { initWallet, addVCtoWallet, syncCredentialToContracts } = useWallet();
     const { track } = useAnalytics();
     const { capture, snapshotRef } = useProfileSnapshotCapture();
     const flowStartedAt = useRef(Date.now());
@@ -196,6 +199,31 @@ const ClaimBoost: React.FC<{
     const presentClaimSuccessToast = useClaimSuccessToast();
     const { isCheckingDuplicate, requestDuplicateResolution, duplicateCredentialPrompt } =
         useDuplicateCredentialGuard();
+    const [claimProgress, setClaimProgress] = useState<ClaimProgress>({ status: 'idle' });
+    const claimSessionRef = useRef<{
+        context: string;
+        storageKey: string;
+        attempt: ClaimAttempt;
+    } | null>(null);
+    const claimBusyRef = useRef(false);
+    const mountedRef = useRef(true);
+    const statusRef = useRef<HTMLElement>(null);
+    const claimTriggerRef = useRef<Element | null>(null);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!['failed', 'pending', 'terminal'].includes(claimProgress.status)) return;
+        const focused = document.activeElement;
+        if (focused === document.body || focused === claimTriggerRef.current) {
+            statusRef.current?.focus({ preventScroll: true });
+        }
+    }, [claimProgress]);
 
     const { credentialWithEdits } = useGetCredentialWithEdits(boost);
 
@@ -204,17 +232,9 @@ const ClaimBoost: React.FC<{
             boostUri
         )}&challenge=${challenge}`;
         redirectStore.set.lcnRedirect(redirectTo);
-        dismissClaimModal?.();
-        dismissModal();
+        closeModal();
         handleCancel();
     };
-
-    const [presentModal, dismissModal] = useIonModal(ClaimBoostLoggedOutPrompt, {
-        handleCloseModal: () => dismissModal(),
-        handleRedirectTo: handleRedirectTo,
-    });
-
-    const [showLoader, dismissLoader] = useIonModal(ClaimBoostLoading);
 
     const verify = async (credential: VC) => {
         const wallet = await initWallet();
@@ -249,6 +269,7 @@ const ClaimBoost: React.FC<{
     };
 
     const handleCancel = () => {
+        if (claimBusyRef.current) return;
         const flow = claimAttemptRef.current;
         if (flow) {
             const claimCredential = boost ?? vc;
@@ -364,108 +385,145 @@ const ClaimBoost: React.FC<{
     }, [boost, vc, isClaimed, boostUri, track]);
 
     const handleClaimBoost = async () => {
-        if (isClaimed || isCheckingDuplicate) return;
-        if (!boost) return;
-        const duplicateResolution = await requestDuplicateResolution(boost, { boostUri });
-        if (duplicateResolution.action === 'cancel') return;
-        if (duplicateResolution.action === 'skip') {
-            setIsClaimed(true);
-            dismissClaimModal?.();
-            history.replace('/');
-            presentToast(m['claim.duplicate.skippedToast'](), {
-                type: ToastTypeEnum.Success,
-                hasDismissButton: true,
-            });
-            return;
-        }
-
-        const { prompted } = await gate();
-        if (prompted) return;
-        const wallet = await initWallet();
+        if (claimBusyRef.current || isClaimed || !boost || !boostUri || !challenge) return;
+        if (claimProgress.status === 'terminal') return;
+        claimBusyRef.current = true;
+        claimTriggerRef.current = document.activeElement;
+        setIsClaimLoading(true);
 
         try {
-            beginClaimAttempt(boost);
-            setIsClaimLoading(true);
-            // LC-1853: freeze pre-mutation profile snapshot for accurate totalItemsAfter.
-            capture();
+            if (!claimSessionRef.current) {
+                const duplicateResolution = await requestDuplicateResolution(boost, { boostUri });
+                if (!mountedRef.current || duplicateResolution.action === 'cancel') return;
+                if (duplicateResolution.action === 'skip') {
+                    setIsClaimed(true);
+                    dismissClaimModal?.();
+                    history.replace('/');
+                    presentToast(m['claim.duplicate.skippedToast'](), {
+                        type: ToastTypeEnum.Success,
+                        hasDismissButton: true,
+                    });
+                    return;
+                }
+                const { prompted } = await gate();
+                if (!mountedRef.current || prompted) return;
+            }
 
-            const claimedBoostUri = await wallet.invoke.claimBoostWithLink(boostUri, challenge);
-            const addedToWallet = await addVCtoWallet({
-                uri: claimedBoostUri,
+            const wallet = await initWallet();
+            const did = wallet.id.did();
+            const context = JSON.stringify([
+                did,
+                networkStore.get.networkUrl(),
                 boostUri,
-            });
-            if (!addedToWallet) throw new Error('Credential was not added to LearnCard');
-
-            await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
+                challenge,
+            ]);
+            if (claimSessionRef.current && claimSessionRef.current.context !== context) {
+                throw new Error('Claim context changed');
+            }
+            if (!claimSessionRef.current) {
+                const { key, requestId } = await getClaimRequest(context);
+                claimSessionRef.current = {
+                    context,
+                    storageKey: key,
+                    attempt: { requestId, saved: false, running: false, complete: false },
+                };
+                beginClaimAttempt(boost);
+                capture();
+            }
+            const session = claimSessionRef.current;
+            const assertActive = async () => {
+                if (!mountedRef.current || (await initWallet()).id.did() !== did) {
+                    throw new Error('Claim session is no longer active');
+                }
+            };
+            const completed = await recoverClaim(
+                session.attempt,
+                {
+                    check: async () => {
+                        await assertActive();
+                        return wallet.invoke.getClaimBoostWithLinkStatus(
+                            boostUri,
+                            challenge,
+                            session.attempt.requestId
+                        );
+                    },
+                    claim: async () => {
+                        await assertActive();
+                        return wallet.invoke.claimBoostWithLink(
+                            boostUri,
+                            challenge,
+                            session.attempt.requestId
+                        );
+                    },
+                    save: async credentialUri => {
+                        await assertActive();
+                        await saveClaimToCollection(wallet, credentialUri, boostUri, addVCtoWallet);
+                    },
+                    refresh: async credentialUri => {
+                        await assertActive();
+                        const record = await getSavedClaimRecord(wallet, credentialUri);
+                        await syncCredentialToContracts({ record, category: record.category });
+                        await Promise.all([
+                            queryClient.invalidateQueries(
+                                { queryKey: ['useGetCredentialList'] },
+                                { throwOnError: true }
+                            ),
+                            queryClient.invalidateQueries(
+                                { queryKey: ['useGetCredentialCount'] },
+                                { throwOnError: true }
+                            ),
+                            queryClient.invalidateQueries(
+                                { queryKey: connectionPromptKeys.all },
+                                { throwOnError: true }
+                            ),
+                        ]);
+                    },
+                },
+                progress => {
+                    if (mountedRef.current) setClaimProgress(progress);
+                }
+            );
+            if (!completed || !mountedRef.current) return;
 
             const category = getDefaultCategoryForCredential(boost);
-            const achievementType = getAchievementType(boost);
-
-            if (boost) {
-                completeClaimAttempt(boost, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
-                track(AnalyticsEvents.CLAIM_BOOST, {
-                    boostType: category,
-                    achievementType,
-                    method: 'Claim Modal',
-                    msSinceMethodStarted: Date.now() - flowStartedAt.current,
-                });
-
-                const now = Date.now();
-                const sessionStart = Number(localStorage.getItem(SESSION_START_KEY) ?? now);
-                const accountCreatedAt = Number(
-                    localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now
-                );
-                track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
-                    method: ProfileBuildMethod.ClaimLink,
-                    itemType: 'credential',
-                    itemCount: 1,
-                    totalItemsAfter: snapshotRef.current.credentialCount + 1,
-                    msSinceAccountCreated: now - accountCreatedAt,
-                    msSinceSessionStart: now - sessionStart,
-                });
-            }
-
+            completeClaimAttempt(boost, AnalyticsEvents.CREDENTIAL_CLAIM_SUCCEEDED);
+            track(AnalyticsEvents.CLAIM_BOOST, {
+                boostType: category,
+                achievementType: getAchievementType(boost),
+                method: 'Claim Modal',
+                msSinceMethodStarted: Date.now() - flowStartedAt.current,
+            });
+            const now = Date.now();
+            track(AnalyticsEvents.PROFILE_ITEM_ADDED, {
+                method: ProfileBuildMethod.ClaimLink,
+                itemType: 'credential',
+                itemCount: 1,
+                totalItemsAfter: snapshotRef.current.credentialCount + 1,
+                msSinceAccountCreated:
+                    now - Number(localStorage.getItem(ACCOUNT_CREATED_AT_KEY) ?? now),
+                msSinceSessionStart: now - Number(localStorage.getItem(SESSION_START_KEY) ?? now),
+            });
+            sessionStorage.removeItem(session.storageKey);
             setIsClaimed(true);
-            setIsClaimLoading(false);
             dismissClaimModal?.();
-
-            if (category === CredentialCategoryEnum.family) {
-                history.replace(`/families?boostUri=${claimedBoostUri}&showPreview=true`);
-            } else {
-                history.replace('/');
-            }
-
-            presentClaimSuccessToast();
-        } catch (e) {
-            setIsClaimLoading(false);
-
-            presentToast(m['toasts.credentialClaimFailed'](), {
-                type: ToastTypeEnum.Error,
-                hasDismissButton: true,
-            });
-
-            presentAlert({
-                backdropDismiss: false,
-                cssClass: 'boost-confirmation-alert',
-                header: m['claim.boost.expiredHeader'](),
-                buttons: [
-                    {
-                        text: m['contacts.okay'](),
-                        role: 'cancel',
-                        handler: () => {
-                            dismissAlert();
-                            handleCancel();
-                        },
-                    },
-                ],
-            });
-
-            log.warn('claimBoostWithLink::error', e);
-            completeClaimAttempt(
-                boost,
-                AnalyticsEvents.CREDENTIAL_CLAIM_FAILED,
-                getClaimErrorCode(e)
+            history.replace(
+                category === CredentialCategoryEnum.family
+                    ? `/families?boostUri=${encodeURIComponent(session.attempt.credentialUri!)}&showPreview=true`
+                    : '/'
             );
+            presentClaimSuccessToast();
+        } catch {
+            if (mountedRef.current) {
+                const saved = claimSessionRef.current?.attempt.saved ?? false;
+                setClaimProgress({
+                    status: 'failed',
+                    stage: saved ? 'refreshing' : 'checking',
+                    saved,
+                });
+            }
+        } finally {
+            claimBusyRef.current = false;
+            if (mountedRef.current) setIsClaimLoading(false);
         }
     };
 
@@ -524,11 +582,14 @@ const ClaimBoost: React.FC<{
             handleClaimBoost();
         }
         if (!isLoggedIn && !loading) {
-            presentModal({
-                cssClass: 'center-modal boost-logged-out-confirmation-prompt',
-                backdropDismiss: true,
-                showBackdrop: false,
-            });
+            newModal(
+                <ClaimBoostLoggedOutPrompt
+                    handleCloseModal={closeModal}
+                    handleRedirectTo={handleRedirectTo}
+                />,
+                { hideButton: true },
+                { desktop: ModalTypes.Center, mobile: ModalTypes.Center }
+            );
         }
     };
 
@@ -554,6 +615,37 @@ const ClaimBoost: React.FC<{
     } else {
         actionButtonText = m['common.accept']();
         if (isFamily) actionButtonText = m['contacts.joinBoost']();
+    }
+    let claimStatusMessage = '';
+    if (!vc) {
+        if (claimProgress.status === 'working') {
+            const stages = {
+                checking: m['claim.recovery.checking'](),
+                claiming: m['claim.recovery.claiming'](),
+                saving: m['claim.recovery.saving'](),
+                refreshing: m['claim.recovery.refreshing'](),
+            };
+            actionButtonText = stages[claimProgress.stage];
+            claimStatusMessage = actionButtonText;
+        } else if (claimProgress.status === 'failed') {
+            const failures = {
+                checking: [m['claim.recovery.checkFailed'](), m['claim.recovery.tryAgain']()],
+                claiming: [m['claim.recovery.claimUncertain'](), m['claim.recovery.check']()],
+                saving: [m['claim.recovery.saveFailed'](), m['claim.recovery.save']()],
+                refreshing: [m['claim.recovery.refreshFailed'](), m['claim.recovery.refresh']()],
+            };
+            [claimStatusMessage, actionButtonText] = failures[claimProgress.stage];
+        } else if (claimProgress.status === 'pending') {
+            claimStatusMessage = m['claim.recovery.pending']();
+            actionButtonText = m['claim.recovery.check']();
+        } else if (claimProgress.status === 'terminal') {
+            const terminalMessages = {
+                expired: m['claim.recovery.expired'](),
+                exhausted: m['claim.recovery.exhausted'](),
+                unavailable: m['claim.recovery.unavailable'](),
+            };
+            claimStatusMessage = terminalMessages[claimProgress.reason];
+        }
     }
 
     useEffect(() => {
@@ -663,12 +755,16 @@ const ClaimBoost: React.FC<{
             <BoostFooterLayout
                 contentOwnsScroll
                 footerProps={{
-                    handleClose: handleCancel,
+                    handleClose: isClaimLoading ? undefined : handleCancel,
                     handleDetails: isMobile ? () => openDetailsSideModal() : undefined,
                     handleClaim: vc ? handleClaimRawCredential : handleClaimBoostAction,
                     claimBtnText: actionButtonText,
                     disableClaimButton:
-                        loading || isClaimLoading || isCheckingDuplicate || isClaimed,
+                        loading ||
+                        isClaimLoading ||
+                        isCheckingDuplicate ||
+                        isClaimed ||
+                        (!vc && (!boost || claimProgress.status === 'terminal')),
                     useFullCloseButton: !isMobile,
                 }}
             >
@@ -691,6 +787,20 @@ const ClaimBoost: React.FC<{
                             } ${Capacitor.isNativePlatform() ? 'pt-0' : 'pt-[30px]'}`}
                         >
                             <div className="pb-4 vc-preview-modal-safe-area h-full w-full">
+                                <section
+                                    ref={statusRef}
+                                    role="status"
+                                    aria-live="polite"
+                                    aria-atomic="true"
+                                    tabIndex={-1}
+                                    className={
+                                        claimStatusMessage
+                                            ? 'mb-5 p-4 bg-white border border-grayscale-200 rounded-2xl font-poppins text-sm text-grayscale-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500'
+                                            : 'sr-only'
+                                    }
+                                >
+                                    {claimStatusMessage}
+                                </section>
                                 {loading && (
                                     <section
                                         role="status"

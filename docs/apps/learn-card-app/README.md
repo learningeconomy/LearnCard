@@ -43,15 +43,23 @@ flowchart LR
     C -->|No| D[Create account / Login]
     C -->|Yes| E[Review credential]
     D --> E
-    E --> F[Accept & Save]
-    F --> G[Credential in wallet]
+    E --> F[Claim credential]
+    F --> G[Save to collection]
+    G --> H[Refresh collection]
 ```
 
-1. User receives a claim link or scans a QR code
-2. Link opens the LearnCard App
-3. User logs in (or creates an account)
-4. User reviews the credential details
-5. User accepts and saves to their wallet
+If completion stops, keep the page open and use its recovery action:
+
+| Action                      | What happens                                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **Try again**               | Checks the same claim link again after a temporary confirmation failure.                                                |
+| **Check for my credential** | Looks for the previous claim's result before another claim can start. An unresolved result stays in this checking flow. |
+| **Save my credential**      | Uses the already-issued credential to finish saving, without claiming another copy or adding a duplicate entry.         |
+| **Refresh my collection**   | Keeps the confirmed saved credential and retries refresh, not claiming or saving.                                       |
+
+Expired links and links that have reached their claim limit have different messages, shown only when the service confirms the condition. Ask the issuer for a new link. A temporary connection failure is not treated as expiration.
+
+Recovery keeps the original link and credential preview in place. Action buttons cannot start overlapping attempts; the existing duplicate choices and Close action remain available when no operation is running.
 
 ### Receiving Credentials from a Website
 

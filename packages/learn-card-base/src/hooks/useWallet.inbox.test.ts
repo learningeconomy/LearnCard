@@ -120,6 +120,37 @@ beforeEach(async () => {
     });
 });
 
+it('does not read or save a staged claim under a different active account', async () => {
+    await expect(
+        useWallet().addVCtoWallet({
+            uri: 'existing-uri',
+            expectedDid: 'did:example:original-account',
+            deferRefresh: true,
+        })
+    ).rejects.toThrow();
+    expect(records).toEqual([]);
+    expect(mocks.read).not.toHaveBeenCalled();
+});
+
+it('keeps a staged collection save successful when later sharing refresh fails', async () => {
+    const hooks = useWallet();
+    const saved = await hooks.addVCtoWallet({
+        uri: 'existing-uri',
+        expectedDid: 'did:example:claiming-account',
+        deferRefresh: true,
+    });
+    expect(saved).toBe(true);
+    const refreshError = new Error('sharing unavailable');
+    mocks.getConsentedContracts.mockRejectedValueOnce(refreshError);
+    await expect(
+        hooks.syncCredentialToContracts({
+            record: { id: records[0]!.id, uri: 'existing-uri', category: 'Achievement' },
+            category: 'Achievement',
+        })
+    ).rejects.toBe(refreshError);
+    expect(records).toEqual([expect.objectContaining({ uri: 'existing-uri' })]);
+});
+
 it('updates on-device targeting facts and emits the claim trigger after saving', async () => {
     await useWallet().storeAndAddVCToWallet(credential);
 
