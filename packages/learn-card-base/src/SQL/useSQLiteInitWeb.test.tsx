@@ -73,4 +73,26 @@ describe('web SQLite initialization boundary', () => {
         expect(mocks.connection.initWebStore).toHaveBeenCalledOnce();
         hook.unmount();
     });
+
+    it('does not publish readiness after an abandoned mount, but a remount can initialize', async () => {
+        mocks.platform = 'web';
+        vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+        let finish!: () => void;
+        const pending = new Promise<void>(resolve => {
+            finish = resolve;
+        });
+        mocks.connection.initWebStore.mockReturnValueOnce(pending);
+        const abandoned = renderHook(() => useSQLiteInitWeb());
+        await waitFor(() => expect(mocks.connection.initWebStore).toHaveBeenCalledOnce());
+        abandoned.unmount();
+        finish();
+        await pending;
+        expect(mocks.ready).not.toHaveBeenCalled();
+        expect(mocks.setDb).not.toHaveBeenCalled();
+
+        const replacement = renderHook(() => useSQLiteInitWeb());
+        await waitFor(() => expect(mocks.setDb).toHaveBeenCalledOnce());
+        expect(mocks.ready).toHaveBeenCalledOnce();
+        replacement.unmount();
+    });
 });

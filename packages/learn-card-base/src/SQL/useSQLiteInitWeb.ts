@@ -57,6 +57,9 @@ export const useSQLiteInitWeb = () => {
                 if (!stopped) log.warn('Optional web SQLite initialization failed', error);
             } finally {
                 clearTimeout(timeout);
+                // Only a live initializer may publish readiness. An abandoned
+                // mount leaves waiters pending until a replacement initializes
+                // (or their own timeout); it must not announce a stale handle.
                 if (!stopped) markSQLiteReady();
             }
         };

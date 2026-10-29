@@ -1,9 +1,10 @@
-import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { ensureReactQueryTableExists, sqliteStore } from 'learn-card-base';
 import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 
+type QueryCacheDatabase = NonNullable<ReturnType<typeof sqliteStore.get.db>>;
+
 const withQueryCacheDatabase = async <T>(
-    operation: (db: SQLiteDBConnection) => Promise<T>
+    operation: (db: QueryCacheDatabase) => Promise<T>
 ): Promise<T | undefined> => {
     const db = sqliteStore.get.db();
     if (!db) return;
@@ -21,16 +22,18 @@ export const queryCacheStorage = {
             const result = await db.query('SELECT cache FROM reactQuery WHERE id = ?;', [key]);
             return result.values?.[0]?.cache;
         }),
-    setItem: (key: string, value: string): Promise<unknown> =>
-        withQueryCacheDatabase(db =>
-            db.executeSet([
+    setItem: (key: string, value: string): Promise<void> =>
+        withQueryCacheDatabase(async db => {
+            await db.executeSet([
                 {
                     statement:
                         'INSERT INTO reactQuery (id, cache) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET cache=excluded.cache;',
                     values: [key, value],
                 },
-            ])
-        ),
-    removeItem: (key: string): Promise<unknown> =>
-        withQueryCacheDatabase(db => db.run('DELETE FROM reactQuery WHERE id = ?;', [key])),
+            ]);
+        }),
+    removeItem: (key: string): Promise<void> =>
+        withQueryCacheDatabase(async db => {
+            await db.run('DELETE FROM reactQuery WHERE id = ?;', [key]);
+        }),
 };
