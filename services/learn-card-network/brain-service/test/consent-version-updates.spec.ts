@@ -150,4 +150,153 @@ describe('safe live contract patches', () => {
         expect(terms.status).toBe('live');
         expect(terms.terms.write.credentials.categories).toEqual({});
     });
+
+    it('accepts every required change across multiple unreviewed versions', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: { credentials: { categories: { Transcript: { required: true } } } },
+                },
+            },
+            reason: 'Verify completed courses.',
+        });
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: {
+                        credentials: { categories: { 'Learning History': { required: true } } },
+                    },
+                    write: {
+                        credentials: {
+                            categories: {
+                                'Social Badge': { required: false, defaultEnabled: true },
+                            },
+                        },
+                    },
+                },
+            },
+            reason: 'Personalize learning and recognize progress.',
+        });
+        const listed = await learner.clients.fullAuth.contracts.getConsentedContracts({});
+        const record = listed.records.find(item => item.uri === termsUri)!;
+        expect(record.consentedVersion).toBe(1);
+        expect(record.cumulativeUpdate).toMatchObject({
+            fromVersion: 1,
+            toVersion: 3,
+            diff: {
+                added: expect.arrayContaining([
+                    expect.objectContaining({ area: 'read', key: 'Transcript', required: true }),
+                    expect.objectContaining({
+                        area: 'read',
+                        key: 'Learning History',
+                        required: true,
+                    }),
+                    expect.objectContaining({
+                        area: 'write',
+                        key: 'Social Badge',
+                        required: false,
+                    }),
+                ]),
+            },
+        });
+
+        const terms = structuredClone(record.terms);
+        terms.read.credentials.shareAll = false;
+        terms.read.credentials.categories['Learning History'] = {
+            sharing: true,
+            shareAll: true,
+            shared: [],
+        };
+        terms.write.credentials.categories['Social Badge'] = true;
+        await expect(
+            learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+                acceptVersion: 3,
+                audienceVersion: 0,
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect((await getContractTermsByUri(termsUri))!.terms.consentedVersion).toBe(1);
+
+        for (const scope of record.cumulativeUpdate!.diff.added) {
+            if (scope.area === 'read' && scope.type === 'credential' && scope.required) {
+                terms.read.credentials.categories[scope.key] = {
+                    sharing: true,
+                    shareAll: true,
+                    shared: [],
+                };
+            }
+        }
+        expect(
+            await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+                acceptVersion: record.cumulativeUpdate!.toVersion,
+                audienceVersion: 0,
+            })
+        ).toBe(true);
+        const saved = (await getContractTermsByUri(termsUri))!.terms;
+        expect(saved).toMatchObject({ consentedVersion: 3, status: 'live' });
+        expect(saved.terms.read.credentials.categories.Transcript?.sharing).toBe(true);
+        expect(saved.terms.read.credentials.categories['Learning History']?.sharing).toBe(true);
+        expect(saved.terms.write.credentials.categories).toMatchObject({
+            ...normalFullTerms.write.credentials.categories,
+            'Social Badge': true,
+        });
+    });
+
+    it('clears pending optional defaults only after successfully saving the holder choices', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    write: {
+                        credentials: {
+                            categories: {
+                                'Social Badge': { required: false, defaultEnabled: true },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        const pending = (
+            await learner.clients.fullAuth.contracts.getConsentedContracts({})
+        ).records.find(item => item.uri === termsUri)!;
+        expect(pending.newOptionsUntil).toEqual(expect.any(String));
+        const terms = structuredClone(pending.terms);
+        delete terms.write.credentials.categories['Social Badge'];
+        await expect(
+            learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms: {
+                    ...terms,
+                    read: { ...terms.read, personal: { unrequested: 'not allowed' } },
+                },
+                audienceVersion: 0,
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        expect((await getContractTermsByUri(termsUri))!.terms.newOptionsUntil).toBe(
+            pending.newOptionsUntil
+        );
+        expect(
+            await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+                audienceVersion: 0,
+            })
+        ).toBe(true);
+        const reopened = (
+            await learner.clients.fullAuth.contracts.getConsentedContracts({})
+        ).records.find(item => item.uri === termsUri)!;
+        expect(reopened.newOptionsUntil).toBeUndefined();
+        expect(reopened.terms.write.credentials.categories['Social Badge']).toBeUndefined();
+        expect(reopened.terms.write.credentials.categories).toEqual(
+            normalFullTerms.write.credentials.categories
+        );
+    });
 });

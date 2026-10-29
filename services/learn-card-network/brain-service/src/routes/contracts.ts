@@ -1442,6 +1442,9 @@ export const contractsRouter = t.router({
                     consenter: updateDidForProfile(ctx.domain, profile),
                     status: record.terms.status,
                     consentedVersion: Number(record.terms.consentedVersion ?? 1),
+                    ...(record.cumulativeUpdate
+                        ? { cumulativeUpdate: record.cumulativeUpdate }
+                        : {}),
                     ...(record.terms.reconsentDeadline
                         ? { reconsentDeadline: record.terms.reconsentDeadline }
                         : {}),

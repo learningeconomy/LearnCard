@@ -446,7 +446,8 @@ export const updateTerms = async (
         status: oneTime ? 'consumed' : 'live',
         ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
         ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
-        ...Object.fromEntries(keysToRemove.map(k => [k, null as any])),
+        newOptionsUntil: null,
+        ...Object.fromEntries(keysToRemove.map(k => [k, null])),
     };
 
     const result = await runAudienceMutation(

@@ -117,6 +117,8 @@ Here `termsUri` and `selectedTerms` come from the user's existing consent record
 
 Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. A cancelled parent check leaves the review available to retry. A version conflict reloads the latest request before another approval attempt.
 
+If a request changes several times before a user reviews it, `getConsentedContracts()` includes a `cumulativeUpdate` from their accepted version to the current version. Review and grant every required item in that cumulative change, not just the last published update, before accepting the current version.
+
 The web review, notification card, and history labels use the active app language (English, Spanish, French, or Arabic). Notification navigation does not wait for the best-effort read receipt; dismissal errors stay visible with a retry action.
 
 An update requiring approval defaults to a deadline 30 days after it is saved. Pass an ISO `reconsentDeadline` in `updateContract` options to choose another date. When the deadline passes, the scheduled job moves unanswered requests to `suspended`. The user can still review and approve the latest request to reconnect.
