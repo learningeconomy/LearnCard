@@ -9,6 +9,7 @@ export type SelectedCredential = {
     recordId: string;
     category: CredentialListCategory;
     fromCategory?: CredentialListCategory;
+    record: LCR;
 };
 
 type CredentialSelectionState = {
@@ -73,13 +74,17 @@ export const credentialSelectionStore = createStore(
         uris.forEach(uri => delete next[uri]);
         set.items(next);
     },
-    setRange: (listId: string, items: SelectedCredential[]) => {
+    setRange: (listId: string, items: SelectedCredential[], endUri: string) => {
         const anchor = credentialSelectionStore.get.anchorByList()[listId];
         const anchorIndex = anchor ? items.findIndex(item => item.uri === anchor) : -1;
-        const end = items.at(-1);
+        const endIndex = items.findIndex(item => item.uri === endUri);
+        const end = items[endIndex];
         if (!end) return;
-        const startIndex = anchorIndex >= 0 ? anchorIndex : items.length - 1;
-        const range = items.slice(Math.min(startIndex, items.length - 1), items.length);
+        const startIndex = anchorIndex >= 0 ? anchorIndex : endIndex;
+        const range = items.slice(
+            Math.min(startIndex, endIndex),
+            Math.max(startIndex, endIndex) + 1
+        );
         credentialSelectionStore.set.selectMany(range, listId);
         set.anchorByList({ ...credentialSelectionStore.get.anchorByList(), [listId]: end.uri });
     },

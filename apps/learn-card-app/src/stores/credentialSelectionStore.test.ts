@@ -7,17 +7,23 @@ import {
     isCredentialSelected,
     SelectedCredential,
 } from './credentialSelectionStore';
+import type { LCR } from 'learn-card-base/types/credential-records';
+
+const record = (uri: string, category: SelectedCredential['category']): LCR =>
+    ({ id: `record:${uri}`, uri, category }) as LCR;
 
 const achievement: SelectedCredential = {
     uri: 'achievement:1',
     recordId: 'record:achievement:1',
     category: 'Achievement',
+    record: record('achievement:1', 'Achievement'),
 };
 
 const badge: SelectedCredential = {
     uri: 'badge:1',
     recordId: 'record:badge:1',
     category: 'Social Badge',
+    record: record('badge:1', 'Social Badge'),
 };
 
 describe('credentialSelectionStore', () => {
