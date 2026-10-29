@@ -653,7 +653,8 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
         await delay(6_000);
 
         const notifications = await a.invoke.getNotifications({ limit: 50 });
-        const initial = (notifications?.notifications ?? []).filter(
+        if (!notifications) throw new Error('Could not read credential notifications');
+        const initial = notifications.notifications.filter(
             (notification: any) =>
                 notification.type === 'CREDENTIAL_RECEIVED' &&
                 (notification.data?.vcUris ?? []).includes(result.credentialUri)

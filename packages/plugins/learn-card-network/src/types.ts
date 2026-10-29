@@ -14,6 +14,10 @@ import type {
     PaginatedCampaigns,
     PaginatedCampaignAudience,
     PublishCredentialSharePreview,
+    ConsentFlowContractChanges,
+    ConsentFlowContractUpdateResult,
+    ConsentFlowContractVersion,
+    ConsentFlowConsentStatus,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -61,10 +65,6 @@ import {
     PaginatedConsentFlowContracts,
     PaginatedConsentFlowTerms,
     ConsentFlowContractDetails,
-    ConsentFlowContractChanges,
-    ConsentFlowContractUpdateResult,
-    ConsentFlowContractVersion,
-    ConsentFlowConsentStatus,
     PaginatedConsentFlowTransactions,
     ConsentFlowTransactionsQuery,
     HolderExportMetadata,
