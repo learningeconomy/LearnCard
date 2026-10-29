@@ -1,0 +1,16 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true
+    },
+    "include": [
+        "scenario",
+        "src/dev",
+        "test/helpers/health-server.ts",
+        "test/helpers/record-binding.ts",
+        "test/helpers/did-auth.ts",
+        "test/helpers/ecosystem-with-id.ts",
+        "test/helpers/demo-lms-manifest.ts",
+        "test/helpers/scenario-preflight.ts"
+    ]
+}
