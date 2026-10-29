@@ -99,3 +99,26 @@ describe('DID CSV', () => {
             expect(parseAudienceCsv(text).errors.length).toBeGreaterThan(0);
     });
 });
+
+describe('advanced audience sources', () => {
+    it('validates existing email, sender, listing and inbox contracts', async () => {
+        const { parseAudienceSource } = await import('./model');
+        expect(
+            parseAudienceSource('{"type":"emails","emails":["Learner@Example.com"]}').data
+        ).toEqual({ type: 'emails', emails: ['learner@example.com'] });
+        expect(
+            parseAudienceSource('{"type":"credentialsSentBy","senderProfileId":"issuer"}').data
+        ).toMatchObject({ includePending: false });
+        expect(
+            parseAudienceSource('{"type":"credentialsSentBy","listingId":"listing"}').errors
+        ).toEqual([]);
+        expect(
+            parseAudienceSource('{"type":"inboxClaims","issuerDid":"did:key:issuer"}').errors
+        ).toEqual([]);
+        expect(
+            parseAudienceSource(
+                '{"type":"credentialsSentBy","listingId":"one","senderProfileId":"two"}'
+            ).data
+        ).toBeUndefined();
+    });
+});

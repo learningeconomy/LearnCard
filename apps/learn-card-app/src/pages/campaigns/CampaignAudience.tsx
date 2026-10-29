@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { CampaignAudienceSource } from '@learncard/types';
 import type { CampaignApi } from './types';
-import { audienceChunks, parseAudienceCsv } from './model';
+import { audienceChunks, parseAudienceCsv, parseAudienceSource } from './model';
 import { useCampaignAction } from './useCampaignAction';
 import { Busy, Field, Notice, buttonClass, inputClass, panelClass } from './ui';
 
@@ -14,6 +14,8 @@ export const CampaignAudience: React.FC<{
 }> = ({ api, id, disabled, onBusy }) => {
     const [csv, setCsv] = useState<ReturnType<typeof parseAudienceCsv>>();
     const [boostUri, setBoostUri] = useState('');
+    const [sourceJson, setSourceJson] = useState('');
+    const advanced = sourceJson ? parseAudienceSource(sourceJson) : undefined;
     const [includePending, setIncludePending] = useState(false);
     const [progress, setProgress] = useState({ done: 0, total: 0, matches: 0 });
     const [cancelling, setCancelling] = useState(false);
@@ -180,6 +182,57 @@ export const CampaignAudience: React.FC<{
                         Add boost audience
                     </button>
                 </div>
+                <details className="space-y-3">
+                    <summary className="cursor-pointer text-sm font-medium">
+                        Advanced audience source
+                    </summary>
+                    <p className="text-xs text-grayscale-600">
+                        Use the existing source JSON contract for email matches, credentials sent by
+                        an account or listing, or inbox claims. Email matching selects existing
+                        accounts; it does not enable email delivery.
+                    </p>
+                    <Field label="Audience source JSON" htmlFor="audience-source-json">
+                        <textarea
+                            id="audience-source-json"
+                            className={`${inputClass} font-mono`}
+                            rows={6}
+                            value={sourceJson}
+                            onChange={e => setSourceJson(e.target.value)}
+                            placeholder={'{"type":"emails","emails":["learner@example.com"]}'}
+                        />
+                    </Field>
+                    {advanced && advanced.errors.length > 0 && (
+                        <Notice error>
+                            <ul>
+                                {advanced.errors.map((error, i) => (
+                                    <li key={i}>{error}</li>
+                                ))}
+                            </ul>
+                        </Notice>
+                    )}
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!advanced?.data}
+                            onClick={() => {
+                                if (advanced?.data) runSources([advanced.data], true);
+                            }}
+                        >
+                            Preview advanced audience
+                        </button>
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!advanced?.data}
+                            onClick={() => {
+                                if (advanced?.data) runSources([advanced.data], false);
+                            }}
+                        >
+                            Add advanced audience
+                        </button>
+                    </div>
+                </details>
             </fieldset>
             {action.busy && (
                 <div role="status">
@@ -196,6 +249,7 @@ export const CampaignAudience: React.FC<{
                         disabled={cancelling}
                         onClick={() => {
                             cancel.current = true;
+                            fileVersion.current++;
                             setCancelling(true);
                         }}
                     >
