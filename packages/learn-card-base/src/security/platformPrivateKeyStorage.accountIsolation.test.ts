@@ -212,6 +212,99 @@ describe.each(['android', 'ios'])('%s account key isolation', platform => {
         expect(query.mock.calls.every(([, values]) => values?.[0] === 'account-b')).toBe(true);
     });
 
+    it.each(['uid', 'verifierId', 'email'] as const)(
+        'uses a hydrated %s after a transient failure instead of a globally stored key',
+        async identifier => {
+            insertUser({ [identifier]: 'account-a' }, 'synthetic-key-a');
+            query.mockRejectedValueOnce(new Error('synthetic transient query failure'));
+            setTimeout(() => {
+                mocks.user = { [identifier]: 'account-b' };
+            }, 100);
+
+            expect(await readKey()).toBeNull();
+            expect(query.mock.calls[0]?.[1]).toEqual([]);
+            expect(
+                query.mock.calls.slice(1).every(([, values]) => values?.[0] === 'account-b')
+            ).toBe(true);
+        }
+    );
+
+    it.each(['uid', 'verifierId', 'email'] as const)(
+        'resolves an initially ambiguous lookup after %s hydrates between attempts',
+        async identifier => {
+            insertUser({ [identifier]: 'account-a' }, 'synthetic-key-a');
+            insertUser({ [identifier]: 'account-b' }, 'synthetic-key-b');
+            setTimeout(() => {
+                mocks.user = { [identifier]: 'account-b' };
+            }, 100);
+
+            expect(await readKey()).toBe('synthetic-key-b');
+            expect(query.mock.calls[0]?.[1]).toEqual([]);
+            expect(query).toHaveBeenCalledWith(expect.any(String), ['account-b']);
+        }
+    );
+
+    it('uses a UID hydrated after an ambiguous email lookup', async () => {
+        insertUser({ uid: 'account-a', email: 'same@example.test' }, 'synthetic-key-a');
+        insertUser({ uid: 'account-b', email: 'same@example.test' }, 'synthetic-key-b');
+        mocks.user = { email: 'same@example.test' };
+        setTimeout(() => {
+            mocks.user = { uid: 'account-b', email: 'same@example.test' };
+        }, 100);
+
+        expect(await readKey()).toBe('synthetic-key-b');
+        expect(query).toHaveBeenCalledWith(expect.stringContaining('WHERE uid = ?'), ['account-b']);
+    });
+
+    it.each([null, { email: 'same@example.test' }])(
+        'never weakens a known UID lookup if identity becomes %s during retries',
+        async nextUser => {
+            insertUser({ uid: 'account-a', email: 'same@example.test' }, 'synthetic-key-a');
+            mocks.user = { uid: 'account-b', email: 'same@example.test' };
+            setTimeout(() => {
+                mocks.user = nextUser;
+            }, 100);
+
+            expect(await readKey()).toBeNull();
+            expect(query.mock.calls.every(([, values]) => values?.[0] === 'account-b')).toBe(true);
+        }
+    );
+
+    it.each(
+        (['open', 'query', 'close'] as const).flatMap(phase =>
+            [false, true].map(hasKey => ({ phase, hasKey }))
+        )
+    )(
+        'uses hydrated identity during SQLite $phase (matching key: $hasKey)',
+        async ({ phase, hasKey }) => {
+            insertUser({ uid: 'account-a' }, 'synthetic-key-a');
+            if (hasKey) insertUser({ uid: 'account-b' }, 'synthetic-key-b');
+            const hydrate = () => {
+                mocks.user = { uid: 'account-b' };
+            };
+            if (phase === 'open') {
+                open.mockImplementationOnce(async () => {
+                    opened = true;
+                    hydrate();
+                });
+            } else if (phase === 'query') {
+                query.mockImplementationOnce(async (sql: string, values: string[] = []) => {
+                    const result = { values: sqlite.prepare(sql).all(...values) };
+                    hydrate();
+                    return result;
+                });
+            } else {
+                close.mockImplementationOnce(async () => {
+                    opened = false;
+                    hydrate();
+                });
+            }
+
+            expect(await readKey()).toBe(hasKey ? 'synthetic-key-b' : null);
+            expect(query).toHaveBeenCalledWith(expect.any(String), ['account-b']);
+        }
+    );
+
     it.each([true, false])(
         'keeps account selection and overlapping SQLite ownership together (matching key: %s)',
         async hasKey => {

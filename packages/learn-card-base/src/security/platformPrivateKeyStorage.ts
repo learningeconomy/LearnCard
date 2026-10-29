@@ -12,14 +12,14 @@ import { getLogger } from '../logging/logger';
 
 const log = getLogger('platform-private-key-storage');
 
-const userFilter = (): { clause: string; values: string[] } => {
+const userFilter = (): { clause: string; values: string[]; strength: 0 | 1 | 2 | 3 } => {
     const user = currentUserStore.get.currentUser();
-    if (user?.uid) return { clause: 'WHERE uid = ?', values: [user.uid] };
+    if (user?.uid) return { clause: 'WHERE uid = ?', values: [user.uid], strength: 3 };
     const verifierId = user && 'verifierId' in user ? user.verifierId : undefined;
     if (typeof verifierId === 'string' && verifierId)
-        return { clause: 'WHERE verifierId = ?', values: [verifierId] };
-    if (user?.email) return { clause: 'WHERE email = ?', values: [user.email] };
-    return { clause: '', values: [] };
+        return { clause: 'WHERE verifierId = ?', values: [verifierId], strength: 2 };
+    if (user?.email) return { clause: 'WHERE email = ?', values: [user.email], strength: 1 };
+    return { clause: '', values: [], strength: 0 };
 };
 
 export async function setPlatformPrivateKey(pk: string): Promise<void> {
@@ -69,24 +69,39 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
 
 export async function getPlatformPrivateKey(): Promise<string | null> {
     if (Capacitor.getPlatform() === 'web') return getWebSecurePrivateKey();
+    // Hydration may strengthen identity, but this lookup must never weaken a scope it observed.
+    let minimumStrength = userFilter().strength;
     await waitForSQLiteReady();
     const db = sqliteStore.get.db();
     if (!db) return null;
-    const filter = userFilter();
     // A known account must never inherit another account's key after a miss.
     // Before identity hydration, restore only if exactly one distinct populated key exists.
     // Legacy rows may repeat the same key; LIMIT 2 detects conflicting key values.
-    const keyQuery = `SELECT DISTINCT privateKey FROM users ${filter.clause || 'WHERE 1 = 1'}
-        AND privateKey IS NOT NULL AND privateKey != '' LIMIT 2`;
-
     for (let attempt = 0; attempt < 3; attempt++) {
         try {
-            const key = await withSQLiteDatabase(db, async connection => {
+            const result = await withSQLiteDatabase(db, async connection => {
+                // Re-read identity after the asynchronous open/lease, on every attempt.
+                const filter = userFilter();
+                if (filter.strength < minimumStrength) return { filter, key: null };
+                minimumStrength = filter.strength;
+                const keyQuery = `SELECT DISTINCT privateKey FROM users ${filter.clause || 'WHERE 1 = 1'}
+                    AND privateKey IS NOT NULL AND privateKey != '' LIMIT 2`;
                 const result = await connection.query(keyQuery, filter.values);
                 const stored = result.values?.length === 1 ? result.values[0]?.privateKey : null;
-                return typeof stored === 'string' && stored.length > 0 ? stored : null;
+                return {
+                    filter,
+                    key: typeof stored === 'string' && stored.length > 0 ? stored : null,
+                };
             });
-            if (key) return key;
+            // A query or connection close may yield while the active identity changes.
+            const current = userFilter();
+            if (current.strength > minimumStrength) minimumStrength = current.strength;
+            if (
+                result.key &&
+                current.clause === result.filter.clause &&
+                current.values[0] === result.filter.values[0]
+            )
+                return result.key;
         } catch (error) {
             log.warn(`getPlatformPrivateKey: sqlite error (attempt ${attempt + 1})`, error);
         }
