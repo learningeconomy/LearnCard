@@ -151,6 +151,7 @@ describe('campaign composer', () => {
         const api = apiMock();
         const view = mount(api);
         expect(await screen.findByLabelText('Campaign ID')).toBeDisabled();
+        fireEvent.click(screen.getByRole('tab', { name: 'JSON' }));
         fireEvent.change(screen.getByLabelText('Message JSON'), { target: { value: '{' } });
         expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Preview message' })).toBeDisabled();
