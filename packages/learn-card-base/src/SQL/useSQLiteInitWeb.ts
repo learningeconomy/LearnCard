@@ -18,10 +18,12 @@ export const useSQLiteInitWeb = () => {
         const initialize = async () => {
             let timeout: ReturnType<typeof setTimeout> | undefined;
             try {
-                // A remote module in HTML previously blocked native React startup.
-                const { defineCustomElements } = await import('jeep-sqlite/loader');
+                // Keep this web-only. The custom-element entry lets Vite bundle all code;
+                // Stencil's lazy loader requests an un-emitted jeep-sqlite.entry.js in production.
+                const { defineCustomElement } =
+                    await import('jeep-sqlite/dist/components/jeep-sqlite');
                 if (stopped) return;
-                defineCustomElements(window);
+                if (!customElements.get('jeep-sqlite')) defineCustomElement();
                 element = document.createElement('jeep-sqlite');
                 document.body.appendChild(element);
                 await customElements.whenDefined('jeep-sqlite');
@@ -57,6 +59,9 @@ export const useSQLiteInitWeb = () => {
                 if (!stopped) log.warn('Optional web SQLite initialization failed', error);
             } finally {
                 clearTimeout(timeout);
+                // Only a live initializer may publish readiness. An abandoned
+                // mount leaves waiters pending until a replacement initializes
+                // (or their own timeout); it must not announce a stale handle.
                 if (!stopped) markSQLiteReady();
             }
         };

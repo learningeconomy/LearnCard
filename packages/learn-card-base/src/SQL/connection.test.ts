@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SQLiteDBConnection } from '@capacitor-community/sqlite';
 import {
     ensureSQLiteSchema,
@@ -6,6 +6,10 @@ import {
     retainSQLiteConnection,
     releaseSQLiteConnection,
 } from './connection';
+
+const log = vi.hoisted(() => ({ warn: vi.fn() }));
+vi.mock('../logging/logger', () => ({ getLogger: () => log }));
+beforeEach(() => vi.clearAllMocks());
 
 const deferred = () => {
     let resolve!: () => void;
@@ -24,6 +28,7 @@ const database = () => {
             if (!opened) throw new Error('Database not opened');
             opened = false;
         }),
+        isDBOpen: vi.fn(async () => ({ result: opened })),
         execute: vi.fn(async () => undefined),
     };
     return { db: methods as unknown as SQLiteDBConnection, methods, isOpen: () => opened };
@@ -59,6 +64,7 @@ describe('shared SQLite connection ownership', () => {
         await operation;
         expect(methods.close).toHaveBeenCalledOnce();
     });
+
     it('does not close a key read while a parallel cache write finishes', async () => {
         const { db, methods, isOpen } = database();
         const entered = deferred(),
@@ -133,6 +139,43 @@ describe('shared SQLite connection ownership', () => {
             })
         ).rejects.toThrow('disk full');
         await expect(withSQLiteDatabase(db, async () => 'retry')).resolves.toBe('retry');
+    });
+
+    it.each([false, true])(
+        'returns a committed write after close throws, even if the handle was closed: %s',
+        async closed => {
+            const { db, methods, isOpen } = database();
+            // Unlike an idempotent upsert, retrying this insert would duplicate it.
+            const rows: string[] = [];
+            const realClose = methods.close.getMockImplementation()!;
+            methods.close.mockImplementationOnce(async () => {
+                if (closed) await realClose();
+                throw new Error('close failed');
+            });
+            await expect(
+                withSQLiteDatabase(db, async () => {
+                    rows.push('credential');
+                    return 'stored-uri';
+                })
+            ).resolves.toBe('stored-uri');
+            expect(rows).toEqual(['credential']);
+            expect(log.warn).toHaveBeenCalledOnce();
+            await expect(withSQLiteDatabase(db, async () => isOpen())).resolves.toBe(true);
+            expect(methods.isDBOpen).toHaveBeenCalledOnce();
+            expect(methods.open).toHaveBeenCalledTimes(closed ? 2 : 1);
+            expect(isOpen()).toBe(false);
+        }
+    );
+
+    it('does not run another operation until an uncertain handle can be checked', async () => {
+        const { db, methods } = database();
+        methods.close.mockRejectedValueOnce(new Error('close failed'));
+        await withSQLiteDatabase(db, async () => undefined);
+        methods.isDBOpen.mockRejectedValueOnce(new Error('status unavailable'));
+        const operation = vi.fn(async () => 'next');
+        await expect(withSQLiteDatabase(db, operation)).rejects.toThrow('status unavailable');
+        expect(operation).not.toHaveBeenCalled();
+        await expect(withSQLiteDatabase(db, operation)).resolves.toBe('next');
     });
 
     it('shares schema initialization and retries a failed schema without poisoning future reads', async () => {

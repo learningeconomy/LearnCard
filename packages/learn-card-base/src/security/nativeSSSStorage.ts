@@ -1,4 +1,4 @@
-import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
+import { ensureSQLiteSchema, withSQLiteDatabase } from 'learn-card-base/SQL/connection';
 import { getLogger } from '../logging/logger';
 const log = getLogger('native-sssstorage');
 /**
@@ -38,26 +38,19 @@ const ensureTable = async (): Promise<boolean> => {
     if (!db) return false;
 
     try {
-        return await withSQLiteDatabase(db, async () => {
-            await db.execute(`
+        await ensureSQLiteSchema(
+            db,
+            TABLE,
+            `
             CREATE TABLE IF NOT EXISTS ${TABLE} (
                 id TEXT PRIMARY KEY,
                 share TEXT NOT NULL
             )
-        `);
-            return true;
-        });
+        `
+        );
+        return true;
     } catch {
         return false;
-    }
-};
-
-let tableEnsured = false;
-
-const ensureTableOnce = async () => {
-    if (!tableEnsured) {
-        const ok = await ensureTable();
-        tableEnsured = ok;
     }
 };
 
@@ -85,7 +78,7 @@ export interface NativeSSSStorageFunctions {
  */
 export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     const storeDeviceShare = async (share: string, id?: string): Promise<void> => {
-        await ensureTableOnce();
+        await ensureTable();
 
         const shareId = id ?? DEFAULT_SHARE_ID;
         const db = sqliteStore.get.db();
@@ -108,7 +101,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     };
 
     const getDeviceShare = async (id?: string): Promise<string | null> => {
-        await ensureTableOnce();
+        await ensureTable();
 
         const shareId = id ?? DEFAULT_SHARE_ID;
         const db = sqliteStore.get.db();
@@ -147,7 +140,6 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
                     await db.run(`DELETE FROM ${TABLE} WHERE id = ?`, [id]);
                 } else {
                     await db.execute(`DELETE FROM ${TABLE}`);
-                    tableEnsured = false;
                 }
             });
         } catch (e) {
@@ -156,7 +148,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     };
 
     const storeShareVersion = async (version: number, id?: string): Promise<void> => {
-        await ensureTableOnce();
+        await ensureTable();
 
         const versionId = `${id ?? DEFAULT_SHARE_ID}:version`;
         const db = sqliteStore.get.db();
@@ -179,7 +171,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     };
 
     const getShareVersion = async (id?: string): Promise<number | null> => {
-        await ensureTableOnce();
+        await ensureTable();
 
         const versionId = `${id ?? DEFAULT_SHARE_ID}:version`;
         const db = sqliteStore.get.db();
@@ -207,7 +199,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     };
 
     const listAllShares = async (): Promise<NativeShareEntry[]> => {
-        await ensureTableOnce();
+        await ensureTable();
 
         const db = sqliteStore.get.db();
 
@@ -250,7 +242,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     };
 
     const deleteShare = async (id: string): Promise<void> => {
-        await ensureTableOnce();
+        await ensureTable();
 
         const db = sqliteStore.get.db();
 
