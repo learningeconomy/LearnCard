@@ -371,13 +371,24 @@ export const reconsentTerms = async (
                     );
                     claimId = undefined;
                 } catch (error) {
+                    if (claimId && sendStarted) {
+                        console.error(
+                            'Auto-boost claim send failed; delivery may be ambiguous',
+                            {
+                                claimId,
+                                termsId: relationship.terms.id,
+                                boostId: String(boostRel.target.dataValues.id),
+                            },
+                            error
+                        );
+                    } else {
+                        console.error('Error processing auto-boost:', error);
+                    }
                     if (claimId && !sendStarted) await releaseAutoBoostClaim(claimId);
-                    console.error('Error processing auto-boost:', error);
                 }
             })
         );
     }
-
     await tryDispatchContractEvent(transaction.id);
 
     return result.summary.counters.containsUpdates();
@@ -637,8 +648,20 @@ export const updateTerms = async (
                     );
                     claimId = undefined;
                 } catch (error) {
+                    if (claimId && sendStarted) {
+                        console.error(
+                            'Auto-boost claim send failed; delivery may be ambiguous',
+                            {
+                                claimId,
+                                termsId: relationship.terms.id,
+                                boostId: String(boost.target.id),
+                            },
+                            error
+                        );
+                    } else {
+                        console.error('Error processing auto-boost:', error);
+                    }
                     if (claimId && !sendStarted) await releaseAutoBoostClaim(claimId);
-                    console.error('Error processing auto-boost:', error);
                 }
             })
         );
