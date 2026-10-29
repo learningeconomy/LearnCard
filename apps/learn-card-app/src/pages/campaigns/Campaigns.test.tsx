@@ -110,7 +110,7 @@ describe('campaign composer', () => {
     it('filters through the server instead of only filtering loaded pages', async () => {
         const api = apiMock();
         mount(api, '/admin/campaigns');
-        fireEvent.click(await screen.findByRole('button', { name: 'Paused', exact: true }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Paused' }));
         await waitFor(() =>
             expect(api.campaignsList).toHaveBeenCalledWith(
                 expect.objectContaining({ status: 'paused', limit: 20 })
