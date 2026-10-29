@@ -29,7 +29,7 @@ export const BulkCredentialActionDock = () => {
     );
     const count = selected.length;
 
-    const execute = async (action: BulkCredentialAction): Promise<void> => {
+    const execute = async (action: Pick<BulkCredentialAction, 'id'>): Promise<void> => {
         if (!mutationActions.has(action.id)) return;
         if (action.id === 'delete' && !confirmingDelete) {
             setConfirmingDelete(true);
@@ -70,7 +70,7 @@ export const BulkCredentialActionDock = () => {
                             <button
                                 type="button"
                                 className="rounded-[20px] bg-red-600 px-3 py-2 text-sm font-medium text-white focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500"
-                                onClick={() => run('delete')}
+                                onClick={() => void execute({ id: 'delete' })}
                             >
                                 {m['bulkSelection.deleteConfirmAction']()}
                             </button>

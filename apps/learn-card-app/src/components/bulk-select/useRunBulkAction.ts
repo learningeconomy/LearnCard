@@ -57,6 +57,11 @@ export const useRunBulkAction = () => {
                         hasDismissButton: true,
                     }
                 );
+            } catch {
+                presentToast(m['bulkSelection.actionFailed'](), {
+                    type: ToastTypeEnum.Error,
+                    hasDismissButton: true,
+                });
             } finally {
                 setPendingAction(undefined);
             }
