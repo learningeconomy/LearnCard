@@ -3,7 +3,7 @@ import { CredentialCategory } from './credentials';
 
 export const ARCHIVED_CATEGORY = 'Archived' as const;
 
-export type CredentialListCategory = CredentialCategory | typeof ARCHIVED_CATEGORY;
+export type CredentialListCategory = CredentialCategory | 'Hidden' | typeof ARCHIVED_CATEGORY;
 
 /**
  * A previously current URI retained as app-local refresh history (LC-2117, LC-2135,

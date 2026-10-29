@@ -18,7 +18,8 @@ import {
     searchCredentialsFromCache,
     useGetCredentialList,
 } from 'learn-card-base';
-import type { CredentialCategory } from 'learn-card-base/types/credentials';
+import type { LCR } from 'learn-card-base/types/credential-records';
+import type { CredentialListCategory } from 'learn-card-base/types/credential-records';
 import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
@@ -27,7 +28,7 @@ import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlace
 import { SelectableCredential, toSelectedCredential } from '../../bulk-select/SelectableCredential';
 import { credentialSelectionStore } from '../../../stores/credentialSelectionStore';
 
-type CategoryType = CredentialCategory | 'Hidden' | 'Archived';
+type CategoryType = CredentialListCategory;
 
 type BoostEarnedListProps = {
     category: CategoryType;
@@ -129,10 +130,10 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     const textColor = categoryColors[category];
 
-    const visibleRecords = useMemo(
+    const visibleRecords = useMemo<LCR[]>(
         () =>
             records?.pages?.flatMap(page =>
-                page?.records?.filter?.(record =>
+                (page.records ?? []).filter(record =>
                     searchResults.find(cred => cred.uri === record?.uri)
                 )
             ) ?? [],
