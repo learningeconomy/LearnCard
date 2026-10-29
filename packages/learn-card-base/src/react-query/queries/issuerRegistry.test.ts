@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { QueryClient, QueryObserver } from '@tanstack/react-query';
 import { knownDIDRegistryQueryOptions, ISSUER_REGISTRY_STALE_TIME } from './issuerRegistry';
 const list = 'https://registries.learncard.com/known-did-registries.json';
@@ -117,6 +117,114 @@ it('retains an untrusted warning during a trusted-registry outage and rechecks a
     vi.setSystemTime(Date.now() + 61_000);
     expect(await lookup('did:c')).toMatchObject({ source: 'untrusted', incomplete: false });
     expect(calls(legacy)).toBe(2);
+});
+
+describe('OpenSALT registry proxy', () => {
+    const base = 'https://staging.learncard.ai';
+    const osAnchor = 'https://staging.opensalt.net/issuer-registry/.well-known/openid-federation';
+    const osFetch = 'https://staging.opensalt.net/issuer-registry/fetch';
+    const proxyPrefix = `${base}/api/registry-proxy/staging.opensalt.net`;
+    const proxyHeaders = { 'X-Registry-Proxy': '1' };
+    type Mode = 'ok' | 'proxy-502' | 'spa-fallback' | 'proxy-network' | 'all-down';
+    let mode: Mode;
+    let osFetchMock: Mock<(url: string, init?: RequestInit) => Promise<Response>>;
+    const upstream = (url: string) => {
+        if (url === osAnchor)
+            return new Response(jwt({ federation_entity: { federation_fetch_endpoint: osFetch } }));
+        if (url.startsWith(osFetch))
+            return new URL(url).searchParams.get('sub') === 'did:os'
+                ? new Response(jwt({ federation_entity: { organization_name: 'OS' } }))
+                : new Response('', { status: 404 });
+        return null;
+    };
+    beforeEach(() => {
+        mode = 'ok';
+        osFetchMock = vi.fn(async (url: string) => {
+            if (url === list)
+                return Response.json([
+                    { type: 'dcc-legacy', name: 'Trusted', url: legacy },
+                    { type: 'oidf', name: 'OpenSALT', trustAnchorEC: osAnchor },
+                ]);
+            if (url.includes('untrusted-did-registries')) return Response.json([]);
+            if (url === legacy) return Response.json({ registry: {} });
+            if (url.startsWith(`${base}/api/registry-proxy/`)) {
+                if (mode === 'proxy-network' || mode === 'all-down')
+                    throw new TypeError('Failed to fetch');
+                if (mode === 'proxy-502')
+                    return Response.json({ error: 'x' }, { status: 502, headers: proxyHeaders });
+                if (mode === 'spa-fallback')
+                    return new Response('<!doctype html>', {
+                        headers: { 'Content-Type': 'text/html' },
+                    });
+                const target = `https://${url.slice(`${base}/api/registry-proxy/`.length)}`;
+                const response = upstream(target)!;
+                return new Response(response.body, {
+                    status: response.status,
+                    headers: proxyHeaders,
+                });
+            }
+            if (mode === 'all-down') throw new TypeError('CORS');
+            return upstream(url) ?? new Response('', { status: 404 });
+        });
+        vi.stubGlobal('fetch', osFetchMock);
+    });
+    const osLookup = (did: string) =>
+        client.fetchQuery({ ...knownDIDRegistryQueryOptions(client, did, base), retry: false });
+    const proxyCalls = () =>
+        osFetchMock.mock.calls.filter(([url]) => url.startsWith(`${base}/api/registry-proxy/`));
+    const directOpenSaltCalls = () =>
+        osFetchMock.mock.calls.filter(([url]) => url.startsWith('https://staging.opensalt.net/'));
+
+    it('resolves OpenSALT-listed issuers as trusted through the proxy only', async () => {
+        const result = await osLookup('did:os');
+        expect(result.source).toBe('trusted');
+        expect(result.results).toMatchObject({
+            matchingIssuers: [{ issuer: { federation_entity: { organization_name: 'OS' } } }],
+        });
+        expect(proxyCalls().map(([url]) => url)).toEqual([
+            `${proxyPrefix}/issuer-registry/.well-known/openid-federation`,
+            `${proxyPrefix}/issuer-registry/fetch?sub=did%3Aos`,
+        ]);
+        expect(proxyCalls().every(([, init]) => init?.credentials === 'omit')).toBe(true);
+        expect(directOpenSaltCalls()).toHaveLength(0);
+        for (const url of [list, legacy]) {
+            expect(osFetchMock.mock.calls.filter(([value]) => value === url)).toHaveLength(1);
+        }
+    });
+
+    it('treats a proxied 404 as a negative lookup without retrying directly', async () => {
+        expect(await osLookup('did:nobody')).toMatchObject({
+            source: 'unknown',
+            incomplete: false,
+        });
+        expect(directOpenSaltCalls()).toHaveLength(0);
+    });
+
+    it.each<Mode>(['proxy-502', 'spa-fallback', 'proxy-network'])(
+        'falls back to the direct request when the proxy fails (%s)',
+        async proxyFailure => {
+            mode = proxyFailure;
+            expect((await osLookup('did:os')).source).toBe('trusted');
+            expect(directOpenSaltCalls().length).toBeGreaterThan(0);
+        }
+    );
+
+    it('reports unknown and incomplete, never trusted, when proxy and direct both fail', async () => {
+        mode = 'all-down';
+        expect(await osLookup('did:os')).toMatchObject({ source: 'unknown', incomplete: true });
+    });
+
+    it('does not proxy anything without a base URL', async () => {
+        expect((await osLookup('did:os')).source).toBe('trusted');
+        client.clear();
+        osFetchMock.mockClear();
+        await client.fetchQuery({
+            ...knownDIDRegistryQueryOptions(client, 'did:os'),
+            retry: false,
+        });
+        expect(proxyCalls()).toHaveLength(0);
+        expect(directOpenSaltCalls()).toHaveLength(2);
+    });
 });
 
 it('marks unsupported registry types as unchecked instead of claiming a complete lookup', async () => {
