@@ -8,7 +8,7 @@ import type { Campaign, CampaignStatus } from '@learncard/types';
 import type { CampaignForm } from './types';
 
 export const initialForm = (): CampaignForm => ({
-    id: '',
+    id: `campaign-${crypto.randomUUID()}`,
     name: '',
     inApp: true,
     notify: false,
@@ -83,9 +83,17 @@ export const validateForm = (form: CampaignForm, status: CampaignStatus = 'draft
     });
     if (!result.success)
         errors.push(
-            ...result.error.issues.map(
-                issue => `${issue.path.join('.') || 'campaign'}: ${issue.message}`
-            )
+            ...result.error.issues.map(issue => {
+                const path = issue.path.join('.') || 'campaign';
+                const friendly: Record<string, string> = {
+                    id: 'Use 3–64 lowercase letters, numbers or hyphens.',
+                    name: 'Enter a campaign name (up to 200 characters).',
+                    channels: 'Choose at least one channel.',
+                    'notification.title': 'Enter a notification title.',
+                    'notification.body': 'Enter a notification body.',
+                };
+                return `${path}: ${friendly[path] ?? issue.message}`;
+            })
         );
     return { errors, data: result.success && errors.length === 0 ? result.data : undefined };
 };

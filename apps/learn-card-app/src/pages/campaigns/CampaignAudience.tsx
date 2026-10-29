@@ -1,10 +1,12 @@
+import { IonIcon } from '@ionic/react';
+import { cloudUploadOutline, ribbonOutline } from 'ionicons/icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import type { CampaignAudienceSource } from '@learncard/types';
 import type { CampaignApi } from './types';
 import { audienceChunks, parseAudienceCsv, parseAudienceSource } from './model';
 import { useCampaignAction } from './useCampaignAction';
-import { Busy, Field, Notice, buttonClass, inputClass, panelClass } from './ui';
+import { Busy, Field, Notice, buttonClass, inputClass, panelClass, SectionHeading } from './ui';
 
 export const CampaignAudience: React.FC<{
     api: CampaignApi;
@@ -75,114 +77,150 @@ export const CampaignAudience: React.FC<{
     ];
     return (
         <section className={panelClass}>
-            <h2 className="text-xl font-semibold">Audience</h2>
-            <p className="text-sm text-grayscale-600">
-                Imports use the saved campaign settings and existing age policy. Save changes before
-                managing the audience.
-            </p>
-            <fieldset disabled={locked} className="space-y-4">
-                <Field label="Audience CSV (did column or single column)" htmlFor="audience-csv">
-                    <input
-                        id="audience-csv"
-                        type="file"
-                        accept=".csv,text/csv"
-                        className={inputClass}
-                        onChange={event => {
-                            const file = event.target.files?.[0];
-                            const version = ++fileVersion.current;
-                            setCsv(undefined);
-                            if (!file) return;
-                            void action.run('Reading CSV...', async () => {
-                                if (file.size > 10 * 1024 * 1024) {
-                                    setCsv({
-                                        dids: [],
-                                        duplicates: 0,
-                                        errors: ['Choose a CSV smaller than 10 MB.'],
-                                    });
-                                    return;
-                                }
-                                const text = await file.text();
-                                if (version === fileVersion.current) setCsv(parseAudienceCsv(text));
-                            });
-                        }}
-                    />
-                </Field>
-                {csv && (
-                    <>
-                        <p>
-                            {csv.dids.length.toLocaleString()} unique identifiers;{' '}
-                            {csv.duplicates.toLocaleString()} duplicate rows removed.
-                        </p>
-                        {csv.errors.length > 0 && (
-                            <Notice error>
-                                <ul>
-                                    {csv.errors.slice(0, 20).map((error, index) => (
-                                        <li key={index}>{error}</li>
-                                    ))}
-                                </ul>
-                                {csv.errors.length > 20 && (
-                                    <p>
-                                        {csv.errors.length - 20} more errors. Fix the CSV before
-                                        continuing.
-                                    </p>
-                                )}
-                            </Notice>
-                        )}
-                    </>
-                )}
-                <div className="flex flex-wrap gap-3">
-                    <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={!csv?.dids.length || Boolean(csv.errors.length)}
-                        onClick={() => runSources(csvSources(), true)}
+            <SectionHeading
+                title="Audience"
+                description="Add people from a file, a boost, or an existing audience source."
+            />
+            {disabled && (
+                <p className="rounded-xl bg-grayscale-100 p-3 text-xs text-grayscale-600">
+                    Save your changes before managing the audience. Archived campaigns cannot be
+                    edited.
+                </p>
+            )}
+            <fieldset disabled={locked} className="grid min-w-0 gap-5 md:grid-cols-2">
+                <div className="min-w-0 space-y-4 rounded-2xl border border-grayscale-200 p-5">
+                    <div className="flex items-center gap-3">
+                        <IonIcon
+                            icon={cloudUploadOutline}
+                            className="text-xl text-emerald-700"
+                            aria-hidden="true"
+                        />
+                        <h3 className="text-sm font-semibold">Import a CSV</h3>
+                    </div>
+                    <p className="text-xs leading-relaxed text-grayscale-600">
+                        One did column or a single column. Duplicate rows are removed.
+                    </p>
+                    <Field
+                        label="Audience CSV (did column or single column)"
+                        htmlFor="audience-csv"
                     >
-                        Preview CSV audience
-                    </button>
-                    <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={!csv?.dids.length || Boolean(csv.errors.length)}
-                        onClick={() => runSources(csvSources(), false)}
-                    >
-                        Add CSV audience
-                    </button>
+                        <input
+                            id="audience-csv"
+                            type="file"
+                            accept=".csv,text/csv"
+                            className={`${inputClass} !p-3 text-xs file:mr-3 file:rounded-[20px] file:border-0 file:bg-grayscale-100 file:px-3 file:py-2 file:text-xs file:font-medium file:text-grayscale-700`}
+                            onChange={event => {
+                                const file = event.target.files?.[0];
+                                const version = ++fileVersion.current;
+                                setCsv(undefined);
+                                if (!file) return;
+                                void action.run('Reading CSV...', async () => {
+                                    if (file.size > 10 * 1024 * 1024) {
+                                        setCsv({
+                                            dids: [],
+                                            duplicates: 0,
+                                            errors: ['Choose a CSV smaller than 10 MB.'],
+                                        });
+                                        return;
+                                    }
+                                    const text = await file.text();
+                                    if (version === fileVersion.current)
+                                        setCsv(parseAudienceCsv(text));
+                                });
+                            }}
+                        />
+                    </Field>
+                    {csv && (
+                        <>
+                            <p>
+                                {csv.dids.length.toLocaleString()} unique identifiers;{' '}
+                                {csv.duplicates.toLocaleString()} duplicate rows removed.
+                            </p>
+                            {csv.errors.length > 0 && (
+                                <Notice error>
+                                    <ul>
+                                        {csv.errors.slice(0, 20).map((error, index) => (
+                                            <li key={index}>{error}</li>
+                                        ))}
+                                    </ul>
+                                    {csv.errors.length > 20 && (
+                                        <p>
+                                            {csv.errors.length - 20} more errors. Fix the CSV before
+                                            continuing.
+                                        </p>
+                                    )}
+                                </Notice>
+                            )}
+                        </>
+                    )}
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!csv?.dids.length || Boolean(csv.errors.length)}
+                            onClick={() => runSources(csvSources(), true)}
+                        >
+                            Preview CSV audience
+                        </button>
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!csv?.dids.length || Boolean(csv.errors.length)}
+                            onClick={() => runSources(csvSources(), false)}
+                        >
+                            Add CSV audience
+                        </button>
+                    </div>
                 </div>
-                <Field label="Boost URI" htmlFor="boost-uri">
-                    <input
-                        id="boost-uri"
-                        className={inputClass}
-                        value={boostUri}
-                        onChange={e => setBoostUri(e.target.value)}
-                    />
-                </Field>
-                <label className="flex gap-2 items-center text-sm">
-                    <input
-                        type="checkbox"
-                        checked={includePending}
-                        onChange={e => setIncludePending(e.target.checked)}
-                    />
-                    Include pending boost recipients
-                </label>
-                <div className="flex flex-wrap gap-3">
-                    <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={!boostUri.trim()}
-                        onClick={() => runSources(boostSource(), true)}
-                    >
-                        Preview boost audience
-                    </button>
-                    <button
-                        type="button"
-                        className={buttonClass}
-                        disabled={!boostUri.trim()}
-                        onClick={() => runSources(boostSource(), false)}
-                    >
-                        Add boost audience
-                    </button>
+                <div className="min-w-0 space-y-4 rounded-2xl border border-grayscale-200 p-5">
+                    <div className="flex items-center gap-3">
+                        <IonIcon
+                            icon={ribbonOutline}
+                            className="text-xl text-emerald-700"
+                            aria-hidden="true"
+                        />
+                        <h3 className="text-sm font-semibold">Boost recipients</h3>
+                    </div>
+                    <p className="text-xs leading-relaxed text-grayscale-600">
+                        Use an existing boost to find people for this campaign.
+                    </p>
+                    <Field label="Boost URI" htmlFor="boost-uri">
+                        <input
+                            id="boost-uri"
+                            className={inputClass}
+                            value={boostUri}
+                            onChange={e => setBoostUri(e.target.value)}
+                        />
+                    </Field>
+                    <label className="flex gap-2 items-center text-sm">
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 accent-emerald-600"
+                            checked={includePending}
+                            onChange={e => setIncludePending(e.target.checked)}
+                        />
+                        Include pending boost recipients
+                    </label>
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!boostUri.trim()}
+                            onClick={() => runSources(boostSource(), true)}
+                        >
+                            Preview boost audience
+                        </button>
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!boostUri.trim()}
+                            onClick={() => runSources(boostSource(), false)}
+                        >
+                            Add boost audience
+                        </button>
+                    </div>
                 </div>
-                <details className="space-y-3">
+                <details className="space-y-3 rounded-2xl border border-grayscale-200 p-5 md:col-span-2">
                     <summary className="cursor-pointer text-sm font-medium">
                         Advanced audience source
                     </summary>
@@ -235,7 +273,15 @@ export const CampaignAudience: React.FC<{
                 </details>
             </fieldset>
             {action.busy && (
-                <div role="status">
+                <div role="status" className="space-y-3 rounded-2xl bg-grayscale-100 p-4 text-sm">
+                    {progress.total > 0 && (
+                        <progress
+                            aria-label="Audience batch progress"
+                            className="h-2 w-full accent-emerald-600"
+                            value={progress.done}
+                            max={progress.total}
+                        />
+                    )}
                     <Busy>{action.busy}</Busy>
                     {progress.total > 0 && (
                         <p>
@@ -266,8 +312,8 @@ export const CampaignAudience: React.FC<{
             {action.error && <Notice error>{action.error}</Notice>}
             {action.success && <Notice>{action.success}</Notice>}
             <p className="text-xs text-grayscale-600">
-                Eligible matches are not newly added counts. Per-row not-found results and exact
-                per-channel send counts are unavailable.
+                Counts include eligible existing members. They do not represent newly added people
+                or an exact send count.
             </p>
             <button
                 type="button"
@@ -292,11 +338,11 @@ export const CampaignAudience: React.FC<{
             {showMembers && members.data && (
                 <>
                     <p className="text-xs">Stored membership, not an eligible send list.</p>
-                    <ul className="space-y-2 text-sm break-all">
+                    <ul className="divide-y divide-grayscale-200 rounded-2xl border border-grayscale-200 text-sm break-all">
                         {members.data.pages
                             .flatMap(page => page.records)
                             .map(member => (
-                                <li key={member.profileId}>
+                                <li key={member.profileId} className="px-4 py-3">
                                     {member.profileId} — {member.did}
                                 </li>
                             ))}

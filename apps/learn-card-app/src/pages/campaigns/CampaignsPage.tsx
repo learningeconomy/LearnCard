@@ -69,8 +69,8 @@ const CampaignsPage: React.FC = () => {
     return (
         <IonPage>
             <IonContent>
-                <main className="font-poppins text-grayscale-900 bg-grayscale-100 min-h-full p-4 sm:p-8">
-                    <div className="max-w-6xl mx-auto">
+                <main className="font-poppins text-grayscale-900 bg-grayscale-10 min-h-full px-4 py-6 sm:px-8 sm:py-10">
+                    <div className="max-w-7xl mx-auto">
                         {user ? <CampaignSession key={key} /> : <CampaignNotFound />}
                     </div>
                 </main>
