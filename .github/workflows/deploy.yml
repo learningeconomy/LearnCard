@@ -813,6 +813,9 @@ jobs:
         uses: ./.github/workflows/open-api-generator.yml
         with:
             affected: ${{ needs.determine-affected.outputs.affected }}
+        secrets:
+            E2E_RUNNER_APP_ID: ${{ secrets.E2E_RUNNER_APP_ID }}
+            E2E_RUNNER_PRIVATE_KEY: ${{ secrets.E2E_RUNNER_PRIVATE_KEY }}
 
     # ============================================================================
     # FRONTEND DEPLOYMENTS
