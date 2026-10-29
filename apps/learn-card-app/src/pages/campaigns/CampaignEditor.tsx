@@ -400,14 +400,17 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     );
 };
 
-export const CampaignEditor: React.FC<{ api: CampaignApi; id: string }> = ({ api, id }) => {
+export const CampaignEditor: React.FC<{ api: CampaignApi; id?: string }> = ({ api, id }) => {
     const query = useQuery({
-        queryKey: ['campaign', id],
-        queryFn: () => api.campaignsGet(id),
-        enabled: id !== 'new',
+        queryKey: ['campaign', id ?? null],
+        queryFn: () => {
+            if (!id) throw new Error('Missing campaign ID');
+            return api.campaignsGet(id);
+        },
+        enabled: Boolean(id),
         retry: false,
     });
-    if (id === 'new') return <EditorForm api={api} />;
+    if (!id) return <EditorForm api={api} />;
     if (query.isPending) return <Busy>Loading campaign...</Busy>;
     if (query.isError)
         return (
