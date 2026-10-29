@@ -9,7 +9,11 @@ const capture = vi.hoisted(() => ({
 }));
 vi.mock('@sentry/react', () => ({ getReplay: () => ({ stop: capture.stop }) }));
 vi.mock('userflow.js', () => ({
-    default: { setPageTrackingDisabled: capture.disable, reset: capture.reset },
+    default: {
+        setPageTrackingDisabled: capture.disable,
+        reset: capture.reset,
+        isIdentified: () => true,
+    },
 }));
 vi.mock('@capacitor-firebase/analytics', () => ({
     FirebaseAnalytics: { setEnabled: capture.analytics },

@@ -110,3 +110,4 @@ export const isAppDidWeb = (did?: string): boolean => {
 export * from './share-content-canonical';
 
 export * from './credential-materialization';
+export * from './age-policy';

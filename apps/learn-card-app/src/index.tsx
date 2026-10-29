@@ -6,6 +6,7 @@ import { Buffer } from 'buffer';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { Capacitor } from '@capacitor/core';
+import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { asyncWithLDProvider, basicLogger } from 'launchdarkly-react-client-sdk';
 import { TenantConfigProvider, renderConfigurationError } from 'learn-card-base';
 import { registerExternalUrlOpener } from 'learn-card-base/helpers/externalUrlOpener';
@@ -32,6 +33,9 @@ applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 installInsetSimulator();
 
 (async () => {
+    // Native Firebase Analytics can collect app lifecycle events independently
+    // of our React event provider, so begin disabled before Firebase auth setup.
+    await FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => undefined);
     // Route external links through Capacitor's in-app browser when running natively.
     registerExternalUrlOpener();
 
@@ -67,6 +71,10 @@ installInsetSimulator();
         options: {
             logger: basicLogger({ level: 'none' }),
             diagnosticOptOut: true,
+            sendEvents: false,
+        },
+        reactOptions: {
+            sendEventsOnFlagRead: false,
         },
     };
 

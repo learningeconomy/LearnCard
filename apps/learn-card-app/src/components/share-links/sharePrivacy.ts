@@ -33,8 +33,12 @@ export const enterSharePrivacy = (): void => {
     });
     // Callers suppress capture during render; notify other mounted consumers afterward.
     queueMicrotask(() => listeners.forEach(listener => listener()));
-    userflow.setPageTrackingDisabled(true);
-    userflow.reset();
+    // The loader queues most API methods and injects its CDN script even for
+    // reset(). isIdentified() is a synchronous, non-loading public check.
+    if (userflow.isIdentified()) {
+        userflow.setPageTrackingDisabled(true);
+        userflow.reset();
+    }
     void FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => {});
     void Sentry.getReplay()?.stop();
 };

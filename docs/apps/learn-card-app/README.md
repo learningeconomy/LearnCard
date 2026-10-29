@@ -32,6 +32,18 @@ See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility
 
 ---
 
+## Privacy and optional diagnostics
+
+Open **Privacy & Data** to change **Usage Analytics**. The control stays unavailable while account preferences are loading or when the current profile is age-restricted. Child profiles are restricted regardless of their saved birth date. Other profiles use the existing country-specific age threshold; guardian and school profiles have no exemption.
+
+The preferences API checks the authenticated profile's current birth date, country and profile type on every preference read or write. It ignores client-supplied age flags, forces restricted analytics off and repairs incorrectly enabled saved preferences when they are read. Profile edits refresh the app's preference authorization. Becoming eligible again does not restore an old opt-in automatically.
+
+PostHog, Userflow and optional Sentry replay/tracing remain off until both account preferences and tenant analytics policy resolve. Turning Usage Analytics off stops optional collection immediately, including queued PostHog retries and Sentry replay uploads. If an initialized Userflow session is later permitted again, the app reloads before restarting it so messages from the retired session cannot be delivered under the new permission.
+
+Necessary security error reporting remains separate from Usage Analytics. LaunchDarkly still supplies feature flags, but its optional analytics events and diagnostics are disabled.
+
+**Service configuration:** set `NETWORK_BRAIN_SERVICE_URL` on the LCA API to the matching tenant's Brain service (`/trpc` or `/api`). Preference operations fail closed if that service or the authenticated self-profile cannot be resolved; they do not trust cached client age data or fall back to another tenant's network.
+
 ## User Flows
 
 ### Claiming a Credential

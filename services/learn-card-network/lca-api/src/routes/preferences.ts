@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { getCurrentProfile } from '@helpers/currentProfile';
+import { isAnalyticsRestricted } from '@helpers/analyticsEligibility';
+
 import { t, didAndChallengeRoute } from '@routes';
 import { createPreferences } from '@accesslayer/preferences/create';
 import { TRPCError } from '@trpc/server';
@@ -46,6 +49,7 @@ export const preferencesRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
+            await getCurrentProfile(ctx);
             const success = await createPreferences(ctx.user.did, input.theme);
 
             if (!success) {
@@ -71,7 +75,16 @@ export const preferencesRouter = t.router({
         .input(preferencesInputSchema)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const success = await updatePreferences(ctx.user.did, input);
+            const profile = await getCurrentProfile(ctx);
+            const restricted = isAnalyticsRestricted(profile);
+            // Age-derived metadata is server-owned, not a caller assertion.
+            const safeInput = {
+                ...input,
+                isMinor: restricted,
+                analyticsAutoDisabled: restricted,
+            };
+            if (restricted) safeInput.analyticsEnabled = false;
+            const success = await updatePreferences(ctx.user.did, safeInput);
 
             if (!success) {
                 throw new TRPCError({
@@ -96,16 +109,31 @@ export const preferencesRouter = t.router({
         .input(z.void())
         .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
+            const profile = await getCurrentProfile(ctx);
+            const restricted = isAnalyticsRestricted(profile);
             const preferences = await getPreferencesForDid(ctx.user.did);
+
+            if (
+                preferences &&
+                ((restricted && preferences.analyticsEnabled === true) ||
+                    preferences.isMinor !== restricted ||
+                    (restricted && preferences.analyticsAutoDisabled !== true))
+            ) {
+                await updatePreferences(ctx.user.did, {
+                    ...(restricted ? { analyticsEnabled: false } : {}),
+                    isMinor: restricted,
+                    ...(restricted ? { analyticsAutoDisabled: true } : {}),
+                });
+            }
 
             return {
                 theme: preferences?.theme,
                 aiEnabled: preferences?.aiEnabled,
                 aiAutoDisabled: preferences?.aiAutoDisabled,
-                analyticsEnabled: preferences?.analyticsEnabled,
-                analyticsAutoDisabled: preferences?.analyticsAutoDisabled,
+                analyticsEnabled: restricted ? false : preferences?.analyticsEnabled,
+                analyticsAutoDisabled: restricted ? true : preferences?.analyticsAutoDisabled,
                 bugReportsEnabled: preferences?.bugReportsEnabled,
-                isMinor: preferences?.isMinor,
+                isMinor: restricted,
             };
         }),
 });

@@ -1,13 +1,14 @@
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { UseMutationResult } from '@tanstack/react-query';
 
 import { useWallet } from '../../hooks/useWallet';
+import type { BespokeLearnCard } from '../../types/learn-card';
 import {
     PREFERENCES_QUERY_KEY,
-    PreferencesQuerySnapshot,
-    PreferencesType,
     optimisticallyMergePreferenceQueries,
     restorePreferenceQueries,
 } from '../preferences.shared';
+import type { PreferencesQuerySnapshot, PreferencesType } from '../preferences.shared';
 
 export enum ThemeEnum {
     Colorful = 'colorful',
@@ -20,57 +21,62 @@ type PreferencesMutationContext = {
     previousPreferenceQueries: PreferencesQuerySnapshot;
 };
 
-const createPreferencesMutationOptions = (
-    queryClient: QueryClient,
-    mutation: (preferences: PreferencesType) => Promise<boolean>
-) => ({
-    mutationFn: async (preferences: PreferencesType) => mutation(preferences),
-    onMutate: async (preferences: PreferencesType): Promise<PreferencesMutationContext> => {
-        await queryClient.cancelQueries({ queryKey: PREFERENCES_QUERY_KEY });
-
-        const previousPreferenceQueries = optimisticallyMergePreferenceQueries(
-            queryClient,
-            preferences
-        );
-
-        return { previousPreferenceQueries };
-    },
-    onError: (
-        _error: Error,
-        _preferences: PreferencesType,
-        context?: PreferencesMutationContext
-    ) => {
-        if (!context?.previousPreferenceQueries) return;
-
-        restorePreferenceQueries(queryClient, context.previousPreferenceQueries);
-    },
-    onSettled: () => {
-        queryClient.invalidateQueries({ queryKey: PREFERENCES_QUERY_KEY });
-    },
-});
-
-export const useUpdatePreferences = () => {
-    const { initWallet } = useWallet();
-    const queryClient = useQueryClient();
-
-    return useMutation<boolean, Error, PreferencesType, PreferencesMutationContext>(
-        createPreferencesMutationOptions(queryClient, async preferences => {
-            const wallet = await initWallet();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return wallet.invoke.updatePreferences(preferences as any);
-        })
-    );
+// Bind the wallet when the caller starts the mutation, not after asynchronous
+// optimistic updates: switching accounts must never redirect an in-flight write.
+const requestedWallet = Symbol('preferences-wallet');
+type PreferenceWrite = PreferencesType & {
+    [requestedWallet]?: Promise<BespokeLearnCard>;
 };
 
-export const useCreatePreferences = () => {
+const usePreferencesMutation = (
+    operation: 'create' | 'update'
+): UseMutationResult<boolean, Error, PreferencesType, PreferencesMutationContext> => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
+    const mutation = useMutation<boolean, Error, PreferenceWrite, PreferencesMutationContext>({
+        mutationFn: async request => {
+            const { [requestedWallet]: pendingWallet, ...preferences } = request;
+            const wallet = await pendingWallet!;
+            const result =
+                operation === 'create'
+                    ? await wallet.invoke.createPreferences(preferences)
+                    : await wallet.invoke.updatePreferences(preferences);
+            return result;
+        },
+        onMutate: async request => {
+            const { [requestedWallet]: pendingWallet, ...preferences } = request;
+            const wallet = await pendingWallet!;
+            const did = wallet.id.did();
+            await queryClient.cancelQueries({ queryKey: [...PREFERENCES_QUERY_KEY, did] });
+            // Opt-out applies immediately; opt-in waits for backend authorization.
+            if (preferences.analyticsEnabled === true) delete preferences.analyticsEnabled;
+            delete preferences.isMinor;
+            delete preferences.analyticsAutoDisabled;
+            return {
+                previousPreferenceQueries: optimisticallyMergePreferenceQueries(
+                    queryClient,
+                    preferences,
+                    did
+                ),
+            };
+        },
+        onError: (_error, _preferences, context) => {
+            if (context) restorePreferenceQueries(queryClient, context.previousPreferenceQueries);
+        },
+        onSettled: () => {
+            return queryClient.invalidateQueries({ queryKey: PREFERENCES_QUERY_KEY });
+        },
+    });
 
-    return useMutation<boolean, Error, PreferencesType, PreferencesMutationContext>(
-        createPreferencesMutationOptions(queryClient, async preferences => {
-            const wallet = await initWallet();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return wallet.invoke.createPreferences(preferences as any);
-        })
-    );
+    return {
+        ...mutation,
+        mutate: (preferences, options) =>
+            mutation.mutate({ ...preferences, [requestedWallet]: initWallet() }, options),
+        mutateAsync: (preferences, options) =>
+            mutation.mutateAsync({ ...preferences, [requestedWallet]: initWallet() }, options),
+    };
 };
+
+export const useUpdatePreferences = () => usePreferencesMutation('update');
+
+export const useCreatePreferences = () => usePreferencesMutation('create');
