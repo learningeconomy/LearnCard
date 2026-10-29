@@ -83,11 +83,6 @@ test('Yarn Classic retries a tarball 404 that has no diagnostic name', async t =
         stderr: '',
     };
     assert(publicationPending('yarn', tarball404));
-    assert(
-        publicationPending('yarn', {
-            stderr: JSON.stringify({ type: 'error', data: 'Package not found' }),
-        })
-    );
 
     let attempts = 0;
     await installPackages({
@@ -100,6 +95,31 @@ test('Yarn Classic retries a tarball 404 that has no diagnostic name', async t =
         verify: () => {},
     });
     assert.equal(attempts, 2);
+});
+
+test('Yarn Classic bare "Package not found" fails fast instead of waiting for registry lag', async t => {
+    const packageNotFound = {
+        status: 1,
+        stderr: JSON.stringify({ type: 'error', data: 'Package not found' }),
+    };
+    assert.equal(publicationPending('yarn', packageNotFound), false);
+
+    let attempts = 0;
+    await assert.rejects(
+        installPackages({
+            manager: 'yarn',
+            group: 'plugins',
+            versions,
+            cwd: fixture(t),
+            wait: async () => {},
+            run: () => {
+                attempts++;
+                return packageNotFound;
+            },
+        }),
+        /not a registry-readiness error/
+    );
+    assert.equal(attempts, 1);
 });
 
 test('Yarn Classic authentication and engine errors are not pending publication', () => {

@@ -162,8 +162,9 @@ export const resolveVersions = async ({
 };
 
 // Metadata can list a new version before its tarball is served, so a tarball 404 is lag too.
+// Bare "Package not found" is excluded: it also covers unrelated failures that should fail fast.
 const YARN_CLASSIC_PENDING =
-    /^Couldn't find any versions for ".+" that matches ".+"$|Request failed "404\b[^"]*"|Package not found/m;
+    /^Couldn't find any versions for ".+" that matches ".+"$|Request failed "404\b[^"]*"/m;
 
 export const publicationPending = (manager, result) => {
     const output = (result.stdout ?? '') + '\n' + (result.stderr ?? '');
