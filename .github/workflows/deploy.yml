@@ -960,6 +960,11 @@ jobs:
                   cp netlify.toml "$STAGE_DIR/"
                   if [[ -d netlify ]]; then
                     cp -R netlify "$STAGE_DIR/netlify"
+                    # Edge functions import shared, dependency-free handlers by repo-relative
+                    # path; mirror them at the same path under the stage root.
+                    REGISTRY_PROXY_DIR="packages/learn-card-base/src/registry-proxy"
+                    mkdir -p "$STAGE_ROOT/$REGISTRY_PROXY_DIR"
+                    cp "../../$REGISTRY_PROXY_DIR/registryProxy.ts" "$STAGE_ROOT/$REGISTRY_PROXY_DIR/"
                   fi
                   cp -R build "$STAGE_DIR/build"
                   # Pin the CLI's repositoryRoot to the stage root so the site's UI base
