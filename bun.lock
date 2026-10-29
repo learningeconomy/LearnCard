@@ -157,7 +157,7 @@
         "jspdf": "4.2.1",
         "jszip": "^3.10.1",
         "jwt-decode": "^3.1.2",
-        "katex": "^0.16.22",
+        "katex": "^0.18.2",
         "launchdarkly-react-client-sdk": "^3.1.1",
         "localforage": "^1.9.0",
         "lodash": "^4.17.21",
@@ -2057,6 +2057,7 @@
     "history": "4.10.1",
     "jsonpath-plus": "10.3.0",
     "jspdf": "4.2.1",
+    "katex": "^0.18.2",
     "next": "15.5.18",
     "protobufjs": "7.6.3",
     "pvutils": "1.0.17",
@@ -7500,7 +7501,7 @@
 
     "jwt-decode": ["jwt-decode@3.1.2", "", {}, "sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A=="],
 
-    "katex": ["katex@0.16.47", "", { "dependencies": { "commander": "^8.3.0" }, "bin": { "katex": "cli.js" } }, "sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg=="],
+    "katex": ["katex@0.18.11", "", { "dependencies": { "commander": "^15.0.0" }, "bin": { "katex": "cli.js" } }, "sha512-yvyz/2VMKqoho/35Hat5w37wIEdWJ5ElVMidTAlWrxr5uW4aBGsEpveTmKh18/zw08v/7lGswCPon4OhqmqrTA=="],
 
     "key-did-provider-ed25519": ["key-did-provider-ed25519@2.0.1", "", { "dependencies": { "@stablelib/ed25519": "^1.0.2", "did-jwt": "^6.0.0", "fast-json-stable-stringify": "^2.1.0", "rpc-utils": "^0.6.2", "uint8arrays": "^3.0.0" } }, "sha512-FaB2g7zUAeN/bLaFl2YSNQx9NsxgDd/3TR1YGvoXLhENsvZBdyA2V7hX8/MZhZ5jm82wL5lRw3O4UXuz/pJANQ=="],
 
@@ -12140,7 +12141,7 @@
 
     "jwks-rsa/jose": ["jose@4.15.9", "", {}, "sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA=="],
 
-    "katex/commander": ["commander@8.3.0", "", {}, "sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww=="],
+    "katex/commander": ["commander@15.0.0", "", {}, "sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg=="],
 
     "key-did-resolver/multiformats": ["multiformats@9.9.0", "", {}, "sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg=="],
 

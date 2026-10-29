@@ -120,6 +120,7 @@
         "@vitest/ui": "4.1.11",
         "@parcel/watcher": "2.5.1",
         "fastify": "^5.8.5",
+        "katex": "^0.18.2",
         "pvutils": "1.0.17",
         "did-jwt": "5.9.0",
         "typescript": "5.9.3",
