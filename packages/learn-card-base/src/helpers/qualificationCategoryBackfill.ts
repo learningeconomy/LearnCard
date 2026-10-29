@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { VC } from '@learncard/types';
-import type { LCR } from 'learn-card-base/types/credential-records';
+import { ARCHIVED_CATEGORY, type LCR } from 'learn-card-base/types/credential-records';
 import type { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import {
     getAchievementType,
@@ -75,6 +75,7 @@ export const reconcileQualificationCategories = async (
 
             for (const record of page?.records ?? []) {
                 if (
+                    record.category === ARCHIVED_CATEGORY ||
                     !legacyCategories[record.category] ||
                     record.categorySource === 'manual' ||
                     record.boostUri
