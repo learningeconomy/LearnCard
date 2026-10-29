@@ -22,9 +22,13 @@ vi.mock('learn-card-base/SQL/sqliteReady', () => ({ waitForSQLiteReady: async ()
 vi.mock('../logging/logger', () => ({ getLogger: () => ({ warn: vi.fn() }) }));
 
 import { getPlatformPrivateKey } from './platformPrivateKeyStorage';
+import { withSQLiteDatabase } from '../SQL/connection';
 
 let sqlite: DatabaseSync;
 let query: ReturnType<typeof vi.fn>;
+let opened: boolean;
+let open: ReturnType<typeof vi.fn>;
+let close: ReturnType<typeof vi.fn>;
 
 const insertUser = (
     user: { uid?: string; verifierId?: string; email?: string },
@@ -46,14 +50,24 @@ beforeEach(() => {
     vi.useFakeTimers();
     mocks.platform = 'android';
     mocks.user = null;
-    sqlite = new DatabaseSync(':memory:', { enableDoubleQuotedStringLiterals: true });
+    sqlite = new DatabaseSync(':memory:');
     sqlite.exec('CREATE TABLE users (uid TEXT, verifierId TEXT, email TEXT, privateKey TEXT)');
-    query = vi.fn(async (sql: string, values: string[] = []) => ({
-        values: sqlite.prepare(sql).all(...values),
-    }));
+    opened = false;
+    open = vi.fn(async () => {
+        if (opened) throw new Error('Synthetic connection is already open');
+        opened = true;
+    });
+    close = vi.fn(async () => {
+        if (!opened) throw new Error('Synthetic connection is already closed');
+        opened = false;
+    });
+    query = vi.fn(async (sql: string, values: string[] = []) => {
+        if (!opened) throw new Error('Synthetic connection was closed underneath a reader');
+        return { values: sqlite.prepare(sql).all(...values) };
+    });
     mocks.db = {
-        open: vi.fn(async () => undefined),
-        close: vi.fn(async () => undefined),
+        open,
+        close,
         query,
     };
 });
@@ -61,6 +75,7 @@ beforeEach(() => {
 afterEach(() => {
     sqlite.close();
     vi.useRealTimers();
+    expect(opened).toBe(false);
 });
 
 describe.each(['android', 'ios'])('%s account key isolation', platform => {
@@ -159,6 +174,45 @@ describe.each(['android', 'ios'])('%s account key isolation', platform => {
         expect(await readKey()).toBe('synthetic-key-b');
         expect(query.mock.calls.every(([, values]) => values?.[0] === 'account-b')).toBe(true);
     });
+
+    it.each([true, false])(
+        'keeps account selection and overlapping SQLite ownership together (matching key: %s)',
+        async hasKey => {
+            insertUser({ uid: 'account-a' }, 'synthetic-key-a');
+            insertUser({ uid: 'account-b' }, hasKey ? 'synthetic-key-b' : null);
+            mocks.user = { uid: 'account-b' };
+            let entered!: () => void;
+            let release!: () => void;
+            const started = new Promise<void>(resolve => {
+                entered = resolve;
+            });
+            const held = new Promise<void>(resolve => {
+                release = resolve;
+            });
+            const db = { open, close, query };
+            mocks.db = db;
+            const reader = withSQLiteDatabase(db, async connection => {
+                entered();
+                await held;
+                return connection.query('SELECT privateKey FROM users WHERE uid = ?', [
+                    'account-b',
+                ]);
+            });
+            await started;
+            try {
+                expect(await readKey()).toBe(hasKey ? 'synthetic-key-b' : null);
+                expect(open).toHaveBeenCalledOnce();
+                expect(close).not.toHaveBeenCalled();
+                expect(query.mock.calls.every(([, values]) => values?.[0] === 'account-b')).toBe(
+                    true
+                );
+            } finally {
+                release();
+                await reader;
+            }
+            expect(close).toHaveBeenCalledOnce();
+        }
+    );
 });
 
 it('keeps browser key restoration on web secure storage', async () => {
