@@ -132,7 +132,7 @@ describe('campaign composer', () => {
         api.campaignsSendTestToMe.mockReturnValue(send.promise);
         mount(api);
         fireEvent.click(await screen.findByRole('button', { name: 'Send Test to Me' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Cancel', exact: true }));
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(api.campaignsSendTestToMe).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Send Test to Me' }));
         const confirm = screen.getByRole('button', { name: 'Confirm test send' });
@@ -258,5 +258,34 @@ describe('audience batches', () => {
             source: { type: 'boostRecipients', boostUri: 'lc:boost:one', includePending: true },
         });
         expect(api.campaignsAddAudience).not.toHaveBeenCalled();
+    });
+});
+
+describe('stats refresh', () => {
+    it('polls at 30 seconds and stops on unmount', async () => {
+        vi.useFakeTimers();
+        const api = apiMock();
+        const view = mount(
+            api,
+            '/admin/campaigns/test-campaign',
+            <CampaignStatsPanel api={api} id="test-campaign" />
+        );
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+        expect(api.campaignsGetStats).toHaveBeenCalledTimes(1);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(29_999);
+        });
+        expect(api.campaignsGetStats).toHaveBeenCalledTimes(1);
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1);
+        });
+        expect(api.campaignsGetStats).toHaveBeenCalledTimes(2);
+        view.unmount();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(60_000);
+        });
+        expect(api.campaignsGetStats).toHaveBeenCalledTimes(2);
     });
 });

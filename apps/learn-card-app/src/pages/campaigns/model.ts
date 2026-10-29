@@ -1,5 +1,9 @@
 import Papa from 'papaparse';
-import { CreateCampaignInputValidator, inAppMessageValidator } from '@learncard/types';
+import {
+    CampaignAudienceSourceValidator,
+    CreateCampaignInputValidator,
+    inAppMessageValidator,
+} from '@learncard/types';
 import type { Campaign, CampaignStatus } from '@learncard/types';
 import type { CampaignForm } from './types';
 
@@ -137,4 +141,21 @@ export const audienceChunks = (dids: string[]): string[][] => {
     const chunks: string[][] = [];
     for (let i = 0; i < dids.length; i += 1000) chunks.push(dids.slice(i, i + 1000));
     return chunks;
+};
+
+/** Advanced source input uses the existing server contract without inventing audience APIs. */
+export const parseAudienceSource = (text: string) => {
+    try {
+        const result = CampaignAudienceSourceValidator.safeParse(JSON.parse(text));
+        return result.success
+            ? { data: result.data, errors: [] }
+            : {
+                  data: undefined,
+                  errors: result.error.issues.map(
+                      issue => `${issue.path.join('.') || 'source'}: ${issue.message}`
+                  ),
+              };
+    } catch {
+        return { data: undefined, errors: ['source: Enter valid JSON.'] };
+    }
 };
