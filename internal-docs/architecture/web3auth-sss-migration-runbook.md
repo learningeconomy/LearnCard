@@ -119,6 +119,30 @@ their random keys cannot be derived by Web3Auth, so they would get a new, empty
 DID. Treat config rollback as an incident tool for the first hours only, and
 fix forward after that.
 
+## Before Web3Auth is shut off
+
+Migrated accounts stay `provisional` until a recovery method activates them,
+usually the PIN prompt. While provisional, a new device re-derives the key from
+Web3Auth instantly, so staying provisional is the better state until Web3Auth
+goes away. The 30-day purge of abandoned migrations skips accounts with a
+confirmed escrow enrollment (`purgeExpiredProvisionalMigrationByAuthProvider`),
+so users who skipped the PIN keep escrow.
+
+Before turning Web3Auth off, activate every remaining provisional migration
+that escrow can recover, in one server-side step (status change only; no keys
+involved). Use the same conditions as `activateUserKeyByAuthProvider`:
+
+- match `keyProvider: "web3auth"`, `sssActivationState: "provisional"`, an
+  `escrowBlob`, and a confirmed `escrow` recovery method whose `shareVersion`
+  equals the record's `shareVersion`;
+- set `sssActivationState: "active"`, `keyProvider: "sss"`,
+  `migratedFromWeb3Auth: true`, `migratedAt`, `updatedAt`; unset
+  `provisionalCreatedAt`.
+
+Count and review the records that do not match (no escrow, or an escrow method
+at an older share version) before the shutdown: once Web3Auth is gone they can
+only use the device that holds their share, or recovery methods they set up.
+
 ## Dormant accounts
 
 Accounts that never sign in again stay on Web3Auth; nothing can migrate them
