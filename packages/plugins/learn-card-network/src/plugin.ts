@@ -2380,8 +2380,13 @@ export async function getLearnCardNetworkPlugin(
             },
 
             updateContract: async (_learnCard, uri, changes, options = {}) => {
-                await ensureUser();
                 const { read, write, contract, ...details } = changes;
+                if ((read && contract?.read) || (write && contract?.write)) {
+                    throw new Error(
+                        'Contract read/write updates must use either the top-level or nested contract shape, not both.'
+                    );
+                }
+                await ensureUser();
                 return client.contracts.updateConsentFlowContract.mutate({
                     uri,
                     changes: {
