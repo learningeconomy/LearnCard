@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
     setDb: vi.fn(),
     setSqlite: vi.fn(),
     ready: vi.fn(),
+    encrypt: vi.fn(async () => undefined),
     driver: {
         isAvailable: true,
         checkConnectionsConsistency: vi.fn(),
@@ -13,6 +14,7 @@ const mocks = vi.hoisted(() => ({
     },
 }));
 vi.mock('learn-card-base/react-sqlite-hook', () => ({ useSQLite: () => mocks.driver }));
+vi.mock('learn-card-base/SQL/nativeEncryption', () => ({ prepareNativeEncryption: mocks.encrypt }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { getPlatform: () => 'android' } }));
 vi.mock('learn-card-base', () => ({}));
 vi.mock('../../stores/sqliteStore', () => ({
@@ -43,11 +45,19 @@ it('shares native initialization across mounted consumers with one connection an
     await waitFor(() => expect(second.result.current.existingConnection).toBe(true));
     expect(first.result.current.existingConnection).toBe(true);
     expect(mocks.driver.createConnection).toHaveBeenCalledOnce();
+    expect(mocks.encrypt).toHaveBeenCalledOnce();
+    expect(mocks.driver.createConnection).toHaveBeenCalledWith(
+        'learncardDB',
+        true,
+        'secret',
+        1,
+        false
+    );
     expect(db.open).toHaveBeenCalledOnce();
-    expect(db.close).toHaveBeenCalledOnce();
+    expect(db.close).not.toHaveBeenCalled();
     expect(db.execute).toHaveBeenCalledTimes(8);
     expect(mocks.setSqlite).toHaveBeenLastCalledWith(mocks.driver);
     first.unmount();
     second.unmount();
-    expect(opened).toBe(false);
+    expect(opened).toBe(true);
 });

@@ -1,0 +1,8 @@
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+rootProject.name = 'LearnCardSQLiteEncryptionProbe'
+def repository = new File(rootDir, '../../../../..').canonicalFile
+include ':app', ':capacitor-android', ':capacitor-community-sqlite'
+project(':capacitor-android').projectDir = new File(repository, 'node_modules/@capacitor/android/capacitor')
+project(':capacitor-community-sqlite').projectDir = new File(repository, 'node_modules/@capacitor-community/sqlite/android')
