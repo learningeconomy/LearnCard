@@ -289,7 +289,17 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 setStep(ConsentFlowStep.confirmation);
                 return;
             }
-
+            const isApprovalUpdateRequired =
+                data &&
+                typeof data === 'object' &&
+                'code' in data &&
+                data.code === 'FORBIDDEN' &&
+                message === 'User has not yet approved the latest version of this contract';
+            if (isApprovalUpdateRequired && contractDetails?.uri) {
+                closeAllModals();
+                history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+                return;
+            }
             const isGuardianApprovalRequired =
                 data &&
                 typeof data === 'object' &&

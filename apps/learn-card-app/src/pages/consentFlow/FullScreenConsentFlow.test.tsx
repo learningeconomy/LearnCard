@@ -256,6 +256,37 @@ describe('guardian approval at the consent submission boundary', () => {
             expect(screen.getByRole('button', { name: 'Connect' })).toBeVisible();
         }
     );
+    it('opens update review for the server approval-required error without reporting success', async () => {
+        state.child = false;
+        state.consent.mockRejectedValue(
+            Object.assign(
+                new Error('User has not yet approved the latest version of this contract'),
+                { data: { code: 'FORBIDDEN' } }
+            )
+        );
+        const success = vi.fn();
+        showFlow({ successCallback: success });
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() =>
+            expect(state.push).toHaveBeenCalledWith('/consent-flow/review?uri=lc%3Acontract')
+        );
+        expect(state.closeAllModals).toHaveBeenCalledOnce();
+        expect(success).not.toHaveBeenCalled();
+    });
+    it('does not route unrelated forbidden errors to update review', async () => {
+        state.child = false;
+        state.consent.mockRejectedValue(
+            Object.assign(new Error('Guardian approval is required'), {
+                data: { code: 'FORBIDDEN' },
+            })
+        );
+        showFlow();
+        fireEvent.click(screen.getByRole('button', { name: 'Connect' }));
+        await waitFor(() => expect(state.presentToast).toHaveBeenCalled());
+        expect(state.push).not.toHaveBeenCalled();
+        expect(state.closeAllModals).not.toHaveBeenCalled();
+    });
+
     it('rejects unexpected returned redirect before success', async () => {
         state.child = false;
         state.consent.mockResolvedValue({ redirectUrl: 'https://api.example.test/callback' });

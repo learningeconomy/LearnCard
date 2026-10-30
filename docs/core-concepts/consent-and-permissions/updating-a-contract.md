@@ -109,6 +109,8 @@ Reads may still return data already allowed by the user's `consentedVersion`. Th
 
 When `needsReconsent` is true, offer a link to the returned `reviewUrl` from the feature that needs access. The LearnCard app does not open a review automatically at startup. The review shows only the changes and lets the user allow them or stop sharing.
 
+In the current LearnCard app, opening the ordinary consent screen for a pending or suspended connection goes to update review instead of showing an already-connected form. If a required update arrives while an ordinary consent dialog is open, its approval-required response closes the modal stack and opens that same review. This handoff does not accept the update or run the connection's success callback. Other authorization errors, including missing guardian approval, retain their own recovery path.
+
 The user accepts with their own LearnCard:
 
 ```javascript
