@@ -6,6 +6,8 @@ import type { CampaignAudienceSource } from '@learncard/types';
 import type { CampaignApi } from './types';
 import { audienceChunks, parseAudienceCsv, parseAudienceSource } from './model';
 import { useCampaignAction } from './useCampaignAction';
+import { CampaignMemberSearch } from './CampaignMemberSearch';
+import { CampaignAudienceSourceEditor } from './CampaignAudienceSourceEditor';
 import { Busy, Field, Notice, buttonClass, inputClass, panelClass, SectionHeading } from './ui';
 
 export const CampaignAudience: React.FC<{
@@ -19,6 +21,7 @@ export const CampaignAudience: React.FC<{
     const [sourceJson, setSourceJson] = useState('');
     const advanced = sourceJson ? parseAudienceSource(sourceJson) : undefined;
     const [includePending, setIncludePending] = useState(false);
+    const [actionSource, setActionSource] = useState('');
     const [progress, setProgress] = useState({ done: 0, total: 0, matches: 0 });
     const [cancelling, setCancelling] = useState(false);
     const cancel = useRef(false);
@@ -45,7 +48,8 @@ export const CampaignAudience: React.FC<{
         },
         []
     );
-    const runSources = (sources: CampaignAudienceSource[], preview: boolean) =>
+    const runSources = (sources: CampaignAudienceSource[], preview: boolean, origin = '') => {
+        setActionSource(`${origin}:${preview ? 'preview' : 'add'}`);
         void action.run(preview ? 'Checking audience...' : 'Adding audience...', async () => {
             cancel.current = false;
             setCancelling(false);
@@ -69,6 +73,7 @@ export const CampaignAudience: React.FC<{
                 }
             }
         });
+    };
     const locked = disabled || Boolean(action.busy);
     const csvSources = (): CampaignAudienceSource[] =>
         audienceChunks(csv?.dids ?? []).map(dids => ({ type: 'dids', dids }));
@@ -79,7 +84,7 @@ export const CampaignAudience: React.FC<{
         <section className={panelClass}>
             <SectionHeading
                 title="Audience"
-                description="Add people from a file, a boost, or an existing audience source."
+                description="Find members by name, email address, account identifier, or credential activity."
             />
             {disabled && (
                 <p className="rounded-xl bg-grayscale-100 p-3 text-xs text-grayscale-600">
@@ -88,6 +93,68 @@ export const CampaignAudience: React.FC<{
                 </p>
             )}
             <fieldset disabled={locked} className="grid min-w-0 gap-5 md:grid-cols-2">
+                <CampaignMemberSearch
+                    api={api}
+                    disabled={locked}
+                    busyAction={
+                        action.busy && actionSource.startsWith('members:')
+                            ? actionSource.endsWith('preview')
+                                ? 'preview'
+                                : 'add'
+                            : undefined
+                    }
+                    onPreview={dids => runSources([{ type: 'dids', dids }], true, 'members')}
+                    onAdd={dids => runSources([{ type: 'dids', dids }], false, 'members')}
+                />
+                <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-grayscale-200 p-5 md:col-span-2">
+                    <h3 className="text-sm font-semibold text-grayscale-900">
+                        Choose an audience source
+                    </h3>
+                    <p className="text-xs leading-relaxed text-grayscale-600">
+                        Use email addresses, account identifiers, or credential activity to find
+                        existing members.
+                    </p>
+                    <CampaignAudienceSourceEditor value={sourceJson} onChange={setSourceJson} />
+                    {advanced && advanced.errors.length > 0 && (
+                        <Notice error>
+                            <ul>
+                                {advanced.errors.map((error, index) => (
+                                    <li key={index}>{error}</li>
+                                ))}
+                            </ul>
+                        </Notice>
+                    )}
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!advanced?.data}
+                            onClick={() => {
+                                if (advanced?.data) runSources([advanced.data], true, 'source');
+                            }}
+                        >
+                            {action.busy && actionSource === 'source:preview' ? (
+                                <Busy>Checking source audience...</Busy>
+                            ) : (
+                                'Preview source audience'
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            className={buttonClass}
+                            disabled={!advanced?.data}
+                            onClick={() => {
+                                if (advanced?.data) runSources([advanced.data], false, 'source');
+                            }}
+                        >
+                            {action.busy && actionSource === 'source:add' ? (
+                                <Busy>Adding source audience...</Busy>
+                            ) : (
+                                'Add source audience'
+                            )}
+                        </button>
+                    </div>
+                </div>
                 <div className="min-w-0 space-y-4 rounded-2xl border border-grayscale-200 p-5">
                     <div className="flex items-center gap-3">
                         <IonIcon
@@ -220,57 +287,6 @@ export const CampaignAudience: React.FC<{
                         </button>
                     </div>
                 </div>
-                <details className="space-y-3 rounded-2xl border border-grayscale-200 p-5 md:col-span-2">
-                    <summary className="cursor-pointer text-sm font-medium">
-                        Advanced audience source
-                    </summary>
-                    <p className="text-xs text-grayscale-600">
-                        Use the existing source JSON contract for email matches, credentials sent by
-                        an account or listing, or inbox claims. Email matching selects existing
-                        accounts; it does not enable email delivery.
-                    </p>
-                    <Field label="Audience source JSON" htmlFor="audience-source-json">
-                        <textarea
-                            id="audience-source-json"
-                            className={`${inputClass} font-[family-name:ui-monospace,SFMono-Regular,Menlo,monospace]`}
-                            rows={6}
-                            value={sourceJson}
-                            onChange={e => setSourceJson(e.target.value)}
-                            placeholder={'{"type":"emails","emails":["learner@example.com"]}'}
-                        />
-                    </Field>
-                    {advanced && advanced.errors.length > 0 && (
-                        <Notice error>
-                            <ul>
-                                {advanced.errors.map((error, i) => (
-                                    <li key={i}>{error}</li>
-                                ))}
-                            </ul>
-                        </Notice>
-                    )}
-                    <div className="flex flex-wrap gap-3">
-                        <button
-                            type="button"
-                            className={buttonClass}
-                            disabled={!advanced?.data}
-                            onClick={() => {
-                                if (advanced?.data) runSources([advanced.data], true);
-                            }}
-                        >
-                            Preview advanced audience
-                        </button>
-                        <button
-                            type="button"
-                            className={buttonClass}
-                            disabled={!advanced?.data}
-                            onClick={() => {
-                                if (advanced?.data) runSources([advanced.data], false);
-                            }}
-                        >
-                            Add advanced audience
-                        </button>
-                    </div>
-                </details>
             </fieldset>
             {action.busy && (
                 <div role="status" className="space-y-3 rounded-2xl bg-grayscale-100 p-4 text-sm">

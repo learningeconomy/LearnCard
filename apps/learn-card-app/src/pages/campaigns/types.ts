@@ -1,5 +1,6 @@
 import type {
     Campaign,
+    LCNVisibleProfile,
     CampaignAudienceInput,
     CampaignStats,
     CampaignStatus,
@@ -13,6 +14,16 @@ import type {
 
 /** Only the supported composer operations; deliberately no full-audience dispatch. */
 export interface CampaignApi {
+    getProfile(): Promise<LCNVisibleProfile | undefined>;
+    searchProfiles(
+        query?: string,
+        options?: {
+            limit?: number;
+            includeSelf?: boolean;
+            includeServiceProfiles?: boolean;
+            includeConnectionStatus?: boolean;
+        }
+    ): Promise<LCNVisibleProfile[]>;
     campaignsIsAdmin(): Promise<boolean>;
     campaignsCreate(input: CreateCampaignInput): Promise<Campaign>;
     campaignsUpdate(input: UpdateCampaignInput): Promise<Campaign>;

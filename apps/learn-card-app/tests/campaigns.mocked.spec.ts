@@ -14,6 +14,21 @@ test.describe('campaign composer @mocked', () => {
     test('admin draft, validation, preview, imports, test send and lifecycle', async ({ page }) => {
         await page.setViewportSize({ width: 1440, height: 1000 });
         const mock = await installNetwork(page);
+        const adminProfile = {
+            profileId: TEST_USER_PROFILE_ID,
+            displayName: 'Synthetic campaign admin',
+            did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
+            dob: '1990-01-01',
+            country: 'US',
+            shortBio: '',
+            bio: '',
+        };
+        mock.on('profile.getProfile', () => adminProfile);
+        mock.on('profile.getOtherProfile', () => adminProfile);
+        mock.on('profile.createProfile', () => adminProfile.did);
+        mock.on('user.getDids', () => [adminProfile.did]);
+        mock.on('user.addDid', () => true);
+
         let saved: Campaign | undefined;
         const members = new Set<string>();
         let testSends = 0;
@@ -69,8 +84,25 @@ test.describe('campaign composer @mocked', () => {
                 .map((did, index) => ({ did, profileId: `synthetic-${index}` })),
             hasMore: false,
         }));
-        mock.on('campaigns.previewAudience', () => ({ count: 12 }));
+        const audiencePreviews: CampaignAudienceInput[] = [];
+        const audienceAdds: CampaignAudienceInput[] = [];
+        const searchRequests: unknown[] = [];
+        mock.on('profile.searchProfiles', input => {
+            searchRequests.push(input);
+            return [
+                {
+                    did: 'did:key:search-member',
+                    profileId: 'search-member',
+                    displayName: 'Synthetic member',
+                },
+            ];
+        });
+        mock.on('campaigns.previewAudience', value => {
+            audiencePreviews.push(value as CampaignAudienceInput);
+            return { count: 12 };
+        });
         mock.on('campaigns.addAudience', value => {
+            audienceAdds.push(value as CampaignAudienceInput);
             const source = (value as CampaignAudienceInput).source;
             if (source.type === 'dids') {
                 batches.push(source.dids.length);
@@ -108,10 +140,11 @@ test.describe('campaign composer @mocked', () => {
         const nameBounds = await nameInput.boundingBox();
         const previewBounds = await previewPanel.boundingBox();
         expect(previewBounds!.x).toBeGreaterThan(nameBounds!.x + nameBounds!.width);
-        await expect(page.getByRole('tab', { name: 'Fields', exact: true })).toHaveAttribute(
-            'aria-selected',
-            'true'
-        );
+        await expect(
+            page
+                .getByRole('tablist', { name: 'Message editing mode' })
+                .getByRole('tab', { name: 'Fields', exact: true })
+        ).toHaveAttribute('aria-selected', 'true');
         await page.getByLabel('Title', { exact: true }).fill('Created with fields');
         await page.getByLabel('Frequency', { exact: true }).selectOption('3');
         await page.getByLabel('Days between messages').fill('7');
@@ -122,11 +155,15 @@ test.describe('campaign composer @mocked', () => {
             path: 'test-results/campaign-message-fields-desktop.png',
             fullPage: true,
         });
-        await page.getByRole('tab', { name: 'Fields', exact: true }).press('ArrowRight');
-        await expect(page.getByRole('tab', { name: 'JSON', exact: true })).toHaveAttribute(
-            'aria-selected',
-            'true'
-        );
+        await page
+            .getByRole('tablist', { name: 'Message editing mode' })
+            .getByRole('tab', { name: 'Fields', exact: true })
+            .press('ArrowRight');
+        await expect(
+            page
+                .getByRole('tablist', { name: 'Message editing mode' })
+                .getByRole('tab', { name: 'JSON', exact: true })
+        ).toHaveAttribute('aria-selected', 'true');
         expect(JSON.parse(await page.getByLabel('Message JSON').inputValue())).toMatchObject({
             title: 'Created with fields',
             frequency: { everyDays: 7 },
@@ -147,7 +184,10 @@ test.describe('campaign composer @mocked', () => {
                 actions: [{ label: 'Close local preview', action: { type: 'dismiss' } }],
             })
         );
-        await page.getByRole('tab', { name: 'JSON', exact: true }).press('ArrowLeft');
+        await page
+            .getByRole('tablist', { name: 'Message editing mode' })
+            .getByRole('tab', { name: 'JSON', exact: true })
+            .press('ArrowLeft');
         await expect(page.getByLabel('Title', { exact: true })).toHaveValue('Local preview only');
         await page.getByLabel('Inbox / push notification').check();
         await page.getByLabel('Notification title').fill('Synthetic test');
@@ -164,8 +204,14 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Save Draft' }).click();
         await expect(page.getByLabel('Campaign ID')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-        await page.getByRole('tab', { name: 'JSON', exact: true }).click();
-        await page.getByRole('tab', { name: 'Fields', exact: true }).click();
+        await page
+            .getByRole('tablist', { name: 'Message editing mode' })
+            .getByRole('tab', { name: 'JSON', exact: true })
+            .click();
+        await page
+            .getByRole('tablist', { name: 'Message editing mode' })
+            .getByRole('tab', { name: 'Fields', exact: true })
+            .click();
         await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
         await expect(
             page.getByRole('button', { name: 'Send Notifications — unavailable' })
@@ -189,6 +235,72 @@ test.describe('campaign composer @mocked', () => {
             timeout: 30_000,
         });
         expect(batches).toEqual(Array(10).fill(1000));
+        await page
+            .getByLabel('Email addresses', { exact: true })
+            .fill(' ADMIN@example.com;admin@example.com,member@example.com');
+        await page.getByRole('button', { name: 'Preview source audience' }).click();
+        await expect(page.getByText(/12 eligible matches processed in preview/)).toBeVisible();
+        expect(audiencePreviews.at(-1)?.source).toEqual({
+            type: 'emails',
+            emails: ['admin@example.com', 'member@example.com'],
+        });
+        expect(audienceAdds).toHaveLength(10);
+        await page.getByRole('button', { name: 'Add source audience' }).click();
+        await expect(
+            page.getByText(/12 eligible matches processed; existing members may be included/)
+        ).toBeVisible();
+        expect(audienceAdds.at(-1)?.source).toEqual(audiencePreviews.at(-1)?.source);
+        const audienceTabs = page.getByRole('tablist', { name: 'Audience source editing mode' });
+        await audienceTabs.getByRole('tab', { name: 'JSON', exact: true }).click();
+        expect(JSON.parse(await page.getByLabel('Audience source JSON').inputValue())).toEqual(
+            audienceAdds.at(-1)?.source
+        );
+        await audienceTabs.getByRole('tab', { name: 'Fields', exact: true }).click();
+        await page.getByLabel('Audience source', { exact: true }).selectOption('dids');
+        await page.getByLabel('Account identifiers', { exact: true }).fill('did:key:field-member');
+        await page.getByRole('button', { name: 'Preview source audience' }).click();
+        await expect(page.getByText(/12 eligible matches processed in preview/)).toBeVisible();
+        expect(audiencePreviews.at(-1)?.source).toEqual({
+            type: 'dids',
+            dids: ['did:key:field-member'],
+        });
+        await page.getByLabel('Search network members').fill('Synthetic');
+        await page
+            .getByRole('checkbox', { name: 'Select Synthetic member (@search-member)' })
+            .check();
+        // The network mock unwraps the request's `input` property; option coverage lives in the unit test.
+        expect(searchRequests.at(-1)).toBe('Synthetic');
+        await expect(
+            page.getByRole('checkbox', {
+                name: `Select Synthetic campaign admin (@${TEST_USER_PROFILE_ID})`,
+            })
+        ).toBeVisible();
+
+        expect(members.has('did:key:search-member')).toBe(false);
+        await page.getByRole('button', { name: 'Preview selected members' }).click();
+        await expect(page.getByRole('button', { name: 'Add selected members' })).toBeEnabled();
+        expect(audiencePreviews.at(-1)?.source).toEqual({
+            type: 'dids',
+            dids: ['did:key:search-member'],
+        });
+        expect(members.has('did:key:search-member')).toBe(false);
+        await page.getByRole('button', { name: 'Add selected members' }).click();
+        await expect(
+            page.getByText(/1 eligible matches processed; existing members may be included/)
+        ).toBeVisible();
+        expect(members.has('did:key:search-member')).toBe(true);
+        await expect(
+            page.getByRole('checkbox', { name: 'Select Synthetic member (@search-member)' })
+        ).toBeVisible();
+        await page
+            .getByRole('heading', { name: 'Audience', exact: true })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: 'test-results/campaign-audience-desktop.png' });
+        await page
+            .getByRole('heading', { name: 'Choose an audience source' })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: 'test-results/campaign-audience-fields-desktop.png' });
+
         await page.getByLabel('Boost URI').fill('lc:boost:synthetic');
         await page.getByLabel('Include pending boost recipients').check();
         await page.getByRole('button', { name: 'Preview boost audience' }).click();
@@ -207,6 +319,28 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Confirm paused' }).click();
         await expect(page.getByText('Campaign is paused.')).toBeVisible();
         await page.setViewportSize({ width: 390, height: 844 });
+        await page.getByLabel('Audience source', { exact: true }).selectOption('emails');
+        await page.getByLabel('Search network members').fill('Synthetic');
+        await page
+            .getByRole('checkbox', { name: 'Select Synthetic member (@search-member)' })
+            .waitFor();
+        await expect(
+            page.getByRole('checkbox', { name: 'Select Synthetic member (@search-member)' })
+        ).toBeVisible();
+        await page
+            .getByRole('heading', { name: 'Audience', exact: true })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: 'test-results/campaign-audience-mobile.png' });
+        await page
+            .getByRole('heading', { name: 'Choose an audience source' })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: 'test-results/campaign-audience-fields-mobile.png' });
+        for (const label of ['Search network members', 'Email addresses']) {
+            const bounds = await page.getByLabel(label, { exact: true }).boundingBox();
+            expect(bounds!.x).toBeGreaterThanOrEqual(0);
+            expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+        }
+
         await page
             .getByRole('heading', { name: 'Edit campaign', exact: true })
             .scrollIntoViewIfNeeded();
@@ -223,17 +357,24 @@ test.describe('campaign composer @mocked', () => {
             expect(bounds!.x).toBeGreaterThanOrEqual(0);
             expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
         }
-        await page.getByRole('tab', { name: 'JSON', exact: true }).click();
+        await page
+            .getByRole('tablist', { name: 'Message editing mode' })
+            .getByRole('tab', { name: 'JSON', exact: true })
+            .click();
         await expect(page.getByLabel('Message JSON')).toBeVisible();
-        await expect(page.getByRole('tab', { name: 'JSON', exact: true })).toHaveCSS(
-            'background-color',
-            'rgb(24, 34, 78)'
-        );
+        await expect(
+            page
+                .getByRole('tablist', { name: 'Message editing mode' })
+                .getByRole('tab', { name: 'JSON', exact: true })
+        ).toHaveCSS('background-color', 'rgb(24, 34, 78)');
         await page.screenshot({
             path: 'test-results/campaign-message-json-mobile.png',
             fullPage: true,
         });
-        await page.getByRole('tab', { name: 'Fields', exact: true }).click();
+        await page
+            .getByRole('tablist', { name: 'Message editing mode' })
+            .getByRole('tab', { name: 'Fields', exact: true })
+            .click();
 
         expect(
             await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
@@ -354,7 +495,9 @@ test.describe('campaign composer @mocked', () => {
             page.getByRole('heading', { name: 'Private next-visit test', exact: true })
         ).toHaveCount(0);
         await page.reload();
-        await expect(page.getByRole('button', { name: 'Send Test to Me' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Send Test to Me' })).toBeVisible({
+            timeout: 30_000,
+        });
         expect(acknowledgements).toBe(0);
         await page.goto('/wallet');
         await expect.poll(() => deliveriesRead, { timeout: 20_000 }).toBeGreaterThan(0);
