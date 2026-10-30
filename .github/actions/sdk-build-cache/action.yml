@@ -1,0 +1,58 @@
+name: Restore verified E2E SDK outputs
+description: Consumers restore only compiled SDK outputs; SPA, tests and preflights still run.
+inputs:
+    use-cache:
+        description: 'Disable only restore for an otherwise identical controlled baseline.'
+        default: 'true'
+outputs:
+    key:
+        value: ${{ steps.key.outputs.key }}
+    hit:
+        value: ${{ steps.restore.outputs.cache-hit }}
+runs:
+    using: composite
+    steps:
+        - name: Identify fixed SDK prerequisite union
+          id: key
+          continue-on-error: true
+          shell: bash
+          run: |
+              spec="$RUNNER_TEMP/e2e-sdk-spec.json"
+              key=$(node scripts/e2e-hosted/sdk-build-cache.mjs key "$spec")
+              [[ "$key" =~ ^e2e-sdk-shared-v1-[a-f0-9]{64}$ ]]
+              echo "key=$key" >> "$GITHUB_OUTPUT"
+              {
+                echo 'E2E_SDK_CACHE_ENABLED=true'
+                echo "E2E_SDK_SPEC=$spec"
+                echo "E2E_SDK_CACHE_DIR=$RUNNER_TEMP/e2e-sdk-snapshot"
+              } >> "$GITHUB_ENV"
+
+        - name: Use ordinary graph for unsupported input or task contracts
+          if: ${{ steps.key.outcome != 'success' }}
+          shell: bash
+          run: |
+              echo '::notice::SDK reuse unavailable; preserving the complete ordinary Nx graph.'
+              echo 'E2E_SDK_CACHE_ENABLED=false' >> "$GITHUB_ENV"
+
+        - name: Restore exact SDK snapshot
+          id: restore
+          if: ${{ steps.key.outcome == 'success' && inputs.use-cache == 'true' }}
+          continue-on-error: true
+          uses: actions/cache/restore@v6
+          with:
+              path: ${{ runner.temp }}/e2e-sdk-snapshot
+              key: ${{ steps.key.outputs.key }}
+
+        - name: Report SDK snapshot lookup
+          shell: bash
+          env:
+              HIT: ${{ steps.restore.outcome == 'success' && steps.restore.outputs.cache-hit == 'true' }}
+              USE_CACHE: ${{ inputs.use-cache }}
+              KEY_OUTCOME: ${{ steps.key.outcome }}
+          run: |
+              echo "E2E_SDK_CACHE_HIT=$HIT" >> "$GITHUB_ENV"
+              {
+                echo '### E2E SDK build reuse'
+                echo "Key calculation: $KEY_OUTCOME; restore enabled: $USE_CACHE; exact hit: $HIT."
+                echo 'A hit must pass the SDK inventory check. App compilation, tests, runtime checks and Docker work remain fresh.'
+              } >> "$GITHUB_STEP_SUMMARY"

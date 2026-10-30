@@ -1,0 +1,71 @@
+name: Prepare shared E2E SDK builds
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+    workflow_call:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: shared-e2e-sdk-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    sdk:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - uses: ./.github/actions/setup
+
+            - name: Calculate fixed SDK identity
+              id: key
+              run: |
+                  spec="$RUNNER_TEMP/sdk-producer-spec.json"
+                  key=$(node scripts/e2e-hosted/sdk-build-cache.mjs key "$spec")
+                  [[ "$key" =~ ^e2e-sdk-shared-v1-[a-f0-9]{64}$ ]]
+                  echo "key=$key" >> "$GITHUB_OUTPUT"
+
+            - name: Check whether main already published this identity
+              id: lookup
+              if: ${{ github.ref == 'refs/heads/main' }}
+              uses: actions/cache/restore@v6
+              with:
+                  path: ${{ runner.temp }}/e2e-sdk-snapshot
+                  key: ${{ steps.key.outputs.key }}
+                  lookup-only: true
+
+            - name: Build SDK prerequisites with their canonical CI environment
+              if: ${{ steps.lookup.outputs.cache-hit != 'true' }}
+              run: node scripts/e2e-hosted/sdk-build-cache.mjs build "$RUNNER_TEMP/sdk-producer-spec.json" unused producer
+
+            - name: Snapshot successful SDK builds
+              if: ${{ steps.lookup.outputs.cache-hit != 'true' }}
+              run: node scripts/e2e-hosted/sdk-build-cache.mjs snapshot "$RUNNER_TEMP/sdk-producer-spec.json" "$RUNNER_TEMP/e2e-sdk-snapshot"
+
+            # Feature-branch dispatches exercise the producer without publishing.
+            # Only main can make a shared snapshot; no PR consumer writes one.
+            - name: Publish from trusted main only
+              if: ${{ success() && github.ref == 'refs/heads/main' && steps.lookup.outputs.cache-hit != 'true' }}
+              uses: actions/cache/save@v6
+              with:
+                  path: ${{ runner.temp }}/e2e-sdk-snapshot
+                  key: ${{ steps.key.outputs.key }}
+
+            - name: Explain publication scope
+              if: always()
+              env:
+                  PUBLISHABLE: ${{ github.ref == 'refs/heads/main' }}
+              run: |
+                  echo "### Shared SDK producer: main publication eligible=$PUBLISHABLE" >> "$GITHUB_STEP_SUMMARY"
+                  echo 'Only compiled SDK prerequisites are shared. No test success, SPA or Nx database is published.' >> "$GITHUB_STEP_SUMMARY"

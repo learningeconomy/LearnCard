@@ -6,6 +6,7 @@ trap 'rm -rf "$TEST_ROOT"' EXIT
 helpers=$(sed -n '/^# BEGIN hosted browser build helpers$/,/^# END hosted browser build helpers$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-browser.sh")
 [[ "$helpers" == *'# END hosted browser build helpers'* ]] || { echo 'Missing host build helper markers' >&2; exit 1; }
 eval "$helpers"
+source "$SOURCE_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 declare -F build_host_browser_images cleanup_browser_build >/dev/null
 REPO_ROOT="$TEST_ROOT/repo"
 APP_DIR="$REPO_ROOT/apps/learn-card-app"
@@ -86,6 +87,7 @@ printf '%s\n' "$helpers" > "$TEST_ROOT/cancel-build.sh"
 cat >> "$TEST_ROOT/cancel-build.sh" <<'SH'
 set -Eeuo pipefail
 source "$SOURCE_ROOT/scripts/e2e-hosted/metrics.sh"
+source "$SOURCE_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 e2e_metrics_init cancellation
 trap 'status=$?; cleanup_browser_build; exit "$status"' EXIT
 trap 'exit 130' INT

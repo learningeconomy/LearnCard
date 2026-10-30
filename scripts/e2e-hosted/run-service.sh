@@ -8,6 +8,7 @@ BAKE_FILE="$REPO_ROOT/scripts/e2e-hosted/docker-bake.hcl"
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
 source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 e2e_metrics_init service
 
 collect_service_artifacts() {
@@ -31,13 +32,16 @@ run_service_suite() {
     cd "$REPO_ROOT"
     # These host SDK prerequisites use the same Sentry plugins as the browser.
     export SENTRY_BUILD_TELEMETRY=false
+    prepare_shared_sdk service || return
+    local dependency_args=()
+    [[ "$E2E_SDK_PREPARED" != true ]] || dependency_args=(--excludeTaskDependencies)
     local vitest_args=''
     if [[ -n "${E2E_SHARD:-}" && -n "${E2E_SHARD_TOTAL:-}" ]]; then
         vitest_args="--shard=${E2E_SHARD}/${E2E_SHARD_TOTAL}"
         echo "Running vitest shard ${E2E_SHARD}/${E2E_SHARD_TOTAL}"
     fi
     E2E_VITEST_ARGS="$vitest_args" \
-        E2E_MANAGE_DOCKER=false NX_DAEMON=false bunx nx run e2e:test:e2e --verbose --skip-nx-cache \
+        E2E_MANAGE_DOCKER=false NX_DAEMON=false bunx nx run e2e:test:e2e --verbose --skip-nx-cache ${dependency_args[@]+"${dependency_args[@]}"} \
         2>&1 | tee "$E2E_ARTIFACT_DIR/vitest.log"
 }
 
