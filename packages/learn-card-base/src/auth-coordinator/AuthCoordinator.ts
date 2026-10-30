@@ -26,8 +26,13 @@ import {
 } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
+import type { MigrationIdentityVerdict, MigrationKeySource } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
+
+export const MIGRATION_IDENTITY_MISMATCH_MESSAGE =
+    "We couldn't safely upgrade your account because the sign-in key didn't match it. " +
+    'Nothing was changed. Please contact support (MIGRATION_IDENTITY_MISMATCH).';
 const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
 
 /**
@@ -68,6 +73,7 @@ import type {
     KeyDerivationStrategy,
     RecoveryMethodInfo,
     RecoveryReason,
+    ServerKeyStatus,
     SssActivationState,
     UnifiedAuthState,
 } from './types';
@@ -114,6 +120,8 @@ export class AuthCoordinator {
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
+    /** Recovery state replaced by a provisional re-derive; see needRecovery(). */
+    private recoveryFallback: UnifiedAuthState | null = null;
     private stopEscrowPolling?: () => void;
 
     static readonly ESCROW_STATUS_REFRESH_MS = 60_000;
@@ -798,6 +806,7 @@ export class AuthCoordinator {
      */
     async initialize(): Promise<UnifiedAuthState> {
         if (this.endingSession) return this.state;
+        this.recoveryFallback = null;
         try {
             // --- Private-key-first path ---
             if (this.config.getCachedPrivateKey && this.config.didFromPrivateKey) {
@@ -869,7 +878,11 @@ export class AuthCoordinator {
                                         this.setState({
                                             status: 'needs_migration',
                                             authUser,
-                                            migrationData: { web3AuthKey: cachedKey },
+                                            migrationData: {
+                                                web3AuthKey: cachedKey,
+                                                source: 'cached',
+                                                expectedDid: serverStatus.primaryDid ?? undefined,
+                                            },
                                         });
 
                                         return this.state;
@@ -1023,23 +1036,17 @@ export class AuthCoordinator {
 
             // Case 2: Strategy says migration is needed
             if (serverStatus.needsMigration && serverStatus.sssActivationState !== 'provisional') {
-                this.setState({ status: 'needs_migration', authUser });
+                this.setState({
+                    status: 'needs_migration',
+                    authUser,
+                    migrationData: { expectedDid: serverStatus.primaryDid ?? undefined },
+                });
                 return this.state;
             }
 
             // Case 3: Server has key but no local component — needs recovery
             if (!hasLocalKey) {
-                this.setState({
-                    status: 'needs_recovery',
-                    authUser,
-                    recoveryMethods,
-                    recoveryReason: 'new_device',
-                    escrowPin: serverStatus.escrowPin,
-                    maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
-                    sssActivationState: serverStatus.sssActivationState ?? null,
-                    expectedDid: serverStatus.primaryDid ?? undefined,
-                });
-                return this.state;
+                return this.needRecovery(authUser, recoveryMethods, serverStatus, 'new_device');
             }
 
             // Case 4: Has both local and server keys — try to connect
@@ -1048,17 +1055,12 @@ export class AuthCoordinator {
             const localKey = await this.keyDerivation.getLocalKey();
 
             if (!localKey || !serverStatus.authShare) {
-                this.setState({
-                    status: 'needs_recovery',
+                return this.needRecovery(
                     authUser,
                     recoveryMethods,
-                    recoveryReason: 'missing_server_data',
-                    escrowPin: serverStatus.escrowPin,
-                    maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
-                    sssActivationState: serverStatus.sssActivationState ?? null,
-                    expectedDid: serverStatus.primaryDid ?? undefined,
-                });
-                return this.state;
+                    serverStatus,
+                    'missing_server_data'
+                );
             }
 
             let privateKey = await this.keyDerivation.reconstructKey(
@@ -1087,17 +1089,12 @@ export class AuthCoordinator {
                         log.warn('DID mismatch - stale local key detected');
                         await this.keyDerivation.clearLocalKeys({ preservePending: true });
 
-                        this.setState({
-                            status: 'needs_recovery',
+                        return this.needRecovery(
                             authUser,
                             recoveryMethods,
-                            recoveryReason: 'stale_local_key',
-                            escrowPin: serverStatus.escrowPin,
-                            maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
-                            sssActivationState: serverStatus.sssActivationState ?? null,
-                            expectedDid: serverStatus.primaryDid,
-                        });
-                        return this.state;
+                            serverStatus,
+                            'stale_local_key'
+                        );
                     }
                 } else if (this.keyDerivation.reconcileShares) {
                     const reconciled = await this.keyDerivation.reconcileShares({
@@ -1240,6 +1237,105 @@ export class AuthCoordinator {
     }
 
     /**
+     * Enter `needs_recovery`, except for a provisional migration from Web3Auth:
+     * the server keeps that legacy fallback until a recovery method activates
+     * SSS, and the account may have no confirmed method yet, so its legacy key
+     * is re-derived instead, checked against the server DID and used without
+     * writing (see migrate()). The recovery state is kept for
+     * `fallBackToRecovery()` in case the legacy key can't be derived.
+     */
+    private needRecovery(
+        authUser: AuthUser,
+        recoveryMethods: RecoveryMethodInfo[],
+        serverStatus: ServerKeyStatus,
+        recoveryReason: RecoveryReason
+    ): UnifiedAuthState {
+        const recovery: UnifiedAuthState = {
+            status: 'needs_recovery',
+            authUser,
+            recoveryMethods,
+            recoveryReason,
+            escrowPin: serverStatus.escrowPin,
+            maskedRecoveryEmail: serverStatus.maskedRecoveryEmail ?? null,
+            sssActivationState: serverStatus.sssActivationState ?? null,
+            expectedDid: serverStatus.primaryDid ?? undefined,
+        };
+
+        if (serverStatus.needsMigration && serverStatus.sssActivationState === 'provisional') {
+            this.recoveryFallback = recovery;
+            this.setState({
+                status: 'needs_migration',
+                authUser,
+                migrationData: {
+                    expectedDid: serverStatus.primaryDid ?? undefined,
+                    provisionalRederive: true,
+                },
+            });
+            return this.state;
+        }
+
+        this.setState(recovery);
+        return this.state;
+    }
+
+    /**
+     * Leave a provisional re-derive (see `needRecovery`) for the recovery state
+     * it replaced, e.g. when Web3Auth is unavailable or a QR-login share is
+     * waiting. No-op in any other state.
+     */
+    fallBackToRecovery(): UnifiedAuthState {
+        if (this.state.status === 'needs_migration' && this.recoveryFallback) {
+            const recovery = this.recoveryFallback;
+            this.recoveryFallback = null;
+            this.setState(recovery);
+        }
+
+        return this.state;
+    }
+
+    /**
+     * Decide whether a legacy key may be written as this account's SSS key.
+     * A DID the server already holds is authoritative; otherwise the app's
+     * verifier is asked (see AuthCoordinatorConfig.verifyMigrationIdentity).
+     */
+    private async checkMigrationIdentity(
+        privateKey: string,
+        did: string,
+        migrationData: Record<string, unknown>
+    ): Promise<'proceed' | 'mismatch' | 'defer'> {
+        const { expectedDid } = migrationData;
+
+        if (typeof expectedDid === 'string' && expectedDid) {
+            return expectedDid === did ? 'proceed' : 'mismatch';
+        }
+
+        const verify = this.config.verifyMigrationIdentity;
+
+        if (!verify) return 'proceed';
+
+        const source: MigrationKeySource = migrationData.source === 'cached' ? 'cached' : 'derived';
+
+        let verdict: MigrationIdentityVerdict;
+
+        try {
+            verdict = await verify({ privateKey, did, source });
+        } catch (e) {
+            log.warn('migration.identity.check_failed', {
+                source,
+                error: e instanceof Error ? e.name : 'unknown',
+            });
+            verdict = 'unknown';
+        }
+
+        if (verdict === 'match') return 'proceed';
+        if (verdict === 'mismatch') return 'mismatch';
+        if (source === 'cached') return 'defer';
+
+        log.warn('migration.identity.unanchored', { source });
+        return 'proceed';
+    }
+
+    /**
      * Migrate from a legacy key derivation strategy.
      * Only valid when state is 'needs_migration'.
      */
@@ -1249,9 +1345,71 @@ export class AuthCoordinator {
         }
 
         const authUser = this.state.authUser;
+        const migrationData = this.state.migrationData ?? {};
 
         try {
             this.setState({ status: 'deriving_key' });
+
+            const identity = await this.checkMigrationIdentity(privateKey, did, migrationData);
+
+            if (identity === 'mismatch' && migrationData.source === 'cached') {
+                // The device-wide key cache holds another account's key. Drop it for
+                // this attempt and derive the signed-in account's key instead; reaching
+                // `ready` re-persists the right key, so later starts are normal.
+                log.warn('migration.identity.cached_key_replaced', {
+                    anchor: migrationData.expectedDid ? 'server' : 'verifier',
+                });
+                const { web3AuthKey: _key, source: _source, ...rest } = migrationData;
+                this.setState({ status: 'needs_migration', authUser, migrationData: rest });
+                return this.state;
+            }
+
+            if (identity === 'mismatch') {
+                // Fail closed and non-retryable: retrying derives the same key, and
+                // writing it would bind the account to the wrong DID for good.
+                log.error('migration.identity.mismatch', {
+                    source: migrationData.source ?? 'unknown',
+                    anchor: migrationData.expectedDid ? 'server' : 'verifier',
+                });
+                this.setState({
+                    status: 'error',
+                    error: MIGRATION_IDENTITY_MISMATCH_MESSAGE,
+                    canRetry: false,
+                });
+                return this.state;
+            }
+
+            if (identity === 'defer') {
+                // Same outcome as an unreachable server on the cached-key path:
+                // keep using the key this device already holds and migrate on a
+                // later start, once the key can be checked.
+                log.warn('migration.identity.deferred', { source: 'cached' });
+                this.setState({
+                    status: 'ready',
+                    authUser,
+                    did,
+                    privateKey,
+                    authSessionValid: true,
+                    sssActivationState: null,
+                });
+                return this.state;
+            }
+
+            if (migrationData.provisionalRederive === true) {
+                // Already migrated (provisionally) from another device, and the key
+                // matches the server DID. Use it without re-splitting: a new split would
+                // strand the other device's share and rotate under any escrow seal.
+                // This device gets a share from the next explicit share update.
+                this.setState({
+                    status: 'ready',
+                    authUser,
+                    did,
+                    privateKey,
+                    authSessionValid: true,
+                    sssActivationState: 'provisional',
+                });
+                return this.state;
+            }
 
             const { token, providerType } = await this.getAuthCredentials();
 

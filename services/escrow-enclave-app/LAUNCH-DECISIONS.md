@@ -15,16 +15,16 @@ against `main` at the time of writing (2026-10-26) and may drift.
 evidence (PR, ticket or meeting notes), and update the matching ROLLOUT.md item
 in the same PR.
 
-| ID  | Decision                                     | Blocks                                  | Owner (placeholder)        | Decision  |
-| --- | -------------------------------------------- | --------------------------------------- | -------------------------- | --------- |
-| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | _TBD (security)_           | _pending_ |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | _TBD (security)_           | _pending_ |
-| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | _TBD (infra/ops)_          | _pending_ |
-| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_           | _pending_ |
-| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | _TBD (product)_            | _pending_ |
-| P-b | Email backup share default                   | Product/security call                   | _TBD (product + security)_ | _pending_ |
-| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | _TBD (legal)_              | _pending_ |
-| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_        | _pending_ |
+| ID  | Decision                                     | Blocks                                  | Owner (placeholder)        | Decision                 |
+| --- | -------------------------------------------- | --------------------------------------- | -------------------------- | ------------------------ |
+| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | _TBD (security)_           | _pending_                |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | _TBD (security)_           | _pending_                |
+| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | _TBD (infra/ops)_          | _pending_                |
+| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_           | _pending_                |
+| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith              | Accepted (C)             |
+| P-b | Email backup share default                   | Product/security call                   | _TBD (product + security)_ | _pending_ (interim: off) |
+| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | _TBD (legal)_              | _pending_                |
+| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_        | _pending_                |
 
 ---
 
@@ -278,7 +278,17 @@ way and reuses the existing prompt flag. Product should confirm.
 
 **Decided looks like:** a product approver and date, plus a ticket if B/C.
 
-`Owner: _TBD (product)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Decision (2026-10-28): C.** Implemented in `decidePinPromptAfterReady`
+(`apps/learn-card-app/src/providers/authCoordinator.helpers.ts`): an account that
+is escrow-enrolled, has no PIN, and has no prompt flag on this device gets the
+first-time prompt, unless it was created this session (new-user setup owns that
+prompt). Only enrolled accounts qualify, so the rollout gate still decides who
+is asked. Setting the PIN also activates a provisional migrated record, which
+protects it from the 30-day purge of unactivated migrations
+(`services/learn-card-network/lca-api/src/models/UserKey.ts`, `PROVISIONAL_MIGRATION_TTL_MS`).
+The flag is per device, so a skipped prompt is asked again on a new device.
+
+`Owner: Jackson Smith` · `Decision: Accepted (option C)` · `Approver/date: Jackson Smith, 2026-10-28`
 
 ---
 
@@ -316,7 +326,19 @@ that holds, keep A.** If it does not hold, choose C. Either way, fix the README 
 
 **Decided looks like:** product and security approvers and date, plus a docs fix PR.
 
-`Owner: _TBD (product + security)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Update 2026-10-28 (interim, not a decision).** Email recovery is unavailable in
+practice: since commit `4b83aa9ee` the Email recovery tab only appears when
+`auth.sss.escrowRelayPublicKey`/`escrowRelayKeyId` are set
+(`isEmailRelayConfigured`, `packages/learn-card-base/src/config/authConfig.ts`),
+and no tenant sets them. This was a side effect of the missing relay key, not a
+product decision. The relay (`services/escrow-relay`) is a separate Lambda, not
+the enclave, and it emails the recovery share **in readable form**: inbox access
+plus one other share recovers the key. The production LearnCard and VetPass
+configs now set `enableEmailBackupShare: false` so the flag matches behaviour at
+launch. Re-enabling needs this record decided, a relay key pinned in tenant
+config, and `ESCROW_RELAY_URL`/`ESCROW_RELAY_AUTH_TOKEN` in production lca-api.
+
+`Owner: _TBD (product + security)_` · `Decision: _pending_ (interim: off)` · `Approver/date: _none recorded_`
 
 ---
 
