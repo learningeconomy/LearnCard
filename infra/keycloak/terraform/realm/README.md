@@ -190,8 +190,13 @@ to the pipeline workstream, not this root.
 `local/` must only target a disposable Keycloak with Apple jar, no fixture import.
 Build `infra/keycloak/Dockerfile.dev`, start on 8081 with admin/admin,
 `--hostname=http://localhost:8081`, and host.docker.internal host-gateway on Linux.
-Run `terraform init -backend=false`, `terraform apply`, then
+Run `terraform init -backend=false`, `terraform apply -parallelism=1`, then
 `terraform plan -detailed-exitcode` there. Dev overlay owns users, ci-tests and the test-only fake-google upstream.
+The Auth Integration workflow also serializes this disposable realm apply:
+parallel creation of sibling authentication-flow executions has triggered a
+Keycloak `flowRef` null-pointer error ([observed CI failure](https://github.com/learningeconomy/LearnCard/actions/runs/40780642638/job/123141170195)).
+This trades provisioning concurrency for reliability; it does not change the
+resource graph, state locking, production apply commands or the no-drift check.
 Start Redis on **6381**, Mongo on 27017 and lca-api on 5100 with **CI=true** (avoids
 requiring the unrelated Metabase secret), plus the env in the new workflow job.
 Run the [live proof commands](../../README.md#firebase-era-mapping-migration-ad-10).

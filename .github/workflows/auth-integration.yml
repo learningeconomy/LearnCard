@@ -215,7 +215,8 @@ jobs:
               run: |
                   terraform init -backend=false -input=false -lockfile=readonly
                   terraform validate
-                  terraform apply -auto-approve -input=false
+                  # Keycloak can race while creating sibling authentication-flow executions.
+                  terraform apply -parallelism=1 -auto-approve -input=false
                   terraform plan -detailed-exitcode -input=false
             - name: Start lca-api
               working-directory: services/learn-card-network/lca-api
