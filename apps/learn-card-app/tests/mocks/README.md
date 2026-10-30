@@ -23,7 +23,9 @@ and implicit dependencies and includes build prerequisites. A file must belong
 to a known project outside that required set to skip. Unknown/deleted project
 paths, missing/invalid/empty comparisons, graph/bootstrap failures and global
 config or dependency metadata changes run the **complete** mock suite. Renames
-consider both old and new paths. Manual dispatch always runs the complete suite.
+consider both old and new paths. Non-prose deletions, renames and file-type
+changes also run in full: removing a module can erase a former consumer edge
+from the head graph. Manual dispatch always runs the complete suite.
 
 An even cheaper check skips prose-only changes without downloading graph tools:
 Markdown under `docs/`, `.changeset/*.md`, and exact root `README.md`,

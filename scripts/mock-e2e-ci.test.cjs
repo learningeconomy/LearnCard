@@ -317,6 +317,28 @@ test('unavailable or malformed graph/task plans run instead of skipping', t => {
         });
 });
 
+test('deleting or renaming code runs even if its former dependency edge is absent', t => {
+    const f = fixture(t);
+    // The head graph could have lost the edge when an imported module disappeared.
+    const getGraph = () => {
+        throw new Error('must not trust head graph for a deletion');
+    };
+    renameSync(join(f.cwd, 'packages/shared/src/index.ts'), join(f.cwd, 'docs/moved.md'));
+    assert.deepEqual(
+        decideEligibility({
+            eventName: 'pull_request',
+            baseSha: f.baseSha,
+            headSha: f.commit(),
+            cwd: f.cwd,
+            getGraph,
+        }),
+        {
+            run: true,
+            reason: 'deleted-or-type-changed-input',
+        }
+    );
+});
+
 const identity = {
     version: '1.62.1',
     manifest: JSON.stringify({

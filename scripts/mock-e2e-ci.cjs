@@ -125,6 +125,31 @@ const decideEligibility = ({ eventName, baseSha, headSha, cwd = process.cwd(), g
     const paths = diff.stdout.split('\0').filter(Boolean);
     if (paths.length === 0) return { run: true, reason: 'empty-comparison' };
     if (paths.every(isProse)) return { run: false, reason: 'prose-only' };
+    // A deleted/renamed module can erase an import edge from the head graph.
+    // Do not use that graph to justify skipping the module's former consumers.
+    const removed = spawnSync(
+        'git',
+        [
+            'diff',
+            '--name-only',
+            '--no-renames',
+            '--diff-filter=DT',
+            '-z',
+            `${baseSha}...${headSha}`,
+            '--',
+        ],
+        { cwd, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }
+    );
+    if (removed.error || removed.status !== 0)
+        return { run: true, reason: 'comparison-unavailable' };
+    if (
+        removed.stdout
+            .split('\0')
+            .filter(Boolean)
+            .some(path => !isProse(path))
+    ) {
+        return { run: true, reason: 'deleted-or-type-changed-input' };
+    }
     // Global/unknown locations and dependency metadata always run. Do not trust a
     // head-only graph to explain a changed/deleted dependency declaration.
     if (
@@ -132,7 +157,9 @@ const decideEligibility = ({ eventName, baseSha, headSha, cwd = process.cwd(), g
             path =>
                 !isProse(path) &&
                 (!/^(apps|packages|services|examples|tests|tools)\//.test(path) ||
-                    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json)$/.test(path))
+                    /(^|\/)(package\.json|project\.json|tsconfig[^/]*\.json|\.gitignore|\.nxignore)$/.test(
+                        path
+                    ))
         )
     )
         return { run: true, reason: 'code-config-or-unknown-path' };
