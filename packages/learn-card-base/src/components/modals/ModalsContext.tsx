@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createContext } from '../../helpers/context.helpers';
 
 import { useFreezelessImmer } from 'learn-card-base/hooks/useFreezelessImmer';
@@ -67,7 +67,26 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const currentId = useRef(0);
     const modalsRef = useRef(modals);
     const pendingUserCloseInstancesRef = useRef(new Set<string>());
-    modalsRef.current = modals;
+    const pendingCloseTimersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+    const scheduleModalRemoval = useCallback((remove: () => void) => {
+        const timer = setTimeout(() => {
+            pendingCloseTimersRef.current.delete(timer);
+            remove();
+        }, 300);
+        pendingCloseTimersRef.current.add(timer);
+    }, []);
+
+    useEffect(
+        () => () => {
+            for (const timer of pendingCloseTimersRef.current) clearTimeout(timer);
+            pendingCloseTimersRef.current.clear();
+        },
+        []
+    );
+
+    useLayoutEffect(() => {
+        modalsRef.current = modals;
+    }, [modals]);
 
     // Disable dimmer for all but top modal
     useEffect(() => {
@@ -140,22 +159,19 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 clearPendingForModalId(pendingUserCloseInstancesRef.current, modalId);
                 if (invokeOnClose) modalToClose.options?.onClose?.();
 
-                setTimeout(
-                    () =>
-                        setModals(oldModals => {
-                            const modalIndex = oldModals.findIndex(
-                                modal =>
-                                    modal.id === modalId && modal.generation === closingGeneration
-                            );
-                            if (modalIndex === -1) return;
+                scheduleModalRemoval(() =>
+                    setModals(oldModals => {
+                        const modalIndex = oldModals.findIndex(
+                            modal => modal.id === modalId && modal.generation === closingGeneration
+                        );
+                        if (modalIndex === -1) return;
 
-                            oldModals.splice(modalIndex, 1);
-                        }),
-                    300
+                        oldModals.splice(modalIndex, 1);
+                    })
                 );
             });
         },
-        [setModals]
+        [scheduleModalRemoval, setModals]
     );
 
     const closeModal = useCallback(() => {
@@ -218,8 +234,8 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const closeAllModals = useCallback(() => {
         pendingUserCloseInstancesRef.current.clear();
         setModals(oldModals => oldModals.map(modal => ({ ...modal, open: false })));
-        setTimeout(() => setModals([]), 300);
-    }, [setModals]);
+        scheduleModalRemoval(() => setModals([]));
+    }, [scheduleModalRemoval, setModals]);
 
     return (
         <ModalsContextProvider value={{ modals }}>

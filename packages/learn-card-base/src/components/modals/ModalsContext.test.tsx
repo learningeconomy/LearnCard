@@ -100,6 +100,26 @@ const TargetedCloseHarness: React.FC = () => {
     );
 };
 
+const CloseAllHarness: React.FC = () => {
+    const { newModal, closeModal, closeAllModals } = useModal();
+    const { modals } = useModalsContext();
+
+    return (
+        <>
+            <button type="button" onClick={() => newModal(<div>Modal</div>)}>
+                Open
+            </button>
+            <button type="button" onClick={closeModal}>
+                Close one
+            </button>
+            <button type="button" onClick={closeAllModals}>
+                Close all
+            </button>
+            <output data-testid="timer-modal-count">{modals.length}</output>
+        </>
+    );
+};
+
 describe('ModalsProvider', () => {
     beforeEach(() => {
         cleanupCallback.mockReset().mockReturnValue(false);
@@ -186,6 +206,55 @@ describe('ModalsProvider', () => {
 
             expect(screen.getByTestId('modal-count').textContent).toBe('0');
             expect(screen.getByTestId('open-modal-count').textContent).toBe('0');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+    it.each(['Close one', 'Close all'])(
+        'releases owned removal timers when unmounting after %s in StrictMode',
+        closeButton => {
+            vi.useFakeTimers();
+            try {
+                const view = render(
+                    <React.StrictMode>
+                        <ModalsProvider>
+                            <CloseAllHarness />
+                        </ModalsProvider>
+                    </React.StrictMode>
+                );
+                fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+                fireEvent.click(screen.getByRole('button', { name: closeButton }));
+                expect(screen.getByTestId('timer-modal-count').textContent).toBe('1');
+                view.unmount();
+                expect(vi.getTimerCount()).toBe(0);
+            } finally {
+                vi.useRealTimers();
+            }
+        }
+    );
+
+    it('retains closing modals for the animation and releases completed timers', async () => {
+        vi.useFakeTimers();
+        try {
+            const view = render(
+                <React.StrictMode>
+                    <ModalsProvider>
+                        <CloseAllHarness />
+                    </ModalsProvider>
+                </React.StrictMode>
+            );
+            fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Close all' }));
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(299);
+            });
+            expect(screen.getByTestId('timer-modal-count').textContent).toBe('1');
+            await act(async () => {
+                await vi.advanceTimersByTimeAsync(1);
+            });
+            expect(screen.getByTestId('timer-modal-count').textContent).toBe('0');
+            expect(vi.getTimerCount()).toBe(0);
+            view.unmount();
         } finally {
             vi.useRealTimers();
         }
