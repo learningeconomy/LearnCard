@@ -1,0 +1,50 @@
+name: Validate GitHub workflows
+
+# Always report a stable check, including PRs with no .github changes. Path
+# filters would leave a future required check pending on unrelated PRs.
+on:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+    merge_group:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: workflow-validation-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+    validate:
+        name: Workflow validation
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            # Default checkout tests the PR merge tree or merge-group SHA.
+            - uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+            - name: Install isolated YAML checker dependencies
+              run: npm ci --prefix .github/workflow-validation --ignore-scripts --no-audit --no-fund
+            - name: Install pinned actionlint
+              env:
+                  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+              run: |
+                  VERSION=$(node -p 'require("./.github/workflow-validation/package.json").actionlintVersion')
+                  TOOL_DIR="$RUNNER_TEMP/learncard-actionlint"
+                  mkdir -p "$TOOL_DIR"
+                  curl --fail --silent --show-error --location --retry 3 \
+                    "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz" \
+                    --output "$TOOL_DIR/actionlint.tar.gz"
+                  echo "$ACTIONLINT_SHA256  $TOOL_DIR/actionlint.tar.gz" | sha256sum --check
+                  tar -xzf "$TOOL_DIR/actionlint.tar.gz" -C "$TOOL_DIR" actionlint
+                  echo "$TOOL_DIR" >> "$GITHUB_PATH"
+            - name: Prove broken configurations are rejected
+              run: npm test --prefix .github/workflow-validation
+            - name: Validate all GitHub workflows and YAML
+              run: npm run check --prefix .github/workflow-validation

@@ -51,7 +51,10 @@ import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
 import { RecoveryPinStep } from './RecoveryPinStep';
 import { waitForEscrowEnrollment } from './waitForEscrowEnrollment';
-import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
+import {
+    readRecoveryPinPromptFlag,
+    writeRecoveryPinPromptFlag,
+} from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../../svgs/LocationIcon';
@@ -691,7 +694,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     },
                     { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
                 );
-                setStep(pinAvailable ? 'pin' : 'celebrate');
+                // Resumed onboarding: the account may already have a PIN, or have
+                // been asked by the provider's one-time prompt on this device.
+                const readyState = coordinatorStateRef.current;
+                const alreadyAsked =
+                    readyState.status === 'ready' &&
+                    (readyState.escrowPin?.enabled === true ||
+                        readRecoveryPinPromptFlag(readyState.did) != null);
+                setStep(pinAvailable && !alreadyAsked ? 'pin' : 'celebrate');
             }
         } catch (err: unknown) {
             const errorDetails =
