@@ -137,7 +137,9 @@ Drain old request writers during the deployment cutover so they cannot create un
 
 A malformed legacy request is skipped so healthy requests can start. The migration emits a bounded report containing skipped contract IDs and an `invalid_contract` reason, with a total count and truncation flag; it never logs credential contents. Its missing snapshot remains fail-closed. A database failure still rejects readiness rather than serving before migration finishes.
 
-A successful, complete backfill records `ConsentFlowContractMigration { id: 'legacy-v1' }` with `completedAt`; later cold starts check that marker instead of rescanning every request and connection. Interrupted migrations and migrations that skip malformed requests do not mark completion. Repair reported IDs and rerun the service migration command. If legacy data is restored after completion, clear only this migration marker before rerunning the idempotent backfill—never delete snapshots or consent history.
+A successful, complete backfill records `ConsentFlowContractMigration { id: 'legacy-v1' }` with `completedAt`; later cold starts check that marker instead of rescanning every request and connection. Interrupted migrations and migrations that skip malformed requests do not mark completion. Repair reported IDs and rerun the service migration command. A missing version-1 lookup can also initialize a single valid, unversioned request written after completion, including its existing connection markers. This scoped repair leaves unrelated requests and the global marker unchanged; it never reconstructs missing history for an already-versioned request.
+
+After restoring legacy data, or rolling back to an older writer and then rolling forward, clear only this migration marker before rerunning the full idempotent backfill—never delete snapshots or consent history. Scoped recovery is a safety net, not a substitute for draining old writers during cutover.
 
 ## One-time delivery and interrupted sends
 

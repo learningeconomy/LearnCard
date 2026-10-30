@@ -19,6 +19,7 @@ import type {
     ConsentFlowContractDiff,
 } from '@learncard/types';
 import { z } from 'zod';
+import { migrateLegacyConsentFlowContracts } from '@helpers/consentflow-legacy-migration.helpers';
 import { neogma } from '@instance';
 import { TRPCError } from '@trpc/server';
 import { v4 as uuid } from 'uuid';
@@ -141,11 +142,19 @@ export const getConsentFlowContractVersionRecord = async (
     contractId: string,
     versionNumber: number
 ): Promise<StoredContractVersion | null> => {
-    const result = await neogma.queryRunner.run(
+    let result = await neogma.queryRunner.run(
         `MATCH (:ConsentFlowContract {id:$contractId})-[:HAS_VERSION]->(v:ConsentFlowContractVersion {version:$version})
          RETURN properties(v) AS version LIMIT 1`,
         { contractId, version: versionNumber }
     );
+    if (!result.records.length && versionNumber === 1) {
+        await migrateLegacyConsentFlowContracts(contractId);
+        result = await neogma.queryRunner.run(
+            `MATCH (:ConsentFlowContract {id:$contractId})-[:HAS_VERSION]->(v:ConsentFlowContractVersion {version:$version})
+                 RETURN properties(v) AS version LIMIT 1`,
+            { contractId, version: versionNumber }
+        );
+    }
     const raw = result.records[0]?.get('version') as Record<string, unknown> | undefined;
     return raw ? parseVersion(raw) : null;
 };

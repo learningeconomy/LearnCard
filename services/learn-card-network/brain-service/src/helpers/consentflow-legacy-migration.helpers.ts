@@ -4,16 +4,21 @@ import { v4 as uuid } from 'uuid';
 import { ConsentFlowContractValidator } from '@learncard/types';
 import type { ConsentFlowContract } from '@learncard/types';
 /** Backfills v1 snapshots and legacy consent markers idempotently. */
-export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
-    const marker = await neogma.queryRunner.run(
-        `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'})
-         WHERE migration.completedAt IS NOT NULL
-         RETURN migration.completedAt AS completedAt`
-    );
-    if (marker.records.length > 0) return;
-    const legacy = await neogma.queryRunner.run(`
+export const migrateLegacyConsentFlowContracts = async (contractId?: string): Promise<void> => {
+    const scoped = contractId !== undefined;
+    if (!scoped) {
+        const marker = await neogma.queryRunner.run(
+            `MATCH (migration:ConsentFlowContractMigration {id:'legacy-v1'})
+             WHERE migration.completedAt IS NOT NULL
+             RETURN migration.completedAt AS completedAt`
+        );
+        if (marker.records.length > 0) return;
+    }
+    const legacy = await neogma.queryRunner.run(
+        `
         MATCH (contract:ConsentFlowContract)
-        WHERE contract.currentVersion IS NULL
+        WHERE ($contractId IS NULL OR contract.id=$contractId)
+          AND contract.currentVersion IS NULL
           AND NOT EXISTS { MATCH (contract)-[:HAS_VERSION]->(:ConsentFlowContractVersion) }
         OPTIONAL MATCH (contract)-[autoReceive:AUTO_RECEIVE]->(boost:Boost)
         WITH contract, collect(CASE WHEN boost IS NULL THEN null ELSE {
@@ -25,7 +30,10 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
         RETURN properties(contract) AS properties,
                [config IN rawAutoboosts WHERE config IS NOT NULL] AS autoboosts,
                writers
-    `);
+    `,
+        { contractId: contractId ?? null }
+    );
+    if (scoped && !legacy.records.length) return;
     let skippedCount = 0;
     const skipped: { contractId: string; reason: string }[] = [];
     for (const record of legacy.records) {
@@ -67,7 +75,11 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
                  autoboosts:$autoboostSnapshot, writers:$writerSnapshot, createdAt:$createdAt
              })
              CREATE (contract)-[:HAS_VERSION]->(version)
-             SET contract.currentVersion=1`,
+             SET contract.currentVersion=1
+             WITH contract
+             MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
+             SET terms.consentedVersion=coalesce(terms.consentedVersion,1),
+                 terms.status=CASE WHEN terms.status='stale' THEN 'consumed' ELSE terms.status END`,
             {
                 id: String(properties.id),
                 versionId: uuid(),
@@ -87,21 +99,23 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
             }
         );
     }
-    await neogma.queryRunner.run(`
-        MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(:ConsentFlowContractVersion {version:1})
-        WHERE contract.currentVersion IS NULL
-        SET contract.currentVersion=1
-    `);
-    await neogma.queryRunner.run(`
-        MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(:ConsentFlowContract)
-        WHERE terms.consentedVersion IS NULL
-        SET terms.consentedVersion=1
-    `);
-    await neogma.queryRunner.run(`
-        MATCH (terms:ConsentFlowTerms)
-        WHERE terms.status='stale'
-        SET terms.status='consumed'
-    `);
+    if (!scoped) {
+        await neogma.queryRunner.run(`
+            MATCH (contract:ConsentFlowContract)-[:HAS_VERSION]->(:ConsentFlowContractVersion {version:1})
+            WHERE contract.currentVersion IS NULL
+            SET contract.currentVersion=1
+        `);
+        await neogma.queryRunner.run(`
+            MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(:ConsentFlowContract)
+            WHERE terms.consentedVersion IS NULL
+            SET terms.consentedVersion=1
+        `);
+        await neogma.queryRunner.run(`
+            MATCH (terms:ConsentFlowTerms)
+            WHERE terms.status='stale'
+            SET terms.status='consumed'
+        `);
+    }
     if (skippedCount) {
         console.warn('Skipped malformed legacy ConsentFlow contracts', {
             count: skippedCount,
@@ -110,12 +124,12 @@ export const migrateLegacyConsentFlowContracts = async (): Promise<void> => {
         });
         return;
     }
+    if (scoped) return;
     await neogma.queryRunner.run(`
         MERGE (migration:ConsentFlowContractMigration {id:'legacy-v1'})
         SET migration.completedAt=coalesce(migration.completedAt, toString(datetime()))
     `);
 };
-
 type StoredAutoBoost = {
     id: string;
     signingAuthorityEndpoint?: string;
