@@ -15,7 +15,7 @@
     "targets": {
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source"],
+            "inputs": ["source", "ciTestConfig"],
             "options": {
                 "script": "test"
             }
