@@ -126,9 +126,14 @@ jobs:
             contents: read
         runs-on: ubuntu-latest
         timeout-minutes: 20
+        # Service pulls happen before steps, so authenticate at the service boundary.
+        # Missing secrets leave public pulls anonymous (forks/Dependabot).
         services:
             mongo:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports:
                     - 27017:27017
                 options: >-

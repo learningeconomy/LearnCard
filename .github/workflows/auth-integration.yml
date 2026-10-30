@@ -25,6 +25,9 @@ env:
     SA_SEED_ENCRYPT_WRITES: 'true'
     SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
+# Service images are pulled before steps; a dockerhub-login step is too late.
+# Reuse the existing pull-only repo secrets. Missing secrets (forks/Dependabot)
+# leave public pulls anonymous; invalid supplied credentials fail initialization.
 jobs:
     keycloak-verifier-tests:
         runs-on: ubuntu-latest
@@ -32,12 +35,18 @@ jobs:
         services:
             redis:
                 image: redis:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['6379:6379']
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 5s --health-timeout 3s --health-retries 12
             mongodb:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['27017:27017']
                 options: >-
                     --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
@@ -153,12 +162,18 @@ jobs:
         services:
             redis:
                 image: redis:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['6381:6379']
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 5s --health-timeout 3s --health-retries 12
             mongodb:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['27017:27017']
                 options: >-
                     --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
