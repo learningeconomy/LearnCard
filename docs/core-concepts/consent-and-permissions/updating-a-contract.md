@@ -101,6 +101,17 @@ Unknown AutoBoost IDs and writer profiles are rejected as invalid input before c
 
 Use `getContractVersions(uri)` to list saved versions, their timestamps, change kinds, and reasons. Deleting a contract retires it and withdraws access; it does not erase users' terms or transactions from their holder export. Do not delete and recreate a connection to change requested access.
 
+## Partner rollout and legacy AutoBoost callers
+
+This is a major SDK/API release, not a behavior-preserving replacement. The deprecated HTTP AutoBoost add/remove routes remain available for one compatibility release, but they use the versioned publication rules. Adding an AutoBoost through the old add route intentionally publishes `requires_consent`: every existing live connection becomes `needs_reconsent`, and writes, automatic delivery and synchronization pause until that person approves. Keeping the old endpoint does not preserve its old consent behavior.
+
+Before enabling these publications:
+
+1. Upgrade partner integrations to `updateContract`. Send the complete desired AutoBoost configuration and a reason, and preview the change before saving.
+2. Ship support for `getConsentStatus` and its returned `reviewUrl` in the feature that needs access. Deploy the updated LearnCard review surface alongside the backend. Older native or embedded clients without that route must open the updated web review URL; retrying ordinary `consentToContract` cannot approve a newer version.
+3. Notify existing integration owners before their next AutoBoost addition or bulk configuration job. Treat a pending update as a feature-level pause, not an instruction to repeatedly retry writes or disconnect everyone.
+4. After approval, let the person return to the partner and restart its original sign-in or launch flow if necessary. The update review does not generate that partner's callback or challenged sign-in proof.
+
 ## Pause the feature, not the whole app
 
 Before using a connected feature, call `getConsentStatus(uri, profileId)`. While the state is `needs_reconsent` or `suspended`, `verifyConsent(uri, profileId)` returns `false`; credential writes, AutoBoost issuance, and synchronization are forbidden with `User has not yet approved the latest version of this contract`.
