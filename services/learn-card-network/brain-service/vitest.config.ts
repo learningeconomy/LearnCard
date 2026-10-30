@@ -40,6 +40,7 @@ export default createVitestConfig(brainServicePreset, {
             'src/config/stageConfig.test.ts',
             'src/config/serverlessFunctionEnv.test.ts',
             'bootstrapLambda.test.ts',
+            'consentFlowDeadlineLambda.test.ts',
             'workerLambda.test.ts',
             'src/credential-refresh.test.ts',
             'src/accesslayer/credential-refresh/read.test.ts',
