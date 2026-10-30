@@ -575,6 +575,20 @@ test.describe('campaign composer @mocked', () => {
     });
     test('non-admin sees only not found', async ({ page }) => {
         const mock = await installNetwork(page);
+        const profile = {
+            profileId: TEST_USER_PROFILE_ID,
+            displayName: 'Synthetic non-admin',
+            did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
+            dob: '1990-01-01',
+            country: 'US',
+            shortBio: '',
+            bio: '',
+        };
+        mock.on('profile.getProfile', () => profile);
+        mock.on('profile.getOtherProfile', () => profile);
+        mock.on('profile.createProfile', () => profile.did);
+        mock.on('user.getDids', () => [profile.did]);
+        mock.on('user.addDid', () => true);
         let reads = 0;
         mock.on('campaigns.isAdmin', () => false);
         mock.on('campaigns.get', () => {
@@ -592,4 +606,98 @@ test.describe('campaign composer @mocked', () => {
         });
         expect(reads).toBe(0);
     });
+});
+
+test('campaign announcement inbox @mocked', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    const mock = await installNetwork(page);
+    const profile = {
+        profileId: TEST_USER_PROFILE_ID,
+        displayName: 'Synthetic campaign recipient',
+        did: `did:web:localhost%3A4000:users:${TEST_USER_PROFILE_ID}`,
+        dob: '1990-01-01',
+        country: 'US',
+        shortBio: '',
+        bio: '',
+    };
+    mock.on('profile.getProfile', () => profile);
+    mock.on('profile.getOtherProfile', () => profile);
+    mock.on('profile.createProfile', () => profile.did);
+    mock.on('user.getDids', () => [profile.did]);
+    mock.on('user.addDid', () => true);
+    mock.on('campaigns.getMyCampaigns', () => []);
+    const notification = {
+        _id: 'synthetic-announcement',
+        type: 'ANNOUNCEMENT',
+        from: 'did:web:network.example.com',
+        to: { did: profile.did },
+        message: {
+            title: 'Your next chapter starts here',
+            body: 'A new learning opportunity is waiting for you.\nExplore what’s possible and take your next step.',
+        },
+        data: { metadata: { campaignId: 'synthetic-campaign' } },
+        sent: '2026-10-30T18:00:00Z',
+        read: false,
+        archived: false,
+    };
+    const updates: unknown[] = [];
+    mock.on('notifications.notifications', input => {
+        const filters = (input as { filters?: { archived?: boolean; read?: boolean } })?.filters;
+        return {
+            notifications:
+                (filters?.archived === undefined || filters.archived === notification.archived) &&
+                (filters?.read === undefined || filters.read === notification.read)
+                    ? [notification]
+                    : [],
+            hasMore: false,
+        };
+    });
+    mock.on('notifications.updateNotificationMeta', input => {
+        const { _id, meta } = input as {
+            _id: string;
+            meta: { archived?: boolean; read?: boolean };
+        };
+        expect(_id).toBe(notification._id);
+        updates.push(meta);
+        Object.assign(notification, meta);
+        return true;
+    });
+    mock.on('notifications.markAllNotificationsRead', () => true);
+    await waitForAuthenticatedState(page, { profileId: TEST_USER_PROFILE_ID });
+    await page.goto('/notifications');
+    const card = page.getByRole('article', { name: notification.message.title });
+    await expect(card).toBeVisible({ timeout: 120_000 });
+    await expect(card.getByText('New', { exact: true })).toBeVisible();
+    await expect(card.getByText(/A new learning opportunity/)).toBeVisible();
+    await page.screenshot({ path: 'test-results/campaign-announcement-desktop.png' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await card.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: 'test-results/campaign-announcement-mobile.png' });
+    const bounds = await card.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+    await card.getByRole('button', { name: 'Mark as read' }).click();
+    await expect(card.getByText('Read', { exact: true })).toBeVisible();
+    await expect.poll(() => updates).toEqual([{ read: true }]);
+    await card.getByRole('button', { name: 'Archive', exact: true }).click();
+    await expect(card).not.toBeVisible();
+    await page.getByRole('button', { name: /Archived/ }).click();
+    await expect(card).toBeVisible();
+    await card.getByRole('button', { name: 'Restore', exact: true }).click();
+    await expect(card).not.toBeVisible();
+    await page.getByRole('button', { name: 'Active', exact: true }).click();
+    await expect(card).toBeVisible();
+    await page.reload();
+    await expect(card.getByText('Read', { exact: true })).toBeVisible();
+    expect(updates).toEqual([
+        { read: true },
+        { read: true, archived: true },
+        { read: true, archived: false },
+    ]);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByRole('button', { name: 'Alerts', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Close alerts' })).toBeVisible();
+    await expect(card).toBeVisible();
+    await page.screenshot({ path: 'test-results/campaign-announcement-modal.png' });
+    await page.getByRole('button', { name: 'Close alerts' }).click();
 });

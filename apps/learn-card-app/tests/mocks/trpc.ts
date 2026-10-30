@@ -53,7 +53,7 @@ const decodeBatchInput = (entry: unknown): unknown => {
  * tRPC v11 over httpBatchLink at `/trpc` with an IDENTITY output transformer,
  * so a batch response is a plain JSON array positioned by op index, each shaped
  * `{ result: { data } }`. Procedure names arrive comma-joined in the URL path
- * (`/trpc/proc.a,proc.b`); inputs (unused here) arrive in the POST body.
+ * (`/trpc/proc.a,proc.b`); inputs arrive in the POST body or GET input parameter.
  */
 export const createTrpcMock = (page: Page) => {
     const handlers = new Map<string, Handler>();
@@ -85,7 +85,11 @@ export const createTrpcMock = (page: Page) => {
 
             let body: Record<string, unknown>;
             try {
-                body = JSON.parse(route.request().postData() ?? '{}');
+                const input =
+                    route.request().method() === 'GET'
+                        ? new URL(route.request().url()).searchParams.get('input')
+                        : route.request().postData();
+                body = JSON.parse(input ?? '{}');
             } catch {
                 body = {};
             }

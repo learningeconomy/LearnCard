@@ -25,3 +25,5 @@ If no eligible recipients remain, confirmation is disabled. Check the stored aud
 ## Test before sending
 
 **Send Test to Me** targets the signed-in administrator and supports saved drafts without an audience. It uses the selected channels: an in-app test appears on the next app visit outside the editor; an inbox/push test uses notification delivery. Tests do not change audience membership or campaign engagement statistics.
+
+Campaign inbox notifications show the saved notification title and body, an announcement icon, their sent time, and an unread indicator. Recipients can mark them as read, archive them, or restore them from Archived. Existing campaign notifications use this display too; there is no need to resend them.

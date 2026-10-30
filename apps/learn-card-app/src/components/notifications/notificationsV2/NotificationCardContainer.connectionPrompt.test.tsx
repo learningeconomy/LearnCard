@@ -2,13 +2,17 @@
 
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { NotificationType } from 'packages/plugins/lca-api-plugin/src/types';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { NotificationCardContainer } from './NotificationCardContainer';
 
-const mocks = vi.hoisted(() => ({ promptProps: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    promptProps: vi.fn(),
+    announcementProps: vi.fn(),
+    profile: vi.fn(),
+}));
 
 vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: {
@@ -30,11 +34,20 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
     useAcceptConnectionRequestMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
     useGetCurrentLCNUser: () => ({ refetch: vi.fn() }),
-    useGetProfile: () => ({ data: undefined, isLoading: false }),
+    useGetProfile: () => {
+        mocks.profile();
+        return { data: undefined, isLoading: false };
+    },
     useMarkNotificationRead: () => ({ mutate: vi.fn() }),
     useUpdateNotification: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
 }));
 
+vi.mock('./NotificationAnnouncementCard', () => ({
+    NotificationAnnouncementCard: (props: unknown) => {
+        mocks.announcementProps(props);
+        return <div data-testid="announcement-notification" />;
+    },
+}));
 vi.mock('./NotificationBoostCard', () => ({
     default: () => <div data-testid="boost-notification" />,
 }));
@@ -91,6 +104,8 @@ const renderContainer = (notification: NotificationType) => {
     );
 };
 
+afterEach(cleanup);
+
 describe('NotificationCardContainer connection prompts', () => {
     beforeEach(() => vi.clearAllMocks());
 
@@ -125,5 +140,26 @@ describe('NotificationCardContainer connection prompts', () => {
 
         expect(screen.getByTestId('boost-notification')).toBeInTheDocument();
         expect(screen.queryByTestId('connection-prompt-notification')).not.toBeInTheDocument();
+    });
+});
+
+describe('announcement routing', () => {
+    it.each([
+        'did:web:network.example.com',
+        { did: 'did:web:network.example.com', displayName: 'Old name' },
+    ])('renders authored campaign copy without a sender profile lookup (%j)', from => {
+        mocks.profile.mockClear();
+        const notification: NotificationType = {
+            ...makeNotification(),
+            type: 'ANNOUNCEMENT',
+            from,
+            message: { title: 'Old name is part of the campaign copy', body: 'Original body' },
+        };
+        renderContainer(notification);
+        expect(screen.getByTestId('announcement-notification')).toBeInTheDocument();
+        expect(mocks.announcementProps).toHaveBeenLastCalledWith(
+            expect.objectContaining({ notification })
+        );
+        expect(mocks.profile).not.toHaveBeenCalled();
     });
 });

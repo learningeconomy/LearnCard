@@ -2360,6 +2360,15 @@
         "notFinished": "Sin terminar"
     },
     "alerts": {
+        "announcement": "Anuncio",
+        "newAlert": "Nuevo",
+        "markRead": "Marcar como leído",
+        "read": "Leído",
+        "markingRead": "Marcando como leído…",
+        "archiving": "Archivando…",
+        "restore": "Restaurar",
+        "restoring": "Restaurando…",
+        "updateFailed": "No se pudo actualizar esta alerta. Inténtalo de nuevo.",
         "title": "Alertas",
         "notifications": "Notificaciones",
         "markAllRead": "Marcar todo como leído",

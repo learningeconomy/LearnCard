@@ -22,6 +22,7 @@ import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
+import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationCardProps = {
@@ -40,6 +41,7 @@ type NotificationPages = {
 };
 
 export const NOTIFICATION_TYPES = {
+    ANNOUNCEMENT: 'ANNOUNCEMENT',
     CONNECTION_REQUEST: 'CONNECTION_REQUEST',
     CONNECTION_REQUEST_EXPIRED_INVITE: 'CONNECTION_REQUEST_EXPIRED_INVITE',
     CONNECTION_ACCEPTED: 'CONNECTION_ACCEPTED',
@@ -64,7 +66,7 @@ export const NOTIFICATION_TYPES = {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('notification-card-container');
 
-export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
+const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
 }) => {
@@ -453,5 +455,14 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         <div className={`${notificationCardStyles.fallbackShell} ${className}`}>Notification</div>
     );
 };
+
+// Announcements carry authored copy and may come from a service DID. Do not resolve a
+// sender profile or run the legacy sender-name substitution on their title/body.
+export const NotificationCardContainer: React.FC<NotificationCardProps> = props =>
+    props.notification.type === NOTIFICATION_TYPES.ANNOUNCEMENT ? (
+        <NotificationAnnouncementCard {...props} />
+    ) : (
+        <StandardNotificationCardContainer {...props} />
+    );
 
 export default NotificationCardContainer;
