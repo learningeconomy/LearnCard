@@ -243,18 +243,15 @@ const status = await client.getAuthShare({
 Run `bun run test` from this package, or `bunx nx test sss-key-manager` from the
 repository root.
 
-The package limits Vitest to two workers and gives each test 15 seconds. These
-tests perform real Argon2id work while other Nx projects may be using the same
-runner; visible CPU counts can exceed the CPU quota actually available. A worker
-cap reduces that contention, and the package-specific budget allows checks that
-perform several derivations to finish. Other packages keep their own budgets.
+The package-specific worker and timeout settings live in [vitest.config.ts](vitest.config.ts).
+They allow real Argon2id checks to run alongside other Nx projects when visible
+CPU counts exceed the CPU quota available. Other packages keep their own limits.
 
-Keep the production KDF coverage intact: Argon2id uses a time cost of 3, 65,536 KiB
-of memory and parallelism of 4. The PIN proof test verifies compatibility with
-the default password KDF, and the critical-path tests retain real encryption,
-decryption and recovery round trips. Fake timers do not accelerate this CPU
-work. The Nx test inputs include `vitest.config.ts` so changing the worker limit
-or timeout invalidates cached test results.
+Tests retain the [production KDF defaults](src/crypto.ts) (`DEFAULT_KDF_PARAMS`),
+including PIN compatibility and real encryption/decryption/recovery round trips.
+Each password round trip is a separate case with its own test budget and failure
+name. Fake timers do not accelerate this CPU work. Nx test inputs include the
+Vitest config so limit changes invalidate cached results.
 
 ## License
 
