@@ -13,7 +13,7 @@
     },
     "auth": {
         "provider": "firebase",
-        "keyDerivation": "web3auth",
+        "keyDerivation": "sss",
         "firebase": {
             "apiKey": "AIzaSyDQJcEDxhxdxRAVdIDBzcE1x6D-KOj6N4o",
             "authDomain": "learncard.firebaseapp.com",
@@ -27,6 +27,7 @@
         },
         "sss": {
             "serverUrl": "https://api.learncard.app/api",
+            "escrowEnclaveMode": "nitro",
             "escrowEnclaveMeasurements": [
                 {
                     "pcr0": "6dc94e2b4da01921c831d7bfc5658ba21145636ca1e81c369ef2dc60be75b009ee98bb5eb56d16ede37a8d86534ba2e2",
@@ -80,6 +81,7 @@
         "pathways": true,
         "launchPadQuickActions": false,
         "dashboardHome": true,
+        "escrowRolloutPercent": 1,
         "samplePersonas": [
             {
                 "id": "student",
