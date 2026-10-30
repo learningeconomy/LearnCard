@@ -50,3 +50,43 @@ jobs:
                       apps/learncard-native/artifacts/native-regressions-*.xcresult
                       apps/learncard-native/artifacts/swift-core.log
                       apps/learncard-native/artifacts/native-attachments-*
+
+    android-foundation:
+        name: Android foundation
+        runs-on: ubuntu-latest
+        timeout-minutes: 45
+        steps:
+            - uses: actions/checkout@v7
+            - uses: ./.github/actions/setup
+            - uses: actions/setup-java@v4
+              with:
+                  distribution: temurin
+                  java-version: '21'
+            - name: Android SDK packages
+              run: |
+                  if [ -z "${ANDROID_HOME:-}" ]; then
+                    if [ -d /usr/local/lib/android/sdk ]; then
+                      echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> "$GITHUB_ENV"
+                      ANDROID_HOME=/usr/local/lib/android/sdk
+                    fi
+                  fi
+                  sdkmanager="${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager"
+                  if [ ! -x "$sdkmanager" ]; then
+                    sdkmanager="$(find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -n 1)"
+                  fi
+                  yes | "$sdkmanager" --sdk_root="${ANDROID_HOME}" --licenses >/dev/null || true
+                  "$sdkmanager" --sdk_root="${ANDROID_HOME}" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "platform-tools"
+            - name: Android unit tests, lint, and debug build
+              run: |
+                  bash apps/learncard-native/scripts/test-android.sh
+                  bash apps/learncard-native/scripts/build-android.sh
+            - name: Upload Android test results
+              if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: vesper-android-results
+                  retention-days: 7
+                  if-no-files-found: warn
+                  path: |
+                      apps/learncard-native/android/app/build/reports/tests/
+                      apps/learncard-native/android/app/build/reports/lint-results-debug.html

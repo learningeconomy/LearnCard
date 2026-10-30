@@ -35,6 +35,16 @@
             "executor": "nx:run-commands",
             "cache": false,
             "options": { "command": "bash apps/learncard-native/scripts/test-ios.sh" }
+        },
+        "test-android": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/test-android.sh" }
+        },
+        "build-android": {
+            "executor": "nx:run-commands",
+            "cache": false,
+            "options": { "command": "bash apps/learncard-native/scripts/build-android.sh" }
         }
     }
 }

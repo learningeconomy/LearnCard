@@ -67,6 +67,43 @@ await build({
     ],
     logLevel: 'warning',
 });
+const androidAssets = resolve(root, 'apps/learncard-native/android/app/src/main/assets');
+await mkdir(androidAssets, { recursive: true });
+await build({
+    entryPoints: [resolve(root, 'apps/learncard-native/account-runtime/runtime.ts')],
+    outfile: resolve(androidAssets, 'account-sdk.js'),
+    bundle: true,
+    minify: true,
+    format: 'iife',
+    platform: 'browser',
+    target: ['es2020'],
+    conditions: ['development', 'browser'],
+    alias: {
+        '@learncard/didkit-plugin-node': resolve(
+            root,
+            'apps/learncard-native/sdk-spike/node-unavailable.ts'
+        ),
+    },
+    plugins: [
+        {
+            name: 'native-logger',
+            setup(builder) {
+                builder.onResolve({ filter: /\/logging\/logger$/ }, () => ({
+                    path: resolve(root, 'apps/learncard-native/account-runtime/safe-logger.ts'),
+                }));
+            },
+        },
+        {
+            name: 'android-ens-stub',
+            setup(builder) {
+                builder.onResolve({ filter: /ens-normalize\/lib(\.js)?$/ }, () => ({
+                    path: resolve(root, 'apps/learncard-native/android/host/ens-normalize-stub.js'),
+                }));
+            },
+        },
+    ],
+    logLevel: 'warning',
+});
 for (const entry of ['consumer-host', 'consumer-fixture']) {
     await build({
         entryPoints: [resolve(root, `apps/learncard-native/account-runtime/${entry}.ts`)],

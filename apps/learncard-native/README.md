@@ -75,6 +75,7 @@ learncard-native/
     Sources/                      SwiftUI features and presentation state
     NativeCore/                   Domain package, platform SDK harness, and tests
     UITests/                      XCTest interaction tests
+  android/                        Kotlin + Jetpack Compose slice. See ANDROID_PARITY.md
 ```
 
 SwiftUI talks to `CredentialService`: `LiveCredentialService` uses the account SDK host, while `DemoCredentialService` powers sample mode. The original signed credential is retained separately from the display model. Changing its presentation never mutates or reissues its contents.
