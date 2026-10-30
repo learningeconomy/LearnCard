@@ -12,6 +12,7 @@ import { CampaignStatsPanel } from './CampaignStats';
 import { initialForm, validateForm } from './model';
 import type { CampaignApi } from './types';
 import { setInAppMessageOverride } from 'learn-card-base/in-app-messages/debugOverrideStore';
+import { ModalsProvider } from 'learn-card-base/components/modals/ModalsContext';
 
 vi.mock('learn-card-base/in-app-messages/debugOverrideStore', () => ({
     setInAppMessageOverride: vi.fn(),
@@ -82,7 +83,8 @@ const mount = (
     const view = render(
         <QueryClientProvider client={queries}>
             <Router history={history}>{element ?? <CampaignRoutes api={api} />}</Router>
-        </QueryClientProvider>
+        </QueryClientProvider>,
+        { wrapper: ModalsProvider }
     );
     return { ...view, history, queries };
 };

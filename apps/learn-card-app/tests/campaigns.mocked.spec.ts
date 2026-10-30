@@ -330,25 +330,59 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Confirm live' }).click();
         await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
         await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
+        const sendDialog = page.getByRole('dialog', { name: 'Send notifications?' });
+        await expect(sendDialog).toBeVisible();
+        await expect(sendDialog).toHaveAttribute('aria-modal', 'true');
         await expect(page.getByText('1 eligible recipient', { exact: true })).toBeVisible();
         expect(dispatches).toBe(0);
         await page
-            .getByRole('group', { name: 'Confirm notification send' })
+            .getByRole('dialog', { name: 'Send notifications?' })
             .getByRole('button', { name: 'Cancel', exact: true })
             .click();
         expect(dispatches).toBe(0);
+        await expect(sendDialog).toBeHidden();
+        await expect(
+            page.getByRole('button', { name: 'Send Notifications', exact: true })
+        ).toBeFocused();
+        for (const dismissal of ['escape', 'backdrop']) {
+            await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
+            await expect(sendDialog).toBeVisible();
+            await page.keyboard.press('Tab');
+            await expect
+                .poll(() => sendDialog.evaluate(node => node.contains(document.activeElement)))
+                .toBe(true);
+            if (dismissal === 'escape') await page.keyboard.press('Escape');
+            else
+                await sendDialog
+                    .getByRole('button', { name: 'Close dialog' })
+                    .click({ position: { x: 8, y: 8 } });
+            await expect(sendDialog).toBeHidden();
+            expect(dispatches).toBe(0);
+            await expect(
+                page.getByRole('button', { name: 'Send Notifications', exact: true })
+            ).toBeFocused();
+        }
         await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
         await expect(
             page.getByRole('button', { name: 'Confirm notification send', exact: true })
         ).toBeEnabled();
-        await page
-            .getByRole('heading', { name: 'Manage campaign', exact: true })
-            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await expect
+            .poll(() =>
+                sendDialog.evaluate(
+                    node =>
+                        node
+                            .getAnimations({ subtree: true })
+                            .filter(animation => animation.playState === 'running').length
+                )
+            )
+            .toBe(0);
         await page.screenshot({ path: 'test-results/campaign-dispatch-desktop.png' });
         await page.setViewportSize({ width: 390, height: 844 });
-        await page
-            .getByRole('group', { name: 'Confirm notification send' })
-            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await expect(sendDialog).toBeVisible();
+        await expect(sendDialog).toBeInViewport({ ratio: 1 });
+        await expect(
+            sendDialog.getByRole('button', { name: 'Confirm notification send' })
+        ).toBeInViewport({ ratio: 1 });
         await page.screenshot({ path: 'test-results/campaign-dispatch-mobile.png' });
         await page.getByRole('button', { name: 'Confirm notification send', exact: true }).click();
         await expect(page.getByText(/Notification delivery started/)).toBeVisible();
@@ -359,10 +393,10 @@ test.describe('campaign composer @mocked', () => {
             page.getByRole('button', { name: 'Confirm notification send', exact: true })
         ).toBeDisabled();
         await page
-            .getByRole('group', { name: 'Confirm notification send' })
+            .getByRole('dialog', { name: 'Send notifications?' })
             .getByRole('button', { name: 'Cancel', exact: true })
             .click();
-        expect(dispatchPreviewReads).toBe(3);
+        expect(dispatchPreviewReads).toBe(5);
         await page.setViewportSize({ width: 1440, height: 1000 });
 
         await page.getByRole('button', { name: 'Pause', exact: true }).click();

@@ -17,13 +17,15 @@ LC-2270 provides URL-only `/admin/campaigns` and `/admin/campaigns/:id` routes. 
 For a saved live campaign with notification content and an active schedule, **Send Notifications**
 loads `campaignsPreviewDispatch`. It counts stored audience members who satisfy the current
 age policy and have no `notifiedAt`, using the delivery worker's eligibility predicate. The
-confirmation shows eligible inbox recipients, total stored membership, and already-notified
+confirmation modal shows eligible inbox recipients, total stored membership, and already-notified
 members. Push is an attempt through the existing notification system; email is not included.
 
 Confirm calls `campaignsDispatch(id, { expectedPreviewToken })`. The server rechecks the
 campaign definition and eligible recipient identities under the campaign lock and consumes
 the token once. A changed audience, changed content/status, or reused token requires reviewing
-again. No-eligible-recipient confirmations cannot send. Cancelling only closes the review.
+again. No-eligible-recipient confirmations cannot send. Cancel, Escape and the backdrop close
+the review without sending. The shared modal restores focus to the send button; editing the
+campaign or leaving the editor dismisses its stale review.
 
 The worker still rechecks eligibility during paced delivery; counts are a point-in-time review,
 not a promise of final inbox or device delivery. Success means dispatch started, and stats are

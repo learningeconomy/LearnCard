@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Campaign, CampaignDispatchPreview } from '@learncard/types';
+import { useModal } from 'learn-card-base/components/modals/useModal';
+import { ModalTypes } from 'learn-card-base/components/modals/types/Modals';
 import type { CampaignApi } from './types';
 import { useCampaignAction } from './useCampaignAction';
-import { Busy, Notice, buttonClass, primaryClass } from './ui';
+import { CampaignDispatchConfirmation } from './CampaignDispatchConfirmation';
+import { Busy, Notice, primaryClass } from './ui';
 
 const reasons: Record<NonNullable<CampaignDispatchPreview['blockedReason']>, string> = {
     not_live: 'Go live before sending audience notifications.',
@@ -31,6 +34,12 @@ export const CampaignDispatch: React.FC<{
     const [now, setNow] = useState(() => new Date().toISOString());
     const action = useCampaignAction();
     const queries = useQueryClient();
+    const { newModalWithToken, forceCloseModalByToken } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
+    const sendRef = useRef<() => void>(() => undefined);
+    const sendButtonRef = useRef<HTMLButtonElement>(null);
     useEffect(() => {
         onBusy(Boolean(action.busy));
     }, [action.busy, onBusy]);
@@ -82,9 +91,40 @@ export const CampaignDispatch: React.FC<{
             }
         });
     };
+    // Modal content lives outside this component's tree. Keep its action current
+    // without reopening the review on every parent render or clock tick.
+    useLayoutEffect(() => {
+        sendRef.current = send;
+    });
+    useEffect(() => {
+        if (!preview || unavailable || action.busy) return;
+        // Loading disables the trigger and can blur it. Restore the origin before
+        // the shared modal captures its return-focus target.
+        sendButtonRef.current?.focus();
+        const token = newModalWithToken(
+            <CampaignDispatchConfirmation
+                campaignName={campaign.name}
+                preview={preview}
+                blockedReason={preview.blockedReason ? reasons[preview.blockedReason] : undefined}
+                onConfirm={() => sendRef.current()}
+                onCancel={() => setPreview(undefined)}
+            />,
+            { onClose: () => setPreview(undefined) }
+        );
+        // Close only this review when it becomes stale or the editor unmounts.
+        return () => forceCloseModalByToken(token);
+    }, [
+        preview,
+        unavailable,
+        action.busy,
+        campaign.name,
+        newModalWithToken,
+        forceCloseModalByToken,
+    ]);
     return (
         <div className="flex flex-col gap-4 border-t border-grayscale-200 pt-5">
             <button
+                ref={sendButtonRef}
                 type="button"
                 className={`${primaryClass} w-full`}
                 disabled={Boolean(unavailable) || Boolean(action.busy)}
@@ -98,54 +138,6 @@ export const CampaignDispatch: React.FC<{
             {action.error && <Notice error>{action.error}</Notice>}
             {conflict && <Notice error>{conflict}</Notice>}
             {action.success && <Notice>{action.success}</Notice>}
-            {preview && !unavailable && (
-                <div
-                    role="group"
-                    aria-label="Confirm notification send"
-                    className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4"
-                >
-                    <h3 className="text-sm font-semibold text-grayscale-900">
-                        {preview.recipientCount.toLocaleString()} eligible{' '}
-                        {preview.recipientCount === 1 ? 'recipient' : 'recipients'}
-                    </h3>
-                    <p className="text-xs leading-relaxed text-grayscale-700">
-                        {preview.audienceCount.toLocaleString()} stored members ·{' '}
-                        {preview.alreadyNotifiedCount.toLocaleString()} already notified
-                    </p>
-                    {preview.blockedReason ? (
-                        <p className="text-sm text-grayscale-700">
-                            {reasons[preview.blockedReason]}
-                        </p>
-                    ) : (
-                        <p className="text-sm leading-relaxed text-grayscale-700">
-                            Send an inbox notification to these members and attempt push?
-                            Eligibility is checked again during delivery.
-                        </p>
-                    )}
-                    <div className="flex flex-wrap gap-3">
-                        <button
-                            type="button"
-                            className={primaryClass}
-                            disabled={
-                                Boolean(action.busy) ||
-                                Boolean(preview.blockedReason) ||
-                                preview.recipientCount === 0
-                            }
-                            onClick={send}
-                        >
-                            Confirm notification send
-                        </button>
-                        <button
-                            type="button"
-                            className={buttonClass}
-                            disabled={Boolean(action.busy)}
-                            onClick={() => setPreview(undefined)}
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

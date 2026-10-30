@@ -70,3 +70,11 @@ export interface CampaignToggleProps {
     checked: boolean;
     onChange: (checked: boolean) => void;
 }
+
+export interface CampaignDispatchConfirmationProps {
+    campaignName: string;
+    preview: CampaignDispatchPreview;
+    blockedReason?: string;
+    onConfirm: () => void;
+    onCancel: () => void;
+}

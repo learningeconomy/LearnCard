@@ -13,8 +13,10 @@ You can also choose an audience source and enter email addresses or account iden
 1. Enable **Inbox / push notification**, enter the notification title and body, and save.
 2. Add the intended audience. **View stored members** confirms who is enrolled.
 3. Choose **Go Live** and ensure the current time is within the campaign's schedule.
-4. Choose **Send Notifications** to review the number of eligible recipients.
+4. Choose **Send Notifications** to open a confirmation modal with the number of eligible recipients.
 5. Choose **Confirm notification send** to start delivery, or **Cancel** to close the review.
+
+Pressing Escape or clicking outside the modal also closes it without sending.
 
 Sending targets the campaign's entire eligible stored audience, not just the selected search results. The review excludes previously notified members and people who do not meet the campaign's age policy. If the campaign or eligible recipients change before confirmation, review the count again.
 
