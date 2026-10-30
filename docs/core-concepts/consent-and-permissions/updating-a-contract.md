@@ -154,6 +154,8 @@ A malformed legacy request is skipped so healthy requests can start. The migrati
 
 A successful, complete backfill records `ConsentFlowContractMigration { id: 'legacy-v1' }` with `completedAt`; later cold starts check that marker instead of rescanning every request and connection. Interrupted migrations and migrations that skip malformed requests do not mark completion. Repair reported IDs and rerun the service migration command. A missing version-1 lookup can also initialize a single valid, unversioned request written after completion, including its existing connection markers. This scoped repair leaves unrelated requests and the global marker unchanged; it never reconstructs missing history for an already-versioned request.
 
+This repair runs only through single-version lookups used by consent creation and terms changes, contract updates and retirement, and the legacy AutoBoost endpoints. Batched consent-list reads and credential writes do not initialize missing snapshots; they remain fail-closed when history is missing.
+
 After restoring legacy data, or rolling back to an older writer and then rolling forward, clear only this migration marker before rerunning the full idempotent backfill—never delete snapshots or consent history. Scoped recovery is a safety net, not a substitute for draining old writers during cutover.
 
 ## One-time delivery and interrupted sends
