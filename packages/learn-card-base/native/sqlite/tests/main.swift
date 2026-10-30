@@ -98,6 +98,19 @@ func summary(_ samples: [Double]) -> [String: Double] {
 if CommandLine.arguments.count > 2 {
     let mode = CommandLine.arguments[1], path = CommandLine.arguments[2]
     if mode == "wal" { try seed(path, wal: true) }
+    else if mode == "hot-journal" {
+        try Database.withDatabase(path: path, secret: "", writable: true) { db in
+            try Database.execute(db, """
+                PRAGMA journal_mode=DELETE;
+                PRAGMA synchronous=FULL;
+                PRAGMA cache_size=1;
+                BEGIN IMMEDIATE;
+                UPDATE users SET privateKey='UNCOMMITTED_SYNTHETIC_KEY';
+                INSERT INTO reactQuery VALUES ('uncommitted', hex(zeroblob(65536)));
+            """)
+            _exit(78) // Leave an actual spilled rollback journal, without closing/rolling back.
+        }
+    }
     else { _ = try prepare(path, fault: mode == "prepare" ? nil : mode) }
     exit(0)
 }
@@ -107,6 +120,22 @@ try manager.createDirectory(at: directory, withIntermediateDirectories: true)
 defer { try? manager.removeItem(at: directory) }
 var passed: [String] = []
 func path(_ name: String) -> String { directory.appendingPathComponent(name + ".db").path }
+
+let interrupted = path("hot-rollback-journal")
+try seed(interrupted)
+try require(try child(["hot-journal", interrupted]).terminationStatus == 78)
+let journal = try Data(contentsOf: URL(fileURLWithPath: interrupted + "-journal"))
+try require(journal.count > 512)
+try require(journal.prefix(8) == Data([0xd9, 0xd5, 0x05, 0xf9, 0x20, 0xa1, 0x63, 0xd7]))
+expectFailure { try Database.validate(path: interrupted, secret: "") }
+try require(try prepare(interrupted))
+try check(interrupted, encrypted: true)
+try Database.withDatabase(path: interrupted, secret: readSecret(interrupted + ".synthetic-secret")!, writable: false) { db in
+    try require(try Database.scalar(db, "SELECT count(*) FROM reactQuery WHERE id='uncommitted'") == "0")
+}
+try Database.validate(path: interrupted, secret: readSecret(interrupted + ".synthetic-secret")!)
+try require(try !prepare(interrupted))
+passed.append("hot-rollback-journal-recovers-committed-state-before-conversion")
 
 let fresh = path("fresh")
 try require(try !prepare(fresh))

@@ -53,7 +53,7 @@ diff --git a/android/src/main/java/com/getcapacitor/community/database/sqlite/SQ
 new file mode 100644
 --- /dev/null
 +++ b/android/src/main/java/com/getcapacitor/community/database/sqlite/SQLite/LearnCardEncryptedDatabase.java
-@@ -0,0 +1,167 @@
+@@ -0,0 +1,174 @@
 +package com.getcapacitor.community.database.sqlite.SQLite;
 +
 +import android.database.Cursor;
@@ -120,7 +120,14 @@ new file mode 100644
 +                        // repeats SQLCipher's KDF and a full scan blocks healthy account pages on cache damage.
 +                        return false;
 +                    }
-+                    validate(original, "");
++                    // A killed plaintext writer can leave a hot rollback journal. SQLite must
++                    // recover committed state through a writable handle before the integrity scan.
++                    // Never delete recovery sidecars ourselves.
++                    try (SQLiteDatabase source = open(original, "", false)) {
++                        if (!"ok".equals(scalar(source, "PRAGMA integrity_check"))) {
++                            throw failure("Account storage integrity check failed");
++                        }
++                    }
 +                }
 +                if (secret.isEmpty()) {
 +                    byte[] bytes = new byte[32];
@@ -301,7 +308,7 @@ diff --git a/ios/Plugin/Utils/LearnCardEncryptedDatabase.swift b/ios/Plugin/Util
 new file mode 100644
 --- /dev/null
 +++ b/ios/Plugin/Utils/LearnCardEncryptedDatabase.swift
-@@ -0,0 +1,180 @@
+@@ -0,0 +1,185 @@
 +import Foundation
 +import Darwin
 +import Security
@@ -354,8 +361,13 @@ new file mode 100644
 +                // The plugin's keyed open authenticates the file without a duplicate KDF/full scan here.
 +                return false
 +            }
-+            // A corrupt plaintext database must not be replaced or treated as a new account.
-+            try validate(path: path, secret: "")
++            // A killed plaintext writer can leave a hot rollback journal. SQLite needs a writable
++            // handle to recover committed state before validation; never delete recovery sidecars.
++            try withDatabase(path: path, secret: "", writable: true) { source in
++                guard try scalar(source, "PRAGMA integrity_check") == "ok" else {
++                    throw failure("Account storage integrity check failed")
++                }
++            }
 +        }
 +        if secret.isEmpty {
 +            var bytes = [UInt8](repeating: 0, count: 32)

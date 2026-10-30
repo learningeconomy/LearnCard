@@ -64,7 +64,14 @@ public final class LearnCardEncryptedDatabase {
                         // repeats SQLCipher's KDF and a full scan blocks healthy account pages on cache damage.
                         return false;
                     }
-                    validate(original, "");
+                    // A killed plaintext writer can leave a hot rollback journal. SQLite must
+                    // recover committed state through a writable handle before the integrity scan.
+                    // Never delete recovery sidecars ourselves.
+                    try (SQLiteDatabase source = open(original, "", false)) {
+                        if (!"ok".equals(scalar(source, "PRAGMA integrity_check"))) {
+                            throw failure("Account storage integrity check failed");
+                        }
+                    }
                 }
                 if (secret.isEmpty()) {
                     byte[] bytes = new byte[32];

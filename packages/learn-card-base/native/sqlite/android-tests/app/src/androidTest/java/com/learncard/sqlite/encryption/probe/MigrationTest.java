@@ -79,6 +79,43 @@ public class MigrationTest {
         assertFalse(LearnCardEncryptedDatabase.prepare(file, secrets));
         assertFalse(new String(Files.readAllBytes(file.toPath()), java.nio.charset.StandardCharsets.ISO_8859_1).contains("SYNTHETIC_PRIVATE_KEY"));
     }
+    @Test public void migrationRecoversHotRollbackJournal() throws Exception {
+        File writer = file("interrupted-writer"); seed(writer);
+        File original = file("hot-journal");
+        try (SQLiteDatabase db = SQLiteDatabase.openDatabase(writer.getPath(), "", null, SQLiteDatabase.OPEN_READWRITE, null)) {
+            db.rawExecSQL("PRAGMA journal_mode=DELETE");
+            db.rawExecSQL("PRAGMA synchronous=FULL");
+            db.rawExecSQL("PRAGMA cache_size=1");
+            db.beginTransaction();
+            try {
+                db.rawExecSQL("UPDATE users SET privateKey='UNCOMMITTED_SYNTHETIC_KEY'");
+                db.rawExecSQL("INSERT INTO reactQuery VALUES ('uncommitted', hex(zeroblob(65536)))");
+                File journal = new File(writer + "-journal");
+                byte[] bytes = Files.readAllBytes(journal.toPath());
+                assertTrue(bytes.length > 512);
+                assertArrayEquals(new byte[] {(byte)0xd9,(byte)0xd5,5,(byte)0xf9,32,(byte)0xa1,99,(byte)0xd7}, java.util.Arrays.copyOf(bytes, 8));
+                // Copy a real spilled, uncommitted transaction without its live writer's locks.
+                // The independent pair models process death; never discard its recovery journal.
+                Files.copy(writer.toPath(), original.toPath());
+                Files.copy(journal.toPath(), new File(original + "-journal").toPath());
+            } finally { db.endTransaction(); }
+        }
+        try { LearnCardEncryptedDatabase.validate(original, ""); fail("Read-only validation must require recovery"); }
+        catch (Exception expected) { }
+        Secrets secrets = new Secrets();
+        assertTrue(LearnCardEncryptedDatabase.prepare(original, secrets));
+        check(original, secrets.secret);
+        LearnCardEncryptedDatabase.validate(original, secrets.secret);
+        try (SQLiteDatabase db = SQLiteDatabase.openDatabase(original.getPath(), secrets.secret, null, SQLiteDatabase.OPEN_READONLY, null)) {
+            try (Cursor rows = db.rawQuery("SELECT privateKey FROM users", null)) {
+                assertTrue(rows.moveToFirst()); assertEquals("SYNTHETIC_PRIVATE_KEY", rows.getString(0));
+            }
+            try (Cursor rows = db.rawQuery("SELECT count(*) FROM reactQuery WHERE id='uncommitted'", null)) {
+                assertTrue(rows.moveToFirst()); assertEquals(0, rows.getInt(0));
+            }
+        }
+        assertFalse(LearnCardEncryptedDatabase.prepare(original, secrets));
+    }
     @Test public void failureBeforeReplacementPreservesOriginal() throws Exception {
         File file = file("before"); seed(file); Secrets secrets = new Secrets();
         try {
