@@ -113,6 +113,7 @@ vi.mock('../../components/network-prompts/hooks/useLCNGatedAction', () => ({
     default: () => ({ gate: async () => ({ prompted: false }) }),
 }));
 vi.mock('../../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper', () => ({
+    FamilyPinViewModeEnum: { edit: 'edit' },
     FamilyPinWrapper: ({ handleOnSubmit }: { handleOnSubmit: () => Promise<void> }) => (
         <button onClick={handleOnSubmit}>Verify guardian PIN</button>
     ),
