@@ -13,7 +13,7 @@
         "aiService": "https://api.learncloud.ai"
     },
     "auth": {
-        "keyDerivation": "web3auth",
+        "keyDerivation": "sss",
         "sss": {
             "serverUrl": "https://api.learncard.app/api",
             "enableEmailBackupShare": false
