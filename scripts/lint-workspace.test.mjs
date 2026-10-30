@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+    mkdirSync,
+    mkdtempSync,
+    readFileSync,
+    rmSync,
+    statSync,
+    symlinkSync,
+    utimesSync,
+    writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -117,4 +126,58 @@ test('full discovery still requires a workspace project sourceRoot', t => {
     assert.ifError(result.error);
     assert.equal(result.status, 1, result.stdout + result.stderr);
     assert.match(result.stderr, /packages\/broken\/project\.json must declare sourceRoot/);
+});
+
+// A real ESLint rule records executions, distinguishing cache hits from repeated passes.
+const writeProbeConfig = (root, severity = 'error') =>
+    writeFixtureFile(
+        root,
+        'eslint.config.mjs',
+        `import { appendFileSync } from 'node:fs';
+export default [{ files: ['**/*.js'], plugins: { fixture: { rules: {
+    probe: { create() { return { Program() { appendFileSync('executions', 'lint\\n'); } }; } }
+} } }, rules: { 'fixture/probe': 'error', 'no-debugger': '${severity}' } }];
+`
+    );
+
+test('cache reuses unchanged content after checkout timestamps change and detects same-size edits', t => {
+    const root = createFixtureRoot(t);
+    writeProbeConfig(root);
+    writeFixtureFile(root, 'packages/real/project.json', '{"sourceRoot":"packages/real/src"}');
+    const source = writeFixtureFile(root, 'packages/real/src/index.js', 'void 123;\n');
+
+    assertPassed(runLint(root));
+    utimesSync(source, 1, 1);
+    assertPassed(runLint(root));
+    assert.equal(readFileSync(join(root, 'executions'), 'utf8'), 'lint\n');
+
+    const { atime, mtime } = statSync(source);
+    writeFileSync(source, 'debugger;\n');
+    utimesSync(source, atime, mtime);
+    assertLintError(runLint(root), 'packages/real/src/index.js');
+    assert.equal(readFileSync(join(root, 'executions'), 'utf8'), 'lint\nlint\n');
+});
+
+test('cache invalidates changed rules even when source is unchanged', t => {
+    const root = createFixtureRoot(t);
+    writeProbeConfig(root, 'off');
+    writeFixtureFile(root, 'selected.js', 'debugger;\n');
+    assertPassed(runLint(root, '--files', 'selected.js'));
+
+    writeProbeConfig(root);
+    assertLintError(runLint(root, '--files', 'selected.js'), 'selected.js');
+    assert.equal(readFileSync(join(root, 'executions'), 'utf8'), 'lint\nlint\n');
+});
+
+test('cached diagnostics are checked against the current baseline on every run', t => {
+    const root = createFixtureRoot(t);
+    writeProbeConfig(root);
+    writeFixtureFile(root, 'selected.js', 'debugger;\n');
+    const update = runLint(root, '--update-baseline', '--files', 'selected.js');
+    assert.ifError(update.error);
+    assert.equal(update.status, 0, update.stdout + update.stderr);
+    assertPassed(runLint(root, '--files', 'selected.js'));
+    writeFixtureFile(root, 'scripts/eslint-baseline.json', '{}\n');
+    assertLintError(runLint(root, '--files', 'selected.js'), 'selected.js');
+    assert.equal(readFileSync(join(root, 'executions'), 'utf8'), 'lint\n');
 });
