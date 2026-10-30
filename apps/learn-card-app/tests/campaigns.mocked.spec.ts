@@ -471,6 +471,7 @@ test.describe('campaign composer @mocked', () => {
         ]) {
             mock.on(procedure, () => emptyPage);
         }
+        mock.on('activity.getMyCredentialLifecycleStatuses', () => ({}));
         mock.on('profile.pendingConnectionPrompts', () => []);
         mock.on('profile.updateProfile', () => true);
         const testId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
