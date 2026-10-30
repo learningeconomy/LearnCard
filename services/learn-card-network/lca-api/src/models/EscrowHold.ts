@@ -500,6 +500,7 @@ export const findEscrowHoldsPendingStartNotification = async (
 ): Promise<EscrowHold[]> =>
     getEscrowHoldsCollection()
         .find({ status: 'pending', startedNotificationPending: true })
+        // Keep tied start-notification batches deterministic before the limit.
         .sort({ startedNotificationAttemptedAt: 1, requestedAt: 1, _id: 1 })
         .limit(limit)
         .toArray();
@@ -564,6 +565,7 @@ export const findEscrowHoldsDueForReminder = async (
             releaseAfter: { $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS) },
             'notifications.kind': { $ne: 'reminder' },
         })
+        // Keep tied reminder batches deterministic before the limit.
         .sort({ reminderAttemptedAt: 1, releaseAfter: 1, _id: 1 })
         .limit(limit)
         .toArray();

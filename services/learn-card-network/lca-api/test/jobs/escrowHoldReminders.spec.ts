@@ -209,11 +209,13 @@ describe('runEscrowHoldReminders', () => {
         await runEscrowHoldReminders({ now, limit: 200 });
         const firstRun = await Promise.all(holds.map(hold => findEscrowHoldById(hold._id)));
         expect(firstRun.map(hold => hold?.enclaveCancelAttempts).sort()).toEqual([0, 0, 1, 1]);
-        const unattempted = firstRun
+        // UUIDs are ASCII: default string ordering matches Mongo's byte ordering.
+        const unattemptedId = firstRun
             .filter(hold => hold?.enclaveCancelAttempts === 0)
-            .sort((left, right) => left!._id.localeCompare(right!._id))[0]!;
+            .map(hold => hold!._id)
+            .sort()[0]!;
         await runEscrowHoldReminders({ now, limit: 1 });
-        expect((await findEscrowHoldById(unattempted._id))?.enclaveCancelAttempts).toBe(1);
+        expect((await findEscrowHoldById(unattemptedId))?.enclaveCancelAttempts).toBe(1);
         for (const hold of holds) {
             const stored = await findEscrowHoldById(hold._id);
             expect(stored?.enclaveCancelPendingAt).toBeInstanceOf(Date);
