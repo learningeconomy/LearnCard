@@ -22,6 +22,6 @@
             "authBridgeUrl": "http://localhost:3000/auth/continue.html"
         },
         "keyDerivation": "sss",
-        "sss": { "serverUrl": "http://localhost:5100/api" }
+        "sss": { "serverUrl": "http://localhost:5100/api", "escrowEnclaveMode": "off" }
     }
 }
