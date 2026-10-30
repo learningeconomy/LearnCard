@@ -114,6 +114,6 @@ jobs:
             environment: learn-card-app-staging
             channel: ${{ needs.decide.outputs.channel }}
             tenant: learncard
-            self_assign: 'true'
+            self_assign: ${{ 'true' }}
         secrets:
             CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
