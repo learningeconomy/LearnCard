@@ -1,4 +1,31 @@
 {
+    "credentialCollection": {
+        "searchIncomplete": "Recherche incomplète. Résultats trouvés : {{count}}.",
+        "searching": "Recherche… Résultats trouvés : {{count}}.",
+        "loadError": "Justificatifs chargés : {{count}}. La collection est incomplète.",
+        "loadErrorEmpty": "Impossible de charger les justificatifs. La collection est incomplète.",
+        "complete": "Justificatifs : {{count}}. Collection complète.",
+        "loaded": "Justificatifs chargés : {{count}}. {{state}}",
+        "loadingMore": "Chargement de la suite…",
+        "moreAvailable": "D’autres justificatifs sont disponibles.",
+        "retrying": "Nouvelle tentative…",
+        "retry": "Réessayer de charger les justificatifs",
+        "loading": "Chargement…",
+        "continue": "Continuer le chargement",
+        "loadingEarned": "Chargement des justificatifs obtenus",
+        "initialError": "Impossible de charger les justificatifs. Réessayez.",
+        "loadingCredentials": "Chargement des justificatifs…",
+        "loadMore": "Charger plus de justificatifs",
+        "recentIncomplete": "Certains justificatifs récents n’ont pas pu être chargés. Ces résultats sont incomplets.",
+        "recentError": "Impossible de charger les justificatifs récents.",
+        "loadingRecent": "Chargement des justificatifs récents…",
+        "retryRecent": "Réessayer de charger les justificatifs récents",
+        "totalsAria": "Totaux des justificatifs",
+        "totals": "Justificatifs : {{credentials}} · Compétences : {{skills}}",
+        "totalsError": "Impossible de charger les totaux des justificatifs.",
+        "counting": "Comptage des justificatifs…",
+        "retryTotals": "Réessayer de charger les totaux"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Crédits obtenus non renseignés",

@@ -62,15 +62,20 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                 >
                     {isError
                         ? records.length > 0
-                            ? `${records.length} credentials loaded. The collection is incomplete because more credentials could not be loaded.`
-                            : 'Credentials could not be loaded. Try again.'
+                            ? m['credentialCollection.loadError']({ count: records.length })
+                            : m['credentialCollection.initialError']()
                         : isPending
-                          ? 'Loading credentials…'
+                          ? m['credentialCollection.loadingCredentials']()
                           : isEmpty
                             ? m['passport.activity.emptyAll']()
                             : isComplete
-                              ? `${records.length} credentials. Collection complete.`
-                              : `${records.length} credentials loaded. ${isFetching ? 'Loading more…' : 'More credentials are available.'}`}
+                              ? m['credentialCollection.complete']({ count: records.length })
+                              : m['credentialCollection.loaded']({
+                                    count: records.length,
+                                    state: isFetching
+                                        ? m['credentialCollection.loadingMore']()
+                                        : m['credentialCollection.moreAvailable'](),
+                                })}
                 </p>
                 {groups.map(group => (
                     <div key={group.label} className="mb-6">
@@ -95,10 +100,10 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                         className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-sm text-grayscale-700 hover:bg-grayscale-10 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
                     >
                         {isFetching
-                            ? 'Loading credentials…'
+                            ? m['credentialCollection.loadingCredentials']()
                             : isError
-                              ? 'Retry loading credentials'
-                              : 'Load more credentials'}
+                              ? m['credentialCollection.retry']()
+                              : m['credentialCollection.loadMore']()}
                     </button>
                 )}
             </div>

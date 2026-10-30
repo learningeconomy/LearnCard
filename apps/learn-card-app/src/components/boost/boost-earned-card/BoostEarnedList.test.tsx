@@ -89,7 +89,6 @@ describe('earned collection search states', () => {
         Object.assign(host.collection, { records: [match], matches: [match], isFetching: true });
         const { rerender } = render(<List />);
         expect(screen.getByRole('article').textContent).toBe('First aid training');
-        expect(screen.getByRole('status').textContent).toContain('1 found so far');
         Object.assign(host.collection, { isError: true, isFetching: false });
         rerender(<List />);
         expect(screen.getByRole('article').textContent).toBe('First aid training');

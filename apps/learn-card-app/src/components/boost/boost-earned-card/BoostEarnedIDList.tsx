@@ -92,13 +92,20 @@ const BoostEarnedIDList: React.FC<{
                                   query: searchString,
                               })
                         : boostError
-                          ? `Search incomplete. ${matches.length} found so far`
-                          : `Searching… ${matches.length} found so far`
+                          ? m['credentialCollection.searchIncomplete']({ count: matches.length })
+                          : m['credentialCollection.searching']({ count: matches.length })
                     : boostError
-                      ? `Could not load ${records.length ? 'more ' : ''}credentials. ${records.length} loaded; collection incomplete.`
+                      ? records.length > 0
+                          ? m['credentialCollection.loadError']({ count: records.length })
+                          : m['credentialCollection.loadErrorEmpty']()
                       : isComplete
-                        ? `${records.length} credentials. Collection complete.`
-                        : `${records.length} credentials loaded. ${credentialsFetching ? 'Loading more…' : 'More credentials are available.'}`}
+                        ? m['credentialCollection.complete']({ count: records.length })
+                        : m['credentialCollection.loaded']({
+                              count: records.length,
+                              state: credentialsFetching
+                                  ? m['credentialCollection.loadingMore']()
+                                  : m['credentialCollection.moreAvailable'](),
+                          })}
             </span>
             {boostError && (
                 <button
@@ -109,7 +116,9 @@ const BoostEarnedIDList: React.FC<{
                         if (!credentialsFetching) void retry();
                     }}
                 >
-                    {credentialsFetching ? 'Retrying…' : 'Retry loading credentials'}
+                    {credentialsFetching
+                        ? m['credentialCollection.retrying']()
+                        : m['credentialCollection.retry']()}
                 </button>
             )}
             {!searching && hasNextPage && !boostError && (
@@ -121,7 +130,9 @@ const BoostEarnedIDList: React.FC<{
                         if (!credentialsFetching) void fetchNextPage();
                     }}
                 >
-                    {credentialsFetching ? 'Loading…' : 'Continue loading'}
+                    {credentialsFetching
+                        ? m['credentialCollection.loading']()
+                        : m['credentialCollection.continue']()}
                 </button>
             )}
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
