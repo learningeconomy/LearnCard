@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { CampaignValidator, type CampaignDispatchPreview, type Campaign } from '@learncard/types';
+import { ModalsProvider, useModalsContext } from 'learn-card-base/components/modals/ModalsContext';
 import { CampaignDispatch } from './CampaignDispatch';
 import type { CampaignApi } from './types';
 
@@ -27,6 +28,26 @@ const mockApi = () => ({
     campaignsPreviewDispatch: vi.fn().mockResolvedValue(preview),
     campaignsDispatch: vi.fn().mockResolvedValue({ dispatchId: 'example' }),
 });
+// Exercise the actual modal lifecycle; browser QA covers the shared surface,
+// focus management, Escape and backdrop dismissal.
+const TestModals = () => {
+    const { modals } = useModalsContext();
+    return (
+        <>
+            {modals
+                .filter(modal => modal.open)
+                .map(modal => (
+                    <React.Fragment key={modal.id}>{modal.component}</React.Fragment>
+                ))}
+        </>
+    );
+};
+const ModalWrapper: React.FC<React.PropsWithChildren> = ({ children }) => (
+    <ModalsProvider>
+        {children}
+        <TestModals />
+    </ModalsProvider>
+);
 const mount = (api = mockApi(), campaign = live(), disabled = false) => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
@@ -39,14 +60,15 @@ const mount = (api = mockApi(), campaign = live(), disabled = false) => {
                 disabled={disabled}
                 onBusy={onBusy}
             />
-        </QueryClientProvider>
+        </QueryClientProvider>,
+        { wrapper: ModalWrapper }
     );
     return { api, queryClient, invalidate, onBusy, ...view };
 };
 afterEach(cleanup);
 const review = async () => {
     fireEvent.click(screen.getByRole('button', { name: 'Send Notifications' }));
-    await screen.findByRole('group', { name: 'Confirm notification send' });
+    await screen.findByRole('heading', { name: 'Send notifications?' });
 };
 
 describe('audience notification dispatch', () => {
@@ -58,7 +80,7 @@ describe('audience notification dispatch', () => {
         expect(api.campaignsDispatch).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
         expect(
-            screen.queryByRole('group', { name: 'Confirm notification send' })
+            screen.queryByRole('heading', { name: 'Send notifications?' })
         ).not.toBeInTheDocument();
         expect(api.campaignsDispatch).not.toHaveBeenCalled();
     });
@@ -134,7 +156,7 @@ describe('audience notification dispatch', () => {
             </QueryClientProvider>
         );
         expect(
-            screen.queryByRole('group', { name: 'Confirm notification send' })
+            screen.queryByRole('heading', { name: 'Send notifications?' })
         ).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Send Notifications' })).toBeDisabled();
     });
@@ -178,7 +200,16 @@ describe('audience notification dispatch', () => {
         );
         expect(screen.getByRole('alert')).not.toHaveTextContent('secret queue details');
         expect(
-            screen.queryByRole('group', { name: 'Confirm notification send' })
+            screen.queryByRole('heading', { name: 'Send notifications?' })
         ).not.toBeInTheDocument();
+    });
+    it('closes the review when the editor unmounts without dispatching', async () => {
+        const { api, rerender } = mount();
+        await review();
+        rerender(<div>Another page</div>);
+        expect(
+            screen.queryByRole('heading', { name: 'Send notifications?' })
+        ).not.toBeInTheDocument();
+        expect(api.campaignsDispatch).not.toHaveBeenCalled();
     });
 });
