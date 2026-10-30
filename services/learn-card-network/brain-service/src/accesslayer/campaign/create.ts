@@ -19,7 +19,7 @@ export const createCampaign = async (
     const now = new Date().toISOString();
     const campaign = CampaignValidator.parse({
         ...parsed,
-        message: { ...parsed.message, id: parsed.id },
+        message: parsed.message ? { ...parsed.message, id: parsed.id } : undefined,
         createdAt: now,
         updatedAt: now,
     });

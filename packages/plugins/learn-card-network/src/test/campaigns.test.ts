@@ -25,6 +25,7 @@ const mockClient = () => ({
     campaigns: {
         isAdmin: query(),
         dispatch: mutation(),
+        previewDispatch: query(),
         sendTestToMe: mutation(),
         create: mutation(),
         update: mutation(),
@@ -45,6 +46,35 @@ const mockClient = () => ({
 beforeEach(() => vi.clearAllMocks());
 
 describe('campaign network plugin methods', () => {
+    it('previews recipients and forwards the reviewed token to dispatch', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        await methods.campaignsPreviewDispatch(wallet, 'pilot-clr');
+        expect(client.campaigns.previewDispatch.query).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+        });
+        await methods.campaignsDispatch(wallet, 'pilot-clr', {
+            expectedPreviewToken: 'a'.repeat(64),
+        });
+        expect(client.campaigns.dispatch.mutate).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+            expectedPreviewToken: 'a'.repeat(64),
+        });
+    });
+
+    it('acknowledges a private test through the existing recordEvent endpoint', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        const testId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
+        await methods.recordCampaignEvent(wallet, 'pilot-clr', 'shown', testId);
+        expect(client.campaigns.recordEvent.mutate).toHaveBeenCalledWith({
+            campaignId: 'pilot-clr',
+            event: 'shown',
+            testId,
+        });
+    });
     it('forwards every campaign operation to the correct typed procedure', async () => {
         const client = mockClient();
         vi.mocked(getClient).mockResolvedValue(client as never);

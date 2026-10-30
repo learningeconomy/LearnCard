@@ -181,10 +181,22 @@ await learnCard.invoke.campaignsSetStatus('transcript-pilot-v1', 'live');
 const { dispatchId } = await learnCard.invoke.campaignsDispatch('transcript-pilot-v1');
 ```
 
-`sendTestToMe` always targets the authenticated caller. It ignores audience, status, dates,
-and channels, but requires notification copy. Each explicit test gets a fresh test ID;
-queue retries preserve it. Test sends neither enroll the caller nor increment `notified`.
-`dispatch` requires a live, in-window campaign with the `notify` channel. The queue job
+`sendTestToMe` always targets the authenticated administrator and tests the selected channels.
+It ignores audience, status and dates. `notify` uses the saved notification copy and existing
+notification queue; `inApp` stores a private snapshot on a `CAMPAIGN_TEST` relationship.
+In-app JSON is optional for notification-only campaigns, and notification copy is optional
+for in-app-only campaigns. At least one channel and its corresponding content are required.
+Each explicit test gets a fresh test ID; notification queue retries preserve it.
+
+The existing `getMyCampaigns` endpoint includes pending private snapshots only for their
+requesting administrator, with a `testId`. Reading does not consume a test. After the real
+renderer presents it, `recordEvent` with `{ campaignId, event: 'shown', testId } removes that
+snapshot without writing engagement state. A stale acknowledgement cannot remove a newer
+snapshot. The latest test replaces the pending one for that administrator/campaign; deleting
+the campaign deletes its pending tests. LearnCard App fetches on entry/return outside the
+composer, keeps tests account/network-scoped, and does not send their events to analytics.
+Test sends neither enroll the caller nor increment campaign stats.
+`dispatch`requires a live, in-window campaign with the`notify` channel. The queue job
 contains campaign ID, creation timestamp, dispatch ID and an optional profile-ID cursor.
 The creation timestamp prevents old jobs from applying to a deleted/recreated campaign.
 
@@ -236,3 +248,29 @@ admin denial, caller-only tests, concurrent state acknowledgements and stats. Th
 notification integration suite covers concurrent receiver storage and push suppression.
 Hosted `lc verify` additionally exercises SDK authorization; it does not provision FCM
 or prove iOS/Android device receipt. Those require separately authorized device QA.
+
+## Reviewed dispatch from the composer
+
+`campaigns.previewDispatch` is an admin-only, read-only query taking `{ campaignId }`.
+The SDK exposes it as `learnCard.invoke.campaignsPreviewDispatch(campaignId)`.
+It returns `audienceCount`, `alreadyNotifiedCount`, `recipientCount`, `previewToken`,
+and an optional `blockedReason` (`not_live`, `notify_disabled`, `not_started`, `ended`,
+`no_recipients`). Recipient counts use the same minor/date-of-birth policy as delivery
+and exclude profiles with `notifiedAt`. They count inbox recipients; push receipt is
+not guaranteed, and no email count is claimed.
+
+After reviewing the count, pass `{ expectedPreviewToken: preview.previewToken }` as
+the second argument to `learnCard.invoke.campaignsDispatch`. The route accepts that
+optional field alongside `campaignId`. Legacy dispatch callers can omit it; the composer
+always supplies it. Under the campaign node lock, the server recomputes a digest over
+the definition, mutation revision, and sorted eligible profile IDs, rejects stale previews
+with `CONFLICT`, and advances the revision to consume the confirmation once. This catches
+same-count recipient changes as well as ordinary audience edits. No recipients or invalid
+status/schedule/channel is rejected before enqueue. Preview does not mark anyone notified.
+
+The count query collects eligible profile IDs internally to fingerprint the recipient set;
+those IDs are not returned by the API. Its memory use scales with eligible audience size.
+The confirmation lock is released before queue/network work. Later waves still use current
+eligibility and audience semantics, so the reviewed count is a snapshot rather than a frozen
+send list. Existing queue retries and receiver deduplication remain unchanged. If enqueue
+fails or the HTTP response is lost, review again before retrying; never reuse the old token.

@@ -11,6 +11,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
         alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
         env: {
             IS_E2E_TEST: 'true',
+            IS_OFFLINE: 'true',
             DOMAIN_NAME: 'localhost%3A3000',
             SEED: 'a'.repeat(64),
             CAMPAIGN_ADMIN_PROFILE_IDS: 'campaign-admin',

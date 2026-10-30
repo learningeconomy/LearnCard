@@ -2360,6 +2360,15 @@
         "notFinished": "غير مكتمل"
     },
     "alerts": {
+        "announcement": "إعلان",
+        "newAlert": "جديد",
+        "markRead": "وضع علامة مقروء",
+        "read": "مقروء",
+        "markingRead": "جارٍ وضع علامة مقروء…",
+        "archiving": "جارٍ الأرشفة…",
+        "restore": "استعادة",
+        "restoring": "جارٍ الاستعادة…",
+        "updateFailed": "تعذّر تحديث هذا التنبيه. يُرجى المحاولة مرة أخرى.",
         "title": "التنبيهات",
         "notifications": "الإشعارات",
         "markAllRead": "تحديد الكل كمقروء",

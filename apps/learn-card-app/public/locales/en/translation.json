@@ -2405,6 +2405,15 @@
         "notFinished": "Not finished"
     },
     "alerts": {
+        "announcement": "Announcement",
+        "newAlert": "New",
+        "markRead": "Mark as read",
+        "read": "Read",
+        "markingRead": "Marking as read…",
+        "archiving": "Archiving…",
+        "restore": "Restore",
+        "restoring": "Restoring…",
+        "updateFailed": "Couldn’t update this alert. Please try again.",
         "accepted": "Accepted",
         "active": "Active",
         "alreadyConnected": "You are already connected.",
