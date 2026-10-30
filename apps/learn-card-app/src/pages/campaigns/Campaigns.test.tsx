@@ -45,6 +45,14 @@ const apiMock = () =>
     ({
         searchProfiles: vi.fn().mockResolvedValue([]),
         getProfile: vi.fn().mockResolvedValue(undefined),
+        campaignsPreviewDispatch: vi.fn().mockResolvedValue({
+            campaignId: 'test-campaign',
+            recipientCount: 13,
+            audienceCount: 17,
+            alreadyNotifiedCount: 4,
+            previewToken: 'a'.repeat(64),
+        }),
+        campaignsDispatch: vi.fn().mockResolvedValue({ dispatchId: 'test-dispatch' }),
         campaignsIsAdmin: vi.fn().mockResolvedValue(true),
         campaignsList: vi
             .fn<CampaignApi['campaignsList']>()
@@ -187,9 +195,7 @@ describe('campaign composer', () => {
         fireEvent.click(confirm);
         expect(api.campaignsSendTestToMe).toHaveBeenCalledTimes(1);
         expect(api.campaignsSendTestToMe).toHaveBeenCalledWith('test-campaign');
-        expect(
-            screen.getByRole('button', { name: 'Send Notifications — unavailable' })
-        ).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Send Notifications' })).toBeDisabled();
         await act(async () => send.resolve(true));
         expect(await screen.findByText(/Test notification sent/)).toBeVisible();
     });

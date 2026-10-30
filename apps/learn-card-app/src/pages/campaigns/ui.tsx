@@ -115,18 +115,3 @@ export const Busy: React.FC<{ children: React.ReactNode }> = ({ children }) => (
         {children}
     </span>
 );
-export const DeferredFeatures = () => (
-    <div className="border-t border-grayscale-200 pt-4 space-y-2">
-        <button
-            type="button"
-            disabled
-            className={`${buttonClass} w-full`}
-            aria-describedby="campaign-send-limit"
-        >
-            Send Notifications — unavailable
-        </button>
-        <p id="campaign-send-limit" className="text-xs leading-relaxed text-grayscale-500">
-            Audience sending is waiting for recipient counts. You can still send yourself a test.
-        </p>
-    </div>
-);

@@ -3,6 +3,8 @@ import type {
     LCNVisibleProfile,
     CampaignAudienceInput,
     CampaignStats,
+    CampaignDispatchPreview,
+    CampaignDispatchOptions,
     CampaignStatus,
     CreateCampaignInput,
     ListCampaignsInput,
@@ -12,7 +14,7 @@ import type {
     UpdateCampaignInput,
 } from '@learncard/types';
 
-/** Only the supported composer operations; deliberately no full-audience dispatch. */
+/** Supported admin composer operations. */
 export interface CampaignApi {
     getProfile(): Promise<LCNVisibleProfile | undefined>;
     searchProfiles(
@@ -24,6 +26,11 @@ export interface CampaignApi {
             includeConnectionStatus?: boolean;
         }
     ): Promise<LCNVisibleProfile[]>;
+    campaignsPreviewDispatch(campaignId: string): Promise<CampaignDispatchPreview>;
+    campaignsDispatch(
+        campaignId: string,
+        options?: CampaignDispatchOptions
+    ): Promise<{ dispatchId: string }>;
     campaignsIsAdmin(): Promise<boolean>;
     campaignsCreate(input: CreateCampaignInput): Promise<Campaign>;
     campaignsUpdate(input: UpdateCampaignInput): Promise<Campaign>;

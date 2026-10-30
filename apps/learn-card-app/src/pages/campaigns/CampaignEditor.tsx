@@ -13,6 +13,7 @@ import { setInAppMessageOverride } from 'learn-card-base/in-app-messages/debugOv
 import type { Campaign, CampaignStatus } from '@learncard/types';
 import type { CampaignApi, CampaignForm } from './types';
 import { campaignToForm, initialForm, previewMessage, validateForm } from './model';
+import { CampaignDispatch } from './CampaignDispatch';
 import { CampaignAudience } from './CampaignAudience';
 import { CampaignMessageEditor } from './CampaignMessageEditor';
 import { CampaignStatsPanel } from './CampaignStats';
@@ -24,7 +25,6 @@ import {
     StatusPill,
     Toggle,
     textButtonClass,
-    DeferredFeatures,
     Field,
     Notice,
     buttonClass,
@@ -39,11 +39,12 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     const [form, setForm] = useState(() => (campaign ? campaignToForm(campaign) : initialForm()));
     const [baseline, setBaseline] = useState(() => JSON.stringify(form));
     const [audienceBusy, setAudienceBusy] = useState(false);
+    const [dispatchBusy, setDispatchBusy] = useState(false);
     const [confirmation, setConfirmation] = useState<CampaignStatus | 'test'>();
     const action = useCampaignAction();
     const queries = useQueryClient();
     const dirty = JSON.stringify(form) !== baseline;
-    const busy = Boolean(action.busy) || audienceBusy;
+    const busy = Boolean(action.busy) || audienceBusy || dispatchBusy;
     const validation = validateForm(form, saved?.status);
     const preview = previewMessage(form);
     useEffect(() => () => setInAppMessageOverride(null), []);
@@ -565,7 +566,18 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         </div>
                                     </div>
                                 )}
-                                <DeferredFeatures />
+                                <CampaignDispatch
+                                    api={api}
+                                    campaign={saved}
+                                    disabled={
+                                        dirty ||
+                                        audienceBusy ||
+                                        Boolean(action.busy) ||
+                                        Boolean(confirmation) ||
+                                        Boolean(validation.errors.length)
+                                    }
+                                    onBusy={setDispatchBusy}
+                                />
                             </>
                         )}
                     </section>
