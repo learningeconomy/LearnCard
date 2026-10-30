@@ -436,6 +436,12 @@ jobs:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
 
+            # The serverless-deploy script smoke-loads the native layer, which must run on Node 24.
+            - name: Set up Lambda Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
@@ -594,6 +600,12 @@ jobs:
               with:
                   name: didkit-native-linux-x64
                   path: packages/plugins/didkit-plugin-node
+
+            # The serverless-deploy script smoke-loads the native layer, which must run on Node 24.
+            - name: Set up Lambda Node 24 runtime tools
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
