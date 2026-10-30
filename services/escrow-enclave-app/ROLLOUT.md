@@ -78,7 +78,8 @@ item 4 (D10) accepted for stage 1, see LAUNCH-DECISIONS.md RT and D10; item 2
 (enrollment authority) and item 3 (attack C) proceed so that stage 1 itself
 provides the production verification (pilot enrollment, PIN and hold
 recoveries, hold-confirmation email), with the staging soak and inbox check
-still to be recorded. None of these close items 1-3 for stage 2.
+still to be recorded. None of these close any item (1-4) for stage 2: D10's
+acceptance is stage 1 only and is revisited before stage 2.
 
 **Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
