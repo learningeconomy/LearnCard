@@ -47,6 +47,11 @@ const useCredentialReader = () => {
     return switchedDid && wallet?.id.did() !== switchedDid ? null : wallet;
 };
 
+/**
+ * Resolve an account-scoped document and opportunistically backfill that same reader's
+ * missing index metadata. Existing server authorization still applies; a rejected
+ * metadata write never prevents the credential from being displayed.
+ */
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
