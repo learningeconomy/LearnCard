@@ -1,0 +1,214 @@
+const assert = require('node:assert/strict');
+const { execFileSync, spawnSync } = require('node:child_process');
+const {
+    mkdirSync,
+    mkdtempSync,
+    readFileSync,
+    renameSync,
+    rmSync,
+    writeFileSync,
+} = require('node:fs');
+const { tmpdir } = require('node:os');
+const { dirname, join } = require('node:path');
+const test = require('node:test');
+const { decideEligibility, browserCacheKey } = require('./mock-e2e-ci.cjs');
+
+const script = join(__dirname, 'mock-e2e-ci.cjs');
+const fixture = t => {
+    const cwd = mkdtempSync(join(tmpdir(), 'mock-e2e-policy-'));
+    t.after(() => rmSync(cwd, { recursive: true, force: true }));
+    const git = (...args) =>
+        execFileSync('git', args, {
+            cwd,
+            encoding: 'utf8',
+            stdio: ['ignore', 'pipe', 'pipe'],
+        }).trim();
+    const write = (path, content = 'fixture\n') => {
+        mkdirSync(dirname(join(cwd, path)), { recursive: true });
+        writeFileSync(join(cwd, path), content);
+    };
+    const commit = () => {
+        git('add', '-A');
+        git(
+            '-c',
+            'core.hooksPath=/dev/null',
+            '-c',
+            'user.name=Fixture',
+            '-c',
+            'user.email=fixture@example.com',
+            'commit',
+            '--allow-empty',
+            '-qm',
+            'fixture'
+        );
+        return git('rev-parse', 'HEAD');
+    };
+    git('init', '-q', '-b', 'main');
+    write('README.md');
+    write('docs/guide.md');
+    write('packages/shared/src/index.ts');
+    const baseSha = commit();
+    const decide = headSha =>
+        decideEligibility({ eventName: 'pull_request', baseSha, headSha, cwd });
+    return { cwd, git, write, commit, baseSha, decide };
+};
+
+test('prose-only PR skips, while manual dispatch always runs without comparison metadata', t => {
+    const f = fixture(t);
+    f.write('docs/guide.md', 'Updated prose\n');
+    f.write('.changeset/example.md');
+    f.write('README.md', 'Updated readme\n');
+    assert.deepEqual(f.decide(f.commit()), { run: false, reason: 'prose-only' });
+    assert.deepEqual(decideEligibility({ eventName: 'workflow_dispatch' }), {
+        run: true,
+        reason: 'manual-dispatch',
+    });
+});
+
+for (const path of [
+    'apps/learn-card-app/src/App.tsx',
+    'packages/shared/src/index.ts',
+    'packages/plugins/crypto/src/index.ts',
+    'services/example/src/index.ts',
+    'bun.lock',
+    'package.json',
+    'nx.json',
+    'tsconfig.base.json',
+    'scripts/build.ts',
+    '.github/workflows/mock-e2e.yml',
+    'apps/learn-card-app/tests/mocks/har/issue.har.zip',
+    'docs/snippets/quickstart/index.ts',
+    'docs/asset.svg',
+    'unknown/new-input',
+    'packages/shared/src/with\nnewline.ts',
+]) {
+    test(`conservatively runs for ${JSON.stringify(path)}, even mixed with docs`, t => {
+        const f = fixture(t);
+        f.write('docs/guide.md', 'Updated prose\n');
+        f.write(path, 'Changed code/config/input\n');
+        assert.equal(f.decide(f.commit()).run, true);
+    });
+}
+
+test('renaming code into a documentation location cannot hide its deletion', t => {
+    const f = fixture(t);
+    renameSync(join(f.cwd, 'packages/shared/src/index.ts'), join(f.cwd, 'docs/moved.md'));
+    assert.equal(f.decide(f.commit()).run, true);
+});
+
+test('renaming documentation into code cannot hide the new input', t => {
+    const f = fixture(t);
+    renameSync(join(f.cwd, 'docs/guide.md'), join(f.cwd, 'packages/shared/src/guide.ts'));
+    assert.equal(f.decide(f.commit()).run, true);
+});
+
+test('code deletion runs; a prose deletion can skip', t => {
+    const f = fixture(t);
+    rmSync(join(f.cwd, 'docs/guide.md'));
+    assert.equal(f.decide(f.commit()).run, false);
+    rmSync(join(f.cwd, 'packages/shared/src/index.ts'));
+    assert.equal(f.decide(f.commit()).run, true);
+});
+
+test('merge-base comparison ignores unrelated new commits on the base branch', t => {
+    const f = fixture(t);
+    f.git('checkout', '-qb', 'feature');
+    f.write('docs/guide.md', 'PR prose\n');
+    const headSha = f.commit();
+    f.git('checkout', '-q', 'main');
+    f.write('packages/shared/src/index.ts', 'Unrelated main change\n');
+    const baseSha = f.commit();
+    assert.deepEqual(
+        decideEligibility({ eventName: 'pull_request', baseSha, headSha, cwd: f.cwd }),
+        {
+            run: false,
+            reason: 'prose-only',
+        }
+    );
+});
+
+test('missing, invalid, unreachable or empty comparisons run rather than silently skipping', t => {
+    const f = fixture(t);
+    for (const baseSha of [undefined, '--not-a-sha', 'f'.repeat(40), f.baseSha]) {
+        assert.equal(
+            decideEligibility({
+                eventName: 'pull_request',
+                baseSha,
+                headSha: f.baseSha,
+                cwd: f.cwd,
+            }).run,
+            true
+        );
+    }
+    assert.equal(decideEligibility({ eventName: 'unexpected' }).run, true);
+    assert.equal(
+        decideEligibility({
+            eventName: 'pull_request',
+            baseSha: f.baseSha,
+            headSha: f.baseSha,
+            cwd: '/missing-repository',
+        }).run,
+        true
+    );
+});
+
+test('CLI emits the decision through GitHub outputs with no installed dependencies', t => {
+    const f = fixture(t);
+    f.write('docs/guide.md', 'PR prose\n');
+    const output = join(f.cwd, 'output');
+    const result = spawnSync(process.execPath, [script, 'eligibility'], {
+        cwd: f.cwd,
+        encoding: 'utf8',
+        env: {
+            ...process.env,
+            GITHUB_EVENT_NAME: 'pull_request',
+            BASE_SHA: f.baseSha,
+            HEAD_SHA: f.commit(),
+            GITHUB_OUTPUT: output,
+        },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(output, 'utf8'), 'run_e2e=false\nreason=prose-only\n');
+});
+
+const identity = {
+    version: '1.62.1',
+    manifest: JSON.stringify({
+        browsers: [
+            { name: 'firefox', revision: '1538' },
+            { name: 'ffmpeg', revision: '1011' },
+        ],
+    }),
+    osRelease: 'ID=ubuntu\nVERSION_ID="24.04"\n',
+    hostPlatform: 'linux',
+    hostArch: 'x64',
+};
+
+test('browser identity is stable and changes with every compatibility input', () => {
+    const key = browserCacheKey(identity);
+    assert.equal(browserCacheKey({ ...identity }), key);
+    assert.ok(key.length < 512);
+    for (const change of [
+        { version: '1.63.0' },
+        { osRelease: 'ID=ubuntu\nVERSION_ID="26.04"\n' },
+        { hostPlatform: 'darwin' },
+        { hostArch: 'arm64' },
+        { manifest: identity.manifest.replace('1538', '1539') },
+        { manifest: identity.manifest.replace('1011', '1012') },
+        {
+            manifest: JSON.stringify({
+                browsers: [
+                    {
+                        name: 'firefox',
+                        revision: '1538',
+                        revisionOverrides: { 'ubuntu24.04-x64': '1539' },
+                    },
+                ],
+            }),
+        },
+    ])
+        assert.notEqual(browserCacheKey({ ...identity, ...change }), key);
+    assert.throws(() => browserCacheKey({ ...identity, manifest: '{bad json' }));
+    assert.throws(() => browserCacheKey({ ...identity, manifest: '{"browsers":[]}' }));
+    assert.throws(() => browserCacheKey({ ...identity, osRelease: '' }));
+});

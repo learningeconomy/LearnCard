@@ -1,8 +1,44 @@
 # Mocked-network E2E tier
 
 Playwright tests that run against the **vite dev server only — no docker backend**.
-Fast and deterministic, so they run on every affected PR (`.github/workflows/mock-e2e.yml`)
-via the `test-mock` nx target. The real-backend E2E stays on the gated EC2 job.
+They run via the `test-mock` Nx target (`.github/workflows/mock-e2e.yml`).
+The real-backend E2E tier is hosted separately in `.github/workflows/e2e.yml`.
+
+## CI eligibility and browser reuse (LC-2312 / CI-14)
+
+Before installing dependencies or downloading Firefox, a dependency-free Node
+check compares the PR's changes from its Git merge base. Only Markdown under
+`docs/`, `.changeset/*.md`, and the root `README.md`, `CONTRIBUTING.md`,
+`CODE_OF_CONDUCT.md` or `LICENSE` can skip setup. Documentation code snippets,
+assets and all other paths run the **complete** mock suite. This is deliberately
+broader than Nx affected selection: a shared-package, lockfile or config change
+cannot be skipped because it sits outside the app directory. Unknown/empty or
+unavailable comparisons also run; renames consider both old and new paths.
+Manual dispatch always runs the complete suite, even for prose-only revisions.
+
+For example, correcting `docs/README.md` skips dependency installation and
+Firefox entirely. Changing `packages/learn-card-base` still runs all mocked
+browser tests, including when the same PR edits documentation.
+
+Eligible runs cache a job-local Playwright browser directory with an exact key
+covering the installed Playwright version, Firefox revision, full browser
+manifest (including FFmpeg/revision overrides), OS distribution/release and
+architecture. There is no broad fallback key. `playwright install --with-deps
+firefox` still runs on cache hits: OS packages are not cached, and Playwright can
+install missing browser files. A cache hit never skips tests. GitHub controls
+cache scope/eviction; this does not add a default-branch cache producer.
+
+[Playwright cautions](https://playwright.dev/docs/ci#caching-browsers) that browser
+cache restore can cost as much as downloading. Treat this as download reuse,
+not a guaranteed speedup; compare actual install/cache timings before expanding
+it. Neither the browser cache nor eligibility changes retries, workers, browser
+choice, HAR fixtures or backend isolation.
+
+Review locally with `node --test scripts/mock-e2e-ci.test.cjs` and
+`node .github/tests/test-mock-e2e-workflow.test.cjs` from the repository root.
+In Actions, a prose-only PR should show `run_e2e=false` / `reason=prose-only`
+and skip setup/browser/test/report steps. For an eligible or manual run, inspect
+the exact cache key, the unconditional browser/OS install, and full test results.
 
 ## What it covers
 

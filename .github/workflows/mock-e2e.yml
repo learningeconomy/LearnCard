@@ -1,8 +1,8 @@
 # Runs the mocked-network Playwright tier (tests/*.mocked.spec.ts) on PRs.
 # This tier has NO backend — it serves boot/reads from a recorded HAR and
 # issuance mutations from typed stubs, so it runs against the vite dev server
-# alone. nx affected scopes it to run only when learn-card-app is touched; the
-# real-backend E2E stays on the gated EC2 job in test.yml.
+# alone. Prose-only PRs skip setup; other changes conservatively run the full
+# mock suite. Real-backend E2E is hosted separately in e2e.yml.
 
 name: Mock E2E
 
@@ -31,26 +31,46 @@ jobs:
                   ref: ${{ github.event.pull_request.head.sha || github.sha }}
                   fetch-depth: 0
 
-            - name: Fetch main for NX comparison
-              run: git fetch --no-tags --prune origin main
+            - name: Test mock E2E CI policy
+              run: node --test scripts/mock-e2e-ci.test.cjs
+
+            - name: Determine mock E2E eligibility
+              id: eligibility
+              env:
+                  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+              run: node scripts/mock-e2e-ci.cjs eligibility
 
             - name: Use Composite Setup Action
+              if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
               uses: ./.github/actions/setup
 
-            - name: Install Playwright browser
+            - name: Identify Playwright browser cache
+              if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
+              id: browser
+              run: |
+                  node scripts/mock-e2e-ci.cjs browser-cache-key
+                  echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/mock-playwright-browsers" >> "$GITHUB_ENV"
+
+            - name: Reuse Playwright Firefox
+              if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
+              uses: actions/cache@v6
+              with:
+                  path: ${{ runner.temp }}/mock-playwright-browsers
+                  key: ${{ steps.browser.outputs.key }}
+
+            # Keep OS packages current and let Playwright repair missing cache files.
+            - name: Install Playwright browser and OS dependencies
+              if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
               working-directory: apps/learn-card-app
               run: bunx playwright install --with-deps firefox
 
-            - name: Run affected mocked E2E
-              if: ${{ github.event_name != 'workflow_dispatch' }}
-              run: bunx nx affected --target=test-mock --base=origin/main --head=HEAD
-
             - name: Run full mocked E2E
-              if: ${{ github.event_name == 'workflow_dispatch' }}
+              if: ${{ steps.eligibility.outputs.run_e2e == 'true' }}
               run: bunx nx run learn-card-app:test-mock
 
             - name: Upload Playwright report
-              if: always()
+              if: ${{ always() && steps.eligibility.outputs.run_e2e == 'true' }}
               uses: actions/upload-artifact@v4
               with:
                   name: mock-e2e-report
