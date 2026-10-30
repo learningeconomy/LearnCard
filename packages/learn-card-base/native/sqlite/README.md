@@ -23,7 +23,9 @@ separate; it must retain its own selection rules when both land. Jira: LC-2321.
   backed by its Keystore MasterKey. iOS uses the plugin's Keychain account/prefix, with
   `AfterFirstUnlockThisDeviceOnly` accessibility. Keychain access errors propagate rather than
   becoming a missing value. Normal logout does not clear the storage secret or recovery shares.
-- For plaintext conversion, validate the source, checkpoint any WAL, require DELETE journal
+- For plaintext conversion, open the source writable so SQLite can recover a hot rollback journal
+  left by an interrupted write, then validate the committed state. Never delete a recovery journal
+  to force the conversion through. Checkpoint any WAL, require DELETE journal
   mode, export inside an exclusive transaction to an encrypted file in the same directory,
   preserve `user_version`, then validate both SQLite and SQLCipher integrity. The original is
   never renamed aside or deleted first. Sync the staged file, atomically rename it over the
@@ -93,7 +95,8 @@ node scripts/verify-native-sqlite-encryption.mjs \
 
 This compiles the production Swift helper and exercises fresh files, wrong/missing secrets,
 preserved account/recovery data and schema version, corrupt originals, secret-write failure,
-stale staging, real uncheckpointed WAL, concurrent processes, and process death after secret
+stale staging, a real hot rollback journal with uncommitted changes, real uncheckpointed WAL,
+concurrent processes, and process death after secret
 storage/before replacement/after replacement. Fixtures are synthetic and removed after success;
 the CLI secret-file adapter is a test double, **not proof of iOS Keychain behavior**.
 The added regressions corrupt an authenticated cache page: existing-file preparation permits a
@@ -105,6 +108,11 @@ The standalone `android-tests` app compiles the actual patched native plugin and
 4.17.0, without Firebase, LearnCard accounts, or any existing app data. Use a separately owned
 emulator/device and the applicationId `com.learncard.sqlite.encryption.probe`. Never run tests
 against the user's LearnCard/ScoutPass package or clear another task's emulator.
+
+Its hot-journal regression snapshots a real spilled, uncommitted transaction without the writer's
+locks, verifies that a read-only scan cannot recover it, then checks conversion rolls back the
+uncommitted key/cache changes while preserving committed account/recovery data and schema version.
+The Swift harness creates its journal by killing a child writer without closing the connection.
 
 ```sh
 ANDROID_HOME=/absolute/android/sdk JAVA_HOME=/absolute/jdk21 \

@@ -50,8 +50,13 @@ enum LearnCardEncryptedDatabase {
                 // The plugin's keyed open authenticates the file without a duplicate KDF/full scan here.
                 return false
             }
-            // A corrupt plaintext database must not be replaced or treated as a new account.
-            try validate(path: path, secret: "")
+            // A killed plaintext writer can leave a hot rollback journal. SQLite needs a writable
+            // handle to recover committed state before validation; never delete recovery sidecars.
+            try withDatabase(path: path, secret: "", writable: true) { source in
+                guard try scalar(source, "PRAGMA integrity_check") == "ok" else {
+                    throw failure("Account storage integrity check failed")
+                }
+            }
         }
         if secret.isEmpty {
             var bytes = [UInt8](repeating: 0, count: 32)
