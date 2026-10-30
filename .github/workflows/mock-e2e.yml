@@ -30,9 +30,7 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha || github.sha }}
                   fetch-depth: 0
-
-            - name: Test mock E2E CI policy
-              run: node --test scripts/mock-e2e-ci.test.cjs
+                  persist-credentials: false
 
             - name: Determine mock E2E eligibility
               id: eligibility

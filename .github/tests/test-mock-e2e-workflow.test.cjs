@@ -42,4 +42,31 @@ assert.equal(steps.filter(step => /nx (affected|run)/.test(step.run ?? '')).leng
 assert.match(workflow.concurrency.group, /workflow_dispatch.*github\.run_id/);
 assert.match(steps.find(step => step.name === 'Upload Playwright report').if, /always\(\)/);
 assert.deepEqual(workflow.permissions, { contents: 'read' });
+assert.equal(
+    steps.find(step => step.uses?.startsWith('actions/checkout@')).with['persist-credentials'],
+    false
+);
+assert.equal(
+    steps.some(step => step.run?.includes('--test scripts/mock-e2e-ci.test.cjs')),
+    false,
+    'policy regressions belong in Lint, not the mock check before eligibility'
+);
+const lint = JSON.parse(
+    execFileSync(
+        'ruby',
+        [
+            '-rjson',
+            '-ryaml',
+            '-e',
+            'puts JSON.generate(YAML.load_file(ARGV.fetch(0), aliases: true))',
+            resolve(__dirname, '../workflows/lint.yml'),
+        ],
+        { encoding: 'utf8' }
+    )
+);
+assert.ok(
+    lint.jobs.RepositoryContracts.steps.some(
+        step => step.run === 'node --test scripts/mock-e2e-ci.test.cjs'
+    )
+);
 console.log('Mock E2E setup/eligibility/cache/full-suite contracts passed.');

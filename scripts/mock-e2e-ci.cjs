@@ -1,6 +1,13 @@
 const { spawnSync } = require('node:child_process');
 const { createHash } = require('node:crypto');
-const { appendFileSync, existsSync, mkdtempSync, readFileSync, rmSync } = require('node:fs');
+const {
+    appendFileSync,
+    copyFileSync,
+    existsSync,
+    mkdtempSync,
+    readFileSync,
+    rmSync,
+} = require('node:fs');
 const { arch, platform, tmpdir } = require('node:os');
 const { dirname, join, resolve } = require('node:path');
 
@@ -40,6 +47,13 @@ const decideFromGraph = (paths, { graph, tasks }) => {
     const projects = Object.entries(graph.nodes)
         .map(([name, node]) => {
             const root = node.data.root;
+            // Root ownership overlaps every project. Keep full coverage until a
+            // root project's inputs have an explicit, reviewed ownership policy.
+            if (root === '.' || root === '') {
+                throw Object.assign(new Error('Root project requires full coverage'), {
+                    code: 'ROOT_PROJECT',
+                });
+            }
             if (typeof root !== 'string' || !root || root === '.' || root.includes('..')) {
                 throw new Error('Unknown project ownership');
             }
@@ -54,17 +68,41 @@ const decideFromGraph = (paths, { graph, tasks }) => {
     return { run: false, reason: 'unrelated-projects' };
 };
 
+const validatePreflightVersions = (versions, manifest) => {
+    const names = ['nx', 'typescript'];
+    if (
+        !names.every(
+            name =>
+                /^\d+\.\d+\.\d+$/.test(versions?.[name] ?? '') &&
+                manifest.dependencies?.[name] === versions[name]
+        ) ||
+        Object.keys(manifest.dependencies ?? {})
+            .sort()
+            .join(',') !== names.join(',')
+    ) {
+        throw Object.assign(
+            new Error('Update the preflight manifest and lockfile with root tooling'),
+            {
+                code: 'PREFLIGHT_VERSION_MISMATCH',
+            }
+        );
+    }
+};
+
 const loadNxGraph = cwd => {
     // A fresh runner has no workspace install. Never replace an existing install.
     if (existsSync(join(cwd, 'node_modules'))) throw new Error('Workspace already installed');
     const versions = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).devDependencies;
-    if (![versions.nx, versions.typescript].every(version => /^\d+\.\d+\.\d+$/.test(version))) {
-        throw new Error('Preflight requires exact Nx and TypeScript versions');
-    }
+    // This npm project lives outside scripts/* so Bun does not treat it as a workspace.
+    const config = join(cwd, '.github/mock-e2e-preflight');
+    validatePreflightVersions(
+        versions,
+        JSON.parse(readFileSync(join(config, 'package.json'), 'utf8'))
+    );
     const tools = mkdtempSync(join(tmpdir(), 'mock-e2e-nx-'));
-    const run = (command, args, env = process.env) => {
+    const run = (command, args, env = process.env, commandCwd = cwd) => {
         const result = spawnSync(command, args, {
-            cwd,
+            cwd: commandCwd,
             env,
             encoding: 'utf8',
             timeout: 120_000,
@@ -74,17 +112,12 @@ const loadNxGraph = cwd => {
         return result.stdout;
     };
     try {
-        // Install only the graph tooling outside the checkout, without lifecycle scripts.
-        run('npm', [
-            'install',
-            '--prefix',
-            tools,
-            '--ignore-scripts',
-            '--no-audit',
-            '--no-fund',
-            `nx@${versions.nx}`,
-            `typescript@${versions.typescript}`,
-        ]);
+        for (const file of ['package.json', 'package-lock.json']) {
+            copyFileSync(join(config, file), join(tools, file));
+        }
+        // npm ci verifies the committed resolution/integrities. Running FROM the
+        // temporary directory also excludes checkout-local .npmrc configuration.
+        run('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], process.env, tools);
         const modules = join(tools, 'node_modules');
         const nx = JSON.parse(readFileSync(join(modules, 'nx/package.json'), 'utf8'));
         if (nx.version !== versions.nx) throw new Error('Unexpected Nx version');
@@ -166,8 +199,14 @@ const decideEligibility = ({ eventName, baseSha, headSha, cwd = process.cwd(), g
     if (!getGraph) return { run: true, reason: 'graph-unavailable' };
     try {
         return decideFromGraph(paths, getGraph(cwd));
-    } catch {
-        return { run: true, reason: 'graph-unavailable' };
+    } catch (error) {
+        const reason =
+            error?.code === 'ROOT_PROJECT'
+                ? 'root-project-requires-full-run'
+                : error?.code === 'PREFLIGHT_VERSION_MISMATCH'
+                  ? 'preflight-version-mismatch'
+                  : 'graph-unavailable';
+        return { run: true, reason };
     }
 };
 
@@ -181,6 +220,9 @@ const browserCacheKey = ({ version, manifest, osRelease, hostPlatform, hostArch 
     return `mock-firefox-v1-${hostPlatform}-${hostArch}-${hash(osRelease)}-${version}-${firefox.revision}-${hash(manifest)}`;
 };
 
+const eligibilitySummary = ({ run, reason }) =>
+    `### Mock E2E\n\n**${run ? 'Full suite requested' : 'Not applicable — suite skipped'}**\n\nReason: \`${reason}\`.\n`;
+
 const main = () => {
     let outputs;
     if (process.argv[2] === 'eligibility') {
@@ -191,6 +233,13 @@ const main = () => {
             getGraph: loadNxGraph,
         });
         outputs = { run_e2e: String(result.run), reason: result.reason };
+        if (process.env.GITHUB_STEP_SUMMARY) {
+            try {
+                appendFileSync(process.env.GITHUB_STEP_SUMMARY, eligibilitySummary(result));
+            } catch {
+                console.warn('Could not write the optional Mock E2E step summary.');
+            }
+        }
     } else if (process.argv[2] === 'browser-cache-key') {
         const app = resolve('apps/learn-card-app');
         const playwright = require.resolve('playwright/package.json', { paths: [app] });
@@ -217,4 +266,11 @@ const main = () => {
 };
 
 if (require.main === module) main();
-module.exports = { decideEligibility, decideFromGraph, loadNxGraph, browserCacheKey };
+module.exports = {
+    decideEligibility,
+    decideFromGraph,
+    loadNxGraph,
+    browserCacheKey,
+    validatePreflightVersions,
+    eligibilitySummary,
+};
