@@ -8,6 +8,7 @@ const {
     rmSync,
     symlinkSync,
     writeFileSync,
+    globSync,
 } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
@@ -79,6 +80,64 @@ export default createVitestConfig(nodePreset, { test: { include: ['case.test.ts'
     return { cwd, reports, put, run, runAsync, configure, readReports };
 };
 
+test('every workspace Vitest script uses the shared factory and includes its Nx inputs', () => {
+    const workspace = JSON.parse(readFileSync(path.join(repository, 'package.json'), 'utf8'));
+    const nxConfig = JSON.parse(readFileSync(path.join(repository, 'nx.json'), 'utf8'));
+    let projects = 0;
+    for (const manifest of globSync(
+        workspace.workspaces.map(root => `${root}/package.json`),
+        { cwd: repository }
+    )) {
+        const pkg = JSON.parse(readFileSync(path.join(repository, manifest), 'utf8'));
+        if (!pkg.scripts?.test?.includes('vitest')) continue;
+        projects += 1;
+        const directory = path.dirname(manifest);
+        const candidates = ['vitest', 'vite'].flatMap(name =>
+            ['ts', 'mts', 'js', 'mjs'].map(extension =>
+                path.join(repository, directory, `${name}.config.${extension}`)
+            )
+        );
+        const config = candidates.find(file => require('node:fs').existsSync(file));
+        assert.ok(config, `Missing Vitest config: ${manifest}`);
+        assert.match(
+            readFileSync(config, 'utf8'),
+            /createVitestConfig\(/,
+            `${manifest} bypasses retry reporting`
+        );
+        const projectFile = path.join(repository, directory, 'project.json');
+        const project = require('node:fs').existsSync(projectFile)
+            ? JSON.parse(readFileSync(projectFile, 'utf8'))
+            : pkg.nx;
+        const inputs = project?.targets?.test?.inputs ?? nxConfig.targetDefaults.test.inputs;
+        assert.ok(inputs.includes('ciTestConfig'), `${manifest} excludes shared test inputs`);
+    }
+    assert.ok(projects > 50, 'The workspace inventory unexpectedly shrank');
+});
+
+for (const directory of ['services/learn-card-network/ai-agent', 'examples/credential-viewer']) {
+    test(`standalone Vite config ${directory} preserves options and reports a real retry`, t => {
+        const f = fixture(t);
+        f.put('package.json', JSON.stringify({ type: 'module' }));
+        const checks = directory.startsWith('services')
+            ? `if (config.test.environment !== 'node' || !config.test.globals || !config.test.exclude.includes('**/dist/**')) throw new Error('AI test options changed');`
+            : `if (config.plugins.length !== 3 || config.resolve.alias['@learncard/credential-library'] !== ${JSON.stringify(path.join(repository, 'packages/credential-library/src/index.ts'))}) throw new Error('Viewer options changed');`;
+        f.put(
+            'vitest.config.ts',
+            `import config from ${JSON.stringify(path.join(repository, directory, 'vite.config.ts'))};
+${checks}
+export default {...config, root:${JSON.stringify(f.cwd)}};`
+        );
+        f.put(
+            'case.test.ts',
+            `import {test,expect} from 'vitest'; let attempt=0;
+test('standalone flaky', () => expect(++attempt).toBe(2));`
+        );
+        const result = f.run(vitest, ['run']);
+        assert.equal(result.status, 0, result.stdout + result.stderr);
+        assert.equal(f.readReports()[0].counts.recovered, 1);
+    });
+}
+
 test('real Vitest retries only a flaky case and reports its recovery', t => {
     const f = fixture(t);
     f.configure();
@@ -110,6 +169,12 @@ test('flaky | <case>', () => {
     const summary = summarize(f.reports, 'success').markdown;
     assert.match(summary, /recovered \(flaky\)/);
     assert.match(summary, /flaky \\\| &lt;case&gt;/);
+    report.cases[0].line = 'invalid';
+    writeFileSync(
+        path.join(f.reports, readdirSync(f.reports)[0], 'report.json'),
+        JSON.stringify(report)
+    );
+    assert.throws(() => summarize(f.reports, 'success'), /Invalid Vitest retry report/);
 });
 
 test('concurrent Vitest processes keep separate reports and both recoveries', async t => {
@@ -146,6 +211,111 @@ test('fails once', () => {appendFileSync('attempts','x'); throw new Error('faile
     const result = f.run(vitest, ['run'], { LC_CI_TEST_RETRY: '', LC_CI_TEST_REPORT_DIR: '' });
     assert.notEqual(result.status, 0);
     assert.equal(readFileSync(path.join(f.cwd, 'attempts'), 'utf8'), 'x');
+});
+
+for (const reporters of ["'verbose'", "['verbose']"]) {
+    test(`CI preserves explicit retry zero and custom reporters ${reporters}`, t => {
+        const f = fixture(t);
+        f.put(
+            'vitest.config.ts',
+            `
+import {createVitestConfig, nodePreset} from ${JSON.stringify(path.join(repository, 'vitest.shared.ts'))};
+const config = createVitestConfig(nodePreset, {test:{include:['case.test.ts'], retry:0, reporters:${reporters}}});
+if (config.test.reporters.length !== 2 || config.test.reporters[0] !== 'verbose') throw new Error('Custom reporters changed');
+export default config;`
+        );
+        f.put(
+            'case.test.ts',
+            `import {test} from 'vitest'; import {appendFileSync} from 'node:fs';
+test('never retry', () => {appendFileSync('attempts','x'); throw new Error('failure');});`
+        );
+        const result = f.run(vitest, ['run']);
+        assert.equal(result.status, 1, result.stdout + result.stderr);
+        assert.equal(readFileSync(path.join(f.cwd, 'attempts'), 'utf8'), 'x');
+        assert.equal(f.readReports()[0].cases[0].retries, 0);
+    });
+}
+
+test('real Nx selects and invalidates tests for shared config and retry policy', t => {
+    const f = fixture(t);
+    const workspace = JSON.parse(readFileSync(path.join(repository, 'nx.json'), 'utf8'));
+    f.put('package.json', JSON.stringify({ name: 'input-fixture', private: true }));
+    f.put(
+        'nx.json',
+        JSON.stringify({
+            namedInputs: workspace.namedInputs,
+            targetDefaults: { test: { inputs: workspace.targetDefaults.test.inputs, cache: true } },
+        })
+    );
+    f.put('vitest.shared.ts', '// shared config');
+    f.put('scripts/ci-test-retries/reporter.ts', '// reporter');
+    f.put('scripts/ci-test-retries/summary.cjs', '// summary');
+    f.put('run.cjs', `require('node:fs').appendFileSync(process.argv[2]+'-attempts','x');`);
+    for (const [name, inputs] of [
+        ['inherited', undefined],
+        ['explicit', ['source', 'ciTestConfig']],
+        ['native', ['source']],
+    ]) {
+        f.put(`projects/${name}/src/index.ts`, '// source');
+        f.put(
+            `projects/${name}/project.json`,
+            JSON.stringify({
+                name,
+                root: `projects/${name}`,
+                namedInputs: { source: ['{projectRoot}/src/**/*'] },
+                targets: {
+                    test: {
+                        ...(inputs ? { inputs } : {}),
+                        executor: 'nx:run-commands',
+                        outputs: [],
+                        options: { command: `node run.cjs ${name}` },
+                    },
+                },
+            })
+        );
+    }
+    for (const file of [
+        'vitest.shared.ts',
+        'scripts/ci-test-retries/reporter.ts',
+        'scripts/ci-test-retries/summary.cjs',
+    ]) {
+        const result = f.run(nx, ['show', 'projects', '--affected', `--files=${file}`, '--json']);
+        assert.equal(result.status, 0, result.stdout + result.stderr);
+        assert.deepEqual(JSON.parse(result.stdout).sort(), ['explicit', 'inherited']);
+    }
+    const run = extra => {
+        const result = f.run(
+            nx,
+            ['run-many', '-t', 'test', '--projects=inherited,explicit', '--outputStyle=stream'],
+            extra
+        );
+        assert.equal(result.status, 0, result.stdout + result.stderr);
+    };
+    const attempts = count => {
+        for (const name of ['inherited', 'explicit'])
+            assert.equal(
+                readFileSync(path.join(f.cwd, `${name}-attempts`), 'utf8'),
+                'x'.repeat(count)
+            );
+    };
+    run();
+    attempts(1);
+    run();
+    attempts(1); // unchanged run is cached
+    f.put('scripts/ci-test-retries/reporter.ts', '// changed reporter');
+    run();
+    attempts(2);
+    f.put('vitest.shared.ts', '// changed config');
+    run();
+    attempts(3);
+    run({ LC_CI_TEST_RETRY: '0' });
+    attempts(4);
+    run({ LC_CI_TEST_RETRY: '0', LC_CI_TEST_REPORT_DIR: path.join(f.cwd, 'different-reports') });
+    attempts(4);
+    f.put('projects/explicit/vite.config.ts', '// changed local config');
+    run({ LC_CI_TEST_RETRY: '0' });
+    assert.equal(readFileSync(path.join(f.cwd, 'explicit-attempts'), 'utf8'), 'xxxxx');
+    assert.equal(readFileSync(path.join(f.cwd, 'inherited-attempts'), 'utf8'), 'xxxx');
 });
 
 test('a permanently failing Vitest case still fails after two attempts', t => {

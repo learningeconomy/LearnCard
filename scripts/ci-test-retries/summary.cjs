@@ -42,6 +42,7 @@ const summarize = (directory, outcome) => {
                     typeof test.file === 'string' &&
                     typeof test.name === 'string' &&
                     integer(test.retries) &&
+                    (test.line === undefined || (integer(test.line) && test.line > 0)) &&
                     ['passed', 'failed', 'skipped', 'pending'].includes(test.state)
             )
         ) {
@@ -54,7 +55,7 @@ const summarize = (directory, outcome) => {
     const lines = [
         '## Test retries',
         '',
-        `Nx test step: **${outcome}**. Nx runs once; only failing Vitest cases may retry once.`,
+        `Nx test step: **${outcome}**. Nx runs once; failing Vitest cases default to one retry.`,
         'Builds, setup/import failures and non-Vitest targets retain their failure status.',
         '',
         `Recovered in executed Vitest processes: **${recovered}**. These tests are flaky, not first-attempt passes.`,

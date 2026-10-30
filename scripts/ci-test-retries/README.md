@@ -17,9 +17,10 @@ Only the `Run tests` steps in `test.yml` and `deploy.yml` set
 their existing configuration. Missing the report directory while opting in fails
 configuration rather than enabling unreported retries.
 
-`createVitestConfig` applies the default retry and keeps Vitest's default console
-reporter alongside the custom reporter. Individual tests can still explicitly
-configure their own retry count. Vitest reruns per-case hooks with a retried case;
+`createVitestConfig` applies the retry default only when the project hasn't set
+one, and appends the CI reporter to the project's existing reporters. It adds the
+default console reporter only when none are configured. Individual tests can also
+explicitly configure their retry count. Vitest reruns per-case hooks with a retried case;
 module imports, setup files, `beforeAll` and `afterAll` do not gain a suite retry.
 No Nx dependency build, Rust test or other non-Vitest command is retried here.
 The Nx step has one 20-minute timeout, replacing three 20-minute attempts.
@@ -47,6 +48,40 @@ early. The summary explicitly avoids claiming complete passing coverage from an
 absent report. Cache-input/output design is part of the separate CI-15 audit.
 No reports are uploaded as artifacts.
 
+All workspace packages whose test script invokes Vitest use the factory, including
+the AI agent and credential viewer's `vite.config.ts` files. Their existing test
+options and Vite plugins/aliases are preserved. The inventory contract checks new
+workspace test scripts for the same wiring.
+
+## Nx inputs
+
+The shared `ciTestConfig` named input covers the shared config, retry tools,
+local Vite/Vitest config and package scripts, plus the `LC_CI_TEST_RETRY` value.
+Test and coverage defaults include it alongside `default` and `^default`.
+Explicit Vitest test input lists append it while retaining existing inputs;
+project-level lists replace defaults rather than extending them automatically.
+See [Nx input configuration](https://nx.dev/docs/kb/configure-inputs).
+
+Shared config/report changes now select real affected test targets and invalidate
+cached tests. The report directory is deliberately not hashed: a different private
+temporary destination does not change test behavior. This does not promise report
+replay from cache. The wider dependency-input/cache-output audit remains CI-15.
+Non-Vitest targets inheriting the defaults can also be conservatively selected.
+
+## Infrastructure rollout
+
+For the first week after merge, inspect failed PR/automatic-deploy Test jobs and
+record whether the cause is a case assertion, setup/container start, Mongo binary
+download, registry pull, build or another command. Check recovered cases in the
+summary separately; a recovered assertion is not an infrastructure recovery.
+Include the run link and failure category in LC-2312 before manually rerunning.
+There is no automatic monitor or claim of measured post-merge reliability here.
+
+If container/registry/download failures dominate, address those operations with
+bounded retries or prewarming in the separate CI-11 infrastructure workstream.
+This PR deliberately does not repeat a whole successful build/test graph for an
+infrastructure failure. The ticket's first-attempt success target is still open.
+
 ## Verify and maintain
 
 After the repository's frozen dependency install, run:
@@ -55,10 +90,12 @@ After the repository's frozen dependency install, run:
 node --test scripts/ci-test-retries/retry.test.cjs
 ```
 
-The regression suite starts real Vitest processes with this shared configuration
-and real Nx build/test fixtures. It checks healthy/flaky/permanent cases,
+The regression suite starts real Vitest processes with this shared configuration,
+both standalone Vite configs and real Nx build/test fixtures. It checks healthy/flaky/permanent cases,
 concurrent writers, opt-out/misconfiguration, import/setup/teardown failures,
 non-Vitest/build failures, incomplete/corrupt evidence and workflow propagation.
+It also proves affected selection and actual cache hits/misses for inherited and
+explicit inputs, shared/config edits, and the retry flag (not report location).
 The non-Vitest fixture is a failing Node command, not the production Rust graph.
 
 The reporter uses the pinned Vitest 4 reporter API, specifically
