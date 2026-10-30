@@ -72,6 +72,14 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    alternative documented in `infra/escrow-enclave/README.md`) before rollout
    proceeds past internal.
 
+**Stage 1 decisions (2026-10-30, Jackson Smith).** Internal-only escrow (SSS pilot
+channel and production canary accounts) proceeds with: item 1 (Roughtime) and
+item 4 (D10) accepted for stage 1, see LAUNCH-DECISIONS.md RT and D10; item 2
+(enrollment authority) and item 3 (attack C) proceed so that stage 1 itself
+provides the production verification (pilot enrollment, PIN and hold
+recoveries, hold-confirmation email), with the staging soak and inbox check
+still to be recorded. None of these close items 1-3 for stage 2.
+
 **Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
 risk" sign-off counts as resolved for D10. Stages 2+ (1% and above, i.e. any real,
