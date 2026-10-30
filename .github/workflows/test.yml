@@ -65,16 +65,25 @@ jobs:
                   username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
                   token: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
+            - name: Test retry reporting contract
+              run: node --test scripts/ci-test-retries/retry.test.cjs
+
             - name: Run tests
-              uses: nick-fields/retry@v2
-              with:
-                  # Full-suite PRs (shared packages touched) run ~9 min under load.
-                  timeout_minutes: 20
-                  max_attempts: 3
-                  command: bunx nx affected --target=test --base=origin/main --head=HEAD
+              id: tests
+              timeout-minutes: 20
+              run: bunx nx affected --target=test --base=origin/main --head=HEAD
               env:
+                  LC_CI_TEST_RETRY: '1'
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+            - name: Summarize test retries
+              if: always()
+              env:
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
+                  LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
+              run: node scripts/ci-test-retries/summary.cjs
 
     escrow-integration:
         name: Escrow integration (lca-api)
