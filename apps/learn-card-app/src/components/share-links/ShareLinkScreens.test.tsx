@@ -781,9 +781,10 @@ describe('recipient screen', () => {
         render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Save to LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
 
-        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        await screen.findByRole('button', { name: 'View saved collections' });
+        expect(screen.getByRole('status')).toBeVisible();
         expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledWith(
             'recipient-1',
             expect.objectContaining({ verifiableCredential: [credential] }),
@@ -799,6 +800,70 @@ describe('recipient screen', () => {
             'lc:network:presentation:one'
         );
     });
+
+    it('does not expose saved destination before acceptance and allows retry after rejection', async () => {
+        mocks.auth.loggedIn = true;
+        let rejectAcceptance!: (error: Error) => void;
+        mocks.wallet.invoke.acceptPresentation.mockImplementationOnce(
+            () =>
+                new Promise((_, reject) => {
+                    rejectAcceptance = reject;
+                })
+        );
+        render(<ShareLinkViewer />);
+        await screen.findByText('Community leadership');
+
+        fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
+        await waitFor(() => expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalled());
+        expect(screen.getByRole('button', { name: 'Saving collection…' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'View saved collections' })).toBeNull();
+
+        rejectAcceptance(new Error('accept rejected'));
+        const error = await screen.findByRole('alert');
+        expect(error).toBeVisible();
+        expect(error).not.toHaveTextContent('accept rejected');
+        expect(screen.queryByRole('button', { name: 'View saved collections' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Save collection' })).toBeEnabled();
+    });
+
+    it.each(['new', 'pending'])(
+        'keeps a %s save retryable when acceptance returns false without duplicating it',
+        async initialState => {
+            mocks.auth.loggedIn = true;
+            const pending = {
+                uri: 'lc:network:presentation:one',
+                from: 'recipient-1',
+                to: 'recipient-1',
+                sent: '2026-09-24T12:00:00.000Z',
+                metadata: {
+                    type: 'learncard.share-link.v1',
+                    shareId: 'AAAAAAAAAAAAAAAAAAAAAA',
+                    title: 'Learning highlights',
+                    sharer: { displayName: 'Alex', profileId: 'owner' },
+                },
+            };
+            if (initialState === 'pending')
+                mocks.wallet.invoke.getIncomingPresentations.mockResolvedValue([pending]);
+            mocks.wallet.invoke.acceptPresentation.mockResolvedValueOnce(false);
+            render(<ShareLinkViewer />);
+            await screen.findByText('Community leadership');
+
+            fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
+            expect(await screen.findByRole('alert')).toBeVisible();
+            expect(screen.queryByRole('button', { name: 'View saved collections' })).toBeNull();
+            expect(screen.getByRole('button', { name: 'Save collection' })).toBeEnabled();
+
+            mocks.wallet.invoke.getIncomingPresentations.mockResolvedValue([pending]);
+            fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
+            expect(
+                await screen.findByRole('button', { name: 'View saved collections' })
+            ).toBeVisible();
+            expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledTimes(
+                initialState === 'new' ? 1 : 0
+            );
+            expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledTimes(2);
+        }
+    );
 
     it('shows an existing saved share without creating a duplicate presentation', async () => {
         mocks.auth.loggedIn = true;
@@ -820,7 +885,7 @@ describe('recipient screen', () => {
 
         render(<ShareLinkViewer />);
 
-        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        await screen.findByRole('button', { name: 'View saved collections' });
         expect(mocks.wallet.invoke.sendPresentation).not.toHaveBeenCalled();
         expect(mocks.wallet.invoke.acceptPresentation).not.toHaveBeenCalled();
     });
@@ -844,9 +909,9 @@ describe('recipient screen', () => {
         render(<ShareLinkViewer />);
         await screen.findByText('Community leadership');
 
-        fireEvent.click(screen.getByRole('button', { name: 'Save to LearnCard' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save collection' }));
 
-        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        await screen.findByRole('button', { name: 'View saved collections' });
         expect(mocks.wallet.invoke.acceptPresentation).toHaveBeenCalledWith(
             'lc:network:presentation:pending'
         );
@@ -893,7 +958,7 @@ describe('recipient screen', () => {
             hash: `#${key}`,
         });
         view.rerender(<ShareLinkViewer />);
-        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        await screen.findByRole('button', { name: 'View saved collections' });
         expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledTimes(1);
         expect(sessionStorage.getItem('learncard:share-link:private-return')).toBeNull();
     });
@@ -903,7 +968,7 @@ describe('recipient screen', () => {
         mocks.auth.loggedIn = true;
         render(<ShareLinkViewer />);
 
-        await screen.findByRole('button', { name: 'Saved to LearnCard' });
+        await screen.findByRole('button', { name: 'View saved collections' });
         expect(mocks.wallet.invoke.sendPresentation).toHaveBeenCalledWith(
             'recipient-1',
             expect.objectContaining({ verifiableCredential: [credential] }),

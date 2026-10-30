@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { IonContent, IonPage, useIonViewWillEnter } from '@ionic/react';
 import { useFlags } from 'launchdarkly-react-client-sdk';
+import { useHistory } from 'react-router-dom';
 import {
     AllowConnectionRequestsEnum,
     ProfileVisibilityEnum,
@@ -52,6 +53,7 @@ type PrivacySettingsProfile = {
 
 const PrivacySettingsPage: React.FC = () => {
     const flags = useFlags();
+    const history = useHistory();
     const historyEligible = useVerifierHistoryEligibility();
     const { newModal, closeModal } = useModal({
         desktop: ModalTypes.FullScreen,
@@ -68,15 +70,28 @@ const PrivacySettingsPage: React.FC = () => {
     const profileType = switchedProfileStore.use.profileType();
     const { isAiEnabled, reason: aiReason } = useAiFeatureGate();
     const { handleAiToggle } = useAiConsentToggle();
-    const [savingField, setSavingField] = useState<string | null>(null);
     const refreshSharedRef = useRef<(() => Promise<void>) | null>(null);
+    const refreshSavedRef = useRef<(() => Promise<void>) | null>(null);
     const hasEnteredRef = useRef(false);
+    const [openSavedOnEntry, setOpenSavedOnEntry] = useState(false);
+    const [savingField, setSavingField] = useState<string | null>(null);
 
     useIonViewWillEnter(() => {
-        if (hasEnteredRef.current) void refreshSharedRef.current?.();
-        else hasEnteredRef.current = true;
+        const requested = new URLSearchParams(history.location.search).get('view') === 'saved';
+        setOpenSavedOnEntry(requested);
+        if (hasEnteredRef.current) {
+            void refreshSharedRef.current?.();
+            void refreshSavedRef.current?.();
+        } else hasEnteredRef.current = true;
     });
 
+    const handleSavedOpened = useCallback(() => {
+        setOpenSavedOnEntry(false);
+        const search = new URLSearchParams(history.location.search);
+        if (search.get('view') !== 'saved') return;
+        search.delete('view');
+        history.replace({ ...history.location, search: search.toString() });
+    }, [history]);
     const handleUpdateShare = useCallback(
         (share: ShareLink) => {
             newModal(
@@ -131,8 +146,9 @@ const PrivacySettingsPage: React.FC = () => {
         country: currentLCNUser?.country,
     });
     const isMinor = ageGate.isChildProfile || ageGate.isMinorByAge;
+    const shareFeatureEnabled = flags?.shareMultipleEnabled === true;
     const shared = useSharedLinks(
-        flags?.shareMultipleEnabled === true,
+        shareFeatureEnabled,
         !isMinor ||
             (currentLCNUser?.isServiceProfile === true &&
                 currentLCNUser.type !== 'child' &&
@@ -142,7 +158,9 @@ const PrivacySettingsPage: React.FC = () => {
         handleUpdateShare,
         handleCreateShare
     );
-    refreshSharedRef.current = shared?.onRefresh ?? null;
+    refreshSharedRef.current = shared.onRefresh;
+    const savedDestinationReady = !shared.savedCollections.isLoading;
+    refreshSavedRef.current = shared.savedCollections.onRefresh;
 
     const contracts = useMemo(
         () =>
@@ -295,6 +313,9 @@ const PrivacySettingsPage: React.FC = () => {
             <IonContent>
                 <DataSharingCenterView
                     vm={vm}
+                    openSaved={openSavedOnEntry && savedDestinationReady}
+                    onSavedOpened={handleSavedOpened}
+                    showOwnerLinks={shareFeatureEnabled}
                     verifierHistory={
                         <VerifierHistorySection
                             eligible={historyEligible()}

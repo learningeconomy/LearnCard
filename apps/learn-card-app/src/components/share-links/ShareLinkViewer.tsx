@@ -110,7 +110,21 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
     const [submittedPasscode, setSubmittedPasscode] = useState<string>();
     const [passcodeError, setPasscodeError] = useState(false);
     const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+    const saveButtonRef = useRef<HTMLButtonElement>(null);
+    const destinationButtonRef = useRef<HTMLButtonElement>(null);
+    const restoreSaveFocus = useRef(false);
     const visible = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (saveState !== 'saved' && saveState !== 'error') return;
+        const ownedFocus = restoreSaveFocus.current;
+        restoreSaveFocus.current = false;
+        // Do not take focus back if the user moved to another control while saving.
+        if (ownedFocus && document.activeElement === document.body) {
+            (saveState === 'saved' ? destinationButtonRef.current : saveButtonRef.current)?.focus({
+                preventScroll: true,
+            });
+        }
+    }, [saveState]);
     const acknowledged = useRef(new Set<string>());
     const currentReady = useRef(ready);
     currentReady.current = ready;
@@ -482,6 +496,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
 
     const saveToLearnCard = useCallback(async () => {
         if (!ready || !isLoggedIn || saveState === 'saving' || saveState === 'saved') return;
+        restoreSaveFocus.current = document.activeElement === saveButtonRef.current;
         setSaveState('saving');
         try {
             const wallet = shareWallet(await initWallet());
@@ -500,7 +515,8 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                     parseSavedShareLinkMetadata(item.metadata)?.shareId === ready.payload.shareId
             );
             if (pendingSave) {
-                await wallet.invoke.acceptPresentation(pendingSave.uri);
+                if (!(await wallet.invoke.acceptPresentation(pendingSave.uri)))
+                    throw new Error('accept');
                 setSaveState('saved');
                 return;
             }
@@ -522,7 +538,7 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                 savedMetadata,
                 true
             );
-            await wallet.invoke.acceptPresentation(uri);
+            if (!(await wallet.invoke.acceptPresentation(uri))) throw new Error('accept');
             setSaveState('saved');
         } catch {
             setSaveState('error');
@@ -751,27 +767,49 @@ const ShareLinkViewerContent = ({ id }: { id: string }) => {
                                                             {m['shareLinks.saveHint']()}
                                                         </p>
                                                     </div>
-                                                    {isLoggedIn ? (
+                                                    {isLoggedIn && saveState === 'saved' ? (
+                                                        <div
+                                                            role="status"
+                                                            className="space-y-2 text-sm text-grayscale-700"
+                                                        >
+                                                            <p>
+                                                                {m[
+                                                                    'shareLinks.savedCollectionStatus'
+                                                                ]()}
+                                                            </p>
+                                                            <p>
+                                                                {m[
+                                                                    'shareLinks.savedCollectionDestination'
+                                                                ]()}
+                                                            </p>
+                                                            <button
+                                                                ref={destinationButtonRef}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    history.push(
+                                                                        '/privacy-and-data?view=saved'
+                                                                    )
+                                                                }
+                                                                className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                                                            >
+                                                                {m[
+                                                                    'shareLinks.viewSavedCollections'
+                                                                ]()}
+                                                            </button>
+                                                        </div>
+                                                    ) : isLoggedIn ? (
                                                         <button
+                                                            ref={saveButtonRef}
                                                             type="button"
                                                             onClick={() => void saveToLearnCard()}
-                                                            disabled={
-                                                                saveState === 'saving' ||
-                                                                saveState === 'saved'
-                                                            }
+                                                            disabled={saveState === 'saving'}
                                                             className="w-full rounded-[20px] bg-grayscale-900 px-5 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                                                         >
                                                             {saveState === 'saving'
                                                                 ? m[
                                                                       'shareLinks.savingToLearnCard'
                                                                   ]()
-                                                                : saveState === 'saved'
-                                                                  ? m[
-                                                                        'shareLinks.savedToLearnCard'
-                                                                    ]()
-                                                                  : m[
-                                                                        'shareLinks.saveToLearnCard'
-                                                                    ]()}
+                                                                : m['shareLinks.saveToLearnCard']()}
                                                         </button>
                                                     ) : (
                                                         <button

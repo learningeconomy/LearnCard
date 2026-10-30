@@ -44,15 +44,47 @@ describe('useSharedLinks', () => {
         await waitFor(() => expect(getReceivedPresentations).toHaveBeenCalled());
     });
 
-    it('does not load links or received collections when disabled', async () => {
-        renderHook(() => useSharedLinks(false, true, vi.fn(), vi.fn(), vi.fn(), vi.fn()));
+    it('loads saved collections with owner sharing disabled, including on refresh', async () => {
+        const { result } = renderHook(() =>
+            useSharedLinks(false, true, vi.fn(), vi.fn(), vi.fn(), vi.fn())
+        );
+
+        expect(result.current?.savedCollections.isLoading).toBe(true);
+        await waitFor(() => expect(result.current?.savedCollections.isLoading).toBe(false));
+        expect(getReceivedPresentations).toHaveBeenCalledOnce();
+        expect(result.current?.savedCollections.error).toBe(false);
 
         await act(async () => {
-            await Promise.resolve();
+            await result.current?.savedCollections.onRefresh();
+            await result.current?.onRefresh();
         });
-
+        expect(getReceivedPresentations).toHaveBeenCalledTimes(2);
         expect(listShareLinks).not.toHaveBeenCalled();
-        expect(getReceivedPresentations).not.toHaveBeenCalled();
+    });
+
+    it('keeps received loading pending while owner sharing becomes enabled', async () => {
+        let resolveReceived!: (value: unknown[]) => void;
+        getReceivedPresentations.mockImplementationOnce(
+            () =>
+                new Promise<unknown[]>(resolve => {
+                    resolveReceived = resolve;
+                })
+        );
+        const { result, rerender } = renderHook(
+            ({ enabled }) => useSharedLinks(enabled, true, vi.fn(), vi.fn(), vi.fn(), vi.fn()),
+            { initialProps: { enabled: false } }
+        );
+        await waitFor(() => expect(getReceivedPresentations).toHaveBeenCalledOnce());
+        expect(result.current?.savedCollections.isLoading).toBe(true);
+        expect(listShareLinks).not.toHaveBeenCalled();
+
+        rerender({ enabled: true });
+        await waitFor(() => expect(listShareLinks).toHaveBeenCalledOnce());
+        expect(result.current?.savedCollections.isLoading).toBe(true);
+        expect(getReceivedPresentations).toHaveBeenCalledOnce();
+
+        await act(async () => resolveReceived([]));
+        expect(result.current?.savedCollections.isLoading).toBe(false);
     });
 
     it('does not start a second saved-collection fetch when onRefresh is called during the eager load', async () => {
