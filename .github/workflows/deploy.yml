@@ -2227,6 +2227,30 @@ jobs:
             - name: Set up flyctl
               uses: superfly/flyctl-actions/setup-flyctl@1.6
 
+            # validateBackendEnvironment() exits 1 before the HTTP server binds when any of these is
+            # missing, and the only trace is a bare service_start_failed event, so the health probe
+            # just times out. Check names (never values) before shipping a release that can't boot.
+            # Keep in sync with services/ai-passport-backend/src/constants/env.ts.
+            - name: Check required Fly secrets
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+              run: |
+                  present=$(
+                    {
+                      flyctl secrets list --app "$FLY_APP" --json | jq -r '.[] | (.Name // .name)'
+                      sed -n '/^\[env\]/,/^\[/s/^ *\([A-Z0-9_]*\) *=.*/\1/p' services/ai-passport-backend/fly.toml
+                    } | sort -u
+                  )
+                  missing=()
+                  for name in MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT OPENAI_API_KEY AI_PRIVACY_KEY; do
+                    grep -qx "$name" <<< "$present" || missing+=("$name")
+                  done
+                  if (( ${#missing[@]} )); then
+                    echo "::error::Fly app $FLY_APP is missing required secrets: ${missing[*]}. The API exits on boot without them."
+                    exit 1
+                  fi
+
             # Same invocation as AI-Passport's deploy-fly.yml: the build context is the monorepo
             # root (the frozen install in Dockerfile.api needs every workspace manifest) and
             # fly.toml's dockerfile path resolves next to the config.
@@ -2252,6 +2276,15 @@ jobs:
                   curl --fail --silent --show-error \
                     --retry 10 --retry-delay 6 --retry-all-errors --max-time 20 \
                     "https://$FLY_APP.fly.dev/health"
+
+            # The app logs only safe event codes, so the machine log is the fastest way to tell a
+            # boot crash (service_start_failed, restart loop) from a slow cold start.
+            - name: Show Fly machine logs on failure
+              if: failure() && steps.fly-target.outputs.app != ''
+              env:
+                  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+                  FLY_APP: ${{ steps.fly-target.outputs.app }}
+              run: flyctl logs --app "$FLY_APP" --no-tail | tail -n 200 || true
 
     deploy-ai-passport-app:
         name: Deploy AI Passport App (${{ matrix.name }})
