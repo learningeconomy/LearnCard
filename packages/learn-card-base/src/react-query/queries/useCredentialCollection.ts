@@ -40,7 +40,7 @@ export const useCredentialCollection = (
     const [browseWindow, setBrowseWindow] = useState({ scope, limit: 12 });
     const browseLimit = browseWindow.scope === scope ? browseWindow.limit : 12;
     const query = useGetCredentialList(
-        category as CredentialCategory | undefined,
+        category === 'Hidden' ? undefined : (category as CredentialCategory | undefined),
         options.enabled !== false
     );
     const { data, isFetching, isError, hasNextPage, fetchNextPage, refetch } = query;
@@ -51,7 +51,7 @@ export const useCredentialCollection = (
             for (const record of page?.records ?? []) {
                 const visible =
                     category === 'Hidden'
-                        ? String(record.category) === 'Hidden' &&
+                        ? record.category?.toLowerCase() === 'hidden' &&
                           !record.id?.startsWith('__verifiable_data_')
                         : isCredentialCollectionRecordVisible(record);
                 if (visible && record.uri && !unique.has(record.uri))
@@ -70,11 +70,9 @@ export const useCredentialCollection = (
         () => (needle ? records.filter(record => !record.title?.trim()) : []),
         [records, needle]
     );
-    const resolutionOptions = legacy.map(record =>
-        resolvedCredentialQueryOptions(reader, record.uri, false)
-    );
-    const failedResolution = resolutionOptions.some(
-        option => client.getQueryState(option.queryKey)?.status === 'error'
+    const resolutionOptions = useMemo(
+        () => legacy.map(record => resolvedCredentialQueryOptions(reader, record.uri, false)),
+        [legacy, reader]
     );
     const active = new Set(
         resolutionOptions
@@ -88,7 +86,7 @@ export const useCredentialCollection = (
     const resolutions: UseQueryResult<VC>[] = useQueries({
         queries: resolutionOptions.map(option => ({
             ...option,
-            enabled: Boolean(reader) && !failedResolution && active.has(option.queryKey[1]),
+            enabled: Boolean(reader) && active.has(option.queryKey[1]),
         })),
     });
     const contentError = resolutions.find(result => result.isError)?.error;
@@ -126,8 +124,8 @@ export const useCredentialCollection = (
             mode === 'complete' ||
             mode === 'search' ||
             (mode === 'recent' && records.length < (options.limit ?? 5));
-        if (shouldContinue && !contentError) void load();
-    }, [mode, records.length, options.limit, contentError, load]);
+        if (shouldContinue) void load();
+    }, [mode, records.length, options.limit, load]);
     const retry = useCallback(async () => {
         if (isError) {
             if (data?.pages.length && query.isFetchNextPageError)

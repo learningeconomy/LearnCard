@@ -76,7 +76,9 @@ const makeWallet = (rows: LCR[], did = 'account-a') => {
             cursor: String(end),
         };
     });
-    const read = vi.fn(async (uri: string) => ({ name: `Resolved ${uri}` }));
+    const read = vi.fn<(uri: string) => Promise<{ name: string } | undefined>>(async uri => ({
+        name: `Resolved ${uri}`,
+    }));
     host.wallet = {
         id: { did: () => did },
         index: { LearnCloud: { getPage } },
@@ -283,6 +285,56 @@ describe('progressive credential collection', () => {
         await waitFor(() => expect(result.current.isComplete).toBe(true));
         expect(result.current.matches.map(row => row.uri)).toEqual(['uri-1', 'uri-2']);
     });
+    it('continues other legacy resolutions after an unavailable document without claiming completeness', async () => {
+        const { read } = makeWallet(
+            Array.from({ length: 9 }, (_, i) => ({ ...record(i), title: undefined }))
+        );
+        read.mockImplementation(async uri =>
+            uri === 'uri-0' ? undefined : { name: uri === 'uri-8' ? 'First aid' : 'Other' }
+        );
+        const { result } = renderHook(
+            () => useCredentialCollection(undefined, { mode: 'search', search: 'first aid' }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.matches.map(row => row.uri)).toEqual(['uri-8']));
+        expect(result.current.isError).toBe(true);
+        expect(result.current.isComplete).toBe(false);
+        expect(read).toHaveBeenCalledTimes(9);
+    });
+    it('continues metadata search past an unavailable early document to find a fourth-page match', async () => {
+        const rows = Array.from({ length: 37 }, (_, i) =>
+            record(i, i === 36 ? 'First aid' : `Badge ${i}`)
+        );
+        rows[0] = { ...rows[0], title: undefined };
+        const { getPage, read } = makeWallet(rows);
+        read.mockResolvedValue(undefined);
+        const { result } = renderHook(
+            () => useCredentialCollection(undefined, { mode: 'search', search: 'first aid' }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.matches.map(row => row.uri)).toEqual(['uri-36']));
+        expect(result.current.isError).toBe(true);
+        expect(result.current.isComplete).toBe(false);
+        expect(getPage).toHaveBeenCalledTimes(4);
+    });
+    it('includes legacy lowercase hidden rows only in the explicit hidden collection', async () => {
+        makeWallet([
+            record(1, 'Visible'),
+            record(2, 'Hidden uppercase', 'Hidden'),
+            record(3, 'Hidden lowercase', 'hidden'),
+            { ...record(4, 'Internal', 'Hidden'), id: '__verifiable_data_preferences' },
+        ]);
+        const { result } = renderHook(
+            () => ({
+                hidden: useCredentialCollection('Hidden', { mode: 'complete' }),
+                visible: useCredentialCollection(undefined, { mode: 'complete' }),
+            }),
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.hidden.isComplete).toBe(true));
+        expect(result.current.hidden.records.map(row => row.uri)).toEqual(['uri-2', 'uri-3']);
+        expect(result.current.visible.records.map(row => row.uri)).toEqual(['uri-1']);
+    });
     it('never exposes another root account or switched-account records while its reader changes', async () => {
         makeWallet([record(1)], 'account-a');
         const { result, rerender } = renderHook(
@@ -320,22 +372,30 @@ describe('progressive credential collection', () => {
         );
         expect(result.current.records.map(row => row.uri)).toEqual(['uri-2']);
     });
-    it('counts only visible records in a requested skills category across pages', async () => {
+    it('keeps category totals consistent with visible global records across pages', async () => {
         const rows = [
             ...Array.from({ length: 13 }, (_, i) => record(i, `Skill evidence ${i}`, 'Skill')),
+            record(0, 'Skill evidence 0', 'Skill'),
             { ...record(50, 'Internal', 'Skill'), id: '__verifiable_data_skill' },
             record(51, 'Self-Assigned Skills', 'Skill'),
             record(52, 'Other badge'),
         ];
         const { read } = makeWallet(rows);
         const { result } = renderHook(
-            () => useCredentialCollection('Skill', { mode: 'complete' }),
+            () => ({
+                category: useCredentialCollection('Skill', { mode: 'complete' }),
+                all: useCredentialCollection(undefined, { mode: 'complete' }),
+            }),
             { wrapper }
         );
-        await waitFor(() => expect(result.current.isComplete).toBe(true));
-        expect(result.current.records.map(row => row.uri)).toEqual(
+        await waitFor(() => expect(result.current.category.isComplete).toBe(true));
+        await waitFor(() => expect(result.current.all.isComplete).toBe(true));
+        expect(result.current.category.records.map(row => row.uri)).toEqual(
             Array.from({ length: 13 }, (_, i) => `uri-${i}`)
         );
+        expect(
+            result.current.all.records.filter(row => row.category === 'Skill').map(row => row.uri)
+        ).toEqual(result.current.category.records.map(row => row.uri));
         expect(read).not.toHaveBeenCalled();
     });
     it('does not expand browsing or resolve all cards just because another view completed metadata totals', async () => {
