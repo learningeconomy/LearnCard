@@ -1,4 +1,5 @@
-name: Prepare shared E2E SDK builds
+# Temporary CI-15 timing harness; do not merge this branch.
+name: Seed isolated E2E SDK benchmark
 
 on:
     push:
@@ -37,13 +38,13 @@ jobs:
                   echo "SDK input identity: $key"
                   echo "key=$key" >> "$GITHUB_OUTPUT"
 
-            - name: Check whether main already published this identity
+            - name: Look up the isolated benchmark identity
               id: lookup
-              if: ${{ github.ref == 'refs/heads/main' }}
+              if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/lc-2312-sdk-cache-benchmark' }}
               uses: actions/cache/restore@v6
               with:
                   path: ${{ runner.temp }}/e2e-sdk-snapshot
-                  key: ${{ steps.key.outputs.key }}
+                  key: ci15-benchmark-${{ steps.key.outputs.key }}
                   lookup-only: true
 
             - name: Build SDK prerequisites with their canonical CI environment
@@ -54,19 +55,19 @@ jobs:
               if: ${{ steps.lookup.outputs.cache-hit != 'true' }}
               run: node scripts/e2e-hosted/sdk-build-cache.mjs snapshot "$RUNNER_TEMP/sdk-producer-spec.json" "$RUNNER_TEMP/e2e-sdk-snapshot"
 
-            # Feature-branch dispatches exercise the producer without publishing.
-            # Only main can make a shared snapshot; no PR consumer writes one.
-            - name: Publish from trusted main only
-              if: ${{ success() && github.ref == 'refs/heads/main' && steps.lookup.outputs.cache-hit != 'true' }}
+            # Benchmark-only writer: explicit manual event + exact scratch branch.
+            # Its key prefix and branch scope cannot replace a main snapshot.
+            - name: Seed the isolated manual benchmark cache
+              if: ${{ success() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/lc-2312-sdk-cache-benchmark' && steps.lookup.outputs.cache-hit != 'true' }}
               uses: actions/cache/save@v6
               with:
                   path: ${{ runner.temp }}/e2e-sdk-snapshot
-                  key: ${{ steps.key.outputs.key }}
+                  key: ci15-benchmark-${{ steps.key.outputs.key }}
 
             - name: Explain publication scope
               if: always()
               env:
-                  PUBLISHABLE: ${{ github.ref == 'refs/heads/main' }}
+                  PUBLISHABLE: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/lc-2312-sdk-cache-benchmark' }}
               run: |
-                  echo "### Shared SDK producer: main publication eligible=$PUBLISHABLE" >> "$GITHUB_STEP_SUMMARY"
-                  echo 'Only compiled SDK prerequisites are shared. No test success, SPA or Nx database is published.' >> "$GITHUB_STEP_SUMMARY"
+                  echo "### SDK benchmark seed: publication eligible=$PUBLISHABLE" >> "$GITHUB_STEP_SUMMARY"
+                  echo 'Benchmark namespace only. No test success, SPA or Nx database is published.' >> "$GITHUB_STEP_SUMMARY"

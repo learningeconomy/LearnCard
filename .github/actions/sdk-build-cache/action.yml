@@ -1,3 +1,4 @@
+# Temporary CI-15 timing harness; do not merge this branch.
 name: Restore verified E2E SDK outputs
 description: Consumers restore only compiled SDK outputs; SPA, tests and preflights still run.
 inputs:
@@ -42,7 +43,7 @@ runs:
           uses: actions/cache/restore@v6
           with:
               path: ${{ runner.temp }}/e2e-sdk-snapshot
-              key: ${{ steps.key.outputs.key }}
+              key: ci15-benchmark-${{ steps.key.outputs.key }}
 
         - name: Report SDK snapshot lookup
           shell: bash

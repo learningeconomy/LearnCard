@@ -1,4 +1,6 @@
+# Temporary CI-15 benchmark harness; do not merge this branch.
 name: E2E
+run-name: 'CI-15 benchmark seed=${{ inputs.verify_sdk_producer }} restore=${{ inputs.use_sdk_cache }}'
 
 on:
     pull_request:
@@ -23,7 +25,7 @@ on:
                 type: boolean
                 default: true
             verify_sdk_producer:
-                description: 'Also validate the SDK producer; feature refs never publish shared output.'
+                description: 'Warm-up only: also seed the isolated benchmark cache; excluded from timing samples.'
                 type: boolean
                 default: false
 
