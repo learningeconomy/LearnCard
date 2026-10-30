@@ -86,6 +86,31 @@ const uploaded = head_sha => ({
     })),
 });
 
+test('delivery evidence matches the real caller and reusable upload workflow', async t => {
+    const f = fixture(t);
+    const caller = workflow.jobs.upload;
+    assert.equal(caller.uses, './.github/workflows/capgo-upload.yml');
+    assert.equal(caller.with.self_assign, "${{ 'true' }}");
+    const reusable = yaml.load(
+        readFileSync(path.join(root, '.github/workflows/capgo-upload.yml'), 'utf8')
+    ).jobs.upload;
+    // Build the mock from actual workflow names: renaming either job or a
+    // required step must break this contract instead of silently rebuilding.
+    const job = {
+        name: `${caller.name} / ${reusable.name}`,
+        head_sha: f.a,
+        conclusion: 'success',
+        steps: reusable.steps.map(step => ({ name: step.name, conclusion: 'success' })),
+    };
+    const range = await resolveCapgoStagingRange(f.options([run(f.a)], { 1: [job] }));
+    assert.equal(range.source, 'successful-deploy');
+    assert.equal(range.base, f.a);
+    assert.equal(
+        reusable.steps.find(step => step.name === 'Set channel default (CapGo)').if,
+        "inputs.self_assign == 'true'"
+    );
+});
+
 test('cancelled B app change survives C backend change and a green no-upload run', async t => {
     const f = fixture(t);
     const b = f.commit('B cancelled', { [app]: 'version B' });
@@ -233,6 +258,22 @@ test('incomplete job metadata cannot acknowledge an upload', async t => {
     assert.equal(range.reason, 'history-unavailable');
 });
 
+test('unavailable per-run evidence falls back even when an older delivery exists', async t => {
+    const f = fixture(t);
+    const b = f.commit('newer backend only', { [backend]: 'backend B' });
+    const error = Object.assign(new Error('private transport detail'), { status: 503 });
+    const range = await resolveCapgoStagingRange(
+        f.options([run(b, 2), run(f.a)], { 2: error, 1: [uploaded(f.a)] })
+    );
+    assert.equal(range.source, 'full-tree');
+    assert.equal(range.reason, 'history-unavailable-http-503');
+    assert.deepEqual(
+        f.jobCalls.map(call => call.run_id),
+        [2]
+    );
+    assert.doesNotMatch(f.warnings.join('\n'), /private transport detail/);
+});
+
 test('history lookup is bounded when 100 successful runs contain no delivered bundle', async t => {
     const f = fixture(t);
     const range = await resolveCapgoStagingRange(
@@ -243,6 +284,49 @@ test('history lookup is bounded when 100 successful runs contain no delivered bu
     assert.equal(f.calls.length, 1);
     assert.equal(f.jobCalls.length, 100);
     assert.ok(f.jobCalls.every(call => call.filter === 'latest' && call.per_page === 100));
+});
+
+test('range step reports an expected bounded-history fallback in its summary', async t => {
+    const f = fixture(t);
+    const options = f.options(Array.from({ length: 100 }, (_, i) => run(f.a, i + 1)));
+    const summary = {
+        text: '',
+        rows: [],
+        addHeading(text) {
+            this.text += text;
+            return this;
+        },
+        addRaw(text) {
+            this.text += text;
+            return this;
+        },
+        addTable(rows) {
+            this.rows = rows;
+            return this;
+        },
+        async write() {},
+    };
+    const outputs = {};
+    const script = workflow.jobs.decide.steps.find(step => step.id === 'range').with.script;
+    const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
+    await new AsyncFunction('require', 'github', 'context', 'core', script)(
+        () => ({
+            resolveCapgoStagingRange: params => resolveCapgoStagingRange({ ...params, cwd: f.cwd }),
+        }),
+        options.github,
+        { repo: options.repo, sha: options.head, runId: options.runId },
+        {
+            summary,
+            warning: options.warn,
+            setOutput: (key, value) => (outputs[key] = value),
+        }
+    );
+    assert.match(summary.text, /100-run search limit/);
+    assert.match(summary.text, /expected after a long stretch without uploads/);
+    assert.match(summary.text, /establish a new baseline/);
+    assert.ok(summary.rows.slice(1).every(row => row.every(cell => typeof cell === 'string')));
+    assert.equal(outputs.head, options.head);
+    assert.equal(summary.rows.find(([key]) => key === 'reason')[1], 'history-limit');
 });
 
 test('workflow keeps release exclusion, staging channel and production tenant configuration', () => {

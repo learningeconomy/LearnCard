@@ -24,6 +24,8 @@ const resolveCapgoStagingRange = async ({ github, repo, head, runId, cwd, warn }
                 filter: 'latest',
                 per_page: 100,
             });
+            // One bounded jobs page is deliberate. Incomplete metadata cannot
+            // prove delivery; rebuild the app rather than expand the API budget.
             if (
                 !Array.isArray(data.jobs) ||
                 !Number.isInteger(data.total_count) ||

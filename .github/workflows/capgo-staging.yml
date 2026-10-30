@@ -76,9 +76,13 @@ jobs:
                       });
                       core.setOutput('base', range.base);
                       core.setOutput('head', range.head);
-                      await core.summary.addHeading('Capgo staging comparison range').addTable([
+                      core.summary.addHeading('Capgo staging comparison range');
+                      if (range.reason === 'history-limit') {
+                        core.summary.addRaw('No delivery was found within the 100-run search limit. This is expected after a long stretch without uploads; a successful staging upload will establish a new baseline.\n\n');
+                      }
+                      await core.summary.addTable([
                         [{ data: 'Field', header: true }, { data: 'Value', header: true }],
-                        ...Object.entries(range).map(([key, value]) => [key, value]),
+                        ...Object.entries(range).map(([key, value]) => [key, String(value)]),
                       ]).write();
 
             - name: Use Composite Setup Action
