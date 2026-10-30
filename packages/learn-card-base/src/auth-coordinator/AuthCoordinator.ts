@@ -21,6 +21,7 @@ import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDe
 import { withNetworkFault } from '../helpers/networkFault';
 import {
     IdentityRecoverySessionConsumedError,
+    DuplicateShareCoordinateError,
     createAdaptiveStorage,
     deleteDeviceShare,
 } from '@learncard/sss-key-manager';
@@ -1063,13 +1064,47 @@ export class AuthCoordinator {
                 );
             }
 
-            let privateKey = await this.keyDerivation.reconstructKey(
-                localKey,
-                serverStatus.authShare
-            );
+            let privateKey: string;
+            let reconciledCollision = false;
+            try {
+                privateKey = await this.keyDerivation.reconstructKey(
+                    localKey,
+                    serverStatus.authShare
+                );
+            } catch (error) {
+                // A stale pair may share a coordinate instead of producing a
+                // mismatched DID. Only this typed local failure uses recovery;
+                // network/programming errors retain their existing handling.
+                if (
+                    !(error instanceof DuplicateShareCoordinateError) ||
+                    !serverStatus.primaryDid ||
+                    !this.config.didFromPrivateKey ||
+                    !this.keyDerivation.reconcileShares
+                ) {
+                    throw error;
+                }
+                const reconciled = await this.keyDerivation.reconcileShares({
+                    token,
+                    providerType,
+                    expectedDid: serverStatus.primaryDid,
+                    didFromPrivateKey: this.config.didFromPrivateKey,
+                    signDidAuthVp: this.config.signDidAuthVp,
+                });
+                if (!reconciled) {
+                    await this.keyDerivation.clearLocalKeys({ preservePending: true });
+                    return this.needRecovery(
+                        authUser,
+                        recoveryMethods,
+                        serverStatus,
+                        'stale_local_key'
+                    );
+                }
+                privateKey = reconciled.privateKey;
+                reconciledCollision = true;
+            }
 
             // Verify the key produces the expected DID (health check)
-            if (this.config.didFromPrivateKey && serverStatus.primaryDid) {
+            if (!reconciledCollision && this.config.didFromPrivateKey && serverStatus.primaryDid) {
                 const derivedDid = await this.config.didFromPrivateKey(privateKey);
 
                 if (derivedDid !== serverStatus.primaryDid) {
