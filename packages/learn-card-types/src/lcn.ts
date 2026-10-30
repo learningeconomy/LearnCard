@@ -648,8 +648,100 @@ export type SendInput = z.infer<typeof SendInputValidator>;
 export const SendResponseValidator = z.discriminatedUnion('type', [SendBoostResponseValidator]);
 export type SendResponse = z.infer<typeof SendResponseValidator>;
 
-export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
+export const ConsentFlowTermsStatusValidator = z.enum([
+    'live',
+    'consumed',
+    'withdrawn',
+    'needs_reconsent',
+    'suspended',
+]);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
+
+export const ConsentFlowContractChangeKindValidator = z.enum([
+    'relaxed',
+    'expanded_optional',
+    'requires_consent',
+]);
+export type ConsentFlowContractChangeKind = z.infer<typeof ConsentFlowContractChangeKindValidator>;
+
+export const ConsentFlowContractScopeValidator = z.object({
+    area: z.enum(['read', 'write']),
+    type: z.enum(['credential', 'personal']),
+    key: z.string(),
+    required: z.boolean(),
+    reason: z.string().optional(),
+});
+export type ConsentFlowContractScope = z.infer<typeof ConsentFlowContractScopeValidator>;
+
+export const ConsentFlowContractDiffValidator = z.object({
+    added: ConsentFlowContractScopeValidator.array(),
+    removed: ConsentFlowContractScopeValidator.array(),
+    changed: ConsentFlowContractScopeValidator.array(),
+});
+export type ConsentFlowContractDiff = z.infer<typeof ConsentFlowContractDiffValidator>;
+
+export const ConsentFlowContractUpdatePreviewValidator = z.object({
+    headline: z.string(),
+    subhead: z.string(),
+    rows: z.array(
+        z.object({
+            scope: ConsentFlowContractScopeValidator,
+            change: z.enum(['added', 'removed', 'changed']),
+            label: z.string(),
+            subtitle: z.string(),
+        })
+    ),
+    primaryLabel: z.string(),
+});
+export type ConsentFlowContractUpdatePreview = z.infer<
+    typeof ConsentFlowContractUpdatePreviewValidator
+>;
+
+export const ConsentFlowContractStatusValidator = z.enum(['active', 'retired']);
+export type ConsentFlowContractStatus = z.infer<typeof ConsentFlowContractStatusValidator>;
+
+export const ConsentFlowContractVersionValidator = z.object({
+    version: z.number().int().positive(),
+    createdAt: z.string(),
+    reason: z.string().optional(),
+    kind: ConsentFlowContractChangeKindValidator.optional(),
+});
+export type ConsentFlowContractVersion = z.infer<typeof ConsentFlowContractVersionValidator>;
+
+export const ConsentFlowContractUpdateResultValidator = z.object({
+    version: z.number().int().positive(),
+    kind: ConsentFlowContractChangeKindValidator,
+    affectedUsers: z.number().int().nonnegative(),
+    preview: ConsentFlowContractUpdatePreviewValidator,
+});
+export type ConsentFlowContractUpdateResult = z.infer<
+    typeof ConsentFlowContractUpdateResultValidator
+>;
+
+export const ConsentFlowConsentStatusValidator = z.object({
+    status: ConsentFlowTermsStatusValidator.or(z.literal('not_consented')),
+    consentedVersion: z.number().int().positive().optional(),
+    currentVersion: z.number().int().positive(),
+    needsReconsent: z.boolean(),
+    reviewUrl: z.string().optional(),
+});
+export type ConsentFlowConsentStatus = z.infer<typeof ConsentFlowConsentStatusValidator>;
+
+export const ConsentFlowContractNotificationDataValidator = z.object({
+    contractUri: z.string(),
+    contractName: z.string().optional(),
+    fromVersion: z.number().int().positive(),
+    toVersion: z.number().int().positive(),
+    kind: ConsentFlowContractChangeKindValidator,
+    reason: z.string().optional(),
+    diff: ConsentFlowContractDiffValidator,
+    reconsentDeadline: z.string().optional(),
+    reviewUrl: z.string(),
+    preview: ConsentFlowContractUpdatePreviewValidator.optional(),
+});
+export type ConsentFlowContractNotificationData = z.infer<
+    typeof ConsentFlowContractNotificationDataValidator
+>;
 
 export const ConsentFlowContractValidator = z.object({
     read: z
@@ -663,6 +755,7 @@ export const ConsentFlowContractValidator = z.object({
                             z.object({
                                 required: z.boolean(),
                                 defaultEnabled: z.boolean().optional(),
+                                reason: z.string().optional(),
                             })
                         )
                         .default({}),
@@ -671,7 +764,11 @@ export const ConsentFlowContractValidator = z.object({
             personal: z
                 .record(
                     z.string(),
-                    z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })
+                    z.object({
+                        required: z.boolean(),
+                        defaultEnabled: z.boolean().optional(),
+                        reason: z.string().optional(),
+                    })
                 )
                 .default({}),
         })
@@ -686,6 +783,7 @@ export const ConsentFlowContractValidator = z.object({
                             z.object({
                                 required: z.boolean(),
                                 defaultEnabled: z.boolean().optional(),
+                                reason: z.string().optional(),
                             })
                         )
                         .default({}),
@@ -694,7 +792,11 @@ export const ConsentFlowContractValidator = z.object({
             personal: z
                 .record(
                     z.string(),
-                    z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })
+                    z.object({
+                        required: z.boolean(),
+                        defaultEnabled: z.boolean().optional(),
+                        reason: z.string().optional(),
+                    })
                 )
                 .default({}),
         })
@@ -702,6 +804,62 @@ export const ConsentFlowContractValidator = z.object({
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
+const ConsentFlowContractScopePatchValidator = z
+    .object({
+        required: z.boolean(),
+        defaultEnabled: z.boolean().optional(),
+        reason: z.string().optional(),
+    })
+    .nullable();
+
+export const ConsentFlowContractChangesValidator = z.object({
+    contract: z
+        .object({
+            read: z
+                .object({
+                    anonymize: z.boolean().optional(),
+                    credentials: z
+                        .object({
+                            categories: z
+                                .record(z.string(), ConsentFlowContractScopePatchValidator)
+                                .optional(),
+                        })
+                        .optional(),
+                    personal: z
+                        .record(z.string(), ConsentFlowContractScopePatchValidator)
+                        .optional(),
+                })
+                .optional(),
+            write: z
+                .object({
+                    credentials: z
+                        .object({
+                            categories: z
+                                .record(z.string(), ConsentFlowContractScopePatchValidator)
+                                .optional(),
+                        })
+                        .optional(),
+                    personal: z
+                        .record(z.string(), ConsentFlowContractScopePatchValidator)
+                        .optional(),
+                })
+                .optional(),
+        })
+        .optional(),
+    name: z.string().optional(),
+    subtitle: z.string().optional(),
+    description: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
+    image: z.string().optional(),
+    needsGuardianConsent: z.boolean().optional(),
+    redirectUrl: z.string().optional(),
+    frontDoorBoostUri: z.string().optional(),
+    expiresAt: z.string().nullable().optional(),
+    autoboosts: AutoBoostConfigValidator.array().optional(),
+    writers: z.string().array().optional(),
+    recipients: z.string().array().optional(),
+});
+export type ConsentFlowContractChanges = z.input<typeof ConsentFlowContractChangesValidator>;
 
 export const ConsentFlowContractDetailsValidator = z.object({
     contract: ConsentFlowContractValidator,
@@ -722,6 +880,20 @@ export const ConsentFlowContractDetailsValidator = z.object({
     writers: z.array(LCNProfileValidator).optional(),
     recipients: z.array(LCNPublicProfileValidator.extend({ did: z.string() })).optional(),
     audienceVersion: z.number().int().nonnegative().optional(),
+    version: z.number().int().positive(),
+    status: ConsentFlowContractStatusValidator.optional(),
+    latestUpdate: z
+        .object({
+            fromVersion: z.number().int().positive(),
+            toVersion: z.number().int().positive(),
+            kind: ConsentFlowContractChangeKindValidator,
+            reason: z.string().optional(),
+            diff: ConsentFlowContractDiffValidator,
+            reconsentDeadline: z.string().optional(),
+            createdAt: z.string(),
+            preview: ConsentFlowContractUpdatePreviewValidator,
+        })
+        .optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
@@ -860,6 +1032,10 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
             uri: z.string(),
             consenter: LCNProfileValidator,
             status: ConsentFlowTermsStatusValidator,
+            consentedVersion: z.number().int().positive(),
+            reconsentDeadline: z.string().optional(),
+            newOptionsUntil: z.string().optional(),
+            cumulativeUpdate: ConsentFlowContractDetailsValidator.shape.latestUpdate,
         })
         .array(),
 });
@@ -985,6 +1161,7 @@ export const ConsentFlowTransactionActionValidator = z.enum([
     'sync',
     'withdraw',
     'write',
+    'reconsent',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 
@@ -1018,8 +1195,12 @@ export const ConsentFlowTransactionValidator = z.object({
     referral: ConsentFlowReferralValidator.optional(),
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
+    kind: ConsentFlowContractChangeKindValidator.optional(),
     date: z.string(),
     uris: z.string().array().optional(),
+    consentedVersion: z.number().int().positive().optional(),
+    reconsentDeadline: z.string().optional(),
+    newOptionsUntil: z.string().optional(),
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
@@ -1029,9 +1210,12 @@ export const HolderExportConsentRecordValidator = z.object({
     contract: ConsentFlowContractDetailsValidator,
     terms: ConsentFlowTermsValidator,
     referral: ConsentFlowReferralValidator.optional(),
+    consentedVersion: z.number().int().positive(),
+    reconsentDeadline: z.string().optional(),
+    newOptionsUntil: z.string().optional(),
+    cumulativeUpdate: ConsentFlowContractDetailsValidator.shape.latestUpdate,
     transactions: ConsentFlowTransactionValidator.array(),
 });
-export type HolderExportConsentRecord = z.infer<typeof HolderExportConsentRecordValidator>;
 
 export const HolderExportMetadataValidator = z.object({
     consentRecords: HolderExportConsentRecordValidator.array(),
@@ -1115,6 +1299,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CREDENTIAL_SUSPENDED',
     'CREDENTIAL_UNSUSPENDED',
     'CREDENTIAL_REFRESHED',
+    'CONSENT_FLOW_CONTRACT_UPDATED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -1166,6 +1351,16 @@ export const LCNNotificationDataValidator = z
         vcUris: z.array(z.string()).optional(),
         vpUris: z.array(z.string()).optional(),
         transaction: ConsentFlowTransactionValidator.optional(),
+        contractUri: z.string().optional(),
+        contractName: z.string().optional(),
+        fromVersion: z.number().int().positive().optional(),
+        toVersion: z.number().int().positive().optional(),
+        kind: ConsentFlowContractChangeKindValidator.optional(),
+        reason: z.string().optional(),
+        diff: ConsentFlowContractDiffValidator.optional(),
+        reconsentDeadline: z.string().optional(),
+        reviewUrl: z.string().optional(),
+        preview: ConsentFlowContractUpdatePreviewValidator.optional(),
         inbox: LCNNotificationInboxValidator.optional(),
         metadata: LCNNotificationMetadataValidator.optional(),
     })

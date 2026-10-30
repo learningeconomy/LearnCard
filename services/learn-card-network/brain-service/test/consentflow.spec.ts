@@ -44,13 +44,33 @@ import {
     hasGuardianApprovalHistory,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { consentToContract } from '@accesslayer/consentflowcontract/relationships/create';
-import { updateTerms } from '@accesslayer/consentflowcontract/relationships/update';
 
+import {
+    getConsentFlowContractVersionRecord,
+    updateConsentFlowContractVersion,
+} from '@accesslayer/consentflowcontract/versions';
+import { neogma } from '@instance';
+import { migrateLegacyConsentFlowContracts } from '../src/helpers/consentflow-legacy-migration.helpers';
+import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
+import * as signingAuthorityHelpers from '../src/helpers/signingAuthority.helpers';
+import type { ConsentFlowTerms as ConsentFlowTermsType } from '@learncard/types';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
 let userD: Awaited<ReturnType<typeof getUser>>;
+
+const seedStoredContractExpiry = async (
+    contractId: string,
+    version: number,
+    expiresAt: string | null
+) => {
+    await neogma.queryRunner.run(
+        `MATCH (contract:ConsentFlowContract {id:$contractId})-[:HAS_VERSION]->(accepted:ConsentFlowContractVersion {version:$version})
+         SET contract.expiresAt = $expiresAt, accepted.expiresAt = $expiresAt`,
+        { contractId, version, expiresAt }
+    );
+};
 
 describe('Consent Flow Contracts', () => {
     beforeAll(async () => {
@@ -112,6 +132,92 @@ describe('Consent Flow Contracts', () => {
             expect(result).toBeDefined();
             expect(typeof result).toBe('string');
         });
+        it('rejects a signing result when consent is suspended while issuance is in flight', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Delayed signing boost',
+            });
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Delayed signing contract',
+            });
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            let announceStarted!: () => void;
+            let releaseSigning!: () => void;
+            const started = new Promise<void>(resolve => {
+                announceStarted = resolve;
+            });
+            const signingGate = new Promise<void>(resolve => {
+                releaseSigning = resolve;
+            });
+            const issueCredential = signingAuthorityHelpers.issueCredentialWithSigningAuthority;
+            const issueSpy = vi
+                .spyOn(signingAuthorityHelpers, 'issueCredentialWithSigningAuthority')
+                .mockImplementation(async (...args) => {
+                    announceStarted();
+                    await signingGate;
+                    return issueCredential(...args);
+                });
+
+            try {
+                const write =
+                    userA.clients.fullAuth.contracts.writeCredentialToContractViaSigningAuthority({
+                        did: userBProfile!.did,
+                        contractUri,
+                        boostUri,
+                        signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'MySA' },
+                    });
+                await started;
+                const changedContract = {
+                    ...normalContract,
+                    read: {
+                        ...normalContract.read,
+                        credentials: {
+                            ...normalContract.read.credentials,
+                            categories: {
+                                ...normalContract.read.credentials.categories,
+                                Transcript: { required: true },
+                            },
+                        },
+                    },
+                };
+                await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                    uri: contractUri,
+                    changes: { contract: changedContract },
+                    reason: 'We need transcripts to personalize your progress report.',
+                });
+                releaseSigning();
+                await expect(write).rejects.toMatchObject({
+                    code: 'FORBIDDEN',
+                    message: 'User has not yet approved the latest version of this contract',
+                });
+                const terms = await getContractTermsByUri(termsUri);
+                expect(terms).toBeDefined();
+                const transactions = await getTransactionsForTerms(terms!.terms.id, { limit: 100 });
+                expect(transactions.some(transaction => transaction.action === 'write')).toBe(
+                    false
+                );
+                const deliveries = await userB.clients.fullAuth.contracts.getCredentialsForContract(
+                    {
+                        termsUri,
+                    }
+                );
+                expect(deliveries.records).toEqual([]);
+            } finally {
+                releaseSigning();
+                issueSpy.mockRestore();
+            }
+        });
     });
 
     describe('createConsentFlowContract', () => {
@@ -155,6 +261,75 @@ describe('Consent Flow Contracts', () => {
                     name: 'a',
                 })
             ).resolves.not.toThrow();
+        });
+        it('persists immutable versions and leaves dry runs untouched', async () => {
+            const uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Versioned test contract',
+            });
+            const id = getIdFromUri(uri);
+            const initial = await getConsentFlowContractVersionRecord(id, 1);
+            expect(initial?.name).toBe('Versioned test contract');
+
+            const changes = {
+                contract: {
+                    write: {
+                        credentials: {
+                            categories: {
+                                OptionalAddition: { required: false, defaultEnabled: true },
+                            },
+                        },
+                    },
+                },
+            };
+            const preview = await updateConsentFlowContractVersion(
+                { uri, changes, dryRun: true },
+                'usera',
+                'localhost'
+            );
+            expect(preview).toMatchObject({ version: 2, kind: 'expanded_optional' });
+            expect(await getConsentFlowContractVersionRecord(id, 2)).toBeNull();
+
+            const updated = await updateConsentFlowContractVersion(
+                { uri, changes },
+                'usera',
+                'localhost'
+            );
+            expect(updated.version).toBe(2);
+            expect((await getConsentFlowContractVersionRecord(id, 1))?.contract).toEqual(
+                initial?.contract
+            );
+            expect(
+                (await getConsentFlowContractVersionRecord(id, 2))?.contract.write.credentials
+                    .categories
+            ).toHaveProperty('OptionalAddition');
+        });
+        it('migrates a legacy contract snapshot idempotently from persisted Neo4j state', async () => {
+            const uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Legacy migration contract',
+            });
+            const id = getIdFromUri(uri);
+            await neogma.queryRunner.run(
+                `MATCH (contract:ConsentFlowContract {id:$id})-[relationship:HAS_VERSION]->(version:ConsentFlowContractVersion)
+                 WITH contract, relationship, version
+                 DELETE relationship, version
+                 WITH contract
+                 SET contract.currentVersion=null`,
+                { id }
+            );
+
+            await migrateLegacyConsentFlowContracts();
+            const migrated = await getConsentFlowContractVersionRecord(id, 1);
+            expect(migrated?.contract).toEqual(normalContract);
+            await migrateLegacyConsentFlowContracts();
+
+            const count = await neogma.queryRunner.run(
+                `MATCH (:ConsentFlowContract {id:$id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+                 RETURN count(version) AS count`,
+                { id }
+            );
+            expect(Number(count.records[0]?.get('count'))).toBe(1);
         });
 
         it('should allow creating a contract with an auto-boost', async () => {
@@ -612,6 +787,278 @@ describe('Consent Flow Contracts', () => {
         });
     });
 
+    describe('versioned consent-flow updates', () => {
+        let uri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Versioned contract',
+            });
+            ({ termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: uri,
+                terms: normalFullTerms,
+            }));
+        });
+
+        it('keeps empty requests readable through optional additions and removal of the last category', async () => {
+            const emptyContract = {
+                read: { personal: {}, credentials: { categories: {} } },
+                write: { personal: {}, credentials: { categories: {} } },
+            };
+            const emptyTerms = {
+                read: { personal: {}, credentials: { categories: {} } },
+                write: { personal: {}, credentials: { categories: {} } },
+            };
+            const emptyUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                name: 'Empty request',
+                contract: emptyContract,
+            });
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: emptyUri }))
+                    .contract
+            ).toEqual(emptyContract);
+            const { termsUri: emptyTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: emptyUri,
+                    terms: emptyTerms,
+                });
+            await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: emptyUri,
+                changes: {
+                    contract: {
+                        write: {
+                            credentials: { categories: { Certificate: { required: false } } },
+                        },
+                    },
+                },
+            });
+            const optional = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(
+                optional.records.find(record => record.uri === emptyTermsUri)?.terms.write
+                    .credentials.categories.Certificate
+            ).toBe(false);
+            const removal = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: emptyUri,
+                changes: {
+                    contract: { write: { credentials: { categories: { Certificate: null } } } },
+                },
+            });
+            expect(removal.kind).toBe('relaxed');
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: emptyUri }))
+                    .contract
+            ).toEqual(emptyContract);
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContracts()).records
+            ).toEqual(
+                expect.arrayContaining([expect.objectContaining({ uri: emptyUri, version: 3 })])
+            );
+            const records = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(records.records.find(record => record.uri === emptyTermsUri)).toMatchObject({
+                status: 'live',
+                consentedVersion: 3,
+                terms: emptyTerms,
+            });
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: emptyUri,
+                    profileId: 'userb',
+                })
+            ).toBe(true);
+        });
+
+        it('previews without writing, requires a reason for expanded access, and blocks stale acceptance', async () => {
+            const changedContract = {
+                ...normalContract,
+                read: {
+                    ...normalContract.read,
+                    credentials: {
+                        ...normalContract.read.credentials,
+                        categories: {
+                            ...normalContract.read.credentials.categories,
+                            Transcript: { required: true },
+                        },
+                    },
+                },
+            };
+            const preview = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { contract: changedContract },
+                reason: 'We need transcripts to personalize your progress report.',
+                dryRun: true,
+            });
+            expect(preview.kind).toBe('requires_consent');
+            expect(preview.version).toBe(2);
+            expect(
+                await userA.clients.fullAuth.contracts.getContractVersions({ uri })
+            ).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                    uri,
+                    changes: { contract: changedContract },
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: 'A reason is required when asking users for more access',
+            });
+            expect(
+                await userA.clients.fullAuth.contracts.getContractVersions({ uri })
+            ).toHaveLength(1);
+
+            const result = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { contract: changedContract },
+                reason: 'We need transcripts to personalize your progress report.',
+            });
+            expect(result.version).toBe(2);
+            expect(result.affectedUsers).toBe(1);
+            const status = await userB.clients.fullAuth.contracts.getConsentStatus({
+                uri,
+                profileId: 'userb',
+            });
+            expect(status.status).toBe('needs_reconsent');
+            expect(status.consentedVersion).toBe(1);
+            expect(status.currentVersion).toBe(2);
+            expect(status.reviewUrl).toContain('/consent-flow/review?uri=');
+            expect(
+                await userB.clients.fullAuth.contracts.verifyConsent({ uri, profileId: 'userb' })
+            ).toBe(false);
+            const retainedTerms = await getContractTermsByUri(termsUri);
+            expect(retainedTerms?.terms.terms).toEqual(normalFullTerms);
+            expect(retainedTerms?.terms.consentedVersion).toBe(1);
+            const retainedData = await userA.clients.fullAuth.contracts.getConsentedDataForContract(
+                { uri }
+            );
+            expect(retainedData.records[0]?.credentials.categories.Achievement).toEqual(
+                normalFullTerms.read.credentials.categories.Achievement.shared
+            );
+            expect(retainedData.records[0]?.credentials.categories.Transcript).toBeUndefined();
+            await expect(
+                userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: { Achievement: ['credential:attempted-write'] },
+                })
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'User has not yet approved the latest version of this contract',
+            });
+            const signedCredential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+            });
+            await expect(
+                userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri: uri,
+                    boostUri: 'boost:pending-write',
+                    credential: signedCredential,
+                })
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'User has not yet approved the latest version of this contract',
+            });
+            await expect(
+                userA.clients.fullAuth.contracts.writeCredentialToContractViaSigningAuthority({
+                    did: userB.learnCard.id.did(),
+                    contractUri: uri,
+                    boostUri: 'boost:pending-write',
+                    credential: testUnsignedBoost,
+                    signingAuthority: { endpoint: 'https://issuer.example', name: 'issuer' },
+                })
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'User has not yet approved the latest version of this contract',
+            });
+
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: normalFullTerms,
+                    acceptVersion: 1,
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { subtitle: 'Updated display information' },
+            });
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: normalFullTerms,
+                    acceptVersion: 2,
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const stillPending = await userB.clients.fullAuth.contracts.getConsentStatus({
+                uri,
+                profileId: 'userb',
+            });
+            expect(stillPending.status).toBe('needs_reconsent');
+            expect(stillPending.consentedVersion).toBe(1);
+            expect(stillPending.currentVersion).toBe(3);
+            const acceptedTerms: ConsentFlowTermsType = structuredClone(normalFullTerms);
+            acceptedTerms.read.credentials.categories.Transcript = { sharing: true, shared: [] };
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: acceptedTerms,
+                    acceptVersion: 3,
+                })
+            ).resolves.toBe(true);
+            expect((await getContractTermsByUri(termsUri))?.terms.consentedVersion).toBe(3);
+        });
+
+        it('migrates relaxed changes by pruning removed grants without requiring reapproval', async () => {
+            const changedContract = {
+                read: { credentials: { categories: { ID: null } } },
+            };
+            const result = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { contract: changedContract },
+            });
+            expect(result.kind).toBe('relaxed');
+            const status = await userB.clients.fullAuth.contracts.getConsentStatus({
+                uri,
+                profileId: 'userb',
+            });
+            expect(status.status).toBe('live');
+            expect(status.consentedVersion).toBe(2);
+            const terms = await getContractTermsByUri(termsUri);
+            expect(terms?.terms.terms.read.credentials.categories.ID).toBeUndefined();
+        });
+
+        it('keeps a newly introduced optional write field off even when defaultEnabled is true', async () => {
+            const changedContract = {
+                ...normalContract,
+                write: {
+                    ...normalContract.write,
+                    personal: {
+                        ...normalContract.write.personal,
+                        email: { required: false, defaultEnabled: true },
+                    },
+                },
+            };
+            const result = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { contract: changedContract },
+            });
+            expect(result.kind).toBe('expanded_optional');
+
+            const terms = await getContractTermsByUri(termsUri);
+            expect(terms?.terms.status).toBe('live');
+            expect(terms?.terms.consentedVersion).toBe(2);
+            expect(terms?.terms.terms.write.personal.email).not.toBe(true);
+        });
+    });
+
     describe('deleteConsentFlowContract', () => {
         let uri: string;
 
@@ -643,35 +1090,51 @@ describe('Consent Flow Contracts', () => {
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
-        it('should allow you to delete contracts', async () => {
+        it('should allow you to retire contracts while retaining their details', async () => {
             const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
-
             expect(contracts.records).toHaveLength(1);
 
             await expect(
                 userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri })
-            ).resolves.not.toThrow();
+            ).resolves.toBe(true);
 
-            const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
-
-            expect(newContracts.records).toHaveLength(0);
+            const retired = await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri });
+            expect(retired.status).toBe('retired');
+            expect(retired.uri).toBe(uri);
         });
 
-        it('should remove contract from profiles that have consented to it', async () => {
-            await userB.clients.fullAuth.contracts.consentToContract({
+        it('withdraws consent while retaining terms and contract history', async () => {
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri: uri,
             });
-
             const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
-
             expect(contracts.records).toHaveLength(1);
 
             await userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri });
 
             const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
-
-            expect(newContracts.records).toHaveLength(0);
+            expect(newContracts.records.find(record => record.uri === termsUri)?.status).toBe(
+                'withdrawn'
+            );
+            const retainedTerms = await getContractTermsByUri(termsUri);
+            expect(retainedTerms?.terms.status).toBe('withdrawn');
+            expect(
+                (await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri })).status
+            ).toBe('retired');
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: minimalTerms,
+                    acceptVersion: 1,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            const history = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+            expect(history.records.some(transaction => transaction.action === 'withdraw')).toBe(
+                true
+            );
         });
     });
 
@@ -1033,7 +1496,7 @@ describe('Consent Flow Contracts', () => {
             expect(withdrawnData.records).toEqual([]);
         });
 
-        it('returns one-time selected data while stale, but not after withdrawal', async () => {
+        it('returns one-time selected data while consumed, but not after withdrawal', async () => {
             const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
             });
@@ -1049,14 +1512,14 @@ describe('Consent Flow Contracts', () => {
                 terms: selectedTerms,
                 oneTime: true,
             });
-            expect((await getContractTermsByUri(termsUri))?.terms.status).toBe('stale');
+            expect((await getContractTermsByUri(termsUri))?.terms.status).toBe('consumed');
             const shared = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
             });
             expect(shared.records).toEqual([
                 expect.objectContaining({
                     termsUri,
-                    status: 'stale',
+                    status: 'consumed',
                     credentials: [{ category: 'Achievement', uri: 'achievement2' }],
                     personal: selectedTerms.read.personal,
                 }),
@@ -1088,12 +1551,20 @@ describe('Consent Flow Contracts', () => {
                             did: userBDid,
                         })
                     ).records[0]?.status
-                ).toBe('stale');
-                const model = target === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
-                await new QueryBuilder()
-                    .match({ model, identifier: 'record', where: { id: relationship[target].id } })
-                    .set("record.expiresAt = '2000-01-01T00:00:00.000Z'")
-                    .run();
+                ).toBe('consumed');
+                const expiredAt = '2000-01-01T00:00:00.000Z';
+                if (target === 'contract') {
+                    await seedStoredContractExpiry(
+                        relationship.contract.id,
+                        relationship.terms.consentedVersion ?? 1,
+                        expiredAt
+                    );
+                } else {
+                    await ConsentFlowTerms.update(
+                        { expiresAt: expiredAt },
+                        { where: { id: relationship.terms.id } }
+                    );
+                }
                 expect(
                     (
                         await userA.clients.fullAuth.contracts.getConsentedDataForDid({
@@ -1104,13 +1575,13 @@ describe('Consent Flow Contracts', () => {
             }
         );
 
-        it('does not treat other stale terms as a one-time grant', async () => {
+        it('does not treat other consumed terms as a one-time grant', async () => {
             const initial = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
             });
             const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
             await ConsentFlowTerms.update(
-                { status: 'stale' },
+                { status: 'consumed' },
                 { where: { id: relationship.terms.id } }
             );
             expect(
@@ -1259,8 +1730,6 @@ describe('Consent Flow Contracts', () => {
                     did: userBDid,
                 });
                 const relationship = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
-                const model = target === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
-                const id = relationship[target].id;
 
                 for (const [expiresAt, active] of [
                     [null, true],
@@ -1270,10 +1739,18 @@ describe('Consent Flow Contracts', () => {
                     ['2000-01-01T00:00:00.000Z', false],
                     ['not-a-date', false],
                 ] as const) {
-                    await new QueryBuilder(new BindParam({ expiresAt }))
-                        .match({ model, identifier: 'record', where: { id } })
-                        .set('record.expiresAt = $expiresAt')
-                        .run();
+                    if (target === 'contract') {
+                        await seedStoredContractExpiry(
+                            relationship.contract.id,
+                            relationship.terms.consentedVersion ?? 1,
+                            expiresAt
+                        );
+                    } else {
+                        await ConsentFlowTerms.update(
+                            { expiresAt },
+                            { where: { id: relationship.terms.id } }
+                        );
+                    }
                     const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                         did: userBDid,
                     });
@@ -1292,28 +1769,38 @@ describe('Consent Flow Contracts', () => {
             });
             const original = initial.records[0]!;
             const relationship = (await getContractTermsByUri(original.termsUri))!;
-            await ConsentFlowContract.update(
-                {
+            const changed = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: constructUri('contract', relationship.contract.id, 'localhost%3A3000'),
+                changes: {
                     reasonForAccessing: 'Personalized learning',
                     expiresAt: '2999-01-01T00:00:00.000Z',
                 },
-                { where: { id: relationship.contract.id } }
-            );
+                reason: 'The contract metadata was updated.',
+            });
             await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
                 uri: original.termsUri,
                 terms: normalAchievementOnlyTerms,
+                acceptVersion: changed.version,
             });
             const updated = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
             });
             expect(updated.records[0]).toMatchObject({
                 createdAt: original.createdAt,
-                contractUpdatedAt: relationship.contract.updatedAt,
+                contractUpdatedAt: (await getConsentFlowContractVersionRecord(
+                    relationship.contract.id,
+                    changed.version
+                ))!.createdAt,
                 contractExpiresAt: '2999-01-01T00:00:00.000Z',
                 reasonForAccessing: 'Personalized learning',
                 guardian: { required: false, approved: false },
                 terms: normalAchievementOnlyTerms,
             });
+            expect(
+                (await getTransactionsForTerms(relationship.terms.id, { limit: 100 })).find(
+                    transaction => transaction.action === 'consent'
+                )?.date
+            ).toBe(original.createdAt);
             expect(Date.parse(updated.records[0]!.date)).toBeGreaterThanOrEqual(
                 Date.parse(original.date)
             );
@@ -1405,23 +1892,24 @@ describe('Consent Flow Contracts', () => {
                 transactions.find(transaction => transaction.guardianApproval)?.guardianApproval
             ).toEqual(approval);
 
-            await ConsentFlowContract.update(
-                { updatedAt: '2999-01-01T00:00:00.000Z' },
-                { where: { id: relationship.contract.id } }
-            );
-            const revised = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
-                did: userBDid,
+            const changedContract = {
+                ...normalContract,
+                read: {
+                    ...normalContract.read,
+                    credentials: {
+                        ...normalContract.read.credentials,
+                        categories: {
+                            ...normalContract.read.credentials.categories,
+                            Transcript: { required: true },
+                        },
+                    },
+                },
+            };
+            await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: constructUri('contract', relationship.contract.id, 'localhost%3A3000'),
+                changes: { contract: changedContract },
+                reason: 'We need transcripts to personalize your progress report.',
             });
-            expect(revised.records[0]?.guardian).toEqual({
-                required: true,
-                approved: false,
-                approval,
-            });
-
-            await ConsentFlowContract.update(
-                { updatedAt: relationship.contract.updatedAt },
-                { where: { id: relationship.contract.id } }
-            );
             await Profile.delete({ detach: true, where: { profileId: 'userc' } });
             const unmanaged = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
                 did: userBDid,
@@ -1433,7 +1921,25 @@ describe('Consent Flow Contracts', () => {
             });
 
             const current = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
-            await updateTerms(current, { terms: normalAchievementOnlyTerms }, 'localhost%3A3000');
+            const acceptedTerms: ConsentFlowTermsType = structuredClone(normalAchievementOnlyTerms);
+            acceptedTerms.read.credentials.categories.Transcript = { sharing: true, shared: [] };
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: initial.records[0]!.termsUri,
+                    terms: acceptedTerms,
+                    acceptVersion: current.contract.currentVersion,
+                })
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'This consent requires approval from a current guardian',
+            });
+            // Legacy metadata may be absent; the original guardian approval must remain auditable.
+            await neogma.queryRunner.run(
+                `MATCH (terms:ConsentFlowTerms {id:$id})
+                 REMOVE terms.\`guardianApproval.guardianProfileId\`, terms.\`guardianApproval.guardianDid\`,
+                        terms.\`guardianApproval.approvedAt\`, terms.\`guardianApproval.contractUpdatedAt\``,
+                { id: relationship.terms.id }
+            );
             const cleared = (await getContractTermsByUri(initial.records[0]!.termsUri))!;
             expect(cleared.terms.guardianApproval).toBeUndefined();
             expect(await hasGuardianApprovalHistory(cleared.terms)).toBe(true);
@@ -1442,9 +1948,6 @@ describe('Consent Flow Contracts', () => {
             });
             expect(historical.records[0]?.guardian).toEqual({ required: true, approved: false });
             const history = await getTransactionsForTerms(relationship.terms.id, { limit: 10 });
-            expect(
-                history.find(transaction => transaction.action === 'update')?.guardianApproval
-            ).toBeUndefined();
             expect(
                 history.find(transaction => transaction.guardianApproval)?.guardianApproval
             ).toEqual(approval);
@@ -1902,69 +2405,58 @@ describe('Consent Flow Contracts', () => {
             ).rejects.toMatchObject({ code: 'CONFLICT' });
         });
 
-        it('should auto-issue boosts when consenting to a contract with auto-boosts', async () => {
-            await userA.clients.fullAuth.profile.registerSigningAuthority({
-                endpoint: 'http://localhost:5000/api',
-                name: 'mysa',
-                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
-            });
+        it.each([false, true])(
+            'auto-issues boosts for contracts with autoboosts when oneTime=%s',
+            async oneTime => {
+                await userA.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: 'http://localhost:5000/api',
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                });
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({
-                endpoint: 'http://localhost:5000/api',
-                name: 'mysa',
-            });
+                const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                    endpoint: 'http://localhost:5000/api',
+                    name: 'mysa',
+                });
+                const signingAuthority = {
+                    endpoint: sa!.signingAuthority.endpoint,
+                    name: sa!.relationship.name,
+                };
 
-            const signingAuthority = {
-                endpoint: sa!.signingAuthority.endpoint,
-                name: sa!.relationship.name,
-            };
+                const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                    category: 'Achievement',
+                    name: 'Auto-issued Boost',
+                });
+                const contractUri =
+                    await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: normalContract,
+                        name: 'Auto Boost Contract',
+                        autoboosts: [{ boostUri, signingAuthority }],
+                    });
 
-            // Create a boost
-            const boostUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testUnsignedBoost,
-                category: 'Achievement',
-                name: 'Auto-issued Boost',
-            });
+                const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                    oneTime,
+                });
+                const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                });
+                expect(result.records).toHaveLength(1);
+                expect(result.records[0]?.boostUri).toContain(boostUri.split(':').pop());
 
-            // Create a contract with the auto-boost
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
-                contract: normalContract,
-                name: 'Auto Boost Contract',
-                autoboosts: [
-                    {
-                        boostUri,
-                        signingAuthority,
-                    },
-                ],
-            });
-
-            // Consent to the contract
-            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: normalFullTerms,
-            });
-
-            // Check that a credential was automatically issued
-            const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
-                termsUri,
-            });
-
-            // Should have one auto-issued credential
-            expect(result.records).toHaveLength(1);
-            expect(result.records[0]?.boostUri).toContain(boostUri.split(':').pop());
-
-            // Check that the transaction history includes an auto-boost transaction
-            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
-                uri: termsUri,
-            });
-
-            // Should have at least 2 transactions (consent + auto-boost)
-            expect(transactions.records.length).toBeGreaterThanOrEqual(2);
-
-            // At least one transaction should be an auto-boost transaction
-            const hasAutoBoostTx = transactions.records.some(tx => tx.action === 'write');
-            expect(hasAutoBoostTx).toBeTruthy();
-        });
+                const transactions =
+                    await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                        uri: termsUri,
+                    });
+                expect(transactions.records.length).toBeGreaterThanOrEqual(2);
+                expect(transactions.records.some(tx => tx.action === 'write')).toBeTruthy();
+                expect((await getContractTermsByUri(termsUri))?.terms.status).toBe(
+                    oneTime ? 'consumed' : 'live'
+                );
+            }
+        );
 
         describe('first-consent auto-boost issuance dates', () => {
             // A malformed date seen on a production Boost template; DIDKit refuses to sign it.
@@ -2131,7 +2623,7 @@ describe('Consent Flow Contracts', () => {
             }
         });
 
-        it('should auto-issue boosts when updating terms for a contract with auto-boosts', async () => {
+        it('does not reissue the same autoboost when terms are updated repeatedly', async () => {
             await userA.clients.fullAuth.profile.registerSigningAuthority({
                 endpoint: 'http://localhost:5000/api',
                 name: 'mysa',
@@ -2187,30 +2679,34 @@ describe('Consent Flow Contracts', () => {
                 },
             });
 
-            // Check that another credential was automatically issued
+            // Updating terms cannot cause the same automatic boost to be issued again.
             const updatedResult = await userB.clients.fullAuth.contracts.getCredentialsForContract({
                 termsUri,
             });
-
-            // Should have one more credential than before
-            expect(updatedResult.records.length).toBeGreaterThan(initialCount);
-
-            // The latest credential should be from the same boost
+            expect(updatedResult.records).toHaveLength(initialCount);
             expect(updatedResult.records[0]?.boostUri).toContain(boostUri.split(':').pop());
 
-            // Check transaction history
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms: {
+                    ...normalFullTerms,
+                    read: { ...normalFullTerms.read, personal: { name: 'Updated again' } },
+                },
+            });
+            const repeatedResult = await userB.clients.fullAuth.contracts.getCredentialsForContract(
+                {
+                    termsUri,
+                }
+            );
+            expect(repeatedResult.records).toHaveLength(initialCount);
+
             const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
                 uri: termsUri,
             });
-
-            // Should have at least 3 transactions now (consent + auto-boost + update + auto-boost)
-            expect(transactions.records.length).toBeGreaterThanOrEqual(4);
-
-            // Should have at least two auto-boost transactions
             const autoBoostTxCount = transactions.records.filter(
                 tx => tx.action === 'write'
             ).length;
-            expect(autoBoostTxCount).toBeGreaterThanOrEqual(2);
+            expect(autoBoostTxCount).toBe(1);
         });
 
         it('should support multiple auto-boosts per contract', async () => {
@@ -2394,7 +2890,7 @@ describe('Consent Flow Contracts', () => {
             expect(terms.deniedWriters).toEqual(['userc']);
         });
 
-        it('should not auto-issue boosts from denied writers', async () => {
+        it('keeps owner autoboosts active when consent denies a writer', async () => {
             await userA.clients.fullAuth.profile.registerSigningAuthority({
                 endpoint: 'http://localhost:5000/api',
                 name: 'mysa',
@@ -2448,10 +2944,15 @@ describe('Consent Flow Contracts', () => {
                 autoboosts: [{ boostUri, signingAuthority }],
             });
 
-            await userC.clients.fullAuth.contracts.addAutoBoostsToContract({
-                contractUri,
-                autoboosts: [{ boostUri: boostUri2, signingAuthority: signingAuthority2 }],
-            });
+            await expect(
+                userC.clients.fullAuth.contracts.addAutoBoostsToContract({
+                    contractUri,
+                    autoboosts: [{ boostUri: boostUri2, signingAuthority: signingAuthority2 }],
+                })
+            ).resolves.toBe(true);
+            expect(
+                await userA.clients.fullAuth.contracts.getContractVersions({ uri: contractUri })
+            ).toHaveLength(2);
 
             // Consent to the contract
             const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
@@ -2481,7 +2982,7 @@ describe('Consent Flow Contracts', () => {
             expect(hasAutoBoostTx).toBeTruthy();
         });
 
-        it('should handle re-consenting to a contract, filtering auto-issued boosts based on new deniedWriters', async () => {
+        it('allows a writer legacy autoboost update through a new required version', async () => {
             // Setup: userA (owner) and userC (writer) can issue boosts
             // User A's SA
             await userA.clients.fullAuth.profile.registerSigningAuthority({
@@ -2532,43 +3033,48 @@ describe('Consent Flow Contracts', () => {
                     },
                 ],
             });
-            await userC.clients.fullAuth.contracts.addAutoBoostsToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
-                autoboosts: [
-                    {
-                        boostUri: boostC_Uri,
-                        signingAuthority: {
-                            endpoint: saC_Details.signingAuthority.endpoint,
-                            name: saC_Details.relationship.name,
-                        },
-                    },
-                ],
+                terms: normalFullTerms,
             });
-
-            // 1. Initial consent by userB (no denied writers)
-            const { termsUri: initialTermsUri } =
-                await userB.clients.fullAuth.contracts.consentToContract({
+            await expect(
+                userC.clients.fullAuth.contracts.addAutoBoostsToContract({
                     contractUri,
-                    terms: normalFullTerms, // No deniedWriters
-                });
-            const credentialsAfterInitialConsent =
-                await userB.clients.fullAuth.contracts.getCredentialsForContract({
-                    termsUri: initialTermsUri,
-                });
-            // Should have boosts from both A and C
-            expect(credentialsAfterInitialConsent.records).toHaveLength(2);
+                    autoboosts: [
+                        {
+                            boostUri: boostC_Uri,
+                            signingAuthority: {
+                                endpoint: saC_Details.signingAuthority.endpoint,
+                                name: saC_Details.relationship.name,
+                            },
+                        },
+                    ],
+                })
+            ).resolves.toBe(true);
             expect(
-                credentialsAfterInitialConsent.records.some(cred =>
-                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
-                )
-            ).toBeTruthy();
-            expect(
-                credentialsAfterInitialConsent.records.some(cred =>
-                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
-                )
-            ).toBeTruthy();
+                await userA.clients.fullAuth.contracts.getContractVersions({ uri: contractUri })
+            ).toHaveLength(2);
 
-            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: initialTermsUri });
+            const status = await userB.clients.fullAuth.contracts.getConsentStatus({
+                uri: contractUri,
+                profileId: 'userb',
+            });
+            expect(status.status).toBe('needs_reconsent');
+            expect(status.currentVersion).toBe(2);
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: normalFullTerms,
+                    acceptVersion: 2,
+                })
+            ).resolves.toBe(true);
+            const credentialsAfterUpdate =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({ termsUri });
+            expect(
+                credentialsAfterUpdate.records.map(credential => credential.boostUri).sort()
+            ).toEqual([boostA_Uri, boostC_Uri].sort());
+
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
 
             // 2. Re-consent by userB, denying userC
             const { termsUri: reconsentTermsUri } =
@@ -2583,18 +3089,10 @@ describe('Consent Flow Contracts', () => {
                     termsUri: reconsentTermsUri,
                 });
 
-            // Should now only have the boost from userA
-            expect(credentialsAfterReconsent.records).toHaveLength(3);
+            // Withdrawing or denying future writes does not erase already delivered credentials.
             expect(
-                credentialsAfterReconsent.records.filter(cred =>
-                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
-                ).length
-            ).toBe(2);
-            expect(
-                credentialsAfterReconsent.records.filter(cred =>
-                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
-                ).length
-            ).toBe(1);
+                credentialsAfterReconsent.records.map(credential => credential.boostUri).sort()
+            ).toEqual([boostA_Uri, boostC_Uri].sort());
         });
 
         it('should handle updating terms for a contract, filtering auto-issued boosts based on new deniedWriters', async () => {
@@ -2648,18 +3146,23 @@ describe('Consent Flow Contracts', () => {
                     },
                 ],
             });
-            await userC.clients.fullAuth.contracts.addAutoBoostsToContract({
-                contractUri,
-                autoboosts: [
-                    {
-                        boostUri: boostC_Uri,
-                        signingAuthority: {
-                            endpoint: saC_Details.signingAuthority.endpoint,
-                            name: saC_Details.relationship.name,
+            await expect(
+                userC.clients.fullAuth.contracts.addAutoBoostsToContract({
+                    contractUri,
+                    autoboosts: [
+                        {
+                            boostUri: boostC_Uri,
+                            signingAuthority: {
+                                endpoint: saC_Details.signingAuthority.endpoint,
+                                name: saC_Details.relationship.name,
+                            },
                         },
-                    },
-                ],
-            });
+                    ],
+                })
+            ).resolves.toBe(true);
+            expect(
+                await userA.clients.fullAuth.contracts.getContractVersions({ uri: contractUri })
+            ).toHaveLength(2);
 
             // 1. Initial consent by userB (no denied writers)
             const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
@@ -2668,7 +3171,7 @@ describe('Consent Flow Contracts', () => {
             });
             const credentialsAfterInitialConsent =
                 await userB.clients.fullAuth.contracts.getCredentialsForContract({ termsUri });
-            // Should have boosts from both A and C
+            // Both owner and designated-writer configurations are active for new consent.
             expect(credentialsAfterInitialConsent.records).toHaveLength(2);
 
             // 2. Update terms by userB, denying userC
@@ -2684,18 +3187,8 @@ describe('Consent Flow Contracts', () => {
                     termsUri,
                 });
 
-            // Should now only have the boost from userA
-            expect(credentialsAfterUpdate.records).toHaveLength(3);
-            expect(
-                credentialsAfterUpdate.records.filter(cred =>
-                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
-                ).length
-            ).toBe(2);
-            expect(
-                credentialsAfterUpdate.records.filter(cred =>
-                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
-                ).length
-            ).toBe(1);
+            // Updating terms must not re-issue already delivered automatic credentials.
+            expect(credentialsAfterUpdate.records).toHaveLength(2);
         });
     });
 
@@ -3484,7 +3977,7 @@ describe('Consent Flow Contracts', () => {
 
         beforeEach(async () => {
             vi.useFakeTimers();
-            vi.setSystemTime(new Date(2024, 3, 21));
+            vi.setSystemTime(new Date(2999, 3, 21));
 
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
@@ -3496,7 +3989,7 @@ describe('Consent Flow Contracts', () => {
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'a',
-                expiresAt: '2999-01-01T00:00:00.000Z', // New consent uses Neo4j's real clock.
+                expiresAt: '3000-01-01T00:00:00.000Z', // New consent uses Neo4j's real clock.
             });
             const { termsUri: _termsUri } =
                 await userB.clients.fullAuth.contracts.consentToContract({
@@ -3505,10 +3998,18 @@ describe('Consent Flow Contracts', () => {
                 });
             termsUri = _termsUri;
             // Verification's fake JS clock can still inspect an existing historical consent.
-            await ConsentFlowContract.update(
-                { expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString() },
-                { where: { id: contractUri.split(':').at(-1)! } }
-            );
+            const expiryVersion = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { expiresAt: new Date(Date.UTC(2999, 3, 25)).toISOString() },
+                reason: 'The contract expiry was updated.',
+            });
+            if (expiryVersion.kind === 'requires_consent') {
+                await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: minimalTerms,
+                    acceptVersion: expiryVersion.version,
+                });
+            }
         });
 
         afterAll(async () => {
@@ -3522,22 +4023,22 @@ describe('Consent Flow Contracts', () => {
             await ConsentFlowTransaction.delete({ detach: true, where: {} });
         });
 
-        it('should not allow you to verify consent without full auth', async () => {
+        it('returns consent state for public and authenticated callers', async () => {
             await expect(
                 noAuthClient.contracts.verifyConsent({ uri: contractUri, profileId: 'userb' })
-            ).resolves.not.toThrow();
+            ).resolves.toBe(true);
             await expect(
                 userA.clients.partialAuth.contracts.verifyConsent({
                     uri: contractUri,
                     profileId: 'userb',
                 })
-            ).resolves.not.toThrow();
+            ).resolves.toBe(true);
             await expect(
                 userA.clients.fullAuth.contracts.verifyConsent({
                     uri: contractUri,
                     profileId: 'userb',
                 })
-            ).resolves.not.toThrow();
+            ).resolves.toBe(true);
         });
 
         it('should actually verify consent', async () => {
@@ -3578,18 +4079,27 @@ describe('Consent Flow Contracts', () => {
                 {
                     contract: minimalContract,
                     name: 'b',
-                    expiresAt: '2999-01-01T00:00:00.000Z',
+                    expiresAt: '3000-01-01T00:00:00.000Z',
                 }
             );
 
-            await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri: newContractUri,
-                terms: minimalTerms,
+            const { termsUri: newTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: newContractUri,
+                    terms: minimalTerms,
+                });
+            const expiryVersion = await userA.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: newContractUri,
+                changes: { expiresAt: new Date(2999, 4, 19).toISOString() },
+                reason: 'The contract expiry was updated.',
             });
-            await ConsentFlowContract.update(
-                { expiresAt: new Date(2024, 4, 19).toISOString() },
-                { where: { id: newContractUri.split(':').at(-1)! } }
-            );
+            if (expiryVersion.kind === 'requires_consent') {
+                await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: newTermsUri,
+                    terms: minimalTerms,
+                    acceptVersion: expiryVersion.version,
+                });
+            }
 
             expect(
                 await userA.clients.fullAuth.contracts.verifyConsent({
@@ -3598,7 +4108,7 @@ describe('Consent Flow Contracts', () => {
                 })
             ).toBeTruthy();
 
-            vi.setSystemTime(new Date(2024, 5, 21));
+            vi.setSystemTime(new Date(2999, 5, 21));
 
             expect(
                 await userA.clients.fullAuth.contracts.verifyConsent({
@@ -3619,7 +4129,7 @@ describe('Consent Flow Contracts', () => {
             await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri: newContractUri,
                 terms: minimalTerms,
-                expiresAt: new Date(2024, 4, 19).toISOString(),
+                expiresAt: new Date(2999, 4, 19).toISOString(),
             });
 
             expect(
@@ -3629,7 +4139,7 @@ describe('Consent Flow Contracts', () => {
                 })
             ).toBeTruthy();
 
-            vi.setSystemTime(new Date(2024, 5, 21));
+            vi.setSystemTime(new Date(2999, 5, 21));
 
             expect(
                 await userA.clients.fullAuth.contracts.verifyConsent({
@@ -4641,10 +5151,7 @@ describe('Consent Flow Contracts', () => {
                         Achievement: ['credential:123'],
                     },
                 })
-            ).rejects.toMatchObject({
-                code: 'FORBIDDEN',
-                message: expect.stringContaining('withdrawn'),
-            });
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         });
 
         it('should deduplicate credentials when syncing', async () => {
@@ -5208,7 +5715,10 @@ describe('Consent Flow Contracts', () => {
             it('should remove all specified autoboosts even if some in the list do not exist on the contract', async () => {
                 await userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
                     contractUri,
-                    boostUris: [boost1Uri, 'urn:lc:boost:zNonExistentBoostForRemoval'],
+                    boostUris: [
+                        boost1Uri,
+                        constructUri('boost', 'not-on-this-contract', 'localhost%3A3000'),
+                    ],
                 });
                 const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
                     uri: contractUri,

@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -43,9 +43,11 @@ import type {
     CredentialRefreshVersionNode,
 } from 'types/credential-refresh';
 
-import { createCredentialIssuedViaContractRelationship } from '@accesslayer/credential/relationships/create';
-import type { CredentialInstance } from '@models';
+import { ConsentFlowTransaction, Credential } from '@models';
 import type { DbTermsType } from 'types/consentflowcontract';
+import { BindParam, QueryBuilder } from 'neogma';
+import { runAudienceMutation } from '@accesslayer/consentflowcontract/relationships/recipients';
+import { termsReferralSnapshotCypher } from './consent-referral.helpers';
 
 import { createDagJweForRecipients, getLearnCard } from './learnCard.helpers';
 import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
@@ -259,28 +261,6 @@ export const peekCredentialRefreshInitialBinding = async (params: {
     };
 };
 
-/**
- * Idempotently links a managed root credential to the approved consent-flow contract
- * terms it was issued through, on both fresh binds and resume paths.
- */
-const ensureCredentialIssuedViaContractRelationship = async (
-    credentialNodeId: string,
-    terms: DbTermsType
-): Promise<void> => {
-    const existing = await neogma.queryRunner.run(
-        `MATCH (root:Credential {id: $nodeId})-[:ISSUED_VIA_TRANSACTION]->()
-         RETURN 1 AS one LIMIT 1`,
-        { nodeId: credentialNodeId }
-    );
-
-    if (existing.records.length > 0) return;
-
-    await createCredentialIssuedViaContractRelationship(
-        { id: credentialNodeId } as unknown as CredentialInstance,
-        terms
-    );
-};
-
 /** Collects the subject identifiers of a credential (single object or array form). */
 const getCredentialSubjectIds = (credential: VC): string[] => {
     const subjects = Array.isArray(credential.credentialSubject)
@@ -410,34 +390,90 @@ const ensureInitialRefreshRelationships = async (params: {
     boostId?: string;
     activityId?: string;
     integrationId?: string;
+    contractTerms?: DbTermsType;
 }): Promise<string | undefined> => {
-    const { refreshId, issuerProfileId, holderProfileId, boostId, activityId, integrationId } =
-        params;
+    const {
+        refreshId,
+        issuerProfileId,
+        holderProfileId,
+        boostId,
+        activityId,
+        integrationId,
+        contractTerms,
+    } = params;
     const now = new Date().toISOString();
-    const result = await neogma.queryRunner.run(
-        `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
-         WHERE coalesce(refresh.boostId, '') = coalesce($boostId, '')
-         MATCH (issuer:Profile {profileId: $issuerProfileId})
-         OPTIONAL MATCH (boost:Boost {id: $boostId})
-         MERGE (issuer)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root)
-         ON CREATE SET sent.date = $now
-         SET sent.activityId = coalesce(sent.activityId, $activityId),
-             sent.integrationId = coalesce(sent.integrationId, $integrationId)
-         FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
-             MERGE (root)-[:INSTANCE_OF]->(boost)
-         )
-         RETURN root.id AS rootId`,
-        {
-            refreshId,
-            issuerProfileId,
-            holderProfileId,
-            boostId: boostId ?? null,
-            activityId: activityId ?? null,
-            integrationId: integrationId ?? null,
-            now,
-        }
-    );
-
+    const values = {
+        refreshId,
+        issuerProfileId,
+        holderProfileId,
+        boostId: boostId ?? null,
+        activityId: activityId ?? null,
+        integrationId: integrationId ?? null,
+        now,
+    };
+    const query = contractTerms
+        ? new QueryBuilder(
+              new BindParam({
+                  ...values,
+                  termsId: contractTerms.id,
+                  expectedVersion: contractTerms.consentedVersion,
+                  transactionId: randomUUID(),
+              })
+          ).raw(
+              `MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract:ConsentFlowContract)
+               SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
+               WITH terms, contract
+               WHERE coalesce(contract.status, 'active') <> 'retired'
+                 AND contract.currentVersion = $expectedVersion
+                 AND terms.consentedVersion = $expectedVersion
+                 AND (terms.status = 'live' OR (terms.status = 'consumed' AND terms.oneTime = true
+                   AND EXISTS {
+                     MATCH (:CredentialRefresh {refreshId:$refreshId})-[:ROOT]->(:Credential)
+                       -[:${Credential.getRelationshipByAlias('issuedViaTransaction').name}]->(:ConsentFlowTransaction)
+                       -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
+                   }))
+                 AND (terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' OR datetime(terms.expiresAt) > datetime.realtime())
+                 AND (contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' OR datetime(contract.expiresAt) > datetime.realtime())
+                 AND NOT $issuerProfileId IN coalesce(terms['terms.deniedWriters'], [])
+                 AND EXISTS { MATCH (:Profile {profileId:$holderProfileId})-[:CREATED_BY]->(terms) }
+               MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+               WHERE coalesce(refresh.boostId, '') = coalesce($boostId, '')
+               MATCH (issuer:Profile {profileId: $issuerProfileId})
+               OPTIONAL MATCH (boost:Boost {id: $boostId})
+               WITH terms, root, issuer, boost
+               WHERE boost IS NULL OR boost.category IS NULL OR terms['terms.write.credentials.categories.' + boost.category] = true
+               MERGE (issuer)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root)
+               ON CREATE SET sent.date = $now
+               SET sent.activityId = coalesce(sent.activityId, $activityId),
+                   sent.integrationId = coalesce(sent.integrationId, $integrationId)
+               FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
+                   MERGE (root)-[:INSTANCE_OF]->(boost)
+               )
+               OPTIONAL MATCH (root)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name}]->(existing:ConsentFlowTransaction)-[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
+               WITH root, terms, existing
+               FOREACH (_ IN CASE WHEN existing IS NULL THEN [1] ELSE [] END |
+                   CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:'write', date:$now, boostId:$boostId})
+                       -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
+                   CREATE (root)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$now}]->(transaction)
+                   ${termsReferralSnapshotCypher()}
+               )
+               RETURN root.id AS rootId`
+          )
+        : new QueryBuilder(new BindParam(values)).raw(
+              `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})-[:ROOT]->(root:Credential)
+               WHERE coalesce(refresh.boostId, '') = coalesce($boostId, '')
+               MATCH (issuer:Profile {profileId: $issuerProfileId})
+               OPTIONAL MATCH (boost:Boost {id: $boostId})
+               MERGE (issuer)-[sent:CREDENTIAL_SENT {to: $holderProfileId}]->(root)
+               ON CREATE SET sent.date = $now
+               SET sent.activityId = coalesce(sent.activityId, $activityId),
+                   sent.integrationId = coalesce(sent.integrationId, $integrationId)
+               FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
+                   MERGE (root)-[:INSTANCE_OF]->(boost)
+               )
+               RETURN root.id AS rootId`
+          );
+    const result = contractTerms ? await runAudienceMutation(query) : await query.run();
     return result.records[0]?.get('rootId') ?? undefined;
 };
 
@@ -648,7 +684,6 @@ export const sendRefreshableCredential = async (
             credentialStatusDigest,
             boost?.id
         );
-
         const rootId = await ensureInitialRefreshRelationships({
             refreshId,
             issuerProfileId: issuerProfile.profileId,
@@ -656,19 +691,16 @@ export const sendRefreshableCredential = async (
             boostId: boost?.id,
             activityId,
             integrationId,
+            contractTerms,
         });
-
         if (!rootId) {
             throw new TRPCError({
-                code: 'CONFLICT',
-                message: 'Credential refresh initial delivery could not be resumed',
+                code: contractTerms ? 'FORBIDDEN' : 'CONFLICT',
+                message: contractTerms
+                    ? 'User has not yet approved the latest version of this contract'
+                    : 'Credential refresh initial delivery could not be resumed',
             });
         }
-
-        if (contractTerms) {
-            await ensureCredentialIssuedViaContractRelationship(rootId, contractTerms);
-        }
-
         const uri = getManagedCredentialUri(rootId, domain);
         const initialNotificationSuppressed = await ensureInitialNotificationPolicy(
             refreshId,
@@ -681,7 +713,6 @@ export const sendRefreshableCredential = async (
             holderProfile,
             initialNotificationSuppressed,
         });
-
         return { uri, receipt: buildReceipt() };
     }
 
@@ -700,52 +731,104 @@ export const sendRefreshableCredential = async (
     let boundRecordsLength = 0;
 
     try {
-        const bound = await neogma.queryRunner.run(
-            `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
-         WHERE NOT EXISTS { MATCH (refresh)-[:ROOT]->(:Credential) }
-         MATCH (root:Credential {id: $rootCredentialNodeId})
-         MATCH (issuer:Profile {profileId: $issuerProfileId})
-         OPTIONAL MATCH (boost:Boost {id: $boostId})
-         CREATE (refresh)-[:ROOT]->(root)
-         CREATE (refresh)-[:HEAD]->(root)
-         CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, date: $now, activityId: $activityId, integrationId: $integrationId}]->(root)
-         FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
-             CREATE (root)-[:INSTANCE_OF]->(boost)
-         )
-         SET root.refreshId = $refreshId,
-             root.version = 1,
-             root.refreshVersionKey = $versionKey,
-             root.publishedAt = $now,
-             root.signingMode = 'issuer-signed',
-             refresh.issuerDid = $credentialIssuerDid,
-             refresh.materialDigest = $materialDigest,
-             refresh.rootMaterialDigest = $materialDigest,
-             refresh.credentialStatusDigest = $credentialStatusDigest,
-             refresh.credentialSubjectDigest = $credentialSubjectDigest,
-             refresh.boostId = $boostId,
-             refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
-             refresh.lastPublishedAt = $now,
-             refresh.updatedAt = $now
-         RETURN refresh`,
-            {
-                refreshId,
-                rootCredentialNodeId: credentialInstance.id,
-                issuerProfileId: issuerProfile.profileId,
-                holderProfileId: holderProfile.profileId,
-                boostId: boost?.id ?? null,
-                activityId: activityId ?? null,
-                integrationId: integrationId ?? null,
-                versionKey: `${refreshId}:1`,
-                now,
-                credentialIssuerDid,
-                materialDigest: rootMaterialDigest,
-                credentialSubjectDigest: computeCredentialSubjectDigest(
-                    credential.credentialSubject
-                ),
-                credentialStatusDigest,
-                initialNotificationSuppressed: skipNotification,
-            }
-        );
+        const bindingParams = {
+            refreshId,
+            rootCredentialNodeId: credentialInstance.id,
+            issuerProfileId: issuerProfile.profileId,
+            holderProfileId: holderProfile.profileId,
+            boostId: boost?.id ?? null,
+            activityId: activityId ?? null,
+            integrationId: integrationId ?? null,
+            versionKey: `${refreshId}:1`,
+            now,
+            credentialIssuerDid,
+            materialDigest: rootMaterialDigest,
+            credentialSubjectDigest: computeCredentialSubjectDigest(credential.credentialSubject),
+            credentialStatusDigest,
+            initialNotificationSuppressed: skipNotification,
+        };
+        const bindQuery = contractTerms
+            ? new QueryBuilder(
+                  new BindParam({
+                      ...bindingParams,
+                      termsId: contractTerms.id,
+                      expectedVersion: contractTerms.consentedVersion,
+                      transactionId: randomUUID(),
+                  })
+              ).raw(
+                  `MATCH (terms:ConsentFlowTerms {id:$termsId})-[:CONSENTS_TO]->(contract:ConsentFlowContract)
+                   SET contract.audienceLock = coalesce(contract.audienceLock, 0) + 1
+                   WITH terms, contract
+                   WHERE coalesce(contract.status, 'active') <> 'retired'
+                     AND contract.currentVersion = $expectedVersion
+                     AND terms.consentedVersion = $expectedVersion
+                     AND terms.status = 'live'
+                     AND (terms.expiresAt IS NULL OR trim(terms.expiresAt) = '' OR datetime(terms.expiresAt) > datetime.realtime())
+                     AND (contract.expiresAt IS NULL OR trim(contract.expiresAt) = '' OR datetime(contract.expiresAt) > datetime.realtime())
+                     AND NOT $issuerProfileId IN coalesce(terms['terms.deniedWriters'], [])
+                     AND EXISTS { MATCH (:Profile {profileId:$holderProfileId})-[:CREATED_BY]->(terms) }
+                   MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                   WHERE NOT EXISTS { MATCH (refresh)-[:ROOT]->(:Credential) }
+                   MATCH (root:Credential {id: $rootCredentialNodeId})
+                   MATCH (issuer:Profile {profileId: $issuerProfileId})
+                   OPTIONAL MATCH (boost:Boost {id: $boostId})
+                   WITH terms, refresh, root, issuer, boost
+                   WHERE boost IS NULL OR boost.category IS NULL OR terms['terms.write.credentials.categories.' + boost.category] = true
+                   CREATE (refresh)-[:ROOT]->(root)
+                   CREATE (refresh)-[:HEAD]->(root)
+                   CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, date: $now, activityId: $activityId, integrationId: $integrationId}]->(root)
+                   FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
+                       CREATE (root)-[:INSTANCE_OF]->(boost)
+                   )
+                   CREATE (transaction:ConsentFlowTransaction {id:$transactionId, action:'write', date:$now, boostId:$boostId})
+                       -[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(terms)
+                   ${termsReferralSnapshotCypher()}
+                   CREATE (root)-[:${Credential.getRelationshipByAlias('issuedViaTransaction').name} {date:$now}]->(transaction)
+                   SET root.refreshId = $refreshId,
+                       root.version = 1,
+                       root.refreshVersionKey = $versionKey,
+                       root.publishedAt = $now,
+                       root.signingMode = 'issuer-signed',
+                       refresh.issuerDid = $credentialIssuerDid,
+                       refresh.materialDigest = $materialDigest,
+                       refresh.rootMaterialDigest = $materialDigest,
+                       refresh.credentialStatusDigest = $credentialStatusDigest,
+                       refresh.credentialSubjectDigest = $credentialSubjectDigest,
+                       refresh.boostId = $boostId,
+                       refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
+                       refresh.lastPublishedAt = $now,
+                       refresh.updatedAt = $now
+                   RETURN refresh`
+              )
+            : new QueryBuilder(new BindParam(bindingParams)).raw(
+                  `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                   WHERE NOT EXISTS { MATCH (refresh)-[:ROOT]->(:Credential) }
+                   MATCH (root:Credential {id: $rootCredentialNodeId})
+                   MATCH (issuer:Profile {profileId: $issuerProfileId})
+                   OPTIONAL MATCH (boost:Boost {id: $boostId})
+                   CREATE (refresh)-[:ROOT]->(root)
+                   CREATE (refresh)-[:HEAD]->(root)
+                   CREATE (issuer)-[:CREDENTIAL_SENT {to: $holderProfileId, date: $now, activityId: $activityId, integrationId: $integrationId}]->(root)
+                   FOREACH (_ IN CASE WHEN boost IS NULL THEN [] ELSE [1] END |
+                       CREATE (root)-[:INSTANCE_OF]->(boost)
+                   )
+                   SET root.refreshId = $refreshId,
+                       root.version = 1,
+                       root.refreshVersionKey = $versionKey,
+                       root.publishedAt = $now,
+                       root.signingMode = 'issuer-signed',
+                       refresh.issuerDid = $credentialIssuerDid,
+                       refresh.materialDigest = $materialDigest,
+                       refresh.rootMaterialDigest = $materialDigest,
+                       refresh.credentialStatusDigest = $credentialStatusDigest,
+                       refresh.credentialSubjectDigest = $credentialSubjectDigest,
+                       refresh.boostId = $boostId,
+                       refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
+                       refresh.lastPublishedAt = $now,
+                       refresh.updatedAt = $now
+                   RETURN refresh`
+              );
+        const bound = contractTerms ? await runAudienceMutation(bindQuery) : await bindQuery.run();
 
         boundRecordsLength = bound.records.length;
     } catch (error) {
@@ -769,17 +852,12 @@ export const sendRefreshableCredential = async (
 
         if (!concurrentlyBoundRoot) {
             throw new TRPCError({
-                code: 'CONFLICT',
-                message: 'Credential refresh was bound concurrently; retry initial delivery',
+                code: contractTerms ? 'FORBIDDEN' : 'CONFLICT',
+                message: contractTerms
+                    ? 'User has not yet approved the latest version of this contract'
+                    : 'Credential refresh was bound concurrently; retry initial delivery',
             });
         }
-
-        assertInitialCredentialMatches(
-            concurrentlyBoundRoot,
-            rootMaterialDigest,
-            credentialStatusDigest,
-            boost?.id
-        );
 
         const rootId = await ensureInitialRefreshRelationships({
             refreshId,
@@ -788,19 +866,16 @@ export const sendRefreshableCredential = async (
             boostId: boost?.id,
             activityId,
             integrationId,
+            contractTerms,
         });
-
         if (!rootId) {
             throw new TRPCError({
-                code: 'CONFLICT',
-                message: 'Credential refresh initial delivery could not be resumed',
+                code: contractTerms ? 'FORBIDDEN' : 'CONFLICT',
+                message: contractTerms
+                    ? 'User has not yet approved the latest version of this contract'
+                    : 'Credential refresh initial delivery could not be resumed',
             });
         }
-
-        if (contractTerms) {
-            await ensureCredentialIssuedViaContractRelationship(rootId, contractTerms);
-        }
-
         const uri = getManagedCredentialUri(rootId, domain);
         const initialNotificationSuppressed = await ensureInitialNotificationPolicy(
             refreshId,
@@ -813,13 +888,10 @@ export const sendRefreshableCredential = async (
             holderProfile,
             initialNotificationSuppressed,
         });
-
         return { uri, receipt: buildReceipt() };
     }
 
-    if (contractTerms) {
-        await ensureCredentialIssuedViaContractRelationship(credentialInstance.id, contractTerms);
-    }
+    // Contract-linked root history was committed atomically with the root binding.
 
     const uri = getManagedCredentialUri(credentialInstance.id, domain);
     const initialNotificationSuppressed = await ensureInitialNotificationPolicy(

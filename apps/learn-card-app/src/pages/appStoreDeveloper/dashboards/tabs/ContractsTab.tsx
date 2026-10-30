@@ -1,11 +1,14 @@
 import * as m from '../../../../paraglide/messages.js';
 import { useLocale } from '../../../../i18n';
 import React, { useState, useMemo } from 'react';
-import { FileText, Copy, Check, Shield, Send, Info } from 'lucide-react';
+import { FileText, Copy, Check, Shield, Send, Info, FilePenLine } from 'lucide-react';
 import { Clipboard } from '@capacitor/clipboard';
 import type { LCNIntegration } from '@learncard/types';
 
 import { useToast } from 'learn-card-base/hooks/useToast';
+import { ModalTypes, useModal } from 'learn-card-base';
+import ContractUpdateModal from '../../components/ContractUpdateModal';
+import { mDynamic } from '../../../../i18n/mDynamic';
 import type { EmbedAppGuideConfig, GuideState } from '../../guides/types';
 
 interface ConfiguredContract {
@@ -22,6 +25,10 @@ interface ContractsTabProps {
 
 export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
     const { presentToast } = useToast();
+    const { newModal } = useModal({
+        desktop: ModalTypes.Center,
+        mobile: ModalTypes.Center,
+    });
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     // ============================================================
@@ -153,8 +160,9 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
             ) : (
                 <div className="space-y-v3-4">
                     {configuredContracts.map(contract => (
-                        <div
+                        <section
                             key={contract.uri}
+                            aria-label={contract.name}
                             className="p-4 border border-gray-200 rounded-xl bg-white hover:border-gray-300 transition-colors"
                         >
                             <div className="flex items-start justify-between gap-4">
@@ -206,7 +214,30 @@ export const ContractsTab: React.FC<ContractsTabProps> = ({ integration }) => {
                                     )}
                                 </button>
                             </div>
-                        </div>
+                            <div className="mt-4 flex justify-end border-t border-grayscale-200 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        newModal(
+                                            <ContractUpdateModal contractUri={contract.uri} />,
+                                            {
+                                                hideButton: true,
+                                                sectionClassName:
+                                                    'max-w-[720px]! flex! flex-col! overflow-hidden!',
+                                            },
+                                            {
+                                                desktop: ModalTypes.Center,
+                                                mobile: ModalTypes.Center,
+                                            }
+                                        )
+                                    }
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 sm:w-auto"
+                                >
+                                    <FilePenLine aria-hidden className="h-4 w-4" />
+                                    {mDynamic('consentUpdate.editor.title')}
+                                </button>
+                            </div>
+                        </section>
                     ))}
 
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">

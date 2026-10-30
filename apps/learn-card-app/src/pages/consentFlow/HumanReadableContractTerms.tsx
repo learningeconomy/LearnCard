@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConsentFlowContractDetails } from '@learncard/types';
-import { isSupportedPersonalField } from '../../helpers/contract.helpers';
+import { isSupportedPersonalField } from '../../helpers/consentPersonalFields';
 import * as m from '../../paraglide/messages.js';
 import TransP from '../../i18n/TransP';
 import { getLocale } from '../../paraglide/runtime.js';

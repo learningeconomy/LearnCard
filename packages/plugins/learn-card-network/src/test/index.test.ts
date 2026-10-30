@@ -360,6 +360,45 @@ describe('connection prompt methods', () => {
     });
 });
 
+describe('updateContract patch shapes', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it.each(['read', 'write'] as const)(
+        'rejects overlapping %s patches without a server mutation',
+        async area => {
+            const mutate = vi.fn();
+            const client = {
+                ...getMockClient(),
+                contracts: { updateConsentFlowContract: { mutate } },
+            };
+            vi.mocked(getBrainClient).mockResolvedValue(client as never);
+            const learnCard = getMockLearnCard();
+            const plugin = await getLearnCardNetworkPlugin(
+                learnCard,
+                'https://network.example/trpc'
+            );
+
+            await expect(
+                plugin.methods?.updateContract(learnCard, 'contract:1', {
+                    [area]: {
+                        credentials: { categories: { Transcript: { required: true } } },
+                        personal: {},
+                    },
+                    contract: {
+                        [area]: {
+                            credentials: { categories: { Certificate: { required: true } } },
+                            personal: {},
+                        },
+                    },
+                })
+            ).rejects.toThrow(
+                'Contract read/write updates must use either the top-level or nested contract shape'
+            );
+            expect(mutate).not.toHaveBeenCalled();
+        }
+    );
+});
+
 describe('credential refresh methods', () => {
     beforeEach(() => {
         vi.clearAllMocks();

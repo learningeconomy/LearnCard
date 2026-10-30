@@ -180,6 +180,7 @@ const ConsentFlowSyncCard: React.FC<ConsentFlowSyncCardProps> = ({
                     )}
                     <button
                         onClick={() => {
+                            if (!contractDetails) return;
                             newModal(
                                 <ConsentFlowEditAccess
                                     contractDetails={contractDetails}

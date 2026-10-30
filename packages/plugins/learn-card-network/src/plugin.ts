@@ -2379,18 +2379,27 @@ export async function getLearnCardNetworkPlugin(
                 return client.contracts.createConsentFlowContract.mutate(contract);
             },
 
-            addAutoBoostsToContract: async (_learnCard, contractUri, autoboosts) => {
+            updateContract: async (_learnCard, uri, changes, options = {}) => {
+                const { read, write, contract, ...details } = changes;
+                if ((read && contract?.read) || (write && contract?.write)) {
+                    throw new Error(
+                        'Contract read/write updates must use either the top-level or nested contract shape, not both.'
+                    );
+                }
                 await ensureUser();
-
-                return client.contracts.addAutoBoostsToContract.mutate({ contractUri, autoboosts });
-            },
-
-            removeAutoBoostsFromContract: async (_learnCard, contractUri, boostUris) => {
-                await ensureUser();
-
-                return client.contracts.removeAutoBoostsFromContract.mutate({
-                    contractUri,
-                    boostUris,
+                return client.contracts.updateConsentFlowContract.mutate({
+                    uri,
+                    changes: {
+                        ...details,
+                        ...((contract || read || write) && {
+                            contract: {
+                                ...contract,
+                                ...(read && { read }),
+                                ...(write && { write }),
+                            },
+                        }),
+                    },
+                    ...options,
                 });
             },
 
@@ -2404,6 +2413,15 @@ export async function getLearnCardNetworkPlugin(
             },
             getContract: async (_learnCard, uri) => {
                 return client.contracts.getConsentFlowContract.query({ uri });
+            },
+            getContractVersions: async (_learnCard, uri) => {
+                await ensureUser();
+                return client.contracts.getContractVersions.query({ uri });
+            },
+
+            getConsentStatus: async (_learnCard, uri, profileId) => {
+                await ensureUser();
+                return client.contracts.getConsentStatus.query({ uri, profileId });
             },
 
             getContracts: async (_learnCard, options) => {
@@ -2490,6 +2508,15 @@ export async function getLearnCardNetworkPlugin(
                     terms,
                     expiresAt,
                     oneTime,
+                    audienceVersion,
+                });
+            },
+            acceptContractUpdate: async (_learnCard, uri, { version, terms, audienceVersion }) => {
+                await ensureUser();
+                return client.contracts.updateConsentedContractTerms.mutate({
+                    uri,
+                    terms,
+                    acceptVersion: version,
                     audienceVersion,
                 });
             },

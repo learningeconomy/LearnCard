@@ -147,7 +147,9 @@ const PrivacySettingsPage: React.FC = () => {
     const contracts = useMemo(
         () =>
             [...(consentedContracts ?? [])]
-                .filter(contract => contract?.status !== 'withdrawn')
+                .filter(
+                    contract => contract?.status !== 'withdrawn' && contract?.status !== 'consumed'
+                )
                 .sort((a, b) => {
                     const aUpdatedAt = new Date(
                         a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0

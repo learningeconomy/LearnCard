@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
     },
     contract: {
         uri: 'lc:network:localhost%3A4000/trpc:contract:one',
+        version: 1,
         name: 'Partner services',
         createdAt: '2026-10-02T00:00:00.000Z',
         updatedAt: '2026-10-02T00:00:00.000Z',

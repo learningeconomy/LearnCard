@@ -52,9 +52,10 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
         name: 'Delegated AutoBoost encryption',
         writers: ['testc'],
     });
-    await writer.invoke.addAutoBoostsToContract(contractUri, [
-        { boostUri, signingAuthority: { endpoint: sa.endpoint, name: sa.name } },
-    ]);
+    await writer.invoke.getLCNClient().contracts.addAutoBoostsToContract.mutate({
+        contractUri,
+        autoboosts: [{ boostUri, signingAuthority: { endpoint: sa.endpoint, name: sa.name } }],
+    });
     const { termsUri } = await student.invoke.consentToContract(contractUri, {
         terms: normalFullTerms,
     });
@@ -83,9 +84,13 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
     const { termsUri: reconsentedTermsUri } = await student.invoke.consentToContract(contractUri, {
         terms: normalFullTerms,
     });
-    await assertNewCredentialReaders(reconsentedTermsUri);
+    expect(
+        (await student.invoke.getCredentialsForContract(reconsentedTermsUri)).records
+    ).toHaveLength(1);
     await student.invoke.updateContractTerms(reconsentedTermsUri, { terms: normalFullTerms });
-    await assertNewCredentialReaders(reconsentedTermsUri);
+    expect(
+        (await student.invoke.getCredentialsForContract(reconsentedTermsUri)).records
+    ).toHaveLength(1);
 });
 
 test('SA issuance stores encrypted credentials and supports claim and revocation', async () => {

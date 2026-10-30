@@ -90,7 +90,7 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
     const { initWallet } = useWallet();
     const [refreshedContract, setRefreshedContract] = useState<ConsentFlowContractDetails>();
     const contractDetails =
-        refreshedContract?.uri === initialContractDetails?.uri
+        refreshedContract && refreshedContract.uri === initialContractDetails?.uri
             ? refreshedContract
             : initialContractDetails;
     const { presentToast } = useToast();
@@ -289,7 +289,17 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 setStep(ConsentFlowStep.confirmation);
                 return;
             }
-
+            const isApprovalUpdateRequired =
+                data &&
+                typeof data === 'object' &&
+                'code' in data &&
+                data.code === 'FORBIDDEN' &&
+                message === 'User has not yet approved the latest version of this contract';
+            if (isApprovalUpdateRequired && contractDetails?.uri) {
+                closeAllModals();
+                history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);
+                return;
+            }
             const isGuardianApprovalRequired =
                 data &&
                 typeof data === 'object' &&

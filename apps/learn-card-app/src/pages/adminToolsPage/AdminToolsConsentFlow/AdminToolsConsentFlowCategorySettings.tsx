@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { IonCheckbox, IonCol } from '@ionic/react';
+import { IonCol } from '@ionic/react';
 
-import { ConsentFlowContractDetails } from '@learncard/types';
+import type { ConsentFlowContract } from '@learncard/types';
 import {
     BoostCategoryOptionsEnum,
     CredentialCategoryEnum,
@@ -60,18 +60,18 @@ const consentFlowCategorySettingOptions: ConsentFlowCategorySettingOption[] = [
 ];
 
 const AdminToolsConsentFlowCategorySettings: React.FC<{
-    values: Record<string, { required?: boolean; defaultEnabled?: boolean }>;
+    values: ConsentFlowContract['read']['credentials']['categories'];
     category: string;
-    setContract: React.Dispatch<React.SetStateAction<ConsentFlowContractDetails>>;
-    mode: 'read' | 'write';
+    onChange: (categories: ConsentFlowContract['read']['credentials']['categories']) => void;
     titleOverride?: string;
-}> = ({ values, category, setContract, mode, titleOverride }) => {
+}> = ({ values, category, onChange, titleOverride }) => {
     const { plural, IconWithShape } = contractCategoryNameToCategoryMetadata(category) || {};
+    const inputId = React.useId();
 
     const value = values[category];
 
     const isRequired = value?.required ?? false;
-    const isDefaultEnabled = value?.defaultEnabled ?? false;
+    const isDefaultEnabled = isRequired || Boolean(value?.defaultEnabled);
 
     const [settings, setSettings] = React.useState<{
         required: boolean;
@@ -122,7 +122,10 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
                             key={index}
                         >
                             <section className="w-full justify-between items-center flex gap-3">
-                                <label className="flex flex-col flex-1 gap-1">
+                                <label
+                                    htmlFor={`${inputId}-${option.type}`}
+                                    className="flex flex-col flex-1 gap-1"
+                                >
                                     <h6 className="text-grayscale-900 text-lg font-poppins">
                                         {option.label}
                                     </h6>
@@ -131,33 +134,17 @@ const AdminToolsConsentFlowCategorySettings: React.FC<{
                                     </span>
                                 </label>
 
-                                <IonCheckbox
-                                    color="emerald-700"
-                                    className="shrink-0 h-8 w-8"
-                                    mode="ios"
+                                <input
+                                    id={`${inputId}-${option.type}`}
+                                    type="radio"
+                                    name={inputId}
+                                    className="h-5 w-5 shrink-0 accent-emerald-600"
                                     checked={isSelected}
-                                    onClick={() => {
+                                    onChange={() => {
                                         setSettings(option.values);
-                                        setContract(prevState => {
-                                            return {
-                                                ...prevState,
-                                                contract: {
-                                                    ...prevState.contract,
-                                                    [mode]: {
-                                                        ...prevState.contract[mode],
-                                                        credentials: {
-                                                            ...prevState.contract[mode].credentials,
-                                                            categories: {
-                                                                ...prevState.contract[mode]
-                                                                    .credentials.categories,
-                                                                [category]: {
-                                                                    ...option.values,
-                                                                },
-                                                            },
-                                                        },
-                                                    },
-                                                },
-                                            };
+                                        onChange({
+                                            ...values,
+                                            [category]: { ...values[category], ...option.values },
                                         });
                                     }}
                                 />

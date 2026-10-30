@@ -14,6 +14,10 @@ import type {
     PaginatedCampaigns,
     PaginatedCampaignAudience,
     PublishCredentialSharePreview,
+    ConsentFlowContractChanges,
+    ConsentFlowContractUpdateResult,
+    ConsentFlowContractVersion,
+    ConsentFlowConsentStatus,
 } from '@learncard/types';
 import {
     LCNProfile,
@@ -672,6 +676,10 @@ export type LearnCardNetworkPluginMethods = {
 
     createContract: (contract: {
         contract: ConsentFlowContract;
+        reasonForAccessing?: string;
+        needsGuardianConsent?: boolean;
+        redirectUrl?: string;
+        frontDoorBoostUri?: string;
         name: string;
         subtitle?: string;
         description?: string;
@@ -681,14 +689,36 @@ export type LearnCardNetworkPluginMethods = {
         recipients?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
-    addAutoBoostsToContract: (
-        contractUri: string,
-        autoboosts: AutoBoostConfig[]
-    ) => Promise<boolean>;
-    removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
+    /**
+     * Updates a live request at the same URI, or previews it without saving.
+     * Scope maps merge with the current request. Set an entry to null to remove it;
+     * expiresAt: null clears expiry. AutoBoost and writer arrays replace their lists.
+     * @example
+     * await learnCard.invoke.updateContract(uri, {
+     *     read: { credentials: { categories: {
+     *         Transcript: { required: true, reason: 'to calculate your GPA' },
+     *     } } },
+     * }, { reason: 'We added transcripts so we can show your GPA on your résumé.' });
+     */
+    updateContract: (
+        uri: string,
+        changes: ConsentFlowContractChanges & NonNullable<ConsentFlowContractChanges['contract']>,
+        options?: { reason?: string; reconsentDeadline?: string; dryRun?: boolean }
+    ) => Promise<ConsentFlowContractUpdateResult>;
     addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
+    /** Gets the current request, including its version.
+     * @example const contract = await learnCard.invoke.getContract(uri);
+     */
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
+    /** Lists a request's saved versions, newest first.
+     * @example const versions = await learnCard.invoke.getContractVersions(uri);
+     */
+    getContractVersions: (uri: string) => Promise<ConsentFlowContractVersion[]>;
+    /** Checks a user's access state and provides a review link when approval is needed.
+     * @example const { needsReconsent, reviewUrl } = await learnCard.invoke.getConsentStatus(uri, profileId);
+     */
+    getConsentStatus: (uri: string, profileId: string) => Promise<ConsentFlowConsentStatus>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
     ) => Promise<PaginatedConsentFlowContracts>;
@@ -735,6 +765,13 @@ export type LearnCardNetworkPluginMethods = {
             oneTime?: boolean;
             audienceVersion?: number;
         }
+    ) => Promise<boolean>;
+    /** Accepts the reviewed update using the user's selected data.
+     * @example await learnCard.invoke.acceptContractUpdate(termsUri, { version: 2, terms, audienceVersion: currentContract.audienceVersion });
+     */
+    acceptContractUpdate: (
+        termsUri: string,
+        update: { version: number; terms: ConsentFlowTerms; audienceVersion?: number }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
     getConsentFlowTransactions: (

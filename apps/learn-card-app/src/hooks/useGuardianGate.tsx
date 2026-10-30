@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import type { ComponentProps } from 'react';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('use-guardian-gate');
 
@@ -13,9 +14,27 @@ import {
 } from 'learn-card-base';
 import { guardianApprovalStore } from 'learn-card-base/stores/guardianApprovalStore';
 
-import { FamilyPinWrapper } from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
+import {
+    FamilyPinViewModeEnum,
+    FamilyPinWrapper,
+} from '../components/familyCMS/FamilyBoostPreview/FamilyPin/FamilyPinWrapper';
 
 const DEFAULT_VERIFICATION_TTL = 5 * 60 * 1000; // 5 minutes in ms
+
+const GuardianPinModal = (props: ComponentProps<typeof FamilyPinWrapper>) => {
+    const mounted = useRef(false);
+    useEffect(() => {
+        mounted.current = true;
+        return () => {
+            mounted.current = false;
+            // StrictMode remounts effects immediately; only a real removal cancels the gate.
+            queueMicrotask(() => {
+                if (!mounted.current) props.onCancel?.();
+            });
+        };
+    }, [props.onCancel]);
+    return <FamilyPinWrapper {...props} />;
+};
 
 /**
  * Standalone function to clear guardian verification cache.
@@ -181,9 +200,19 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
 
             // Show verification modal using FamilyPinWrapper
             return new Promise<void>((resolve, reject) => {
+                let settled = false;
+                const handleCancel = () => {
+                    if (settled) return;
+                    settled = true;
+                    onCancel?.();
+                    reject(new Error('Guardian verification was cancelled'));
+                };
                 const handleSuccess = async () => {
-                    closeModal();
+                    if (settled) return;
+                    // Claim submission before closing invokes cancellation cleanup.
+                    settled = true;
                     try {
+                        closeModal();
                         await setVerified();
                         onVerified?.();
                         await action();
@@ -192,13 +221,13 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                         reject(error);
                     }
                 };
-
                 newModal(
-                    <FamilyPinWrapper
-                        viewMode="edit"
+                    <GuardianPinModal
+                        viewMode={FamilyPinViewModeEnum.edit}
                         skipVerification={false}
                         existingPin={['', '', '', '', '']}
                         handleOnSubmit={handleSuccess}
+                        onCancel={handleCancel}
                         familyName=""
                         closeButtonText="Cancel"
                     />,
@@ -208,6 +237,7 @@ export const useGuardianGate = (options: UseGuardianGateOptions = {}): GuardianG
                         hideButton: true,
                         usePortal: true,
                         portalClassName: 'max-w-[400px]! mb-[-70px]! h-[150px]',
+                        onClose: handleCancel,
                     },
                     { mobile: ModalTypes.FullScreen, desktop: ModalTypes.Cancel }
                 );

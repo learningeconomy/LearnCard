@@ -1,4 +1,248 @@
 {
+    "consentUpdate": {
+        "summary": {
+            "requestDetails": "Détails de la demande",
+            "before": "Actuellement",
+            "after": "Après la mise à jour",
+            "notRequested": "Non demandé"
+        },
+        "editor": {
+            "accessSettings": "Paramètres de {{label}}",
+            "title": "Mettre à jour la demande",
+            "close": "Fermer l’éditeur de la demande",
+            "description": "Modifiez la demande actuelle, vérifiez vos changements, puis publiez-les quand vous êtes prêt.",
+            "noContract": "Créez ou sélectionnez une demande de consentement avant de la modifier.",
+            "loading": "Chargement de la demande…",
+            "loadError": "Impossible de charger la demande actuelle. Veuillez réessayer.",
+            "unsupportedNetwork": "Les mises à jour des demandes ne sont pas encore disponibles sur ce réseau. Connectez-vous au service mis à jour et réessayez.",
+            "retry": "Réessayer",
+            "currentVersion": "Version actuelle : {{version}}",
+            "customField": "Champ personnalisé pour {{area}}",
+            "addField": "Ajouter un champ",
+            "removeAccess": "Retirer {{label}}",
+            "selectImage": "Choisir l’image de la demande",
+            "removeImage": "Retirer l’image de la demande",
+            "image": "Image",
+            "reason": "Pourquoi faites-vous cette mise à jour ?",
+            "reasonPlaceholder": "Expliquez ce qui change pour les personnes utilisant votre application",
+            "reasonRequired": "Ajoutez une courte explication avant l’aperçu ou la publication (140 caractères maximum).",
+            "reasonHint": "Les personnes verront cette explication en examinant la mise à jour (140 caractères maximum).",
+            "summary": "Vos changements",
+            "noChanges": "Modifiez un champ pour préparer une mise à jour.",
+            "approvalNeeded": "Les personnes doivent approuver cette mise à jour avant que l’application puisse à nouveau enregistrer des données.",
+            "optionalNotice": "Le nouvel accès facultatif reste désactivé tant que les personnes ne l’activent pas.",
+            "quietNotice": "Cette mise à jour ne nécessite pas de nouvelle approbation.",
+            "updated": "Mis à jour",
+            "notSet": "Non défini",
+            "cleared": "Effacé",
+            "enabled": "Activé",
+            "disabled": "Désactivé",
+            "optionalOn": "Facultatif · activé pour les nouvelles connexions",
+            "optionalOff": "Facultatif · désactivé par défaut",
+            "retired": "Cette demande a été retirée et ne peut plus être modifiée.",
+            "published": "Mise à jour publiée · version {{version}}",
+            "preview": "Aperçu de la mise à jour",
+            "previewing": "Préparation de l’aperçu…",
+            "publish": "Publier la mise à jour",
+            "publishing": "Publication de la mise à jour…",
+            "reload": "Recharger la demande actuelle",
+            "reloading": "Rechargement de la demande…",
+            "conflict": "Cette demande a changé ailleurs. Rechargez la demande actuelle avant de publier.",
+            "previewError": "Impossible de préparer l’aperçu. Vos changements sont conservés ; veuillez réessayer.",
+            "publishError": "Impossible de publier la mise à jour. Vos changements sont conservés ; veuillez réessayer.",
+            "publishedReloadError": "La mise à jour a été publiée, mais la demande actuelle n’a pas pu être rechargée. Rechargez-la avant une autre mise à jour.",
+            "createError": "Impossible de créer la demande. Veuillez réessayer."
+        },
+        "dismissing": "Masquage…",
+        "dismissError": "Impossible de masquer cette mise à jour. Veuillez réessayer.",
+        "approvedUpdate": "Mise à jour approuvée",
+        "approvedUpdateDescription": "Vous avez approuvé la demande mise à jour de {{appName}}.",
+        "headline": {
+            "paused": "L’accès de {{name}} est suspendu",
+            "read": "{{name}} demande à voir vos {{label}}",
+            "write": "{{name}} demande à ajouter des {{label}} à votre compte",
+            "multiple": "{{name}} demande davantage d’accès",
+            "changed": "{{name}} a modifié sa demande",
+            "optional": "{{name}} propose une nouvelle option",
+            "removed": "{{name}} voit désormais moins d’informations"
+        },
+        "subhead": {
+            "reconnect": "Approuvez la mise à jour pour vous reconnecter.",
+            "newItems": "{{count}} nouveaux éléments",
+            "review": "Examinez ce qui a changé.",
+            "optional": "Activez-la si vous le souhaitez. Rien ne change sans votre accord.",
+            "removed": "Ne demande plus les informations suivantes : {{label}}.",
+            "changed": "Sa demande a changé."
+        },
+        "action": {
+            "reconnect": "Se reconnecter",
+            "allow": "Autoriser",
+            "allowAccess": "Autoriser l’accès",
+            "continue": "Continuer",
+            "done": "Terminé",
+            "saveChoices": "Enregistrer les choix"
+        },
+        "ui": {
+            "close": "Fermer",
+            "saving": "Enregistrement…",
+            "stopSharing": "Arrêter le partage",
+            "askParent": "Demander à un parent",
+            "saveError": "Un problème est survenu. Veuillez réessayer.",
+            "new": "Nouveau",
+            "removed": "Supprimé",
+            "nowRequired": "Désormais obligatoire",
+            "updated": "Mis à jour",
+            "turnOnOption": "Activer cette option",
+            "required": "Obligatoire",
+            "whySeeing": "Pourquoi est-ce que je vois cela ?",
+            "appContext": "{{name}} est une application que vous avez connectée à {{brand}}. Vous choisissez ce qu’elle peut voir et ajouter à votre compte. Vous pouvez modifier vos choix à tout moment.",
+            "parentNeeded": "Un parent est nécessaire pour continuer.",
+            "stopSharingWarning": "{{name}} n’aura plus accès à tout ce que vous avez partagé. Vous pourrez vous reconnecter plus tard.",
+            "keepSharing": "Continuer le partage",
+            "stopSharingWith": "Arrêter le partage avec {{name}}",
+            "respondBy": "Répondez avant le {{date}} pour continuer le partage",
+            "loadError": "Impossible de charger cette mise à jour. Veuillez réessayer.",
+            "tryAgain": "Réessayer",
+            "noLongerAvailable": "Cette mise à jour n’est plus disponible.",
+            "unchangedRead": "{{name}} peut déjà voir {{items}}. Cela ne change pas.",
+            "unchangedWrite": "{{name}} peut déjà ajouter {{items}}. Cela ne change pas.",
+            "unchangedDefault": "Vos choix actuels restent inchangés.",
+            "noExistingAccess": "Aucun accès n’est actuellement activé pour cette application.",
+            "noDefaultAccess": "Aucun accès par défaut ne reste inchangé.",
+            "allAccessChanged": "Votre accès existant est inclus dans les changements ci-dessus.",
+            "defaultAccess": "Accès par défaut de la demande actuelle",
+            "defaultAccessDescription": "Cet aperçu montre les choix par défaut, pas les autorisations enregistrées d’une personne.",
+            "readAccess": "Accès en lecture",
+            "writeAccess": "Accès en écriture",
+            "saved": "Enregistré",
+            "changes": "Modifications"
+        },
+        "review": "Examiner cette mise à jour",
+        "dismiss": "Masquer",
+        "needsReview": "À examiner",
+        "newOption": "Nouvelle option · ajoutée au cours des 14 derniers jours",
+        "appUpdatedTerms": "Mise à jour de l’application",
+        "appUpdatedTermsDescription": "{{appName}} a modifié sa demande d’accès.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} ne demande plus vos {{removed}}",
+            "changed": "{{appName}} a modifié sa demande",
+            "review": "{{appName}} vous demande d’examiner une mise à jour",
+            "option": "{{appName}} propose une nouvelle option"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Relevés de notes",
+                "description": "Documents récapitulant les cours et apprentissages terminés."
+            },
+            "certificates": {
+                "label": "Certificats",
+                "description": "Justificatifs reconnaissant des qualifications ou des apprentissages terminés."
+            },
+            "achievements": {
+                "label": "Réalisations",
+                "description": "Étapes franchies grâce aux efforts, aux compétences ou à la persévérance."
+            },
+            "skills": {
+                "label": "Compétences",
+                "description": "Aptitudes développées par la formation, la pratique ou l’expérience."
+            },
+            "workHistory": {
+                "label": "Parcours professionnel",
+                "description": "Fonctions et activités professionnelles au fil du temps."
+            },
+            "learningHistory": {
+                "label": "Parcours d’apprentissage",
+                "description": "Programmes d’apprentissage structurés."
+            },
+            "ids": {
+                "label": "Pièces d’identité",
+                "description": "Justificatifs utilisés pour vérifier l’identité."
+            },
+            "socialBadges": {
+                "label": "Badges sociaux",
+                "description": "Distinctions numériques reconnaissant une participation ou l’appartenance à un groupe."
+            },
+            "memberships": {
+                "label": "Adhésions",
+                "description": "Informations sur les adhésions."
+            },
+            "accomplishments": {
+                "label": "Travaux réalisés",
+                "description": "Ensembles de travaux illustrant les compétences et l’expérience."
+            },
+            "experiences": {
+                "label": "Expériences",
+                "description": "Connaissances et compétences acquises au cours d’activités professionnelles."
+            },
+            "accommodations": {
+                "label": "Aménagements",
+                "description": "Adaptations favorisant l’accessibilité."
+            },
+            "family": {
+                "label": "Famille",
+                "description": "Profils familiaux liés par des parcours d’apprentissage partagés."
+            },
+            "name": { "label": "Nom", "description": "Votre nom." },
+            "email": { "label": "Adresse e-mail", "description": "Votre adresse e-mail." },
+            "profilePhoto": { "label": "Photo de profil", "description": "Votre photo de profil." },
+            "qualifications": {
+                "label": "Qualifications",
+                "description": "Études, formations et qualifications professionnelles."
+            },
+            "goals": {
+                "label": "Objectifs",
+                "description": "Objectifs d’apprentissage et de carrière que vous souhaitez atteindre."
+            },
+            "professionalTitle": {
+                "label": "Titre professionnel",
+                "description": "Le titre qui décrit votre fonction professionnelle."
+            },
+            "roleExperience": {
+                "label": "Expérience dans une fonction",
+                "description": "Expérience acquise dans une fonction professionnelle précise."
+            },
+            "workExperience": {
+                "label": "Expérience professionnelle",
+                "description": "Vos activités, responsabilités et expériences professionnelles."
+            },
+            "payRate": {
+                "label": "Rémunération",
+                "description": "Le montant de votre rémunération et sa périodicité."
+            },
+            "workLifeBalance": {
+                "label": "Équilibre entre travail et vie personnelle",
+                "description": "Vos préférences pour concilier travail et vie personnelle."
+            },
+            "jobStability": {
+                "label": "Stabilité de l’emploi",
+                "description": "Vos préférences en matière de sécurité et de stabilité de l’emploi."
+            },
+            "selfAssignedSkills": {
+                "label": "Compétences autoévaluées",
+                "description": "Compétences que vous avez ajoutées à votre propre profil."
+            },
+            "aiSummaries": {
+                "label": "Résumés d’IA",
+                "description": "Résumés de vos séances d’apprentissage assisté par IA."
+            },
+            "aiTopics": {
+                "label": "Sujets d’IA",
+                "description": "Sujets explorés lors de votre apprentissage assisté par IA."
+            },
+            "aiAssessments": {
+                "label": "Évaluations d’IA",
+                "description": "Évaluations issues de votre apprentissage assisté par IA."
+            },
+            "aiInsights": {
+                "label": "Observations d’IA",
+                "description": "Observations sur vos progrès d’apprentissage et vos compétences."
+            },
+            "learningPathways": {
+                "label": "Parcours d’apprentissage",
+                "description": "Plans et étapes pour atteindre vos objectifs d’apprentissage."
+            }
+        }
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Crédits obtenus non renseignés",

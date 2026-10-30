@@ -1,25 +1,18 @@
 import React, { useState } from 'react';
 import { useImmer } from 'use-immer';
-import { curriedStateSlice } from '@learncard/helpers';
-import { Eye, Upload, X, ChevronDown, ChevronUp, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Eye, X, Loader2 } from 'lucide-react';
 
 import * as m from '../../../paraglide/messages.js';
 
-import {
-    ModalTypes,
-    UploadRes,
-    useModal,
-    useToast,
-    useWallet,
-    useImageUpload,
-    ToastTypeEnum,
-} from 'learn-card-base';
-import { ConsentFlowContract } from '@learncard/types';
+import { ModalTypes, useModal, useToast, useWallet, useImageUpload } from 'learn-card-base';
+import type { UploadRes } from 'learn-card-base';
+import type { ConsentFlowContractDetails } from '@learncard/types';
 import { IMAGE_MIME_TYPES } from 'learn-card-base/filestack/constants/filestack';
 
 import FullScreenConsentFlow from '../../consentFlow/FullScreenConsentFlow';
 import FullScreenGameFlow from '../../consentFlow/GameFlow/FullScreenGameFlow';
-import ContractCategoryMultiSelect from '../../hidden/ContractCategoryMultiSelect';
+import ConsentContractForm from './ConsentContractForm';
+import type { ConsentContractFormValue } from './consentContractForm.types';
 
 type CreateConsentContractModalProps = {
     onSuccess?: (contractUri?: string) => void;
@@ -35,7 +28,6 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [showAdvanced, setShowAdvanced] = useState(false);
 
     const emptyContract = {
         contract: {
@@ -51,54 +43,14 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
         redirectUrl: '',
     };
 
-    const [contract, setContract] = useImmer<{
-        contract: ConsentFlowContract;
-        name: string;
-        subtitle?: string;
-        description?: string;
-        image?: string;
-        reasonForAccessing?: string;
-        needsGuardianConsent?: boolean;
-        redirectUrl?: string;
-    }>(emptyContract);
-
-    const updateSlice = curriedStateSlice(setContract);
-    const updateContract = curriedStateSlice(updateSlice('contract'));
-    const updateRead = curriedStateSlice(updateContract('read'));
-    const updateReadCredentials = curriedStateSlice(updateRead('credentials'));
-    const updateWrite = curriedStateSlice(updateContract('write'));
-    const updateWriteCredentials = curriedStateSlice(updateWrite('credentials'));
-
-    const [customFieldName, setCustomFieldName] = useState('');
-
-    const COMMON_PERSONAL_FIELDS = ['name', 'email'] as const;
-
-    const addPersonalField = (field: string, required = false) => {
-        setContract(draft => {
-            draft.contract.read.personal[field] = { required, defaultEnabled: true };
-        });
-    };
-
-    const removePersonalField = (field: string) => {
-        setContract(draft => {
-            delete draft.contract.read.personal[field];
-        });
-    };
-
-    const togglePersonalFieldRequired = (field: string) => {
-        setContract(draft => {
-            const existing = draft.contract.read.personal[field];
-
-            if (existing) {
-                existing.required = !existing.required;
-            }
-        });
-    };
+    const [contract, setContract] = useImmer<ConsentContractFormValue>(emptyContract);
 
     const { handleFileSelect: handleImageSelect, isLoading: imageUploading } = useImageUpload({
         fileType: IMAGE_MIME_TYPES,
         onUpload: (_url, _file, data: UploadRes) => {
-            updateSlice('image', data?.url);
+            setContract(draft => {
+                draft.image = data?.url;
+            });
         },
     });
 
@@ -121,12 +73,8 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
             onSuccess?.(contractUri);
             presentToast(`Contract "${contract.name}" created successfully!`);
             closeModal();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-        } catch (e: any) {
-            presentToast(`Failed to create contract: ${e.message}`, {
-                type: ToastTypeEnum.Error,
-            });
-            setError(e.message);
+        } catch {
+            setError(m['consentUpdate.editor.createError']());
         } finally {
             setLoading(false);
         }
@@ -135,24 +83,24 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
     const handlePreview = () => {
         if (contract.needsGuardianConsent) {
             newModal(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                <FullScreenGameFlow contractDetails={contract as any} isPreview />,
+                <FullScreenGameFlow
+                    contractDetails={contract as ConsentFlowContractDetails}
+                    isPreview
+                />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         } else {
             newModal(
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                <FullScreenConsentFlow contractDetails={contract as any} isPreview />,
+                <FullScreenConsentFlow
+                    contractDetails={contract as ConsentFlowContractDetails}
+                    isPreview
+                />,
                 {},
                 { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
             );
         }
     };
-
-    const hasReadCategories = Object.keys(contract.contract.read.credentials.categories).length > 0;
-    const hasWriteCategories =
-        Object.keys(contract.contract.write.credentials.categories).length > 0;
 
     return (
         <div className="w-full max-w-lg mx-auto">
@@ -172,396 +120,18 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 </button>
             </div>
 
-            <div className="space-y-v3-6">
-                {/* Image Upload */}
-                <div className="flex items-start gap-4">
-                    <div className="relative">
-                        <div
-                            onClick={() => handleImageSelect()}
-                            className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors overflow-hidden border-2 border-dashed border-gray-300"
-                        >
-                            {imageUploading ? (
-                                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
-                            ) : contract.image ? (
-                                <img
-                                    src={contract.image}
-                                    alt={m[
-                                        'developerPortal.components.createConsentContractModal.contractLabel'
-                                    ]()}
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <Upload className="w-6 h-6 text-gray-400" />
-                            )}
-                        </div>
-
-                        {contract.image && (
-                            <button
-                                onClick={() => updateSlice('image', '')}
-                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="flex-1 space-y-v3-3">
-                        {/* Name */}
-                        <input
-                            type="text"
-                            value={contract.name}
-                            onChange={e => updateSlice('name', e.target.value)}
-                            placeholder={
-                                m[
-                                    'developerPortal.components.createConsentContractModal.contractName'
-                                ]() + ' *'
-                            }
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                        />
-
-                        {/* Subtitle */}
-                        <input
-                            type="text"
-                            value={contract.subtitle || ''}
-                            onChange={e => updateSlice('subtitle', e.target.value)}
-                            placeholder={m[
-                                'developerPortal.components.createConsentContractModal.subtitle'
-                            ]()}
-                            className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                        />
-                    </div>
-                </div>
-
-                {/* Description */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                        {m['developerPortal.components.createConsentContractModal.description']()}
-                    </label>
-
-                    <textarea
-                        value={contract.description || ''}
-                        onChange={e => updateSlice('description', e.target.value)}
-                        placeholder={m[
-                            'developerPortal.components.createConsentContractModal.descriptionPlaceholder'
-                        ]()}
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 min-h-[80px] resize-none"
-                    />
-                </div>
-
-                {/* Reason for Accessing */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">
-                        {m[
-                            'developerPortal.components.createConsentContractModal.reasonForAccessing'
-                        ]()}
-                    </label>
-
-                    <input
-                        type="text"
-                        value={contract.reasonForAccessing || ''}
-                        onChange={e => updateSlice('reasonForAccessing', e.target.value)}
-                        placeholder={m[
-                            'developerPortal.components.createConsentContractModal.reasonPlaceholder'
-                        ]()}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                    />
-                </div>
-
-                {/* Read Terms */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center text-xs font-bold">
-                            R
-                        </span>
-                        {m['developerPortal.components.createConsentContractModal.readAccess']()}
-                    </h3>
-
-                    <p className="text-xs text-gray-500 mb-3">
-                        {m[
-                            'developerPortal.components.createConsentContractModal.readAccessDesc'
-                        ]()}
-                    </p>
-
-                    <ContractCategoryMultiSelect
-                        values={contract.contract.read.credentials.categories}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        onChange={updateReadCredentials('categories') as any}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        setContract={setContract as any}
-                        mode="read"
-                    />
-
-                    {/* Anonymize Toggle */}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-200 mt-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-600">
-                                {m[
-                                    'developerPortal.components.createConsentContractModal.anonymizeData'
-                                ]()}
-                            </label>
-
-                            <p className="text-xs text-gray-400">
-                                {m[
-                                    'developerPortal.components.createConsentContractModal.anonymizeDataDesc'
-                                ]()}
-                            </p>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() =>
-                                updateRead('anonymize', !contract.contract.read.anonymize)
-                            }
-                            className={`relative w-12 h-7 rounded-full transition-colors ${
-                                contract.contract.read.anonymize ? 'bg-cyan-500' : 'bg-gray-200'
-                            }`}
-                        >
-                            <span
-                                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                                    contract.contract.read.anonymize
-                                        ? 'translate-x-5'
-                                        : 'translate-x-0'
-                                }`}
-                            />
-                        </button>
-                    </div>
-
-                    {/* Personal Data Fields */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 mb-3">
-                            {m[
-                                'developerPortal.components.createConsentContractModal.personalDataFieldsDesc'
-                            ]()}
-                        </p>
-
-                        {/* Quick-add common fields */}
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                            {COMMON_PERSONAL_FIELDS.filter(
-                                f => !(f in contract.contract.read.personal)
-                            ).map(field => (
-                                <button
-                                    key={field}
-                                    type="button"
-                                    onClick={() => addPersonalField(field)}
-                                    className="px-2.5 py-1 text-xs rounded-lg bg-white border border-gray-200 text-gray-600 hover:border-cyan-300 hover:text-cyan-600 transition-colors"
-                                >
-                                    + {field}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Active personal fields */}
-                        {Object.entries(contract.contract.read.personal).length > 0 && (
-                            <div className="space-y-v3-2 mb-3">
-                                {Object.entries(contract.contract.read.personal).map(
-                                    ([field, config]) => (
-                                        <div
-                                            key={field}
-                                            className="flex items-center justify-between p-2.5 bg-white rounded-lg border border-gray-200"
-                                        >
-                                            <span className="text-sm text-gray-700 font-medium">
-                                                {field}
-                                            </span>
-
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() =>
-                                                        togglePersonalFieldRequired(field)
-                                                    }
-                                                    className={`px-2 py-0.5 text-xs rounded-full border transition-colors ${
-                                                        config.required
-                                                            ? 'bg-red-50 border-red-200 text-red-600'
-                                                            : 'bg-gray-50 border-gray-200 text-gray-400'
-                                                    }`}
-                                                >
-                                                    {config.required
-                                                        ? m[
-                                                              'developerPortal.components.createConsentContractModal.required'
-                                                          ]()
-                                                        : m[
-                                                              'developerPortal.components.createConsentContractModal.optional'
-                                                          ]()}
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removePersonalField(field)}
-                                                    className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                        )}
-
-                        {/* Add custom field */}
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={customFieldName}
-                                onChange={e => setCustomFieldName(e.target.value)}
-                                onKeyDown={e => {
-                                    if (
-                                        e.key === 'Enter' &&
-                                        customFieldName.trim() &&
-                                        !(customFieldName.trim() in contract.contract.read.personal)
-                                    ) {
-                                        addPersonalField(customFieldName.trim());
-                                        setCustomFieldName('');
-                                    }
-                                }}
-                                placeholder={m[
-                                    'developerPortal.components.createConsentContractModal.customFieldName'
-                                ]()}
-                                className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (
-                                        customFieldName.trim() &&
-                                        !(customFieldName.trim() in contract.contract.read.personal)
-                                    ) {
-                                        addPersonalField(customFieldName.trim());
-                                        setCustomFieldName('');
-                                    }
-                                }}
-                                disabled={
-                                    !customFieldName.trim() ||
-                                    customFieldName.trim() in contract.contract.read.personal
-                                }
-                                className="px-3 py-2 bg-cyan-500 text-white rounded-lg text-xs font-medium hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Write Terms */}
-                <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
-                            W
-                        </span>
-                        {m['developerPortal.components.createConsentContractModal.writeAccess']()}
-                    </h3>
-
-                    <p className="text-xs text-gray-500 mb-3">
-                        {m[
-                            'developerPortal.components.createConsentContractModal.writeAccessDesc'
-                        ]()}
-                    </p>
-
-                    <ContractCategoryMultiSelect
-                        values={contract.contract.write.credentials.categories}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        onChange={updateWriteCredentials('categories') as any}
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-                        setContract={setContract as any}
-                        mode="write"
-                    />
-                </div>
-
-                {/* Advanced Options */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <button
-                        type="button"
-                        onClick={() => setShowAdvanced(!showAdvanced)}
-                        className="w-full px-4 py-3 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
-                    >
-                        <span className="text-sm font-medium text-gray-600">
-                            {m[
-                                'developerPortal.components.createConsentContractModal.advancedOptions'
-                            ]()}
-                        </span>
-
-                        {showAdvanced ? (
-                            <ChevronUp className="w-4 h-4 text-gray-400" />
-                        ) : (
-                            <ChevronDown className="w-4 h-4 text-gray-400" />
-                        )}
-                    </button>
-
-                    {showAdvanced && (
-                        <div className="px-4 pb-4 space-y-v3-4 border-t border-gray-100">
-                            {/* Redirect URL */}
-                            <div className="pt-4">
-                                <label className="block text-sm font-medium text-gray-600 mb-1">
-                                    {m[
-                                        'developerPortal.components.createConsentContractModal.redirectUrl'
-                                    ]()}
-                                </label>
-
-                                <input
-                                    type="url"
-                                    value={contract.redirectUrl || ''}
-                                    onChange={e => updateSlice('redirectUrl', e.target.value)}
-                                    placeholder="https://yourapp.com/callback"
-                                    className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-hidden focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                                />
-
-                                <p className="text-xs text-gray-400 mt-1">
-                                    {m[
-                                        'developerPortal.components.createConsentContractModal.redirectUrlDesc'
-                                    ]()}
-                                </p>
-                            </div>
-
-                            {/* Guardian Consent Toggle */}
-                            <div className="flex items-center justify-between py-2">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-600">
-                                        {m[
-                                            'developerPortal.components.createConsentContractModal.guardianConsentFlow'
-                                        ]()}
-                                    </label>
-
-                                    <p className="text-xs text-gray-400">
-                                        {m[
-                                            'developerPortal.components.createConsentContractModal.guardianConsentFlowDesc'
-                                        ]()}
-                                    </p>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        updateSlice(
-                                            'needsGuardianConsent',
-                                            !contract.needsGuardianConsent
-                                        )
-                                    }
-                                    className={`relative w-12 h-7 rounded-full transition-colors ${
-                                        contract.needsGuardianConsent
-                                            ? 'bg-cyan-500'
-                                            : 'bg-gray-200'
-                                    }`}
-                                >
-                                    <span
-                                        className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                                            contract.needsGuardianConsent
-                                                ? 'translate-x-5'
-                                                : 'translate-x-0'
-                                        }`}
-                                    />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                        <p className="text-sm text-red-600">{error}</p>
-                    </div>
-                )}
-            </div>
+            <ConsentContractForm
+                value={contract}
+                onChange={setContract}
+                disabled={loading}
+                imageUploading={imageUploading}
+                onSelectImage={handleImageSelect}
+            />
+            {error && (
+                <p role="alert" className="mt-4 text-sm text-red-700">
+                    {error}
+                </p>
+            )}
 
             {/* Footer Buttons */}
             <div className="mt-6 space-y-v3-3">
@@ -569,8 +139,8 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 <button
                     type="button"
                     onClick={handlePreview}
-                    disabled={!contract.name}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading || imageUploading || !contract.name}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-grayscale-100 text-grayscale-700 rounded-[20px] text-sm font-medium hover:bg-grayscale-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     <Eye className="w-4 h-4" />
                     {m['developerPortal.components.createConsentContractModal.previewContract']()}
@@ -580,8 +150,8 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={loading || !contract.name}
-                    className="w-full px-4 py-3 bg-cyan-500 text-white rounded-xl text-sm font-semibold hover:bg-cyan-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    disabled={loading || imageUploading || !contract.name}
+                    className="w-full px-4 py-3 bg-grayscale-900 text-white rounded-[20px] text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
                         <>
@@ -597,7 +167,7 @@ const CreateConsentContractModal: React.FC<CreateConsentContractModalProps> = ({
                 <button
                     type="button"
                     onClick={closeModal}
-                    className="w-full px-4 py-3 bg-white text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors border border-gray-200"
+                    className="w-full px-4 py-3 bg-white text-grayscale-700 rounded-[20px] text-sm font-medium hover:bg-grayscale-10 transition-colors border border-grayscale-300"
                 >
                     {m['common.cancel']()}
                 </button>

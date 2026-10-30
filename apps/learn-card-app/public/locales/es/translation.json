@@ -1,4 +1,251 @@
 {
+    "consentUpdate": {
+        "summary": {
+            "requestDetails": "Detalles de la solicitud",
+            "before": "Actual",
+            "after": "Después de la actualización",
+            "notRequested": "No solicitado"
+        },
+        "editor": {
+            "accessSettings": "Ajustes de {{label}}",
+            "title": "Actualizar solicitud",
+            "close": "Cerrar el editor de la solicitud",
+            "description": "Edita la solicitud actual, revisa los cambios y publícalos cuando estén listos.",
+            "noContract": "Crea o selecciona una solicitud de consentimiento antes de editarla.",
+            "loading": "Cargando solicitud…",
+            "loadError": "No pudimos cargar la solicitud actual. Inténtalo de nuevo.",
+            "unsupportedNetwork": "Las actualizaciones de solicitudes aún no están disponibles en esta red. Conéctate al servicio actualizado e inténtalo de nuevo.",
+            "retry": "Intentar de nuevo",
+            "currentVersion": "Versión actual: {{version}}",
+            "customField": "Campo personalizado para {{area}}",
+            "addField": "Añadir campo",
+            "removeAccess": "Quitar {{label}}",
+            "selectImage": "Elegir imagen de la solicitud",
+            "removeImage": "Quitar imagen de la solicitud",
+            "image": "Imagen",
+            "reason": "¿Por qué haces esta actualización?",
+            "reasonPlaceholder": "Explica qué cambia para quienes usan tu aplicación",
+            "reasonRequired": "Añade una explicación breve antes de previsualizar o publicar esta actualización (máximo 140 caracteres).",
+            "reasonHint": "Las personas verán esta explicación al revisar la actualización (máximo 140 caracteres).",
+            "summary": "Tus cambios",
+            "noChanges": "Cambia un campo para preparar una actualización.",
+            "approvalNeeded": "Las personas deben aprobar esta actualización antes de que la aplicación pueda volver a guardar datos.",
+            "optionalNotice": "El nuevo acceso opcional queda desactivado hasta que las personas lo activen.",
+            "quietNotice": "Esta actualización no necesita otra aprobación.",
+            "updated": "Actualizado",
+            "notSet": "Sin definir",
+            "cleared": "Eliminado",
+            "enabled": "Activado",
+            "disabled": "Desactivado",
+            "optionalOn": "Opcional · activado para nuevas conexiones",
+            "optionalOff": "Opcional · desactivado por defecto",
+            "retired": "Esta solicitud se ha retirado y no se puede actualizar.",
+            "published": "Actualización publicada · versión {{version}}",
+            "preview": "Previsualizar actualización",
+            "previewing": "Preparando vista previa…",
+            "publish": "Publicar actualización",
+            "publishing": "Publicando actualización…",
+            "reload": "Recargar solicitud actual",
+            "reloading": "Recargando solicitud…",
+            "conflict": "Esta solicitud cambió en otro lugar. Recarga la solicitud actual antes de publicar.",
+            "previewError": "No pudimos preparar la vista previa. Tus cambios siguen aquí; inténtalo de nuevo.",
+            "publishError": "No pudimos publicar la actualización. Tus cambios siguen aquí; inténtalo de nuevo.",
+            "publishedReloadError": "La actualización se publicó, pero no pudimos recargar la solicitud actual. Recárgala antes de hacer otra actualización.",
+            "createError": "No pudimos crear la solicitud. Inténtalo de nuevo."
+        },
+        "dismissing": "Descartando…",
+        "dismissError": "No pudimos descartar esta actualización. Inténtalo de nuevo.",
+        "approvedUpdate": "Actualización aprobada",
+        "approvedUpdateDescription": "Aprobaste la solicitud actualizada de {{appName}}.",
+        "headline": {
+            "paused": "El acceso de {{name}} está en pausa",
+            "read": "{{name}} solicita ver tus {{label}}",
+            "write": "{{name}} solicita añadir {{label}} a tu cuenta",
+            "multiple": "{{name}} solicita más acceso",
+            "changed": "{{name}} cambió su solicitud",
+            "optional": "{{name}} tiene una nueva opción",
+            "removed": "{{name}} ahora ve menos información"
+        },
+        "subhead": {
+            "reconnect": "Aprueba la actualización para volver a conectar.",
+            "newItems": "{{count}} elementos nuevos",
+            "review": "Revisa lo que cambió.",
+            "optional": "Actívala si quieres. Nada cambia a menos que lo hagas.",
+            "removed": "Ya no solicita {{label}}.",
+            "changed": "Su solicitud ha cambiado."
+        },
+        "action": {
+            "reconnect": "Volver a conectar",
+            "allow": "Permitir",
+            "allowAccess": "Permitir acceso",
+            "continue": "Continuar",
+            "done": "Listo",
+            "saveChoices": "Guardar opciones"
+        },
+        "ui": {
+            "close": "Cerrar",
+            "saving": "Guardando…",
+            "stopSharing": "Dejar de compartir",
+            "askParent": "Pedir a un adulto responsable",
+            "saveError": "Algo salió mal. Inténtalo de nuevo.",
+            "new": "Nuevo",
+            "removed": "Eliminado",
+            "nowRequired": "Ahora obligatorio",
+            "updated": "Actualizado",
+            "turnOnOption": "Activar esta opción",
+            "required": "Obligatorio",
+            "whySeeing": "¿Por qué veo esto?",
+            "appContext": "{{name}} es una aplicación que conectaste a {{brand}}. Tú decides qué puede ver y qué puede añadir a tu cuenta. Puedes cambiarlo en cualquier momento.",
+            "parentNeeded": "Se necesita un adulto responsable para continuar.",
+            "stopSharingWarning": "{{name}} perderá el acceso a todo lo que has compartido. Puedes volver a conectar más tarde.",
+            "keepSharing": "Seguir compartiendo",
+            "stopSharingWith": "Dejar de compartir con {{name}}",
+            "respondBy": "Responde antes del {{date}} para seguir compartiendo",
+            "loadError": "No pudimos cargar esta actualización. Inténtalo de nuevo.",
+            "tryAgain": "Intentar de nuevo",
+            "noLongerAvailable": "Esta actualización ya no está disponible.",
+            "unchangedRead": "{{name}} ya puede ver {{items}}. Eso no cambia.",
+            "unchangedWrite": "{{name}} ya puede añadir {{items}}. Eso no cambia.",
+            "unchangedDefault": "Tus opciones actuales siguen igual.",
+            "noExistingAccess": "No hay ningún acceso activado para esta aplicación.",
+            "noDefaultAccess": "Ningún acceso predeterminado permanece sin cambios.",
+            "allAccessChanged": "Tu acceso existente está incluido en los cambios anteriores.",
+            "defaultAccess": "Acceso predeterminado de la solicitud actual",
+            "defaultAccessDescription": "Esta vista previa muestra las opciones predeterminadas, no los permisos guardados de una persona.",
+            "readAccess": "Acceso de lectura",
+            "writeAccess": "Acceso de escritura",
+            "saved": "Guardado",
+            "changes": "Cambios"
+        },
+        "review": "Revisar esta actualización",
+        "dismiss": "Descartar",
+        "needsReview": "Necesita tu revisión",
+        "newOption": "Nueva opción · añadida en los últimos 14 días",
+        "appUpdatedTerms": "Actualización de la aplicación",
+        "appUpdatedTermsDescription": "{{appName}} actualizó su solicitud de acceso.",
+        "notification": {
+            "relaxedWithItem": "{{appName}} ya no solicita tus {{removed}}",
+            "changed": "{{appName}} cambió su solicitud",
+            "review": "{{appName}} necesita tu revisión",
+            "option": "{{appName}} tiene una nueva opción"
+        },
+        "scope": {
+            "transcripts": {
+                "label": "Expedientes académicos",
+                "description": "Registros de cursos y aprendizajes completados."
+            },
+            "certificates": {
+                "label": "Certificados",
+                "description": "Credenciales que reconocen cualificaciones o aprendizajes completados."
+            },
+            "achievements": {
+                "label": "Logros",
+                "description": "Hitos alcanzados mediante el esfuerzo, las habilidades o la perseverancia."
+            },
+            "skills": {
+                "label": "Habilidades",
+                "description": "Capacidades desarrolladas mediante formación, práctica o experiencia."
+            },
+            "workHistory": {
+                "label": "Historial laboral",
+                "description": "Funciones y actividades profesionales a lo largo del tiempo."
+            },
+            "learningHistory": {
+                "label": "Historial de aprendizaje",
+                "description": "Programas de aprendizaje estructurados."
+            },
+            "ids": {
+                "label": "Identificaciones",
+                "description": "Credenciales utilizadas para verificar la identidad."
+            },
+            "socialBadges": {
+                "label": "Insignias sociales",
+                "description": "Distintivos digitales que reconocen la participación o pertenencia a un grupo."
+            },
+            "memberships": {
+                "label": "Membresías",
+                "description": "Registros de pertenencia a organizaciones."
+            },
+            "accomplishments": {
+                "label": "Resultados",
+                "description": "Conjuntos de trabajos que muestran habilidades y experiencia."
+            },
+            "experiences": {
+                "label": "Experiencias",
+                "description": "Conocimientos y habilidades adquiridos en funciones y actividades profesionales."
+            },
+            "accommodations": {
+                "label": "Adaptaciones",
+                "description": "Ajustes para facilitar la accesibilidad."
+            },
+            "family": {
+                "label": "Familia",
+                "description": "Perfiles familiares conectados mediante experiencias de aprendizaje compartidas."
+            },
+            "name": { "label": "Nombre", "description": "Tu nombre." },
+            "email": {
+                "label": "Correo electrónico",
+                "description": "Tu dirección de correo electrónico."
+            },
+            "profilePhoto": { "label": "Foto de perfil", "description": "Tu foto de perfil." },
+            "qualifications": {
+                "label": "Cualificaciones",
+                "description": "Estudios, formación y cualificaciones profesionales."
+            },
+            "goals": {
+                "label": "Objetivos",
+                "description": "Objetivos de aprendizaje y profesionales que quieres alcanzar."
+            },
+            "professionalTitle": {
+                "label": "Título profesional",
+                "description": "El título que describe tu función profesional."
+            },
+            "roleExperience": {
+                "label": "Experiencia en el puesto",
+                "description": "Experiencia adquirida en una función profesional concreta."
+            },
+            "workExperience": {
+                "label": "Experiencia laboral",
+                "description": "Tus actividades, responsabilidades y experiencia de trabajo."
+            },
+            "payRate": {
+                "label": "Remuneración",
+                "description": "El importe de tu remuneración y el período de pago."
+            },
+            "workLifeBalance": {
+                "label": "Equilibrio entre trabajo y vida personal",
+                "description": "Tus preferencias para equilibrar el trabajo y la vida personal."
+            },
+            "jobStability": {
+                "label": "Estabilidad laboral",
+                "description": "Tus preferencias sobre seguridad y estabilidad en el empleo."
+            },
+            "selfAssignedSkills": {
+                "label": "Habilidades autoasignadas",
+                "description": "Habilidades que has añadido a tu propio perfil."
+            },
+            "aiSummaries": {
+                "label": "Resúmenes de IA",
+                "description": "Resúmenes de tus sesiones de aprendizaje con IA."
+            },
+            "aiTopics": {
+                "label": "Temas de IA",
+                "description": "Temas explorados en tu aprendizaje con IA."
+            },
+            "aiAssessments": {
+                "label": "Evaluaciones de IA",
+                "description": "Evaluaciones de tu aprendizaje con IA."
+            },
+            "aiInsights": {
+                "label": "Observaciones de IA",
+                "description": "Observaciones sobre tu progreso de aprendizaje y tus habilidades."
+            },
+            "learningPathways": {
+                "label": "Itinerarios de aprendizaje",
+                "description": "Planes y pasos para alcanzar tus objetivos de aprendizaje."
+            }
+        }
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",

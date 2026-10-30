@@ -1,0 +1,18 @@
+@keyframes contract-update-changes-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.contract-update-changes {
+    animation: contract-update-changes-in 180ms ease-out 120ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .contract-update-changes {
+        animation: none;
+    }
+}
