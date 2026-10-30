@@ -282,7 +282,8 @@ export const findEscrowHoldsPendingEnclaveCancellation = async (
             enclaveCancelPendingAt: { $exists: true },
             enclaveCancelConfirmedAt: { $exists: false },
         })
-        .sort({ enclaveCancelAttempts: 1, releaseAfter: 1 })
+        // Mongo sorts are unstable on ties; the unique ID makes bounded batches repeatable.
+        .sort({ enclaveCancelAttempts: 1, releaseAfter: 1, _id: 1 })
         .limit(limit)
         .toArray();
 
@@ -499,7 +500,7 @@ export const findEscrowHoldsPendingStartNotification = async (
 ): Promise<EscrowHold[]> =>
     getEscrowHoldsCollection()
         .find({ status: 'pending', startedNotificationPending: true })
-        .sort({ startedNotificationAttemptedAt: 1, requestedAt: 1 })
+        .sort({ startedNotificationAttemptedAt: 1, requestedAt: 1, _id: 1 })
         .limit(limit)
         .toArray();
 
@@ -563,7 +564,7 @@ export const findEscrowHoldsDueForReminder = async (
             releaseAfter: { $lte: new Date(now.getTime() + ESCROW_HOLD_REMINDER_WINDOW_MS) },
             'notifications.kind': { $ne: 'reminder' },
         })
-        .sort({ reminderAttemptedAt: 1, releaseAfter: 1 })
+        .sort({ reminderAttemptedAt: 1, releaseAfter: 1, _id: 1 })
         .limit(limit)
         .toArray();
 

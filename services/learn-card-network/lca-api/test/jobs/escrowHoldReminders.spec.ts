@@ -15,6 +15,13 @@ import {
     hashEscrowResumeToken,
     recordEscrowHoldNotification,
     computeEffectiveReleaseAfter,
+    findEscrowHoldsDueForReminder,
+    findEscrowHoldsPendingStartNotification,
+    findEscrowHoldsPendingEnclaveCancellation,
+    claimEscrowHoldForReminder,
+    releaseEscrowReminderClaim,
+    recordEscrowStartNotificationAttempt,
+    recordEscrowEnclaveCancelAttempt,
     ESCROW_RELEASE_TIME_MARGIN_MS,
     ESCROW_RELEASE_WARNING_GAP_MS,
     type AuthProviderMapping,
@@ -41,7 +48,11 @@ const makeProvider = (): AuthProviderMapping => {
 
 /** Every seed() call gets its own authProvider (see test/models/escrow.spec.ts
  * for why: only one pending hold-policy hold is allowed per authProvider). */
-const seed = async (releaseAfter: Date, releasePolicy: 'hold' | 'pin' = 'hold') => {
+const seed = async (
+    releaseAfter: Date,
+    releasePolicy: 'hold' | 'pin' = 'hold',
+    holdId = randomUUID()
+) => {
     const provider = makeProvider();
     await upsertUserKeyByAuthProvider(
         { type: 'email', value: `${provider.id}@example.com` },
@@ -54,7 +65,7 @@ const seed = async (releaseAfter: Date, releasePolicy: 'hold' | 'pin' = 'hold') 
     return createEscrowHold({
         holdRecord: {
             hold: {
-                holdId: randomUUID(),
+                holdId,
                 did: 'did:key:test',
                 shareVersion: 1,
                 blobHash: 'ab'.repeat(32),
@@ -117,6 +128,75 @@ afterAll(async () => {
 });
 
 describe('runEscrowHoldReminders', () => {
+    describe.each(['reminder', 'started', 'cancelled'] as const)('%s queue ordering', queue => {
+        it.each([false, true])(
+            'keeps tied batches stable and rotates retries (previously attempted: %s)',
+            async previouslyAttempted => {
+                const now = new Date();
+                const previousAttempt = new Date(now.getTime() - HOUR);
+                // More than a default delivery batch. Insert backwards so physical
+                // insertion order cannot accidentally satisfy the expected ID order.
+                const ids = Array.from(
+                    { length: 13 },
+                    (_, index) => `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+                );
+                for (const id of [...ids].reverse()) {
+                    await seed(new Date(now.getTime() + HOUR), 'hold', id);
+                }
+                await getEscrowHoldsCollection().updateMany(
+                    {},
+                    {
+                        $set: {
+                            requestedAt: previousAttempt,
+                            ...(queue === 'started' ? { startedNotificationPending: true } : {}),
+                            ...(queue === 'cancelled'
+                                ? {
+                                      status: 'cancelled' as const,
+                                      enclaveCancelPendingAt: previousAttempt,
+                                      enclaveCancelAttempts: previouslyAttempted ? 2 : 0,
+                                  }
+                                : previouslyAttempted
+                                  ? queue === 'reminder'
+                                      ? { reminderAttemptedAt: previousAttempt }
+                                      : { startedNotificationAttemptedAt: previousAttempt }
+                                  : {}),
+                        },
+                    }
+                );
+                const readBatch = () =>
+                    queue === 'reminder'
+                        ? findEscrowHoldsDueForReminder(now, 5)
+                        : queue === 'started'
+                          ? findEscrowHoldsPendingStartNotification(5)
+                          : findEscrowHoldsPendingEnclaveCancellation(5);
+
+                for (let repeat = 0; repeat < 3; repeat += 1) {
+                    expect((await readBatch()).map(hold => hold._id)).toEqual(ids.slice(0, 5));
+                }
+                // Failed deliveries remain eligible. Updating their real attempt
+                // markers must put untouched rows first, even with tied timestamps.
+                for (let offset = 0; offset < ids.length; offset += 5) {
+                    const batch = await readBatch();
+                    const remaining = Math.min(5, ids.length - offset);
+                    expect(batch.slice(0, remaining).map(hold => hold._id)).toEqual(
+                        ids.slice(offset, offset + remaining)
+                    );
+                    for (const hold of batch) {
+                        if (queue === 'reminder') {
+                            const claimed = await claimEscrowHoldForReminder(hold._id, now);
+                            expect(claimed).not.toBeNull();
+                            if (claimed) await releaseEscrowReminderClaim(claimed);
+                        } else if (queue === 'started') {
+                            await recordEscrowStartNotificationAttempt(hold._id, now);
+                        } else {
+                            expect(await recordEscrowEnclaveCancelAttempt(hold._id)).toBe(true);
+                        }
+                    }
+                }
+            }
+        );
+    });
+
     it('bounds cancellation retries and gives unattempted cancellations priority', async () => {
         const now = new Date();
         const holds = await Promise.all(
@@ -129,7 +209,9 @@ describe('runEscrowHoldReminders', () => {
         await runEscrowHoldReminders({ now, limit: 200 });
         const firstRun = await Promise.all(holds.map(hold => findEscrowHoldById(hold._id)));
         expect(firstRun.map(hold => hold?.enclaveCancelAttempts).sort()).toEqual([0, 0, 1, 1]);
-        const unattempted = firstRun.find(hold => hold?.enclaveCancelAttempts === 0)!;
+        const unattempted = firstRun
+            .filter(hold => hold?.enclaveCancelAttempts === 0)
+            .sort((left, right) => left!._id.localeCompare(right!._id))[0]!;
         await runEscrowHoldReminders({ now, limit: 1 });
         expect((await findEscrowHoldById(unattempted._id))?.enclaveCancelAttempts).toBe(1);
         for (const hold of holds) {
