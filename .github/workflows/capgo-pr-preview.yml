@@ -218,7 +218,7 @@ jobs:
             ref: ${{ needs.gate.outputs.head_sha }}
             tenant: learncard
             stage: staging
-            self_assign: 'true'
+            self_assign: ${{ 'true' }}
         secrets:
             CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
 
