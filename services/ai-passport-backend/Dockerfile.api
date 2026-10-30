@@ -2,6 +2,32 @@
 
 # Bun pin matches the LearnCard monorepo (root package.json packageManager).
 ARG BUN_VERSION=1.4.2
+
+# --- Build stage ---
+# The bun.lock is shared by every LearnCard workspace, so a frozen install needs every workspace
+# manifest in the context (same pattern as services/learn-card-network/*/Dockerfile). The
+# .dockerignore at the repo root keeps node_modules and Rust targets out of the context.
+# `--filter` limits the install to this service and its workspace dependencies; an unfiltered
+# install pulls every app's dependency tree (Next, Expo, Ionic, Storybook, CDK, ...) and puts the
+# image over Fly's 8 GiB unpack limit.
+FROM oven/bun:${BUN_VERSION}-slim AS build
+
+WORKDIR /app
+
+ENV SKIP_DIDKIT_NAPI=1 \
+    MONGOMS_DISABLE_POSTINSTALL=1
+
+COPY . .
+
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile --filter ai-passport-backend
+
+WORKDIR /app/services/ai-passport-backend
+
+# Produces dist/admin (vite, a devDependency) and dist/privacy, which the runtime reads from disk.
+RUN bun run build
+
+# --- Runtime stage ---
 FROM oven/bun:${BUN_VERSION}-slim AS base
 
 LABEL fly_launch_runtime="Bun"
@@ -16,20 +42,19 @@ COPY services/ai-passport-backend/privacy/processor.py /opt/ai-privacy/assets/pr
 ENV AI_PRIVACY_PYTHON=/opt/ai-privacy/bin/python \
     AI_PRIVACY_ASSET_DIR=/opt/ai-privacy/assets
 
-# The bun.lock is shared by every LearnCard workspace, so a frozen install needs the full
-# workspace closure (same pattern as services/learn-card-network/*/Dockerfile).
-# .dockerignore at the repo root keeps node_modules and Rust targets out of the context.
 COPY . .
 
 ENV SKIP_DIDKIT_NAPI=1 \
     MONGOMS_DISABLE_POSTINSTALL=1
 
+# `start` runs src/ with --conditions=development, so the runtime keeps workspace sources and
+# production dependencies for this service's closure only (no devDependencies, no bun cache).
 RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+    bun install --frozen-lockfile --filter ai-passport-backend --production
+
+COPY --from=build /app/services/ai-passport-backend/dist /app/services/ai-passport-backend/dist
 
 WORKDIR /app/services/ai-passport-backend
-
-RUN bun run build
 
 EXPOSE ${PORT:-3001}
 
