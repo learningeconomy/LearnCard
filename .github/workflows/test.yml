@@ -272,6 +272,11 @@ jobs:
               run: bunx nx run network-brain-service:test:campaigns
               env:
                   TESTCONTAINERS_REUSE_ENABLE: 'false'
+            - name: Test campaign inbox deduplication and push suppression with MongoDB
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/notifications.spec.ts -t 'deduplicates concurrent campaign'
 
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.

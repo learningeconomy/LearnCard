@@ -46,6 +46,56 @@ describe('Notifications', () => {
     });
 
     describe('Send Notification', () => {
+        it('deduplicates concurrent campaign delivery and retries after a lost storage response', async () => {
+            const notification: LCNNotification = {
+                type: 'ANNOUNCEMENT',
+                to: { did: userA.learnCard.id.did() },
+                from: userB.learnCard.id.did(),
+                message: { title: 'Explore', body: 'Find your next step' },
+                data: {
+                    metadata: {
+                        campaignId: 'pilot-clr',
+                        campaignCreatedAt: '2026-01-01T00:00:00Z',
+                    },
+                },
+            };
+            const push = vi
+                .spyOn(PushNotifications, 'sendPushNotification')
+                .mockResolvedValue({ successCount: 1, failureCount: 0, failedTokens: [] });
+            try {
+                const send = () =>
+                    userA.clients.authorizedDidAuth.notifications.sendNotification(notification);
+                const results = await Promise.all(Array.from({ length: 10 }, send));
+                expect(results.every(Boolean)).toBe(true);
+                expect(await Notifications.countDocuments({ type: 'ANNOUNCEMENT' })).toBe(1);
+                expect(push).toHaveBeenCalledTimes(1);
+                await Notifications.updateOne(
+                    { type: 'ANNOUNCEMENT' },
+                    { $set: { read: true, archived: true } }
+                );
+                // A retry after storage succeeded but its HTTP response was lost.
+                await expect(send()).resolves.toBe(true);
+                expect(push).toHaveBeenCalledTimes(1);
+                expect(await Notifications.findOne({ type: 'ANNOUNCEMENT' })).toMatchObject({
+                    read: true,
+                    archived: true,
+                });
+                await userA.clients.authorizedDidAuth.notifications.sendNotification({
+                    ...notification,
+                    data: {
+                        metadata: {
+                            ...notification.data!.metadata!,
+                            campaignTestId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa',
+                        },
+                    },
+                });
+                expect(await Notifications.countDocuments({ type: 'ANNOUNCEMENT' })).toBe(2);
+                expect(push).toHaveBeenCalledTimes(2);
+            } finally {
+                push.mockRestore();
+            }
+        });
+
         it('should allow an authorized service to send a notification to a user', async () => {
             await expect(
                 userA.clients.authorizedDidAuth.notifications.sendNotification(

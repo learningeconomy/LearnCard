@@ -398,7 +398,8 @@ export async function sendNotification(
             }
 
             if (
-                notification.data?.metadata?.connectionPrompt &&
+                (notification.data?.metadata?.connectionPrompt ||
+                    notification.type === 'ANNOUNCEMENT') &&
                 extractNotificationWebhookSuccess(responseBody) === null
             ) {
                 throw createUnrecognizedWebhookAcknowledgementError(response.status);

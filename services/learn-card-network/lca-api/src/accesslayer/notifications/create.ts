@@ -79,6 +79,37 @@ export const createNotification = async (
     notification: LCNNotification
 ): Promise<NotificationCreationResult | false> => {
     try {
+        if (notification.type === 'ANNOUNCEMENT') {
+            const metadata = notification.data?.metadata;
+            if (!metadata?.campaignId || !metadata.campaignCreatedAt) return false;
+            // The Mongo _id index arbitrates concurrent deliveries. A dispatch/retry
+            // never changes this identity; explicit test sends get their own identity.
+            const digest = createHash('sha256')
+                .update(
+                    JSON.stringify([
+                        notification.from,
+                        notification.to.did,
+                        metadata.campaignId,
+                        metadata.campaignCreatedAt,
+                        metadata.campaignTestId ?? null,
+                    ])
+                )
+                .digest('hex');
+            const result = await Notifications.updateOne(
+                { _id: `campaign:${digest}` },
+                {
+                    $setOnInsert: {
+                        ...notification,
+                        _id: `campaign:${digest}`,
+                        read: false,
+                        archived: false,
+                        sent: new Date().toISOString(),
+                    },
+                },
+                { upsert: true }
+            );
+            return { created: result.upsertedCount === 1 };
+        }
         const promptId = getConnectionPromptId(notification);
 
         if (!promptId) {

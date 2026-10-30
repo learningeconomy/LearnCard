@@ -52,6 +52,10 @@ export const inboxDeadLetterWorker = async (
 export const notificationsWorker = async (...args: Parameters<LambdaApp['notificationsWorker']>) =>
     (await getApplication()).notificationsWorker(...args);
 
+export const campaignDispatchWorker = async (
+    ...args: Parameters<LambdaApp['campaignDispatchWorker']>
+) => (await getApplication()).campaignDispatchWorker(...args);
+
 export const inboxMaintenanceHandler = async (
     ...args: Parameters<LambdaApp['inboxMaintenanceHandler']>
 ) => (await getApplication()).inboxMaintenanceHandler(...args);

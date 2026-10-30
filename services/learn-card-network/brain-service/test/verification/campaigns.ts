@@ -30,6 +30,15 @@ const script: VerificationScript = async v => {
             .rejects.toThrow(/Campaign administrator access required/);
     });
 
+    await v.step(null, 'campaign-dispatch-authorization', async () => {
+        await v
+            .expect(learner.invoke.campaignsSendTestToMe(campaignId))
+            .rejects.toThrow(/Campaign administrator access required/);
+        await v
+            .expect(learner.invoke.campaignsDispatch(campaignId))
+            .rejects.toThrow(/Campaign administrator access required/);
+    });
+
     await v.step(null, 'campaign-sdk-user-isolation', async () => {
         v.expect(await learner.invoke.getMyCampaigns()).toEqual([]);
         v.expect(await other.invoke.getMyCampaigns()).toEqual([]);

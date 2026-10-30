@@ -24,6 +24,8 @@ const mockClient = () => ({
     },
     campaigns: {
         isAdmin: query(),
+        dispatch: mutation(),
+        sendTestToMe: mutation(),
         create: mutation(),
         update: mutation(),
         get: query(),
@@ -70,6 +72,8 @@ describe('campaign network plugin methods', () => {
         await methods.campaignsAddAudience(wallet, source);
         await methods.campaignsPageAudience(wallet, { campaignId: campaign.id, limit: 20 });
         await methods.campaignsGetStats(wallet, campaign.id);
+        await methods.campaignsSendTestToMe(wallet, campaign.id);
+        await methods.campaignsDispatch(wallet, campaign.id);
         await methods.getMyCampaigns(wallet);
         await methods.recordCampaignEvent(wallet, campaign.id, 'shown');
         await methods.enrollInCampaign(wallet, campaign.id);
@@ -91,6 +95,10 @@ describe('campaign network plugin methods', () => {
             limit: 20,
         });
         expect(client.campaigns.getStats.query).toHaveBeenCalledWith({ campaignId: campaign.id });
+        expect(client.campaigns.sendTestToMe.mutate).toHaveBeenCalledWith({
+            campaignId: campaign.id,
+        });
+        expect(client.campaigns.dispatch.mutate).toHaveBeenCalledWith({ campaignId: campaign.id });
         expect(client.campaigns.getMyCampaigns.query).toHaveBeenCalledWith();
         expect(client.campaigns.recordEvent.mutate).toHaveBeenCalledWith({
             campaignId: campaign.id,
