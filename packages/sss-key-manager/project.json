@@ -28,7 +28,7 @@
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source", "tests", "{projectRoot}/vitest.config.ts"],
+            "inputs": ["source", "tests", "{projectRoot}/vitest.config.ts", "ciTestConfig"],
             "options": {
                 "script": "test"
             }

@@ -380,18 +380,27 @@ jobs:
               working-directory: services/escrow-enclave-app
               run: rustup toolchain install
 
+            - name: Test retry reporting contract
+              run: node --test scripts/ci-test-retries/retry.test.cjs
+
             - name: Run tests
-              uses: nick-fields/retry@v2
-              with:
-                  # Matches test.yml; a large squash can make most projects affected.
-                  timeout_minutes: 20
-                  max_attempts: 3
-                  command: bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
+              id: tests
+              timeout-minutes: 20
+              run: bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
               env:
+                  LC_CI_TEST_RETRY: '1'
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   NX_BASE: ${{ needs.determine-affected.outputs.base }}
                   NX_HEAD: ${{ needs.determine-affected.outputs.head }}
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+            - name: Summarize test retries
+              if: always()
+              env:
+                  LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
+                  LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
+              run: node scripts/ci-test-retries/summary.cjs
 
     # ============================================================================
     # SERVICE DEPLOYMENTS
