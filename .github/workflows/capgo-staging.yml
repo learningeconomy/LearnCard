@@ -35,6 +35,9 @@ jobs:
     decide:
         name: Decide whether to deploy
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            actions: read
         outputs:
             should_deploy: ${{ steps.gate.outputs.should_deploy }}
             bundle_version: ${{ steps.version.outputs.bundle_version }}
@@ -56,6 +59,32 @@ jobs:
                     echo "is_release=false" >> "$GITHUB_OUTPUT"
                   fi
 
+            - name: Select last successful staging upload range
+              id: range
+              if: steps.release_check.outputs.is_release != 'true'
+              uses: actions/github-script@v8
+              with:
+                  retries: 3
+                  script: |
+                      const { resolveCapgoStagingRange } = require('./scripts/resolve-capgo-staging-range.cjs');
+                      const range = await resolveCapgoStagingRange({
+                        github,
+                        repo: context.repo,
+                        head: context.sha,
+                        runId: context.runId,
+                        warn: message => core.warning(message),
+                      });
+                      core.setOutput('base', range.base);
+                      core.setOutput('head', range.head);
+                      core.summary.addHeading('Capgo staging comparison range');
+                      if (range.reason === 'history-limit') {
+                        core.summary.addRaw('No delivery was found within the 100-run search limit. This is expected after a long stretch without uploads; a successful staging upload will establish a new baseline.\n\n');
+                      }
+                      await core.summary.addTable([
+                        [{ data: 'Field', header: true }, { data: 'Value', header: true }],
+                        ...Object.entries(range).map(([key, value]) => [key, String(value)]),
+                      ]).write();
+
             - name: Use Composite Setup Action
               if: steps.release_check.outputs.is_release != 'true'
               uses: ./.github/actions/setup
@@ -63,8 +92,11 @@ jobs:
             - name: Check if learn-card-app is affected
               id: affected
               if: steps.release_check.outputs.is_release != 'true'
+              env:
+                  NX_BASE: ${{ steps.range.outputs.base }}
+                  NX_HEAD: ${{ steps.range.outputs.head }}
               run: |
-                  AFFECTED="$(bunx nx show projects --affected --base=HEAD~1 --head=HEAD)"
+                  AFFECTED="$(bunx nx show projects --affected --base="$NX_BASE" --head="$NX_HEAD")"
                   echo "Affected: $AFFECTED"
 
                   if grep -qx "learn-card-app" <<< "$AFFECTED"; then
