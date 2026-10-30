@@ -699,6 +699,10 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     await page.getByRole('button', { name: 'Alerts', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Close alerts' })).toBeVisible();
     await expect(card).toBeVisible();
-    await page.screenshot({ path: 'test-results/campaign-announcement-modal.png' });
+    await expect(card).toBeInViewport({ ratio: 1 });
+    await page.screenshot({
+        path: 'test-results/campaign-announcement-modal.png',
+        animations: 'disabled',
+    });
     await page.getByRole('button', { name: 'Close alerts' }).click();
 });
