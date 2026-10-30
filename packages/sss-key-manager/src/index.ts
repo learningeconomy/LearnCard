@@ -173,6 +173,7 @@ export type {
 
 export {
     createSSSStrategy,
+    DuplicateShareCoordinateError,
     IdentityRecoverySessionConsumedError,
     EscrowRequestError,
 } from './sss-strategy';

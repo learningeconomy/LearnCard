@@ -12,17 +12,19 @@
  * - AuthSessionError — typed auth session errors go to idle
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { AuthCoordinator, createAuthCoordinator } from '../AuthCoordinator';
 import {
     createSSSStrategy,
     EscrowPinMismatchError,
     IdentityRecoverySessionConsumedError,
-    splitAndVerify,
+    DuplicateShareCoordinateError,
+    reconstructFromShares,
     type SSSStorageFunctions,
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
+import pendingWriteSplits from './fixtures/pending-write-splits.json';
 
 const logoutLogs = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }));
 vi.mock('../../logging/logger', () => ({ getLogger: () => logoutLogs }));
@@ -1926,12 +1928,38 @@ describe('AuthCoordinator', () => {
         });
 
         describe('unresolved SSS writes during stale-key login', () => {
-            const privateKey = '1234567890abcdef'.repeat(4);
+            const { privateKey, stale, server } = pendingWriteSplits;
             const expectedDid = 'did:key:zPendingOwner';
             const mainId = 'sss-device-share:user-1';
             const pendingId = `sss-pending-share:${mainId}`;
 
-            const preparePendingWrite = async () => {
+            afterEach(() => vi.restoreAllMocks());
+
+            it('uses valid independently generated fixture splits', async () => {
+                const strategy = createSSSStrategy({ serverUrl: 'http://test-server/api' });
+                for (const split of [stale, server]) {
+                    const shares = Object.values(split);
+                    for (let left = 0; left < shares.length; left += 1) {
+                        for (let right = left + 1; right < shares.length; right += 1) {
+                            expect(
+                                await strategy.reconstructKey(shares[left]!, shares[right]!)
+                            ).toBe(privateKey);
+                        }
+                    }
+                }
+            });
+
+            it('the underlying share library rejects the colliding fixture pair', async () => {
+                // Bypass the strategy's typed pre-check to guard its library-format assumption.
+                expect(stale.deviceShare.slice(-2)).toBe(server.authShare.slice(-2));
+                await expect(
+                    reconstructFromShares([stale.deviceShare, server.authShare])
+                ).rejects.toThrow();
+            });
+
+            // Real verified splits of a public test key. Across independent splits,
+            // the stale device and current auth share can reuse an x-coordinate.
+            const preparePendingWrite = async (collidingCoordinates: boolean) => {
                 const shares = new Map<string, string>();
                 const versions = new Map<string, number>();
                 const storage: SSSStorageFunctions = {
@@ -1958,11 +1986,15 @@ describe('AuthCoordinator', () => {
                     },
                     getShareVersion: async id => versions.get(id ?? 'sss-device-share') ?? null,
                 };
-                const stale = await splitAndVerify(privateKey);
-                const otherDevice = await splitAndVerify(privateKey);
-                shares.set(mainId, stale.shares.deviceShare);
+                shares.set(mainId, stale.deviceShare);
                 versions.set(mainId, 1);
-                let currentAuthShare = otherDevice.shares.authShare;
+                const originalAuthShare = collidingCoordinates
+                    ? server.authShare
+                    : server.recoveryShare;
+                expect(stale.deviceShare.slice(-2) === originalAuthShare.slice(-2)).toBe(
+                    collidingCoordinates
+                );
+                let currentAuthShare = originalAuthShare;
                 let version = 1;
                 let delayedAuthShare = '';
                 vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
@@ -1974,9 +2006,7 @@ describe('AuthCoordinator', () => {
                     return new Response(
                         JSON.stringify({
                             authShare:
-                                requestedVersion === 1
-                                    ? otherDevice.shares.authShare
-                                    : currentAuthShare,
+                                requestedVersion === 1 ? originalAuthShare : currentAuthShare,
                             shareVersion: version,
                             keyProvider: 'sss',
                             primaryDid: expectedDid,
@@ -2016,53 +2046,149 @@ describe('AuthCoordinator', () => {
                 };
             };
 
-            it('keeps the pending split through needs_recovery and recovers after a delayed commit', async () => {
-                const { coordinator, strategy, shares, versions, commitLegacyWrite } =
-                    await preparePendingWrite();
-                const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
+            it.each([false, true])(
+                'keeps the pending split through needs_recovery and recovers after a delayed commit (colliding coordinates: %s)',
+                async collidingCoordinates => {
+                    const { coordinator, strategy, shares, versions, commitLegacyWrite } =
+                        await preparePendingWrite(collidingCoordinates);
+                    const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
 
-                expect(await coordinator.initialize()).toMatchObject({
-                    status: 'needs_recovery',
-                    recoveryReason: 'stale_local_key',
-                });
-                expect(shares.has(mainId)).toBe(false);
-                expect(versions.has(mainId)).toBe(false);
-                expect(shares.has(pendingId)).toBe(true);
-                expect(await strategy.getLocalKey()).toBe(pending);
+                    logoutLogs.warn.mockClear();
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'needs_recovery',
+                        recoveryReason: 'stale_local_key',
+                    });
+                    expect(logoutLogs.warn).toHaveBeenCalledExactlyOnceWith(
+                        collidingCoordinates
+                            ? 'Share coordinate collision - stale local key detected'
+                            : 'DID mismatch - stale local key detected'
+                    );
+                    expect(shares.has(mainId)).toBe(false);
+                    expect(versions.has(mainId)).toBe(false);
+                    expect(shares.has(pendingId)).toBe(true);
+                    expect(await strategy.getLocalKey()).toBe(pending);
 
-                commitLegacyWrite();
-                expect(await coordinator.initialize()).toMatchObject({
-                    status: 'ready',
-                    did: expectedDid,
-                    privateKey,
+                    commitLegacyWrite();
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'ready',
+                        did: expectedDid,
+                        privateKey,
+                    });
+                    expect(shares.get(mainId)).toBe(pending);
+                    expect(versions.get(mainId)).toBe(2);
+                    expect(shares.has(pendingId)).toBe(false);
+                }
+            );
+
+            it.each([false, true])(
+                'reconciles an already committed pending split once (colliding coordinates: %s)',
+                async collidingCoordinates => {
+                    const { coordinator, strategy, shares, versions, commitLegacyWrite } =
+                        await preparePendingWrite(collidingCoordinates);
+                    const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
+                    const reconcile = vi.spyOn(strategy, 'reconcileShares');
+                    commitLegacyWrite();
+
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'ready',
+                        did: expectedDid,
+                        privateKey,
+                    });
+                    expect(reconcile).toHaveBeenCalledTimes(1);
+                    expect(shares.get(mainId)).toBe(pending);
+                    expect(versions.get(mainId)).toBe(2);
+                    expect(shares.has(pendingId)).toBe(false);
+                }
+            );
+
+            it.each([false, true])(
+                'forgets retained pending data without touching another account (colliding coordinates: %s)',
+                async collidingCoordinates => {
+                    const { coordinator, strategy, shares, versions } =
+                        await preparePendingWrite(collidingCoordinates);
+                    const otherId = 'sss-device-share:user-2';
+                    const otherPendingId = `sss-pending-share:${otherId}`;
+                    shares.set(otherId, 'other-account-device');
+                    shares.set(otherPendingId, 'other-account-pending');
+                    versions.set(otherId, 7);
+
+                    expect(await coordinator.initialize()).toMatchObject({
+                        status: 'needs_recovery',
+                        recoveryReason: 'stale_local_key',
+                    });
+                    expect(shares.has(pendingId)).toBe(true);
+                    await coordinator.forgetDevice();
+                    expect(shares.has(mainId)).toBe(false);
+                    expect(shares.has(pendingId)).toBe(false);
+                    expect(versions.has(mainId)).toBe(false);
+                    strategy.setActiveUser!('user-2');
+                    expect(await strategy.getLocalKey()).toBe('other-account-device');
+                    expect(await strategy.getLocalShareVersion!()).toBe(7);
+                    expect(shares.get(otherPendingId)).toBe('other-account-pending');
+                }
+            );
+        });
+
+        it.each([
+            [new Error('Unexpected reconstruction failure'), 'error'],
+            [new TypeError('Failed to fetch'), 'idle'],
+        ] as const)(
+            'preserves unrelated reconstruction failure handling: %s',
+            async (error, status) => {
+                const reconcileShares = vi.fn();
+                const { coordinator, keyDerivation } = setup({
+                    keyDerivation: {
+                        reconstructKey: vi.fn().mockRejectedValue(error),
+                        reconcileShares,
+                    },
                 });
-                expect(shares.get(mainId)).toBe(pending);
-                expect(versions.get(mainId)).toBe(2);
-                expect(shares.has(pendingId)).toBe(false);
+                expect(await coordinator.initialize()).toMatchObject({ status });
+                expect(reconcileShares).not.toHaveBeenCalled();
+                expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
+            }
+        );
+
+        it.each(['expected-did', 'verifier', 'reconciliation'] as const)(
+            'does not recover a collision without %s support',
+            async missing => {
+                const reconcileShares = vi.fn();
+                const { coordinator, keyDerivation } = setup({
+                    config: missing === 'verifier' ? { didFromPrivateKey: undefined } : {},
+                    keyDerivation: {
+                        reconstructKey: vi
+                            .fn()
+                            .mockRejectedValue(new DuplicateShareCoordinateError()),
+                        reconcileShares: missing === 'reconciliation' ? undefined : reconcileShares,
+                        ...(missing === 'expected-did'
+                            ? {
+                                  fetchServerKeyStatus: vi.fn().mockResolvedValue({
+                                      ...defaultServerStatus,
+                                      primaryDid: null,
+                                  }),
+                              }
+                            : {}),
+                    },
+                });
+                expect(await coordinator.initialize()).toMatchObject({ status: 'error' });
+                expect(reconcileShares).not.toHaveBeenCalled();
+                expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
+            }
+        );
+
+        it('preserves a reconciliation failure after a coordinate collision', async () => {
+            const reconcileShares = vi.fn().mockRejectedValue(new Error('Reconciliation failed'));
+            const { coordinator, keyDerivation } = setup({
+                keyDerivation: {
+                    reconstructKey: vi.fn().mockRejectedValue(new DuplicateShareCoordinateError()),
+                    reconcileShares,
+                },
             });
-
-            it('forgets retained pending data without touching another account', async () => {
-                const { coordinator, strategy, shares, versions } = await preparePendingWrite();
-                const otherId = 'sss-device-share:user-2';
-                const otherPendingId = `sss-pending-share:${otherId}`;
-                shares.set(otherId, 'other-account-device');
-                shares.set(otherPendingId, 'other-account-pending');
-                versions.set(otherId, 7);
-
-                expect(await coordinator.initialize()).toMatchObject({
-                    status: 'needs_recovery',
-                    recoveryReason: 'stale_local_key',
-                });
-                expect(shares.has(pendingId)).toBe(true);
-                await coordinator.forgetDevice();
-                expect(shares.has(mainId)).toBe(false);
-                expect(shares.has(pendingId)).toBe(false);
-                expect(versions.has(mainId)).toBe(false);
-                strategy.setActiveUser!('user-2');
-                expect(await strategy.getLocalKey()).toBe('other-account-device');
-                expect(await strategy.getLocalShareVersion!()).toBe(7);
-                expect(shares.get(otherPendingId)).toBe('other-account-pending');
+            expect(await coordinator.initialize()).toMatchObject({
+                status: 'error',
+                error: 'Reconciliation failed',
             });
+            expect(reconcileShares).toHaveBeenCalledTimes(1);
+            expect(keyDerivation.clearLocalKeys).not.toHaveBeenCalled();
         });
 
         it('goes to idle (not error) when AuthSessionError is thrown', async () => {
