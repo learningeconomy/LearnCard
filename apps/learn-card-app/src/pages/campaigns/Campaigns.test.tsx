@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { within, act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Router } from 'react-router-dom';
@@ -43,6 +43,8 @@ const campaign = (): Campaign => {
 };
 const apiMock = () =>
     ({
+        searchProfiles: vi.fn().mockResolvedValue([]),
+        getProfile: vi.fn().mockResolvedValue(undefined),
         campaignsIsAdmin: vi.fn().mockResolvedValue(true),
         campaignsList: vi
             .fn<CampaignApi['campaignsList']>()
@@ -151,7 +153,11 @@ describe('campaign composer', () => {
         const api = apiMock();
         const view = mount(api);
         expect(await screen.findByLabelText('Campaign ID')).toBeDisabled();
-        fireEvent.click(screen.getByRole('tab', { name: 'JSON' }));
+        fireEvent.click(
+            within(screen.getByRole('tablist', { name: 'Message editing mode' })).getByRole('tab', {
+                name: 'JSON',
+            })
+        );
         fireEvent.change(screen.getByLabelText('Message JSON'), { target: { value: '{' } });
         expect(screen.getByRole('button', { name: 'Save changes' })).toBeDisabled();
         expect(screen.getByRole('button', { name: 'Preview message' })).toBeDisabled();
@@ -286,6 +292,60 @@ describe('campaign composer', () => {
 });
 
 describe('audience batches', () => {
+    it('previews email fields without adding, then sends the same normalized source on add', async () => {
+        const api = apiMock();
+        mount(
+            api,
+            '/admin/campaigns/test-campaign',
+            <CampaignAudience api={api} id="test-campaign" disabled={false} onBusy={() => {}} />
+        );
+        fireEvent.change(screen.getByLabelText('Email addresses'), {
+            target: { value: ' First@EXAMPLE.com;first@example.com,second@example.com' },
+        });
+        expect(api.campaignsAddAudience).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Preview source audience' }));
+        await screen.findByText(/eligible matches processed in preview/);
+        const input = {
+            campaignId: 'test-campaign',
+            source: { type: 'emails', emails: ['first@example.com', 'second@example.com'] },
+        };
+        expect(api.campaignsPreviewAudience).toHaveBeenCalledWith(input);
+        expect(api.campaignsAddAudience).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Add source audience' }));
+        await waitFor(() => expect(api.campaignsAddAudience).toHaveBeenCalledWith(input));
+        await screen.findByText(/existing members may be included/);
+        fireEvent.change(screen.getByLabelText('Email addresses'), {
+            target: { value: 'invalid' },
+        });
+        expect(screen.getByRole('button', { name: 'Add source audience' })).toBeDisabled();
+    });
+    it('adds only explicitly selected network members through the existing audience endpoint', async () => {
+        const api = apiMock();
+        api.searchProfiles.mockResolvedValue([
+            { did: 'did:key:member', profileId: 'member', displayName: 'A network member' },
+        ]);
+        mount(
+            api,
+            '/admin/campaigns/test-campaign',
+            <CampaignAudience api={api} id="test-campaign" disabled={false} onBusy={() => {}} />
+        );
+        fireEvent.change(screen.getByLabelText('Search network members'), {
+            target: { value: 'member' },
+        });
+        fireEvent.click(
+            await screen.findByRole('checkbox', { name: 'Select A network member (@member)' })
+        );
+        expect(api.campaignsAddAudience).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Add selected members' }));
+        expect(screen.getByText('Adding selected members...')).toBeInTheDocument();
+        await waitFor(() =>
+            expect(api.campaignsAddAudience).toHaveBeenCalledWith({
+                campaignId: 'test-campaign',
+                source: { type: 'dids', dids: ['did:key:member'] },
+            })
+        );
+        await screen.findByText(/existing members may be included/);
+    });
     it('stops after the in-flight batch, preserves progress, and never labels matches as additions', async () => {
         const api = apiMock();
         const batch = deferred<{ count: number }>();
