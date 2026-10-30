@@ -238,6 +238,21 @@ const status = await client.getAuthShare({
 });
 ```
 
+## Testing
+
+Run `bun run test` from this package, or `bunx nx test sss-key-manager` from the
+repository root.
+
+The package-specific worker and timeout settings live in [vitest.config.ts](vitest.config.ts).
+They allow real Argon2id checks to run alongside other Nx projects when visible
+CPU counts exceed the CPU quota available. Other packages keep their own limits.
+
+Tests retain the [production KDF defaults](src/crypto.ts) (`DEFAULT_KDF_PARAMS`),
+including PIN compatibility and real encryption/decryption/recovery round trips.
+Each password round trip is a separate case with its own test budget and failure
+name. Fake timers do not accelerate this CPU work. Nx test inputs include the
+Vitest config so limit changes invalidate cached results.
+
 ## License
 
 MIT

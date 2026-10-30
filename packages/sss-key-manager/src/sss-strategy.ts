@@ -243,6 +243,14 @@ export class EscrowRequestError extends Error {
     }
 }
 
+/** Independently generated splits can reuse a share's final-byte x-coordinate. */
+export class DuplicateShareCoordinateError extends Error {
+    constructor() {
+        super('Stored shares have the same coordinate and cannot be combined');
+        this.name = 'DuplicateShareCoordinateError';
+    }
+}
+
 const fetchAuthShareRaw = async (
     serverUrl: string,
     token: string,
@@ -1852,6 +1860,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async reconstructKey(localKey: string, remoteKey: string): Promise<string> {
+            const coordinate = localKey.slice(-2).toLowerCase();
+            if (
+                localKey.length === remoteKey.length &&
+                /^(?:[0-9a-f]{2}){2,}$/i.test(localKey) &&
+                /^(?:[0-9a-f]{2}){2,}$/i.test(remoteKey) &&
+                coordinate !== '00' &&
+                coordinate === remoteKey.slice(-2).toLowerCase()
+            ) {
+                throw new DuplicateShareCoordinateError();
+            }
             return reconstructFromShares([localKey, remoteKey]);
         },
 
