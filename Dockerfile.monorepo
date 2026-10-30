@@ -26,9 +26,8 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install
 
 # Keep the installed dependency layers intact. Only the executable needs the
-# older runtime: Bun 1.4.2 bypassed the localhost host-gateway mapping used for
-# cross-service did:web resolution, and the 1.4.4 used by the install stages above
-# hasn't been re-tested for it. Copying /app into a fresh base duplicates the
+# older runtime: Bun 1.4.x (rechecked on 1.4.4, LC-2309) bypasses the localhost
+# host-gateway mapping used for cross-service did:web resolution. Copying /app into a fresh base duplicates the
 # entire dependency tree and makes image export expensive.
 FROM oven/bun:1.3.14 AS compatible-runtime
 

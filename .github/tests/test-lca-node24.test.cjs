@@ -24,8 +24,8 @@ const workflow = yaml.load(
 assert.equal(
     workflow.jobs['deploy-lca-api'].steps.find(
         step => step.name === 'Set up LCA Node 24 runtime tools'
-    ).with['node-version'],
-    '24.12.0'
+    ).with['node-version-file'],
+    '.nvmrc'
 );
 for (const [name, job] of Object.entries(workflow.jobs)) {
     if (name !== 'deploy-lca-api')

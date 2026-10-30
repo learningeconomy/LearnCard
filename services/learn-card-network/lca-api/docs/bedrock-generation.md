@@ -98,7 +98,7 @@ before Serverless deployment; WASM fallback is not evidence of native compatibil
 LCA pins serverless-esbuild 1.57.2 for Node 24 target support. The shared
 `scripts/serverless-node24-runtime.cjs` plugin adds Node 24 to Serverless 3.40's older
 runtime schema without disabling validation. Deployment tools run on
-Node 24.12.0 in the LCA action. Local offline configuration uses Node 24 too.
+the repo `.nvmrc` Node 24 in the LCA action. Local offline configuration uses Node 24 too.
 
 The `LcaDevBedrockGenerationPolicy` CloudFormation resource attaches the scoped
 policy to `SigningAuthorityExecutionRole` only for stage `dev` in `us-east-1`.

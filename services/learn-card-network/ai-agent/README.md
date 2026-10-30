@@ -276,7 +276,7 @@ temporary database.
 Production retains its environment approval; no separate action dispatch is required.
 See [RUNBOOK.md](./RUNBOOK.md) for CI, release metadata, environment setup, and controlled rollout.
 
-Local and CI AI Agent commands pin **Node.js 24.18.0**. Trigger tasks select the stable
+Local and CI AI Agent commands pin **Node.js 24.22.1**. Trigger tasks select the stable
 **Node.js 24** major (`runtime: 'node-24'`); the hosted platform selects its minor version.
 The ECS HTTP service and repository dependency installation use **Bun 1.4.4**. ECS builds the
 service's own Dockerfile and uses Fargate `awsvpc` networking, without an
