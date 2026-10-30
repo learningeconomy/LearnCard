@@ -281,8 +281,8 @@ Local and CI AI Agent commands pin **Node.js 24.22.1**. Trigger tasks select the
 The ECS HTTP service and repository dependency installation use **Bun 1.4.4**. ECS builds the
 service's own Dockerfile and uses Fargate `awsvpc` networking, without an
 `extra_hosts`/`host-gateway` override. Local Compose instead uses
-`Dockerfile.monorepo`: dependencies install on 1.4.4, but its final `source`
-runtime deliberately stays on 1.3.14 for local and hosted E2E did:web host-gateway
+`Dockerfile.monorepo`: dependencies install on 1.4.4, but its `compatible-runtime`
+stage deliberately stays on 1.3.14 for local and hosted E2E did:web host-gateway
 resolution, an exception to the production `1.4.4-alpine` runtime. The local AI
 Agent startup runs `dev`, not `bun install`.
 Trigger SDK/build/CLI are pinned to 4.5.7, the first release with stable Node 24 support; see the
