@@ -107,6 +107,9 @@ jobs:
               with:
                   ruby-version: '3.3'
 
+            - name: Test mock E2E CI policy
+              run: node --test scripts/mock-e2e-ci.test.cjs
+
             - name: Run repository shell contracts
               run: |
                   for contract in .github/tests/*.test.sh; do
@@ -137,7 +140,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -181,7 +184,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -210,7 +213,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -228,7 +231,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
@@ -243,7 +246,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout Repo
-              uses: actions/checkout@v3
+              uses: actions/checkout@v7
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
