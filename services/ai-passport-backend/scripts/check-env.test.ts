@@ -42,7 +42,30 @@ describe('bun run check:env', () => {
         expect(stderr).toContain('LLM_PROVIDER must be bedrock or openai (got "nope")');
         expect(stderr).toContain('EMBEDDINGS_PROVIDER must be bedrock or openai (got "typo")');
         expect(stderr).toContain('DANGEROUSLY_BYPASS_PRIVACY_GUARDRAIL must be exactly "true"');
-        // Typos in both provider names still surface the key OpenAI embeddings need.
+        // Embeddings default to Nova, so a typo no longer asks for an OpenAI key.
+        expect(stderr).not.toContain('OPENAI_API_KEY is required');
+    });
+
+    test('the default Bedrock/Nova setup passes without OPENAI_API_KEY', async () => {
+        const { exitCode, stdout, stderr } = await run({
+            ...infra,
+            AWS_REGION: 'us-east-1',
+            AWS_BEARER_TOKEN_BEDROCK: 'synthetic-key',
+        });
+        expect(exitCode, stderr).toBe(0);
+        expect(stdout).toContain(
+            'Backend environment OK (LLM_PROVIDER=bedrock, EMBEDDINGS_PROVIDER=bedrock, privacy guardrail on)'
+        );
+    });
+
+    test('EMBEDDINGS_PROVIDER=openai without OPENAI_API_KEY fails', async () => {
+        const { exitCode, stderr } = await run({
+            ...infra,
+            AWS_REGION: 'us-east-1',
+            AWS_BEARER_TOKEN_BEDROCK: 'synthetic-key',
+            EMBEDDINGS_PROVIDER: 'openai',
+        });
+        expect(exitCode).toBe(1);
         expect(stderr).toContain('OPENAI_API_KEY is required (EMBEDDINGS_PROVIDER=openai)');
     });
 

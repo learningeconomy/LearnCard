@@ -11,6 +11,8 @@ process.env.EMBEDDINGS_LAUNCHDARKLY_ENABLED = 'true';
 process.env.EMBEDDINGS_LAUNCHDARKLY_SDK_KEY = 'synthetic-key';
 process.env.EMBEDDINGS_FLAG_ENVIRONMENT = 'test';
 process.env.BEDROCK_EMBEDDINGS_ENABLED = 'true';
+// The LaunchDarkly read switch is a migration control: start from legacy reads and writes.
+process.env.EMBEDDINGS_PROVIDER = 'openai';
 let value = 'openai1536',
     evaluations = 0,
     release!: (value: void) => void,

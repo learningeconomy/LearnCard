@@ -79,7 +79,7 @@ test.each([
 });
 
 test('refuses while Bedrock embeddings are disabled', async () => {
-    delete process.env.BEDROCK_EMBEDDINGS_ENABLED;
+    process.env.BEDROCK_EMBEDDINGS_ENABLED = 'false';
     await expect(novaEmbeddings(['text'], 'query')).rejects.toThrow(
         'Bedrock embeddings are disabled'
     );

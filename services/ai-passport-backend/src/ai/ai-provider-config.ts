@@ -11,15 +11,23 @@ import {
     getBedrockGenerationModelForAudit,
 } from './bedrock-generation';
 import { isPrivacyGuardrailBypassEnabled } from './privacy-guardrail-bypass';
+import {
+    activeGeneration,
+    novaEmbeddingsEnabled,
+    writeGenerations,
+    type EmbeddingGeneration,
+} from './embedding-generation';
 
 // Default is the deployed path. `openai` exists so someone without AWS access
 // can run generation locally on OPENAI_API_KEY.
 export type LlmProvider = 'bedrock' | 'openai';
-// EMBEDDINGS_PROVIDER only selects OpenAI. Nova 2 embeddings are controlled by
-// the generation settings (EMBEDDINGS_READ_GENERATION, EMBEDDINGS_WRITE_GENERATION,
-// EMBEDDINGS_DUAL_WRITE, BEDROCK_EMBEDDINGS_ENABLED), which pin model, dimensions
-// and Qdrant collection together. `bedrock` stays rejected so a second switch
-// can never move embeddings to a different index on its own.
+// EMBEDDINGS_PROVIDER only picks the default embedding generation: bedrock
+// (default) is Nova 2 (nova1024v1), openai is legacy text-embedding-3-small
+// (openai1536) for local dev without AWS access. The generation settings
+// (EMBEDDINGS_READ_GENERATION, EMBEDDINGS_WRITE_GENERATION, EMBEDDINGS_DUAL_WRITE,
+// BEDROCK_EMBEDDINGS_ENABLED) still override it and are what pin model,
+// dimensions and Qdrant collection, so there is one switch, not two. See
+// embedding-generation.ts.
 export type EmbeddingsProvider = 'openai' | 'bedrock';
 
 // The openai1536 collections only hold text-embedding-3-small vectors. Another
@@ -78,7 +86,8 @@ export const validateAiProviderEnvironment = (
     const parsedEmbeddings = parseProvider(
         'EMBEDDINGS_PROVIDER',
         environment.EMBEDDINGS_PROVIDER,
-        'openai'
+        // Unset follows the generation provider (see defaultEmbeddingGeneration).
+        'provider' in parsedLlm ? parsedLlm.provider : 'bedrock'
     );
     for (const parsed of [parsedLlm, parsedEmbeddings])
         if ('problem' in parsed) problems.push(parsed.problem);
@@ -100,18 +109,45 @@ export const validateAiProviderEnvironment = (
         problems.push((error as Error).message);
     }
 
+    // Resolve the generations every embedding call will use, so the key and
+    // Nova checks follow what actually runs rather than the provider label.
+    let readGeneration: EmbeddingGeneration | undefined;
+    let writes: EmbeddingGeneration[] = [];
+    try {
+        readGeneration = activeGeneration(environment);
+    } catch {
+        problems.push(
+            `EMBEDDINGS_READ_GENERATION must be nova1024v1 or openai1536 (got "${environment.EMBEDDINGS_READ_GENERATION}")`
+        );
+    }
+    try {
+        writes = writeGenerations(environment);
+    } catch {
+        problems.push(
+            `EMBEDDINGS_WRITE_GENERATION must be nova1024v1 or openai1536 (got "${environment.EMBEDDINGS_WRITE_GENERATION}")`
+        );
+    }
+    const generationSource = (name: string, explicit: string | undefined) =>
+        explicit?.trim()
+            ? `${name}=${explicit.trim()}`
+            : environment.EMBEDDINGS_PROVIDER?.trim()
+              ? 'EMBEDDINGS_PROVIDER=openai'
+              : 'LLM_PROVIDER=openai';
+
     const needsOpenAIKey = [
         llm === 'openai' && 'LLM_PROVIDER=openai',
-        // OpenAI is the only working embeddings provider, so a typo still needs the key.
-        embeddings !== 'bedrock' && 'EMBEDDINGS_PROVIDER=openai',
-    ].filter(Boolean);
+        readGeneration === 'openai1536' &&
+            generationSource('EMBEDDINGS_READ_GENERATION', environment.EMBEDDINGS_READ_GENERATION),
+        writes.includes('openai1536') &&
+            (environment.EMBEDDINGS_DUAL_WRITE === 'true'
+                ? 'EMBEDDINGS_DUAL_WRITE=true'
+                : generationSource(
+                      'EMBEDDINGS_WRITE_GENERATION',
+                      environment.EMBEDDINGS_WRITE_GENERATION
+                  )),
+    ].filter((reason): reason is string => Boolean(reason));
     if (needsOpenAIKey.length && !environment.OPENAI_API_KEY?.trim())
-        problems.push(`OPENAI_API_KEY is required (${needsOpenAIKey.join(', ')})`);
-
-    if (embeddings === 'bedrock')
-        problems.push(
-            'EMBEDDINGS_PROVIDER=bedrock is not supported. Nova 2 embeddings are selected with EMBEDDINGS_READ_GENERATION, EMBEDDINGS_WRITE_GENERATION, EMBEDDINGS_DUAL_WRITE and BEDROCK_EMBEDDINGS_ENABLED (see docs/nova-embeddings-backfill.md). Use EMBEDDINGS_PROVIDER=openai.'
-        );
+        problems.push(`OPENAI_API_KEY is required (${[...new Set(needsOpenAIKey)].join(', ')})`);
 
     const embeddingModel = environment.EMBEDDING_MODEL?.trim();
     if (
@@ -122,19 +158,34 @@ export const validateAiProviderEnvironment = (
             `EMBEDDING_MODEL="${embeddingModel}" is not an approved embeddings model; unset it or use ${APPROVED_OPENAI_EMBEDDING_MODELS.join(', ')}`
         );
 
-    // Retirement configuration (Nova-only writes): openai1536 copies stop being
-    // current, so reads must already be on Nova and there is no OpenAI fallback.
-    const legacyWritesOff =
-        environment.EMBEDDINGS_DUAL_WRITE !== 'true' &&
-        environment.EMBEDDINGS_WRITE_GENERATION === 'nova1024v1';
-    if (legacyWritesOff) {
-        if (environment.EMBEDDINGS_READ_GENERATION !== 'nova1024v1')
+    const novaInUse = readGeneration === 'nova1024v1' || writes.includes('nova1024v1');
+    const legacyWritesOff = writes.length > 0 && !writes.includes('openai1536');
+    if (novaInUse) {
+        // Retirement configuration (Nova-only writes, also the default):
+        // openai1536 copies stop being current, so reads must be on Nova and
+        // there is no OpenAI fallback.
+        if (legacyWritesOff && readGeneration === 'openai1536')
             problems.push(
                 'EMBEDDINGS_WRITE_GENERATION=nova1024v1 without dual writes retires the openai1536 copies; it needs EMBEDDINGS_READ_GENERATION=nova1024v1; there is no OpenAI read fallback once legacy writes stop'
             );
-        if (environment.BEDROCK_EMBEDDINGS_ENABLED !== 'true')
+        if (!novaEmbeddingsEnabled(environment))
             problems.push(
-                'EMBEDDINGS_WRITE_GENERATION=nova1024v1 without dual writes needs BEDROCK_EMBEDDINGS_ENABLED=true'
+                legacyWritesOff
+                    ? 'EMBEDDINGS_WRITE_GENERATION=nova1024v1 without dual writes needs BEDROCK_EMBEDDINGS_ENABLED=true (or unset)'
+                    : 'nova1024v1 embeddings need BEDROCK_EMBEDDINGS_ENABLED=true (or unset)'
+            );
+        if (llm === 'openai' && environment.AWS_REGION !== 'us-east-1')
+            problems.push(
+                `Nova embeddings need AWS_REGION=us-east-1 (got ${environment.AWS_REGION ? `"${environment.AWS_REGION}"` : 'nothing'}); use EMBEDDINGS_PROVIDER=openai with OPENAI_API_KEY to run without AWS`
+            );
+        if (
+            llm === 'openai' &&
+            !onFly &&
+            bedrockAuth.kind === 'credential-chain' &&
+            !hasAwsCredentialSource(environment, fileExists)
+        )
+            problems.push(
+                `Nova embeddings found no Bedrock credentials. Set ${BEDROCK_API_KEY_ENV}, configure AWS credentials (AWS_PROFILE or ~/.aws), or use EMBEDDINGS_PROVIDER=openai with OPENAI_API_KEY`
             );
     }
 

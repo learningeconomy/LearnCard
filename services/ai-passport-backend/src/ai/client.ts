@@ -53,11 +53,15 @@ const ownerBoundSignal = (signal?: AbortSignal): AbortSignal | undefined => {
 };
 
 // Pin embeddings independently; ambient OPENAI_BASE_URL must not reroute them.
-const openai = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-    baseURL: 'https://api.openai.com/v1',
-    maxRetries: 0,
-});
+// Built on first openai1536 use: the SDK throws on an empty key, and Nova
+// (the default) deployments run without OPENAI_API_KEY.
+let openaiEmbeddingsClient: OpenAI | undefined;
+const openaiEmbeddings = () =>
+    (openaiEmbeddingsClient ??= new OpenAI({
+        apiKey: OPENAI_API_KEY,
+        baseURL: 'https://api.openai.com/v1',
+        maxRetries: 0,
+    }));
 // LLM_PROVIDER=bedrock (default) or openai; validated at startup.
 const llm = getLlmRoute();
 const llmProvider = new BedrockResponsesProvider(llm.clientFactory, undefined, llm);
@@ -292,7 +296,7 @@ export async function embeddingAiCall(
                             signal?.throwIfAborted();
                             return result;
                         }
-                        const response = await openai.embeddings.create(
+                        const response = await openaiEmbeddings().embeddings.create(
                             {
                                 model: EMBEDDING_MODEL,
                                 input: providerTexts,

@@ -49,7 +49,13 @@ test('generation scope isolates target storage; erasure inventory includes both 
             'nova2_text1024_privacy_v1'
         );
     });
+    // Outside a scope, the default generation (Nova) decides the collection.
+    expect(resolveVectorCollection(EMBEDDINGS_COLLECTION)).toContain('nova2_text1024_privacy_v1');
+    process.env.EMBEDDINGS_PROVIDER = 'openai';
     expect(resolveVectorCollection(EMBEDDINGS_COLLECTION)).toBe(EMBEDDINGS_COLLECTION);
+    delete process.env.EMBEDDINGS_PROVIDER;
     delete process.env.BEDROCK_EMBEDDINGS_ENABLED;
+    expect(() => assertNovaEnabled()).not.toThrow();
+    process.env.BEDROCK_EMBEDDINGS_ENABLED = 'false';
     expect(() => assertNovaEnabled()).toThrow();
 });

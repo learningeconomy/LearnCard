@@ -2243,7 +2243,7 @@ jobs:
                     } | sort -u
                   )
                   missing=()
-                  for name in MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT OPENAI_API_KEY AI_PRIVACY_KEY; do
+                  for name in MONGO_URI SEED JWT_SECRET REDIS_HOST REDIS_PORT AI_PRIVACY_KEY; do
                     grep -qx "$name" <<< "$present" || missing+=("$name")
                   done
                   if (( ${#missing[@]} )); then

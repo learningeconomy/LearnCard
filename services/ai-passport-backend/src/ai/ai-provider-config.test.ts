@@ -24,14 +24,18 @@ const problems = (environment: NodeJS.ProcessEnv, roleModels = models) => {
 const bedrockKeyEnv = {
     AWS_REGION: 'us-east-1',
     AWS_BEARER_TOKEN_BEDROCK: 'synthetic-key',
+};
+const openaiEmbeddingsEnv = {
+    ...bedrockKeyEnv,
+    EMBEDDINGS_PROVIDER: 'openai',
     OPENAI_API_KEY: 'sk-synthetic',
 };
 
 describe('provider selection', () => {
-    test('defaults to Bedrock generation and OpenAI embeddings', () => {
+    test('defaults to Bedrock generation and Nova embeddings without OPENAI_API_KEY', () => {
         expect(validate(bedrockKeyEnv)).toEqual({
             llm: 'bedrock',
-            embeddings: 'openai',
+            embeddings: 'bedrock',
             bedrockAuth: { kind: 'api-key', token: 'synthetic-key' },
             privacyGuardrailBypass: false,
         });
@@ -42,7 +46,6 @@ describe('provider selection', () => {
             validate({
                 AWS_REGION: 'us-east-1',
                 AWS_PROFILE: 'dev',
-                OPENAI_API_KEY: 'sk-synthetic',
             })
         ).toMatchObject({
             llm: 'bedrock',
@@ -56,11 +59,25 @@ describe('provider selection', () => {
             validate({
                 FLY_APP_NAME: 'synthetic-app',
                 AWS_REGION: 'us-east-1',
-                OPENAI_API_KEY: 'sk-synthetic',
             })
         ).toMatchObject({
             llm: 'bedrock',
+            embeddings: 'bedrock',
             bedrockAuth: { kind: 'credential-chain' },
+        });
+    });
+
+    test('EMBEDDINGS_PROVIDER=bedrock is accepted and needs no OPENAI_API_KEY', () => {
+        expect(validate({ ...bedrockKeyEnv, EMBEDDINGS_PROVIDER: 'Bedrock' })).toMatchObject({
+            llm: 'bedrock',
+            embeddings: 'bedrock',
+        });
+    });
+
+    test('EMBEDDINGS_PROVIDER=openai is the opt-in for legacy OpenAI embeddings', () => {
+        expect(validate(openaiEmbeddingsEnv)).toMatchObject({
+            llm: 'bedrock',
+            embeddings: 'openai',
         });
     });
 
@@ -97,12 +114,32 @@ describe('startup validation errors', () => {
             'BEDROCK_BASE_URL must be unset',
         ],
         [
-            { ...bedrockKeyEnv, OPENAI_API_KEY: '' },
+            { ...openaiEmbeddingsEnv, OPENAI_API_KEY: '' },
             'OPENAI_API_KEY is required (EMBEDDINGS_PROVIDER=openai)',
         ],
         [
-            { ...bedrockKeyEnv, EMBEDDINGS_PROVIDER: 'bedrock' },
-            'EMBEDDINGS_PROVIDER=bedrock is not supported. Nova 2 embeddings are selected with EMBEDDINGS_READ_GENERATION',
+            { ...bedrockKeyEnv, EMBEDDINGS_READ_GENERATION: 'openai1536' },
+            'OPENAI_API_KEY is required (EMBEDDINGS_READ_GENERATION=openai1536)',
+        ],
+        [
+            { ...bedrockKeyEnv, EMBEDDINGS_DUAL_WRITE: 'true' },
+            'OPENAI_API_KEY is required (EMBEDDINGS_DUAL_WRITE=true)',
+        ],
+        [
+            { ...bedrockKeyEnv, EMBEDDINGS_READ_GENERATION: 'nova2048' },
+            'EMBEDDINGS_READ_GENERATION must be nova1024v1 or openai1536 (got "nova2048")',
+        ],
+        [
+            { ...bedrockKeyEnv, BEDROCK_EMBEDDINGS_ENABLED: 'false' },
+            'needs BEDROCK_EMBEDDINGS_ENABLED=true',
+        ],
+        [
+            {
+                LLM_PROVIDER: 'openai',
+                EMBEDDINGS_PROVIDER: 'bedrock',
+                OPENAI_API_KEY: 'sk-synthetic',
+            },
+            'Nova embeddings need AWS_REGION=us-east-1 (got nothing)',
         ],
         [
             { ...bedrockKeyEnv, FLY_APP_NAME: 'synthetic-app' },
@@ -121,15 +158,18 @@ describe('startup validation errors', () => {
     });
 
     test('Bedrock with no key and no AWS credentials says how to fix it', () => {
-        expect(problems({ AWS_REGION: 'us-east-1', OPENAI_API_KEY: 'sk-synthetic' })).toEqual([
+        expect(problems({ AWS_REGION: 'us-east-1' })).toEqual([
             'LLM_PROVIDER=bedrock found no Bedrock credentials. Set AWS_BEARER_TOKEN_BEDROCK to a Bedrock API key, configure AWS credentials (AWS_PROFILE or ~/.aws), or use LLM_PROVIDER=openai with OPENAI_API_KEY',
         ]);
     });
 
-    test('OpenAI generation without a key names both consumers', () => {
+    test('OpenAI generation without a key fails; embeddings follow LLM_PROVIDER when unset', () => {
         expect(problems({ LLM_PROVIDER: 'openai' })).toEqual([
-            'OPENAI_API_KEY is required (LLM_PROVIDER=openai, EMBEDDINGS_PROVIDER=openai)',
+            'OPENAI_API_KEY is required (LLM_PROVIDER=openai)',
         ]);
+        expect(
+            problems({ ...openaiEmbeddingsEnv, LLM_PROVIDER: 'openai', OPENAI_API_KEY: '' })
+        ).toEqual(['OPENAI_API_KEY is required (LLM_PROVIDER=openai, EMBEDDINGS_PROVIDER=openai)']);
     });
 
     test('unapproved role models are reported by variable name for either provider', () => {
@@ -147,7 +187,7 @@ describe('startup validation errors', () => {
     test.each(['text-embedding-3-large', 'text-embedding-ada-002', 'amazon.titan-embed-text-v2:0'])(
         'rejects the non-allowlisted embeddings model %s at startup',
         model => {
-            expect(problems({ ...bedrockKeyEnv, EMBEDDING_MODEL: model })).toEqual([
+            expect(problems({ ...openaiEmbeddingsEnv, EMBEDDING_MODEL: model })).toEqual([
                 `EMBEDDING_MODEL="${model}" is not an approved embeddings model; unset it or use text-embedding-3-small`,
             ]);
         }
@@ -155,13 +195,13 @@ describe('startup validation errors', () => {
 
     test('accepts the allowlisted embeddings model or no override', () => {
         for (const EMBEDDING_MODEL of ['text-embedding-3-small', '', undefined])
-            expect(validate({ ...bedrockKeyEnv, EMBEDDING_MODEL })).toMatchObject({
+            expect(validate({ ...openaiEmbeddingsEnv, EMBEDDING_MODEL })).toMatchObject({
                 embeddings: 'openai',
             });
     });
 
     test('collects every problem into one error', () => {
-        expect(problems({ LLM_PROVIDER: 'bedrock', EMBEDDINGS_PROVIDER: 'bedrock' })).toHaveLength(
+        expect(problems({ LLM_PROVIDER: 'bedrock', EMBEDDINGS_PROVIDER: 'openai' })).toHaveLength(
             3
         );
     });
@@ -274,15 +314,24 @@ describe('legacy embeddings retirement', () => {
         BEDROCK_EMBEDDINGS_ENABLED: 'true',
     };
     test('Nova-only writes with Nova reads start', () => {
-        expect(validate(retired).embeddings).toBe('openai');
+        expect(validate(retired).embeddings).toBe('bedrock');
     });
     test('Nova-only writes refuse OpenAI reads, since there is no fallback', () => {
-        expect(problems({ ...retired, EMBEDDINGS_READ_GENERATION: 'openai1536' })).toEqual([
-            expect.stringContaining('needs EMBEDDINGS_READ_GENERATION=nova1024v1'),
-        ]);
-        expect(problems({ ...retired, EMBEDDINGS_READ_GENERATION: undefined })).toEqual([
-            expect.stringContaining('needs EMBEDDINGS_READ_GENERATION=nova1024v1'),
-        ]);
+        expect(
+            problems({
+                ...retired,
+                OPENAI_API_KEY: 'sk-synthetic',
+                EMBEDDINGS_READ_GENERATION: 'openai1536',
+            })
+        ).toEqual([expect.stringContaining('needs EMBEDDINGS_READ_GENERATION=nova1024v1')]);
+        expect(
+            problems({
+                ...retired,
+                EMBEDDINGS_PROVIDER: 'openai',
+                OPENAI_API_KEY: 'sk-synthetic',
+                EMBEDDINGS_READ_GENERATION: undefined,
+            })
+        ).toEqual([expect.stringContaining('needs EMBEDDINGS_READ_GENERATION=nova1024v1')]);
     });
     test('Nova-only writes need Nova enabled', () => {
         expect(problems({ ...retired, BEDROCK_EMBEDDINGS_ENABLED: 'false' })).toEqual([
@@ -293,9 +342,10 @@ describe('legacy embeddings retirement', () => {
         expect(
             validate({
                 ...retired,
+                OPENAI_API_KEY: 'sk-synthetic',
                 EMBEDDINGS_DUAL_WRITE: 'true',
                 EMBEDDINGS_READ_GENERATION: 'openai1536',
             }).embeddings
-        ).toBe('openai');
+        ).toBe('bedrock');
     });
 });

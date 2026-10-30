@@ -3,6 +3,9 @@ import { z } from 'zod';
 import type { StreamingOptions } from './providers';
 import * as environment from '../constants/env';
 
+// This file covers the legacy OpenAI embedding client; the default is Nova.
+process.env.EMBEDDINGS_PROVIDER = 'openai';
+
 mock.module('../constants/env', () => ({
     ...environment,
     CHAT_MODEL: 'gpt-6-luna-none',

@@ -249,9 +249,9 @@ text and full processed-character coverage do not guarantee correct PII detectio
 missed identifiers can reach the configured generation provider. Known identifiers
 are tokenized independently of language; their variants and unfamiliar free-text
 PII can remain. Insight generation uses OpenAI models through Bedrock Responses,
-and Bedrock remains the managed privacy processor. Embeddings default to legacy
-OpenAI 1536; the versioned Nova 1024 migration and read/write controls are documented
-in the [migration runbook](../../docs/nova-embeddings-backfill.md). No translation,
+and Bedrock remains the managed privacy processor. Embeddings default to Nova
+1024; legacy OpenAI 1536 stays available through `EMBEDDINGS_PROVIDER=openai` and the
+`EMBEDDINGS_*_GENERATION` read/write controls. No translation,
 character stripping or extra paid call per credential is added.
 
 Detection is probabilistic, not guaranteed anonymization. `bun run
@@ -456,7 +456,7 @@ consent, and `DRAFT` cannot replace the reviewed immutable numeric version.
 
 Generation now uses the OpenAI SDK Responses API at the approved US Runtime endpoint, exact `us.openai.gpt-6.1-sol`/`us.openai.gpt-6-luna` profiles, and short-term bearer tokens. Runtime Responses requires scoped model inference/streaming grants **and** `bedrock:InvokeModel` on the account's default project. No IAM policy is changed by this PR.
 
-Sol chat/planning keep medium defaults and accept low/medium/high/xhigh/max; Luna formatting/title retain none. Responses sends `reasoning: { effort }` without downshifting. Unknown models and unsupported efforts reject before requests. Generation resolves tokens per request, prefers configured Fly web identity, redacts credential-provider failures, sets `store: false`, disables SDK retries and suppresses ambient OpenAI org/project headers. Embeddings default to legacy OpenAI 1536; Nova 1024 is separately versioned and opt-in through the [migration read/write controls](../../docs/nova-embeddings-backfill.md#generation-and-rollback).
+Sol chat/planning keep medium defaults and accept low/medium/high/xhigh/max; Luna formatting/title retain none. Responses sends `reasoning: { effort }` without downshifting. Unknown models and unsupported efforts reject before requests. Generation resolves tokens per request, prefers configured Fly web identity, redacts credential-provider failures, sets `store: false`, disables SDK retries and suppresses ambient OpenAI org/project headers. Embeddings default to Nova 1024 (`EMBEDDINGS_PROVIDER=bedrock`, or unset with Bedrock generation); legacy OpenAI 1536 is the `EMBEDDINGS_PROVIDER=openai` local-dev opt-in and the rollback target of the `EMBEDDINGS_*_GENERATION` controls. `OPENAI_API_KEY` is required only when OpenAI is actually used.
 
 Taylor approved non-strict function schemas and unchanged original Zod validation. Intended functions and complete responses are required; original optional fields stay optional, null is not normalized to undefined, and malformed/refused/incomplete output rejects. Plain chat is independent of schema capabilities. Provider schema projection is not a guarantee that omitted bounds/refinements are enforced upstream.
 
@@ -467,8 +467,8 @@ final synthesis shapes separately. For the local operator's bounded synthetic li
 See [the LC-2205 data-handling and staging gates](../../docs/managed-privacy.md#lc-2205-sdk-responses-generation--live-release-pending).
 
 Set repository variables `BEDROCK_GUARDRAIL_ID`, the immutable numeric
-`BEDROCK_GUARDRAIL_VERSION`, and `AWS_PRIVACY_CI_ROLE_ARN`; retain the existing
-`OPENAI_API_KEY` secret for embeddings. Restrict the CI role's
+`BEDROCK_GUARDRAIL_VERSION`, and `AWS_PRIVACY_CI_ROLE_ARN`; `OPENAI_API_KEY` is only
+needed if the job pins OpenAI embeddings. Restrict the CI role's
 GitHub OIDC trust to the allowlisted branch refs. Protect those branches and
 restrict who can push; the live job refuses unprotected refs before checkout.
 Run `gh workflow run ci.yml --ref lc-2128-lifecycle-follow-up`

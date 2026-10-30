@@ -8,6 +8,8 @@ import { reuseRequestConsentRead, runWithLearnCardRequestScope } from '../learnc
 // LearnCard consent round trip, the cost that ran the opening out of budget.
 // No real LearnCard, provider or network is involved.
 const DID = 'did:example:learner';
+// This file covers the legacy OpenAI embedding client; the default is Nova.
+process.env.EMBEDDINGS_PROVIDER = 'openai';
 let remoteGranted = true;
 let remoteReads = 0;
 const readRemote = async () => {

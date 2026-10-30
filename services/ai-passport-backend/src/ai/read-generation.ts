@@ -2,6 +2,7 @@ import { init } from '@launchdarkly/node-server-sdk';
 import {
     activeGeneration,
     legacyWritesRetired,
+    novaEmbeddingsEnabled,
     pinnedEmbeddingGeneration,
     withEmbeddingGeneration,
 } from './embedding-generation';
@@ -14,7 +15,7 @@ const control = createReadGenerationControl(
         flagKey:
             process.env.EMBEDDINGS_LAUNCHDARKLY_FLAG_KEY ?? 'ai-passport-embedding-read-generation',
         environment: process.env.EMBEDDINGS_FLAG_ENVIRONMENT,
-        novaEnabled: process.env.BEDROCK_EMBEDDINGS_ENABLED === 'true',
+        novaEnabled: novaEmbeddingsEnabled(),
         legacyRetired: legacyWritesRetired(),
     }),
     key =>

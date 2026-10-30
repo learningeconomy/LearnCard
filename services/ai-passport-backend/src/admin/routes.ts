@@ -39,7 +39,7 @@ const legacyRetirement = () => import('./legacy-retirement');
 const SWEEP_MAX_PAGES = 8;
 import { LEARNCARD_DID_WEB, CORS_ORIGINS, DOMAIN } from '../constants/env';
 import { getLearnCard } from '../learncard';
-import { NOVA_IDENTITY } from '../ai/embedding-generation';
+import { NOVA_IDENTITY, novaEmbeddingsEnabled } from '../ai/embedding-generation';
 import { isServicePrincipal, isFreshAdmin, csrfToken, validAdminMutation } from './security';
 import { listJobs, createJob, stepJob, cancelJob, costPlan } from './backfill';
 export async function handleAdminRoute(
@@ -104,7 +104,7 @@ export async function handleAdminRoute(
                 readControl,
                 target: NOVA_IDENTITY,
                 pricing: costPricing(process.env),
-                enabled: process.env.BEDROCK_EMBEDDINGS_ENABLED === 'true',
+                enabled: novaEmbeddingsEnabled(),
                 dualWrite: process.env.EMBEDDINGS_DUAL_WRITE === 'true',
                 fresh: isFreshAdmin(session),
                 csrf: csrfToken(sessionId, origin),

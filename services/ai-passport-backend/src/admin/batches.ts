@@ -4,6 +4,7 @@ import { MONGO_URI, MONGO_DB } from '../constants/env';
 import { stepJob, listJobs, costPlan } from './backfill';
 import { repairJobAction, listRepairJobs } from './legacy-repair';
 import { AI_INSIGHT_CREDENTIAL_TYPE } from '../constants/vc';
+import { novaEmbeddingsEnabled } from '../ai/embedding-generation';
 export type BatchKind = 'verification' | 'apply';
 type Batch = {
     _id: string;
@@ -195,7 +196,7 @@ export async function startBatch(
         kind === 'apply' &&
         (job.dryRun ||
             !job.regenerationAuthorized ||
-            process.env.BEDROCK_EMBEDDINGS_ENABLED !== 'true' ||
+            !novaEmbeddingsEnabled() ||
             process.env.EMBEDDINGS_DUAL_WRITE !== 'true')
     )
         throw new Error('Paid apply unavailable');
