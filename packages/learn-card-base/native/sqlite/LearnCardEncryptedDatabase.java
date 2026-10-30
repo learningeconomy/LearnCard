@@ -41,6 +41,16 @@ public final class LearnCardEncryptedDatabase {
             try (RandomAccessFile lockFile = new RandomAccessFile(original + ".encryption.lock", "rw");
                  FileLock ignored = lockFile.getChannel().lock()) {
                 boolean exists = original.exists();
+                if (exists && !original.isFile()) throw failure("Account storage is unreadable");
+                // SQLite may leave an empty file on an interrupted first open. It has no data to convert.
+                if (exists && original.length() == 0) {
+                    for (String suffix : new String[] {"-wal", "-shm", "-journal"}) {
+                        if (new File(original + suffix).length() > 0) {
+                            throw failure("Empty account storage has recovery sidecars");
+                        }
+                    }
+                }
+                exists = exists && original.length() > 0;
                 String secret = secrets.read();
                 if (secret == null) secret = "";
                 if (exists) {
@@ -50,7 +60,8 @@ public final class LearnCardEncryptedDatabase {
                     }
                     if (!Arrays.equals(header, "SQLite format 3\0".getBytes(StandardCharsets.US_ASCII))) {
                         if (secret.isEmpty()) throw failure("Account storage secret is unavailable");
-                        validate(original, secret);
+                        // Let the plugin's keyed open authenticate the file. A second open here
+                        // repeats SQLCipher's KDF and a full scan blocks healthy account pages on cache damage.
                         return false;
                     }
                     validate(original, "");
@@ -99,6 +110,7 @@ public final class LearnCardEncryptedDatabase {
                             target.rawExecSQL("PRAGMA user_version=1");
                         }
                     }
+                    checkpoint.reached("before-validate");
                     validate(staged, secret);
                     Os.chmod(staged.getAbsolutePath(), 0600);
                     try (FileOutputStream file = new FileOutputStream(staged, true)) {

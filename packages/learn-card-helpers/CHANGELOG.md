@@ -1,5 +1,14 @@
 # @learncard/helpers
 
+## 1.7.1
+
+### Patch Changes
+
+- [#1827](https://github.com/learningeconomy/LearnCard/pull/1827) [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7) Thanks [@leif-squeak](https://github.com/apps/leif-squeak)! - Upgrade the pinned `zod` dependency to 4.6.6 to pick up the upstream security fix.
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762)]:
+    - @learncard/types@5.24.0
+
 ## 1.7.0
 
 ### Minor Changes

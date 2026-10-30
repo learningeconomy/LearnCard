@@ -4,9 +4,15 @@
     "webDir": "build",
     "bundledWebRuntime": false,
     "android": {
-        "adjustMarginsForEdgeToEdge": "force"
+        "adjustMarginsForEdgeToEdge": "force",
+        "minWebViewVersion": 111
     },
     "plugins": {
+        "CapacitorSQLite": {
+            "iosIsEncryption": true,
+            "androidIsEncryption": true,
+            "iosKeychainPrefix": "learncard.sqlite.v1"
+        },
         "SplashScreen": {
             "launchShowDuration": 6000,
             "launchAutoHide": true,
@@ -42,12 +48,7 @@
         "CapacitorUpdater": {
             "appId": "org.scoutpass.app",
             "autoUpdate": true,
-            "defaultChannel": "1.0.7"
-        },
-        "CapacitorSQLite": {
-            "iosIsEncryption": true,
-            "androidIsEncryption": true,
-            "iosKeychainPrefix": "learncard.sqlite.v1"
+            "defaultChannel": "1.0.9"
         }
     },
     "packageClassList": [
@@ -71,5 +72,8 @@
         "CapacitorUpdaterPlugin",
         "NativeSettingsPlugin",
         "SafeAreaPlugin"
-    ]
+    ],
+    "server": {
+        "errorPath": "unsupported-browser.html"
+    }
 }

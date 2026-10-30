@@ -1,4 +1,25 @@
 import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+// window.load does not cover the component imported after React mounts.
+const expectWebSQLiteReady = async (page: Page): Promise<void> => {
+    await expect
+        .poll(
+            async () =>
+                page.evaluate(async () => {
+                    const element = document.querySelector('jeep-sqlite') as
+                        | (HTMLElement & {
+                              isStoreOpen?: () => Promise<boolean>;
+                          })
+                        | null;
+                    return (
+                        typeof element?.isStoreOpen === 'function' && (await element.isStoreOpen())
+                    );
+                }),
+            { timeout: 15_000, message: 'Bundled browser SQLite store should initialize' }
+        )
+        .toBe(true);
+};
 
 test.describe('Tier 2: Browser Smoke Checks', () => {
     test('tenant config edge function returns JSON', async ({ request }) => {
@@ -49,8 +70,9 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
         await expect(page.locator('button, input, a[href]').first()).toBeVisible({
             timeout: 15_000,
         });
+        await expectWebSQLiteReady(page);
         // Filter out known non-critical errors. The `critical assets load successfully`
-        // test below specifically asserts JS/CSS/WASM didn't 404 — so generic resource
+        // test below specifically checks JS/CSS/WASM responses — so generic resource
         // 404s logged here are non-critical (icons, manifest, images, analytics).
         const criticalErrors = errors.filter(
             e =>
@@ -71,18 +93,20 @@ test.describe('Tier 2: Browser Smoke Checks', () => {
         const failedRequests: string[] = [];
         page.on('response', response => {
             const url = response.url();
+            const path = new URL(url).pathname;
             const status = response.status();
             // Track failed loads for JS/CSS/WASM assets
             if (
-                (url.endsWith('.js') || url.endsWith('.css') || url.endsWith('.wasm')) &&
-                status >= 400
+                /\.(js|css|wasm)$/.test(path) &&
+                (status >= 400 || response.headers()['content-type']?.includes('text/html'))
             ) {
                 failedRequests.push(`${status} ${url}`);
             }
         });
         await page.goto('/', { waitUntil: 'load' });
-        // `load` fires after all <script>/<link> resources declared in HTML have loaded,
-        // which is exactly what this test asserts — no need to wait for network silence.
+        // Include lazy-loaded component resources, including 200 HTML SPA fallbacks
+        // for missing JavaScript. Network silence would hang on analytics/WebSockets.
+        await expectWebSQLiteReady(page);
         expect(failedRequests).toEqual([]);
     });
 

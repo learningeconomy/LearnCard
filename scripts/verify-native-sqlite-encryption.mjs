@@ -7,6 +7,7 @@ const { values } = parseArgs({
     options: {
         'sqlcipher-dir': { type: 'string' },
         output: { type: 'string' },
+        'functional-only': { type: 'boolean', default: false },
     },
 });
 if (process.platform !== 'darwin' || !values['sqlcipher-dir'] || !values.output) {
@@ -53,7 +54,14 @@ execFileSync('swiftc', [
     '-o',
     binary,
 ]);
-const result = execFileSync(binary, { encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 });
+const result = execFileSync(binary, {
+    encoding: 'utf8',
+    maxBuffer: 4 * 1024 * 1024,
+    env: {
+        ...process.env,
+        LEARNCARD_SQLITE_SKIP_PERFORMANCE: values['functional-only'] ? '1' : '0',
+    },
+});
 const parsed = JSON.parse(result);
 writeFileSync(join(output, 'summary.json'), JSON.stringify(parsed, null, 2) + '\n');
 console.log(JSON.stringify(parsed, null, 2));

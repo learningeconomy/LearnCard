@@ -11,6 +11,7 @@ import com.getcapacitor.community.database.sqlite.CapacitorSQLite;
 import com.getcapacitor.community.database.sqlite.SQLite.LearnCardEncryptedDatabase;
 import com.getcapacitor.community.database.sqlite.SQLite.SqliteConfig;
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +39,7 @@ public class MigrationTest {
         try (SQLiteDatabase db = SQLiteDatabase.openOrCreateDatabase(file, "", null, null)) {
             db.rawExecSQL("CREATE TABLE users(uid TEXT PRIMARY KEY, privateKey TEXT)");
             db.rawExecSQL("CREATE TABLE sss_shares(id TEXT PRIMARY KEY, share TEXT)");
+            db.rawExecSQL("CREATE TABLE reactQuery(id TEXT PRIMARY KEY, cache TEXT)");
             db.rawExecSQL("INSERT INTO users VALUES ('synthetic', 'SYNTHETIC_PRIVATE_KEY')");
             db.rawExecSQL("INSERT INTO sss_shares VALUES ('device','SYNTHETIC_DEVICE_SHARE'),('device:version','7'),('pending','SYNTHETIC_RESUME_TOKEN')");
             db.rawExecSQL("PRAGMA user_version=7");
@@ -51,6 +53,24 @@ public class MigrationTest {
                 assertEquals("SYNTHETIC_RESUME_TOKEN", rows.getString(0));
             }
         }
+    }
+    private byte[] damageCache(File file, String secret) throws Exception {
+        int page, pageSize;
+        try (SQLiteDatabase db = SQLiteDatabase.openDatabase(file.getPath(), secret, null, SQLiteDatabase.OPEN_READONLY, null)) {
+            try (Cursor rows = db.rawQuery("SELECT rootpage FROM sqlite_master WHERE name='reactQuery'", null)) {
+                assertTrue(rows.moveToFirst()); page = rows.getInt(0);
+            }
+            try (Cursor rows = db.rawQuery("PRAGMA cipher_page_size", null)) {
+                assertTrue(rows.moveToFirst()); pageSize = rows.getInt(0);
+            }
+        }
+        assertTrue(page > 1 && pageSize > 0);
+        try (RandomAccessFile bytes = new RandomAccessFile(file, "rw")) {
+            long offset = (long) (page - 1) * pageSize + 128;
+            bytes.seek(offset); int value = bytes.read();
+            bytes.seek(offset); bytes.write(value ^ 1);
+        }
+        return Files.readAllBytes(file.toPath());
     }
     @Test public void migrationPreservesDataAndRetries() throws Exception {
         File file = file("migration"); seed(file); Secrets secrets = new Secrets();
@@ -85,6 +105,59 @@ public class MigrationTest {
         catch (Exception expected) { assertArrayEquals(bytes, Files.readAllBytes(file.toPath())); }
         assertEquals("", secrets.secret);
     }
+    @Test public void existingEncryptedPreparationDoesNotScanDisposableCache() throws Exception {
+        File file = file("cache-corrupt"); seed(file); Secrets secrets = new Secrets();
+        LearnCardEncryptedDatabase.prepare(file, secrets);
+        byte[] damaged = damageCache(file, secrets.secret);
+        try { LearnCardEncryptedDatabase.validate(file, secrets.secret); fail("Expected full integrity failure"); }
+        catch (Exception expected) { }
+        assertFalse(LearnCardEncryptedDatabase.prepare(file, secrets));
+        check(file, secrets.secret);
+        assertArrayEquals(damaged, Files.readAllBytes(file.toPath()));
+    }
+    @Test public void fullStagingValidationStillPreservesOriginal() throws Exception {
+        File file = file("staging-corrupt"); seed(file); Secrets secrets = new Secrets();
+        byte[] original = Files.readAllBytes(file.toPath());
+        try {
+            LearnCardEncryptedDatabase.prepare(file, secrets, point -> {
+                if (point.equals("before-validate")) damageCache(new File(file + ".encryption.tmp"), secrets.secret);
+            });
+            fail("Expected staged integrity failure");
+        } catch (Exception expected) { }
+        assertArrayEquals(original, Files.readAllBytes(file.toPath()));
+        check(file, "");
+        assertFalse(new File(file + ".encryption.tmp").exists());
+    }
+    @Test public void existingWrongKeyFailsOnUseWithoutReplacement() throws Exception {
+        File file = file("wrong-key"); seed(file); Secrets secrets = new Secrets();
+        LearnCardEncryptedDatabase.prepare(file, secrets);
+        byte[] original = Files.readAllBytes(file.toPath());
+        secrets.secret = "WRONG_SYNTHETIC_SECRET";
+        assertFalse(LearnCardEncryptedDatabase.prepare(file, secrets));
+        try { check(file, secrets.secret); fail("Expected keyed-open failure"); }
+        catch (Exception expected) { }
+        assertArrayEquals(original, Files.readAllBytes(file.toPath()));
+    }
+    @Test public void zeroByteFilesProvisionButShortFilesRemainIntact() throws Exception {
+        File empty = file("empty"); assertTrue(empty.createNewFile()); Secrets fresh = new Secrets();
+        assertFalse(LearnCardEncryptedDatabase.prepare(empty, fresh));
+        LearnCardEncryptedDatabase.validate(empty, fresh.secret);
+        File shortFile = file("short"); byte[] original = "SYNTHETIC".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        Files.write(shortFile.toPath(), original); Secrets missing = new Secrets();
+        try { LearnCardEncryptedDatabase.prepare(shortFile, missing); fail("Expected unreadable-file failure"); }
+        catch (Exception expected) { }
+        assertArrayEquals(original, Files.readAllBytes(shortFile.toPath()));
+        assertEquals("", missing.secret);
+    }
+    @Test public void emptyFileWithRecoverySidecarIsNotReset() throws Exception {
+        File empty = file("empty-wal"); assertTrue(empty.createNewFile()); Secrets secrets = new Secrets();
+        File wal = new File(empty + "-wal"); byte[] original = "SYNTHETIC_RECOVERY_WAL".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        Files.write(wal.toPath(), original);
+        try { LearnCardEncryptedDatabase.prepare(empty, secrets); fail("Expected recovery-sidecar failure"); }
+        catch (Exception expected) { }
+        assertEquals(0, empty.length()); assertEquals("", secrets.secret);
+        assertArrayEquals(original, Files.readAllBytes(wal.toPath()));
+    }
     @Test public void nativePluginUsesProtectedStoreAndEncryptedConnection() throws Exception {
         // This path belongs to the probe applicationId, never com.learncard.app.
         boolean reopen = "reopen".equals(InstrumentationRegistry.getArguments().getString("sqlitePhase"));
@@ -98,6 +171,7 @@ public class MigrationTest {
         assertTrue(plugin.isSecretStored());
         plugin.createConnection("learncardDB", true, "secret", 1, new java.util.Hashtable<>(), false);
         plugin.open("learncardDB", false);
+        assertFalse(plugin.prepareEncryptedDatabase("learncardDB")); // live native connection / JS reload
         assertEquals("SYNTHETIC_PRIVATE_KEY", plugin.query("learncardDB", "SELECT privateKey FROM users", new JSArray(), false).getJSONObject(0).getString("privateKey"));
         plugin.closeConnection("learncardDB", false);
         assertFalse(plugin.prepareEncryptedDatabase("learncardDB"));
