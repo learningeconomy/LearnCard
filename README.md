@@ -39,6 +39,19 @@ bun run run-network-tests  # builds dependencies then runs the Brain service tes
 
 Avoid running individual package builds or tests directly, as that can lead to stale artifacts.
 
+CI opts into case-level Vitest retries with `LC_CI_TEST_RETRY=1` and a private
+`LC_CI_TEST_REPORT_DIR`. Failing cases default to one retry; explicit retry settings
+and custom reporters are preserved. Build, import, suite setup/teardown, and
+non-Vitest failures are not retried as Nx targets. Recovered cases are reported as
+flaky, not first-attempt passes. Cached tasks retain their original terminal output
+without claiming a fresh per-process report.
+
+Validate the retry policy locally:
+
+```bash
+node --test scripts/ci-test-retries/retry.test.cjs
+```
+
 The shared local-service Docker image installs dependencies with Bun 1.4.2 to
 read lockfile v3, then runs services with Bun 1.3.14. Bun 1.4.2's runtime bypasses
 the Compose `localhost:host-gateway` mapping used for cross-service DID document
