@@ -1091,6 +1091,7 @@ export class AuthCoordinator {
                     signDidAuthVp: this.config.signDidAuthVp,
                 });
                 if (!reconciled) {
+                    log.warn('Share coordinate collision - stale local key detected');
                     await this.keyDerivation.clearLocalKeys({ preservePending: true });
                     return this.needRecovery(
                         authUser,

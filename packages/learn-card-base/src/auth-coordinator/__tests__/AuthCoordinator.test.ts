@@ -20,6 +20,7 @@ import {
     EscrowPinMismatchError,
     IdentityRecoverySessionConsumedError,
     DuplicateShareCoordinateError,
+    reconstructFromShares,
     type SSSStorageFunctions,
 } from '@learncard/sss-key-manager';
 import { AuthSessionError } from '../types';
@@ -1948,6 +1949,14 @@ describe('AuthCoordinator', () => {
                 }
             });
 
+            it('the underlying share library rejects the colliding fixture pair', async () => {
+                // Bypass the strategy's typed pre-check to guard its library-format assumption.
+                expect(stale.deviceShare.slice(-2)).toBe(server.authShare.slice(-2));
+                await expect(
+                    reconstructFromShares([stale.deviceShare, server.authShare])
+                ).rejects.toThrow();
+            });
+
             // Real verified splits of a public test key. Across independent splits,
             // the stale device and current auth share can reuse an x-coordinate.
             const preparePendingWrite = async (collidingCoordinates: boolean) => {
@@ -2044,10 +2053,16 @@ describe('AuthCoordinator', () => {
                         await preparePendingWrite(collidingCoordinates);
                     const pending = JSON.parse(shares.get(pendingId)!).candidates[0].share;
 
+                    logoutLogs.warn.mockClear();
                     expect(await coordinator.initialize()).toMatchObject({
                         status: 'needs_recovery',
                         recoveryReason: 'stale_local_key',
                     });
+                    expect(logoutLogs.warn).toHaveBeenCalledExactlyOnceWith(
+                        collidingCoordinates
+                            ? 'Share coordinate collision - stale local key detected'
+                            : 'DID mismatch - stale local key detected'
+                    );
                     expect(shares.has(mainId)).toBe(false);
                     expect(versions.has(mainId)).toBe(false);
                     expect(shares.has(pendingId)).toBe(true);
