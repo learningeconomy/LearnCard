@@ -13,6 +13,7 @@ const isReleaseCommit = message => message.includes('chore(release):');
  * Manual runs deploy only selected components/environments; release pushes deploy
  * production rather than staging. Neither can acknowledge the other mode's work.
  * Missing staging history compares the full tree; production requires a baseline.
+ * Other staging workflows may require additional delivery evidence per run.
  */
 const resolveDeployRange = async ({
     github,
@@ -20,9 +21,15 @@ const resolveDeployRange = async ({
     head,
     runId,
     release,
+    workflowId = 'deploy.yml',
+    acceptRun = async () => true,
+    maxPages = MAX_PAGES,
     cwd = process.cwd(),
     warn = console.warn,
 }) => {
+    if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > MAX_PAGES) {
+        throw new Error('Deployment history must be bounded to 1–10 pages.');
+    }
     const git = (args, input) =>
         execFileSync('git', args, {
             cwd,
@@ -54,12 +61,22 @@ const resolveDeployRange = async ({
         return { base, head, mode, source: 'full-tree', reason, successfulRunId: '' };
     };
 
-    for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const historyUnavailable = error => {
+        // Only expose HTTP status, never transport messages or request details.
+        const status = error?.status;
+        const reason =
+            Number.isInteger(status) && status >= 400 && status <= 599
+                ? `history-unavailable-http-${status}`
+                : 'history-unavailable';
+        return fullTree(reason);
+    };
+
+    for (let page = 1; page <= maxPages; page += 1) {
         let runs;
         try {
             const response = await github.rest.actions.listWorkflowRuns({
                 ...repo,
-                workflow_id: 'deploy.yml',
+                workflow_id: workflowId,
                 branch: 'main',
                 event: 'push',
                 status: 'success',
@@ -70,14 +87,7 @@ const resolveDeployRange = async ({
             if (!Array.isArray(runs)) throw new Error('Invalid workflow history response.');
         } catch (error) {
             // An API/permission failure must not silently drop undeployed changes.
-            // Keep HTTP diagnostics in the summary/error without exposing raw
-            // transport messages, request headers or other credential details.
-            const status = error?.status;
-            const reason =
-                Number.isInteger(status) && status >= 400 && status <= 599
-                    ? `history-unavailable-http-${status}`
-                    : 'history-unavailable';
-            return fullTree(reason);
+            return historyUnavailable(error);
         }
 
         for (const run of runs) {
@@ -99,6 +109,11 @@ const resolveDeployRange = async ({
             if (ancestor.status !== 0) continue;
             const message = git(['show', '-s', '--format=%B', run.head_sha]);
             if (isReleaseCommit(message) !== release) continue;
+            try {
+                if (!(await acceptRun(run))) continue;
+            } catch (error) {
+                return historyUnavailable(error);
+            }
 
             return {
                 base: run.head_sha,
