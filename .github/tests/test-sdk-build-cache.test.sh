@@ -19,8 +19,8 @@ node() {
     esac
 }
 bunx() {
-    [[ "$*" == "nx run e2e:test:e2e --verbose --skip-nx-cache$EXPECTED_SKIP" ]]
-    [[ "$E2E_VITEST_ARGS" == --shard=2/3 && "$E2E_MANAGE_DOCKER" == false && "$NX_DAEMON" == false ]]
+    [[ "$*" == "nx run e2e:test:e2e --verbose --skip-nx-cache$EXPECTED_SKIP" ]] || return 98
+    [[ "$E2E_VITEST_ARGS" == --shard=2/3 && "$E2E_MANAGE_DOCKER" == false && "$NX_DAEMON" == false ]] || return 99
     echo fresh-test-execution >> "$TEST_ROOT/tests"
     return "$TEST_STATUS"
 }
