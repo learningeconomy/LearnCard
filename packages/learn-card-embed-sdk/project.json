@@ -14,22 +14,30 @@
         "build": {
             "executor": "nx:run-script",
             "inputs": ["source", "rollup-config"],
-            "options": { "script": "build" }
+            "options": {
+                "script": "build"
+            }
         },
         "dev": {
             "executor": "nx:run-script",
             "inputs": ["source", "rollup-config"],
-            "options": { "script": "dev" }
+            "options": {
+                "script": "dev"
+            }
         },
         "typecheck": {
             "executor": "nx:run-script",
             "inputs": ["source"],
-            "options": { "script": "typecheck" }
+            "options": {
+                "script": "typecheck"
+            }
         },
         "test": {
             "executor": "nx:run-script",
             "inputs": ["source", "ciTestConfig"],
-            "options": { "script": "test" }
+            "options": {
+                "script": "test"
+            }
         }
     }
 }

@@ -1,0 +1,15 @@
+{
+    "privateKey": "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    "stale": {
+        "deviceShare": "7da76e7a755e7959372d22bec6be6d28d47c471f07821ed59947ccb11930e355fd",
+        "authShare": "42df15dd096db334221681255c7abd6d4ff1d68a2a68410904c8c0ac23e225c764",
+        "recoveryShare": "53bcdb8a14fe88582d79a8ce25fca620a4b8fedce78e2c90aebe425fdec69c42b0",
+        "emailShare": "1360290ea006194de4514424d5e168884eb5f0ba2872dbe61887fa46ec3cb5626e"
+    },
+    "server": {
+        "deviceShare": "6678afc32ae7b5953bf7520f0ce088fe11df05c1bf8005b0cd36a0da1cfd795acf",
+        "authShare": "0d64b19a99fb4aa58451d741b15c6f36342c8a574af097abddf90f5a831d9158fd",
+        "recoveryShare": "a7073c8dc09885f68f89f43954ce04f4e6b1d2dcfe67db96ec6535c9ea2831b640",
+        "emailShare": "fc6989901af68d6bb99cc530b9c3cff7b45579546cc4fe6e6ef081b5c3752d6d06"
+    }
+}

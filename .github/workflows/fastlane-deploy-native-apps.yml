@@ -51,12 +51,10 @@ on:
             environment:
                 description: 'Choose Environment'
                 required: true
-                default: 'learn-card-app-production'
                 type: string
             googlePlayReleaseTrack:
                 description: 'Choose Android App Google Play Release Track'
                 required: true
-                default: 'internal'
                 type: string
             submitToAppStore:
                 description: 'Submit iOS App to App Stores'
@@ -66,7 +64,6 @@ on:
             releaseNotes:
                 description: 'Release Notes'
                 required: true
-                default: '- Critical Bug Fixes and Security Patches'
                 type: string
 
 env:

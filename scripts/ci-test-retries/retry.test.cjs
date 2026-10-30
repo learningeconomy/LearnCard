@@ -178,6 +178,7 @@ for (const reporters of ["'verbose'", "['verbose']"]) {
             `
 import {createVitestConfig, nodePreset} from ${JSON.stringify(path.join(repository, 'vitest.shared.ts'))};
 const config = createVitestConfig(nodePreset, {test:{include:['case.test.ts'], retry:0, reporters:${reporters}}});
+
 export default config;`
         );
         f.put(
@@ -375,6 +376,7 @@ test('summary CLI fails closed on incomplete reports and preserves a failed Nx o
         GITHUB_STEP_SUMMARY: summaryFile,
     });
     assert.equal(result.status, 1, result.stdout + result.stderr);
+
     const failed = f.run(...args, {
         LC_CI_NX_OUTCOME: 'failure',
         GITHUB_STEP_SUMMARY: summaryFile,
