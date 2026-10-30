@@ -231,7 +231,7 @@ functions:
 
     # Suspend consent updates whose response deadline has passed.
     consentFlowDeadline:
-        handler: consentFlowDeadlineLambdaApp.consentFlowDeadlineHandler
+        handler: consentFlowDeadlineLambda.consentFlowDeadlineHandler
         timeout: 30
         reservedConcurrency: 1
         vpc:

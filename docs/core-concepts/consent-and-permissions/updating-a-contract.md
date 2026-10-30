@@ -146,6 +146,8 @@ An update requiring approval defaults to a deadline 30 days after it is saved. P
 
 Docker startup and Lambda handlers await the same idempotent backfill before serving version-aware requests. It creates version 1 for legacy requests, records the accepted version on existing connections, and renames consumed one-time connections. A failed Lambda migration is retried by the next request; concurrent requests share one migration attempt. Application import failures retain the bootstrap's separate memoization policy.
 
+The scheduled deadline Lambda also loads its runtime secrets before importing environment validation or database clients. A deployment using only `RUNTIME_SECRETS_ID` does not need to copy those secrets into the function environment. If startup leaves less than two seconds for the invocation, the worker skips suspension work until the next run.
+
 Drain old request writers during the deployment cutover so they cannot create unversioned requests after a new process completes its readiness gate. The `migrate:consent-flow-versions` service command remains available for an explicit pre-deployment backfill; it is no longer the only migration path for Lambda.
 
 A malformed legacy request is skipped so healthy requests can start. The migration emits a bounded report containing skipped contract IDs and an `invalid_contract` reason, with a total count and truncation flag; it never logs credential contents. Its missing snapshot remains fail-closed. A database failure still rejects readiness rather than serving before migration finishes.
