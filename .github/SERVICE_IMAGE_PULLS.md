@@ -28,6 +28,13 @@ never ran. A [second realm job](https://github.com/learningeconomy/LearnCard/act
 also logged the quota error. These are observed historical failures, not an
 inference from anonymous YAML alone.
 
+Both jobs recorded this error during **Initialize containers** (quoted here so
+the evidence remains useful after Actions logs expire):
+
+```text
+Error response from daemon: toomanyrequests: You have reached your unauthenticated pull rate limit.
+```
+
 GitHub's [current limits documentation](https://docs.github.com/en/actions/reference/limits#docker-hubs-rate-limit-for-github-actions)
 says public Docker Hub pulls on GitHub-hosted runners are exempt from its pull
 limit. The historical logs show that service initialization nevertheless failed
@@ -59,6 +66,19 @@ credential failure cannot fall back to anonymous pulls. Check credential validit
 and coordinate any replacement with the existing secret owner. The runner uses a
 temporary client config for service login/pull and removes it before workflow
 steps; this is separate from the later CLI action's `DOCKER_CONFIG`.
+
+## Troubleshooting failed initialization
+
+- **Initialize containers** shows `unauthorized` or a failed `docker login`:
+  check the existing pull account and token with the secret owner. Supplied but
+  rejected credentials block service startup; updating a later CLI login step
+  cannot recover that job. Do not paste credentials into logs or comments.
+- A **Docker Hub login failed** warning from the composite action means that
+  job's later CLI pulls continue anonymously. Service-container jobs using the
+  same rejected credentials fail before their steps; coordinate token rotation.
+- `toomanyrequests` matches the historical quota failure above. If no credentials
+  are available, public pulls remain anonymous. Token-endpoint timeouts indicate
+  a registry/network problem; authentication does not guarantee recovery.
 
 ## Verification
 

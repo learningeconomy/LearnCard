@@ -135,8 +135,7 @@ jobs:
             contents: read
         runs-on: ubuntu-latest
         timeout-minutes: 20
-        # Service pulls happen before steps, so authenticate at the service boundary.
-        # Missing secrets leave public pulls anonymous (forks/Dependabot).
+        # Pre-step service authentication and troubleshooting: .github/SERVICE_IMAGE_PULLS.md.
         services:
             mongo:
                 image: mongo:7

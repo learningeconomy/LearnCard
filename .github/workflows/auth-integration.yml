@@ -25,9 +25,7 @@ env:
     SA_SEED_ENCRYPT_WRITES: 'true'
     SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
-# Service images are pulled before steps; a dockerhub-login step is too late.
-# Reuse the existing pull-only repo secrets. Missing secrets (forks/Dependabot)
-# leave public pulls anonymous; invalid supplied credentials fail initialization.
+# Pre-step service authentication and troubleshooting: .github/SERVICE_IMAGE_PULLS.md.
 jobs:
     keycloak-verifier-tests:
         runs-on: ubuntu-latest
