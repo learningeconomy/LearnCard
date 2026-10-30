@@ -11,7 +11,7 @@ const {
 const { tmpdir } = require('node:os');
 const { dirname, join } = require('node:path');
 const test = require('node:test');
-const { decideEligibility, browserCacheKey } = require('./mock-e2e-ci.cjs');
+const { decideEligibility, decideFromGraph, browserCacheKey } = require('./mock-e2e-ci.cjs');
 
 const script = join(__dirname, 'mock-e2e-ci.cjs');
 const fixture = t => {
@@ -169,6 +169,152 @@ test('CLI emits the decision through GitHub outputs with no installed dependenci
     });
     assert.equal(result.status, 0, result.stderr);
     assert.equal(readFileSync(output, 'utf8'), 'run_e2e=false\nreason=prose-only\n');
+});
+
+const projectGraph = () => ({
+    graph: {
+        nodes: Object.fromEntries(
+            [
+                ['learn-card-app', 'apps/learn-card-app'],
+                ['ui', 'packages/ui'],
+                ['core', 'packages/shared'],
+                ['scouts', 'apps/scouts'],
+                ['backend', 'services/backend'],
+                ['builder', 'tools/builder'],
+            ].map(([name, root]) => [
+                name,
+                { data: { root, targets: name === 'learn-card-app' ? { 'test-mock': {} } : {} } },
+            ])
+        ),
+        dependencies: {
+            'learn-card-app': [{ target: 'ui', type: 'implicit' }],
+            ui: [{ target: 'core', type: 'dynamic' }],
+            backend: [{ target: 'core', type: 'static' }],
+        },
+    },
+    tasks: {
+        tasks: {
+            'learn-card-app:test-mock': {
+                target: { project: 'learn-card-app', target: 'test-mock' },
+            },
+            'builder:build': { target: { project: 'builder', target: 'build' } },
+        },
+    },
+});
+
+test('Nx graph skips unrelated app/service projects but keeps direct/transitive/implicit dependencies', () => {
+    for (const path of ['apps/scouts/src/App.tsx', 'services/backend/src/route.ts']) {
+        assert.deepEqual(decideFromGraph([path, 'docs/guide.md'], projectGraph()), {
+            run: false,
+            reason: 'unrelated-projects',
+        });
+    }
+    for (const path of [
+        'apps/learn-card-app/tests/example.spec.ts',
+        'packages/ui/src/view.tsx',
+        'packages/shared/src/index.ts',
+        'tools/builder/src/build.ts',
+    ])
+        assert.deepEqual(decideFromGraph([path], projectGraph()), {
+            run: true,
+            reason: 'mock-dependency-change',
+        });
+});
+
+test('task prerequisites outside source-import graph still require tests; cycles terminate', () => {
+    const snapshot = projectGraph();
+    snapshot.graph.dependencies.core = [{ target: 'ui', type: 'static' }];
+    assert.equal(decideFromGraph(['tools/builder/src/build.ts'], snapshot).run, true);
+    assert.equal(decideFromGraph(['apps/scouts/src/App.tsx'], snapshot).run, false);
+    assert.equal(decideFromGraph(['packages/shared/src/index.ts'], snapshot).run, true);
+});
+
+test('Nx ownership prefers the deepest project; unowned/new/deleted project paths run', () => {
+    const snapshot = projectGraph();
+    snapshot.graph.nodes['nested-ui'] = { data: { root: 'apps/scouts/nested', targets: {} } };
+    snapshot.graph.dependencies.ui.push({ target: 'nested-ui', type: 'static' });
+    assert.equal(decideFromGraph(['apps/scouts/nested/view.ts'], snapshot).run, true);
+    assert.equal(decideFromGraph(['packages/new-or-deleted/src/index.ts'], snapshot).run, true);
+});
+
+test('real Git decisions use the Nx provider only for eligible project changes', t => {
+    const f = fixture(t);
+    f.write('apps/scouts/src/App.tsx');
+    assert.deepEqual(
+        decideEligibility({
+            eventName: 'pull_request',
+            baseSha: f.baseSha,
+            headSha: f.commit(),
+            cwd: f.cwd,
+            getGraph: projectGraph,
+        }),
+        {
+            run: false,
+            reason: 'unrelated-projects',
+        }
+    );
+    f.write('packages/shared/src/index.ts', 'Shared dependency changed\n');
+    assert.equal(
+        decideEligibility({
+            eventName: 'pull_request',
+            baseSha: f.baseSha,
+            headSha: f.commit(),
+            cwd: f.cwd,
+            getGraph: projectGraph,
+        }).run,
+        true
+    );
+});
+
+test('global config, project metadata and manual runs bypass graph-based skipping', t => {
+    const f = fixture(t);
+    f.write('apps/scouts/project.json');
+    const getGraph = () => {
+        throw new Error('must not be called');
+    };
+    const args = {
+        eventName: 'pull_request',
+        baseSha: f.baseSha,
+        headSha: f.commit(),
+        cwd: f.cwd,
+        getGraph,
+    };
+    assert.equal(decideEligibility(args).reason, 'code-config-or-unknown-path');
+    assert.equal(
+        decideEligibility({ ...args, eventName: 'workflow_dispatch' }).reason,
+        'manual-dispatch'
+    );
+});
+
+test('unavailable or malformed graph/task plans run instead of skipping', t => {
+    const f = fixture(t);
+    f.write('apps/scouts/src/App.tsx');
+    const args = { eventName: 'pull_request', baseSha: f.baseSha, headSha: f.commit(), cwd: f.cwd };
+    for (const getGraph of [
+        () => {
+            throw new Error('bootstrap failed');
+        },
+        () => ({}),
+        () => {
+            const g = projectGraph();
+            delete g.graph.nodes['learn-card-app'];
+            return g;
+        },
+        () => {
+            const g = projectGraph();
+            g.tasks.tasks = {};
+            return g;
+        },
+        () => {
+            const g = projectGraph();
+            g.graph.dependencies.ui.push({ target: 'missing' });
+            return g;
+        },
+    ])
+        assert.deepEqual(decideEligibility({ ...args, getGraph }), {
+            run: true,
+            reason: 'graph-unavailable',
+        });
 });
 
 const identity = {

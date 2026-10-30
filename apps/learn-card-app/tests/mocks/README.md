@@ -6,19 +6,31 @@ The real-backend E2E tier is hosted separately in `.github/workflows/e2e.yml`.
 
 ## CI eligibility and browser reuse (LC-2312 / CI-14)
 
-Before installing dependencies or downloading Firefox, a dependency-free Node
-check compares the PR's changes from its Git merge base. Only Markdown under
-`docs/`, `.changeset/*.md`, and the root `README.md`, `CONTRIBUTING.md`,
-`CODE_OF_CONDUCT.md` or `LICENSE` can skip setup. Documentation code snippets,
-assets and all other paths run the **complete** mock suite. This is deliberately
-broader than Nx affected selection: a shared-package, lockfile or config change
-cannot be skipped because it sits outside the app directory. Unknown/empty or
-unavailable comparisons also run; renames consider both old and new paths.
-Manual dispatch always runs the complete suite, even for prose-only revisions.
+Before installing the workspace or downloading Firefox, a Node check compares
+the PR's changes from its Git merge base. It can skip unrelated code projects
+using Nx's project graph and the planned `test-mock` prerequisite tasks.
 
-For example, correcting `docs/README.md` skips dependency installation and
-Firefox entirely. Changing `packages/learn-card-base` still runs all mocked
-browser tests, including when the same PR edits documentation.
+For example, a ScoutPass-only or AI-agent-only code edit can skip the LearnCard
+App mock suite, workspace installation and Firefox. Changes to shared types,
+crypto, `learn-card-base` or brain-service still run: those projects are in the
+app's dependency graph. A backend label alone is not a reason to skip.
+
+The preflight installs **only the repository-pinned Nx and TypeScript tooling**
+in a temporary directory outside the checkout, with lifecycle scripts disabled.
+It does not install workspace dependencies, run builds or execute tests. Nx
+produces its actual project/task graph; the check follows transitive, dynamic
+and implicit dependencies and includes build prerequisites. A file must belong
+to a known project outside that required set to skip. Unknown/deleted project
+paths, missing/invalid/empty comparisons, graph/bootstrap failures and global
+config or dependency metadata changes run the **complete** mock suite. Renames
+consider both old and new paths. Manual dispatch always runs the complete suite.
+
+An even cheaper check skips prose-only changes without downloading graph tools:
+Markdown under `docs/`, `.changeset/*.md`, and exact root `README.md`,
+`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` or `LICENSE`. Code snippets and assets
+outside known unrelated projects do not qualify for that shortcut. The path
+prefixes only bound when graph analysis may be attempted; they never establish
+that an app or service is unrelated.
 
 Eligible runs cache a job-local Playwright browser directory with an exact key
 covering the installed Playwright version, Firefox revision, full browser
@@ -36,9 +48,11 @@ choice, HAR fixtures or backend isolation.
 
 Review locally with `node --test scripts/mock-e2e-ci.test.cjs` and
 `node .github/tests/test-mock-e2e-workflow.test.cjs` from the repository root.
-In Actions, a prose-only PR should show `run_e2e=false` / `reason=prose-only`
-and skip setup/browser/test/report steps. For an eligible or manual run, inspect
-the exact cache key, the unconditional browser/OS install, and full test results.
+In Actions, an unrelated-project PR should show `run_e2e=false` /
+`reason=unrelated-projects`; prose-only changes show `reason=prose-only`. Both
+skip workspace/browser/test/report steps. A graph/tooling failure shows
+`reason=graph-unavailable` and runs the full suite. For an eligible or manual run,
+inspect the exact cache key, unconditional browser/OS install, and full results.
 
 ## What it covers
 

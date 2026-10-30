@@ -1,8 +1,8 @@
 # Runs the mocked-network Playwright tier (tests/*.mocked.spec.ts) on PRs.
 # This tier has NO backend — it serves boot/reads from a recorded HAR and
 # issuance mutations from typed stubs, so it runs against the vite dev server
-# alone. Prose-only PRs skip setup; other changes conservatively run the full
-# mock suite. Real-backend E2E is hosted separately in e2e.yml.
+# alone. Nx-only preflight skips unrelated projects before workspace/browser
+# setup. Real-backend E2E is hosted separately in e2e.yml.
 
 name: Mock E2E
 
