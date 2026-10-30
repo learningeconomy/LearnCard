@@ -4,6 +4,7 @@ import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { TRPCError } from '@trpc/server';
 import { CampaignDispatchJobValidator, type CampaignDispatchJob } from 'types/campaign';
 import { environment } from '@environment';
+import { authorizeConfirmedCampaignDispatch } from '@accesslayer/campaign/dispatch';
 import { getCampaign } from '@accesslayer/campaign/read';
 import { pageCampaignAudience } from '@accesslayer/campaign/audience';
 import { getCampaignDeliveryRecipient } from '@accesslayer/campaign/delivery';
@@ -36,8 +37,14 @@ export const addCampaignDispatchToQueue = async (
     );
 };
 
-export const dispatchCampaign = async (campaignId: string): Promise<{ dispatchId: string }> => {
-    const campaign = await getCampaign(campaignId);
+export const dispatchCampaign = async (
+    campaignId: string,
+    expectedPreviewToken?: string
+): Promise<{ dispatchId: string }> => {
+    // Keep existing SDK callers compatible; the composer always supplies its reviewed token.
+    const campaign = expectedPreviewToken
+        ? await authorizeConfirmedCampaignDispatch(campaignId, expectedPreviewToken)
+        : await getCampaign(campaignId);
     if (!canDispatchCampaign(campaign))
         throw new TRPCError({
             code: 'BAD_REQUEST',

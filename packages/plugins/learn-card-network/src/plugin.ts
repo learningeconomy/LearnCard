@@ -3314,9 +3314,13 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.campaigns.sendTestToMe.mutate({ campaignId });
             },
-            campaignsDispatch: async (_learnCard, campaignId) => {
+            campaignsPreviewDispatch: async (_learnCard, campaignId) => {
                 await ensureUser();
-                return client.campaigns.dispatch.mutate({ campaignId });
+                return client.campaigns.previewDispatch.query({ campaignId });
+            },
+            campaignsDispatch: async (_learnCard, campaignId, options = {}) => {
+                await ensureUser();
+                return client.campaigns.dispatch.mutate({ campaignId, ...options });
             },
             campaignsCreate: async (_learnCard, input) => {
                 await ensureUser();

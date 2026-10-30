@@ -2,6 +2,8 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
     CampaignAudienceInputValidator,
+    CampaignDispatchPreviewValidator,
+    CampaignDispatchOptionsValidator,
     CampaignEventValidator,
     CampaignIdValidator,
     CampaignStatsValidator,
@@ -32,6 +34,7 @@ import {
     getLiveCampaignsForProfile,
     getCampaignStats,
 } from '@accesslayer/campaign/read';
+import { getCampaignDispatchPreview } from '@accesslayer/campaign/dispatch';
 import { updateCampaign } from '@accesslayer/campaign/update';
 import { deleteCampaign } from '@accesslayer/campaign/delete';
 import {
@@ -79,11 +82,21 @@ export const campaignsRouter = t.router({
                 sendCampaignTestToMe(input.campaignId, ctx.user.profile)
             )
         ),
-    dispatch: campaignAdminRoute
+    previewDispatch: campaignAdminRoute
         .input(idInput)
+        .output(CampaignDispatchPreviewValidator)
+        .query(async ({ input }) =>
+            trace('route', 'campaigns:previewDispatch', () =>
+                getCampaignDispatchPreview(input.campaignId)
+            )
+        ),
+    dispatch: campaignAdminRoute
+        .input(idInput.extend(CampaignDispatchOptionsValidator.shape))
         .output(z.object({ dispatchId: z.uuid() }))
         .mutation(async ({ input }): Promise<{ dispatchId: string }> =>
-            trace('route', 'campaigns:dispatch', () => dispatchCampaign(input.campaignId))
+            trace('route', 'campaigns:dispatch', () =>
+                dispatchCampaign(input.campaignId, input.expectedPreviewToken)
+            )
         ),
     isAdmin: campaignUserRoute
         .meta({ requiredScope: 'campaigns:read' })

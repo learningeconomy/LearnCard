@@ -125,6 +125,7 @@ describe('campaign lifecycle and access', () => {
             () => other.getStats({ campaignId: 'pilot-clr' }),
             () => other.sendTestToMe({ campaignId: 'pilot-clr' }),
             () => other.dispatch({ campaignId: 'pilot-clr' }),
+            () => other.previewDispatch({ campaignId: 'pilot-clr' }),
         ])
             await expect(request()).rejects.toMatchObject({ code: 'FORBIDDEN' });
         await expect(caller('campaign-admin', '*:read').create(draft())).rejects.toMatchObject({
@@ -960,5 +961,183 @@ describe('campaign notification delivery state', () => {
         await expect(
             getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
         ).resolves.toBeUndefined();
+    });
+});
+
+describe('confirmed audience notification dispatch', () => {
+    const live = () =>
+        draft({
+            status: 'live',
+            channels: ['notify'],
+            notification: { title: 'Campaign notice', body: 'A test message' },
+        });
+    const id = { campaignId: 'pilot-clr' };
+    const deliveryMocks = () => {
+        const enqueue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
+        const signer = vi
+            .spyOn(learnCardHelpers, 'getDidWebLearnCard')
+            .mockResolvedValue({ id: { did: () => 'did:web:brain.test' } } as never);
+        return {
+            enqueue,
+            restore: () => {
+                enqueue.mockRestore();
+                signer.mockRestore();
+            },
+        };
+    };
+    it('counts the same delivery-eligible members, excluding already notified and ineligible profiles', async () => {
+        const campaign = await admin.create(live());
+        await neogma.queryRunner.run(
+            `MATCH (c:Campaign {id: $id}), (p:Profile)
+            WHERE p.profileId IN $profiles CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            {
+                id: campaign.id,
+                profiles: [
+                    'learner',
+                    'other',
+                    'minor',
+                    'child',
+                    'unknown-dob',
+                    'managed-adult',
+                    'managed-service',
+                ],
+            }
+        );
+        await neogma.queryRunner
+            .run(`MATCH (owner:Profile {profileId: 'campaign-admin'}), (p:Profile)
+            WHERE p.profileId IN ['managed-adult', 'managed-service'] CREATE (p)-[:MANAGED_BY]->(owner)`);
+        await acknowledgeCampaignNotification({
+            type: 'ANNOUNCEMENT',
+            from: 'did:web:brain.test',
+            to: { profileId: 'other', did: did('other') },
+            data: { metadata: { campaignId: campaign.id, campaignCreatedAt: campaign.createdAt } },
+        });
+        const preview = await admin.previewDispatch(id);
+        expect(preview).toMatchObject({
+            audienceCount: 7,
+            recipientCount: 2,
+            alreadyNotifiedCount: 1,
+        });
+        expect(preview.previewToken).toMatch(/^[a-f0-9]{64}$/);
+        expect(await admin.previewDispatch(id)).toEqual(preview);
+        for (const profile of ['learner', 'managed-service'])
+            expect(
+                await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, profile)
+            ).toBeTruthy();
+        for (const profile of ['minor', 'child', 'unknown-dob', 'managed-adult', 'other'])
+            expect(
+                await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, profile)
+            ).toBeUndefined();
+        await admin.update({ ...id, updates: { excludeMinors: false } });
+        expect(await admin.previewDispatch(id)).toMatchObject({ recipientCount: 5 });
+    });
+    it.each([
+        [{ status: 'draft' }, 'not_live'],
+        [{ status: 'paused' }, 'not_live'],
+        [{ status: 'archived' }, 'not_live'],
+        [{ channels: ['inApp'], message: { title: 'In-app only' } }, 'notify_disabled'],
+        [{ startsAt: '2999-01-01T00:00:00Z' }, 'not_started'],
+        [{ endsAt: '2000-01-01T00:00:00Z' }, 'ended'],
+    ] as const)('explains non-dispatchable campaigns (%j)', async (updates, reason) => {
+        await admin.create({ ...live(), ...updates } as CreateCampaignInput);
+        const preview = await admin.previewDispatch(id);
+        expect(preview).toMatchObject({ blockedReason: reason, recipientCount: 0 });
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+    it('dispatches to the stored audience and requires a fresh eligible preview after delivery', async () => {
+        await admin.create(live());
+        await addLearner();
+        const mocks = deliveryMocks();
+        try {
+            const preview = await admin.previewDispatch(id);
+            expect(preview.recipientCount).toBe(1);
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).resolves.toHaveProperty('dispatchId');
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+            expect(mocks.enqueue.mock.calls[0][0]).toMatchObject({
+                to: { profileId: 'learner' },
+                type: 'ANNOUNCEMENT',
+            });
+            expect(await admin.getStats(id)).toMatchObject({ audience: 1, notified: 1 });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const empty = await admin.previewDispatch(id);
+            expect(empty).toMatchObject({
+                recipientCount: 0,
+                alreadyNotifiedCount: 1,
+                blockedReason: 'no_recipients',
+            });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: empty.previewToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+        } finally {
+            mocks.restore();
+        }
+    });
+    it('rejects stale recipient identities even when their count is unchanged', async () => {
+        await admin.create(live());
+        await addLearner();
+        const preview = await admin.previewDispatch(id);
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'})-[a:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id:$id}), (other:Profile {profileId:'other'}) DELETE a CREATE (other)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            { id: id.campaignId }
+        );
+        expect((await admin.previewDispatch(id)).recipientCount).toBe(preview.recipientCount);
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+    it('rejects a changed campaign definition and concurrent reuse of the confirmation', async () => {
+        await admin.create(live());
+        await addLearner();
+        const before = await admin.previewDispatch(id);
+        await admin.update({
+            ...id,
+            updates: { notification: { title: 'Changed', body: 'Changed' } },
+        });
+        await expect(
+            admin.dispatch({ ...id, expectedPreviewToken: before.previewToken })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        const preview = await admin.previewDispatch(id);
+        const mocks = deliveryMocks();
+        try {
+            const results = await Promise.allSettled([
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken }),
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken }),
+            ]);
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
+            expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+        } finally {
+            mocks.restore();
+        }
+    });
+    it('recovers from an enqueue failure with a fresh preview without marking a recipient notified', async () => {
+        await admin.create(live());
+        await addLearner();
+        const mocks = deliveryMocks();
+        mocks.enqueue.mockRejectedValueOnce(new Error('temporary transport failure'));
+        try {
+            const first = await admin.previewDispatch(id);
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: first.previewToken })
+            ).rejects.toThrow();
+            expect(await admin.getStats(id)).toMatchObject({ notified: 0 });
+            const next = await admin.previewDispatch(id);
+            expect(next.recipientCount).toBe(1);
+            expect(next.previewToken).not.toBe(first.previewToken);
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: next.previewToken })
+            ).resolves.toHaveProperty('dispatchId');
+            expect(await admin.getStats(id)).toMatchObject({ notified: 1 });
+        } finally {
+            mocks.restore();
+        }
     });
 });

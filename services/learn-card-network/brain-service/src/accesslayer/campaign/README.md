@@ -248,3 +248,29 @@ admin denial, caller-only tests, concurrent state acknowledgements and stats. Th
 notification integration suite covers concurrent receiver storage and push suppression.
 Hosted `lc verify` additionally exercises SDK authorization; it does not provision FCM
 or prove iOS/Android device receipt. Those require separately authorized device QA.
+
+## Reviewed dispatch from the composer
+
+`campaigns.previewDispatch` is an admin-only, read-only query taking `{ campaignId }`.
+The SDK exposes it as `learnCard.invoke.campaignsPreviewDispatch(campaignId)`.
+It returns `audienceCount`, `alreadyNotifiedCount`, `recipientCount`, `previewToken`,
+and an optional `blockedReason` (`not_live`, `notify_disabled`, `not_started`, `ended`,
+`no_recipients`). Recipient counts use the same minor/date-of-birth policy as delivery
+and exclude profiles with `notifiedAt`. They count inbox recipients; push receipt is
+not guaranteed, and no email count is claimed.
+
+After reviewing the count, pass `{ expectedPreviewToken: preview.previewToken }` as
+the second argument to `learnCard.invoke.campaignsDispatch`. The route accepts that
+optional field alongside `campaignId`. Legacy dispatch callers can omit it; the composer
+always supplies it. Under the campaign node lock, the server recomputes a digest over
+the definition, mutation revision, and sorted eligible profile IDs, rejects stale previews
+with `CONFLICT`, and advances the revision to consume the confirmation once. This catches
+same-count recipient changes as well as ordinary audience edits. No recipients or invalid
+status/schedule/channel is rejected before enqueue. Preview does not mark anyone notified.
+
+The count query collects eligible profile IDs internally to fingerprint the recipient set;
+those IDs are not returned by the API. Its memory use scales with eligible audience size.
+The confirmation lock is released before queue/network work. Later waves still use current
+eligibility and audience semantics, so the reviewed count is a snapshot rather than a frozen
+send list. Existing queue retries and receiver deduplication remain unchanged. If enqueue
+fails or the HTTP response is lost, review again before retrying; never reuse the old token.

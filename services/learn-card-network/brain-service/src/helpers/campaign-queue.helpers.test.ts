@@ -4,6 +4,7 @@ import type { Campaign, LCNNotification } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
     getCampaign: vi.fn(),
+    confirmDispatch: vi.fn(),
     queueTest: vi.fn(),
     pageAudience: vi.fn(),
     recipient: vi.fn(),
@@ -28,6 +29,9 @@ vi.mock('@aws-sdk/client-sqs', () => ({
     },
 }));
 vi.mock('@accesslayer/campaign/test', () => ({ queueCampaignInAppTest: mocks.queueTest }));
+vi.mock('@accesslayer/campaign/dispatch', () => ({
+    authorizeConfirmedCampaignDispatch: mocks.confirmDispatch,
+}));
 vi.mock('@accesslayer/campaign/read', () => ({ getCampaign: mocks.getCampaign }));
 vi.mock('@accesslayer/campaign/audience', () => ({ pageCampaignAudience: mocks.pageAudience }));
 vi.mock('@accesslayer/campaign/delivery', () => ({
@@ -87,6 +91,18 @@ beforeEach(() => {
 });
 
 describe('campaign wave dispatch', () => {
+    it('validates a reviewed preview before enqueuing and refuses stale confirmations', async () => {
+        mocks.confirmDispatch.mockResolvedValueOnce(campaign);
+        await dispatchCampaign(campaign.id, 'a'.repeat(64));
+        expect(mocks.confirmDispatch).toHaveBeenCalledWith(campaign.id, 'a'.repeat(64));
+        expect(mocks.sqs).toHaveBeenCalledTimes(1);
+        mocks.confirmDispatch.mockRejectedValueOnce(new TRPCError({ code: 'CONFLICT' }));
+        await expect(dispatchCampaign(campaign.id, 'a'.repeat(64))).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        expect(mocks.sqs).toHaveBeenCalledTimes(1);
+    });
+
     it('delivers 2500 recipients in three waves with stable cursors and configured delay', async () => {
         const profiles = Array.from({ length: 2500 }, (_, i) =>
             recipient(String(i).padStart(4, '0'))

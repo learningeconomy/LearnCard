@@ -33,6 +33,9 @@ test.describe('campaign composer @mocked', () => {
         const members = new Set<string>();
         let testSends = 0;
         let dispatches = 0;
+        let notified = 0;
+        let dispatchPreviewReads = 0;
+        const dispatchToken = 'd'.repeat(64);
         let events = 0;
         const batches: number[] = [];
         mock.on('campaigns.isAdmin', () => true);
@@ -73,7 +76,7 @@ test.describe('campaign composer @mocked', () => {
             audience: members.size,
             shown: 0,
             clicked: 0,
-            notified: 0,
+            notified,
             dismissed: 0,
             converted: 0,
             enrolled: 0,
@@ -115,9 +118,22 @@ test.describe('campaign composer @mocked', () => {
             testSends++;
             return true;
         });
-        mock.on('campaigns.dispatch', () => {
+        mock.on('campaigns.previewDispatch', () => {
+            dispatchPreviewReads++;
+            return {
+                campaignId: saved!.id,
+                audienceCount: members.size,
+                alreadyNotifiedCount: notified,
+                recipientCount: notified ? 0 : 1,
+                previewToken: dispatchToken,
+                ...(notified ? { blockedReason: 'no_recipients' } : {}),
+            };
+        });
+        mock.on('campaigns.dispatch', value => {
+            expect(value).toEqual({ campaignId: saved!.id, expectedPreviewToken: dispatchToken });
             dispatches++;
-            return { dispatchId: 'not-allowed' };
+            notified = 1;
+            return { dispatchId: 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa' };
         });
         mock.on('campaigns.recordEvent', () => {
             events++;
@@ -213,9 +229,7 @@ test.describe('campaign composer @mocked', () => {
             .getByRole('tab', { name: 'Fields', exact: true })
             .click();
         await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
-        await expect(
-            page.getByRole('button', { name: 'Send Notifications — unavailable' })
-        ).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Send Notifications' })).toBeDisabled();
         await page
             .getByRole('heading', { name: 'Edit campaign', exact: true })
             .scrollIntoViewIfNeeded();
@@ -315,6 +329,42 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Go Live' }).click();
         await page.getByRole('button', { name: 'Confirm live' }).click();
         await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
+        await expect(page.getByText('1 eligible recipient', { exact: true })).toBeVisible();
+        expect(dispatches).toBe(0);
+        await page
+            .getByRole('group', { name: 'Confirm notification send' })
+            .getByRole('button', { name: 'Cancel', exact: true })
+            .click();
+        expect(dispatches).toBe(0);
+        await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
+        await expect(
+            page.getByRole('button', { name: 'Confirm notification send', exact: true })
+        ).toBeEnabled();
+        await page
+            .getByRole('heading', { name: 'Manage campaign', exact: true })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: 'test-results/campaign-dispatch-desktop.png' });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page
+            .getByRole('group', { name: 'Confirm notification send' })
+            .evaluate(node => node.scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: 'test-results/campaign-dispatch-mobile.png' });
+        await page.getByRole('button', { name: 'Confirm notification send', exact: true }).click();
+        await expect(page.getByText(/Notification delivery started/)).toBeVisible();
+        expect(dispatches).toBe(1);
+        await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
+        await expect(page.getByText(/No eligible members remain to notify/)).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Confirm notification send', exact: true })
+        ).toBeDisabled();
+        await page
+            .getByRole('group', { name: 'Confirm notification send' })
+            .getByRole('button', { name: 'Cancel', exact: true })
+            .click();
+        expect(dispatchPreviewReads).toBe(3);
+        await page.setViewportSize({ width: 1440, height: 1000 });
+
         await page.getByRole('button', { name: 'Pause', exact: true }).click();
         await page.getByRole('button', { name: 'Confirm paused' }).click();
         await expect(page.getByText('Campaign is paused.')).toBeVisible();
@@ -382,7 +432,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Archive', exact: true }).click();
         await page.getByRole('button', { name: 'Confirm archived' }).click();
         await expect(page.getByText('Campaign is archived.')).toBeVisible();
-        expect(dispatches).toBe(0);
+        expect(dispatches).toBe(1);
         expect(events).toBe(0);
         await page.getByRole('link', { name: 'Back to campaigns' }).click();
         await expect(page.getByRole('link', { name: 'Composer local QA' })).toBeVisible();

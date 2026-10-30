@@ -247,3 +247,22 @@ export type ListCampaignsInput = z.input<typeof ListCampaignsInputValidator>;
 export type PageCampaignAudienceInput = z.input<typeof PageCampaignAudienceInputValidator>;
 export type PaginatedCampaigns = z.output<typeof PaginatedCampaignsValidator>;
 export type PaginatedCampaignAudience = z.output<typeof PaginatedCampaignAudienceValidator>;
+
+/** Current inbox recipients; push is attempted through the existing notification delivery path. */
+export const CampaignDispatchPreviewValidator = z.object({
+    campaignId: CampaignIdValidator,
+    audienceCount: z.number().int().nonnegative(),
+    alreadyNotifiedCount: z.number().int().nonnegative(),
+    recipientCount: z.number().int().nonnegative(),
+    previewToken: z.string().regex(/^[a-f0-9]{64}$/),
+    blockedReason: z
+        .enum(['not_live', 'notify_disabled', 'not_started', 'ended', 'no_recipients'])
+        .optional(),
+});
+export const CampaignDispatchOptionsValidator = z
+    .object({
+        expectedPreviewToken: CampaignDispatchPreviewValidator.shape.previewToken.optional(),
+    })
+    .strict();
+export type CampaignDispatchPreview = z.output<typeof CampaignDispatchPreviewValidator>;
+export type CampaignDispatchOptions = z.input<typeof CampaignDispatchOptionsValidator>;
