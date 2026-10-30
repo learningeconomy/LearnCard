@@ -754,6 +754,9 @@ describe('Profiles', () => {
                 email: 'userA@test.com',
                 country: 'US',
                 role: 'teacher',
+                dob: '1990-01-01',
+                notificationsWebhook: 'https://example.com/private-webhook',
+                highlightedCredentials: ['lc:boost:third', 'lc:boost:first', 'lc:boost:second'],
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
@@ -774,9 +777,18 @@ describe('Profiles', () => {
             expect(profile?.profileId).toEqual('usera');
             expect(profile?.displayName).toEqual('A');
             expect(profile?.shortBio).toEqual('Short A');
+            expect(profile?.highlightedCredentials).toEqual([
+                'lc:boost:third',
+                'lc:boost:first',
+                'lc:boost:second',
+            ]);
             expect(profile?.bio).toBeUndefined();
             expect(profile?.did).toBeUndefined();
             expect(profile?.email).toBeUndefined();
+            expect(profile?.country).toBeUndefined();
+            expect(profile?.dob).toBeUndefined();
+            expect(profile?.notificationsWebhook).toBeUndefined();
+            expect(profile?.role).toBeUndefined();
             expect(profile?.profileVisibility).toBeUndefined();
             expect(profile?.showEmail).toBeUndefined();
             expect(profile?.allowConnectionRequests).toBeUndefined();
@@ -828,6 +840,15 @@ describe('Profiles', () => {
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not add highlightedCredentials to an anonymous profile with no stored selection', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+
+            const profile = await noAuthClient.profile.getOtherProfile({ profileId: 'usera' });
+
+            expect(profile?.profileId).toBe('usera');
+            expect(profile).not.toHaveProperty('highlightedCredentials');
         });
 
         it('should return the expected tiers for a public profile', async () => {
@@ -1444,16 +1465,90 @@ describe('Profiles', () => {
             expect(userAResult?.isPrivate).toBeTruthy();
         });
 
-        it('should allow updating highlightedCredentials', async () => {
+        it.each([
+            { highlightedCredentials: [] },
+            {
+                highlightedCredentials: [
+                    'lc:boost:5',
+                    'lc:boost:3',
+                    'lc:boost:1',
+                    'lc:boost:4',
+                    'lc:boost:2',
+                ],
+            },
+        ])(
+            'should publicly return the ordered selection after updating to $highlightedCredentials',
+            async ({ highlightedCredentials }) => {
+                await expect(
+                    userA.clients.fullAuth.profile.updateProfile({ highlightedCredentials })
+                ).resolves.not.toThrow();
+
+                const profile = await noAuthClient.profile.getOtherProfile({ profileId: 'usera' });
+
+                expect(profile?.highlightedCredentials).toEqual(highlightedCredentials);
+            }
+        );
+
+        it.each([
+            { highlightedCredentials: ['lc:boost:1', 'lc:boost:5', 'lc:boost:3'] },
+            { highlightedCredentials: ['lc:boost:2'] },
+            { highlightedCredentials: [] },
+        ])(
+            'should replace highlightedCredentials exactly when shortened to $highlightedCredentials',
+            async ({ highlightedCredentials }) => {
+                await userA.clients.fullAuth.profile.updateProfile({
+                    highlightedCredentials: [
+                        'lc:boost:5',
+                        'lc:boost:3',
+                        'lc:boost:1',
+                        'lc:boost:4',
+                        'lc:boost:2',
+                    ],
+                });
+
+                await userA.clients.fullAuth.profile.updateProfile({ highlightedCredentials });
+
+                const privateProfile = await userA.clients.fullAuth.profile.getProfile();
+                const publicProfile = await noAuthClient.profile.getOtherProfile({
+                    profileId: 'usera',
+                });
+                expect(privateProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+                expect(publicProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+            }
+        );
+
+        it.each([
+            { highlightedCredentials: ['lc:boost:3', 'lc:boost:1', 'lc:boost:2'] },
+            { highlightedCredentials: [] },
+        ])(
+            'should preserve highlightedCredentials $highlightedCredentials when updating unrelated fields',
+            async ({ highlightedCredentials }) => {
+                await userA.clients.fullAuth.profile.updateProfile({ highlightedCredentials });
+
+                await userA.clients.fullAuth.profile.updateProfile({ displayName: 'Updated name' });
+
+                const privateProfile = await userA.clients.fullAuth.profile.getProfile();
+                const publicProfile = await noAuthClient.profile.getOtherProfile({
+                    profileId: 'usera',
+                });
+                expect(privateProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+                expect(publicProfile?.highlightedCredentials).toEqual(highlightedCredentials);
+            }
+        );
+
+        it('should reject updating highlightedCredentials with a sixth URI', async () => {
             await expect(
                 userA.clients.fullAuth.profile.updateProfile({
-                    highlightedCredentials: ['credA', 'credB'],
+                    highlightedCredentials: [
+                        'lc:boost:1',
+                        'lc:boost:2',
+                        'lc:boost:3',
+                        'lc:boost:4',
+                        'lc:boost:5',
+                        'lc:boost:6',
+                    ],
                 })
-            ).resolves.not.toThrow();
-
-            const profile = await userA.clients.fullAuth.profile.getProfile();
-
-            expect(profile?.highlightedCredentials).toEqual(['credA', 'credB']);
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
 
         it('should allow you to update your country', async () => {

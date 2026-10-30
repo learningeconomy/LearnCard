@@ -2835,7 +2835,23 @@
         "menu": {
             "manageIssuances": "Gestionar emisiones",
             "viewData": "Ver datos",
-            "viewPreviousVersions": "Ver versiones anteriores"
+            "viewPreviousVersions": "Ver versiones anteriores",
+            "featureOnProfile": "Destacar en el perfil",
+            "removeFromProfile": "Quitar del perfil"
+        },
+        "featured": {
+            "limitHint": "Tu perfil ya destaca {{max}} credenciales",
+            "limitReached": "Puedes destacar hasta {{max}} credenciales. Primero quita una de tu perfil.",
+            "featureConfirm": {
+                "title": "¿Destacar en tu perfil?",
+                "text": "Esta credencial será pública. Cualquier persona que vea tu perfil podrá verla.",
+                "confirm": "Destacar"
+            },
+            "removeConfirm": {
+                "title": "¿Quitar de tu perfil?",
+                "text": "Esta credencial dejará de mostrarse en tu perfil público.",
+                "confirm": "Quitar"
+            }
         },
         "shortBoost": {
             "selectRecipient": "Seleccionar destinatario",
@@ -3342,7 +3358,10 @@
             "contactLinkCopied": "Enlace de contacto copiado al portapapeles",
             "contactLinkCopyFailed": "No se pudo copiar el enlace de contacto",
             "endorsementLinkCopied": "Enlace copiado al portapapeles",
-            "endorsementRequestFailed": "Error al enviar la solicitud de respaldo"
+            "endorsementRequestFailed": "Error al enviar la solicitud de respaldo",
+            "featuredOnProfile": "Destacada en tu perfil público",
+            "removedFromProfile": "Quitada de tu perfil público",
+            "featuredUpdateFailed": "No pudimos actualizar tu perfil. Inténtalo de nuevo."
         },
         "resume": {
             "publishedSuccess": "Credencial de currículum LER-RS publicada exitosamente.",
@@ -9930,5 +9949,10 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo"
+    },
+    "featuredCredentials": {
+        "label": "Credenciales destacadas",
+        "view": "Ver credencial destacada: {{title}}",
+        "credentialFallback": "Credencial"
     }
 }

@@ -9,13 +9,43 @@ import ShareBoostLink from './ShareBoostLink';
 import JsonPreviewModal from './JsonPreviewModal';
 import BracketsIcon from '../../svgs/BracketsIcon';
 import ReplyIcon from 'learn-card-base/svgs/ReplyIcon';
+import Star from 'learn-card-base/svgs/Star';
 import TimeCircle from 'learn-card-base/svgs/TimeCircle';
 
-import { ModalTypes, useModal, useConfirmation, useGetRecordForUri } from 'learn-card-base';
+import {
+    ModalTypes,
+    ToastTypeEnum,
+    getLogger,
+    useModal,
+    useConfirmation,
+    useGetRecordForUri,
+    useToast,
+} from 'learn-card-base';
 
 import { VC, UnsignedVC } from '@learncard/types';
 import { BoostMenuType } from '../hooks/useBoostMenu';
+import useFeaturedCredentials, {
+    FeaturedCredentialsLimitError,
+} from '../hooks/useFeaturedCredentials';
 import { LCR } from 'learn-card-base/types/credential-records';
+import {
+    MAX_FEATURED_CREDENTIALS,
+    getFeaturableCredentialUri,
+} from './featuredCredentials.helpers';
+
+const log = getLogger('boost-options-menu');
+
+const CANCEL_BUTTON_CLASS_NAME =
+    'cancel-btn text-grayscale-900 bg-grayscale-200 py-2 rounded-[40px] font-bold px-4 min-w-[100px]';
+const CONFIRM_BUTTON_CLASS_NAME =
+    'confirm-btn bg-grayscale-900 text-white py-2 rounded-[40px] font-bold px-4 min-w-[100px]';
+
+const FeaturedConfirmationCopy: React.FC<{ title: string; body: string }> = ({ title, body }) => (
+    <div className="flex flex-col items-center gap-1 text-center mb-4 font-poppins">
+        <h2 className="text-lg font-semibold text-grayscale-900">{title}</h2>
+        <p className="text-sm text-grayscale-600 leading-relaxed">{body}</p>
+    </div>
+);
 
 type BoostOptionsMenuProps = {
     handleCloseModal: () => void;
@@ -53,6 +83,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
 }) => {
     const confirm = useConfirmation();
     const flags = useFlags();
+    const { presentToast } = useToast();
+    const featured = useFeaturedCredentials();
 
     const { newModal, closeModal, closeAllModals } = useModal({
         desktop: ModalTypes.Center,
@@ -65,6 +97,83 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     );
 
     const record = retrievedRecord || _record;
+
+    const featurableUri =
+        menuType === BoostMenuType.earned ? getFeaturableCredentialUri(boost, record) : undefined;
+
+    const presentFeaturedLimitToast = () => {
+        presentToast(m['boost.featured.limitReached']({ max: MAX_FEATURED_CREDENTIALS }), {
+            type: ToastTypeEnum.Error,
+            hasDismissButton: true,
+        });
+    };
+
+    const handleFeatureOnProfile = async (uri: string) => {
+        const confirmed = await confirm({
+            text: (
+                <FeaturedConfirmationCopy
+                    title={m['boost.featured.featureConfirm.title']()}
+                    body={m['boost.featured.featureConfirm.text']()}
+                />
+            ),
+            confirmText: m['boost.featured.featureConfirm.confirm'](),
+            cancelText: m['common.cancel'](),
+            cancelButtonClassName: CANCEL_BUTTON_CLASS_NAME,
+            confirmButtonClassName: CONFIRM_BUTTON_CLASS_NAME,
+        });
+        if (!confirmed) return;
+
+        try {
+            await featured.featureCredential(uri);
+            presentToast(m['toasts.boost.featuredOnProfile'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            handleCloseModal();
+        } catch (error) {
+            if (error instanceof FeaturedCredentialsLimitError) {
+                presentFeaturedLimitToast();
+                return;
+            }
+
+            log.error('featureCredential::error', error);
+            presentToast(m['toasts.boost.featuredUpdateFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
+
+    const handleRemoveFromProfile = async (uri: string) => {
+        const confirmed = await confirm({
+            text: (
+                <FeaturedConfirmationCopy
+                    title={m['boost.featured.removeConfirm.title']()}
+                    body={m['boost.featured.removeConfirm.text']()}
+                />
+            ),
+            confirmText: m['boost.featured.removeConfirm.confirm'](),
+            cancelText: m['common.cancel'](),
+            cancelButtonClassName: CANCEL_BUTTON_CLASS_NAME,
+            confirmButtonClassName: CONFIRM_BUTTON_CLASS_NAME,
+        });
+        if (!confirmed) return;
+
+        try {
+            await featured.unfeatureCredential(uri);
+            presentToast(m['toasts.boost.removedFromProfile'](), {
+                type: ToastTypeEnum.Success,
+                hasDismissButton: true,
+            });
+            handleCloseModal();
+        } catch (error) {
+            log.error('unfeatureCredential::error', error);
+            presentToast(m['toasts.boost.featuredUpdateFailed'](), {
+                type: ToastTypeEnum.Error,
+                hasDismissButton: true,
+            });
+        }
+    };
 
     const presentShareBoostLink = () => {
         newModal(
@@ -125,6 +234,8 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     const boostMenuOptions: {
         id?: number;
         title?: string;
+        description?: string;
+        disabled?: boolean;
         icon?: React.ReactNode;
         onClick?: () => void;
     }[] = [];
@@ -160,6 +271,36 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
             onClick: () => handleShare(),
         });
 
+        // Featuring needs a publicly resolvable boost URI and a network profile to show it on.
+        if (featurableUri && featured.hasProfile) {
+            const isFeatured = featured.isFeatured(featurableUri);
+            const limitReached = !isFeatured && !featured.canFeatureMore;
+
+            boostMenuOptions.push({
+                id: 5,
+                title: isFeatured
+                    ? m['boost.menu.removeFromProfile']()
+                    : m['boost.menu.featureOnProfile'](),
+                description: featured.isUpdating
+                    ? m['common.updating']()
+                    : limitReached
+                      ? m['boost.featured.limitHint']({ max: MAX_FEATURED_CREDENTIALS })
+                      : undefined,
+                disabled: featured.isUpdating || limitReached,
+                icon: <Star className="text-grayscale-900 w-5 h-5" />,
+                onClick: () => {
+                    if (featured.isUpdating) return;
+                    if (isFeatured) {
+                        handleRemoveFromProfile(featurableUri);
+                    } else if (limitReached) {
+                        presentFeaturedLimitToast();
+                    } else {
+                        handleFeatureOnProfile(featurableUri);
+                    }
+                },
+            });
+        }
+
         if (onViewHistory) {
             boostMenuOptions.push({
                 id: 4,
@@ -183,18 +324,28 @@ const BoostOptionsMenu: React.FC<BoostOptionsMenuProps> = ({
     return (
         <ul className="w-full flex flex-col items-center justify-center ion-padding">
             {boostMenuOptions?.map(action => {
-                const { id, title, icon, onClick } = action;
+                const { id, title, description, disabled, icon, onClick } = action;
                 return (
                     <li
                         key={id}
                         className="w-full border-b-grayscale-100 border-b-solid border-b-2 last:border-0"
                     >
                         <button
-                            className="text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2"
+                            className={`text-[17px] font-poppins w-full flex items-center justify-between py-3 px-2 ${
+                                disabled ? 'opacity-60' : ''
+                            }`}
                             type="button"
+                            aria-disabled={disabled || undefined}
                             onClick={onClick}
                         >
-                            <p className="text-grayscale-900">{title}</p>
+                            <span className="flex flex-col items-start text-left">
+                                <span className="text-grayscale-900">{title}</span>
+                                {description && (
+                                    <span className="text-xs text-grayscale-500">
+                                        {description}
+                                    </span>
+                                )}
+                            </span>
                             {icon}
                         </button>
                     </li>

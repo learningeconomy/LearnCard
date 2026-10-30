@@ -7,12 +7,18 @@ import VerifiedBadge from 'learn-card-base/svgs/VerifiedBadge';
 
 import { DEFAULT_BRAND_MARK, useTenantBrandingAssets } from '../../../config/brandingAssets';
 import { getIdBackgroundStyles } from '../../../components/learncardID-CMS/learncard-cms.helpers';
+import FeaturedCredentialBubbles from '../../../components/featured-credentials/FeaturedCredentialBubbles';
 
 type ContactProfileCardProps = {
     contact: LCNProfile;
+    /** Freshly resolved public selection; falls back to the contact record's own copy. */
+    featuredCredentialUris?: readonly string[];
 };
 
-const ContactProfileCard: React.FC<ContactProfileCardProps> = ({ contact }) => {
+const ContactProfileCard: React.FC<ContactProfileCardProps> = ({
+    contact,
+    featuredCredentialUris = contact.highlightedCredentials,
+}) => {
     const { brandMark } = useTenantBrandingAssets();
     const backgroundStyles = getIdBackgroundStyles(contact.display);
     const displayName = contact.displayName || contact.profileId;
@@ -42,6 +48,11 @@ const ContactProfileCard: React.FC<ContactProfileCardProps> = ({ contact }) => {
                 <div className="min-w-0 font-poppins text-white">
                     <h2 className="truncate text-xl font-semibold leading-tight">{displayName}</h2>
                     <p className="truncate text-sm font-medium">@{contact.profileId}</p>
+                    <FeaturedCredentialBubbles
+                        uris={featuredCredentialUris}
+                        owner={contact}
+                        className="mt-1"
+                    />
                 </div>
             </div>
 

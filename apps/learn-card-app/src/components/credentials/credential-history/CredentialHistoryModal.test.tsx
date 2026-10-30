@@ -55,6 +55,8 @@ vi.mock('learn-card-base', () => ({
     ToastTypeEnum: { Success: 'success', Error: 'error' },
     useConfirmation: () => vi.fn(),
     useGetRecordForUri: () => ({ data: undefined }),
+    useGetProfile: () => ({ data: undefined, isLoading: false }),
+    switchedProfileStore: { get: { switchedDid: () => undefined } },
     useDeleteCredentialRecord: () => ({ mutateAsync: vi.fn() }),
     useDeleteManagedBoostMutation: () => ({ mutateAsync: vi.fn() }),
     CredentialSubjectDisplay: () => null,
@@ -140,6 +142,7 @@ vi.mock('launchdarkly-react-client-sdk', () => ({
     useFlags: () => ({ shareMultipleEnabled: false }),
 }));
 
+vi.mock('../../../helpers/queryPersistence', () => ({ persistQueryCacheNow: vi.fn() }));
 vi.mock('../../../stores/loadingStore', () => ({ useLoadingLine: vi.fn() }));
 vi.mock('../../../theme/hooks/useTheme', () => ({
     default: () => ({ getThemedCategory: () => undefined }),

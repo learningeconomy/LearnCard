@@ -29,6 +29,7 @@ import {
     ModalTypes,
     ToastTypeEnum,
     unwrapBoostCredential,
+    useGetProfile,
     useModal,
     useToast,
 } from 'learn-card-base';
@@ -208,6 +209,12 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
         isLoading,
         isError,
     } = useContactCredentialHistory(contact?.profileId, { enabled: isConnected });
+    // The contact record may predate the owner's latest selection; the public profile is current.
+    const { data: publicProfile } = useGetProfile(contact?.profileId, Boolean(contact?.profileId));
+    const featuredCredentialUris =
+        publicProfile === undefined
+            ? contact?.highlightedCredentials
+            : publicProfile?.highlightedCredentials;
 
     useEffect(() => {
         if (!showOverflow) return undefined;
@@ -436,7 +443,10 @@ export const AddressBookContactDetailsView: React.FC<AddressBookContactDetailsVi
                         </div>
                     )}
 
-                    <ContactProfileCard contact={contact} />
+                    <ContactProfileCard
+                        contact={contact}
+                        featuredCredentialUris={featuredCredentialUris}
+                    />
 
                     <div
                         className="relative mt-5 flex items-center justify-between"

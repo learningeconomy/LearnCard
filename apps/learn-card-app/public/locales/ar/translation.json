@@ -2835,7 +2835,23 @@
         "menu": {
             "manageIssuances": "إدارة الإصدارات",
             "viewData": "عرض البيانات",
-            "viewPreviousVersions": "عرض الإصدارات السابقة"
+            "viewPreviousVersions": "عرض الإصدارات السابقة",
+            "featureOnProfile": "إبراز في الملف الشخصي",
+            "removeFromProfile": "إزالة من الملف الشخصي"
+        },
+        "featured": {
+            "limitHint": "ملفك الشخصي يُبرز بالفعل {{max}} من بيانات الاعتماد",
+            "limitReached": "يمكنك إبراز ما يصل إلى {{max}} من بيانات الاعتماد. أزل واحدة من ملفك الشخصي أولًا.",
+            "featureConfirm": {
+                "title": "إبراز في ملفك الشخصي؟",
+                "text": "ستصبح بيانات الاعتماد هذه عامة. سيتمكن أي شخص يشاهد ملفك الشخصي من رؤيتها.",
+                "confirm": "إبراز"
+            },
+            "removeConfirm": {
+                "title": "إزالة من ملفك الشخصي؟",
+                "text": "لن تُعرض بيانات الاعتماد هذه بعد الآن على ملفك الشخصي العام.",
+                "confirm": "إزالة"
+            }
         },
         "shortBoost": {
             "selectRecipient": "اختيار المستلم",
@@ -3342,7 +3358,10 @@
             "contactLinkCopied": "تم نسخ رابط جهة الاتصال إلى الحافظة",
             "contactLinkCopyFailed": "تعذر نسخ رابط جهة الاتصال",
             "endorsementLinkCopied": "تم نسخ الرابط إلى الحافظة",
-            "endorsementRequestFailed": "فشل إرسال طلب التأييد"
+            "endorsementRequestFailed": "فشل إرسال طلب التأييد",
+            "featuredOnProfile": "تم الإبراز في ملفك الشخصي العام",
+            "removedFromProfile": "تمت الإزالة من ملفك الشخصي العام",
+            "featuredUpdateFailed": "تعذر تحديث ملفك الشخصي. يرجى المحاولة مرة أخرى."
         },
         "resume": {
             "publishedSuccess": "تم نشر بيانات اعتماد السيرة الذاتية LER-RS بنجاح.",
@@ -10019,5 +10038,10 @@
         "revocationCheck": "التحقق من الإلغاء متاح",
         "evidenceCount": "عناصر الأدلة: {{count}}",
         "evidence": "الأدلة الداعمة"
+    },
+    "featuredCredentials": {
+        "label": "بيانات الاعتماد المميزة",
+        "view": "عرض بيان الاعتماد المميز: {{title}}",
+        "credentialFallback": "بيان اعتماد"
     }
 }

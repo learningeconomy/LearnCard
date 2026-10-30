@@ -3221,7 +3221,23 @@
         "menu": {
             "manageIssuances": "Manage Issuances",
             "viewData": "View Data",
-            "viewPreviousVersions": "View Previous Versions"
+            "viewPreviousVersions": "View Previous Versions",
+            "featureOnProfile": "Feature on Profile",
+            "removeFromProfile": "Remove from Profile"
+        },
+        "featured": {
+            "limitHint": "Your profile already features {{max}} credentials",
+            "limitReached": "You can feature up to {{max}} credentials. Remove one from your profile first.",
+            "featureConfirm": {
+                "title": "Feature on your profile?",
+                "text": "This credential will be public. Anyone who views your profile will be able to see it.",
+                "confirm": "Feature"
+            },
+            "removeConfirm": {
+                "title": "Remove from your profile?",
+                "text": "This credential will no longer be shown on your public profile.",
+                "confirm": "Remove"
+            }
         },
         "shortBoost": {
             "selectRecipient": "Select Recipient",
@@ -3382,7 +3398,10 @@
             "contactLinkCopied": "Contact link copied to clipboard",
             "contactLinkCopyFailed": "Unable to copy Contact link to clipboard",
             "endorsementLinkCopied": "Link copied to clipboard",
-            "endorsementRequestFailed": "Failed to send endorsement request"
+            "endorsementRequestFailed": "Failed to send endorsement request",
+            "featuredOnProfile": "Featured on your public profile",
+            "removedFromProfile": "Removed from your public profile",
+            "featuredUpdateFailed": "We couldn't update your profile. Please try again."
         },
         "claimOops": "Oops, we couldn't claim the credential.",
         "claimOopsPlural": "Oops, we couldn't claim the credential(s).",
@@ -9981,5 +10000,10 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
+    },
+    "featuredCredentials": {
+        "label": "Featured credentials",
+        "view": "View featured credential: {{title}}",
+        "credentialFallback": "Credential"
     }
 }

@@ -2835,7 +2835,23 @@
         "menu": {
             "manageIssuances": "Gérer les émissions",
             "viewData": "Voir les données",
-            "viewPreviousVersions": "Voir les versions précédentes"
+            "viewPreviousVersions": "Voir les versions précédentes",
+            "featureOnProfile": "Mettre en avant sur le profil",
+            "removeFromProfile": "Retirer du profil"
+        },
+        "featured": {
+            "limitHint": "Votre profil met déjà en avant {{max}} accréditations",
+            "limitReached": "Vous pouvez mettre en avant jusqu'à {{max}} accréditations. Retirez-en d'abord une de votre profil.",
+            "featureConfirm": {
+                "title": "Mettre en avant sur votre profil ?",
+                "text": "Cette accréditation sera publique. Toute personne consultant votre profil pourra la voir.",
+                "confirm": "Mettre en avant"
+            },
+            "removeConfirm": {
+                "title": "Retirer de votre profil ?",
+                "text": "Cette accréditation ne sera plus affichée sur votre profil public.",
+                "confirm": "Retirer"
+            }
         },
         "shortBoost": {
             "selectRecipient": "Sélectionner le destinataire",
@@ -3342,7 +3358,10 @@
             "contactLinkCopied": "Lien de contact copié dans le presse-papiers",
             "contactLinkCopyFailed": "Impossible de copier le lien de contact",
             "endorsementLinkCopied": "Lien copié dans le presse-papiers",
-            "endorsementRequestFailed": "Échec de l'envoi de la demande d'approbation"
+            "endorsementRequestFailed": "Échec de l'envoi de la demande d'approbation",
+            "featuredOnProfile": "Mise en avant sur votre profil public",
+            "removedFromProfile": "Retirée de votre profil public",
+            "featuredUpdateFailed": "Nous n'avons pas pu mettre à jour votre profil. Veuillez réessayer."
         },
         "resume": {
             "publishedSuccess": "Accréditation de cv LER-RS publiée avec succès.",
@@ -9930,5 +9949,10 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
+    },
+    "featuredCredentials": {
+        "label": "Justificatifs mis en avant",
+        "view": "Voir le justificatif mis en avant : {{title}}",
+        "credentialFallback": "Justificatif"
     }
 }
