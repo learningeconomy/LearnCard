@@ -20,6 +20,7 @@ runs:
               spec="$RUNNER_TEMP/e2e-sdk-spec.json"
               key=$(node scripts/e2e-hosted/sdk-build-cache.mjs key "$spec")
               [[ "$key" =~ ^e2e-sdk-shared-v1-[a-f0-9]{64}$ ]]
+              echo "SDK input identity: $key"
               echo "key=$key" >> "$GITHUB_OUTPUT"
               {
                 echo 'E2E_SDK_CACHE_ENABLED=true'
