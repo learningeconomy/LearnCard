@@ -2,7 +2,7 @@
 # Reuse the host's installed dependencies; never build/install another monorepo copy.
 # The checkout is read-only. Databases and generated assets stay in LC2201_QA_DIR.
 x-qa-runtime: &qa-runtime
-    image: oven/bun:1.4.2
+    image: oven/bun:1.4.4
     build: !reset null
     working_dir: /app
     volumes: !override

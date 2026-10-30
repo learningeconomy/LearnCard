@@ -3,9 +3,9 @@
 #############################################
 
 [build.environment]
-BUN_VERSION = "1.4.2"
+BUN_VERSION = "1.4.4"
 BUN_FLAGS = "--ignore-scripts"
-NODE_VERSION = "24.12.0"
+NODE_VERSION = "24.22.1"
 NODE_OPTIONS = "--max-old-space-size=4096"
 SKIP_DIDKIT_NAPI = "1"
 

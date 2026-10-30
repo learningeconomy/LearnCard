@@ -94,7 +94,7 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v6
               with:
-                  node-version: '24.12.0'
+                  node-version-file: .nvmrc
             - name: Wait for npm CDN propagation
               env:
                   WAIT: ${{ inputs.registry-wait-seconds || '0' }}
@@ -131,17 +131,17 @@ jobs:
                     # npm is the package manager that broke us in the incident
                     # this workflow was created to prevent. Run all package
                     # managers on the standardized monorepo Node version.
-                    - { package-manager: npm, node-version: '24.12.0' }
+                    - { package-manager: npm, node-version: '24.22.1' }
                     # pnpm and yarn have their own resolution algorithms and
                     # handle optional/workspace deps differently.
-                    - { package-manager: pnpm, node-version: '24.12.0' }
-                    - { package-manager: yarn, node-version: '24.12.0' }
+                    - { package-manager: pnpm, node-version: '24.22.1' }
+                    - { package-manager: yarn, node-version: '24.22.1' }
                     # bun is the package manager this monorepo builds with, and
                     # a growing share of external consumers install with it. Its
                     # resolver + node_modules layout differ from npm/pnpm/yarn,
                     # so it gets its own leg. Bun bundles its own runtime, so no
                     # separate Node setup is needed for the install itself.
-                    - { package-manager: bun, node-version: '24.12.0' }
+                    - { package-manager: bun, node-version: '24.22.1' }
         steps:
             - name: Checkout smoke tools
               uses: actions/checkout@v7
@@ -174,7 +174,7 @@ jobs:
               if: matrix.package-manager == 'bun'
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.4.2
+                  bun-version: 1.4.4
 
             - name: Create clean test workspace (outside the monorepo)
               run: |
@@ -373,7 +373,7 @@ jobs:
             - name: Set up Node.js
               uses: actions/setup-node@v6
               with:
-                  node-version: '24.12.0'
+                  node-version-file: .nvmrc
 
             - name: Create clean test workspace
               run: |

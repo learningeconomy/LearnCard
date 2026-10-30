@@ -3,7 +3,7 @@
 #############################################
 
 [build.environment]
-BUN_VERSION = "1.4.2"
+BUN_VERSION = "1.4.4"
 SKIP_DIDKIT_NAPI = "1"
 
 # Global Context Default

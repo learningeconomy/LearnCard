@@ -69,17 +69,17 @@ expect(rootPackage.overrides?.typescript === '5.9.3', 'TypeScript override must 
 expect(rootPackage.devDependencies?.nx === '23.2.1', 'Nx 23.2.1 must support Bun lockfile v3');
 expect(ts.version === '5.9.3', 'Installed TypeScript must be 5.9.3');
 
-expect(readFileSync('.nvmrc', 'utf8').trim() === 'v24.12.0', '.nvmrc must pin Node 24.12.0');
-expect(rootPackage.packageManager === 'bun@1.4.2', 'root packageManager must be bun@1.4.2');
+expect(readFileSync('.nvmrc', 'utf8').trim() === 'v24.22.1', '.nvmrc must pin Node 24.22.1');
+expect(rootPackage.packageManager === 'bun@1.4.4', 'root packageManager must be bun@1.4.4');
 expect(rootPackage.engines?.node === '>=24.12 <25', 'root Node engine must be >=24.12 <25');
 
 for (const path of runtimePackagePaths) {
     const packageJson = readJson(path, packageSchema);
-    expect(packageJson.packageManager === 'bun@1.4.2', `${path} must declare bun@1.4.2`);
+    expect(packageJson.packageManager === 'bun@1.4.4', `${path} must declare bun@1.4.4`);
     expect(packageJson.engines?.node === '>=24.12 <25', `${path} must declare Node >=24.12 <25`);
 }
 const aiAgentPackage = readJson('services/learn-card-network/ai-agent/package.json', packageSchema);
-expect(aiAgentPackage.engines?.bun === '>=1.4.2', 'AI Agent package must require Bun >=1.4.2');
+expect(aiAgentPackage.engines?.bun === '>=1.4.4', 'AI Agent package must require Bun >=1.4.4');
 
 const workflowPathPattern = /(?:^|\/)\.github\/workflows\/[^/]+\.(?:yml|yaml)$/;
 const runtimePinFiles = walkFiles('.').filter(path => {
@@ -105,18 +105,18 @@ for (const path of runtimePinFiles) {
     expect(!staleNodePattern.test(contents), `${path} contains a stale Node pin`);
     if (path.endsWith('netlify.toml')) {
         for (const match of contents.matchAll(/^BUN_VERSION\s*=\s*"([^"]+)"/gm)) {
-            expect(match[1] === '1.4.2', `${path} must use Bun 1.4.2`);
+            expect(match[1] === '1.4.4', `${path} must use Bun 1.4.4`);
         }
     }
     expect(
-        !/bun\.sh\/install(?!\s*\|\s*bash\s+-s\s+--\s+["']?bun-v(?:1\.4\.2|\$\{BUN_VERSION\})["']?)|npm (?:install|i) -g bun(?:\s|\\|$)/.test(
+        !/bun\.sh\/install(?!\s*\|\s*bash\s+-s\s+--\s+["']?bun-v(?:1\.4\.4|\$\{BUN_VERSION\})["']?)|npm (?:install|i) -g bun(?:\s|\\|$)/.test(
             contents
         ),
         `${path} contains an unpinned Bun installer`
     );
 
     for (const match of contents.matchAll(/npm (?:install|i) -g bun@([^\s\\"'`]+)/g)) {
-        expect(match[1] === '1.4.2', `${path} must install Bun 1.4.2`);
+        expect(match[1] === '1.4.4', `${path} must install Bun 1.4.4`);
     }
 
     const stages = [
@@ -128,18 +128,18 @@ for (const path of runtimePinFiles) {
         const image = stage[1];
         if (image !== 'oven/bun' && !image.startsWith('oven/bun:')) continue;
 
-        // Only the final local-service runtime may retain the host-gateway workaround.
-        // Dependency installation and every standalone service image stay on Bun 1.4.2.
+        // Only the monorepo's compatible-runtime stage (its executable is copied into the
+        // local-service runtimes) may retain the host-gateway workaround; Bun 1.4.4 still
+        // bypasses it. Dependency installation and every standalone service image stay on 1.4.4.
         const isLocalRuntime =
             path === 'Dockerfile.monorepo' &&
-            index === stages.length - 1 &&
             image === 'oven/bun:1.3.14' &&
-            stage[2] === 'source';
+            stage[2] === 'compatible-runtime';
         expect(
             isLocalRuntime ||
-                image === 'oven/bun:1.4.2' ||
-                (path !== 'Dockerfile.monorepo' && image === 'oven/bun:1.4.2-alpine'),
-            `${path} must use oven/bun:1.4.2 or 1.4.2-alpine (only its final monorepo source stage may use 1.3.14)`
+                image === 'oven/bun:1.4.4' ||
+                (path !== 'Dockerfile.monorepo' && image === 'oven/bun:1.4.4-alpine'),
+            `${path} must use oven/bun:1.4.4 or 1.4.4-alpine (only the monorepo compatible-runtime stage may use 1.3.14)`
         );
     }
 }
@@ -153,8 +153,8 @@ for (const path of runtimePinFiles) {
     for (const match of setupMatches) {
         const setupBlock = contents.slice(match.index, match.index + 180);
         expect(
-            /bun-version:\s*['"]?1\.4\.2['"]?(?:\s|$)/.test(setupBlock),
-            `${path} has setup-bun without bun-version 1.4.2`
+            /bun-version:\s*['"]?1\.4\.4['"]?(?:\s|$)/.test(setupBlock),
+            `${path} has setup-bun without bun-version 1.4.4`
         );
     }
 }

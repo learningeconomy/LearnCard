@@ -12,7 +12,7 @@ bash packages/open-api-lcn-clients/generate-python.sh
 The script exports the checked-out brain-service router graph; it does not read a
 live deployed OpenAPI URL, start a service, or invoke a route handler. Export and
 generation run in network-disabled containers without inherited service
-credentials. Bun 1.3.14 and OpenAPI Generator 7.25.0 images are pinned by digest.
+credentials. Bun 1.4.4 and OpenAPI Generator 7.25.0 images are pinned by digest.
 
 Generation writes a sibling staging directory. Security dependency floors and
 all their postconditions run against that exact directory before generated
