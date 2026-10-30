@@ -8,7 +8,7 @@ import { randomSalt } from '../../../sd-jwt-vc/src/salt';
 import { presentSdJwtVc } from '../../../sd-jwt-vc/src/present';
 import { getOpenID4VCPlugin } from '../plugin';
 import type { OpenID4VCDependentLearnCard } from '../types';
-import { DcApiError, parseDcApiRequest, type DcApiRequest } from './dcApi';
+import { createDcApiResponse, DcApiError, parseDcApiRequest, type DcApiRequest } from './dcApi';
 import { parseAuthorizationRequestUri } from './parse';
 
 const ORIGIN = 'https://verifier.example';
@@ -85,6 +85,21 @@ const setup = async () => {
 };
 
 describe('unsigned DC API response profile', () => {
+    it('rejects SD-JWT requests when the host cannot present them', async () => {
+        const context = await setup();
+
+        await expect(
+            createDcApiResponse(
+                parseDcApiRequest(request(), ORIGIN),
+                context.chosen,
+                context.learnCard.id.did(),
+                undefined
+            )
+        ).rejects.toMatchObject({ code: 'missing_sd_jwt_presenter' });
+        expect(context.presenter).not.toHaveBeenCalled();
+        expect(context.fetchImpl).not.toHaveBeenCalled();
+    });
+
     it('accepts a canonical native certificate origin supplied by the trusted transport', () => {
         const origin = `android:apk-key-hash:${Buffer.alloc(32, 1).toString('base64url')}`;
         expect(parseDcApiRequest(request(), origin).audience).toBe(`origin:${origin}`);

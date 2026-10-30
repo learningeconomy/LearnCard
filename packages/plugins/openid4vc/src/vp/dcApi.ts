@@ -138,7 +138,7 @@ export const createDcApiResponse = async (
     const built = buildDcqlPresentations({ query: request.query, chosen, holder });
     const response = await buildDcqlResponse(
         { built, audience: request.audience, nonce: request.nonce, holder },
-        { sdJwtPresenter }
+        sdJwtPresenter ? { sdJwtPresenter } : {}
     );
     assertNotCancelled();
     return { vp_token: response.vpToken };
