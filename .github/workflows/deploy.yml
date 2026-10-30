@@ -296,7 +296,7 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.4.2
+                  bun-version: 1.4.4
 
             - name: Setup Bun cache
               uses: actions/cache@v6
@@ -720,7 +720,7 @@ jobs:
             - name: Set up LCA Node 24 runtime tools
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
 
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
@@ -1452,7 +1452,7 @@ jobs:
             - name: Use Node.js 24 for npm trusted publishing
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
                   package-manager-cache: false
 
             - name: Build packages
@@ -1627,18 +1627,17 @@ jobs:
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            # 2026-07-02: Pin only the Changesets subprocess to Node 24.16.0.
-            # Newer runner Node 24 builds can make node-fetch@2 report false
-            # ERR_STREAM_PREMATURE_CLOSE failures while @changesets/changelog-github
-            # fetches GitHub GraphQL changelog data.
-            # Node regression: https://github.com/nodejs/node/issues/63989
-            # Our failed deploy: https://github.com/learningeconomy/LearnCard/actions/runs/28558778835/job/84673047463
-            # Owner: release CI. Revisit after Node's fix is on the runner or Changesets stops using node-fetch@2:
-            # https://github.com/nodejs/node/pull/64004
-            - name: Use Node.js 24.12.0 for Changesets
+            # 2026-07-02: Changesets was pinned to an older Node 24 because 24.17.0 made
+            # node-fetch@2 report false ERR_STREAM_PREMATURE_CLOSE failures while
+            # @changesets/changelog-github fetched GitHub GraphQL changelog data
+            # (https://github.com/nodejs/node/issues/63989). The fix
+            # (https://github.com/nodejs/node/pull/64004) shipped in Node 24.18, so
+            # .nvmrc (24.22.1) is safe to use. Keep an explicit step so Changesets stays
+            # pinned to the repo Node even if the setup action changes.
+            - name: Use Node.js from .nvmrc for Changesets
               uses: actions/setup-node@v6
               with:
-                  node-version: 24.12.0
+                  node-version-file: .nvmrc
 
             - name: Create Release Pull Request
               uses: changesets/action@v1

@@ -7,7 +7,7 @@ CLIENT_ROOT="$ROOT/packages/open-api-lcn-clients"
 OUTPUT="${1:-$CLIENT_ROOT/python-client}"
 OUTPUT="$(realpath -ms "$OUTPUT")"
 GENERATOR_IMAGE='openapitools/openapi-generator-cli@sha256:2ab0a9680222de65dc9d3baf861aa02b99e1b80c211d8221ebf3ae8f8a102524'
-BUN_IMAGE='oven/bun@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4'
+BUN_IMAGE='oven/bun@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d'
 
 validate_output() {
     if [[ "$OUTPUT" != "$(realpath -m "$OUTPUT")" || -L "$OUTPUT" ]]; then
