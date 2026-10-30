@@ -37,8 +37,13 @@ permissions = workflow.fetch('permissions')
 abort 'workflow must use read-only contents permission' unless permissions == { 'contents' => 'read' }
 
 jobs = workflow.fetch('jobs')
-expected_jobs = %w[eligibility playwright_e2e tests_e2e e2e]
+expected_jobs = %w[eligibility playwright_e2e tests_e2e e2e sdk_cache_probe]
 abort 'E2E workflow job set changed' unless jobs.keys.sort == expected_jobs.sort
+probe = jobs.fetch('sdk_cache_probe')
+abort 'producer probe must require explicit manual opt-in' unless probe.fetch('if') == "${{ github.event_name == 'workflow_dispatch' && inputs.verify_sdk_producer }}"
+abort 'producer probe must use the same-revision reusable workflow' unless probe.fetch('uses') == './.github/workflows/sdk-build-cache.yml'
+probe_input = triggers.fetch('workflow_dispatch').fetch('inputs').fetch('verify_sdk_producer')
+abort 'producer probe must default off' unless probe_input.fetch('type') == 'boolean' && probe_input.fetch('default') == false
 
 eligibility = jobs.fetch('eligibility')
 abort 'eligibility name must not retain hosted shadow terminology' unless eligibility.fetch('name') == 'Determine E2E eligibility'
@@ -97,7 +102,7 @@ abort 'runner label must remain configurable' unless browser.fetch('runs-on').in
   'vars.E2E_HOSTED_RUNNER'
 )
 
-abort 'aggregate must inspect all job results' unless aggregate.fetch('needs') == [
+abort 'aggregate must inspect all required suite results' unless aggregate.fetch('needs') == [
   'eligibility', 'playwright_e2e', 'tests_e2e'
 ]
 abort 'aggregate must run after failures/skips' unless aggregate.fetch('if').include?('always()')

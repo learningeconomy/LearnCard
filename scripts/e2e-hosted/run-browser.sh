@@ -12,6 +12,7 @@ BROWSER_RUNTIME_CONTEXT=""
 
 source "$REPO_ROOT/scripts/e2e-hosted/metrics.sh"
 source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
+source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 e2e_metrics_init browser
 
 collect_browser_artifacts() {
@@ -90,10 +91,13 @@ build_host_browser() {
     # Old Sentry build plugins can fail compilation when optional telemetry
     # cannot connect. Keep hosted test builds independent of that endpoint.
     export SENTRY_BUILD_TELEMETRY=false
+    prepare_shared_sdk browser || return
+    local dependency_args=()
+    [[ "$E2E_SDK_PREPARED" != true ]] || dependency_args=(--excludeTaskDependencies)
     # The app's ^build graph includes all three SDK roots used by Playwright.
     # Use the tested checkout for Vite provenance, including manual dispatches.
     GITHUB_SHA=$(git rev-parse HEAD) SKIP_DIDKIT_NAPI=1 NX_DAEMON=false \
-        bunx nx run learn-card-app:docker-build --verbose --skip-nx-cache || return
+        bunx nx run learn-card-app:docker-build --verbose --skip-nx-cache ${dependency_args[@]+"${dependency_args[@]}"} || return
     [[ -s "$APP_DIR/build/index.html" ]] || return 1
     local output
     for output in packages/learn-card-types/dist packages/learn-card-init/dist packages/plugins/lca-api-plugin/dist; do

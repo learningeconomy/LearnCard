@@ -97,6 +97,50 @@ through index.html, and returns 404 for missing assets. Backend containers use t
 
 ## Cache writers and cleanup
 
+### Shared SDK compilation (LC-2312 / CI-15a)
+
+`sdk-build-cache.yml` publishes an exact snapshot of the fixed browser/service SDK
+prerequisite union after successful compilation on `main`. E2E jobs only restore;
+they never publish SDK outputs. The app, Docker work, runtime readiness checks and
+all tests still execute. No Nx database or test result is shared.
+
+For example, changing an app button can reuse the SDK compiled on `main`, while
+Vite still compiles that button and Playwright still tests the changed app. SDK,
+compiler, lockfile, embedded CLI snippet or compiler-environment changes require
+a different snapshot. SDK release metadata uses this input identity; the fresh
+app build still uses the tested Git SHA.
+
+The plan audits both task graphs and every declared output directory. Unexpected
+prerequisite targets or unsupported inputs preserve the complete ordinary Nx
+graph. A miss, unavailable restore or rejected inventory rebuilds prerequisites;
+a compilation or test failure still fails the job. Hashes, file modes and a full
+inventory detect missing, changed, extra or linked snapshot entries. Only an
+accepted inventory or successful compilation permits skipping dependency tasks.
+
+The key deliberately hashes all tracked packages, services, tools, scripts,
+patches, root files, workspace manifests and `docs/snippets/`, plus the task plan,
+toolchain, platform and restricted compiler environment. It excludes app source
+and commit IDs. Absolute workspace/tool paths are included conservatively, so a
+different runner layout misses. Build-time environment additions require auditing
+`compilerEnvironment`; runtime test variables are unaffected.
+
+For a controlled manual baseline, dispatch E2E on the same ref with
+`use_sdk_cache=false`. This disables restore while retaining the same SDK phase,
+compiler environment and concurrency. Compare `sdk_dependency_build` against
+`sdk_output_restore`, then compare the complete required-job durations and test
+counts across several runs. Key/lookup overhead and a cold producer cost time too;
+an SDK phase win alone does not establish a faster complete workflow.
+
+`verify_sdk_producer=true` adds a producer probe to a manual E2E run; feature refs
+compile and snapshot without publishing. After merge, verify a successful `main`
+publication, reuse on a second app-only PR commit and merge-group reuse. These
+scope checks require the workflow on the default branch. A corrupt immutable
+cache remains a safe miss/rebuild until eviction or manual deletion. The broader
+Test Runner experiment in #1681 remains research; its affected-set keys and mixed
+timing results are not evidence of cross-PR reuse or a measured net speedup.
+
+### Dependency cache and builders
+
 The browser job and service shards 2/3 restore the Bun dependency cache without
 saving it. Service shard 1 is the sole writer within each E2E run. The shared setup
 action retains cache saving by default for other workflows. This avoids sibling
