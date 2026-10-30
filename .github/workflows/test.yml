@@ -135,9 +135,13 @@ jobs:
             contents: read
         runs-on: ubuntu-latest
         timeout-minutes: 20
+        # Pre-step service authentication and troubleshooting: .github/SERVICE_IMAGE_PULLS.md.
         services:
             mongo:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports:
                     - 27017:27017
                 options: >-
