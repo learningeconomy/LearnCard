@@ -1,5 +1,19 @@
 # @welibraryos/react-learn-card
 
+## 3.0.1
+
+### Patch Changes
+
+- [#1816](https://github.com/learningeconomy/LearnCard/pull/1816) [`616d4e3bf506aa14852e66c0423f232906e2c339`](https://github.com/learningeconomy/LearnCard/commit/616d4e3bf506aa14852e66c0423f232906e2c339) Thanks [@goblincore](https://github.com/goblincore)! - Correct unsigned credential preview labels, ordinary evidence link types, and mapped award dates on desktop and mobile.
+
+    Keep calendar award dates consistent across timezones and recognize uploaded MP4, MOV, and WebM evidence from file metadata.
+
+    Retain verification for signed credentials in preview mode and recognize direct HTTP(S) video-file evidence links.
+
+- Updated dependencies [[`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/helpers@1.7.1
+    - @learncard/init@2.5.6
+
 ## 3.0.0
 
 ### Major Changes

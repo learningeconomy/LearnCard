@@ -1,5 +1,46 @@
 # @learncard/network-brain-service
 
+## 4.1.0
+
+### Minor Changes
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - Add campaign definitions, admin-managed metadata audiences, age-aware self-enrollment and shared engagement state. Expose typed campaign APIs and network plugin methods without enabling notification delivery or app rendering.
+
+    Campaign audiences always exclude profiles with missing, empty, or malformed birthdays. Self-enrollment requires a known adult birthday.
+
+    Require live or paused campaigns to be archived before deletion. Rejected campaign events leave profile properties unchanged, and audience metadata filters are limited to 20 keys.
+
+- [#1730](https://github.com/learningeconomy/LearnCard/pull/1730) [`e0f4188b93fba5747f21cd50e0bd4a62fdf88d37`](https://github.com/learningeconomy/LearnCard/commit/e0f4188b93fba5747f21cd50e0bd4a62fdf88d37) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Amazon Nova 2 Multimodal Embeddings on Bedrock (`amazon.nova-2-multimodal-embeddings-v1:0`, us-east-1, 1024-d) for skill matching, side by side with the legacy Google `gemini-embedding-001` (768-d) index. With `SKILL_EMBEDDING_BEDROCK_ENABLED`, new and updated skills get Nova vectors (`GENERIC_INDEX`) in a versioned Neo4j property and vector index, and a locked, resumable backfill (`skill-embeddings:backfill`) re-embeds existing skills; legacy Google writes continue unchanged. Semantic search keeps reading the legacy index with Google query embeddings until `SKILL_EMBEDDING_BEDROCK_READ_ENABLED=true` switches it to the Nova index with `TEXT_RETRIEVAL` query embeddings; setting it back to `false` is the rollback. Query-embedding cache keys are scoped by model (and, for Nova, dimension and scheme), so the two read paths never share cached vectors (LC-2206).
+
+- [#1777](https://github.com/learningeconomy/LearnCard/pull/1777) [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762) Thanks [@smurflo2](https://github.com/smurflo2)! - feat: [LC-2245] Add issuer LinkedIn organization IDs, stable certification IDs, and opt-in localized social previews. Keep each preview bound to one encrypted presentation so a new share does not replace an earlier card; refresh metadata in place and recreate deleted references. Audit publisher and creation/update times, support owner/profile cleanup, preserve decryptable card URLs, and isolate private updates to their exact share record.
+
+    Extract stable UUIDs from recognized LearnCard credential addresses to fit LinkedIn's certification ID field, retain other complete IDs only within the 80-character limit, and preserve family record identity independently of loaded pages. Use only eligible credential/achievement artwork for public previews, never recipient-photo fallbacks. Enable posting only after explicit preview publication succeeds and associate the disabled action with its consent explanation. Keep unresolved issuer placeholders out of LinkedIn organization names.
+
+    Keep the share-preview request type in a type-only network-plugin import so consumers using `verbatimModuleSyntax` can typecheck.
+
+### Patch Changes
+
+- [#1785](https://github.com/learningeconomy/LearnCard/pull/1785) [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104) Thanks [@gerardopar](https://github.com/gerardopar)! - feat(campaigns): add audience management and shared engagement state [LC-2265]
+
+- [#1827](https://github.com/learningeconomy/LearnCard/pull/1827) [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7) Thanks [@leif-squeak](https://github.com/apps/leif-squeak)! - Upgrade the pinned `zod` dependency to 4.6.6 to pick up the upstream security fix.
+
+- Updated dependencies [[`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`4fae096473fd0824be1dd6aefb4a783062377104`](https://github.com/learningeconomy/LearnCard/commit/4fae096473fd0824be1dd6aefb4a783062377104), [`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198), [`d1708a1ce43f052862fedda2cf0d922a71ad1762`](https://github.com/learningeconomy/LearnCard/commit/d1708a1ce43f052862fedda2cf0d922a71ad1762), [`11f18bde5808075df401e17d2b3cc40a0cdbdac7`](https://github.com/learningeconomy/LearnCard/commit/11f18bde5808075df401e17d2b3cc40a0cdbdac7)]:
+    - @learncard/types@5.24.0
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/credential-library@2.1.4
+    - @learncard/helpers@1.7.1
+    - @learncard/core@9.4.41
+    - @learncard/did-web-plugin@1.1.41
+    - @learncard/didkey-plugin@1.1.41
+    - @learncard/didkit-plugin-node@0.3.6
+    - @learncard/encryption-plugin@1.1.41
+    - @learncard/learn-card-plugin@1.2.41
+    - @learncard/vc-plugin@1.6.7
+    - @learncard/vc-templates-plugin@1.1.41
+    - @learncard/crypto-plugin@1.1.41
+    - @learncard/dynamic-loader-plugin@1.1.41
+    - @learncard/expiration-plugin@1.2.41
+
 ## 4.0.4
 
 ### Patch Changes

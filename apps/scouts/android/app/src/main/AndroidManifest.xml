@@ -23,6 +23,8 @@
     <application
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
+        android:fullBackupContent="@xml/sqlite_backup_rules"
+        android:dataExtractionRules="@xml/sqlite_data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

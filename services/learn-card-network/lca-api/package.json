@@ -1,6 +1,6 @@
 {
     "name": "@learncard/lca-api-service",
-    "version": "1.5.3",
+    "version": "1.6.0",
     "description": "",
     "engines": {
         "node": ">=24.12 <25"
@@ -103,7 +103,7 @@
         "postmark": "^4.0.5",
         "trpc-to-openapi": "^3.1.0",
         "uuid": "^14.0.0",
-        "zod": "4.4.3",
+        "zod": "4.6.6",
         "pngjs": "^7.0.0",
         "@aws/bedrock-token-generator": "1.1.0"
     },

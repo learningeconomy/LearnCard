@@ -1,0 +1,496 @@
+diff --git a/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLite.java b/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLite.java
+--- a/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLite.java
++++ b/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLite.java
+@@ -171,6 +171,21 @@
+         return value;
+     }
+ 
++
++    public boolean prepareEncryptedDatabase(String database) throws Exception {
++        if (!isEncryption || !"learncardDB".equals(database)) throw new Exception("Encrypted account storage is unavailable");
++        return com.getcapacitor.community.database.sqlite.SQLite.LearnCardEncryptedDatabase.prepare(
++            context.getDatabasePath("learncardDBSQLite.db"),
++            new com.getcapacitor.community.database.sqlite.SQLite.LearnCardEncryptedDatabase.Secrets() {
++                public String read() { return sharedPreferences.getString("secret", ""); }
++                public void write(String secret) throws Exception {
++                    if (!sharedPreferences.edit().putString("secret", secret).commit()) {
++                        throw new Exception("Cannot persist account storage secret");
++                    }
++                }
++            });
++    }
++
+     public Boolean isSecretStored() throws Exception {
+         boolean ret = false;
+         if (isEncryption) {
+diff --git a/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLitePlugin.java b/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLitePlugin.java
+--- a/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLitePlugin.java
++++ b/android/src/main/java/com/getcapacitor/community/database/sqlite/CapacitorSQLitePlugin.java
+@@ -57,6 +57,22 @@
+      *
+      * @param call PluginCall
+      */
++
++    @PluginMethod
++    public void prepareEncryptedDatabase(PluginCall call) {
++        try {
++            if (implementation == null) throw new Exception("Unavailable");
++            boolean migrated = implementation.prepareEncryptedDatabase(call.getString("database"));
++            JSObject result = new JSObject();
++            result.put("version", 1);
++            result.put("encrypted", true);
++            result.put("migrated", migrated);
++            call.resolve(result);
++        } catch (Exception error) {
++            call.reject("Encrypted account storage is unavailable");
++        }
++    }
++
+     @PluginMethod
+     public void echo(PluginCall call) {
+         String value = call.getString("value");
+diff --git a/android/src/main/java/com/getcapacitor/community/database/sqlite/SQLite/LearnCardEncryptedDatabase.java b/android/src/main/java/com/getcapacitor/community/database/sqlite/SQLite/LearnCardEncryptedDatabase.java
+new file mode 100644
+--- /dev/null
++++ b/android/src/main/java/com/getcapacitor/community/database/sqlite/SQLite/LearnCardEncryptedDatabase.java
+@@ -0,0 +1,174 @@
++package com.getcapacitor.community.database.sqlite.SQLite;
++
++import android.database.Cursor;
++import android.system.Os;
++import android.system.OsConstants;
++import java.io.File;
++import java.io.FileDescriptor;
++import java.io.FileOutputStream;
++import java.io.IOException;
++import java.io.RandomAccessFile;
++import java.nio.channels.FileLock;
++import java.nio.charset.StandardCharsets;
++import java.security.SecureRandom;
++import java.util.Arrays;
++import net.zetetic.database.sqlcipher.SQLiteDatabase;
++import net.zetetic.database.sqlcipher.SQLiteStatement;
++
++/** Native-only, process-locked bootstrap; the original file survives until atomic replacement. */
++public final class LearnCardEncryptedDatabase {
++    public interface Secrets {
++        String read() throws Exception;
++        void write(String secret) throws Exception;
++    }
++
++    public interface Checkpoint {
++        void reached(String point) throws Exception;
++    }
++
++    public static boolean prepare(File original, Secrets secrets) throws Exception {
++        return prepare(original, secrets, point -> {});
++    }
++
++    public static boolean prepare(File original, Secrets secrets, Checkpoint checkpoint) throws Exception {
++        System.loadLibrary("sqlcipher");
++        File parent = original.getParentFile();
++        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
++            throw failure("Cannot create account storage");
++        }
++        // FileChannel.lock serializes processes; the monitor also handles same-JVM callers.
++        synchronized (LearnCardEncryptedDatabase.class) {
++            try (RandomAccessFile lockFile = new RandomAccessFile(original + ".encryption.lock", "rw");
++                 FileLock ignored = lockFile.getChannel().lock()) {
++                boolean exists = original.exists();
++                if (exists && !original.isFile()) throw failure("Account storage is unreadable");
++                // SQLite may leave an empty file on an interrupted first open. It has no data to convert.
++                if (exists && original.length() == 0) {
++                    for (String suffix : new String[] {"-wal", "-shm", "-journal"}) {
++                        if (new File(original + suffix).length() > 0) {
++                            throw failure("Empty account storage has recovery sidecars");
++                        }
++                    }
++                }
++                exists = exists && original.length() > 0;
++                String secret = secrets.read();
++                if (secret == null) secret = "";
++                if (exists) {
++                    byte[] header = new byte[16];
++                    try (RandomAccessFile file = new RandomAccessFile(original, "r")) {
++                        if (file.read(header) != 16) throw failure("Account storage is unreadable");
++                    }
++                    if (!Arrays.equals(header, "SQLite format 3\0".getBytes(StandardCharsets.US_ASCII))) {
++                        if (secret.isEmpty()) throw failure("Account storage secret is unavailable");
++                        // Let the plugin's keyed open authenticate the file. A second open here
++                        // repeats SQLCipher's KDF and a full scan blocks healthy account pages on cache damage.
++                        return false;
++                    }
++                    // A killed plaintext writer can leave a hot rollback journal. SQLite must
++                    // recover committed state through a writable handle before the integrity scan.
++                    // Never delete recovery sidecars ourselves.
++                    try (SQLiteDatabase source = open(original, "", false)) {
++                        if (!"ok".equals(scalar(source, "PRAGMA integrity_check"))) {
++                            throw failure("Account storage integrity check failed");
++                        }
++                    }
++                }
++                if (secret.isEmpty()) {
++                    byte[] bytes = new byte[32];
++                    new SecureRandom().nextBytes(bytes);
++                    StringBuilder encoded = new StringBuilder(64);
++                    for (byte value : bytes) encoded.append(String.format("%02x", value & 0xff));
++                    secret = encoded.toString();
++                    secrets.write(secret);
++                    if (!secret.equals(secrets.read())) throw failure("Cannot persist account storage secret");
++                }
++                checkpoint.reached("after-secret");
++                File staged = new File(original + ".encryption.tmp");
++                clearStaging(staged);
++                try {
++                    if (exists) {
++                        try (SQLiteDatabase source = open(original, "", false)) {
++                            if (!"0".equals(scalar(source, "PRAGMA wal_checkpoint(TRUNCATE)"))) {
++                                throw failure("Account storage is busy");
++                            }
++                            if (!"delete".equals(scalar(source, "PRAGMA journal_mode=DELETE"))) {
++                                throw failure("Account storage is busy");
++                            }
++                            String version = scalar(source, "PRAGMA user_version");
++                            try (SQLiteStatement attach = source.compileStatement("ATTACH DATABASE ? AS encrypted KEY ?")) {
++                                attach.bindString(1, staged.getAbsolutePath());
++                                attach.bindString(2, secret);
++                                attach.execute();
++                            }
++                            source.rawExecSQL("PRAGMA encrypted.synchronous=FULL");
++                            source.beginTransaction();
++                            try {
++                                source.rawExecSQL("SELECT sqlcipher_export('encrypted')");
++                                source.rawExecSQL("PRAGMA encrypted.user_version=" + version);
++                                source.setTransactionSuccessful();
++                            } finally {
++                                source.endTransaction();
++                            }
++                            source.rawExecSQL("DETACH DATABASE encrypted");
++                        }
++                    } else {
++                        try (SQLiteDatabase target = open(staged, secret, false)) {
++                            target.rawExecSQL("PRAGMA synchronous=FULL");
++                            target.rawExecSQL("PRAGMA user_version=1");
++                        }
++                    }
++                    checkpoint.reached("before-validate");
++                    validate(staged, secret);
++                    Os.chmod(staged.getAbsolutePath(), 0600);
++                    try (FileOutputStream file = new FileOutputStream(staged, true)) {
++                        file.getFD().sync();
++                    }
++                    checkpoint.reached("before-replace");
++                    // POSIX same-directory replacement; never delete the authoritative DB first.
++                    Os.rename(staged.getAbsolutePath(), original.getAbsolutePath());
++                    checkpoint.reached("after-replace");
++                    FileDescriptor directory = Os.open(parent.getAbsolutePath(), OsConstants.O_RDONLY, 0);
++                    try { Os.fsync(directory); } finally { Os.close(directory); }
++                    return exists;
++                } finally {
++                    // Only our encrypted staging file is disposable. Leave the original untouched on failure.
++                    clearStaging(staged);
++                }
++            }
++        }
++    }
++
++    private static SQLiteDatabase open(File path, String secret, boolean readonly) {
++        SQLiteDatabase db = SQLiteDatabase.openDatabase(path.getAbsolutePath(), secret, null,
++            readonly ? SQLiteDatabase.OPEN_READONLY : SQLiteDatabase.OPEN_READWRITE | SQLiteDatabase.CREATE_IF_NECESSARY, null);
++        db.rawExecSQL("PRAGMA busy_timeout=5000");
++        return db;
++    }
++
++    private static void clearStaging(File staged) throws IOException {
++        for (String suffix : new String[] {"", "-journal", "-wal", "-shm"}) {
++            File file = new File(staged + suffix);
++            if (file.exists() && !file.delete()) throw failure("Cannot clear account storage staging");
++        }
++    }
++
++    public static void validate(File path, String secret) throws Exception {
++        try (SQLiteDatabase db = open(path, secret, true)) {
++            if (!"ok".equals(scalar(db, "PRAGMA integrity_check"))) throw failure("Account storage integrity check failed");
++            if (!secret.isEmpty()) {
++                try (Cursor rows = db.rawQuery("PRAGMA cipher_integrity_check", null)) {
++                    if (rows.moveToFirst()) throw failure("Account storage authentication failed");
++                }
++            }
++        }
++    }
++
++    private static String scalar(SQLiteDatabase db, String sql) throws Exception {
++        try (Cursor rows = db.rawQuery(sql, null)) {
++            if (!rows.moveToFirst()) throw failure("Account storage query failed");
++            return rows.getString(0);
++        }
++    }
++
++    private static IOException failure(String message) { return new IOException(message); }
++}
+diff --git a/ios/Plugin/CapacitorSQLite.swift b/ios/Plugin/CapacitorSQLite.swift
+--- a/ios/Plugin/CapacitorSQLite.swift
++++ b/ios/Plugin/CapacitorSQLite.swift
+@@ -102,6 +102,30 @@
+     // swiftlint:enable no_space_in_method_call
+     // swiftlint:enable cyclomatic_complexity
+     // swiftlint:enable function_body_length
++
++
++    func prepareEncryptedDatabase(_ database: String) throws -> Bool {
++        guard isEncryption && database == "learncardDB" else {
++            throw CapacitorSQLiteError.failed(message: "Encrypted account storage is unavailable")
++        }
++        let path = try UtilsFile.getFilePath(databaseLocation: databaseLocation, fileName: "learncardDBSQLite.db")
++        let migrated = try LearnCardEncryptedDatabase.prepare(path: path, readSecret: {
++            do {
++                return try KeychainWrapper().getGenericPasswordFor(account: self.account, service: "unlockSecret")
++            } catch let error as KeychainWrapperError {
++                if error.type == .itemNotFound { return nil }
++                throw error
++            }
++        }, writeSecret: { secret in
++            try UtilsSecret.setPassphrase(account: self.account, passphrase: secret)
++        })
++        var url = URL(fileURLWithPath: path)
++        var values = URLResourceValues()
++        values.isExcludedFromBackup = true
++        try url.setResourceValues(values)
++        try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: path)
++        return migrated
++    }
+ 
+     // MARK: - Echo
+ 
+diff --git a/ios/Plugin/CapacitorSQLitePlugin.swift b/ios/Plugin/CapacitorSQLitePlugin.swift
+--- a/ios/Plugin/CapacitorSQLitePlugin.swift
++++ b/ios/Plugin/CapacitorSQLitePlugin.swift
+@@ -8,6 +8,7 @@
+     public let identifier = "CapacitorSQLitePlugin"
+     public let jsName = "CapacitorSQLite"
+     public let pluginMethods: [CAPPluginMethod] = [
++        CAPPluginMethod(name: "prepareEncryptedDatabase", returnType: CAPPluginReturnPromise),
+         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
+         CAPPluginMethod(name: "createConnection", returnType: CAPPluginReturnPromise),
+         CAPPluginMethod(name: "closeConnection", returnType: CAPPluginReturnPromise),
+@@ -85,6 +86,17 @@
+     }
+ 
+     // MARK: - Echo
++
++
++    @objc func prepareEncryptedDatabase(_ call: CAPPluginCall) {
++        do {
++            guard let implementation = implementation else { throw CapacitorSQLiteError.failed(message: "Unavailable") }
++            let migrated = try implementation.prepareEncryptedDatabase(call.getString("database") ?? "")
++            call.resolve(["version": 1, "encrypted": true, "migrated": migrated])
++        } catch {
++            call.reject("Encrypted account storage is unavailable")
++        }
++    }
+ 
+     @objc func echo(_ call: CAPPluginCall) {
+         let value = call.getString("value") ?? ""
+diff --git a/ios/Plugin/Models/KeychainServices.swift b/ios/Plugin/Models/KeychainServices.swift
+--- a/ios/Plugin/Models/KeychainServices.swift
++++ b/ios/Plugin/Models/KeychainServices.swift
+@@ -61,7 +61,8 @@
+             // 4
+             kSecAttrService as String: service,
+             // 5
+-            kSecValueData as String: passwordData
++            kSecValueData as String: passwordData,
++            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+         ]
+ 
+         // 1
+diff --git a/ios/Plugin/Utils/LearnCardEncryptedDatabase.swift b/ios/Plugin/Utils/LearnCardEncryptedDatabase.swift
+new file mode 100644
+--- /dev/null
++++ b/ios/Plugin/Utils/LearnCardEncryptedDatabase.swift
+@@ -0,0 +1,185 @@
++import Foundation
++import Darwin
++import Security
++import SQLCipher
++
++/// Native-only bootstrap. Secrets never cross the Capacitor bridge.
++/// The same file is included in the pinned SQLite plugin patch and host migration tests.
++enum LearnCardEncryptedDatabase {
++    static func prepare(
++        path: String,
++        readSecret: () throws -> String?,
++        writeSecret: (String) throws -> Void,
++        checkpoint: (String) throws -> Void = { _ in }
++    ) throws -> Bool {
++        let manager = FileManager.default
++        let parent = URL(fileURLWithPath: path).deletingLastPathComponent().path
++        try manager.createDirectory(atPath: parent, withIntermediateDirectories: true)
++        let lock = Darwin.open(path + ".encryption.lock", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
++        guard lock >= 0 else { throw failure("Cannot lock account storage") }
++        defer { Darwin.close(lock) }
++        guard flock(lock, LOCK_EX) == 0 else { throw failure("Cannot lock account storage") }
++        defer { flock(lock, LOCK_UN) }
++
++        var exists = manager.fileExists(atPath: path)
++        if exists {
++            let attributes = try manager.attributesOfItem(atPath: path)
++            guard attributes[.type] as? FileAttributeType == .typeRegular,
++                  let size = attributes[.size] as? NSNumber else {
++                throw failure("Account storage is unreadable")
++            }
++            // An interrupted initial SQLite open may leave an empty file with no data to convert.
++            exists = size.uint64Value > 0
++            if !exists {
++                for suffix in ["-wal", "-shm", "-journal"] where manager.fileExists(atPath: path + suffix) {
++                    let sidecar = try manager.attributesOfItem(atPath: path + suffix)
++                    guard let size = sidecar[.size] as? NSNumber, size.uint64Value == 0 else {
++                        throw failure("Empty account storage has recovery sidecars")
++                    }
++                }
++            }
++        }
++        var secret = try readSecret() ?? ""
++        if exists {
++            let file = try FileHandle(forReadingFrom: URL(fileURLWithPath: path))
++            let header = try file.read(upToCount: 16)
++            try file.close()
++            guard header?.count == 16 else { throw failure("Account storage is unreadable") }
++            if header != Data("SQLite format 3\0".utf8) {
++                guard !secret.isEmpty else { throw failure("Account storage secret is unavailable") }
++                // The plugin's keyed open authenticates the file without a duplicate KDF/full scan here.
++                return false
++            }
++            // A killed plaintext writer can leave a hot rollback journal. SQLite needs a writable
++            // handle to recover committed state before validation; never delete recovery sidecars.
++            try withDatabase(path: path, secret: "", writable: true) { source in
++                guard try scalar(source, "PRAGMA integrity_check") == "ok" else {
++                    throw failure("Account storage integrity check failed")
++                }
++            }
++        }
++        if secret.isEmpty {
++            var bytes = [UInt8](repeating: 0, count: 32)
++            guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
++                throw failure("Cannot provision account storage")
++            }
++            secret = bytes.map { String(format: "%02x", $0) }.joined()
++            try writeSecret(secret)
++            guard try readSecret() == secret else { throw failure("Cannot persist account storage secret") }
++        }
++        try checkpoint("after-secret")
++
++        // Stage on the same filesystem. The authoritative file is never moved aside/deleted.
++        let staged = path + ".encryption.tmp"
++        for suffix in ["", "-journal", "-wal", "-shm"] {
++            if manager.fileExists(atPath: staged + suffix) { try manager.removeItem(atPath: staged + suffix) }
++        }
++        defer {
++            for suffix in ["", "-journal", "-wal", "-shm"] { try? manager.removeItem(atPath: staged + suffix) }
++        }
++        if exists {
++            try withDatabase(path: path, secret: "", writable: true) { source in
++                // Fold WAL into the source before replacing its inode; reject active writers.
++                guard try scalar(source, "PRAGMA wal_checkpoint(TRUNCATE)") == "0" else {
++                    throw failure("Account storage is busy")
++                }
++                guard try scalar(source, "PRAGMA journal_mode=DELETE") == "delete" else {
++                    throw failure("Account storage is busy")
++                }
++                let version = try scalar(source, "PRAGMA user_version")
++                try execute(source, "ATTACH DATABASE '\(escaped(staged))' AS encrypted KEY '\(escaped(secret))'")
++                try execute(source, "PRAGMA encrypted.synchronous=FULL")
++                try execute(source, "BEGIN EXCLUSIVE")
++                do {
++                    try execute(source, "SELECT sqlcipher_export('encrypted')")
++                    try execute(source, "PRAGMA encrypted.user_version=\(version)")
++                    try execute(source, "COMMIT")
++                } catch {
++                    try? execute(source, "ROLLBACK")
++                    throw error
++                }
++                try execute(source, "DETACH DATABASE encrypted")
++            }
++        } else {
++            try withDatabase(path: staged, secret: secret, writable: true) { target in
++                try execute(target, "PRAGMA synchronous=FULL")
++                // Force an encrypted header even before application schema initialization.
++                try execute(target, "PRAGMA user_version=1")
++            }
++        }
++        try checkpoint("before-validate")
++        try validate(path: staged, secret: secret)
++        let stagedFD = Darwin.open(staged, O_RDONLY)
++        guard stagedFD >= 0 else { throw failure("Cannot sync account storage") }
++        let synced = fsync(stagedFD)
++        Darwin.close(stagedFD)
++        guard synced == 0 else { throw failure("Cannot sync account storage") }
++        try checkpoint("before-replace")
++        guard rename(staged, path) == 0 else { throw failure("Cannot replace account storage") }
++        try checkpoint("after-replace")
++        let directoryFD = Darwin.open(parent, O_RDONLY)
++        guard directoryFD >= 0 else { throw failure("Cannot sync account storage directory") }
++        let directorySynced = fsync(directoryFD)
++        Darwin.close(directoryFD)
++        guard directorySynced == 0 else { throw failure("Cannot sync account storage directory") }
++        return exists
++    }
++
++    static func validate(path: String, secret: String) throws {
++        try withDatabase(path: path, secret: secret, writable: false) { db in
++            guard try scalar(db, "PRAGMA integrity_check") == "ok" else {
++                throw failure("Account storage integrity check failed")
++            }
++            if !secret.isEmpty {
++                var statement: OpaquePointer?
++                guard sqlite3_prepare_v2(db, "PRAGMA cipher_integrity_check", -1, &statement, nil) == SQLITE_OK else {
++                    throw failure("Account storage authentication failed")
++                }
++                defer { sqlite3_finalize(statement) }
++                guard sqlite3_step(statement) == SQLITE_DONE else {
++                    throw failure("Account storage authentication failed")
++                }
++            }
++        }
++    }
++
++    static func withDatabase<T>(
++        path: String, secret: String, writable: Bool, operation: (OpaquePointer) throws -> T
++    ) throws -> T {
++        var handle: OpaquePointer?
++        let flags = writable ? SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE : SQLITE_OPEN_READONLY
++        guard sqlite3_open_v2(path, &handle, flags | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
++              let db = handle else {
++            if let handle = handle { sqlite3_close(handle) }
++            throw failure("Cannot open account storage")
++        }
++        defer { sqlite3_close(db) }
++        sqlite3_busy_timeout(db, 5_000)
++        if !secret.isEmpty { try execute(db, "PRAGMA key='\(escaped(secret))'") }
++        return try operation(db)
++    }
++
++    static func execute(_ db: OpaquePointer, _ sql: String) throws {
++        guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
++            // Never return SQL, filenames, keys or native error text to JavaScript/logs.
++            throw failure("Account storage operation failed")
++        }
++    }
++
++    static func scalar(_ db: OpaquePointer, _ sql: String) throws -> String {
++        var statement: OpaquePointer?
++        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
++            throw failure("Account storage query failed")
++        }
++        defer { sqlite3_finalize(statement) }
++        guard sqlite3_step(statement) == SQLITE_ROW, let value = sqlite3_column_text(statement, 0) else {
++            throw failure("Account storage query failed")
++        }
++        return String(cString: value)
++    }
++
++    private static func escaped(_ value: String) -> String { value.replacingOccurrences(of: "'", with: "''") }
++    private static func failure(_ message: String) -> NSError {
++        NSError(domain: "LearnCardSQLiteEncryption", code: 1, userInfo: [NSLocalizedDescriptionKey: message])
++    }
++}
