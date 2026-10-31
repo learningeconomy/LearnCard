@@ -96,9 +96,9 @@ flowchart TD
   guaranteed detection deadline: a stolen writer identity can evade the nonwriter
   filter, and a trusted organization/MFA admin can weaken policies or detection.
   COMPLIANCE locks delivered log versions, not future logging or KMS availability.
-  Explicit security acceptance is required before launch without the archiver;
-  implement it before the 50% rollout stage, or sooner if security rejects this
-  risk. Same-generation rollback remains forbidden.
+  Accepted for all rollout stages (LAUNCH-DECISIONS.md RAR, amended 2026-10-31);
+  the archiver is post-launch hardening. Same-generation rollback remains
+  forbidden.
 
 **Fixed monitoring gap (deployment and drills still required):** operator
 read-only verification on **2026-10-20** found no escrow staging CloudTrail trail,

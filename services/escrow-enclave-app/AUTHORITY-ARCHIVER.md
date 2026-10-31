@@ -1,12 +1,12 @@
 # Enrollment authority immutable archive and outbox
 
-**Status:** Deferred — not a launch blocker; required before the 50% rollout stage (or sooner if security rejects R-AUTHORITY-ROLLBACK).
+**Status:** Deferred, post-launch hardening. Not a launch or stage gate: R-AUTHORITY-ROLLBACK is accepted for all stages (LAUNCH-DECISIONS.md RAR, amended 2026-10-31).
 
 The design below is retained as the implementation proposal. Its production
 sequencing describes the future archiver cutover, not a prerequisite to initial
-launch. [ROLLOUT.md](ROLLOUT.md) governs the current pre-50% gate; earlier stages
-require working CloudTrail alarms and explicit security acceptance of
-R-AUTHORITY-ROLLBACK, not a claim that independent archived history exists.
+launch. R-AUTHORITY-ROLLBACK is accepted for all stages (LAUNCH-DECISIONS.md RAR,
+amended 2026-10-31), relying on working CloudTrail alarms, not on independent
+archived history.
 
 **Status:** Proposed; requires security/product approval. No infrastructure is deployed by this document.
 **Baseline:** `origin/main` at `750bdc2050fa7f4e59fe80dc83a69a5072c55d09` (2026-10-19).

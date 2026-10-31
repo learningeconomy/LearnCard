@@ -637,7 +637,7 @@ change as independently committed; an API `{success:true}` is insufficient.
   The escrow CMK policy is NOT touched (it denies Encrypt).
   The new KMS key policy allows Decrypt only with an attested Recipient matching pinned PCRs.
   Add single-region tables, fixed TLS endpoint, alarms and backup policy. The audit
-  outbox/Object Lock archiver is a pre-50%-rollout gate (see section 5), not in this stack.
+  outbox/Object Lock archiver is post-launch hardening (RAR accepted for all stages), not in this stack.
   Host/API get no table writes, signing grants or cross-account administrator role.
   Update `infra/escrow-enclave/{iam,ledger,kms,storage,monitor}.tf` integration and
   measured endpoint/pin configuration. Preserve existing PCR tuple/KMS denies.

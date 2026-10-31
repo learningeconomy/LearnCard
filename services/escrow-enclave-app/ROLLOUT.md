@@ -5,8 +5,9 @@ tenants, stage by stage. It is operator-facing, not implementation documentation
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
 Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
-The authority Object Lock archiver/outbox is **deferred to a pre-50% rollout gate**,
-not a launch blocker, unless security rejects R-AUTHORITY-ROLLBACK. Preparing
+The authority Object Lock archiver/outbox is **post-launch hardening**, not a
+launch or stage gate: R-AUTHORITY-ROLLBACK is accepted for all stages
+(LAUNCH-DECISIONS.md RAR, amended 2026-10-31). Preparing
 infrastructure or passing offline Terraform tests does not close any live gate.
 
 ## What this controls (and what it doesn't)
@@ -144,12 +145,12 @@ up.
 
 ## Go/no-go criteria per stage
 
-**Before stage 4 (50%):** ship and security-approve
-[AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md), including independent immutable
-history, reconciliation, rollback/purge drills and independent alarm delivery.
-Remain at 10% or below until this gate closes. Security rejection of
-R-AUTHORITY-ROLLBACK moves this requirement earlier, including before launch.
-This is an operator gate, not a newly implemented automatic percentage limit.
+**Archiver (no longer a stage gate).** R-AUTHORITY-ROLLBACK is accepted for all
+stages (LAUNCH-DECISIONS.md RAR, amended 2026-10-31), conditional on authority
+PITR, the authority write trail and alarms, and a production drill of the
+denied-write and unexpected-write alarms before the switch.
+[AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md), or a lighter tamper-evident
+history, is post-launch hardening.
 
 At every stage, require zero unexplained `AuthorityGovernance:unexpected_write`,
 `AuthorityGovernance:denied_write` or `EscrowCloudTrailTamper` alerts. Planned
