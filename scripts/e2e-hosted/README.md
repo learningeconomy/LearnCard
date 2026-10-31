@@ -70,7 +70,7 @@ export with `mode=min`. Service shards never install the app's build dependencie
 inside Docker. The browser job uses both caches. The backend cache starts cold on
 its first CI run; compare a subsequent run before drawing conclusions about timings.
 
-Both dependency stages use Bun 1.4.2 for lockfile v3. Runtime stages inherit their
+Both dependency stages use Bun 1.4.4 for lockfile v3. Runtime stages inherit their
 installed dependency layers and copy only the Bun 1.3.14 executable to preserve
 `localhost:host-gateway` did:web resolution. Neither hosted Compose startup commands
 nor final runtime stages run `bun install`. The original full `source` target remains
@@ -145,7 +145,7 @@ E2E_EXTERNAL_STACK=true bunx playwright test --config=playwright.parallel.config
 
 ## Bun installer/runtime compatibility
 
-The dependency stage uses Bun 1.4.2 for lockfile v3. The source stage inherits
+The dependency stage uses Bun 1.4.4 for lockfile v3. The source stage inherits
 those layers and copies only the Bun 1.3.14 executable from the compatible runtime
 image. Both `bun` and its `bunx` link are checked during the build. This retains
 the cross-service localhost/DID workaround without copying the installed `/app`
