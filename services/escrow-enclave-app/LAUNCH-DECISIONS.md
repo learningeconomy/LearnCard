@@ -15,16 +15,16 @@ against `main` at the time of writing (2026-10-26) and may drift.
 evidence (PR, ticket or meeting notes), and update the matching ROLLOUT.md item
 in the same PR.
 
-| ID  | Decision                                     | Blocks                                  | Owner (placeholder)       | Decision                |
-| --- | -------------------------------------------- | --------------------------------------- | ------------------------- | ----------------------- |
-| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | Jackson Smith             | Accepted (A), stage 1   |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | Jackson Smith             | Accepted (A+C), stage 1 |
-| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | Jackson Smith             | Accepted (A)            |
-| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_          | _pending_               |
-| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith             | Accepted (C)            |
-| P-b | Email backup share default                   | Product/security call                   | Jackson Smith             | Off at launch           |
-| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | Legal (via Jackson Smith) | Policy text approved    |
-| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_       | _pending_               |
+| ID  | Decision                                     | Blocks                                  | Owner (placeholder)       | Decision                           |
+| --- | -------------------------------------------- | --------------------------------------- | ------------------------- | ---------------------------------- |
+| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | Jackson Smith             | Accepted (A), stage 1              |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | Jackson Smith             | Accepted (A), up to 100%           |
+| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | Jackson Smith             | Accepted (A), stage 1              |
+| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_          | _pending_                          |
+| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith             | Accepted (C)                       |
+| P-b | Email backup share default                   | Product/security call                   | Jackson Smith             | Off at launch                      |
+| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | Legal (via Jackson Smith) | Text approved (reported; link due) |
+| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_       | _pending_                          |
 
 ---
 
@@ -122,7 +122,33 @@ is approved (ROLLOUT.md stage 4 gate, unchanged). Archiver target date: to be
 set before stage 2. Production authority alarms are deployed
 (`escrow-enclave-production-authority-*`, `trail-tamper`).
 
-`Owner: Jackson Smith` · `Decision: Accepted (A, capped at 10% until the archiver)` · `Approver/date: Jackson Smith, 2026-10-30`
+**Amended decision (2026-10-31): A, without the 10% cap.** R-AUTHORITY-ROLLBACK is
+accepted for every rollout stage up to 100%; the archiver is no longer a launch or
+stage gate. Rationale: a coherent authority-table rollback requires an attacker who
+has already broken the AWS admin boundary, the same attacker accepted under D10, who
+could instead rewrite the KMS key policy (a worse outcome). The archiver adds
+after-the-fact detection against a narrower attacker (table write without full
+admin), not prevention, so it does not justify gating launch. Context: SSS and escrow
+launch together at 100% (decision 2026-10-31), so a percentage cap would block launch.
+
+Conditions (verified 2026-10-31 unless noted):
+
+- Point-in-time recovery stays enabled on the authority table (enabled, 35-day
+  window) and deletion protection stays on (on).
+- The escrow CloudTrail trail keeps logging authority-table writes, including
+  batch, transaction and PartiQL writes (logging, log-file validation on, no
+  delivery error), and the seven `escrow-enclave-production-authority-*` rules
+  stay enabled (enabled).
+- **Before the switch:** drill the production denied-write and unexpected-write
+  alarms and record the outcome (staging drills exist; production is not yet
+  drilled).
+- Two-person MFA controls and the guardrail SCPs stay in place.
+- Hardening follow-up, not a gate: a lightweight tamper-evident history (scheduled
+  locked AWS Backup copies of the authority table in a separate account plus a
+  monitor reconciliation), or the full archiver in AUTHORITY-ARCHIVER.md. Target
+  date to be recorded before the switch.
+
+`Owner: Jackson Smith` · `Decision: Accepted (A) for all stages; archiver is post-launch hardening` · `Approver/date: Jackson Smith, 2026-10-31`
 
 ---
 
@@ -232,7 +258,7 @@ time.txryan.com have acknowledged LearnCard's use (operator-reported by Jackson
 Smith; store the replies with this record). Still to attach before stage 2: the
 measured per-operation request count from staging and the volume forecast.
 
-`Owner: Jackson Smith` · `Decision: Accepted (option A); operator acknowledgments received` · `Approver/date: Jackson Smith, 2026-10-30`
+`Owner: Jackson Smith` · `Decision: Accepted (option A) for stage 1; operator acknowledgments received; stage 2 needs the measured count and forecast` · `Approver/date: Jackson Smith, 2026-10-30`
 
 ---
 
@@ -423,7 +449,7 @@ by Jackson Smith; link the approved text and approval here). The short in-app no
 recommended above is still a product item before automatic enrollment reaches real
 users.
 
-`Owner: Legal` · `Decision: Policy text approved` · `Approver/date: Legal, reported by Jackson Smith, 2026-10-30`
+`Owner: Legal` · `Decision: Policy text approved (operator-reported; named legal approver and published-policy link pending)` · `Approver/date: Legal (name pending), reported by Jackson Smith, 2026-10-30`
 
 ---
 
