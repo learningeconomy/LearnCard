@@ -12,6 +12,7 @@ import {
     leafConfigs,
     nextBaseline,
     nxProjects,
+    scriptChecks,
     toProjects,
     verdict,
 } from './typecheck-ratchet.mjs';
@@ -286,4 +287,45 @@ test('a cycle-only solution fails closed instead of dropping the project', async
     );
     assert.equal(v.pass, false);
     assert.equal(next, null);
+});
+
+test('--checker=bun checks the same tsconfigs with bun check', () => {
+    const repo = fixture({ 'apps/web/tsconfig.json': { include: ['src'] } });
+    try {
+        const [tsc] = toProjects(repo, [{ name: 'web', root: 'apps/web' }]);
+        const [bun] = toProjects(repo, [{ name: 'web', root: 'apps/web' }], 'bun');
+        assert.match(tsc.checks[0].cmd, /node_modules\/\.bin\/tsc$/);
+        assert.equal(bun.checks[0].cmd, process.env.BUN_CHECK_BIN || 'bun');
+        assert.deepEqual(bun.checks[0].args.slice(0, 4), [
+            'check',
+            '--no-script',
+            '-p',
+            'apps/web/tsconfig.json',
+        ]);
+        // Ungrouped, one-line diagnostics so counts mean the same thing as tsc's.
+        assert.ok(
+            bun.checks[0].args.includes('--all') && bun.checks[0].args.includes('--no-pretty')
+        );
+        assert.deepEqual(bun.checks[0].args.slice(-2), tsc.checks[0].args.slice(-4, -2));
+    } finally {
+        rmSync(repo, { recursive: true, force: true });
+    }
+});
+
+test('tsc --noEmit typecheck scripts map onto bun check; anything else keeps the script', () => {
+    const script = 'tsc --noEmit -p tsconfig.build.json && tsc --noEmit';
+    assert.deepEqual(
+        scriptChecks(script, '/r/svc', 'bun').map(c => [c.cwd, c.args[3]]),
+        [
+            ['/r/svc', 'tsconfig.build.json'],
+            ['/r/svc', 'tsconfig.json'],
+        ]
+    );
+    for (const other of ['vue-tsc --noEmit', 'tsc --noEmit && node check.js'])
+        assert.deepEqual(scriptChecks(other, '/r/svc', 'bun'), [
+            { cmd: 'bun', args: ['run', 'typecheck'], cwd: '/r/svc' },
+        ]);
+    assert.deepEqual(scriptChecks(script, '/r/svc', 'tsc'), [
+        { cmd: 'bun', args: ['run', 'typecheck'], cwd: '/r/svc' },
+    ]);
 });
