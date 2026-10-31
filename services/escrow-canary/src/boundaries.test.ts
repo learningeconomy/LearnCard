@@ -137,3 +137,28 @@ describe('tier 3 metric rollups', () => {
         expect(latency._aws.CloudWatchMetrics[0].Metrics[0].Unit).toBe('Milliseconds');
     });
 });
+
+describe('provisioning stays out of the Lambda', () => {
+    it("handler.ts's import graph never reaches src/provision or test fakes", async () => {
+        const { readFile } = await import('node:fs/promises');
+        const { dirname, resolve } = await import('node:path');
+        const { fileURLToPath } = await import('node:url');
+        const root = dirname(fileURLToPath(import.meta.url));
+        const seen = new Set<string>();
+        const visit = async (file: string): Promise<void> => {
+            if (seen.has(file)) return;
+            seen.add(file);
+            const source = await readFile(file, 'utf8');
+            for (const match of source.matchAll(
+                /from '(\.{1,2}\/[^']+)'|import\('(\.{1,2}\/[^']+)'\)/g
+            ))
+                await visit(`${resolve(dirname(file), match[1] ?? match[2])}.ts`);
+        };
+        await visit(resolve(root, 'handler.ts'));
+        const files = [...seen].map(file => file.slice(root.length + 1));
+        expect(files).toContain('tier3/inbox.ts');
+        expect(
+            files.filter(file => file.startsWith('provision/') || /test-|\.test\./.test(file))
+        ).toEqual([]);
+    });
+});
