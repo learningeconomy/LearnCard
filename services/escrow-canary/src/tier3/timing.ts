@@ -16,11 +16,21 @@ export const WARNING_HOURS = 24;
 /** Re-read status until the recomputed deadline appears, at most this long. */
 export const WARNING_DEADLINE_GRACE_MS = 2 * HOUR;
 
+/**
+ * lca-api's hourly job sends the warning once at most {@link WARNING_HOURS} of the
+ * hold remain, so measured from confirmation it is due after `hold - 24h`, and at
+ * once for holds of 24h or less (staging uses a 10-minute hold).
+ */
+export const warningSendsAfterMs = (holdDurationMs: number): number =>
+    Math.max(0, holdDurationMs - WARNING_HOURS * HOUR);
+
+/** Warning step deadline from confirmation: the hourly job may run up to an hour late. */
+export const warningDeadlineMs = (holdDurationMs: number): number =>
+    warningSendsAfterMs(holdDurationMs) + 2 * HOUR;
+
 export const STEP_DEADLINES = {
     CodeEmail: 5 * MINUTE,
     Confirmed: 10 * MINUTE,
-    /** From confirmation: the hourly warning job may run up to an hour late. */
-    Warning: 6 * DAY + 2 * HOUR,
     /** From the effective deadline (`releaseAfter`). */
     Released: 2 * HOUR,
     Cancelled: 10 * MINUTE,

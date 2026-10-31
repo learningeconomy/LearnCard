@@ -10,7 +10,7 @@ import type { AccountSecret } from '../secrets';
 import type { Sdk } from '../sdk';
 import { holdLabel, type RunnerConfig } from './config';
 import type { InboxObject, InboxStore } from './inbox';
-import { DAY, HOUR, MINUTE } from './timing';
+import { DAY, HOUR, MINUTE, warningSendsAfterMs } from './timing';
 
 export const SENDER = 'recovery@vault.notify.example.com';
 export const DKIM_DOMAIN = 'vault.notify.example.com';
@@ -158,6 +158,8 @@ interface FakeHold {
 }
 
 export interface WorldOptions {
+    /** lca-api's ESCROW_HOLD_DURATION_MS (production 7 days, staging 10 minutes). */
+    holdDurationMs: number;
     emailDelayMs: number;
     warningDelayMs: number;
     /** lca-api saves the recomputed deadline this long after the warning email. */
@@ -187,6 +189,7 @@ export class World {
     secretWrites: AccountSecret[] = [];
     calls: string[] = [];
     options: WorldOptions = {
+        holdDurationMs: HOLD_MS,
         emailDelayMs: 20_000,
         warningDelayMs: 30 * MINUTE,
         deadlineWriteLagMs: 0,
@@ -233,7 +236,10 @@ export class World {
                 hold.warnedAt !== undefined
             )
                 continue;
-            const due = hold.confirmedAt + 6 * DAY + this.options.warningDelayMs;
+            const due =
+                hold.confirmedAt +
+                warningSendsAfterMs(this.options.holdDurationMs) +
+                this.options.warningDelayMs;
             if (this.now < due) continue;
             hold.warnedAt = due;
             if (!this.options.suppressWarning)
@@ -308,7 +314,7 @@ export class World {
             releasePolicy: 'hold' as const,
             requiresConfirmation: true,
             confirmed: hold.confirmedAt !== undefined,
-            holdRecord: { holdDurationMs: HOLD_MS } as never,
+            holdRecord: { holdDurationMs: this.options.holdDurationMs } as never,
         };
     }
 
@@ -345,7 +351,9 @@ export class World {
                         holdId: pending?.holdId ?? 'hold-id-existing',
                         status: 'pending',
                         requestedAt: new Date(this.now).toISOString(),
-                        releaseAfter: new Date(this.now + HOLD_MS).toISOString(),
+                        releaseAfter: new Date(
+                            this.now + this.options.holdDurationMs
+                        ).toISOString(),
                         resumeToken: null,
                     } as never;
                 this.sequence += 1;
@@ -356,7 +364,7 @@ export class World {
                     code: String(10_000_000 + this.sequence * 7919).slice(-8),
                     status: 'pending',
                     requestedAt: this.now,
-                    releaseAfter: this.now + HOLD_MS + MINUTE,
+                    releaseAfter: this.now + this.options.holdDurationMs + MINUTE,
                     guesses: 0,
                 };
                 this.holds.push(hold);
@@ -394,7 +402,7 @@ export class World {
                     throw new EscrowRequestError(403, 'codeExpired');
                 if (params.code !== hold.code) throw new EscrowRequestError(403, 'codeMismatch');
                 hold.confirmedAt = this.now;
-                hold.releaseAfter = this.now + HOLD_MS + MINUTE;
+                hold.releaseAfter = this.now + this.options.holdDurationMs + MINUTE;
                 return { success: true };
             };
             strategy.getEscrowRecoveryStatus = async params => {

@@ -9,6 +9,8 @@ import {
     isoWeekKey,
     MINUTE,
     warningDeadlineExpired,
+    warningDeadlineMs,
+    warningSendsAfterMs,
 } from './timing';
 
 const accounts = Array.from({ length: 12 }, (_, index) => `hold-account-${index}`);
@@ -125,5 +127,16 @@ describe('tier 3 timing rules', () => {
         expect(isCancelDue(Date.UTC(2026, 10, 2, 16), 15)).toBe(true);
         expect(isCancelDue(Date.UTC(2026, 10, 2, 15), 15)).toBe(false);
         expect(isCancelDue(Date.UTC(2026, 10, 3, 16), 15)).toBe(false);
+    });
+});
+
+describe('warning timing follows the hold duration', () => {
+    it('is due 24h before the hold ends, at once for holds of 24h or less', () => {
+        expect(warningSendsAfterMs(7 * DAY)).toBe(6 * DAY);
+        expect(warningDeadlineMs(7 * DAY)).toBe(6 * DAY + 2 * HOUR);
+        expect(warningSendsAfterMs(2 * DAY)).toBe(DAY);
+        expect(warningSendsAfterMs(24 * HOUR)).toBe(0);
+        expect(warningSendsAfterMs(10 * MINUTE)).toBe(0);
+        expect(warningDeadlineMs(10 * MINUTE)).toBe(2 * HOUR);
     });
 });

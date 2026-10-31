@@ -12,9 +12,10 @@ import {
     type PoolItem,
     type RunItem,
 } from './ledger';
+import type { RunnerConfig } from './config';
 import { runTier3 } from './runner';
 import { baseConfig, codeEmail, emailFor, runnerConfig, World } from './test-fakes';
-import { DAY, HOUR, MINUTE } from './timing';
+import { DAY, HOUR, MINUTE, warningDeadlineMs, warningSendsAfterMs } from './timing';
 
 // 2026-10-27 is a Tuesday; 2026-11-02 a Monday.
 const TUESDAY = Date.UTC(2026, 9, 27, 14, 0);
@@ -23,8 +24,13 @@ const TICK = 15 * MINUTE;
 
 type Line = Record<string, unknown>;
 
-const harness = async (start: number, configure?: (world: World) => void) => {
+const harness = async (
+    start: number,
+    configure?: (world: World) => void,
+    config: RunnerConfig = runnerConfig
+) => {
     const world = new World(start);
+    world.options.holdDurationMs = config.holdDurationMs;
     configure?.(world);
     const memory = createMemoryLedger();
     let crash: ((write: LedgerWrite) => boolean) | undefined;
@@ -52,7 +58,7 @@ const harness = async (start: number, configure?: (world: World) => void) => {
         sleep: async (ms: number) => world.advance(ms),
     };
     const tick = () =>
-        runTier3({ time: new Date(world.now).toISOString() }, baseConfig, runnerConfig, deps);
+        runTier3({ time: new Date(world.now).toISOString() }, baseConfig, config, deps);
     const evaluations: { at: number; overdue: number; startAge: number; pool: number }[] = [];
     const evaluateNow = async () => {
         const result = await runEvaluator(
@@ -145,6 +151,34 @@ describe('tier 3 daily run (fake clock)', () => {
         expect(h.count('release')).toBe(3 + 2 + 1);
         leakFree(h.lines, h.world);
     });
+
+    it.each([
+        ['staging 10-minute hold', 10 * MINUTE],
+        ['2-day hold', 2 * DAY],
+    ])(
+        'derives warning timing from the hold duration (%s): warns, releases, no false pages',
+        async (_name, holdDurationMs) => {
+            const h = await harness(TUESDAY, undefined, { ...runnerConfig, holdDurationMs });
+            await h.run(holdDurationMs + 2 * DAY);
+            const first = h.runs().find(run => run.runId.startsWith('daily-2026-10-27'))!;
+            const warning = h.ledger
+                .items()
+                .find(
+                    item =>
+                        item.type === 'step' &&
+                        item.runId === first.runId &&
+                        item.name === 'Warning'
+                ) as { dueAt: number; observedAt?: number } | undefined;
+            expect(warning?.dueAt).toBe(first.confirmedAt! + warningDeadlineMs(holdDurationMs));
+            expect(warning?.observedAt).toBeDefined();
+            expect(warning!.observedAt!).toBeGreaterThanOrEqual(
+                first.confirmedAt! + warningSendsAfterMs(holdDurationMs)
+            );
+            expect(h.values('Tier3.Warned', { Account: first.label })).toContain(1);
+            expect(h.values('Tier3.Released', { Account: first.label })).toContain(1);
+            expect(h.evaluations.every(e => e.overdue === 0)).toBe(true);
+        }
+    );
 
     it('scenario (c): a suppressed warning is overdue on the first evaluation after confirm + 6d + 2h', async () => {
         const h = await harness(TUESDAY, world => {

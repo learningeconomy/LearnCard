@@ -123,11 +123,14 @@ Every refresh-token exchange persists a rotated token before any other I/O
   `holdRecord.holdDurationMs === TIER3_HOLD_DURATION_MS`, and `releaseAfter` within
   `[confirmCallStartedAt + hold + 60 s − 120 s, confirmedAt + hold + 60 s + 120 s]`.
   Else `Confirmed=0` `deadline_mismatch`. Success: RUN → `waiting`, and for daily
-  runs create `Warning` due `confirmedAt + 6 d + 2 h`.
+  runs create `Warning` due `confirmedAt + warningDeadlineMs(hold)`, where
+  `warningDeadlineMs(hold) = max(0, hold − 24 h) + 2 h`: lca-api's hourly job warns once
+  at most 24 h remain (6 d + 2 h for the production 7-day hold; 2 h for staging's
+  10-minute hold, which is warned on the first hourly run).
 
 ### 3.4 Warning (daily runs)
 
-From `confirmedAt + 6 d`, each tick looks for a trusted warning email after
+From `confirmedAt + max(0, hold − 24 h)`, each tick looks for a trusted warning email after
 `confirmedAt`. Its body is `about {hours} hours` (`authority/email.rs:150-152`);
 the parser captures the number and the runner requires 24.
 
@@ -149,7 +152,8 @@ the parser captures the number and the runner requires 24.
 4. RUN → `warned` with `releaseAfter`; create `Released` and `Reenrolled` due
    `releaseAfter + 2 h`; `Warned=1`.
 
-No warning email: the `Warning` step goes overdue (page) at `confirmedAt + 6 d + 2 h`.
+No warning email: the `Warning` step goes overdue (page) at
+`confirmedAt + warningDeadlineMs(hold)` (6 d + 2 h for a 7-day hold).
 A day after that due time the run closes `Warned=0` `warning_missing` and the
 account is `orphaned`, so the orphan cleanup (§3.8) cancels the pending hold
 through the user's cancel path instead of leaving the account busy forever.

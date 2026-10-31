@@ -370,7 +370,8 @@ the runner touches nothing and the evaluator reports `Overdue=0`, `StartAge=0`,
 up. Disabling only the schedules instead would page through Overdue/StartAge.
 
 A daily run whose **warning email never arrives** pages through Overdue at
-confirm + 6 d + 2 h; a day later the runner closes it `Warned=0`
+confirm + max(0, hold − 24 h) + 2 h (6 d 2 h for the production 7-day hold, 2 h for
+staging's 10-minute hold); a day later the runner closes it `Warned=0`
 `warning_missing` and orphans the account (cleanup below).
 
 **Quarantine** happens on release failure, DID mismatch, failed re-enrolment,

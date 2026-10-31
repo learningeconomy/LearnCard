@@ -32,6 +32,8 @@ import {
     runTtlSeconds,
     SKEW_MS,
     STEP_DEADLINES,
+    warningDeadlineMs,
+    warningSendsAfterMs,
     ttlSeconds,
     WARNING_HOURS,
     WARNING_MISSING_GRACE_MS,
@@ -437,7 +439,7 @@ export const runTier3 = async (
                       putStep(
                           ctx.run.runId,
                           'Warning',
-                          confirmedAt + STEP_DEADLINES.Warning,
+                          confirmedAt + warningDeadlineMs(config.holdDurationMs),
                           confirmedAt
                       ),
                   ]
@@ -714,7 +716,7 @@ export const runTier3 = async (
 
     const handleWaitingDaily = async (ctx: RunContext): Promise<void> => {
         const confirmedAt = ctx.run.confirmedAt!;
-        if (now() < confirmedAt + 6 * 86_400_000) return;
+        if (now() < confirmedAt + warningSendsAfterMs(config.holdDurationMs)) return;
         const result = await findMessage(
             inbox,
             prefixFor(ctx.run.label),
