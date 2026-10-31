@@ -136,7 +136,7 @@ not be manually reset to force retries.
 2. Verify the staging app resolves to SSS + Nitro and the correct staging Firebase
    project/API. Finish the existing escrow staging prerequisites first. Choose three
    addresses you control for the read-only, PIN A and PIN B accounts, e.g. the
-   placeholder pattern `jackson+canary<n>@learningeconomy.io` with `<n>` replaced
+   placeholder pattern `<local>+canary<n>@<domain>` with the placeholders replaced
    locally. Do not add these addresses or actual account identifiers to tracked
    files. **Nobody signs in to the app with a canary address**: a key the app
    creates for it is unknown to the canary secret and blocks provisioning (exit 3).

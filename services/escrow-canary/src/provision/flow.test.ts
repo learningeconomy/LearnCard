@@ -132,23 +132,50 @@ describe('provisioning happy paths', () => {
 });
 
 describe('login mail and rate limits', () => {
-    it('untrusted login mail: one resend, then stops without verifying or writing', async () => {
+    it('untrusted login mail: one send, then stops without verifying or writing', async () => {
         world.options.untrustedMail = true;
         const error = await failure(run(3));
         expect(error.message).toBe('mail: no_code');
         expect(error.exitCode).toBe(1);
-        expect(world.sends).toBe(2);
+        expect(world.sends).toBe(1);
         expect(world.verifies).toBe(0);
         expect(world.calls).not.toContain('put');
         expect(world.out.some(line => /untrusted message/.test(line))).toBe(true);
     });
 
-    it('silent no-mail send times out cleanly after at most two sends', async () => {
+    it('silent no-mail send times out cleanly after a single send (no in-run resend)', async () => {
         world.options.send = 'silent';
         const error = await failure(run(3));
         expect(error.message).toBe('mail: no_code');
-        expect(world.sends).toBe(2);
+        expect(world.sends).toBe(1);
+        expect(world.verifies).toBe(0);
         expect(world.users.size).toBe(0);
+    });
+
+    it('a first mail delayed past the window is never paired with a resend in the same run', async () => {
+        // Mail #1 arrives after the 270 s wait; previously a resend's window could pick it
+        // over mail #2 by S3 arrival order and spend the one verify on a replaced code.
+        world.options.mailDelayMs = 300_000;
+        const error = await failure(run(3));
+        expect(error.message).toBe('mail: no_code');
+        expect(world.sends).toBe(1);
+        expect(world.verifies).toBe(0);
+        expect(world.calls).not.toContain('put');
+    });
+
+    it('tier 1/2 prompt: a blank answer resends once and asks for the newest code', async () => {
+        const deps = world.deps();
+        const plan = await world.plan(1);
+        const answers = ['', undefined];
+        deps.prompt = async question => {
+            world.prompts.push(question);
+            const next = answers.shift();
+            return next ?? world.codes.get(TIER12_EMAIL) ?? '';
+        };
+        await createProvisioner(plan, defaultOptions, deps).run();
+        expect(world.sends).toBe(2);
+        expect(world.verifies).toBe(1);
+        expect(world.prompts[1]).toMatch(/NEWEST/);
     });
 
     it('a rate-limit body stops the run after one send', async () => {
@@ -297,6 +324,32 @@ describe('idempotency and resume', () => {
         const error = await failure(createProvisioner(plan, defaultOptions, deps).run());
         expect(error.message).toBe('promote: current_changed');
         expect(error.exitCode).toBe(3);
+    });
+
+    it('a promotion whose response was lost and whose retry failed is still a success', async () => {
+        const store = world.secretStore;
+        const moveStage = store.moveStage;
+        store.moveStage = async (secretId, stage, to, from) => {
+            await moveStage(secretId, stage, to, from);
+            // Committed, then the SDK retry is rejected (AWSCURRENT left `from`).
+            if (stage === 'AWSCURRENT') throw new Error('InvalidParameter');
+        };
+        expect(await run(3)).toEqual([{ label: 'hold-01', result: 'provisioned' }]);
+        expect(current(HOLD_01)).not.toBe('{}');
+        expect(world.stageValue(HOLD_01, 'PROVISIONING')).toBeUndefined();
+    });
+
+    it('a promotion that failed without committing still stops as a stage conflict', async () => {
+        const store = world.secretStore;
+        const moveStage = store.moveStage;
+        store.moveStage = async (secretId, stage, to, from) => {
+            if (stage === 'AWSCURRENT') throw new Error('Throttling');
+            await moveStage(secretId, stage, to, from);
+        };
+        const error = await failure(run(3));
+        expect(error.message).toBe('promote: current_changed');
+        expect(error.exitCode).toBe(3);
+        expect(current(HOLD_01)).toBe('{}');
     });
 
     it('a PROVISIONING label moved by another run aborts the next write', async () => {

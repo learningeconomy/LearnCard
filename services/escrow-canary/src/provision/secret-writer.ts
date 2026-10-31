@@ -169,7 +169,14 @@ export class ProvisioningVersion {
         try {
             await this.store.moveStage(this.secretId, CURRENT, this.own, currentVersionId);
         } catch {
-            throw needsHuman('promote', 'current_changed');
+            // The call is not idempotent once committed: if its response was lost and
+            // the SDK retried, the retry fails because AWSCURRENT already left
+            // `currentVersionId`. Re-read before declaring a conflict.
+            const promoted = await this.store
+                .describe(this.secretId)
+                .then(metadata => versionWith(metadata, CURRENT) === this.own)
+                .catch(() => false);
+            if (!promoted) throw needsHuman('promote', 'current_changed');
         }
         try {
             await this.store.moveStage(this.secretId, PROVISIONING, undefined, this.own);

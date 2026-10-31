@@ -138,11 +138,17 @@ for `hold-0n`, as the runner does (`tier3/runner.ts:157-165`). lca-api calls use
 2. Code: tier 3 polls `inbox/hold-NN/` every 10 s for up to 4.5 min (codes live 300 s,
    `:65`) with the login policy (§5), mail at or after `t0`, newest trusted wins (each
    send replaces the code, `:279-280`). Tier 1/2: hidden prompt, `^[0-9]{6}$`; blank
-   means resend.
+   means resend (once; the operator then enters the code from the newest email).
 3. No code (possibly silent: with no Postmark token lca-api answers `success:true`
-   and sends nothing, `delivery.factory.ts:29-45`): resend once, then stop (exit 1).
-   At most 2 sends per account per run; the server allows 6 per fixed 5-minute window
-   (`:67-69,261-271`; the comment at `:259` is stale).
+   and sends nothing, `delivery.factory.ts:29-45`): tier 3 stops (exit 1) after its
+   **single** send; resending is an explicit re-run. The inbox orders mail by S3
+   arrival, not send order, so an in-run resend could let a late copy of the
+   replaced first code win "newest trusted" and spend the one verify on it. A late
+   mail from an earlier run can still race a re-run; the server rejects the stale
+   code (`verify: rejected`, exit 1) and nothing is written, so wait a few minutes
+   and re-run. At most 1 send (tier 3) or 2 sends (tier 1/2) per account per run;
+   the server allows 6 per fixed 5-minute window (`:67-69,261-271`; the comment at
+   `:259` is stale).
 4. `POST /verify-login-code` `{email, code}`, **one attempt** per code (server limits
    5 per email, 30 per IP per 10 min, `:72-74`). It creates the Firebase user if
    missing (`:399-401`) and mints a custom token with no claims (`:409`).

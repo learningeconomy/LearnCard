@@ -212,49 +212,60 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
         }
     };
 
-    /** Send the code (at most twice) and read it from the inbox or the operator. */
+    /**
+     * Send the code and read it from the inbox or the operator.
+     *
+     * Inbox path: exactly ONE send per run. Each send replaces the server's code
+     * (`lca-api/src/routes/firebase.ts:276-280`) and the inbox orders mail by S3
+     * arrival, not send order, so after a resend a late copy of the first,
+     * already-replaced code could win "newest trusted" and burn the run's single
+     * verify. A missing code therefore stops the run; resending is an explicit re-run.
+     * Prompt path (tier 1/2): the operator reads their own mailbox and may ask for
+     * one resend (at most two sends).
+     */
     const readCode = async (target: Target): Promise<string> => {
-        for (let sends = 1; sends <= 2; sends += 1) {
+        if (target.inboxPrefix) {
+            if (!deps.inbox || !options.loginMail) throw refuse('usage', 'login_mail_policy');
             const since = deps.now();
             await step(target, 'send', () => deps.login.sendCode(target.email));
-            if (target.inboxPrefix) {
-                if (!deps.inbox || !options.loginMail) throw refuse('usage', 'login_mail_policy');
-                const result = await step(
-                    target,
-                    'mail',
-                    () =>
-                        waitForLoginCode({
-                            store: deps.inbox!,
-                            prefix: target.inboxPrefix!,
-                            since,
-                            policy: loginTrustPolicy(options.loginMail!, target.email),
-                            timeoutMs: options.mailTimeoutMs ?? 270_000,
-                            pollMs: options.mailPollMs ?? 10_000,
-                            now: deps.now,
-                            sleep: deps.sleep,
-                        }),
-                    true
-                );
-                if (result.untrusted > 0)
-                    deps.out(
-                        `${target.label} mail: ${result.untrusted} untrusted message(s) ignored`
-                    );
-                if (result.malformed > 0)
-                    deps.out(
-                        `${target.label} mail: ${result.malformed} malformed message(s) ignored`
-                    );
-                if (result.code) {
-                    deps.out(`${target.label} mail ok`);
-                    return result.code;
-                }
-                deps.out(`${target.label} mail: no trusted login code yet`);
-            } else {
-                const answer = (
-                    await deps.prompt(`${target.label}: 6-digit login code (blank to resend): `)
-                ).trim();
-                if (/^[0-9]{6}$/.test(answer)) return answer;
-                if (answer !== '') throw refuse('prompt', 'code_format');
+            const result = await step(
+                target,
+                'mail',
+                () =>
+                    waitForLoginCode({
+                        store: deps.inbox!,
+                        prefix: target.inboxPrefix!,
+                        since,
+                        policy: loginTrustPolicy(options.loginMail!, target.email),
+                        timeoutMs: options.mailTimeoutMs ?? 270_000,
+                        pollMs: options.mailPollMs ?? 10_000,
+                        now: deps.now,
+                        sleep: deps.sleep,
+                    }),
+                true
+            );
+            if (result.untrusted > 0)
+                deps.out(`${target.label} mail: ${result.untrusted} untrusted message(s) ignored`);
+            if (result.malformed > 0)
+                deps.out(`${target.label} mail: ${result.malformed} malformed message(s) ignored`);
+            if (result.code) {
+                deps.out(`${target.label} mail ok`);
+                return result.code;
             }
+            deps.out(`${target.label} mail: no trusted login code (re-run to send a new one)`);
+            throw new ProvisionError('mail', 'no_code');
+        }
+        for (let sends = 1; sends <= 2; sends += 1) {
+            await step(target, 'send', () => deps.login.sendCode(target.email));
+            const answer = (
+                await deps.prompt(
+                    sends === 1
+                        ? `${target.label}: 6-digit login code (blank to resend once): `
+                        : `${target.label}: 6-digit login code from the NEWEST email: `
+                )
+            ).trim();
+            if (/^[0-9]{6}$/.test(answer)) return answer;
+            if (answer !== '') throw refuse('prompt', 'code_format');
         }
         throw new ProvisionError('mail', 'no_code');
     };
