@@ -20,8 +20,8 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.inbox_issue_batch_request_configuration import InboxIssueBatchRequestConfiguration
 from openapi_client.models.inbox_issue_batch_request_items_inner import InboxIssueBatchRequestItemsInner
+from openapi_client.models.inbox_issue_batch_request_items_inner_configuration import InboxIssueBatchRequestItemsInnerConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +32,7 @@ class InboxIssueBatchRequest(BaseModel):
     """ # noqa: E501
     request_id: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=256)]] = Field(default=None, alias="requestId")
     items: Annotated[List[InboxIssueBatchRequestItemsInner], Field(min_length=1, max_length=100)]
-    configuration: Optional[InboxIssueBatchRequestConfiguration] = None
+    configuration: Optional[InboxIssueBatchRequestItemsInnerConfiguration] = None
     __properties: ClassVar[List[str]] = ["requestId", "items", "configuration"]
 
     model_config = ConfigDict(
@@ -97,7 +97,7 @@ class InboxIssueBatchRequest(BaseModel):
         _values = {
             "requestId": obj.get("requestId"),
             "items": [InboxIssueBatchRequestItemsInner.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None,
-            "configuration": InboxIssueBatchRequestConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
+            "configuration": InboxIssueBatchRequestItemsInnerConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -74,11 +74,6 @@ class InboxIssueBatchRequestItemsInnerConfigurationDelivery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of template
         if self.template:
             _dict['template'] = self.template.to_dict()
-        # set to None if suppress (nullable) is None
-        # and model_fields_set contains the field
-        if self.suppress is None and "suppress" in self.model_fields_set:
-            _dict['suppress'] = None
-
         return _dict
 
     @classmethod

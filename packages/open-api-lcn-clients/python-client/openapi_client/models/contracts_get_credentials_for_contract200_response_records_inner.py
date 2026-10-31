@@ -27,12 +27,12 @@ class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
     """
     ContractsGetCredentialsForContract200ResponseRecordsInner
     """ # noqa: E501
-    credential_uri: Optional[StrictStr] = Field(alias="credentialUri")
-    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    credential_uri: StrictStr = Field(alias="credentialUri")
+    terms_uri: StrictStr = Field(alias="termsUri")
+    contract_uri: StrictStr = Field(alias="contractUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     category: Optional[StrictStr] = None
-    var_date: Optional[StrictStr] = Field(alias="date")
+    var_date: StrictStr = Field(alias="date")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["credentialUri", "termsUri", "contractUri", "boostUri", "category", "date"]
 
@@ -81,36 +81,6 @@ class ContractsGetCredentialsForContract200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
-            _dict['credentialUri'] = None
-
-        # set to None if terms_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
-            _dict['termsUri'] = None
-
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
-        # set to None if var_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_date is None and "var_date" in self.model_fields_set:
-            _dict['date'] = None
 
         return _dict
 

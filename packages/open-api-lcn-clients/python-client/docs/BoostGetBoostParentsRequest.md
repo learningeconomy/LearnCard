@@ -8,7 +8,7 @@
 | **cursor**                | **str**                                                                                                                                         |             | [optional]                 |
 | **sort**                  | **str**                                                                                                                                         |             | [optional]                 |
 | **uri**                   | **str**                                                                                                                                         |             |
-| **query**                 | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md)                                                                             |             | [optional]                 |
+| **query**                 | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md)                                                                                 |             | [optional]                 |
 | **number_of_generations** | [**BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations**](BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.md) |             | [optional]                 |
 
 ## Example

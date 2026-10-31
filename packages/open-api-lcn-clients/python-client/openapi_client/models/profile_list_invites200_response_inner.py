@@ -27,7 +27,7 @@ class ProfileListInvites200ResponseInner(BaseModel):
     """
     ProfileListInvites200ResponseInner
     """ # noqa: E501
-    challenge: Optional[StrictStr]
+    challenge: StrictStr
     expires_in: Optional[Union[StrictFloat, StrictInt]] = Field(alias="expiresIn")
     uses_remaining: Optional[Union[StrictFloat, StrictInt]] = Field(alias="usesRemaining")
     max_uses: Optional[Union[StrictFloat, StrictInt]] = Field(alias="maxUses")
@@ -79,11 +79,6 @@ class ProfileListInvites200ResponseInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.challenge is None and "challenge" in self.model_fields_set:
-            _dict['challenge'] = None
 
         # set to None if expires_in (nullable) is None
         # and model_fields_set contains the field

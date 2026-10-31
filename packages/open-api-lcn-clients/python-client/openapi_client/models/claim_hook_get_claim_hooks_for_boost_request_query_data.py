@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data_permissions import ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,8 +29,8 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
     """
     ClaimHookGetClaimHooksForBoostRequestQueryData
     """ # noqa: E501
-    claim_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="claimUri")
-    target_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="targetUri")
+    claim_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="claimUri")
+    target_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="targetUri")
     permissions: Optional[ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions] = None
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri", "permissions"]
 
@@ -94,8 +94,8 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "claimUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["claimUri"]) if obj.get("claimUri") is not None else None,
-            "targetUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["targetUri"]) if obj.get("targetUri") is not None else None,
+            "claimUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["claimUri"]) if obj.get("claimUri") is not None else None,
+            "targetUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["targetUri"]) if obj.get("targetUri") is not None else None,
             "permissions": ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions.from_dict(obj["permissions"]) if obj.get("permissions") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

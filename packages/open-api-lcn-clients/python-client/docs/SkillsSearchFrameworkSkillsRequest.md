@@ -2,12 +2,12 @@
 
 ## Properties
 
-| Name       | Type                                                                                      | Description | Notes                      |
-| ---------- | ----------------------------------------------------------------------------------------- | ----------- | -------------------------- |
-| **id**     | **str**                                                                                   |             |
-| **query**  | [**SkillsSearchFrameworkSkillsRequestQuery**](SkillsSearchFrameworkSkillsRequestQuery.md) |             |
-| **limit**  | **int**                                                                                   |             | [optional] [default to 50] |
-| **cursor** | **str**                                                                                   |             | [optional]                 |
+| Name       | Type                                                                                                    | Description | Notes                      |
+| ---------- | ------------------------------------------------------------------------------------------------------- | ----------- | -------------------------- |
+| **id**     | **str**                                                                                                 |             |
+| **query**  | [**BoostSearchSkillsAvailableForBoostRequestQuery**](BoostSearchSkillsAvailableForBoostRequestQuery.md) |             |
+| **limit**  | **int**                                                                                                 |             | [optional] [default to 50] |
+| **cursor** | **str**                                                                                                 |             | [optional]                 |
 
 ## Example
 

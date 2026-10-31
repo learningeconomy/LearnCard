@@ -55,8 +55,8 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransac
                         personal = {
                             'key' : ''
                             }, ), 
-                    write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_write(
-                        credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_write_credentials(
+                    write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_write(
+                        credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_write_credentials(
                             categories = {
                                 'key' : True
                                 }, ), 
@@ -71,6 +71,10 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransac
                     guardian_did = '', 
                     approved_at = datetime.datetime.strptime('2013-10-20 19:20:30.00', '%Y-%m-%d %H:%M:%S.%f'), 
                     contract_updated_at = '', ),
+                referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                    request_id = '', 
+                    requested_by = '', 
+                    external_reference_id = '', ),
                 id = '',
                 action = 'consent',
                 var_date = '',

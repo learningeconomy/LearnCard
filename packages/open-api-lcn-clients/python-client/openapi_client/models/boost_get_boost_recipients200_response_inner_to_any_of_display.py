@@ -87,61 +87,6 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.background_color is None and "background_color" in self.model_fields_set:
-            _dict['backgroundColor'] = None
-
-        # set to None if background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.background_image is None and "background_image" in self.model_fields_set:
-            _dict['backgroundImage'] = None
-
-        # set to None if fade_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.fade_background_image is None and "fade_background_image" in self.model_fields_set:
-            _dict['fadeBackgroundImage'] = None
-
-        # set to None if repeat_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.repeat_background_image is None and "repeat_background_image" in self.model_fields_set:
-            _dict['repeatBackgroundImage'] = None
-
-        # set to None if font_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.font_color is None and "font_color" in self.model_fields_set:
-            _dict['fontColor'] = None
-
-        # set to None if accent_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.accent_color is None and "accent_color" in self.model_fields_set:
-            _dict['accentColor'] = None
-
-        # set to None if accent_font_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.accent_font_color is None and "accent_font_color" in self.model_fields_set:
-            _dict['accentFontColor'] = None
-
-        # set to None if id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.id_background_image is None and "id_background_image" in self.model_fields_set:
-            _dict['idBackgroundImage'] = None
-
-        # set to None if fade_id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.fade_id_background_image is None and "fade_id_background_image" in self.model_fields_set:
-            _dict['fadeIdBackgroundImage'] = None
-
-        # set to None if id_background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.id_background_color is None and "id_background_color" in self.model_fields_set:
-            _dict['idBackgroundColor'] = None
-
-        # set to None if repeat_id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.repeat_id_background_image is None and "repeat_id_background_image" in self.model_fields_set:
-            _dict['repeatIdBackgroundImage'] = None
-
         return _dict
 
     @classmethod

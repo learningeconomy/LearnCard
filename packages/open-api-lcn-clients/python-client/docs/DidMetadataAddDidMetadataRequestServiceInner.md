@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name                 | Type                                                                                                                    | Description | Notes |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **id**               | **str**                                                                                                                 |             |
-| **type**             | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md) |             |
-| **service_endpoint** | **List[object]**                                                                                                        |             |
+| Name                 | Type                                                                                                              | Description | Notes |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **id**               | **str**                                                                                                           |             |
+| **type**             | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md) |             |
+| **service_endpoint** | **List[object]**                                                                                                  |             |
 
 ## Example
 

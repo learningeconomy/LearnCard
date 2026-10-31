@@ -29,7 +29,7 @@ class FederationReceiveRequestConfiguration(BaseModel):
     """ # noqa: E501
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     expires_in_days: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="expiresInDays")
-    federated_from: Optional[StrictStr] = Field(alias="federatedFrom")
+    federated_from: StrictStr = Field(alias="federatedFrom")
     __properties: ClassVar[List[str]] = ["webhookUrl", "expiresInDays", "federatedFrom"]
 
     model_config = ConfigDict(
@@ -71,20 +71,10 @@ class FederationReceiveRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if webhook_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.webhook_url is None and "webhook_url" in self.model_fields_set:
-            _dict['webhookUrl'] = None
-
         # set to None if expires_in_days (nullable) is None
         # and model_fields_set contains the field
         if self.expires_in_days is None and "expires_in_days" in self.model_fields_set:
             _dict['expiresInDays'] = None
-
-        # set to None if federated_from (nullable) is None
-        # and model_fields_set contains the field
-        if self.federated_from is None and "federated_from" in self.model_fields_set:
-            _dict['federatedFrom'] = None
 
         return _dict
 

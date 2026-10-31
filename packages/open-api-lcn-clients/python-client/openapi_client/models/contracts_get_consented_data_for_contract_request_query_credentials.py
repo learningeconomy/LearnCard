@@ -27,7 +27,7 @@ class ContractsGetConsentedDataForContractRequestQueryCredentials(BaseModel):
     """
     ContractsGetConsentedDataForContractRequestQueryCredentials
     """ # noqa: E501
-    categories: Optional[Dict[str, Optional[StrictBool]]] = None
+    categories: Optional[Dict[str, StrictBool]] = None
     __properties: ClassVar[List[str]] = ["categories"]
 
     model_config = ConfigDict(

@@ -28,13 +28,13 @@ class InboxGetGuardianPendingCredential200Response(BaseModel):
     """
     InboxGetGuardianPendingCredential200Response
     """ # noqa: E501
-    inbox_credential_id: Optional[StrictStr] = Field(alias="inboxCredentialId")
-    guardian_status: Optional[StrictStr] = Field(alias="guardianStatus")
+    inbox_credential_id: StrictStr = Field(alias="inboxCredentialId")
+    guardian_status: StrictStr = Field(alias="guardianStatus")
     issuer: InboxGetGuardianPendingCredential200ResponseIssuer
     credential_name: Optional[StrictStr] = Field(default=None, alias="credentialName")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
-    expires_at: Optional[StrictStr] = Field(alias="expiresAt")
-    can_approve_in_app: Optional[StrictBool] = Field(alias="canApproveInApp")
+    created_at: StrictStr = Field(alias="createdAt")
+    expires_at: StrictStr = Field(alias="expiresAt")
+    can_approve_in_app: StrictBool = Field(alias="canApproveInApp")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["inboxCredentialId", "guardianStatus", "issuer", "credentialName", "createdAt", "expiresAt", "canApproveInApp"]
 
@@ -86,36 +86,6 @@ class InboxGetGuardianPendingCredential200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if inbox_credential_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.inbox_credential_id is None and "inbox_credential_id" in self.model_fields_set:
-            _dict['inboxCredentialId'] = None
-
-        # set to None if guardian_status (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_status is None and "guardian_status" in self.model_fields_set:
-            _dict['guardianStatus'] = None
-
-        # set to None if credential_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_name is None and "credential_name" in self.model_fields_set:
-            _dict['credentialName'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
-        # set to None if can_approve_in_app (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_approve_in_app is None and "can_approve_in_app" in self.model_fields_set:
-            _dict['canApproveInApp'] = None
 
         return _dict
 

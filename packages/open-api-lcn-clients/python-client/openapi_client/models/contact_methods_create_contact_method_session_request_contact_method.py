@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class ContactMethodsCreateContactMethodSessionRequestContactMethod(BaseModel):
     """
     ContactMethodsCreateContactMethodSessionRequestContactMethod
     """ # noqa: E501
-    value: Optional[StrictStr]
+    value: StrictStr
     type: StrictStr
     __properties: ClassVar[List[str]] = ["value", "type"]
 
@@ -77,11 +77,6 @@ class ContactMethodsCreateContactMethodSessionRequestContactMethod(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if value (nullable) is None
-        # and model_fields_set contains the field
-        if self.value is None and "value" in self.model_fields_set:
-            _dict['value'] = None
-
         return _dict
 
     @classmethod

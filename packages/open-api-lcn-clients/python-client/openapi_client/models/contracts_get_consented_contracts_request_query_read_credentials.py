@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value import ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue
+from openapi_client.models.contracts_consent_to_contract_request_terms_read_credentials_categories_value import ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,7 +30,7 @@ class ContractsGetConsentedContractsRequestQueryReadCredentials(BaseModel):
     """ # noqa: E501
     share_all: Optional[StrictBool] = Field(default=None, alias="shareAll")
     sharing: Optional[StrictBool] = None
-    categories: Optional[Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]] = None
+    categories: Optional[Dict[str, ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["shareAll", "sharing", "categories"]
 
     model_config = ConfigDict(
@@ -78,16 +78,6 @@ class ContractsGetConsentedContractsRequestQueryReadCredentials(BaseModel):
             for _key_categories in self.categories:
                 _field_dict[_key_categories] = self.categories[_key_categories].to_dict() if self.categories[_key_categories] is not None else None
             _dict['categories'] = _field_dict
-        # set to None if share_all (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_all is None and "share_all" in self.model_fields_set:
-            _dict['shareAll'] = None
-
-        # set to None if sharing (nullable) is None
-        # and model_fields_set contains the field
-        if self.sharing is None and "sharing" in self.model_fields_set:
-            _dict['sharing'] = None
-
         return _dict
 
     @classmethod
@@ -103,7 +93,7 @@ class ContractsGetConsentedContractsRequestQueryReadCredentials(BaseModel):
             "shareAll": obj.get("shareAll"),
             "sharing": obj.get("sharing"),
             "categories": dict(
-                (_k, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.from_dict(_v))
+                (_k, ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["categories"].items()
             )
             if obj.get("categories") is not None

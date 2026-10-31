@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite(
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
     """ # noqa: E501
     credentials: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
-    personal: Dict[str, Optional[StrictBool]]
+    personal: Dict[str, StrictBool]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["credentials", "personal"]
 

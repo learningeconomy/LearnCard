@@ -27,9 +27,9 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
     """
     DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk
     """ # noqa: E501
-    kty: Optional[StrictStr]
-    crv: Optional[StrictStr]
-    x: Optional[StrictStr]
+    kty: StrictStr
+    crv: StrictStr
+    x: StrictStr
     y: Optional[StrictStr] = None
     n: Optional[StrictStr] = None
     d: Optional[StrictStr] = None
@@ -81,36 +81,6 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if kty (nullable) is None
-        # and model_fields_set contains the field
-        if self.kty is None and "kty" in self.model_fields_set:
-            _dict['kty'] = None
-
-        # set to None if crv (nullable) is None
-        # and model_fields_set contains the field
-        if self.crv is None and "crv" in self.model_fields_set:
-            _dict['crv'] = None
-
-        # set to None if x (nullable) is None
-        # and model_fields_set contains the field
-        if self.x is None and "x" in self.model_fields_set:
-            _dict['x'] = None
-
-        # set to None if y (nullable) is None
-        # and model_fields_set contains the field
-        if self.y is None and "y" in self.model_fields_set:
-            _dict['y'] = None
-
-        # set to None if n (nullable) is None
-        # and model_fields_set contains the field
-        if self.n is None and "n" in self.model_fields_set:
-            _dict['n'] = None
-
-        # set to None if d (nullable) is None
-        # and model_fields_set contains the field
-        if self.d is None and "d" in self.model_fields_set:
-            _dict['d'] = None
 
         return _dict
 

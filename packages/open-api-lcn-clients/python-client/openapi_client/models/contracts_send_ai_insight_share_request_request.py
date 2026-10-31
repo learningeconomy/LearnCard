@@ -28,8 +28,8 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
     ContractsSendAiInsightShareRequestRequest
     """ # noqa: E501
     child_profile_id: Optional[StrictStr] = Field(default=None, alias="childProfileId")
-    target_profile_id: Optional[StrictStr] = Field(alias="targetProfileId")
-    share_link: Optional[StrictStr] = Field(alias="shareLink")
+    target_profile_id: StrictStr = Field(alias="targetProfileId")
+    share_link: StrictStr = Field(alias="shareLink")
     __properties: ClassVar[List[str]] = ["childProfileId", "targetProfileId", "shareLink"]
 
     model_config = ConfigDict(
@@ -71,21 +71,6 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if child_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.child_profile_id is None and "child_profile_id" in self.model_fields_set:
-            _dict['childProfileId'] = None
-
-        # set to None if target_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set:
-            _dict['targetProfileId'] = None
-
-        # set to None if share_link (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_link is None and "share_link" in self.model_fields_set:
-            _dict['shareLink'] = None
-
         return _dict
 
     @classmethod

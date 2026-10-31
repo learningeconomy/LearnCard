@@ -89,66 +89,6 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfDataPermiss
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if role (nullable) is None
-        # and model_fields_set contains the field
-        if self.role is None and "role" in self.model_fields_set:
-            _dict['role'] = None
-
-        # set to None if can_edit (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_edit is None and "can_edit" in self.model_fields_set:
-            _dict['canEdit'] = None
-
-        # set to None if can_issue (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_issue is None and "can_issue" in self.model_fields_set:
-            _dict['canIssue'] = None
-
-        # set to None if can_revoke (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_revoke is None and "can_revoke" in self.model_fields_set:
-            _dict['canRevoke'] = None
-
-        # set to None if can_manage_permissions (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_manage_permissions is None and "can_manage_permissions" in self.model_fields_set:
-            _dict['canManagePermissions'] = None
-
-        # set to None if can_issue_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_issue_children is None and "can_issue_children" in self.model_fields_set:
-            _dict['canIssueChildren'] = None
-
-        # set to None if can_create_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_create_children is None and "can_create_children" in self.model_fields_set:
-            _dict['canCreateChildren'] = None
-
-        # set to None if can_edit_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_edit_children is None and "can_edit_children" in self.model_fields_set:
-            _dict['canEditChildren'] = None
-
-        # set to None if can_revoke_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_revoke_children is None and "can_revoke_children" in self.model_fields_set:
-            _dict['canRevokeChildren'] = None
-
-        # set to None if can_manage_children_permissions (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_manage_children_permissions is None and "can_manage_children_permissions" in self.model_fields_set:
-            _dict['canManageChildrenPermissions'] = None
-
-        # set to None if can_manage_children_profiles (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_manage_children_profiles is None and "can_manage_children_profiles" in self.model_fields_set:
-            _dict['canManageChildrenProfiles'] = None
-
-        # set to None if can_view_analytics (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_view_analytics is None and "can_view_analytics" in self.model_fields_set:
-            _dict['canViewAnalytics'] = None
-
         return _dict
 
     @classmethod

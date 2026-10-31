@@ -45,7 +45,7 @@ All URIs are relative to _/api_
 
 # **inbox_approve_guardian_request**
 
-> ContactMethodsSendChallenge200Response inbox_approve_guardian_request(inbox_approve_guardian_request_request)
+> ContactMethodsSendChallenge200Response inbox_approve_guardian_request(contact_methods_verify_contact_method_request)
 
 Approve Guardian Request
 
@@ -58,7 +58,7 @@ Consumes a guardian approval token and marks the requesting user profile as appr
 ```python
 import openapi_client
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
-from openapi_client.models.inbox_approve_guardian_request_request import InboxApproveGuardianRequestRequest
+from openapi_client.models.contact_methods_verify_contact_method_request import ContactMethodsVerifyContactMethodRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -82,11 +82,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    inbox_approve_guardian_request_request = openapi_client.InboxApproveGuardianRequestRequest() # InboxApproveGuardianRequestRequest |
+    contact_methods_verify_contact_method_request = openapi_client.ContactMethodsVerifyContactMethodRequest() # ContactMethodsVerifyContactMethodRequest |
 
     try:
         # Approve Guardian Request
-        api_response = api_instance.inbox_approve_guardian_request(inbox_approve_guardian_request_request)
+        api_response = api_instance.inbox_approve_guardian_request(contact_methods_verify_contact_method_request)
         print("The response of ProfilesApi->inbox_approve_guardian_request:\n")
         pprint(api_response)
     except Exception as e:
@@ -95,9 +95,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                       | Type                                                                            | Description | Notes |
-| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ----- |
-| **inbox_approve_guardian_request_request** | [**InboxApproveGuardianRequestRequest**](InboxApproveGuardianRequestRequest.md) |             |
+| Name                                              | Type                                                                                        | Description | Notes |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_verify_contact_method_request** | [**ContactMethodsVerifyContactMethodRequest**](ContactMethodsVerifyContactMethodRequest.md) |             |
 
 ### Return type
 
@@ -2027,7 +2027,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **profile_manager_get_managed_profiles**
 
-> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
 
 Managed Profiles
 
@@ -2039,8 +2039,8 @@ This route gets all of your managed profiles
 
 ```python
 import openapi_client
+from openapi_client.models.profile_get_available_profiles_request import ProfileGetAvailableProfilesRequest
 from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
-from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -2064,11 +2064,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfilesApi(api_client)
-    profile_manager_get_managed_profiles_request = openapi_client.ProfileManagerGetManagedProfilesRequest() # ProfileManagerGetManagedProfilesRequest |  (optional)
+    profile_get_available_profiles_request = openapi_client.ProfileGetAvailableProfilesRequest() # ProfileGetAvailableProfilesRequest |  (optional)
 
     try:
         # Managed Profiles
-        api_response = api_instance.profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+        api_response = api_instance.profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
         print("The response of ProfilesApi->profile_manager_get_managed_profiles:\n")
         pprint(api_response)
     except Exception as e:
@@ -2077,9 +2077,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                             | Type                                                                                      | Description | Notes      |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md) |             | [optional] |
+| Name                                       | Type                                                                            | Description | Notes      |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile_get_available_profiles_request** | [**ProfileGetAvailableProfilesRequest**](ProfileGetAvailableProfilesRequest.md) |             | [optional] |
 
 ### Return type
 

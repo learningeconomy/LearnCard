@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,8 +27,8 @@ class BoostAttachFrameworkToBoostRequest(BaseModel):
     """
     BoostAttachFrameworkToBoostRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    boost_uri: StrictStr = Field(alias="boostUri")
+    framework_id: StrictStr = Field(alias="frameworkId")
     __properties: ClassVar[List[str]] = ["boostUri", "frameworkId"]
 
     model_config = ConfigDict(
@@ -70,16 +70,6 @@ class BoostAttachFrameworkToBoostRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
         return _dict
 
     @classmethod

@@ -27,7 +27,7 @@ class SkillsDelete200Response(BaseModel):
     """
     SkillsDelete200Response
     """ # noqa: E501
-    success: Optional[StrictBool]
+    success: StrictBool
     deleted_count: Optional[Union[StrictFloat, StrictInt]] = Field(alias="deletedCount")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["success", "deletedCount"]
@@ -77,11 +77,6 @@ class SkillsDelete200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if success (nullable) is None
-        # and model_fields_set contains the field
-        if self.success is None and "success" in self.model_fields_set:
-            _dict['success'] = None
 
         # set to None if deleted_count (nullable) is None
         # and model_fields_set contains the field

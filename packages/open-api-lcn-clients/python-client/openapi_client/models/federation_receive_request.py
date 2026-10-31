@@ -29,10 +29,10 @@ class FederationReceiveRequest(BaseModel):
     """
     FederationReceiveRequest
     """ # noqa: E501
-    recipient_did: Optional[StrictStr] = Field(alias="recipientDid")
+    recipient_did: StrictStr = Field(alias="recipientDid")
     credential: ContractsWriteCredentialToContractRequestCredential
-    issuer_did: Optional[StrictStr] = Field(alias="issuerDid")
-    issuer_display_name: Optional[StrictStr] = Field(alias="issuerDisplayName")
+    issuer_did: StrictStr = Field(alias="issuerDid")
+    issuer_display_name: StrictStr = Field(alias="issuerDisplayName")
     configuration: Optional[FederationReceiveRequestConfiguration] = None
     __properties: ClassVar[List[str]] = ["recipientDid", "credential", "issuerDid", "issuerDisplayName", "configuration"]
 
@@ -81,21 +81,6 @@ class FederationReceiveRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
-            _dict['recipientDid'] = None
-
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
-            _dict['issuerDid'] = None
-
-        # set to None if issuer_display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_display_name is None and "issuer_display_name" in self.model_fields_set:
-            _dict['issuerDisplayName'] = None
-
         return _dict
 
     @classmethod

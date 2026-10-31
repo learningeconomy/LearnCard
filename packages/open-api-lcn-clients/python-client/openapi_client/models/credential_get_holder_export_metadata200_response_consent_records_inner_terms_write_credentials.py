@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteC
     """
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
     """ # noqa: E501
-    categories: Dict[str, Optional[StrictBool]]
+    categories: Dict[str, StrictBool]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["categories"]
 

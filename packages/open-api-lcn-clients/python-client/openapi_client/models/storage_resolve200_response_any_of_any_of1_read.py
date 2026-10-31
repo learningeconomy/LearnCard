@@ -90,11 +90,6 @@ class StorageResolve200ResponseAnyOfAnyOf1Read(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if anonymize (nullable) is None
-        # and model_fields_set contains the field
-        if self.anonymize is None and "anonymize" in self.model_fields_set:
-            _dict['anonymize'] = None
-
         return _dict
 
     @classmethod

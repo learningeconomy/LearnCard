@@ -32,17 +32,17 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     refresh: Optional[InboxIssue200ResponseRefresh] = None
     refresh_id: Optional[StrictStr] = Field(default=None, alias="refreshId")
-    id: Optional[StrictStr]
-    is_signed: Optional[StrictBool] = Field(alias="isSigned")
+    id: StrictStr
+    is_signed: StrictBool = Field(alias="isSigned")
     current_status: StrictStr = Field(alias="currentStatus")
     is_accepted: Optional[StrictBool] = Field(default=None, alias="isAccepted")
-    expires_at: Optional[StrictStr] = Field(alias="expiresAt")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    expires_at: StrictStr = Field(alias="expiresAt")
+    created_at: StrictStr = Field(alias="createdAt")
     finalized_at: Optional[StrictStr] = Field(default=None, alias="finalizedAt")
     expired_at: Optional[StrictStr] = Field(default=None, alias="expiredAt")
     credential_name: Optional[StrictStr] = Field(default=None, alias="credentialName")
     achievement_type: Optional[StrictStr] = Field(default=None, alias="achievementType")
-    issuer_did: Optional[StrictStr] = Field(alias="issuerDid")
+    issuer_did: StrictStr = Field(alias="issuerDid")
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
@@ -68,8 +68,8 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     @field_validator('guardian_status')
@@ -133,91 +133,6 @@ class InboxGetMyIssuedCredentials200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if refresh_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.refresh_id is None and "refresh_id" in self.model_fields_set:
-            _dict['refreshId'] = None
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if is_signed (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_signed is None and "is_signed" in self.model_fields_set:
-            _dict['isSigned'] = None
-
-        # set to None if is_accepted (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
-            _dict['isAccepted'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
-
-        # set to None if finalized_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.finalized_at is None and "finalized_at" in self.model_fields_set:
-            _dict['finalizedAt'] = None
-
-        # set to None if expired_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expired_at is None and "expired_at" in self.model_fields_set:
-            _dict['expiredAt'] = None
-
-        # set to None if credential_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_name is None and "credential_name" in self.model_fields_set:
-            _dict['credentialName'] = None
-
-        # set to None if achievement_type (nullable) is None
-        # and model_fields_set contains the field
-        if self.achievement_type is None and "achievement_type" in self.model_fields_set:
-            _dict['achievementType'] = None
-
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
-            _dict['issuerDid'] = None
-
-        # set to None if webhook_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.webhook_url is None and "webhook_url" in self.model_fields_set:
-            _dict['webhookUrl'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if activity_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.activity_id is None and "activity_id" in self.model_fields_set:
-            _dict['activityId'] = None
-
-        # set to None if integration_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.integration_id is None and "integration_id" in self.model_fields_set:
-            _dict['integrationId'] = None
-
-        # set to None if guardian_approved_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_approved_at is None and "guardian_approved_at" in self.model_fields_set:
-            _dict['guardianApprovedAt'] = None
-
-        # set to None if guardian_approved_by_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_approved_by_did is None and "guardian_approved_by_did" in self.model_fields_set:
-            _dict['guardianApprovedByDid'] = None
 
         return _dict
 

@@ -42,7 +42,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                         expires_at = '', 
                         one_time = True, 
                         terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
-                            read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                            read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                                 anonymize = True, 
                                 credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                                     share_all = True, 
@@ -70,6 +70,10 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                             denied_writers = [
                                 ''
                                 ], ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         contract = openapi_client.models.contracts_get_consent_flow_contract_200_response.contracts_getConsentFlowContract_200_response(
                             contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
                                 read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
@@ -106,6 +110,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
@@ -159,6 +164,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     email = '', 
                                     image = '', 
                                     hero_image = '', 
+                                    linked_in_organization_id = '4', 
                                     website_link = '', 
                                     is_service_profile = True, 
                                     type = '', 
@@ -168,7 +174,20 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     country = '', 
                                     locale = '', 
                                     approved = True, )
-                                ], ), 
+                                ], 
+                            recipients = [
+                                openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                    profile_id = '012', 
+                                    display_name = '', 
+                                    short_bio = '', 
+                                    image = '', 
+                                    hero_image = '', 
+                                    linked_in_organization_id = '4', 
+                                    type = '', 
+                                    is_service_profile = True, 
+                                    did = '', )
+                                ], 
+                            audience_version = 0, ), 
                         uri = '', 
                         consenter = , 
                         status = 'live', )
@@ -182,7 +201,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                         expires_at = '', 
                         one_time = True, 
                         terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
-                            read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                            read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                                 anonymize = True, 
                                 credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                                     share_all = True, 
@@ -210,6 +229,10 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                             denied_writers = [
                                 ''
                                 ], ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         contract = openapi_client.models.contracts_get_consent_flow_contract_200_response.contracts_getConsentFlowContract_200_response(
                             contract = openapi_client.models.storage_resolve_200_response_any_of_any_of_1.storage_resolve_200_response_anyOf_anyOf_1(
                                 read = openapi_client.models.storage_resolve_200_response_any_of_any_of_1_read.storage_resolve_200_response_anyOf_anyOf_1_read(
@@ -246,6 +269,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
@@ -299,6 +323,7 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     email = '', 
                                     image = '', 
                                     hero_image = '', 
+                                    linked_in_organization_id = '4', 
                                     website_link = '', 
                                     is_service_profile = True, 
                                     type = '', 
@@ -308,7 +333,20 @@ class TestContractsGetConsentedContracts200Response(unittest.TestCase):
                                     country = '', 
                                     locale = '', 
                                     approved = True, )
-                                ], ), 
+                                ], 
+                            recipients = [
+                                openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                    profile_id = '012', 
+                                    display_name = '', 
+                                    short_bio = '', 
+                                    image = '', 
+                                    hero_image = '', 
+                                    linked_in_organization_id = '4', 
+                                    type = '', 
+                                    is_service_profile = True, 
+                                    did = '', )
+                                ], 
+                            audience_version = 0, ), 
                         uri = '', 
                         consenter = , 
                         status = 'live', )

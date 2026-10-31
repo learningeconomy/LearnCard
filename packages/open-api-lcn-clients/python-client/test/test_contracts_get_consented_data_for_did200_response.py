@@ -65,7 +65,7 @@ class TestContractsGetConsentedDataForDid200Response(unittest.TestCase):
                         status = 'live', 
                         expires_at = '', 
                         terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
-                            read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                            read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                                 anonymize = True, 
                                 credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                                     share_all = True, 
@@ -126,7 +126,7 @@ class TestContractsGetConsentedDataForDid200Response(unittest.TestCase):
                         status = 'live', 
                         expires_at = '', 
                         terms = openapi_client.models.storage_resolve_200_response_any_of_1.storage_resolve_200_response_anyOf_1(
-                            read = openapi_client.models.storage_resolve_200_response_any_of_1_read.storage_resolve_200_response_anyOf_1_read(
+                            read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read(
                                 anonymize = True, 
                                 credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_read_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_read_credentials(
                                     share_all = True, 

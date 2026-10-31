@@ -29,7 +29,7 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
     ProfileSigningAuthorities200ResponseInnerRelationship
     """ # noqa: E501
     name: Annotated[str, Field(strict=True, max_length=15)]
-    did: Optional[StrictStr]
+    did: StrictStr
     is_primary: Optional[StrictBool] = Field(default=None, alias="isPrimary")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["name", "did", "isPrimary"]
@@ -86,16 +86,6 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
-            _dict['did'] = None
-
-        # set to None if is_primary (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_primary is None and "is_primary" in self.model_fields_set:
-            _dict['isPrimary'] = None
 
         return _dict
 

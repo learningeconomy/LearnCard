@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,8 +27,8 @@ class InboxApproveGuardianCredential200Response(BaseModel):
     """
     InboxApproveGuardianCredential200Response
     """ # noqa: E501
-    message: Optional[StrictStr]
-    already_linked: Optional[StrictBool] = Field(alias="alreadyLinked")
+    message: StrictStr
+    already_linked: StrictBool = Field(alias="alreadyLinked")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "alreadyLinked"]
 
@@ -77,16 +77,6 @@ class InboxApproveGuardianCredential200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if message (nullable) is None
-        # and model_fields_set contains the field
-        if self.message is None and "message" in self.model_fields_set:
-            _dict['message'] = None
-
-        # set to None if already_linked (nullable) is None
-        # and model_fields_set contains the field
-        if self.already_linked is None and "already_linked" in self.model_fields_set:
-            _dict['alreadyLinked'] = None
 
         return _dict
 

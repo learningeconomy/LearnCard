@@ -2,18 +2,18 @@
 
 ## Properties
 
-| Name                                | Type                                                                                      | Description | Notes      |
-| ----------------------------------- | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **name**                            | **str**                                                                                   |             | [optional] |
-| **type**                            | **str**                                                                                   |             | [optional] |
-| **category**                        | **str**                                                                                   |             | [optional] |
-| **created**                         | **str**                                                                                   |             | [optional] |
-| **status**                          | **str**                                                                                   |             | [optional] |
-| **auto_connect_recipients**         | **bool**                                                                                  |             | [optional] |
-| **meta**                            | **Dict[str, Optional[object]]**                                                           |             | [optional] |
-| **allow_anyone_to_create_children** | **bool**                                                                                  |             | [optional] |
-| **credential**                      | [**BoostCreateBoostRequestCredential**](BoostCreateBoostRequestCredential.md)             |             | [optional] |
-| **default_permissions**             | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |             | [optional] |
+| Name                                | Type                                                                                        | Description | Notes      |
+| ----------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **name**                            | **str**                                                                                     |             | [optional] |
+| **type**                            | **str**                                                                                     |             | [optional] |
+| **category**                        | **str**                                                                                     |             | [optional] |
+| **created**                         | **str**                                                                                     |             | [optional] |
+| **status**                          | **str**                                                                                     |             | [optional] |
+| **auto_connect_recipients**         | **bool**                                                                                    |             | [optional] |
+| **meta**                            | **Dict[str, Optional[object]]**                                                             |             | [optional] |
+| **allow_anyone_to_create_children** | **bool**                                                                                    |             | [optional] |
+| **credential**                      | [**BoostSendRequestTemplateCredential**](BoostSendRequestTemplateCredential.md)             |             | [optional] |
+| **default_permissions**             | [**BoostSendRequestTemplateClaimPermissions**](BoostSendRequestTemplateClaimPermissions.md) |             | [optional] |
 
 ## Example
 

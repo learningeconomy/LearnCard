@@ -27,19 +27,19 @@ class BoostGetBoost200ResponseDefaultPermissions(BaseModel):
     """
     BoostGetBoost200ResponseDefaultPermissions
     """ # noqa: E501
-    role: Optional[StrictStr]
+    role: StrictStr
     can_view: StrictBool = Field(alias="canView")
-    can_edit: Optional[StrictBool] = Field(alias="canEdit")
-    can_issue: Optional[StrictBool] = Field(alias="canIssue")
-    can_revoke: Optional[StrictBool] = Field(alias="canRevoke")
-    can_manage_permissions: Optional[StrictBool] = Field(alias="canManagePermissions")
-    can_issue_children: Optional[StrictStr] = Field(alias="canIssueChildren")
-    can_create_children: Optional[StrictStr] = Field(alias="canCreateChildren")
-    can_edit_children: Optional[StrictStr] = Field(alias="canEditChildren")
-    can_revoke_children: Optional[StrictStr] = Field(alias="canRevokeChildren")
-    can_manage_children_permissions: Optional[StrictStr] = Field(alias="canManageChildrenPermissions")
+    can_edit: StrictBool = Field(alias="canEdit")
+    can_issue: StrictBool = Field(alias="canIssue")
+    can_revoke: StrictBool = Field(alias="canRevoke")
+    can_manage_permissions: StrictBool = Field(alias="canManagePermissions")
+    can_issue_children: StrictStr = Field(alias="canIssueChildren")
+    can_create_children: StrictStr = Field(alias="canCreateChildren")
+    can_edit_children: StrictStr = Field(alias="canEditChildren")
+    can_revoke_children: StrictStr = Field(alias="canRevokeChildren")
+    can_manage_children_permissions: StrictStr = Field(alias="canManageChildrenPermissions")
     can_manage_children_profiles: Optional[StrictBool] = Field(default=None, alias="canManageChildrenProfiles")
-    can_view_analytics: Optional[StrictBool] = Field(alias="canViewAnalytics")
+    can_view_analytics: StrictBool = Field(alias="canViewAnalytics")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["role", "canView", "canEdit", "canIssue", "canRevoke", "canManagePermissions", "canIssueChildren", "canCreateChildren", "canEditChildren", "canRevokeChildren", "canManageChildrenPermissions", "canManageChildrenProfiles", "canViewAnalytics"]
 
@@ -88,66 +88,6 @@ class BoostGetBoost200ResponseDefaultPermissions(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if role (nullable) is None
-        # and model_fields_set contains the field
-        if self.role is None and "role" in self.model_fields_set:
-            _dict['role'] = None
-
-        # set to None if can_edit (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_edit is None and "can_edit" in self.model_fields_set:
-            _dict['canEdit'] = None
-
-        # set to None if can_issue (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_issue is None and "can_issue" in self.model_fields_set:
-            _dict['canIssue'] = None
-
-        # set to None if can_revoke (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_revoke is None and "can_revoke" in self.model_fields_set:
-            _dict['canRevoke'] = None
-
-        # set to None if can_manage_permissions (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_manage_permissions is None and "can_manage_permissions" in self.model_fields_set:
-            _dict['canManagePermissions'] = None
-
-        # set to None if can_issue_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_issue_children is None and "can_issue_children" in self.model_fields_set:
-            _dict['canIssueChildren'] = None
-
-        # set to None if can_create_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_create_children is None and "can_create_children" in self.model_fields_set:
-            _dict['canCreateChildren'] = None
-
-        # set to None if can_edit_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_edit_children is None and "can_edit_children" in self.model_fields_set:
-            _dict['canEditChildren'] = None
-
-        # set to None if can_revoke_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_revoke_children is None and "can_revoke_children" in self.model_fields_set:
-            _dict['canRevokeChildren'] = None
-
-        # set to None if can_manage_children_permissions (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_manage_children_permissions is None and "can_manage_children_permissions" in self.model_fields_set:
-            _dict['canManageChildrenPermissions'] = None
-
-        # set to None if can_manage_children_profiles (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_manage_children_profiles is None and "can_manage_children_profiles" in self.model_fields_set:
-            _dict['canManageChildrenProfiles'] = None
-
-        # set to None if can_view_analytics (nullable) is None
-        # and model_fields_set contains the field
-        if self.can_view_analytics is None and "can_view_analytics" in self.model_fields_set:
-            _dict['canViewAnalytics'] = None
 
         return _dict
 

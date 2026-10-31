@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class ContactMethodsVerifyWithCredentialRequest(BaseModel):
     """
     ContactMethodsVerifyWithCredentialRequest
     """ # noqa: E501
-    proof_of_login_jwt: Optional[StrictStr] = Field(alias="proofOfLoginJwt")
+    proof_of_login_jwt: StrictStr = Field(alias="proofOfLoginJwt")
     __properties: ClassVar[List[str]] = ["proofOfLoginJwt"]
 
     model_config = ConfigDict(
@@ -69,11 +69,6 @@ class ContactMethodsVerifyWithCredentialRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if proof_of_login_jwt (nullable) is None
-        # and model_fields_set contains the field
-        if self.proof_of_login_jwt is None and "proof_of_login_jwt" in self.model_fields_set:
-            _dict['proofOfLoginJwt'] = None
-
         return _dict
 
     @classmethod

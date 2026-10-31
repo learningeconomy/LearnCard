@@ -90,6 +90,7 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
@@ -114,7 +115,20 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 country = '', 
                                 locale = '', 
                                 approved = True, )
-                            ], )
+                            ], 
+                        recipients = [
+                            openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                profile_id = '012', 
+                                display_name = '', 
+                                short_bio = '', 
+                                image = '', 
+                                hero_image = '', 
+                                linked_in_organization_id = '4', 
+                                type = '', 
+                                is_service_profile = True, 
+                                did = '', )
+                            ], 
+                        audience_version = 0, )
                     ]
             )
         else:
@@ -173,6 +187,7 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
@@ -197,7 +212,20 @@ class TestContractsGetConsentFlowContracts200Response(unittest.TestCase):
                                 country = '', 
                                 locale = '', 
                                 approved = True, )
-                            ], )
+                            ], 
+                        recipients = [
+                            openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                profile_id = '012', 
+                                display_name = '', 
+                                short_bio = '', 
+                                image = '', 
+                                hero_image = '', 
+                                linked_in_organization_id = '4', 
+                                type = '', 
+                                is_service_profile = True, 
+                                did = '', )
+                            ], 
+                        audience_version = 0, )
                     ],
         )
         """

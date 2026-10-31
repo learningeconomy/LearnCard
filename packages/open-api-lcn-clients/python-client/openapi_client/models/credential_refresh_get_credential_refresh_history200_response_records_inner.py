@@ -93,21 +93,6 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if effective_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.effective_at is None and "effective_at" in self.model_fields_set:
-            _dict['effectiveAt'] = None
-
-        # set to None if etag (nullable) is None
-        # and model_fields_set contains the field
-        if self.etag is None and "etag" in self.model_fields_set:
-            _dict['etag'] = None
-
-        # set to None if update_summary (nullable) is None
-        # and model_fields_set contains the field
-        if self.update_summary is None and "update_summary" in self.model_fields_set:
-            _dict['updateSummary'] = None
-
         return _dict
 
     @classmethod

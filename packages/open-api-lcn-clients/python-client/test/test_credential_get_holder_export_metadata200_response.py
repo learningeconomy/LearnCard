@@ -77,6 +77,7 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
@@ -130,6 +131,7 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                                     email = '', 
                                     image = '', 
                                     hero_image = '', 
+                                    linked_in_organization_id = '4', 
                                     website_link = '', 
                                     is_service_profile = True, 
                                     type = '', 
@@ -139,7 +141,20 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                                     country = '', 
                                     locale = '', 
                                     approved = True, )
-                                ], ), 
+                                ], 
+                            recipients = [
+                                openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                    profile_id = '012', 
+                                    display_name = '', 
+                                    short_bio = '', 
+                                    image = '', 
+                                    hero_image = '', 
+                                    linked_in_organization_id = '4', 
+                                    type = '', 
+                                    is_service_profile = True, 
+                                    did = '', )
+                                ], 
+                            audience_version = 0, ), 
                         terms = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms(
                             read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_read(
                                 anonymize = True, 
@@ -169,6 +184,10 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                             denied_writers = [
                                 ''
                                 ], ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         transactions = [
                             openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner(
                                 expires_at = '', 
@@ -238,6 +257,7 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                                 email = '', 
                                 image = '', 
                                 hero_image = '', 
+                                linked_in_organization_id = '4', 
                                 website_link = '', 
                                 is_service_profile = True, 
                                 type = '', 
@@ -291,6 +311,7 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                                     email = '', 
                                     image = '', 
                                     hero_image = '', 
+                                    linked_in_organization_id = '4', 
                                     website_link = '', 
                                     is_service_profile = True, 
                                     type = '', 
@@ -300,7 +321,20 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                                     country = '', 
                                     locale = '', 
                                     approved = True, )
-                                ], ), 
+                                ], 
+                            recipients = [
+                                openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                                    profile_id = '012', 
+                                    display_name = '', 
+                                    short_bio = '', 
+                                    image = '', 
+                                    hero_image = '', 
+                                    linked_in_organization_id = '4', 
+                                    type = '', 
+                                    is_service_profile = True, 
+                                    did = '', )
+                                ], 
+                            audience_version = 0, ), 
                         terms = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms(
                             read = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_read.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_read(
                                 anonymize = True, 
@@ -330,6 +364,10 @@ class TestCredentialGetHolderExportMetadata200Response(unittest.TestCase):
                             denied_writers = [
                                 ''
                                 ], ), 
+                        referral = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_referral.credential_getHolderExportMetadata_200_response_consentRecords_inner_referral(
+                            request_id = '', 
+                            requested_by = '', 
+                            external_reference_id = '', ), 
                         transactions = [
                             openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner(
                                 expires_at = '', 

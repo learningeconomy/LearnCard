@@ -36,14 +36,14 @@ class TestContractsUpdateConsentedContractTermsRequest(unittest.TestCase):
         if include_optional:
             return ContractsUpdateConsentedContractTermsRequest(
                 uri = '',
-                terms = openapi_client.models.contracts_update_consented_contract_terms_request_terms.contracts_updateConsentedContractTerms_request_terms(
-                    read = openapi_client.models.contracts_update_consented_contract_terms_request_terms_read.contracts_updateConsentedContractTerms_request_terms_read(
+                terms = openapi_client.models.contracts_consent_to_contract_request_terms.contracts_consentToContract_request_terms(
+                    read = openapi_client.models.contracts_consent_to_contract_request_terms_read.contracts_consentToContract_request_terms_read(
                         anonymize = True, 
-                        credentials = openapi_client.models.contracts_update_consented_contract_terms_request_terms_read_credentials.contracts_updateConsentedContractTerms_request_terms_read_credentials(
+                        credentials = openapi_client.models.contracts_consent_to_contract_request_terms_read_credentials.contracts_consentToContract_request_terms_read_credentials(
                             share_all = True, 
                             sharing = True, 
                             categories = {
-                                'key' : openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value.contracts_getConsentedContracts_request_query_read_credentials_categories_value(
+                                'key' : openapi_client.models.contracts_consent_to_contract_request_terms_read_credentials_categories_value.contracts_consentToContract_request_terms_read_credentials_categories_value(
                                     sharing = True, 
                                     shared = [
                                         ''
@@ -59,19 +59,20 @@ class TestContractsUpdateConsentedContractTermsRequest(unittest.TestCase):
                         ''
                         ], ),
                 expires_at = '',
-                one_time = True
+                one_time = True,
+                audience_version = 0
             )
         else:
             return ContractsUpdateConsentedContractTermsRequest(
                 uri = '',
-                terms = openapi_client.models.contracts_update_consented_contract_terms_request_terms.contracts_updateConsentedContractTerms_request_terms(
-                    read = openapi_client.models.contracts_update_consented_contract_terms_request_terms_read.contracts_updateConsentedContractTerms_request_terms_read(
+                terms = openapi_client.models.contracts_consent_to_contract_request_terms.contracts_consentToContract_request_terms(
+                    read = openapi_client.models.contracts_consent_to_contract_request_terms_read.contracts_consentToContract_request_terms_read(
                         anonymize = True, 
-                        credentials = openapi_client.models.contracts_update_consented_contract_terms_request_terms_read_credentials.contracts_updateConsentedContractTerms_request_terms_read_credentials(
+                        credentials = openapi_client.models.contracts_consent_to_contract_request_terms_read_credentials.contracts_consentToContract_request_terms_read_credentials(
                             share_all = True, 
                             sharing = True, 
                             categories = {
-                                'key' : openapi_client.models.contracts_get_consented_contracts_request_query_read_credentials_categories_value.contracts_getConsentedContracts_request_query_read_credentials_categories_value(
+                                'key' : openapi_client.models.contracts_consent_to_contract_request_terms_read_credentials_categories_value.contracts_consentToContract_request_terms_read_credentials_categories_value(
                                     sharing = True, 
                                     shared = [
                                         ''

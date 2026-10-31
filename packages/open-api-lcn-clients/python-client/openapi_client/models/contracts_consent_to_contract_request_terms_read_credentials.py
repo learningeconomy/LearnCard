@@ -78,16 +78,6 @@ class ContractsConsentToContractRequestTermsReadCredentials(BaseModel):
             for _key_categories in self.categories:
                 _field_dict[_key_categories] = self.categories[_key_categories].to_dict() if self.categories[_key_categories] is not None else None
             _dict['categories'] = _field_dict
-        # set to None if share_all (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_all is None and "share_all" in self.model_fields_set:
-            _dict['shareAll'] = None
-
-        # set to None if sharing (nullable) is None
-        # and model_fields_set contains the field
-        if self.sharing is None and "sharing" in self.model_fields_set:
-            _dict['sharing'] = None
-
         return _dict
 
     @classmethod

@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
+from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class SkillFrameworksGetBoostsThatUseFrameworkRequest(BaseModel):
     """ # noqa: E501
     limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = 50
     cursor: Optional[StrictStr] = None
-    query: Optional[BoostCountBoostsRequestQuery] = None
+    query: Optional[BoostGetBoostsRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "query"]
 
     model_config = ConfigDict(
@@ -95,7 +95,7 @@ class SkillFrameworksGetBoostsThatUseFrameworkRequest(BaseModel):
         _values = {
             "limit": obj.get("limit") if obj.get("limit") is not None else 50,
             "cursor": obj.get("cursor"),
-            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
+            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

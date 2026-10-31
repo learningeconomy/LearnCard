@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.app_store_create_listing_request_listing import AppStoreCreateListingRequestListing
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,7 +28,7 @@ class AppStoreCreateListingRequest(BaseModel):
     """
     AppStoreCreateListingRequest
     """ # noqa: E501
-    integration_id: Optional[StrictStr] = Field(alias="integrationId")
+    integration_id: StrictStr = Field(alias="integrationId")
     listing: AppStoreCreateListingRequestListing
     __properties: ClassVar[List[str]] = ["integrationId", "listing"]
 
@@ -74,11 +74,6 @@ class AppStoreCreateListingRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of listing
         if self.listing:
             _dict['listing'] = self.listing.to_dict()
-        # set to None if integration_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.integration_id is None and "integration_id" in self.model_fields_set:
-            _dict['integrationId'] = None
-
         return _dict
 
     @classmethod

@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_create_boost_request_credential_any_of import BoostCreateBoostRequestCredentialAnyOf
+from openapi_client.models.boost_send_request_template_credential_any_of1 import BoostSendRequestTemplateCredentialAnyOf1
 from openapi_client.models.credential_refresh_publish_credential_refresh_request_one_of1_signing_authority import CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
@@ -35,7 +35,7 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
     update_summary: Optional[StrictStr] = Field(default=None, alias="updateSummary")
     idempotency_key: Optional[StrictStr] = Field(default=None, alias="idempotencyKey")
     mode: StrictStr
-    credential: BoostCreateBoostRequestCredentialAnyOf
+    credential: BoostSendRequestTemplateCredentialAnyOf1
     signing_authority: CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority = Field(alias="signingAuthority")
     __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "idempotencyKey", "mode", "credential", "signingAuthority"]
 
@@ -92,21 +92,6 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signing_authority
         if self.signing_authority:
             _dict['signingAuthority'] = self.signing_authority.to_dict()
-        # set to None if notify_holder (nullable) is None
-        # and model_fields_set contains the field
-        if self.notify_holder is None and "notify_holder" in self.model_fields_set:
-            _dict['notifyHolder'] = None
-
-        # set to None if update_summary (nullable) is None
-        # and model_fields_set contains the field
-        if self.update_summary is None and "update_summary" in self.model_fields_set:
-            _dict['updateSummary'] = None
-
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
-            _dict['idempotencyKey'] = None
-
         return _dict
 
     @classmethod
@@ -128,7 +113,7 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
             "updateSummary": obj.get("updateSummary"),
             "idempotencyKey": obj.get("idempotencyKey"),
             "mode": obj.get("mode"),
-            "credential": BoostCreateBoostRequestCredentialAnyOf.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "credential": BoostSendRequestTemplateCredentialAnyOf1.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "signingAuthority": CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

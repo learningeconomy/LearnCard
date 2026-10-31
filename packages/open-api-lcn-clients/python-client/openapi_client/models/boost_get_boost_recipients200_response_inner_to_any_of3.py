@@ -41,6 +41,7 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf3(BaseModel):
     email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Numeric LinkedIn organization ID.", alias="linkedInOrganizationId")
     website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
     is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
@@ -53,7 +54,7 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf3(BaseModel):
     locale: Optional[StrictStr] = Field(default=None, description="BCP-47 language tag (e.g. 'es', 'fr', 'ar') — the user's preferred language for server-sent notifications and emails.")
     approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "did", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "did", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "linkedInOrganizationId", "websiteLink", "isServiceProfile", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved"]
 
     @field_validator('profile_visibility')
     def profile_visibility_validate_enum(cls, value):
@@ -73,6 +74,16 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf3(BaseModel):
 
         if value not in set(['anyone', 'invite_only']):
             raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d+$", value):
+            raise ValueError(r"must validate the regular expression /^\d+$/")
         return value
 
     @field_validator('notifications_webhook', mode="before")
@@ -158,6 +169,7 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf3(BaseModel):
             "email": obj.get("email"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "websiteLink": obj.get("websiteLink"),
             "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
             "type": obj.get("type"),

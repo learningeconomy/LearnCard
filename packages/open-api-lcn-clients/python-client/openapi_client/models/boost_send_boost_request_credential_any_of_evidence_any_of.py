@@ -84,36 +84,6 @@ class BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if narrative (nullable) is None
-        # and model_fields_set contains the field
-        if self.narrative is None and "narrative" in self.model_fields_set:
-            _dict['narrative'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if genre (nullable) is None
-        # and model_fields_set contains the field
-        if self.genre is None and "genre" in self.model_fields_set:
-            _dict['genre'] = None
-
-        # set to None if audience (nullable) is None
-        # and model_fields_set contains the field
-        if self.audience is None and "audience" in self.model_fields_set:
-            _dict['audience'] = None
-
         return _dict
 
     @classmethod

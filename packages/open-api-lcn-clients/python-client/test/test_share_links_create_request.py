@@ -49,19 +49,19 @@ class TestShareLinksCreateRequest(unittest.TestCase):
                     alg = 'A256GCM', 
                     iv = '', 
                     ct = '', ),
-                owner_encrypted_recovery = openapi_client.models.credential_send_credential_request_credential_any_of_1.credential_sendCredential_request_credential_anyOf_1(
+                owner_encrypted_recovery = openapi_client.models.boost_send_boost_request_credential_any_of_1.boost_sendBoost_request_credential_anyOf_1(
                     protected = '', 
                     iv = '', 
                     ciphertext = '', 
                     tag = '', 
                     aad = '', 
                     recipients = [
-                        openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner.credential_sendCredential_request_credential_anyOf_1_recipients_inner(
-                            header = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header(
+                        openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner.boost_sendBoost_request_credential_anyOf_1_recipients_inner(
+                            header = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header(
                                 alg = '', 
                                 iv = '', 
                                 tag = '', 
-                                epk = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header_epk.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header_epk(
+                                epk = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header_epk.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header_epk(
                                     kty = '', 
                                     crv = '', 
                                     x = '', 
@@ -72,7 +72,10 @@ class TestShareLinksCreateRequest(unittest.TestCase):
                                 apv = '', 
                                 apu = '', ), 
                             encrypted_key = '', )
-                        ], )
+                        ], ),
+                attachment = openapi_client.models.share_links_create_request_attachment.shareLinks_create_request_attachment(
+                    id = 'ffffffff-ffff-ffff-ffff-ffffffffffff', 
+                    chunk_count = 1, )
             )
         else:
             return ShareLinksCreateRequest(
@@ -86,19 +89,19 @@ class TestShareLinksCreateRequest(unittest.TestCase):
                     alg = 'A256GCM', 
                     iv = '', 
                     ct = '', ),
-                owner_encrypted_recovery = openapi_client.models.credential_send_credential_request_credential_any_of_1.credential_sendCredential_request_credential_anyOf_1(
+                owner_encrypted_recovery = openapi_client.models.boost_send_boost_request_credential_any_of_1.boost_sendBoost_request_credential_anyOf_1(
                     protected = '', 
                     iv = '', 
                     ciphertext = '', 
                     tag = '', 
                     aad = '', 
                     recipients = [
-                        openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner.credential_sendCredential_request_credential_anyOf_1_recipients_inner(
-                            header = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header(
+                        openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner.boost_sendBoost_request_credential_anyOf_1_recipients_inner(
+                            header = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header(
                                 alg = '', 
                                 iv = '', 
                                 tag = '', 
-                                epk = openapi_client.models.credential_send_credential_request_credential_any_of_1_recipients_inner_header_epk.credential_sendCredential_request_credential_anyOf_1_recipients_inner_header_epk(
+                                epk = openapi_client.models.boost_send_boost_request_credential_any_of_1_recipients_inner_header_epk.boost_sendBoost_request_credential_anyOf_1_recipients_inner_header_epk(
                                     kty = '', 
                                     crv = '', 
                                     x = '', 

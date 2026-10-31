@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name       | Type          | Description | Notes      |
-| ---------- | ------------- | ----------- | ---------- |
+| Name       | Type          | Description | Notes |
+| ---------- | ------------- | ----------- | ----- |
 | **var_in** | **List[str]** |             |
-| **regex**  | **str**       |             | [optional] |
+| **regex**  | **str**       |             |
 
 ## Example
 

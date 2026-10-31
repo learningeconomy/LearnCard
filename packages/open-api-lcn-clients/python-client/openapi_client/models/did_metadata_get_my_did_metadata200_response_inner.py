@@ -19,11 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
-from openapi_client.models.boost_send_request_template_credential_any_of_proof import BoostSendRequestTemplateCredentialAnyOfProof
+from openapi_client.models.boost_send_boost_request_credential_any_of_context_inner import BoostSendBoostRequestCredentialAnyOfContextInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
+from openapi_client.models.boost_send_boost_request_credential_any_of_proof import BoostSendBoostRequestCredentialAnyOfProof
+from openapi_client.models.did_metadata_add_did_metadata_request_service_inner import DidMetadataAddDidMetadataRequestServiceInner
 from openapi_client.models.did_metadata_get_did_metadata200_response_authentication_inner import DidMetadataGetDidMetadata200ResponseAuthenticationInner
-from openapi_client.models.did_metadata_get_did_metadata200_response_service_inner import DidMetadataGetDidMetadata200ResponseServiceInner
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,10 +32,10 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
     """
     DidMetadataGetMyDidMetadata200ResponseInner
     """ # noqa: E501
-    context: Optional[List[BoostSendRequestTemplateCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
-    id: Optional[StrictStr]
+    context: Optional[List[BoostSendBoostRequestCredentialAnyOfContextInner]] = Field(default=None, alias="@context")
+    id: StrictStr
     also_known_as: Optional[StrictStr] = Field(default=None, alias="alsoKnownAs")
-    controller: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType] = None
+    controller: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType] = None
     verification_method: Optional[List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]] = Field(default=None, alias="verificationMethod")
     authentication: Optional[List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]] = None
     assertion_method: Optional[List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]] = Field(default=None, alias="assertionMethod")
@@ -43,8 +43,8 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
     capability_invocation: Optional[List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]] = Field(default=None, alias="capabilityInvocation")
     capability_delegation: Optional[List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]] = Field(default=None, alias="capabilityDelegation")
     public_key: Optional[List[DidMetadataGetDidMetadata200ResponseAuthenticationInner]] = Field(default=None, alias="publicKey")
-    service: Optional[List[DidMetadataGetDidMetadata200ResponseServiceInner]] = None
-    proof: Optional[BoostSendRequestTemplateCredentialAnyOfProof] = None
+    service: Optional[List[DidMetadataAddDidMetadataRequestServiceInner]] = None
+    proof: Optional[BoostSendBoostRequestCredentialAnyOfProof] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["@context", "id", "alsoKnownAs", "controller", "verificationMethod", "authentication", "assertionMethod", "keyAgreement", "capabilityInvocation", "capabilityDelegation", "publicKey", "service", "proof"]
 
@@ -154,16 +154,6 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if also_known_as (nullable) is None
-        # and model_fields_set contains the field
-        if self.also_known_as is None and "also_known_as" in self.model_fields_set:
-            _dict['alsoKnownAs'] = None
-
         return _dict
 
     @classmethod
@@ -176,10 +166,10 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
+            "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "alsoKnownAs": obj.get("alsoKnownAs"),
-            "controller": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["controller"]) if obj.get("controller") is not None else None,
+            "controller": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["controller"]) if obj.get("controller") is not None else None,
             "verificationMethod": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["verificationMethod"]] if obj.get("verificationMethod") is not None else None,
             "authentication": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["authentication"]] if obj.get("authentication") is not None else None,
             "assertionMethod": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["assertionMethod"]] if obj.get("assertionMethod") is not None else None,
@@ -187,8 +177,8 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
             "capabilityInvocation": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["capabilityInvocation"]] if obj.get("capabilityInvocation") is not None else None,
             "capabilityDelegation": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["capabilityDelegation"]] if obj.get("capabilityDelegation") is not None else None,
             "publicKey": [DidMetadataGetDidMetadata200ResponseAuthenticationInner.from_dict(_item) for _item in obj["publicKey"]] if obj.get("publicKey") is not None else None,
-            "service": [DidMetadataGetDidMetadata200ResponseServiceInner.from_dict(_item) for _item in obj["service"]] if obj.get("service") is not None else None,
-            "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
+            "service": [DidMetadataAddDidMetadataRequestServiceInner.from_dict(_item) for _item in obj["service"]] if obj.get("service") is not None else None,
+            "proof": BoostSendBoostRequestCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

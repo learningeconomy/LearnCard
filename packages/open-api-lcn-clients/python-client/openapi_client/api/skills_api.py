@@ -26,7 +26,7 @@ from openapi_client.models.boost_get_boosts_request import BoostGetBoostsRequest
 from openapi_client.models.boost_get_paginated_boosts200_response import BoostGetPaginatedBoosts200Response
 from openapi_client.models.boost_search_skills_available_for_boost200_response import BoostSearchSkillsAvailableForBoost200Response
 from openapi_client.models.inbox_approve_guardian_credential_in_app200_response import InboxApproveGuardianCredentialInApp200Response
-from openapi_client.models.skill_frameworks_add_framework_admin_request import SkillFrameworksAddFrameworkAdminRequest
+from openapi_client.models.profile_manager_remove_manages_relationship_request import ProfileManagerRemoveManagesRelationshipRequest
 from openapi_client.models.skill_frameworks_count_boosts_that_use_framework200_response import SkillFrameworksCountBoostsThatUseFramework200Response
 from openapi_client.models.skill_frameworks_create_managed_batch_request import SkillFrameworksCreateManagedBatchRequest
 from openapi_client.models.skill_frameworks_create_managed_request import SkillFrameworksCreateManagedRequest
@@ -78,7 +78,7 @@ class SkillsApi:
     def skill_frameworks_add_framework_admin(
         self,
         framework_id: StrictStr,
-        skill_frameworks_add_framework_admin_request: SkillFrameworksAddFrameworkAdminRequest,
+        profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -98,8 +98,8 @@ class SkillsApi:
 
         :param framework_id: (required)
         :type framework_id: str
-        :param skill_frameworks_add_framework_admin_request: (required)
-        :type skill_frameworks_add_framework_admin_request: SkillFrameworksAddFrameworkAdminRequest
+        :param profile_manager_remove_manages_relationship_request: (required)
+        :type profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -124,7 +124,7 @@ class SkillsApi:
 
         _param = self._skill_frameworks_add_framework_admin_serialize(
             framework_id=framework_id,
-            skill_frameworks_add_framework_admin_request=skill_frameworks_add_framework_admin_request,
+            profile_manager_remove_manages_relationship_request=profile_manager_remove_manages_relationship_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -153,7 +153,7 @@ class SkillsApi:
     def skill_frameworks_add_framework_admin_with_http_info(
         self,
         framework_id: StrictStr,
-        skill_frameworks_add_framework_admin_request: SkillFrameworksAddFrameworkAdminRequest,
+        profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -173,8 +173,8 @@ class SkillsApi:
 
         :param framework_id: (required)
         :type framework_id: str
-        :param skill_frameworks_add_framework_admin_request: (required)
-        :type skill_frameworks_add_framework_admin_request: SkillFrameworksAddFrameworkAdminRequest
+        :param profile_manager_remove_manages_relationship_request: (required)
+        :type profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -199,7 +199,7 @@ class SkillsApi:
 
         _param = self._skill_frameworks_add_framework_admin_serialize(
             framework_id=framework_id,
-            skill_frameworks_add_framework_admin_request=skill_frameworks_add_framework_admin_request,
+            profile_manager_remove_manages_relationship_request=profile_manager_remove_manages_relationship_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -228,7 +228,7 @@ class SkillsApi:
     def skill_frameworks_add_framework_admin_without_preload_content(
         self,
         framework_id: StrictStr,
-        skill_frameworks_add_framework_admin_request: SkillFrameworksAddFrameworkAdminRequest,
+        profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -248,8 +248,8 @@ class SkillsApi:
 
         :param framework_id: (required)
         :type framework_id: str
-        :param skill_frameworks_add_framework_admin_request: (required)
-        :type skill_frameworks_add_framework_admin_request: SkillFrameworksAddFrameworkAdminRequest
+        :param profile_manager_remove_manages_relationship_request: (required)
+        :type profile_manager_remove_manages_relationship_request: ProfileManagerRemoveManagesRelationshipRequest
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -274,7 +274,7 @@ class SkillsApi:
 
         _param = self._skill_frameworks_add_framework_admin_serialize(
             framework_id=framework_id,
-            skill_frameworks_add_framework_admin_request=skill_frameworks_add_framework_admin_request,
+            profile_manager_remove_manages_relationship_request=profile_manager_remove_manages_relationship_request,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -298,7 +298,7 @@ class SkillsApi:
     def _skill_frameworks_add_framework_admin_serialize(
         self,
         framework_id,
-        skill_frameworks_add_framework_admin_request,
+        profile_manager_remove_manages_relationship_request,
         _request_auth,
         _content_type,
         _headers,
@@ -326,8 +326,8 @@ class SkillsApi:
         # process the header parameters
         # process the form parameters
         # process the body parameter
-        if skill_frameworks_add_framework_admin_request is not None:
-            _body_params = skill_frameworks_add_framework_admin_request
+        if profile_manager_remove_manages_relationship_request is not None:
+            _body_params = profile_manager_remove_manages_relationship_request
 
 
         # set the HTTP header `Accept`
@@ -2727,7 +2727,7 @@ class SkillsApi:
     @validate_call
     def skill_frameworks_list_framework_admins(
         self,
-        framework_id: Optional[StrictStr],
+        framework_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2799,7 +2799,7 @@ class SkillsApi:
     @validate_call
     def skill_frameworks_list_framework_admins_with_http_info(
         self,
-        framework_id: Optional[StrictStr],
+        framework_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -2871,7 +2871,7 @@ class SkillsApi:
     @validate_call
     def skill_frameworks_list_framework_admins_without_preload_content(
         self,
-        framework_id: Optional[StrictStr],
+        framework_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -6561,7 +6561,7 @@ class SkillsApi:
     def skills_get_skill_children_tree(
         self,
         id: StrictStr,
-        framework_id: Optional[StrictStr],
+        framework_id: StrictStr,
         limit: Optional[Annotated[int, Field(le=200, strict=True, ge=1)]] = None,
         cursor: Optional[StrictStr] = None,
         _request_timeout: Union[
@@ -6645,7 +6645,7 @@ class SkillsApi:
     def skills_get_skill_children_tree_with_http_info(
         self,
         id: StrictStr,
-        framework_id: Optional[StrictStr],
+        framework_id: StrictStr,
         limit: Optional[Annotated[int, Field(le=200, strict=True, ge=1)]] = None,
         cursor: Optional[StrictStr] = None,
         _request_timeout: Union[
@@ -6729,7 +6729,7 @@ class SkillsApi:
     def skills_get_skill_children_tree_without_preload_content(
         self,
         id: StrictStr,
-        framework_id: Optional[StrictStr],
+        framework_id: StrictStr,
         limit: Optional[Annotated[int, Field(le=200, strict=True, ge=1)]] = None,
         cursor: Optional[StrictStr] = None,
         _request_timeout: Union[
@@ -6887,7 +6887,7 @@ class SkillsApi:
     @validate_call
     def skills_get_skill_path(
         self,
-        skill_id: Optional[StrictStr],
+        skill_id: StrictStr,
         framework_id: StrictStr,
         _request_timeout: Union[
             None,
@@ -6963,7 +6963,7 @@ class SkillsApi:
     @validate_call
     def skills_get_skill_path_with_http_info(
         self,
-        skill_id: Optional[StrictStr],
+        skill_id: StrictStr,
         framework_id: StrictStr,
         _request_timeout: Union[
             None,
@@ -7039,7 +7039,7 @@ class SkillsApi:
     @validate_call
     def skills_get_skill_path_without_preload_content(
         self,
-        skill_id: Optional[StrictStr],
+        skill_id: StrictStr,
         framework_id: StrictStr,
         _request_timeout: Union[
             None,

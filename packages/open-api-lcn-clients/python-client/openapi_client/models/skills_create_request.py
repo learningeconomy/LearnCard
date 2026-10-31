@@ -28,7 +28,7 @@ class SkillsCreateRequest(BaseModel):
     """
     SkillsCreateRequest
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    framework_id: StrictStr = Field(alias="frameworkId")
     skill: Schema0
     parent_id: Optional[StrictStr] = Field(default=None, alias="parentId")
     __properties: ClassVar[List[str]] = ["frameworkId", "skill", "parentId"]
@@ -75,11 +75,6 @@ class SkillsCreateRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of skill
         if self.skill:
             _dict['skill'] = self.skill.to_dict()
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
         # set to None if parent_id (nullable) is None
         # and model_fields_set contains the field
         if self.parent_id is None and "parent_id" in self.model_fields_set:

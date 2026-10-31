@@ -28,9 +28,9 @@ class AppStoreAssociateListingWithSigningAuthorityRequest(BaseModel):
     """
     AppStoreAssociateListingWithSigningAuthorityRequest
     """ # noqa: E501
-    endpoint: Optional[StrictStr]
+    endpoint: StrictStr
     name: Annotated[str, Field(strict=True, max_length=15)]
-    did: Optional[StrictStr]
+    did: StrictStr
     is_primary: Optional[StrictBool] = Field(default=None, alias="isPrimary")
     __properties: ClassVar[List[str]] = ["endpoint", "name", "did", "isPrimary"]
 
@@ -80,21 +80,6 @@ class AppStoreAssociateListingWithSigningAuthorityRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if endpoint (nullable) is None
-        # and model_fields_set contains the field
-        if self.endpoint is None and "endpoint" in self.model_fields_set:
-            _dict['endpoint'] = None
-
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
-            _dict['did'] = None
-
-        # set to None if is_primary (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_primary is None and "is_primary" in self.model_fields_set:
-            _dict['isPrimary'] = None
-
         return _dict
 
     @classmethod

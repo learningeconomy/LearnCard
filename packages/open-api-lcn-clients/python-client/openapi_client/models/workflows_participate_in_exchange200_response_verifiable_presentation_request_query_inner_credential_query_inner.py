@@ -78,16 +78,6 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if required (nullable) is None
-        # and model_fields_set contains the field
-        if self.required is None and "required" in self.model_fields_set:
-            _dict['required'] = None
-
-        # set to None if reason (nullable) is None
-        # and model_fields_set contains the field
-        if self.reason is None and "reason" in self.model_fields_set:
-            _dict['reason'] = None
-
         return _dict
 
     @classmethod

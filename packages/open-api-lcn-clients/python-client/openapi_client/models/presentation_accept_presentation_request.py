@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class PresentationAcceptPresentationRequest(BaseModel):
     """
     PresentationAcceptPresentationRequest
     """ # noqa: E501
-    uri: Optional[StrictStr]
+    uri: StrictStr
     __properties: ClassVar[List[str]] = ["uri"]
 
     model_config = ConfigDict(
@@ -69,11 +69,6 @@ class PresentationAcceptPresentationRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
         return _dict
 
     @classmethod

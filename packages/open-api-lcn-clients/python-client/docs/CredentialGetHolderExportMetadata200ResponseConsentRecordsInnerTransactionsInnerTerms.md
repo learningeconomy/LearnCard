@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name               | Type                                                                                                                                                                                            | Description | Notes      |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md)   |             |
-| **write**          | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite.md) |             |
-| **denied_writers** | **List[str]**                                                                                                                                                                                   |             | [optional] |
+| Name               | Type                                                                                                                                                                                          | Description | Notes      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md) |             |
+| **write**          | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite.md)                                 |             |
+| **denied_writers** | **List[str]**                                                                                                                                                                                 |             | [optional] |
 
 ## Example
 

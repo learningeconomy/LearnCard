@@ -46,10 +46,11 @@ class TestProfileUpdateProfileRequest(unittest.TestCase):
                 image = '',
                 hero_image = '',
                 website_link = '',
+                linked_in_organization_id = '4807288800152802179809',
                 type = '',
                 email = '',
                 notifications_webhook = '',
-                display = openapi_client.models.profile_create_service_profile_request_display.profile_createServiceProfile_request_display(
+                display = openapi_client.models.profile_create_profile_request_display.profile_createProfile_request_display(
                     background_color = '', 
                     background_image = '', 
                     fade_background_image = True, 

@@ -99,11 +99,6 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf1(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
-            _dict['idempotencyKey'] = None
-
         return _dict
 
     @classmethod

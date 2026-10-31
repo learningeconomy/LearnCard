@@ -91,11 +91,6 @@ class CredentialGetHolderExportMetadata200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if truncated (nullable) is None
-        # and model_fields_set contains the field
-        if self.truncated is None and "truncated" in self.model_fields_set:
-            _dict['truncated'] = None
-
         return _dict
 
     @classmethod

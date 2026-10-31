@@ -18,9 +18,9 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
-from openapi_client.models.share_links_update_request_envelope import ShareLinksUpdateRequestEnvelope
+from openapi_client.models.share_links_create_request_envelope import ShareLinksCreateRequestEnvelope
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,10 +29,10 @@ class PublicShareLinksContent200Response(BaseModel):
     """
     PublicShareLinksContent200Response
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     content_version: Annotated[int, Field(le=2147483647, strict=True, ge=1)] = Field(alias="contentVersion")
-    envelope: ShareLinksUpdateRequestEnvelope
-    content_url: Optional[StrictStr] = Field(alias="contentUrl")
+    envelope: ShareLinksCreateRequestEnvelope
+    content_url: StrictStr = Field(alias="contentUrl")
     receipt: Annotated[str, Field(min_length=22, strict=True, max_length=128)]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "contentVersion", "envelope", "contentUrl", "receipt"]
@@ -93,16 +93,6 @@ class PublicShareLinksContent200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if content_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.content_url is None and "content_url" in self.model_fields_set:
-            _dict['contentUrl'] = None
-
         return _dict
 
     @classmethod
@@ -117,7 +107,7 @@ class PublicShareLinksContent200Response(BaseModel):
         _values = {
             "id": obj.get("id"),
             "contentVersion": obj.get("contentVersion"),
-            "envelope": ShareLinksUpdateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
+            "envelope": ShareLinksCreateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
             "contentUrl": obj.get("contentUrl"),
             "receipt": obj.get("receipt")
         }

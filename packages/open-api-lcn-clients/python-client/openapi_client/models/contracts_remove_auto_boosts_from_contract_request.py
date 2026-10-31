@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class ContractsRemoveAutoBoostsFromContractRequest(BaseModel):
     """
     ContractsRemoveAutoBoostsFromContractRequest
     """ # noqa: E501
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
+    contract_uri: StrictStr = Field(alias="contractUri")
     boost_uris: List[StrictStr] = Field(alias="boostUris")
     __properties: ClassVar[List[str]] = ["contractUri", "boostUris"]
 
@@ -70,11 +70,6 @@ class ContractsRemoveAutoBoostsFromContractRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
         return _dict
 
     @classmethod

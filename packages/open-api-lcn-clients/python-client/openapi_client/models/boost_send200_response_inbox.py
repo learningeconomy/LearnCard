@@ -29,7 +29,7 @@ class BoostSend200ResponseInbox(BaseModel):
     Present when sent via email/phone (Universal Inbox)
     """ # noqa: E501
     refresh: Optional[BoostSend200ResponseInboxRefresh] = None
-    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
+    issuance_id: StrictStr = Field(alias="issuanceId")
     status: StrictStr
     claim_url: Optional[StrictStr] = Field(default=None, description="Present when suppressDelivery=true", alias="claimUrl")
     guardian_status: Optional[StrictStr] = Field(default=None, description="Present when guardianEmail was specified", alias="guardianStatus")
@@ -101,11 +101,6 @@ class BoostSend200ResponseInbox(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if issuance_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
-            _dict['issuanceId'] = None
 
         return _dict
 

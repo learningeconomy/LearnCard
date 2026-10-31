@@ -27,7 +27,7 @@ class ActivityGetMyActivities200ResponseRecordsInnerBoost(BaseModel):
     """
     ActivityGetMyActivities200ResponseRecordsInnerBoost
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     name: Optional[StrictStr] = None
     category: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
@@ -78,21 +78,6 @@ class ActivityGetMyActivities200ResponseRecordsInnerBoost(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
 
         return _dict
 

@@ -29,7 +29,7 @@ class SkillsCreateManyRequest(BaseModel):
     """
     SkillsCreateManyRequest
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    framework_id: StrictStr = Field(alias="frameworkId")
     skills: Annotated[List[Schema0], Field(min_length=1)]
     parent_id: Optional[StrictStr] = Field(default=None, alias="parentId")
     __properties: ClassVar[List[str]] = ["frameworkId", "skills", "parentId"]
@@ -79,11 +79,6 @@ class SkillsCreateManyRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
         # set to None if parent_id (nullable) is None
         # and model_fields_set contains the field
         if self.parent_id is None and "parent_id" in self.model_fields_set:

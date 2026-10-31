@@ -19,7 +19,9 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_contract_recipients_inner import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner
 from openapi_client.models.storage_resolve200_response_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,22 +32,24 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
     ContractsGetConsentFlowContracts200ResponseRecordsInner
     """ # noqa: E501
     contract: StorageResolve200ResponseAnyOfAnyOf1
-    name: Optional[StrictStr]
+    name: StrictStr
     subtitle: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     reason_for_accessing: Optional[StrictStr] = Field(default=None, alias="reasonForAccessing")
     image: Optional[StrictStr] = None
-    uri: Optional[StrictStr]
+    uri: StrictStr
     needs_guardian_consent: Optional[StrictBool] = Field(default=None, alias="needsGuardianConsent")
     redirect_url: Optional[StrictStr] = Field(default=None, alias="redirectUrl")
     front_door_boost_uri: Optional[StrictStr] = Field(default=None, alias="frontDoorBoostUri")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
-    updated_at: Optional[StrictStr] = Field(alias="updatedAt")
+    created_at: StrictStr = Field(alias="createdAt")
+    updated_at: StrictStr = Field(alias="updatedAt")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     auto_boosts: Optional[List[StrictStr]] = Field(default=None, alias="autoBoosts")
     writers: Optional[List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]] = None
+    recipients: Optional[List[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner]] = None
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers"]
+    __properties: ClassVar[List[str]] = ["contract", "name", "subtitle", "description", "reasonForAccessing", "image", "uri", "needsGuardianConsent", "redirectUrl", "frontDoorBoostUri", "createdAt", "updatedAt", "expiresAt", "autoBoosts", "writers", "recipients", "audienceVersion"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -97,70 +101,16 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
             for _item_writers in self.writers:
                 _items.append(_item_writers.to_dict() if _item_writers is not None else None)
             _dict['writers'] = _items
+        # override the default output from pydantic by calling `to_dict()` of each item in recipients (list)
+        _items = []
+        if self.recipients:
+            for _item_recipients in self.recipients:
+                _items.append(_item_recipients.to_dict() if _item_recipients is not None else None)
+            _dict['recipients'] = _items
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if subtitle (nullable) is None
-        # and model_fields_set contains the field
-        if self.subtitle is None and "subtitle" in self.model_fields_set:
-            _dict['subtitle'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if reason_for_accessing (nullable) is None
-        # and model_fields_set contains the field
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set:
-            _dict['reasonForAccessing'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
-        # set to None if needs_guardian_consent (nullable) is None
-        # and model_fields_set contains the field
-        if self.needs_guardian_consent is None and "needs_guardian_consent" in self.model_fields_set:
-            _dict['needsGuardianConsent'] = None
-
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
-            _dict['redirectUrl'] = None
-
-        # set to None if front_door_boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.front_door_boost_uri is None and "front_door_boost_uri" in self.model_fields_set:
-            _dict['frontDoorBoostUri'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
-
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
-            _dict['updatedAt'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
 
         return _dict
 
@@ -188,7 +138,9 @@ class ContractsGetConsentFlowContracts200ResponseRecordsInner(BaseModel):
             "updatedAt": obj.get("updatedAt"),
             "expiresAt": obj.get("expiresAt"),
             "autoBoosts": obj.get("autoBoosts"),
-            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None
+            "writers": [BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(_item) for _item in obj["writers"]] if obj.get("writers") is not None else None,
+            "recipients": [CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner.from_dict(_item) for _item in obj["recipients"]] if obj.get("recipients") is not None else None,
+            "audienceVersion": obj.get("audienceVersion")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

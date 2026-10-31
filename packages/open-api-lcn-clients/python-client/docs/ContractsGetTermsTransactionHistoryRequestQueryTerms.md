@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name      | Type                                                                                                                        | Description | Notes      |
-| --------- | --------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **read**  | [**ContractsGetTermsTransactionHistoryRequestQueryTermsRead**](ContractsGetTermsTransactionHistoryRequestQueryTermsRead.md) |             | [optional] |
-| **write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md)                   |             | [optional] |
+| Name      | Type                                                                                                      | Description | Notes      |
+| --------- | --------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**  | [**ContractsGetConsentedContractsRequestQueryRead**](ContractsGetConsentedContractsRequestQueryRead.md)   |             | [optional] |
+| **write** | [**ContractsGetConsentedContractsRequestQueryWrite**](ContractsGetConsentedContractsRequestQueryWrite.md) |             | [optional] |
 
 ## Example
 

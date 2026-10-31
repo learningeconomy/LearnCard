@@ -99,16 +99,6 @@ class BoostSendRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if template_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.template_uri is None and "template_uri" in self.model_fields_set:
-            _dict['templateUri'] = None
-
         return _dict
 
     @classmethod

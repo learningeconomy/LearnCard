@@ -45,7 +45,7 @@ class TestContractsCreateConsentFlowContractRequest(unittest.TestCase):
                                     default_enabled = True, )
                                 }, ), 
                         personal = {
-                            'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value.contracts_createConsentFlowContract_request_contract_read_personal_value(
+                            'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value.contracts_createConsentFlowContract_request_contract_read_credentials_categories_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 
@@ -62,11 +62,14 @@ class TestContractsCreateConsentFlowContractRequest(unittest.TestCase):
                 autoboosts = [
                     openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner.contracts_createConsentFlowContract_request_autoboosts_inner(
                         boost_uri = '', 
-                        signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
+                        signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
                             name = '', 
                             endpoint = '', ), )
                     ],
                 writers = [
+                    ''
+                    ],
+                recipients = [
                     ''
                     ]
             )
@@ -82,7 +85,7 @@ class TestContractsCreateConsentFlowContractRequest(unittest.TestCase):
                                     default_enabled = True, )
                                 }, ), 
                         personal = {
-                            'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value.contracts_createConsentFlowContract_request_contract_read_personal_value(
+                            'key' : openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value.contracts_createConsentFlowContract_request_contract_read_credentials_categories_value(
                                 required = True, 
                                 default_enabled = True, )
                             }, ), 

@@ -2,23 +2,25 @@
 
 ## Properties
 
-| Name                       | Type                                                                                                            | Description | Notes      |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **contract**               | [**StorageResolve200ResponseAnyOfAnyOf1**](StorageResolve200ResponseAnyOfAnyOf1.md)                             |             |
-| **name**                   | **str**                                                                                                         |             |
-| **subtitle**               | **str**                                                                                                         |             | [optional] |
-| **description**            | **str**                                                                                                         |             | [optional] |
-| **reason_for_accessing**   | **str**                                                                                                         |             | [optional] |
-| **image**                  | **str**                                                                                                         |             | [optional] |
-| **uri**                    | **str**                                                                                                         |             |
-| **needs_guardian_consent** | **bool**                                                                                                        |             | [optional] |
-| **redirect_url**           | **str**                                                                                                         |             | [optional] |
-| **front_door_boost_uri**   | **str**                                                                                                         |             | [optional] |
-| **created_at**             | **str**                                                                                                         |             |
-| **updated_at**             | **str**                                                                                                         |             |
-| **expires_at**             | **str**                                                                                                         |             | [optional] |
-| **auto_boosts**            | **List[str]**                                                                                                   |             | [optional] |
-| **writers**                | [**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md) |             | [optional] |
+| Name                       | Type                                                                                                                                                                                          | Description | Notes      |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **contract**               | [**StorageResolve200ResponseAnyOfAnyOf1**](StorageResolve200ResponseAnyOfAnyOf1.md)                                                                                                           |             |
+| **name**                   | **str**                                                                                                                                                                                       |             |
+| **subtitle**               | **str**                                                                                                                                                                                       |             | [optional] |
+| **description**            | **str**                                                                                                                                                                                       |             | [optional] |
+| **reason_for_accessing**   | **str**                                                                                                                                                                                       |             | [optional] |
+| **image**                  | **str**                                                                                                                                                                                       |             | [optional] |
+| **uri**                    | **str**                                                                                                                                                                                       |             |
+| **needs_guardian_consent** | **bool**                                                                                                                                                                                      |             | [optional] |
+| **redirect_url**           | **str**                                                                                                                                                                                       |             | [optional] |
+| **front_door_boost_uri**   | **str**                                                                                                                                                                                       |             | [optional] |
+| **created_at**             | **str**                                                                                                                                                                                       |             |
+| **updated_at**             | **str**                                                                                                                                                                                       |             |
+| **expires_at**             | **str**                                                                                                                                                                                       |             | [optional] |
+| **auto_boosts**            | **List[str]**                                                                                                                                                                                 |             | [optional] |
+| **writers**                | [**List[BoostGetBoostRecipients200ResponseInnerToAnyOf3]**](BoostGetBoostRecipients200ResponseInnerToAnyOf3.md)                                                                               |             | [optional] |
+| **recipients**             | [**List[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner]**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractRecipientsInner.md) |             | [optional] |
+| **audience_version**       | **int**                                                                                                                                                                                       |             | [optional] |
 
 ## Example
 

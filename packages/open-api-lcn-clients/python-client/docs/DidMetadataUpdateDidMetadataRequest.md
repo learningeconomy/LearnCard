@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name        | Type                                                                                            | Description | Notes |
-| ----------- | ----------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **updates** | [**DidMetadataUpdateDidMetadataRequestUpdates**](DidMetadataUpdateDidMetadataRequestUpdates.md) |             |
+| Name        | Type                                                                        | Description | Notes |
+| ----------- | --------------------------------------------------------------------------- | ----------- | ----- |
+| **updates** | [**DidMetadataAddDidMetadataRequest**](DidMetadataAddDidMetadataRequest.md) |             |
 
 ## Example
 

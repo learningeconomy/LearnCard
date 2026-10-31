@@ -69,11 +69,6 @@ class ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if required (nullable) is None
-        # and model_fields_set contains the field
-        if self.required is None and "required" in self.model_fields_set:
-            _dict['required'] = None
-
         return _dict
 
     @classmethod

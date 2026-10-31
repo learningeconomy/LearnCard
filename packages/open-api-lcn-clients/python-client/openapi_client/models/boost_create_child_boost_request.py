@@ -29,7 +29,7 @@ class BoostCreateChildBoostRequest(BaseModel):
     """
     BoostCreateChildBoostRequest
     """ # noqa: E501
-    parent_uri: Optional[StrictStr] = Field(alias="parentUri")
+    parent_uri: StrictStr = Field(alias="parentUri")
     boost: BoostCreateChildBoostRequestBoost
     skills: Optional[List[BoostSendRequestTemplateSkillsInner]] = None
     __properties: ClassVar[List[str]] = ["parentUri", "boost", "skills"]
@@ -82,11 +82,6 @@ class BoostCreateChildBoostRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if parent_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_uri is None and "parent_uri" in self.model_fields_set:
-            _dict['parentUri'] = None
-
         return _dict
 
     @classmethod

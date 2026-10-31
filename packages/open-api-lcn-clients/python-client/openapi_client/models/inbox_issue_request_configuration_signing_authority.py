@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class InboxIssueRequestConfigurationSigningAuthority(BaseModel):
     The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.
     """ # noqa: E501
     endpoint: StrictStr
-    name: Optional[StrictStr]
+    name: StrictStr
     __properties: ClassVar[List[str]] = ["endpoint", "name"]
 
     model_config = ConfigDict(
@@ -70,11 +70,6 @@ class InboxIssueRequestConfigurationSigningAuthority(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
         return _dict
 
     @classmethod

@@ -77,16 +77,6 @@ class CredentialRefreshSendRefreshableCredentialRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credential
         if self.credential:
             _dict['credential'] = self.credential.to_dict()
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if skip_notification (nullable) is None
-        # and model_fields_set contains the field
-        if self.skip_notification is None and "skip_notification" in self.model_fields_set:
-            _dict['skipNotification'] = None
-
         return _dict
 
     @classmethod

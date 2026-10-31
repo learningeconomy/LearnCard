@@ -28,9 +28,9 @@ class ShareLinksCreate200ResponseOneOfShareMinorPolicy(BaseModel):
     ShareLinksCreate200ResponseOneOfShareMinorPolicy
     """ # noqa: E501
     is_minor: Optional[StrictBool] = Field(alias="isMinor")
-    policy_resolved: Optional[StrictBool] = Field(alias="policyResolved")
+    policy_resolved: StrictBool = Field(alias="policyResolved")
     default_expiry_days: Union[StrictFloat, StrictInt] = Field(alias="defaultExpiryDays")
-    view_counting_enabled: Optional[StrictBool] = Field(alias="viewCountingEnabled")
+    view_counting_enabled: StrictBool = Field(alias="viewCountingEnabled")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["isMinor", "policyResolved", "defaultExpiryDays", "viewCountingEnabled"]
 
@@ -91,16 +91,6 @@ class ShareLinksCreate200ResponseOneOfShareMinorPolicy(BaseModel):
         # and model_fields_set contains the field
         if self.is_minor is None and "is_minor" in self.model_fields_set:
             _dict['isMinor'] = None
-
-        # set to None if policy_resolved (nullable) is None
-        # and model_fields_set contains the field
-        if self.policy_resolved is None and "policy_resolved" in self.model_fields_set:
-            _dict['policyResolved'] = None
-
-        # set to None if view_counting_enabled (nullable) is None
-        # and model_fields_set contains the field
-        if self.view_counting_enabled is None and "view_counting_enabled" in self.model_fields_set:
-            _dict['viewCountingEnabled'] = None
 
         return _dict
 

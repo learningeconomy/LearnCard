@@ -70,6 +70,7 @@ class TestContractsGetConsentFlowContract200Response(unittest.TestCase):
                     email = '', 
                     image = '', 
                     hero_image = '', 
+                    linked_in_organization_id = '4', 
                     website_link = '', 
                     is_service_profile = True, 
                     type = '', 
@@ -123,6 +124,7 @@ class TestContractsGetConsentFlowContract200Response(unittest.TestCase):
                         email = '', 
                         image = '', 
                         hero_image = '', 
+                        linked_in_organization_id = '4', 
                         website_link = '', 
                         is_service_profile = True, 
                         type = '', 
@@ -147,7 +149,32 @@ class TestContractsGetConsentFlowContract200Response(unittest.TestCase):
                         country = '', 
                         locale = '', 
                         approved = True, )
-                    ]
+                    ],
+                recipients = [
+                    openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_contract_recipients_inner.credential_getHolderExportMetadata_200_response_consentRecords_inner_contract_recipients_inner(
+                        profile_id = '012', 
+                        display_name = '', 
+                        short_bio = '', 
+                        image = '', 
+                        hero_image = '', 
+                        linked_in_organization_id = '4', 
+                        type = '', 
+                        is_service_profile = True, 
+                        display = openapi_client.models.boost_get_boost_recipients_200_response_inner_to_any_of_1_display.boost_getBoostRecipients_200_response_inner_to_anyOf_1_display(
+                            background_color = '', 
+                            background_image = '', 
+                            fade_background_image = True, 
+                            repeat_background_image = True, 
+                            font_color = '', 
+                            accent_color = '', 
+                            accent_font_color = '', 
+                            id_background_image = '', 
+                            fade_id_background_image = True, 
+                            id_background_color = '', 
+                            repeat_id_background_image = True, ), 
+                        did = '', )
+                    ],
+                audience_version = 0
             )
         else:
             return ContractsGetConsentFlowContract200Response(
@@ -186,6 +213,7 @@ class TestContractsGetConsentFlowContract200Response(unittest.TestCase):
                     email = '', 
                     image = '', 
                     hero_image = '', 
+                    linked_in_organization_id = '4', 
                     website_link = '', 
                     is_service_profile = True, 
                     type = '', 
