@@ -1,5 +1,17 @@
 # @learncard/cli
 
+## 3.6.8
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/holder-continuity@0.2.26
+    - @learncard/init@2.5.7
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/learn-cloud-plugin@2.3.49
+    - @learncard/network-brain-client@2.6.1
+
 ## 3.6.7
 
 ### Patch Changes

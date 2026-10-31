@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.100.7
+
+### Patch Changes
+
+- [#1850](https://github.com/learningeconomy/LearnCard/pull/1850) [`578e831f41bc762ff12e5ad9be6ba765f2bed33d`](https://github.com/learningeconomy/LearnCard/commit/578e831f41bc762ff12e5ad9be6ba765f2bed33d) Thanks [@Custard7](https://github.com/Custard7)! - Prepare production for the Web3Auth → SSS migration: point SSS at lca-api's REST base (`/api`), refuse to migrate a key whose DID doesn't match the account (`verifyMigrationIdentity`), re-derive provisional migrations on a new device instead of stranding them, prompt escrow-enrolled accounts without a PIN once per device, and add the `sss-pilot` tenant overlays.
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/credential-library@2.1.4
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/react@3.0.2
+
 ## 1.100.6
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # learn-card-base
 
+## 0.7.7
+
+### Patch Changes
+
+- [#1843](https://github.com/learningeconomy/LearnCard/pull/1843) [`41e3202735655982a2c2c9102681b2cc484b2c78`](https://github.com/learningeconomy/LearnCard/commit/41e3202735655982a2c2c9102681b2cc484b2c78) Thanks [@goblincore](https://github.com/goblincore)! - Bundle the browser SQLite custom element through its explicit component entry so production builds include all required JavaScript without a CDN script.
+
+- [#1860](https://github.com/learningeconomy/LearnCard/pull/1860) [`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a) Thanks [@goblincore](https://github.com/goblincore)! - Reconcile stale account shares that reuse the same share coordinate instead of stopping sign-in with an error. Preserve pending writes for a delayed server commit and retain existing handling for unrelated failures.
+
+- [#1838](https://github.com/learningeconomy/LearnCard/pull/1838) [`095f40762b4d96ae00f5677cb46e272bb6da02a1`](https://github.com/learningeconomy/LearnCard/commit/095f40762b4d96ae00f5677cb46e272bb6da02a1) Thanks [@goblincore](https://github.com/goblincore)! - Keep native cached private-key restoration scoped to the active account. Restore duplicate rows only when they contain a single distinct key, and reject conflicting keys. If a UID lookup has no key, require authentication or recovery rather than restoring an email-only legacy key. Refresh account scope on retries and discard stale results if identity changes while reading.
+
+- [#1850](https://github.com/learningeconomy/LearnCard/pull/1850) [`578e831f41bc762ff12e5ad9be6ba765f2bed33d`](https://github.com/learningeconomy/LearnCard/commit/578e831f41bc762ff12e5ad9be6ba765f2bed33d) Thanks [@Custard7](https://github.com/Custard7)! - Prepare production for the Web3Auth → SSS migration: point SSS at lca-api's REST base (`/api`), refuse to migrate a key whose DID doesn't match the account (`verifyMigrationIdentity`), re-derive provisional migrations on a new device instead of stranding them, prompt escrow-enrolled accounts without a PIN once per device, and add the `sss-pilot` tenant overlays.
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/lca-api-plugin@2.0.13
+
 ## 0.7.6
 
 ### Patch Changes
