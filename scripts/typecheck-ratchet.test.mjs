@@ -6,6 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+    DEFAULT_CHECKER,
     checkProject,
     incompleteReason,
     isConfigError,
@@ -121,10 +122,14 @@ test('package.json-only projects are typechecked and the workspace root is skipp
         'services/relay/tsconfig.json': { include: ['src'] },
     });
     try {
-        const projects = toProjects(repo, [
-            { name: '@x/relay', root: 'services/relay' },
-            { name: 'workspace', root: '.' },
-        ]);
+        const projects = toProjects(
+            repo,
+            [
+                { name: '@x/relay', root: 'services/relay' },
+                { name: 'workspace', root: '.' },
+            ],
+            'tsc'
+        );
         assert.deepEqual(
             projects.map(p => [p.name, p.checks.map(c => c.args.join(' '))]),
             [['@x/relay', ['run typecheck']]]
@@ -289,11 +294,12 @@ test('a cycle-only solution fails closed instead of dropping the project', async
     assert.equal(next, null);
 });
 
-test('--checker=bun checks the same tsconfigs with bun check', () => {
+test('bun check is the default checker; --checker=tsc checks the same tsconfigs with tsc', () => {
     const repo = fixture({ 'apps/web/tsconfig.json': { include: ['src'] } });
     try {
-        const [tsc] = toProjects(repo, [{ name: 'web', root: 'apps/web' }]);
-        const [bun] = toProjects(repo, [{ name: 'web', root: 'apps/web' }], 'bun');
+        assert.equal(DEFAULT_CHECKER, 'bun');
+        const [bun] = toProjects(repo, [{ name: 'web', root: 'apps/web' }]);
+        const [tsc] = toProjects(repo, [{ name: 'web', root: 'apps/web' }], 'tsc');
         assert.match(tsc.checks[0].cmd, /node_modules\/\.bin\/tsc$/);
         assert.equal(bun.checks[0].cmd, process.env.BUN_CHECK_BIN || 'bun');
         assert.deepEqual(bun.checks[0].args.slice(0, 4), [

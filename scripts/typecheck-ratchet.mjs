@@ -7,9 +7,10 @@
 //     and `--update` refuses to write a baseline from it.
 //   - `--update` (bun run typecheck:baseline) rewrites the baseline from the current counts.
 //   - `--report=PATH` writes full diagnostics for an advisory PR-base comparison.
-//   - `--checker=bun` swaps tsc for `bun check` (Bun >= 1.4.3, TypeScript 7 semantics) over the
-//     same projects and tsconfigs; `--baseline=PATH` points it at a matching baseline. Set
-//     BUN_CHECK_BIN when the Bun that has `check` isn't the `bun` on PATH.
+//   - Checks run with `bun check` (Bun >= 1.4.3, TypeScript 7 semantics), and the committed
+//     baseline holds its counts. `--checker=tsc` runs TypeScript 5's tsc over the same projects
+//     and tsconfigs instead; its counts differ, so compare it with `--baseline=PATH`, not the
+//     committed baseline. Set BUN_CHECK_BIN when the Bun that has `check` isn't the `bun` on PATH.
 // Counts depend on build state, so run it the way CI does: install, build the libraries
 // (`nx run-many -t build` over lib projects), compile Paraglide messages, then this script.
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -22,9 +23,11 @@ import { createDiagnosticReport } from './typecheck-diagnostics.mjs';
 
 // Data shapes:
 //   Project = { name, root, checks: Check[], incomplete?: string }   Check = { cmd, args, cwd }
-//   Checker = 'tsc' | 'bun'
+//   Checker = 'bun' | 'tsc'
 //   Result  = { name, count, errors: string[], incomplete: string | null, tail: string[],
 //               configErrors: number, errorCwds?: string[] }
+
+export const DEFAULT_CHECKER = 'bun';
 
 const readJson = path => (existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : {});
 
@@ -90,7 +93,7 @@ export const scriptChecks = (script, cwd, checker) => {
     return steps.map(([, tsconfig = 'tsconfig.json']) => checkCommand('bun', cwd, tsconfig));
 };
 
-const tscCheck = (repo, tsconfig, checker = 'tsc') => {
+const configCheck = (repo, tsconfig, checker) => {
     // Check workspace dependencies from source (`development` export condition) when the
     // config's module resolution supports custom conditions.
     const { options } = ts.getParsedCommandLineOfConfigFile(
@@ -113,7 +116,7 @@ const tscCheck = (repo, tsconfig, checker = 'tsc') => {
     );
 };
 
-export const toProjects = (repo, list, checker = 'tsc') =>
+export const toProjects = (repo, list, checker = DEFAULT_CHECKER) =>
     list
         .filter(({ root }) => root && root !== '.')
         .map(({ name, root }) => {
@@ -150,7 +153,7 @@ export const toProjects = (repo, list, checker = 'tsc') =>
             return {
                 name,
                 root,
-                checks: leaves.map(leaf => tscCheck(repo, relative(repo, leaf), checker)),
+                checks: leaves.map(leaf => configCheck(repo, relative(repo, leaf), checker)),
             };
         })
         .filter(p => p.checks.length || p.incomplete);
@@ -179,7 +182,7 @@ export const run = ({ cmd, args, cwd }) =>
         child.on('close', (code, signal) => finish({ code, signal, spawnError: null }));
     });
 
-// tsc exits 0 when clean and 1 or 2 when it reports diagnostics. Anything else, or a diagnostics
+// tsc and bun check exit 0 when clean and 1 or 2 when they report diagnostics. Anything else, or a diagnostics
 // exit with no diagnostics in the output, means the check didn't finish and its count can't be trusted.
 export const incompleteReason = ({ code, signal, spawnError, errors }) => {
     if (spawnError) return `could not start: ${spawnError}`;
@@ -189,7 +192,7 @@ export const incompleteReason = ({ code, signal, spawnError, errors }) => {
     return `exited with code ${code} after ${errors.length} type errors`;
 };
 
-// tsc skips semantic checking when a config has errors (missing `files`, bad options), so a
+// The checker skips semantic checking when a config has errors (missing `files`, bad options), so a
 // project with any of these only counts its config errors. Worth fixing, but stable.
 export const isConfigError = line =>
     !/^[^(]+\(\d+,\d+\): error/.test(line) || /tsconfig[^/]*\.json\(/.test(line);
@@ -258,7 +261,7 @@ export const nextBaseline = (results, baseline, only) => {
 
 const main = async () => {
     const arg = name => process.argv.find(a => a.startsWith(`--${name}=`))?.slice(name.length + 3);
-    const checker = arg('checker') ?? 'tsc';
+    const checker = arg('checker') ?? DEFAULT_CHECKER;
     if (!['tsc', 'bun'].includes(checker)) throw new Error(`Unknown --checker=${checker}`);
     const BASELINE = arg('baseline') ?? 'scripts/typecheck-baseline.json';
     const update = process.argv.includes('--update');
@@ -309,7 +312,7 @@ const main = async () => {
 
     for (const r of results.filter(result => result.configErrors)) {
         console.log(
-            `note ${r.name}: ${r.configErrors} tsconfig errors, so tsc skipped checking its source files.`
+            `note ${r.name}: ${r.configErrors} tsconfig errors, so ${checker} skipped checking its source files.`
         );
     }
 
