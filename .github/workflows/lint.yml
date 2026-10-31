@@ -69,6 +69,28 @@ jobs:
             - name: Run LearnCard app and shared library jsx-a11y lint
               run: bun run lint:a11y
 
+    # Fast native lint path (oxlint). Complements WorkspaceLint (ESLint); does not
+    # replace it. #1867 caches ESLint results in WorkspaceLint — leave that job alone.
+    # See .github/OXLINT.md.
+    OxLint:
+        name: Run oxlint (fast path)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: 1.4.2
+
+            # Skip composite setup / full install: oxlint ships as a native binary.
+            # Pin the same version as package.json so CI matches local `bun run lint:ox`.
+            - name: Run oxlint
+              run: bunx oxlint@1.90.0 . -c .oxlintrc.json --deny-warnings --disable-unicorn-plugin
+
     WorkspaceLint:
         name: Run workspace lint
         runs-on: ubuntu-latest
