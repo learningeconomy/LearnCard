@@ -117,6 +117,9 @@ jobs:
               with:
                   ruby-version: '3.3'
 
+            - name: Test mock E2E CI policy
+              run: node --test scripts/mock-e2e-ci.test.cjs
+
             - name: Run repository shell contracts
               run: |
                   for contract in .github/tests/*.test.sh; do

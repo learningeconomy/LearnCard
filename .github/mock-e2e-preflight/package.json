@@ -1,0 +1,10 @@
+{
+    "name": "learncard-mock-e2e-preflight",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Isolated, locked Nx graph tooling for mock E2E eligibility; kept outside Bun workspaces.",
+    "dependencies": {
+        "nx": "23.2.1",
+        "typescript": "5.9.3"
+    }
+}

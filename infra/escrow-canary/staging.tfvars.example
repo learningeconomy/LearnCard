@@ -14,3 +14,15 @@ measurements = [{
 }]
 enabled               = false
 alarm_actions_enabled = false
+
+# --- Tier 3 + canary inbox (all off by default; see services/escrow-canary/README.md "Tier 3").
+# Apply infra/escrow-canary-inbox first (it owns the account's single active rule set).
+# hold_account_ids           = ["REPLACE-hold-01", "...", "REPLACE-hold-12"] # exactly 12 opaque labels
+# inbox_enabled              = true
+# inbox_domain               = "REPLACE-inbox.example.invalid"
+# inbox_local_part           = "canary-staging" # production: "canary" (never ending in -staging)
+# Copy both from this environment's escrow output enclave_email_configuration:
+# inbox_expected_senders     = ["REPLACE-ESCROW_EMAIL_FROM"]
+# inbox_expected_dkim_domain = "REPLACE-ESCROW_EMAIL_IDENTITY"
+# inbox_require_dmarc        = true
+# tier3_enabled              = false # only after `tier3-admin ready` and the staging drills

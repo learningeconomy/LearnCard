@@ -25,6 +25,7 @@ env:
     SA_SEED_ENCRYPT_WRITES: 'true'
     SA_SEED_LOCAL_KEK: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
+# Pre-step service authentication and troubleshooting: .github/SERVICE_IMAGE_PULLS.md.
 jobs:
     keycloak-verifier-tests:
         runs-on: ubuntu-latest
@@ -32,12 +33,18 @@ jobs:
         services:
             redis:
                 image: redis:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['6379:6379']
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 5s --health-timeout 3s --health-retries 12
             mongodb:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['27017:27017']
                 options: >-
                     --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
@@ -153,12 +160,18 @@ jobs:
         services:
             redis:
                 image: redis:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['6381:6379']
                 options: >-
                     --health-cmd "redis-cli ping"
                     --health-interval 5s --health-timeout 3s --health-retries 12
             mongodb:
                 image: mongo:7
+                credentials:
+                    username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
+                    password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
                 ports: ['27017:27017']
                 options: >-
                     --health-cmd "mongosh --quiet --eval 'db.adminCommand({ping:1}).ok'"
@@ -215,7 +228,8 @@ jobs:
               run: |
                   terraform init -backend=false -input=false -lockfile=readonly
                   terraform validate
-                  terraform apply -auto-approve -input=false
+                  # Keycloak can race while creating sibling authentication-flow executions.
+                  terraform apply -parallelism=1 -auto-approve -input=false
                   terraform plan -detailed-exitcode -input=false
             - name: Start lca-api
               working-directory: services/learn-card-network/lca-api

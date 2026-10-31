@@ -15,16 +15,16 @@ against `main` at the time of writing (2026-10-26) and may drift.
 evidence (PR, ticket or meeting notes), and update the matching ROLLOUT.md item
 in the same PR.
 
-| ID  | Decision                                     | Blocks                                  | Owner (placeholder)        | Decision                 |
-| --- | -------------------------------------------- | --------------------------------------- | -------------------------- | ------------------------ |
-| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | _TBD (security)_           | _pending_                |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | _TBD (security)_           | _pending_                |
-| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | _TBD (infra/ops)_          | _pending_                |
-| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_           | _pending_                |
-| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith              | Accepted (C)             |
-| P-b | Email backup share default                   | Product/security call                   | _TBD (product + security)_ | _pending_ (interim: off) |
-| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | _TBD (legal)_              | _pending_                |
-| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_        | _pending_                |
+| ID  | Decision                                     | Blocks                                  | Owner (placeholder)       | Decision                |
+| --- | -------------------------------------------- | --------------------------------------- | ------------------------- | ----------------------- |
+| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | Jackson Smith             | Accepted (A), stage 1   |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | Jackson Smith             | Accepted (A+C), stage 1 |
+| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | Jackson Smith             | Accepted (A)            |
+| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_          | _pending_               |
+| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith             | Accepted (C)            |
+| P-b | Email backup share default                   | Product/security call                   | Jackson Smith             | Off at launch           |
+| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | Legal (via Jackson Smith) | Policy text approved    |
+| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_       | _pending_               |
 
 ---
 
@@ -66,7 +66,16 @@ STAGING.md and ROLLOUT.md describe the alarm as existing.
 chosen option, and (for A/C) a link to the production `PutKeyPolicy` alarm drill
 result.
 
-`Owner: _TBD (security)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Decision (2026-10-30), stage 1 only: A.** Accepted for internal-only escrow (the
+SSS pilot channel and production canary accounts). Production evidence: the
+escrow CloudTrail trail is logging with no delivery error; the
+`escrow-enclave-production-kms-governance` rule fired on every `PutKeyPolicy`
+during the step 7 image work (2026-10-27 22:05Z, 22:48Z, 23:25Z) and on the
+#1820 Drill 2; pages reached the alarm inbox (operator-reported). Revisit before
+stage 2 (any non-internal user), together with option B, once the image-roll
+cadence settles.
+
+`Owner: Jackson Smith` · `Decision: Accepted (option A), stage 1 internal` · `Approver/date: Jackson Smith, 2026-10-30`
 
 ---
 
@@ -107,7 +116,13 @@ SECURITY.md (2026-10-23). The archiver is designed but deferred
 **Decided looks like:** a named security approver and date, the accepted exposure
 cap, and the archiver target date.
 
-`Owner: _TBD (security)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Decision (2026-10-30): A, with C's bound.** Accepted for stage 1 (internal).
+Exposure stays at or below the 10% stage until the authority archiver ships and
+is approved (ROLLOUT.md stage 4 gate, unchanged). Archiver target date: to be
+set before stage 2. Production authority alarms are deployed
+(`escrow-enclave-production-authority-*`, `trail-tamper`).
+
+`Owner: Jackson Smith` · `Decision: Accepted (A, capped at 10% until the archiver)` · `Approver/date: Jackson Smith, 2026-10-30`
 
 ---
 
@@ -206,7 +221,18 @@ to users but takes away the remaining margin.
 operator linked here, a measured per-operation count, a volume forecast, and an
 infra/ops approver and date accepting the availability risk.
 
-`Owner: _TBD (infra/ops)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Decision (2026-10-30), stage 1 only: A.** Internal volume (pilot devices plus
+the canary's ~2 PIN recoveries an hour, roughly 20 requests per server per hour
+by the estimate above) is accepted on the three pinned sources. Before stage 2:
+written acknowledgments (or documented no-reply) from Cloudflare, int08h and
+time.txryan.com, a measured per-operation count, and a volume forecast.
+
+**Update (2026-10-30): operator acknowledgments received.** Cloudflare, int08h and
+time.txryan.com have acknowledged LearnCard's use (operator-reported by Jackson
+Smith; store the replies with this record). Still to attach before stage 2: the
+measured per-operation request count from staging and the volume forecast.
+
+`Owner: Jackson Smith` · `Decision: Accepted (option A); operator acknowledgments received` · `Approver/date: Jackson Smith, 2026-10-30`
 
 ---
 
@@ -338,7 +364,15 @@ configs now set `enableEmailBackupShare: false` so the flag matches behaviour at
 launch. Re-enabling needs this record decided, a relay key pinned in tenant
 config, and `ESCROW_RELAY_URL`/`ESCROW_RELAY_AUTH_TOKEN` in production lca-api.
 
-`Owner: _TBD (product + security)_` · `Decision: _pending_ (interim: off)` · `Approver/date: _none recorded_`
+**Decision (2026-10-30): off at launch.** Email backup stays off for LearnCard and
+VetPass (`enableEmailBackupShare: false`, no relay key). Reasons: for email-login
+accounts the Firebase sign-in is itself an email code, so inbox access releases the
+auth share; an emailed share in the same inbox would make the inbox alone sufficient
+to rebuild the key (2 of 3). The relay also delivers the share in readable form.
+Escrow, with its PIN and 7-day notice, is the backup. Revisit only with a design that
+does not put a share in the login inbox.
+
+`Owner: Jackson Smith` · `Decision: Off at launch (option B, no tenant opts in)` · `Approver/date: Jackson Smith, 2026-10-30`
 
 ---
 
@@ -384,7 +418,12 @@ product adds a short in-app notice, because auto-enrolment is silent.
 **Decided looks like:** a legal approver and date, plus a link to the published
 policy revision.
 
-`Owner: _TBD (legal)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Update (2026-10-30): legal approved the new privacy-policy text** (operator-reported
+by Jackson Smith; link the approved text and approval here). The short in-app notice
+recommended above is still a product item before automatic enrollment reaches real
+users.
+
+`Owner: Legal` · `Decision: Policy text approved` · `Approver/date: Legal, reported by Jackson Smith, 2026-10-30`
 
 ---
 
