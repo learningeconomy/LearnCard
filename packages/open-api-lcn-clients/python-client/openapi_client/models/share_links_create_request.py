@@ -22,7 +22,8 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, Stri
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing_extensions import Annotated
 from uuid import UUID
-from openapi_client.models.credential_send_credential_request_credential_any_of1 import CredentialSendCredentialRequestCredentialAnyOf1
+from openapi_client.models.boost_send_boost_request_credential_any_of1 import BoostSendBoostRequestCredentialAnyOf1
+from openapi_client.models.share_links_create_request_attachment import ShareLinksCreateRequestAttachment
 from openapi_client.models.share_links_create_request_envelope import ShareLinksCreateRequestEnvelope
 from typing import Optional, Set
 from typing_extensions import Self
@@ -32,8 +33,8 @@ class ShareLinksCreateRequest(BaseModel):
     """
     ShareLinksCreateRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
-    client_request_id: UUID = Field(alias="clientRequestId")
+    id: StrictStr
+    client_request_id: Optional[UUID] = Field(alias="clientRequestId")
     title: Annotated[str, Field(min_length=1, strict=True, max_length=120)]
     note: Optional[Annotated[str, Field(strict=True, max_length=500)]] = None
     expires_at: Optional[datetime] = Field(default=None, alias="expiresAt")
@@ -42,13 +43,17 @@ class ShareLinksCreateRequest(BaseModel):
     selected_count: Annotated[int, Field(le=50, strict=True, ge=1)] = Field(alias="selectedCount")
     content_version: Union[StrictFloat, StrictInt] = Field(alias="contentVersion")
     envelope: ShareLinksCreateRequestEnvelope
-    owner_encrypted_recovery: CredentialSendCredentialRequestCredentialAnyOf1 = Field(alias="ownerEncryptedRecovery")
+    owner_encrypted_recovery: BoostSendBoostRequestCredentialAnyOf1 = Field(alias="ownerEncryptedRecovery")
+    attachment: Optional[ShareLinksCreateRequestAttachment] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "clientRequestId", "title", "note", "expiresAt", "passcode", "notifyOnView", "selectedCount", "contentVersion", "envelope", "ownerEncryptedRecovery"]
+    __properties: ClassVar[List[str]] = ["id", "clientRequestId", "title", "note", "expiresAt", "passcode", "notifyOnView", "selectedCount", "contentVersion", "envelope", "ownerEncryptedRecovery", "attachment"]
 
     @field_validator('client_request_id', mode="before")
     def client_request_id_validate_regular_expression(cls, value):
         """Validates the regular expression"""
+        if value is None:
+            return value
+
         if isinstance(value, str) and not re.match(r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", value):
             raise ValueError(r"must validate the regular expression /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/")
         return value
@@ -59,8 +64,8 @@ class ShareLinksCreateRequest(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     @field_validator('content_version')
@@ -117,15 +122,23 @@ class ShareLinksCreateRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of owner_encrypted_recovery
         if self.owner_encrypted_recovery:
             _dict['ownerEncryptedRecovery'] = self.owner_encrypted_recovery.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of attachment
+        if self.attachment:
+            _dict['attachment'] = self.attachment.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
+        # set to None if client_request_id (nullable) is None
         # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
+        if self.client_request_id is None and "client_request_id" in self.model_fields_set:
+            _dict['clientRequestId'] = None
+
+        # set to None if note (nullable) is None
+        # and model_fields_set contains the field
+        if self.note is None and "note" in self.model_fields_set:
+            _dict['note'] = None
 
         # set to None if expires_at (nullable) is None
         # and model_fields_set contains the field
@@ -154,7 +167,8 @@ class ShareLinksCreateRequest(BaseModel):
             "selectedCount": obj.get("selectedCount"),
             "contentVersion": obj.get("contentVersion"),
             "envelope": ShareLinksCreateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
-            "ownerEncryptedRecovery": CredentialSendCredentialRequestCredentialAnyOf1.from_dict(obj["ownerEncryptedRecovery"]) if obj.get("ownerEncryptedRecovery") is not None else None
+            "ownerEncryptedRecovery": BoostSendBoostRequestCredentialAnyOf1.from_dict(obj["ownerEncryptedRecovery"]) if obj.get("ownerEncryptedRecovery") is not None else None,
+            "attachment": ShareLinksCreateRequestAttachment.from_dict(obj["attachment"]) if obj.get("attachment") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

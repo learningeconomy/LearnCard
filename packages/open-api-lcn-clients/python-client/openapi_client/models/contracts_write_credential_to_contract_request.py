@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contracts_write_credential_to_contract_request_credential import ContractsWriteCredentialToContractRequestCredential
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,9 +28,9 @@ class ContractsWriteCredentialToContractRequest(BaseModel):
     """
     ContractsWriteCredentialToContractRequest
     """ # noqa: E501
-    did: Optional[StrictStr]
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    did: StrictStr
+    contract_uri: StrictStr = Field(alias="contractUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     credential: ContractsWriteCredentialToContractRequestCredential
     __properties: ClassVar[List[str]] = ["did", "contractUri", "boostUri", "credential"]
 
@@ -76,21 +76,6 @@ class ContractsWriteCredentialToContractRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credential
         if self.credential:
             _dict['credential'] = self.credential.to_dict()
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
-            _dict['did'] = None
-
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
         return _dict
 
     @classmethod

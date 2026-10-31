@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials import ContractsCreateConsentFlowContractRequestContractReadCredentials
-from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value import ContractsCreateConsentFlowContractRequestContractReadPersonalValue
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value import ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class ContractsCreateConsentFlowContractRequestContractRead(BaseModel):
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
     credentials: Optional[ContractsCreateConsentFlowContractRequestContractReadCredentials] = None
-    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]] = None
+    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(
@@ -82,11 +82,6 @@ class ContractsCreateConsentFlowContractRequestContractRead(BaseModel):
             for _key_personal in self.personal:
                 _field_dict[_key_personal] = self.personal[_key_personal].to_dict() if self.personal[_key_personal] is not None else None
             _dict['personal'] = _field_dict
-        # set to None if anonymize (nullable) is None
-        # and model_fields_set contains the field
-        if self.anonymize is None and "anonymize" in self.model_fields_set:
-            _dict['anonymize'] = None
-
         return _dict
 
     @classmethod
@@ -102,7 +97,7 @@ class ContractsCreateConsentFlowContractRequestContractRead(BaseModel):
             "anonymize": obj.get("anonymize"),
             "credentials": ContractsCreateConsentFlowContractRequestContractReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": dict(
-                (_k, ContractsCreateConsentFlowContractRequestContractReadPersonalValue.from_dict(_v))
+                (_k, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["personal"].items()
             )
             if obj.get("personal") is not None

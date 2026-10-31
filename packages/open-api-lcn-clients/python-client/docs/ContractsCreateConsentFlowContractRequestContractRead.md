@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                                                       | Description | Notes      |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **anonymize**   | **bool**                                                                                                                                                   |             | [optional] |
-| **credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md)                |             | [optional] |
-| **personal**    | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]**](ContractsCreateConsentFlowContractRequestContractReadPersonalValue.md) |             | [optional] |
+| Name            | Type                                                                                                                                                                                 | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
+| **anonymize**   | **bool**                                                                                                                                                                             |             | [optional] |
+| **credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md)                                          |             | [optional] |
+| **personal**    | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 

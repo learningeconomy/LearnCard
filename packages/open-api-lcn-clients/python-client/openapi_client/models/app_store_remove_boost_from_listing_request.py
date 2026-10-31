@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class AppStoreRemoveBoostFromListingRequest(BaseModel):
     """
     AppStoreRemoveBoostFromListingRequest
     """ # noqa: E501
-    template_alias: Optional[StrictStr] = Field(alias="templateAlias")
+    template_alias: StrictStr = Field(alias="templateAlias")
     __properties: ClassVar[List[str]] = ["templateAlias"]
 
     model_config = ConfigDict(
@@ -69,11 +69,6 @@ class AppStoreRemoveBoostFromListingRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if template_alias (nullable) is None
-        # and model_fields_set contains the field
-        if self.template_alias is None and "template_alias" in self.model_fields_set:
-            _dict['templateAlias'] = None
-
         return _dict
 
     @classmethod

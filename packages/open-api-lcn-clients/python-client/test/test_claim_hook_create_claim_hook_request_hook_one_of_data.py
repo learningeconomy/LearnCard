@@ -37,7 +37,7 @@ class TestClaimHookCreateClaimHookRequestHookOneOfData(unittest.TestCase):
             return ClaimHookCreateClaimHookRequestHookOneOfData(
                 claim_uri = '',
                 target_uri = '',
-                permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                     role = '', 
                     can_view = True, 
                     can_edit = True, 
@@ -56,7 +56,7 @@ class TestClaimHookCreateClaimHookRequestHookOneOfData(unittest.TestCase):
             return ClaimHookCreateClaimHookRequestHookOneOfData(
                 claim_uri = '',
                 target_uri = '',
-                permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
+                permissions = openapi_client.models.boost_send_request_template_claim_permissions.boost_send_request_template_claimPermissions(
                     role = '', 
                     can_view = True, 
                     can_edit = True, 

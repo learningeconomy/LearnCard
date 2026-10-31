@@ -85,21 +85,6 @@ class SkillFrameworksUpdateRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if is_public (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_public is None and "is_public" in self.model_fields_set:
-            _dict['isPublic'] = None
-
         return _dict
 
     @classmethod

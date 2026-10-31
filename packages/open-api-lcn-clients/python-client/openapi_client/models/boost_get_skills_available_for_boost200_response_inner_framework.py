@@ -27,8 +27,8 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
     """
     BoostGetSkillsAvailableForBoost200ResponseInnerFramework
     """ # noqa: E501
-    id: Optional[StrictStr]
-    name: Optional[StrictStr]
+    id: StrictStr
+    name: StrictStr
     description: Optional[StrictStr] = None
     image: Optional[StrictStr] = None
     source_uri: Optional[StrictStr] = Field(default=None, alias="sourceURI")
@@ -91,36 +91,6 @@ class BoostGetSkillsAvailableForBoost200ResponseInnerFramework(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
-
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
-            _dict['updatedAt'] = None
 
         return _dict
 

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.boost_send_boost_request_credential_any_of1_recipients_inner_header import BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInner(BaseModel):
     BoostSendBoostRequestCredentialAnyOf1RecipientsInner
     """ # noqa: E501
     header: BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
-    encrypted_key: Optional[StrictStr]
+    encrypted_key: StrictStr
     __properties: ClassVar[List[str]] = ["header", "encrypted_key"]
 
     model_config = ConfigDict(
@@ -74,11 +74,6 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of header
         if self.header:
             _dict['header'] = self.header.to_dict()
-        # set to None if encrypted_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.encrypted_key is None and "encrypted_key" in self.model_fields_set:
-            _dict['encrypted_key'] = None
-
         return _dict
 
     @classmethod

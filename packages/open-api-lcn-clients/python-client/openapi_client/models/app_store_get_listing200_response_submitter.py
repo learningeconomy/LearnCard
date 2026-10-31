@@ -27,8 +27,8 @@ class AppStoreGetListing200ResponseSubmitter(BaseModel):
     """
     AppStoreGetListing200ResponseSubmitter
     """ # noqa: E501
-    profile_id: Optional[StrictStr] = Field(alias="profileId")
-    display_name: Optional[StrictStr] = Field(alias="displayName")
+    profile_id: StrictStr = Field(alias="profileId")
+    display_name: StrictStr = Field(alias="displayName")
     email: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["profileId", "displayName", "email"]
@@ -78,21 +78,6 @@ class AppStoreGetListing200ResponseSubmitter(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.profile_id is None and "profile_id" in self.model_fields_set:
-            _dict['profileId'] = None
-
-        # set to None if display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.display_name is None and "display_name" in self.model_fields_set:
-            _dict['displayName'] = None
-
-        # set to None if email (nullable) is None
-        # and model_fields_set contains the field
-        if self.email is None and "email" in self.model_fields_set:
-            _dict['email'] = None
 
         return _dict
 

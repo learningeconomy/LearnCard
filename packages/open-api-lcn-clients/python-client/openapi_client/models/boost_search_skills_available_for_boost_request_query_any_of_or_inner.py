@@ -20,7 +20,6 @@ import json
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
 from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_status import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus
 from typing import Optional, Set
 from typing_extensions import Self
@@ -31,10 +30,10 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner(BaseModel):
     BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner
     """ # noqa: E501
     id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
-    statement: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    description: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    code: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    type: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    statement: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    description: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    code: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    type: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
     status: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus] = None
     __properties: ClassVar[List[str]] = ["id", "statement", "description", "code", "type", "status"]
 
@@ -108,10 +107,10 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInner(BaseModel):
 
         _values = {
             "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["id"]) if obj.get("id") is not None else None,
-            "statement": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["statement"]) if obj.get("statement") is not None else None,
-            "description": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["description"]) if obj.get("description") is not None else None,
-            "code": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["code"]) if obj.get("code") is not None else None,
-            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "statement": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["statement"]) if obj.get("statement") is not None else None,
+            "description": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["description"]) if obj.get("description") is not None else None,
+            "code": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["code"]) if obj.get("code") is not None else None,
+            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "status": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatus.from_dict(obj["status"]) if obj.get("status") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

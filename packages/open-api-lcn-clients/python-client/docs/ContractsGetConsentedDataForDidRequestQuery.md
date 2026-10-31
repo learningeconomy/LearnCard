@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                                              | Description | Notes      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **credentials** | [**ContractsGetConsentedDataForDidRequestQueryCredentials**](ContractsGetConsentedDataForDidRequestQueryCredentials.md)                           |             | [optional] |
-| **personal**    | **Dict[str, bool]**                                                                                                                               |             | [optional] |
-| **id**          | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| Name            | Type                                                                                                                                | Description | Notes      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **credentials** | [**ContractsGetConsentedDataForContractRequestQueryCredentials**](ContractsGetConsentedDataForContractRequestQueryCredentials.md)   |             | [optional] |
+| **personal**    | **Dict[str, bool]**                                                                                                                 |             | [optional] |
+| **id**          | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
 
 ## Example
 

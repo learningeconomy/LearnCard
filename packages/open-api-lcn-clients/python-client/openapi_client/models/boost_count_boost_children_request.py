@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request_number_of_generations import BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations
+from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,8 +29,8 @@ class BoostCountBoostChildrenRequest(BaseModel):
     """
     BoostCountBoostChildrenRequest
     """ # noqa: E501
-    uri: Optional[StrictStr]
-    query: Optional[BoostCountBoostsRequestQuery] = None
+    uri: StrictStr
+    query: Optional[BoostGetBoostsRequestQuery] = None
     number_of_generations: Optional[BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations] = Field(default=None, alias="numberOfGenerations")
     __properties: ClassVar[List[str]] = ["uri", "query", "numberOfGenerations"]
 
@@ -79,11 +79,6 @@ class BoostCountBoostChildrenRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of number_of_generations
         if self.number_of_generations:
             _dict['numberOfGenerations'] = self.number_of_generations.to_dict()
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
         return _dict
 
     @classmethod
@@ -97,7 +92,7 @@ class BoostCountBoostChildrenRequest(BaseModel):
 
         _values = {
             "uri": obj.get("uri"),
-            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
+            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
             "numberOfGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["numberOfGenerations"]) if obj.get("numberOfGenerations") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

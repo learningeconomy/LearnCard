@@ -27,9 +27,9 @@ class FederationReceive200Response(BaseModel):
     """
     FederationReceive200Response
     """ # noqa: E501
-    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
+    issuance_id: StrictStr = Field(alias="issuanceId")
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
-    status: Optional[StrictStr]
+    status: StrictStr
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["issuanceId", "claimUrl", "status"]
 
@@ -78,21 +78,6 @@ class FederationReceive200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if issuance_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
-            _dict['issuanceId'] = None
-
-        # set to None if claim_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_url is None and "claim_url" in self.model_fields_set:
-            _dict['claimUrl'] = None
-
-        # set to None if status (nullable) is None
-        # and model_fields_set contains the field
-        if self.status is None and "status" in self.model_fields_set:
-            _dict['status'] = None
 
         return _dict
 

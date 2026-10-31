@@ -30,7 +30,7 @@ class ContractsGetConsentedContractsRequestQueryRead(BaseModel):
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
     credentials: Optional[ContractsGetConsentedContractsRequestQueryReadCredentials] = None
-    personal: Optional[Dict[str, Optional[StrictStr]]] = None
+    personal: Optional[Dict[str, StrictStr]] = None
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
     model_config = ConfigDict(
@@ -75,11 +75,6 @@ class ContractsGetConsentedContractsRequestQueryRead(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credentials
         if self.credentials:
             _dict['credentials'] = self.credentials.to_dict()
-        # set to None if anonymize (nullable) is None
-        # and model_fields_set contains the field
-        if self.anonymize is None and "anonymize" in self.model_fields_set:
-            _dict['anonymize'] = None
-
         return _dict
 
     @classmethod

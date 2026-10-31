@@ -35,13 +35,39 @@ class TestStorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf(unittest.TestC
         model = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf()
         if include_optional:
             return StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf(
-                format = 'w3c-vc-2.0',
-                data = ''
+                context = [
+                    null
+                    ],
+                id = '',
+                type = [
+                    ''
+                    ],
+                issuer = None,
+                credential_subject = None,
+                refresh_service = None,
+                credential_schema = None,
+                issuance_date = '',
+                expiration_date = '',
+                credential_status = None,
+                name = '',
+                description = '',
+                valid_from = '',
+                valid_until = '',
+                status = None,
+                terms_of_use = None,
+                evidence = None,
+                render_method = None
             )
         else:
             return StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf(
-                format = 'w3c-vc-2.0',
-                data = '',
+                context = [
+                    null
+                    ],
+                type = [
+                    ''
+                    ],
+                issuer = None,
+                credential_subject = None,
         )
         """
 

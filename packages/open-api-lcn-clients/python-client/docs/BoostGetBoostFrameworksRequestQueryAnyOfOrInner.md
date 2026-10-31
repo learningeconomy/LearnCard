@@ -2,13 +2,13 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                                              | Description | Notes      |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **id**          | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **name**        | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **description** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **source_uri**  | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **status**      | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
+| Name            | Type                                                                                                                                | Description | Notes      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **id**          | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **name**        | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **description** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **source_uri**  | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **status**      | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
 
 ## Example
 

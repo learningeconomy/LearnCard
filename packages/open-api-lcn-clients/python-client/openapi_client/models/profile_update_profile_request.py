@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.profile_create_service_profile_request_display import ProfileCreateServiceProfileRequestDisplay
+from openapi_client.models.profile_create_profile_request_display import ProfileCreateProfileRequestDisplay
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -40,17 +40,18 @@ class ProfileUpdateProfileRequest(BaseModel):
     image: Optional[StrictStr] = None
     hero_image: Optional[StrictStr] = Field(default=None, alias="heroImage")
     website_link: Optional[StrictStr] = Field(default=None, alias="websiteLink")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, alias="linkedInOrganizationId")
     type: Optional[StrictStr] = None
     email: Optional[StrictStr] = None
     notifications_webhook: Optional[StrictStr] = Field(default=None, alias="notificationsWebhook")
-    display: Optional[ProfileCreateServiceProfileRequestDisplay] = None
+    display: Optional[ProfileCreateProfileRequestDisplay] = None
     role: Optional[StrictStr] = None
     dob: Optional[StrictStr] = None
     country: Optional[StrictStr] = None
     locale: Optional[StrictStr] = None
     highlighted_credentials: Optional[List[StrictStr]] = Field(default=None, alias="highlightedCredentials")
     approved: Optional[StrictBool] = None
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "image", "heroImage", "websiteLink", "type", "email", "notificationsWebhook", "display", "role", "dob", "country", "locale", "highlightedCredentials", "approved"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "image", "heroImage", "websiteLink", "linkedInOrganizationId", "type", "email", "notificationsWebhook", "display", "role", "dob", "country", "locale", "highlightedCredentials", "approved"]
 
     @field_validator('profile_visibility')
     def profile_visibility_validate_enum(cls, value):
@@ -70,6 +71,16 @@ class ProfileUpdateProfileRequest(BaseModel):
 
         if value not in set(['anyone', 'invite_only']):
             raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d*$", value):
+            raise ValueError(r"must validate the regular expression /^\d*$/")
         return value
 
     model_config = ConfigDict(
@@ -114,86 +125,6 @@ class ProfileUpdateProfileRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
-        # set to None if display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.display_name is None and "display_name" in self.model_fields_set:
-            _dict['displayName'] = None
-
-        # set to None if short_bio (nullable) is None
-        # and model_fields_set contains the field
-        if self.short_bio is None and "short_bio" in self.model_fields_set:
-            _dict['shortBio'] = None
-
-        # set to None if bio (nullable) is None
-        # and model_fields_set contains the field
-        if self.bio is None and "bio" in self.model_fields_set:
-            _dict['bio'] = None
-
-        # set to None if is_private (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_private is None and "is_private" in self.model_fields_set:
-            _dict['isPrivate'] = None
-
-        # set to None if show_email (nullable) is None
-        # and model_fields_set contains the field
-        if self.show_email is None and "show_email" in self.model_fields_set:
-            _dict['showEmail'] = None
-
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
-            _dict['image'] = None
-
-        # set to None if hero_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.hero_image is None and "hero_image" in self.model_fields_set:
-            _dict['heroImage'] = None
-
-        # set to None if website_link (nullable) is None
-        # and model_fields_set contains the field
-        if self.website_link is None and "website_link" in self.model_fields_set:
-            _dict['websiteLink'] = None
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if email (nullable) is None
-        # and model_fields_set contains the field
-        if self.email is None and "email" in self.model_fields_set:
-            _dict['email'] = None
-
-        # set to None if notifications_webhook (nullable) is None
-        # and model_fields_set contains the field
-        if self.notifications_webhook is None and "notifications_webhook" in self.model_fields_set:
-            _dict['notificationsWebhook'] = None
-
-        # set to None if role (nullable) is None
-        # and model_fields_set contains the field
-        if self.role is None and "role" in self.model_fields_set:
-            _dict['role'] = None
-
-        # set to None if dob (nullable) is None
-        # and model_fields_set contains the field
-        if self.dob is None and "dob" in self.model_fields_set:
-            _dict['dob'] = None
-
-        # set to None if country (nullable) is None
-        # and model_fields_set contains the field
-        if self.country is None and "country" in self.model_fields_set:
-            _dict['country'] = None
-
-        # set to None if locale (nullable) is None
-        # and model_fields_set contains the field
-        if self.locale is None and "locale" in self.model_fields_set:
-            _dict['locale'] = None
-
-        # set to None if approved (nullable) is None
-        # and model_fields_set contains the field
-        if self.approved is None and "approved" in self.model_fields_set:
-            _dict['approved'] = None
-
         return _dict
 
     @classmethod
@@ -217,10 +148,11 @@ class ProfileUpdateProfileRequest(BaseModel):
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
             "websiteLink": obj.get("websiteLink"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "type": obj.get("type"),
             "email": obj.get("email"),
             "notificationsWebhook": obj.get("notificationsWebhook"),
-            "display": ProfileCreateServiceProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "display": ProfileCreateProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
             "role": obj.get("role"),
             "dob": obj.get("dob"),
             "country": obj.get("country"),

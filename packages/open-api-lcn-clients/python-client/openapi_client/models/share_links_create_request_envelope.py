@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Union
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,9 +29,8 @@ class ShareLinksCreateRequestEnvelope(BaseModel):
     """ # noqa: E501
     v: Union[StrictFloat, StrictInt]
     alg: StrictStr
-    iv: Optional[StrictStr]
-    ct: Optional[StrictStr]
-    additional_properties: Dict[str, Any] = {}
+    iv: StrictStr
+    ct: StrictStr
     __properties: ClassVar[List[str]] = ["v", "alg", "iv", "ct"]
 
     @field_validator('v')
@@ -78,10 +77,8 @@ class ShareLinksCreateRequestEnvelope(BaseModel):
         * `None` is only added to the output dict for nullable fields that
           were set at model initialization. Other fields with value `None`
           are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
-            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -89,21 +86,6 @@ class ShareLinksCreateRequestEnvelope(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
-
-        # set to None if iv (nullable) is None
-        # and model_fields_set contains the field
-        if self.iv is None and "iv" in self.model_fields_set:
-            _dict['iv'] = None
-
-        # set to None if ct (nullable) is None
-        # and model_fields_set contains the field
-        if self.ct is None and "ct" in self.model_fields_set:
-            _dict['ct'] = None
-
         return _dict
 
     @classmethod
@@ -123,11 +105,6 @@ class ShareLinksCreateRequestEnvelope(BaseModel):
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
         return _obj
 
 

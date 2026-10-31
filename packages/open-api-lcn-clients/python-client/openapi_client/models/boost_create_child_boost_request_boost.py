@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
-from openapi_client.models.boost_create_boost_request_credential import BoostCreateBoostRequestCredential
+from openapi_client.models.boost_send_request_template_claim_permissions import BoostSendRequestTemplateClaimPermissions
+from openapi_client.models.boost_send_request_template_credential import BoostSendRequestTemplateCredential
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -37,9 +37,9 @@ class BoostCreateChildBoostRequestBoost(BaseModel):
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
-    credential: BoostCreateBoostRequestCredential
-    claim_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="claimPermissions")
-    default_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="defaultPermissions")
+    credential: BoostSendRequestTemplateCredential
+    claim_permissions: Optional[BoostSendRequestTemplateClaimPermissions] = Field(default=None, alias="claimPermissions")
+    default_permissions: Optional[BoostSendRequestTemplateClaimPermissions] = Field(default=None, alias="defaultPermissions")
     __properties: ClassVar[List[str]] = ["name", "type", "category", "created", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "claimPermissions", "defaultPermissions"]
 
     @field_validator('status')
@@ -100,36 +100,6 @@ class BoostCreateChildBoostRequestBoost(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of default_permissions
         if self.default_permissions:
             _dict['defaultPermissions'] = self.default_permissions.to_dict()
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
-            _dict['category'] = None
-
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
-            _dict['created'] = None
-
-        # set to None if auto_connect_recipients (nullable) is None
-        # and model_fields_set contains the field
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set:
-            _dict['autoConnectRecipients'] = None
-
-        # set to None if allow_anyone_to_create_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set:
-            _dict['allowAnyoneToCreateChildren'] = None
-
         return _dict
 
     @classmethod
@@ -150,9 +120,9 @@ class BoostCreateChildBoostRequestBoost(BaseModel):
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
-            "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
-            "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
-            "defaultPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None
+            "credential": BoostSendRequestTemplateCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "claimPermissions": BoostSendRequestTemplateClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
+            "defaultPermissions": BoostSendRequestTemplateClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -27,8 +27,8 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
     """
     BoostAlignBoostSkillsRequestSkillsInner
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
-    id: Optional[StrictStr]
+    framework_id: StrictStr = Field(alias="frameworkId")
+    id: StrictStr
     proficiency_level: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="proficiencyLevel")
     __properties: ClassVar[List[str]] = ["frameworkId", "id", "proficiencyLevel"]
 
@@ -71,16 +71,6 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
         # set to None if proficiency_level (nullable) is None
         # and model_fields_set contains the field
         if self.proficiency_level is None and "proficiency_level" in self.model_fields_set:

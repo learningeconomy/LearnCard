@@ -19,9 +19,9 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
-from openapi_client.models.boost_send_request_template_credential_any_of_proof import BoostSendRequestTemplateCredentialAnyOfProof
+from openapi_client.models.boost_send_boost_request_credential_any_of_context_inner import BoostSendBoostRequestCredentialAnyOfContextInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
+from openapi_client.models.boost_send_boost_request_credential_any_of_proof import BoostSendBoostRequestCredentialAnyOfProof
 from openapi_client.models.presentation_send_presentation_request_presentation_any_of_verifiable_credential import PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential
 from typing import Optional, Set
 from typing_extensions import Self
@@ -31,12 +31,12 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
     """
     PresentationSendPresentationRequestPresentationAnyOf
     """ # noqa: E501
-    context: List[BoostSendRequestTemplateCredentialAnyOfContextInner] = Field(alias="@context")
+    context: List[BoostSendBoostRequestCredentialAnyOfContextInner] = Field(alias="@context")
     id: Optional[StrictStr] = None
-    type: BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
+    type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
     verifiable_credential: Optional[PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential] = Field(default=None, alias="verifiableCredential")
     holder: Optional[StrictStr] = None
-    proof: BoostSendRequestTemplateCredentialAnyOfProof
+    proof: BoostSendBoostRequestCredentialAnyOfProof
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["@context", "id", "type", "verifiableCredential", "holder", "proof"]
 
@@ -101,16 +101,6 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if holder (nullable) is None
-        # and model_fields_set contains the field
-        if self.holder is None and "holder" in self.model_fields_set:
-            _dict['holder'] = None
-
         return _dict
 
     @classmethod
@@ -123,12 +113,12 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
+            "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
-            "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "verifiableCredential": PresentationSendPresentationRequestPresentationAnyOfVerifiableCredential.from_dict(obj["verifiableCredential"]) if obj.get("verifiableCredential") is not None else None,
             "holder": obj.get("holder"),
-            "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
+            "proof": BoostSendBoostRequestCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

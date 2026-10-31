@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,8 +27,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseM
     """
     ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data
     """ # noqa: E501
-    claim_uri: Optional[StrictStr] = Field(alias="claimUri")
-    target_uri: Optional[StrictStr] = Field(alias="targetUri")
+    claim_uri: StrictStr = Field(alias="claimUri")
+    target_uri: StrictStr = Field(alias="targetUri")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri"]
 
@@ -77,16 +77,6 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf1Data(BaseM
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if claim_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_uri is None and "claim_uri" in self.model_fields_set:
-            _dict['claimUri'] = None
-
-        # set to None if target_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_uri is None and "target_uri" in self.model_fields_set:
-            _dict['targetUri'] = None
 
         return _dict
 

@@ -31,7 +31,7 @@ class ContractsGetConsentedDataForDidRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    did: Optional[StrictStr]
+    did: StrictStr
     query: Optional[ContractsGetConsentedDataForDidRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "did", "query"]
 
@@ -77,21 +77,6 @@ class ContractsGetConsentedDataForDidRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
-            _dict['sort'] = None
-
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
-            _dict['did'] = None
-
         return _dict
 
     @classmethod

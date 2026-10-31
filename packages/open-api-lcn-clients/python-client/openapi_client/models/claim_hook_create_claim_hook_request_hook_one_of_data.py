@@ -18,8 +18,8 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.boost_send_request_template_claim_permissions import BoostSendRequestTemplateClaimPermissions
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,9 +28,9 @@ class ClaimHookCreateClaimHookRequestHookOneOfData(BaseModel):
     """
     ClaimHookCreateClaimHookRequestHookOneOfData
     """ # noqa: E501
-    claim_uri: Optional[StrictStr] = Field(alias="claimUri")
-    target_uri: Optional[StrictStr] = Field(alias="targetUri")
-    permissions: BoostCreateBoostRequestClaimPermissions
+    claim_uri: StrictStr = Field(alias="claimUri")
+    target_uri: StrictStr = Field(alias="targetUri")
+    permissions: BoostSendRequestTemplateClaimPermissions
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri", "permissions"]
 
     model_config = ConfigDict(
@@ -75,16 +75,6 @@ class ClaimHookCreateClaimHookRequestHookOneOfData(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of permissions
         if self.permissions:
             _dict['permissions'] = self.permissions.to_dict()
-        # set to None if claim_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_uri is None and "claim_uri" in self.model_fields_set:
-            _dict['claimUri'] = None
-
-        # set to None if target_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_uri is None and "target_uri" in self.model_fields_set:
-            _dict['targetUri'] = None
-
         return _dict
 
     @classmethod
@@ -99,7 +89,7 @@ class ClaimHookCreateClaimHookRequestHookOneOfData(BaseModel):
         _values = {
             "claimUri": obj.get("claimUri"),
             "targetUri": obj.get("targetUri"),
-            "permissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["permissions"]) if obj.get("permissions") is not None else None
+            "permissions": BoostSendRequestTemplateClaimPermissions.from_dict(obj["permissions"]) if obj.get("permissions") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

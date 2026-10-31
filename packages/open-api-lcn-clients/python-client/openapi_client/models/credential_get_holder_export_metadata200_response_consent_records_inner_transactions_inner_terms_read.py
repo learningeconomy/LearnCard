@@ -30,7 +30,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
     """ # noqa: E501
     anonymize: Optional[StrictBool] = None
     credentials: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsReadCredentials
-    personal: Dict[str, Optional[StrictStr]]
+    personal: Dict[str, StrictStr]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["anonymize", "credentials", "personal"]
 
@@ -82,11 +82,6 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if anonymize (nullable) is None
-        # and model_fields_set contains the field
-        if self.anonymize is None and "anonymize" in self.model_fields_set:
-            _dict['anonymize'] = None
 
         return _dict
 

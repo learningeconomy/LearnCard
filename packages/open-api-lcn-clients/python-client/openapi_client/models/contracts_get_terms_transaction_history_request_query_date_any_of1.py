@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryDateAnyOf1(BaseModel):
     """
     ContractsGetTermsTransactionHistoryRequestQueryDateAnyOf1
     """ # noqa: E501
-    eq: Optional[StrictStr] = Field(alias="$eq")
+    eq: StrictStr = Field(alias="$eq")
     __properties: ClassVar[List[str]] = ["$eq"]
 
     model_config = ConfigDict(
@@ -69,11 +69,6 @@ class ContractsGetTermsTransactionHistoryRequestQueryDateAnyOf1(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if eq (nullable) is None
-        # and model_fields_set contains the field
-        if self.eq is None and "eq" in self.model_fields_set:
-            _dict['$eq'] = None
-
         return _dict
 
     @classmethod

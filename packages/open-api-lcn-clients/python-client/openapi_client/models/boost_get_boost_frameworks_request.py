@@ -29,7 +29,7 @@ class BoostGetBoostFrameworksRequest(BaseModel):
     """
     BoostGetBoostFrameworksRequest
     """ # noqa: E501
-    uri: Optional[StrictStr]
+    uri: StrictStr
     limit: Optional[Annotated[int, Field(le=200, strict=True, ge=1)]] = 50
     cursor: Optional[StrictStr] = None
     query: Optional[BoostGetBoostFrameworksRequestQuery] = None
@@ -77,11 +77,6 @@ class BoostGetBoostFrameworksRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
         # set to None if cursor (nullable) is None
         # and model_fields_set contains the field
         if self.cursor is None and "cursor" in self.model_fields_set:

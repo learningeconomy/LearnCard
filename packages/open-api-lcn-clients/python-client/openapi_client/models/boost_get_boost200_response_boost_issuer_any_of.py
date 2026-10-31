@@ -23,7 +23,7 @@ from typing_extensions import Annotated
 from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_address import BoostGetBoost200ResponseBoostIssuerAnyOfAddress
 from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_image import BoostGetBoost200ResponseBoostIssuerAnyOfImage
 from openapi_client.models.boost_get_boost200_response_boost_issuer_any_of_other_identifier_inner import BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -33,7 +33,7 @@ class BoostGetBoost200ResponseBoostIssuerAnyOf(BaseModel):
     BoostGetBoost200ResponseBoostIssuerAnyOf
     """ # noqa: E501
     id: Optional[StrictStr] = None
-    type: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType] = None
+    type: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType] = None
     name: Optional[StrictStr] = None
     url: Optional[StrictStr] = None
     phone: Optional[StrictStr] = None
@@ -62,8 +62,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOf(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -127,80 +127,10 @@ class BoostGetBoost200ResponseBoostIssuerAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
-            _dict['name'] = None
-
-        # set to None if url (nullable) is None
-        # and model_fields_set contains the field
-        if self.url is None and "url" in self.model_fields_set:
-            _dict['url'] = None
-
-        # set to None if phone (nullable) is None
-        # and model_fields_set contains the field
-        if self.phone is None and "phone" in self.model_fields_set:
-            _dict['phone'] = None
-
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
-            _dict['description'] = None
-
-        # set to None if official (nullable) is None
-        # and model_fields_set contains the field
-        if self.official is None and "official" in self.model_fields_set:
-            _dict['official'] = None
-
         # set to None if parent_org (nullable) is None
         # and model_fields_set contains the field
         if self.parent_org is None and "parent_org" in self.model_fields_set:
             _dict['parentOrg'] = None
-
-        # set to None if family_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.family_name is None and "family_name" in self.model_fields_set:
-            _dict['familyName'] = None
-
-        # set to None if given_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.given_name is None and "given_name" in self.model_fields_set:
-            _dict['givenName'] = None
-
-        # set to None if additional_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.additional_name is None and "additional_name" in self.model_fields_set:
-            _dict['additionalName'] = None
-
-        # set to None if patronymic_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.patronymic_name is None and "patronymic_name" in self.model_fields_set:
-            _dict['patronymicName'] = None
-
-        # set to None if honorific_prefix (nullable) is None
-        # and model_fields_set contains the field
-        if self.honorific_prefix is None and "honorific_prefix" in self.model_fields_set:
-            _dict['honorificPrefix'] = None
-
-        # set to None if honorific_suffix (nullable) is None
-        # and model_fields_set contains the field
-        if self.honorific_suffix is None and "honorific_suffix" in self.model_fields_set:
-            _dict['honorificSuffix'] = None
-
-        # set to None if family_name_prefix (nullable) is None
-        # and model_fields_set contains the field
-        if self.family_name_prefix is None and "family_name_prefix" in self.model_fields_set:
-            _dict['familyNamePrefix'] = None
-
-        # set to None if date_of_birth (nullable) is None
-        # and model_fields_set contains the field
-        if self.date_of_birth is None and "date_of_birth" in self.model_fields_set:
-            _dict['dateOfBirth'] = None
 
         return _dict
 
@@ -215,7 +145,7 @@ class BoostGetBoost200ResponseBoostIssuerAnyOf(BaseModel):
 
         _values = {
             "id": obj.get("id"),
-            "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "name": obj.get("name"),
             "url": obj.get("url"),
             "phone": obj.get("phone"),

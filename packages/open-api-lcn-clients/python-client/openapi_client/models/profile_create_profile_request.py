@@ -40,6 +40,7 @@ class ProfileCreateProfileRequest(BaseModel):
     email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Numeric LinkedIn organization ID.", alias="linkedInOrganizationId")
     website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
@@ -51,7 +52,7 @@ class ProfileCreateProfileRequest(BaseModel):
     locale: Optional[StrictStr] = Field(default=None, description="BCP-47 language tag (e.g. 'es', 'fr', 'ar') — the user's preferred language for server-sent notifications and emails.")
     approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
     auth_token: Optional[StrictStr] = Field(default=None, alias="authToken")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved", "authToken"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "linkedInOrganizationId", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved", "authToken"]
 
     @field_validator('profile_visibility')
     def profile_visibility_validate_enum(cls, value):
@@ -71,6 +72,16 @@ class ProfileCreateProfileRequest(BaseModel):
 
         if value not in set(['anyone', 'invite_only']):
             raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d+$", value):
+            raise ValueError(r"must validate the regular expression /^\d+$/")
         return value
 
     @field_validator('notifications_webhook', mode="before")
@@ -125,11 +136,6 @@ class ProfileCreateProfileRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
-        # set to None if auth_token (nullable) is None
-        # and model_fields_set contains the field
-        if self.auth_token is None and "auth_token" in self.model_fields_set:
-            _dict['authToken'] = None
-
         return _dict
 
     @classmethod
@@ -153,6 +159,7 @@ class ProfileCreateProfileRequest(BaseModel):
             "email": obj.get("email"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "websiteLink": obj.get("websiteLink"),
             "type": obj.get("type"),
             "notificationsWebhook": obj.get("notificationsWebhook"),

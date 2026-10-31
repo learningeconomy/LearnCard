@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,8 +29,8 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
     WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
     """ # noqa: E501
     query: List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner]
-    challenge: Optional[StrictStr]
-    domain: Optional[StrictStr]
+    challenge: StrictStr
+    domain: StrictStr
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["query", "challenge", "domain"]
 
@@ -85,16 +85,6 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(Bas
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.challenge is None and "challenge" in self.model_fields_set:
-            _dict['challenge'] = None
-
-        # set to None if domain (nullable) is None
-        # and model_fields_set contains the field
-        if self.domain is None and "domain" in self.model_fields_set:
-            _dict['domain'] = None
 
         return _dict
 

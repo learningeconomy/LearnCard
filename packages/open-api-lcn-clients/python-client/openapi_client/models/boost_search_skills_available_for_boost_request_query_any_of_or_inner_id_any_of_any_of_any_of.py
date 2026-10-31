@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOfAnyO
     """
     BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOfAnyOfAnyOf
     """ # noqa: E501
-    var_in: List[Optional[StrictStr]] = Field(alias="$in")
+    var_in: List[StrictStr] = Field(alias="$in")
     __properties: ClassVar[List[str]] = ["$in"]
 
     model_config = ConfigDict(

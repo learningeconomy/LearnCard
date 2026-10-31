@@ -47,7 +47,7 @@ class ActivityApi:
     @validate_call
     def activity_get_activity(
         self,
-        activity_id: Optional[StrictStr],
+        activity_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -119,7 +119,7 @@ class ActivityApi:
     @validate_call
     def activity_get_activity_with_http_info(
         self,
-        activity_id: Optional[StrictStr],
+        activity_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -191,7 +191,7 @@ class ActivityApi:
     @validate_call
     def activity_get_activity_without_preload_content(
         self,
-        activity_id: Optional[StrictStr],
+        activity_id: StrictStr,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],

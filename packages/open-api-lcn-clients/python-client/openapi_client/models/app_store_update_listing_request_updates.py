@@ -84,8 +84,8 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -127,16 +127,6 @@ class AppStoreUpdateListingRequestUpdates(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if full_description (nullable) is None
-        # and model_fields_set contains the field
-        if self.full_description is None and "full_description" in self.model_fields_set:
-            _dict['full_description'] = None
-
-        # set to None if launch_config_json (nullable) is None
-        # and model_fields_set contains the field
-        if self.launch_config_json is None and "launch_config_json" in self.model_fields_set:
-            _dict['launch_config_json'] = None
-
         # set to None if min_age (nullable) is None
         # and model_fields_set contains the field
         if self.min_age is None and "min_age" in self.model_fields_set:

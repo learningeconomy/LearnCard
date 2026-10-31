@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
-from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_write import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,7 +30,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTerms
     """ # noqa: E501
     read: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
-    write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite
+    write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["read", "write", "deniedWriters"]
@@ -100,7 +100,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
 
         _values = {
             "read": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
-            "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
+            "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class InboxApproveGuardianCredentialInApp200Response(BaseModel):
     """
     InboxApproveGuardianCredentialInApp200Response
     """ # noqa: E501
-    success: Optional[StrictBool]
+    success: StrictBool
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["success"]
 
@@ -76,11 +76,6 @@ class InboxApproveGuardianCredentialInApp200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if success (nullable) is None
-        # and model_fields_set contains the field
-        if self.success is None and "success" in self.model_fields_set:
-            _dict['success'] = None
 
         return _dict
 

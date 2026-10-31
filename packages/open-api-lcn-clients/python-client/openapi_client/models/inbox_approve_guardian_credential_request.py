@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class InboxApproveGuardianCredentialRequest(BaseModel):
     """
     InboxApproveGuardianCredentialRequest
     """ # noqa: E501
-    otp_code: Optional[StrictStr] = Field(alias="otpCode")
+    otp_code: StrictStr = Field(alias="otpCode")
     __properties: ClassVar[List[str]] = ["otpCode"]
 
     model_config = ConfigDict(
@@ -69,11 +69,6 @@ class InboxApproveGuardianCredentialRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if otp_code (nullable) is None
-        # and model_fields_set contains the field
-        if self.otp_code is None and "otp_code" in self.model_fields_set:
-            _dict['otpCode'] = None
-
         return _dict
 
     @classmethod

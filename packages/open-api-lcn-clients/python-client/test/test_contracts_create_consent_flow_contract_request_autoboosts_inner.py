@@ -36,14 +36,14 @@ class TestContractsCreateConsentFlowContractRequestAutoboostsInner(unittest.Test
         if include_optional:
             return ContractsCreateConsentFlowContractRequestAutoboostsInner(
                 boost_uri = '',
-                signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
+                signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
                     name = '', 
                     endpoint = '', )
             )
         else:
             return ContractsCreateConsentFlowContractRequestAutoboostsInner(
                 boost_uri = '',
-                signing_authority = openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner_signing_authority.contracts_createConsentFlowContract_request_autoboosts_inner_signingAuthority(
+                signing_authority = openapi_client.models.boost_send_boost_via_signing_authority_request_signing_authority.boost_sendBoostViaSigningAuthority_request_signingAuthority(
                     name = '', 
                     endpoint = '', ),
         )

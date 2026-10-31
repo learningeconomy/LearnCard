@@ -86,16 +86,6 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCr
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if share_all (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_all is None and "share_all" in self.model_fields_set:
-            _dict['shareAll'] = None
-
-        # set to None if sharing (nullable) is None
-        # and model_fields_set contains the field
-        if self.sharing is None and "sharing" in self.model_fields_set:
-            _dict['sharing'] = None
-
         return _dict
 
     @classmethod

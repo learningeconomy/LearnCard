@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.boost_allocate_credential_status200_response_inner_status_list_index import BoostAllocateCredentialStatus200ResponseInnerStatusListIndex
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,11 +28,11 @@ class BoostAllocateCredentialStatus200ResponseInner(BaseModel):
     """
     BoostAllocateCredentialStatus200ResponseInner
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     type: StrictStr
     status_purpose: StrictStr = Field(alias="statusPurpose")
     status_list_index: BoostAllocateCredentialStatus200ResponseInnerStatusListIndex = Field(alias="statusListIndex")
-    status_list_credential: Optional[StrictStr] = Field(alias="statusListCredential")
+    status_list_credential: StrictStr = Field(alias="statusListCredential")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "type", "statusPurpose", "statusListIndex", "statusListCredential"]
 
@@ -98,16 +98,6 @@ class BoostAllocateCredentialStatus200ResponseInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if status_list_credential (nullable) is None
-        # and model_fields_set contains the field
-        if self.status_list_credential is None and "status_list_credential" in self.model_fields_set:
-            _dict['statusListCredential'] = None
 
         return _dict
 

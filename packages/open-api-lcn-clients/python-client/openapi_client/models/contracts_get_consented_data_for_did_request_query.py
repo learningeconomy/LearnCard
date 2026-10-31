@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
-from openapi_client.models.contracts_get_consented_data_for_did_request_query_credentials import ContractsGetConsentedDataForDidRequestQueryCredentials
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
+from openapi_client.models.contracts_get_consented_data_for_contract_request_query_credentials import ContractsGetConsentedDataForContractRequestQueryCredentials
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,9 +29,9 @@ class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
     """
     ContractsGetConsentedDataForDidRequestQuery
     """ # noqa: E501
-    credentials: Optional[ContractsGetConsentedDataForDidRequestQueryCredentials] = None
+    credentials: Optional[ContractsGetConsentedDataForContractRequestQueryCredentials] = None
     personal: Optional[Dict[str, StrictBool]] = None
-    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
     __properties: ClassVar[List[str]] = ["credentials", "personal", "id"]
 
     model_config = ConfigDict(
@@ -91,9 +91,9 @@ class ContractsGetConsentedDataForDidRequestQuery(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "credentials": ContractsGetConsentedDataForDidRequestQueryCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
+            "credentials": ContractsGetConsentedDataForContractRequestQueryCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": obj.get("personal"),
-            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None
+            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["id"]) if obj.get("id") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of1_recipients_inner_header import StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner(BaseModel):
     StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner
     """ # noqa: E501
     header: StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader
-    encrypted_key: Optional[StrictStr]
+    encrypted_key: StrictStr
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["header", "encrypted_key"]
 
@@ -81,11 +81,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if encrypted_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.encrypted_key is None and "encrypted_key" in self.model_fields_set:
-            _dict['encrypted_key'] = None
 
         return _dict
 

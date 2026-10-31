@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.contracts_consent_to_contract_request_terms import ContractsConsentToContractRequestTerms
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,11 +30,13 @@ class ContractsConsentToContractRequest(BaseModel):
     ContractsConsentToContractRequest
     """ # noqa: E501
     terms: ContractsConsentToContractRequestTerms
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
+    contract_uri: StrictStr = Field(alias="contractUri")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
+    expected_request_id: Optional[Annotated[str, Field(min_length=1, strict=True)]] = Field(default=None, alias="expectedRequestId")
     recipient_token: Optional[StrictStr] = Field(default=None, alias="recipientToken")
-    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime", "recipientToken"]
+    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime", "audienceVersion", "expectedRequestId", "recipientToken"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -77,26 +80,6 @@ class ContractsConsentToContractRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
-            _dict['contractUri'] = None
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
-        # set to None if one_time (nullable) is None
-        # and model_fields_set contains the field
-        if self.one_time is None and "one_time" in self.model_fields_set:
-            _dict['oneTime'] = None
-
-        # set to None if recipient_token (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_token is None and "recipient_token" in self.model_fields_set:
-            _dict['recipientToken'] = None
-
         return _dict
 
     @classmethod
@@ -113,6 +96,8 @@ class ContractsConsentToContractRequest(BaseModel):
             "contractUri": obj.get("contractUri"),
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
+            "audienceVersion": obj.get("audienceVersion"),
+            "expectedRequestId": obj.get("expectedRequestId"),
             "recipientToken": obj.get("recipientToken")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

@@ -33,6 +33,13 @@ class TestAppStoreAdminApi(unittest.TestCase):
         """
         pass
 
+    def test_app_store_admin_review_listing_update(self) -> None:
+        """Test case for app_store_admin_review_listing_update
+
+        Review Listing Update (Admin)
+        """
+        pass
+
     def test_app_store_admin_update_listing_status(self) -> None:
         """Test case for app_store_admin_update_listing_status
 

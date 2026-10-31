@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_store_request_item_any_of_any_of_any_of import StorageStoreRequestItemAnyOfAnyOfAnyOf
+from openapi_client.models.presentation_send_presentation_request_presentation_any_of import PresentationSendPresentationRequestPresentationAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
     """
     WorkflowsParticipateInExchangeRequest
     """ # noqa: E501
-    verifiable_presentation: Optional[StorageStoreRequestItemAnyOfAnyOfAnyOf] = Field(default=None, alias="verifiablePresentation")
+    verifiable_presentation: Optional[PresentationSendPresentationRequestPresentationAnyOf] = Field(default=None, alias="verifiablePresentation")
     __properties: ClassVar[List[str]] = ["verifiablePresentation"]
 
     model_config = ConfigDict(
@@ -85,7 +85,7 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "verifiablePresentation": StorageStoreRequestItemAnyOfAnyOfAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None
+            "verifiablePresentation": PresentationSendPresentationRequestPresentationAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -42,8 +42,8 @@ class InboxGetBatch200ResponseItemsInnerResultOneOfRecipientOneOf(BaseModel):
     @field_validator('value', mode="before")
     def value_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(

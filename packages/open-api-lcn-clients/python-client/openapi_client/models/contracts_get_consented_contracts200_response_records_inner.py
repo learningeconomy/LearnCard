@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_consent_flow_contract200_response import ContractsGetConsentFlowContract200Response
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_referral import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral
 from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
@@ -33,12 +34,13 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
     terms: StorageResolve200ResponseAnyOf1
+    referral: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral] = None
     contract: ContractsGetConsentFlowContract200Response
-    uri: Optional[StrictStr]
+    uri: StrictStr
     consenter: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: StrictStr
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "contract", "uri", "consenter", "status"]
+    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "referral", "contract", "uri", "consenter", "status"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -91,6 +93,9 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of referral
+        if self.referral:
+            _dict['referral'] = self.referral.to_dict()
         # override the default output from pydantic by calling `to_dict()` of contract
         if self.contract:
             _dict['contract'] = self.contract.to_dict()
@@ -101,21 +106,6 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
-            _dict['expiresAt'] = None
-
-        # set to None if one_time (nullable) is None
-        # and model_fields_set contains the field
-        if self.one_time is None and "one_time" in self.model_fields_set:
-            _dict['oneTime'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
 
         return _dict
 
@@ -132,6 +122,7 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
             "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "referral": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.from_dict(obj["referral"]) if obj.get("referral") is not None else None,
             "contract": ContractsGetConsentFlowContract200Response.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "uri": obj.get("uri"),
             "consenter": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,

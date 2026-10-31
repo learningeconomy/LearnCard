@@ -28,10 +28,10 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
     """
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerGuardianApproval
     """ # noqa: E501
-    guardian_profile_id: Optional[StrictStr] = Field(alias="guardianProfileId")
-    guardian_did: Optional[StrictStr] = Field(alias="guardianDid")
+    guardian_profile_id: StrictStr = Field(alias="guardianProfileId")
+    guardian_did: StrictStr = Field(alias="guardianDid")
     approved_at: Optional[datetime] = Field(alias="approvedAt")
-    contract_updated_at: Optional[StrictStr] = Field(alias="contractUpdatedAt")
+    contract_updated_at: StrictStr = Field(alias="contractUpdatedAt")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["guardianProfileId", "guardianDid", "approvedAt", "contractUpdatedAt"]
 
@@ -41,8 +41,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     model_config = ConfigDict(
@@ -91,25 +91,10 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransaction
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if guardian_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_profile_id is None and "guardian_profile_id" in self.model_fields_set:
-            _dict['guardianProfileId'] = None
-
-        # set to None if guardian_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_did is None and "guardian_did" in self.model_fields_set:
-            _dict['guardianDid'] = None
-
         # set to None if approved_at (nullable) is None
         # and model_fields_set contains the field
         if self.approved_at is None and "approved_at" in self.model_fields_set:
             _dict['approvedAt'] = None
-
-        # set to None if contract_updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set:
-            _dict['contractUpdatedAt'] = None
 
         return _dict
 

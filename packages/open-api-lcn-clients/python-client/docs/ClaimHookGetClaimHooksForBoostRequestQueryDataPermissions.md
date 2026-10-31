@@ -2,21 +2,21 @@
 
 ## Properties
 
-| Name                                | Type                                                                                                                                              | Description | Notes      |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **role**                            | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **can_view**                        | **bool**                                                                                                                                          |             | [optional] |
-| **can_edit**                        | **bool**                                                                                                                                          |             | [optional] |
-| **can_issue**                       | **bool**                                                                                                                                          |             | [optional] |
-| **can_revoke**                      | **bool**                                                                                                                                          |             | [optional] |
-| **can_manage_permissions**          | **bool**                                                                                                                                          |             | [optional] |
-| **can_issue_children**              | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **can_create_children**             | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **can_edit_children**               | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **can_revoke_children**             | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **can_manage_children_permissions** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **can_manage_children_profiles**    | **bool**                                                                                                                                          |             | [optional] |
-| **can_view_analytics**              | **bool**                                                                                                                                          |             | [optional] |
+| Name                                | Type                                                                                                                                | Description | Notes      |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **role**                            | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **can_view**                        | **bool**                                                                                                                            |             | [optional] |
+| **can_edit**                        | **bool**                                                                                                                            |             | [optional] |
+| **can_issue**                       | **bool**                                                                                                                            |             | [optional] |
+| **can_revoke**                      | **bool**                                                                                                                            |             | [optional] |
+| **can_manage_permissions**          | **bool**                                                                                                                            |             | [optional] |
+| **can_issue_children**              | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **can_create_children**             | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **can_edit_children**               | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **can_revoke_children**             | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **can_manage_children_permissions** | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **can_manage_children_profiles**    | **bool**                                                                                                                            |             | [optional] |
+| **can_view_analytics**              | **bool**                                                                                                                            |             | [optional] |
 
 ## Example
 

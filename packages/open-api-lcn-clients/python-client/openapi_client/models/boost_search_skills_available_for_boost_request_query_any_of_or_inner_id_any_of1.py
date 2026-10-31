@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
     """
     BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1
     """ # noqa: E501
-    var_or: List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner] = Field(alias="$or")
+    var_or: List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf] = Field(alias="$or")
     __properties: ClassVar[List[str]] = ["$or"]
 
     model_config = ConfigDict(
@@ -88,7 +88,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
             return cls.model_validate(obj)
 
         _values = {
-            "$or": [BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner.from_dict(_item) for _item in obj["$or"]] if obj.get("$or") is not None else None
+            "$or": [BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf.from_dict(_item) for _item in obj["$or"]] if obj.get("$or") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

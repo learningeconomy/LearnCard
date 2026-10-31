@@ -29,7 +29,7 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInner(BaseModel):
     BoostGetPaginatedBoostRecipients200ResponseRecordsInner
     """ # noqa: E501
     to: BoostGetPaginatedBoostRecipients200ResponseRecordsInnerTo
-    var_from: Optional[StrictStr] = Field(alias="from")
+    var_from: StrictStr = Field(alias="from")
     received: Optional[StrictStr] = None
     uri: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
@@ -94,21 +94,6 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if var_from (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_from is None and "var_from" in self.model_fields_set:
-            _dict['from'] = None
-
-        # set to None if received (nullable) is None
-        # and model_fields_set contains the field
-        if self.received is None and "received" in self.model_fields_set:
-            _dict['received'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
 
         return _dict
 

@@ -31,7 +31,7 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf(BaseModel):
     InboxGetBatch200ResponseItemsInnerResultOneOf
     """ # noqa: E501
     refresh: Optional[InboxIssue200ResponseRefresh] = None
-    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
+    issuance_id: StrictStr = Field(alias="issuanceId")
     status: StrictStr
     recipient: InboxGetBatch200ResponseItemsInnerResultOneOfRecipient
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
@@ -119,26 +119,6 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if issuance_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
-            _dict['issuanceId'] = None
-
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
-            _dict['recipientDid'] = None
-
-        # set to None if deduplicated (nullable) is None
-        # and model_fields_set contains the field
-        if self.deduplicated is None and "deduplicated" in self.model_fields_set:
-            _dict['deduplicated'] = None
-
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
-            _dict['idempotencyKey'] = None
 
         return _dict
 

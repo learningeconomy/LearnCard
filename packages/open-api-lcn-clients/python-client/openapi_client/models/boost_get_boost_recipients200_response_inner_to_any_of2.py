@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of1_display import BoostGetBoostRecipients200ResponseInnerToAnyOf1Display
@@ -34,11 +34,22 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf2(BaseModel):
     short_bio: StrictStr = Field(description="Short bio for the profile.", alias="shortBio")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Numeric LinkedIn organization ID.", alias="linkedInOrganizationId")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
     display: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf1Display] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "image", "heroImage", "type", "isServiceProfile", "display"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "image", "heroImage", "linkedInOrganizationId", "type", "isServiceProfile", "display"]
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d+$", value):
+            raise ValueError(r"must validate the regular expression /^\d+$/")
+        return value
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -106,6 +117,7 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf2(BaseModel):
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "type": obj.get("type"),
             "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
             "display": BoostGetBoostRecipients200ResponseInnerToAnyOf1Display.from_dict(obj["display"]) if obj.get("display") is not None else None

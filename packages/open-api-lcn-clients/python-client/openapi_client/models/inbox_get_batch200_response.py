@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.inbox_get_batch200_response_items_inner import InboxGetBatch200ResponseItemsInner
 from openapi_client.models.inbox_get_batch200_response_summary import InboxGetBatch200ResponseSummary
 from typing import Optional, Set
@@ -29,8 +29,8 @@ class InboxGetBatch200Response(BaseModel):
     """
     InboxGetBatch200Response
     """ # noqa: E501
-    batch_id: Optional[StrictStr] = Field(alias="batchId")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    batch_id: StrictStr = Field(alias="batchId")
+    created_at: StrictStr = Field(alias="createdAt")
     done: StrictBool = Field(description="True when no queued or processing items remain, including unconfirmed outcomes.")
     status: StrictStr
     items: List[InboxGetBatch200ResponseItemsInner]
@@ -99,16 +99,6 @@ class InboxGetBatch200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if batch_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.batch_id is None and "batch_id" in self.model_fields_set:
-            _dict['batchId'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
 
         return _dict
 

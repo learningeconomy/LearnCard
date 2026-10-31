@@ -28,14 +28,17 @@ class ShareLinksRetryRequest(BaseModel):
     """
     ShareLinksRetryRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
-    operation_id: UUID = Field(alias="operationId")
+    id: StrictStr
+    operation_id: Optional[UUID] = Field(alias="operationId")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "operationId"]
 
     @field_validator('operation_id', mode="before")
     def operation_id_validate_regular_expression(cls, value):
         """Validates the regular expression"""
+        if value is None:
+            return value
+
         if isinstance(value, str) and not re.match(r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", value):
             raise ValueError(r"must validate the regular expression /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/")
         return value
@@ -86,10 +89,10 @@ class ShareLinksRetryRequest(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
+        # set to None if operation_id (nullable) is None
         # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
+        if self.operation_id is None and "operation_id" in self.model_fields_set:
+            _dict['operationId'] = None
 
         return _dict
 

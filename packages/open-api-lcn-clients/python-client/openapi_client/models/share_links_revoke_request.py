@@ -29,7 +29,7 @@ class ShareLinksRevokeRequest(BaseModel):
     """
     ShareLinksRevokeRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     expected_version: Optional[Annotated[int, Field(le=2147483647, strict=True, ge=1)]] = Field(default=None, alias="expectedVersion")
     client_request_id: Optional[UUID] = Field(default=None, alias="clientRequestId")
     additional_properties: Dict[str, Any] = {}
@@ -91,10 +91,10 @@ class ShareLinksRevokeRequest(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
+        # set to None if client_request_id (nullable) is None
         # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
+        if self.client_request_id is None and "client_request_id" in self.model_fields_set:
+            _dict['clientRequestId'] = None
 
         return _dict
 

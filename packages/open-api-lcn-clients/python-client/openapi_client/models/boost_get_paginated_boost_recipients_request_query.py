@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,14 +28,14 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
     """
     BoostGetPaginatedBoostRecipientsRequestQuery
     """ # noqa: E501
-    profile_id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="profileId")
-    display_name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="displayName")
-    short_bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="shortBio")
-    bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    email: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    website_link: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="websiteLink")
+    profile_id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="profileId")
+    display_name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="displayName")
+    short_bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="shortBio")
+    bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    email: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    website_link: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="websiteLink")
     is_service_profile: Optional[StrictBool] = Field(default=None, alias="isServiceProfile")
-    type: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    type: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
     __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "email", "websiteLink", "isServiceProfile", "type"]
 
     model_config = ConfigDict(
@@ -98,11 +98,6 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
             _dict['type'] = self.type.to_dict()
-        # set to None if is_service_profile (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_service_profile is None and "is_service_profile" in self.model_fields_set:
-            _dict['isServiceProfile'] = None
-
         return _dict
 
     @classmethod
@@ -115,14 +110,14 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "profileId": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["profileId"]) if obj.get("profileId") is not None else None,
-            "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
-            "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
-            "bio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["bio"]) if obj.get("bio") is not None else None,
-            "email": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["email"]) if obj.get("email") is not None else None,
-            "websiteLink": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["websiteLink"]) if obj.get("websiteLink") is not None else None,
+            "profileId": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["profileId"]) if obj.get("profileId") is not None else None,
+            "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
+            "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
+            "bio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["bio"]) if obj.get("bio") is not None else None,
+            "email": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["email"]) if obj.get("email") is not None else None,
+            "websiteLink": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["websiteLink"]) if obj.get("websiteLink") is not None else None,
             "isServiceProfile": obj.get("isServiceProfile"),
-            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None
+            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["type"]) if obj.get("type") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

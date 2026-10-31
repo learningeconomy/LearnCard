@@ -5,7 +5,7 @@
 | Name                   | Type                                                                                                                                      | Description | Notes      |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
 | **id**                 | **str**                                                                                                                                   |             | [optional] |
-| **type**               | [**BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType**](BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.md)                   |             | [optional] |
+| **type**               | [**BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType**](BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.md)                         |             | [optional] |
 | **name**               | **str**                                                                                                                                   |             | [optional] |
 | **url**                | **str**                                                                                                                                   |             | [optional] |
 | **phone**              | **str**                                                                                                                                   |             | [optional] |

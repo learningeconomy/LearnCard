@@ -20,27 +20,27 @@ import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Optional
 from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
-from openapi_client.models.storage_resolve200_response_any_of_any_of_any_of_any_of_any_of_any_of1 import StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
+from openapi_client.models.storage_store_request_item_any_of1 import StorageStoreRequestItemAnyOf1
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-STORAGERESOLVE200RESPONSEANYOFANYOFANYOFANYOFANYOF_ANY_OF_SCHEMAS = ["StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf", "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1"]
+STORAGERESOLVE200RESPONSEANYOFANYOFANYOFANYOFANYOF_ANY_OF_SCHEMAS = ["StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf", "StorageStoreRequestItemAnyOf1"]
 
 class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf
     """
 
+    # data type: StorageStoreRequestItemAnyOf1
+    anyof_schema_1_validator: Optional[StorageStoreRequestItemAnyOf1] = None
     # data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
-    anyof_schema_1_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf] = None
-    # data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
-    anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1] = None
+    anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1]] = None
+        actual_instance: Optional[Union[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageStoreRequestItemAnyOf1]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf", "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1" }
+    any_of_schemas: Set[str] = { "StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf", "StorageStoreRequestItemAnyOf1" }
 
     model_config = {
         "validate_assignment": True,
@@ -61,21 +61,21 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
     def actual_instance_must_validate_anyof(cls, v):
         instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf.model_construct()
         error_messages = []
+        # validate data type: StorageStoreRequestItemAnyOf1
+        if not isinstance(v, StorageStoreRequestItemAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `StorageStoreRequestItemAnyOf1`")
+        else:
+            return v
+
         # validate data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf
         if not isinstance(v, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf):
             error_messages.append(f"Error! Input type `{type(v)}` is not `StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf`")
         else:
             return v
 
-        # validate data type: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1
-        if not isinstance(v, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1`")
-        else:
-            return v
-
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageStoreRequestItemAnyOf1. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -88,22 +88,22 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
         """Returns the object represented by the json string"""
         instance = cls.model_construct()
         error_messages = []
-        # anyof_schema_1_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf] = None
+        # anyof_schema_1_validator: Optional[StorageStoreRequestItemAnyOf1] = None
         try:
-            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf.from_json(json_str)
+            instance.actual_instance = StorageStoreRequestItemAnyOf1.from_json(json_str)
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
-        # anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1] = None
+        # anyof_schema_2_validator: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf] = None
         try:
-            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1.from_json(json_str)
+            instance.actual_instance = StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf.from_json(json_str)
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf with anyOf schemas: StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageStoreRequestItemAnyOf1. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -117,7 +117,7 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf1]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf, StorageStoreRequestItemAnyOf1]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

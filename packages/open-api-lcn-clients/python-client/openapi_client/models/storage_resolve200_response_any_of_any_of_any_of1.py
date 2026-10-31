@@ -28,10 +28,10 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOfAnyOf1
     """ # noqa: E501
-    protected: Optional[StrictStr]
-    iv: Optional[StrictStr]
-    ciphertext: Optional[StrictStr]
-    tag: Optional[StrictStr]
+    protected: StrictStr
+    iv: StrictStr
+    ciphertext: StrictStr
+    tag: StrictStr
     aad: Optional[StrictStr] = None
     recipients: Optional[List[StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner]] = None
     additional_properties: Dict[str, Any] = {}
@@ -88,31 +88,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if protected (nullable) is None
-        # and model_fields_set contains the field
-        if self.protected is None and "protected" in self.model_fields_set:
-            _dict['protected'] = None
-
-        # set to None if iv (nullable) is None
-        # and model_fields_set contains the field
-        if self.iv is None and "iv" in self.model_fields_set:
-            _dict['iv'] = None
-
-        # set to None if ciphertext (nullable) is None
-        # and model_fields_set contains the field
-        if self.ciphertext is None and "ciphertext" in self.model_fields_set:
-            _dict['ciphertext'] = None
-
-        # set to None if tag (nullable) is None
-        # and model_fields_set contains the field
-        if self.tag is None and "tag" in self.model_fields_set:
-            _dict['tag'] = None
-
-        # set to None if aad (nullable) is None
-        # and model_fields_set contains the field
-        if self.aad is None and "aad" in self.model_fields_set:
-            _dict['aad'] = None
 
         return _dict
 

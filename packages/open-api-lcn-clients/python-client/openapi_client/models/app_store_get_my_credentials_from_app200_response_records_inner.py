@@ -27,9 +27,9 @@ class AppStoreGetMyCredentialsFromApp200ResponseRecordsInner(BaseModel):
     """
     AppStoreGetMyCredentialsFromApp200ResponseRecordsInner
     """ # noqa: E501
-    credential_id: Optional[StrictStr] = Field(alias="credentialId")
-    credential_uri: Optional[StrictStr] = Field(alias="credentialUri")
-    var_date: Optional[StrictStr] = Field(alias="date")
+    credential_id: StrictStr = Field(alias="credentialId")
+    credential_uri: StrictStr = Field(alias="credentialUri")
+    var_date: StrictStr = Field(alias="date")
     status: StrictStr
     boost_name: Optional[StrictStr] = Field(default=None, alias="boostName")
     boost_category: Optional[StrictStr] = Field(default=None, alias="boostCategory")
@@ -89,36 +89,6 @@ class AppStoreGetMyCredentialsFromApp200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if credential_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_id is None and "credential_id" in self.model_fields_set:
-            _dict['credentialId'] = None
-
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
-            _dict['credentialUri'] = None
-
-        # set to None if var_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_date is None and "var_date" in self.model_fields_set:
-            _dict['date'] = None
-
-        # set to None if boost_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_name is None and "boost_name" in self.model_fields_set:
-            _dict['boostName'] = None
-
-        # set to None if boost_category (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_category is None and "boost_category" in self.model_fields_set:
-            _dict['boostCategory'] = None
-
-        # set to None if activity_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.activity_id is None and "activity_id" in self.model_fields_set:
-            _dict['activityId'] = None
 
         return _dict
 

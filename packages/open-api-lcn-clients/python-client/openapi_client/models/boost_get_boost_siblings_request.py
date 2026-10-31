@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
+from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,8 +31,8 @@ class BoostGetBoostSiblingsRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    uri: Optional[StrictStr]
-    query: Optional[BoostCountBoostsRequestQuery] = None
+    uri: StrictStr
+    query: Optional[BoostGetBoostsRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "query"]
 
     model_config = ConfigDict(
@@ -77,21 +77,6 @@ class BoostGetBoostSiblingsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
-            _dict['cursor'] = None
-
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
-            _dict['sort'] = None
-
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
-            _dict['uri'] = None
-
         return _dict
 
     @classmethod
@@ -108,7 +93,7 @@ class BoostGetBoostSiblingsRequest(BaseModel):
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "uri": obj.get("uri"),
-            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
+            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

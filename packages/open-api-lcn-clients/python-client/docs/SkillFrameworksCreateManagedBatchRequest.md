@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name           | Type                                                                                                                            | Description | Notes |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **frameworks** | [**List[SkillFrameworksCreateManagedBatchRequestFrameworksInner]**](SkillFrameworksCreateManagedBatchRequestFrameworksInner.md) |             |
+| Name           | Type                                                                                    | Description | Notes |
+| -------------- | --------------------------------------------------------------------------------------- | ----------- | ----- |
+| **frameworks** | [**List[SkillFrameworksCreateManagedRequest]**](SkillFrameworksCreateManagedRequest.md) |             |
 
 ## Example
 

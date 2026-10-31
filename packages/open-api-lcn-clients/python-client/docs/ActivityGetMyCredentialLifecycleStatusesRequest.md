@@ -2,9 +2,9 @@
 
 ## Properties
 
-| Name     | Type                    | Description | Notes |
-| -------- | ----------------------- | ----------- | ----- |
-| **uris** | **List[Optional[str]]** |             |
+| Name     | Type          | Description | Notes |
+| -------- | ------------- | ----------- | ----- |
+| **uris** | **List[str]** |             |
 
 ## Example
 

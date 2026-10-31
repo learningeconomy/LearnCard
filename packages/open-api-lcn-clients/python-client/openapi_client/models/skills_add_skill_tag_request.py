@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.skills_add_skill_tag_request_tag import SkillsAddSkillTagRequestTag
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,7 +28,7 @@ class SkillsAddSkillTagRequest(BaseModel):
     """
     SkillsAddSkillTagRequest
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    framework_id: StrictStr = Field(alias="frameworkId")
     tag: SkillsAddSkillTagRequestTag
     __properties: ClassVar[List[str]] = ["frameworkId", "tag"]
 
@@ -74,11 +74,6 @@ class SkillsAddSkillTagRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of tag
         if self.tag:
             _dict['tag'] = self.tag.to_dict()
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
-            _dict['frameworkId'] = None
-
         return _dict
 
     @classmethod

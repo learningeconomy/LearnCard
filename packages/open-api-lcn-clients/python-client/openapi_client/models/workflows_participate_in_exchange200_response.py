@@ -95,11 +95,6 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
-            _dict['redirectUrl'] = None
-
         return _dict
 
     @classmethod

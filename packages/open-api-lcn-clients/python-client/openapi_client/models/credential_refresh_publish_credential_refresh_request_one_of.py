@@ -87,21 +87,6 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signed_credential
         if self.signed_credential:
             _dict['signedCredential'] = self.signed_credential.to_dict()
-        # set to None if notify_holder (nullable) is None
-        # and model_fields_set contains the field
-        if self.notify_holder is None and "notify_holder" in self.model_fields_set:
-            _dict['notifyHolder'] = None
-
-        # set to None if update_summary (nullable) is None
-        # and model_fields_set contains the field
-        if self.update_summary is None and "update_summary" in self.model_fields_set:
-            _dict['updateSummary'] = None
-
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
-            _dict['idempotencyKey'] = None
-
         return _dict
 
     @classmethod

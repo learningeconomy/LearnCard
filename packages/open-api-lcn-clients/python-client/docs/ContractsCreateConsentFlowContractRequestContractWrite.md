@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name            | Type                                                                                                                                                       | Description | Notes      |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **credentials** | [**ContractsCreateConsentFlowContractRequestContractWriteCredentials**](ContractsCreateConsentFlowContractRequestContractWriteCredentials.md)              |             | [optional] |
-| **personal**    | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]**](ContractsCreateConsentFlowContractRequestContractReadPersonalValue.md) |             | [optional] |
+| Name            | Type                                                                                                                                                                                 | Description | Notes      |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
+| **credentials** | [**ContractsCreateConsentFlowContractRequestContractReadCredentials**](ContractsCreateConsentFlowContractRequestContractReadCredentials.md)                                          |             | [optional] |
+| **personal**    | [**Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]**](ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 

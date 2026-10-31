@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_resolve200_response_any_of1_read import StorageResolve200ResponseAnyOf1Read
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
 from openapi_client.models.storage_resolve200_response_any_of1_write import StorageResolve200ResponseAnyOf1Write
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
     """
     StorageResolve200ResponseAnyOf1
     """ # noqa: E501
-    read: StorageResolve200ResponseAnyOf1Read
+    read: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
     write: StorageResolve200ResponseAnyOf1Write
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
     additional_properties: Dict[str, Any] = {}
@@ -99,7 +99,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "read": StorageResolve200ResponseAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
+            "read": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": StorageResolve200ResponseAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")
         }

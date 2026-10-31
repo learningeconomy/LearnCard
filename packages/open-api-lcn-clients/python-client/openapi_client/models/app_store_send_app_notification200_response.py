@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class AppStoreSendAppNotification200Response(BaseModel):
     """
     AppStoreSendAppNotification200Response
     """ # noqa: E501
-    sent: Optional[StrictBool]
+    sent: StrictBool
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["sent"]
 
@@ -76,11 +76,6 @@ class AppStoreSendAppNotification200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if sent (nullable) is None
-        # and model_fields_set contains the field
-        if self.sent is None and "sent" in self.model_fields_set:
-            _dict['sent'] = None
 
         return _dict
 

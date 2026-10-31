@@ -20,14 +20,14 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_send_boost_request_credential_any_of_credential_status import BoostSendBoostRequestCredentialAnyOfCredentialStatus
-from openapi_client.models.boost_send_request_template_credential_any_of_context_inner import BoostSendRequestTemplateCredentialAnyOfContextInner
-from openapi_client.models.boost_send_request_template_credential_any_of_credential_schema import BoostSendRequestTemplateCredentialAnyOfCredentialSchema
-from openapi_client.models.boost_send_request_template_credential_any_of_credential_subject import BoostSendRequestTemplateCredentialAnyOfCredentialSubject
-from openapi_client.models.boost_send_request_template_credential_any_of_evidence import BoostSendRequestTemplateCredentialAnyOfEvidence
+from openapi_client.models.boost_send_boost_request_credential_any_of_context_inner import BoostSendBoostRequestCredentialAnyOfContextInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_credential_schema import BoostSendBoostRequestCredentialAnyOfCredentialSchema
+from openapi_client.models.boost_send_boost_request_credential_any_of_credential_subject import BoostSendBoostRequestCredentialAnyOfCredentialSubject
+from openapi_client.models.boost_send_boost_request_credential_any_of_evidence import BoostSendBoostRequestCredentialAnyOfEvidence
+from openapi_client.models.boost_send_boost_request_credential_any_of_proof import BoostSendBoostRequestCredentialAnyOfProof
+from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service import BoostSendBoostRequestCredentialAnyOfRefreshService
+from openapi_client.models.boost_send_boost_request_credential_any_of_render_method import BoostSendBoostRequestCredentialAnyOfRenderMethod
 from openapi_client.models.boost_send_request_template_credential_any_of_issuer import BoostSendRequestTemplateCredentialAnyOfIssuer
-from openapi_client.models.boost_send_request_template_credential_any_of_proof import BoostSendRequestTemplateCredentialAnyOfProof
-from openapi_client.models.boost_send_request_template_credential_any_of_render_method import BoostSendRequestTemplateCredentialAnyOfRenderMethod
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -36,25 +36,25 @@ class BoostSendRequestTemplateCredentialAnyOf(BaseModel):
     """
     BoostSendRequestTemplateCredentialAnyOf
     """ # noqa: E501
-    context: List[BoostSendRequestTemplateCredentialAnyOfContextInner] = Field(alias="@context")
+    context: List[BoostSendBoostRequestCredentialAnyOfContextInner] = Field(alias="@context")
     id: Optional[StrictStr] = None
     type: Annotated[List[StrictStr], Field(min_length=1)]
     issuer: BoostSendRequestTemplateCredentialAnyOfIssuer
-    credential_subject: BoostSendRequestTemplateCredentialAnyOfCredentialSubject = Field(alias="credentialSubject")
-    refresh_service: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="refreshService")
-    credential_schema: Optional[BoostSendRequestTemplateCredentialAnyOfCredentialSchema] = Field(default=None, alias="credentialSchema")
+    credential_subject: BoostSendBoostRequestCredentialAnyOfCredentialSubject = Field(alias="credentialSubject")
+    refresh_service: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="refreshService")
+    credential_schema: Optional[BoostSendBoostRequestCredentialAnyOfCredentialSchema] = Field(default=None, alias="credentialSchema")
     issuance_date: Optional[StrictStr] = Field(default=None, alias="issuanceDate")
     expiration_date: Optional[StrictStr] = Field(default=None, alias="expirationDate")
-    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="credentialStatus")
+    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="credentialStatus")
     name: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     valid_from: Optional[StrictStr] = Field(default=None, alias="validFrom")
     valid_until: Optional[StrictStr] = Field(default=None, alias="validUntil")
-    status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = None
-    terms_of_use: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="termsOfUse")
-    evidence: Optional[BoostSendRequestTemplateCredentialAnyOfEvidence] = None
-    render_method: Optional[BoostSendRequestTemplateCredentialAnyOfRenderMethod] = Field(default=None, alias="renderMethod")
-    proof: BoostSendRequestTemplateCredentialAnyOfProof
+    status: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = None
+    terms_of_use: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="termsOfUse")
+    evidence: Optional[BoostSendBoostRequestCredentialAnyOfEvidence] = None
+    render_method: Optional[BoostSendBoostRequestCredentialAnyOfRenderMethod] = Field(default=None, alias="renderMethod")
+    proof: BoostSendBoostRequestCredentialAnyOfProof
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["@context", "id", "type", "issuer", "credentialSubject", "refreshService", "credentialSchema", "issuanceDate", "expirationDate", "credentialStatus", "name", "description", "validFrom", "validUntil", "status", "termsOfUse", "evidence", "renderMethod", "proof"]
 
@@ -152,25 +152,25 @@ class BoostSendRequestTemplateCredentialAnyOf(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "@context": [BoostSendRequestTemplateCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
+            "@context": [BoostSendBoostRequestCredentialAnyOfContextInner.from_dict(_item) for _item in obj["@context"]] if obj.get("@context") is not None else None,
             "id": obj.get("id"),
             "type": obj.get("type"),
             "issuer": BoostSendRequestTemplateCredentialAnyOfIssuer.from_dict(obj["issuer"]) if obj.get("issuer") is not None else None,
-            "credentialSubject": BoostSendRequestTemplateCredentialAnyOfCredentialSubject.from_dict(obj["credentialSubject"]) if obj.get("credentialSubject") is not None else None,
-            "refreshService": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
-            "credentialSchema": BoostSendRequestTemplateCredentialAnyOfCredentialSchema.from_dict(obj["credentialSchema"]) if obj.get("credentialSchema") is not None else None,
+            "credentialSubject": BoostSendBoostRequestCredentialAnyOfCredentialSubject.from_dict(obj["credentialSubject"]) if obj.get("credentialSubject") is not None else None,
+            "refreshService": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
+            "credentialSchema": BoostSendBoostRequestCredentialAnyOfCredentialSchema.from_dict(obj["credentialSchema"]) if obj.get("credentialSchema") is not None else None,
             "issuanceDate": obj.get("issuanceDate"),
             "expirationDate": obj.get("expirationDate"),
-            "credentialStatus": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
+            "credentialStatus": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
             "name": obj.get("name"),
             "description": obj.get("description"),
             "validFrom": obj.get("validFrom"),
             "validUntil": obj.get("validUntil"),
-            "status": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["status"]) if obj.get("status") is not None else None,
-            "termsOfUse": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["termsOfUse"]) if obj.get("termsOfUse") is not None else None,
-            "evidence": BoostSendRequestTemplateCredentialAnyOfEvidence.from_dict(obj["evidence"]) if obj.get("evidence") is not None else None,
-            "renderMethod": BoostSendRequestTemplateCredentialAnyOfRenderMethod.from_dict(obj["renderMethod"]) if obj.get("renderMethod") is not None else None,
-            "proof": BoostSendRequestTemplateCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
+            "status": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["status"]) if obj.get("status") is not None else None,
+            "termsOfUse": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["termsOfUse"]) if obj.get("termsOfUse") is not None else None,
+            "evidence": BoostSendBoostRequestCredentialAnyOfEvidence.from_dict(obj["evidence"]) if obj.get("evidence") is not None else None,
+            "renderMethod": BoostSendBoostRequestCredentialAnyOfRenderMethod.from_dict(obj["renderMethod"]) if obj.get("renderMethod") is not None else None,
+            "proof": BoostSendBoostRequestCredentialAnyOfProof.from_dict(obj["proof"]) if obj.get("proof") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

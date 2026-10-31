@@ -84,31 +84,6 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if is_signed (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_signed is None and "is_signed" in self.model_fields_set:
-            _dict['isSigned'] = None
-
-        # set to None if is_accepted (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
-            _dict['isAccepted'] = None
-
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
-            _dict['issuerDid'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
         return _dict
 
     @classmethod

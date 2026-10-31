@@ -29,8 +29,8 @@ class BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf(BaseModel):
     BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf
     """ # noqa: E501
     type: StrictStr
-    render_suite: Optional[StrictStr] = Field(alias="renderSuite")
-    template: Optional[StrictStr]
+    render_suite: StrictStr = Field(alias="renderSuite")
+    template: StrictStr
     render_property: Optional[List[StrictStr]] = Field(default=None, alias="renderProperty")
     output_preference: Optional[BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOfOutputPreference] = Field(default=None, alias="outputPreference")
     __properties: ClassVar[List[str]] = ["type", "renderSuite", "template", "renderProperty", "outputPreference"]
@@ -84,16 +84,6 @@ class BoostSendBoostRequestCredentialAnyOfRenderMethodAnyOfAnyOf(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of output_preference
         if self.output_preference:
             _dict['outputPreference'] = self.output_preference.to_dict()
-        # set to None if render_suite (nullable) is None
-        # and model_fields_set contains the field
-        if self.render_suite is None and "render_suite" in self.model_fields_set:
-            _dict['renderSuite'] = None
-
-        # set to None if template (nullable) is None
-        # and model_fields_set contains the field
-        if self.template is None and "template" in self.model_fields_set:
-            _dict['template'] = None
-
         return _dict
 
     @classmethod

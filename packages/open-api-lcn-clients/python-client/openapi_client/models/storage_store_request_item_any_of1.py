@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class StorageStoreRequestItemAnyOf1(BaseModel):
     StorageStoreRequestItemAnyOf1
     """ # noqa: E501
     format: StrictStr
-    data: Optional[StrictStr]
+    data: StrictStr
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["format", "data"]
 
@@ -84,11 +84,6 @@ class StorageStoreRequestItemAnyOf1(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if data (nullable) is None
-        # and model_fields_set contains the field
-        if self.data is None and "data" in self.model_fields_set:
-            _dict['data'] = None
 
         return _dict
 

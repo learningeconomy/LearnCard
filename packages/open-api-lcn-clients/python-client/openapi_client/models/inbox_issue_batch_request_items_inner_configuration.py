@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.inbox_issue_batch_request_items_inner_configuration_delivery import InboxIssueBatchRequestItemsInnerConfigurationDelivery
-from openapi_client.models.inbox_issue_batch_request_items_inner_configuration_signing_authority import InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority
+from openapi_client.models.inbox_issue_request_configuration_signing_authority import InboxIssueRequestConfigurationSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
     InboxIssueBatchRequestItemsInnerConfiguration
     """ # noqa: E501
     guardian_email: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Require approval from this guardian before the recipient can claim. Must differ from the recipient email.", alias="guardianEmail")
-    signing_authority: Optional[InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
+    signing_authority: Optional[InboxIssueRequestConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
     webhook_url: Optional[StrictStr] = Field(default=None, description="The webhook URL to receive credential issuance events.", alias="webhookUrl")
     expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.", alias="expiresInDays")
     template_data: Optional[Dict[str, Any]] = Field(default=None, description="Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.", alias="templateData")
@@ -45,8 +45,8 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -112,7 +112,7 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
 
         _values = {
             "guardianEmail": obj.get("guardianEmail"),
-            "signingAuthority": InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
+            "signingAuthority": InboxIssueRequestConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
             "webhookUrl": obj.get("webhookUrl"),
             "expiresInDays": obj.get("expiresInDays"),
             "templateData": obj.get("templateData"),

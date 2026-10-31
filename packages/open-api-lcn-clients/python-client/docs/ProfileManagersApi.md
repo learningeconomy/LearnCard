@@ -339,7 +339,7 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 # **profile_manager_get_managed_profiles**
 
-> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+> ProfileGetManagedServiceProfiles200Response profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
 
 Managed Profiles
 
@@ -351,8 +351,8 @@ This route gets all of your managed profiles
 
 ```python
 import openapi_client
+from openapi_client.models.profile_get_available_profiles_request import ProfileGetAvailableProfilesRequest
 from openapi_client.models.profile_get_managed_service_profiles200_response import ProfileGetManagedServiceProfiles200Response
-from openapi_client.models.profile_manager_get_managed_profiles_request import ProfileManagerGetManagedProfilesRequest
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -376,11 +376,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ProfileManagersApi(api_client)
-    profile_manager_get_managed_profiles_request = openapi_client.ProfileManagerGetManagedProfilesRequest() # ProfileManagerGetManagedProfilesRequest |  (optional)
+    profile_get_available_profiles_request = openapi_client.ProfileGetAvailableProfilesRequest() # ProfileGetAvailableProfilesRequest |  (optional)
 
     try:
         # Managed Profiles
-        api_response = api_instance.profile_manager_get_managed_profiles(profile_manager_get_managed_profiles_request=profile_manager_get_managed_profiles_request)
+        api_response = api_instance.profile_manager_get_managed_profiles(profile_get_available_profiles_request=profile_get_available_profiles_request)
         print("The response of ProfileManagersApi->profile_manager_get_managed_profiles:\n")
         pprint(api_response)
     except Exception as e:
@@ -389,9 +389,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                             | Type                                                                                      | Description | Notes      |
-| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **profile_manager_get_managed_profiles_request** | [**ProfileManagerGetManagedProfilesRequest**](ProfileManagerGetManagedProfilesRequest.md) |             | [optional] |
+| Name                                       | Type                                                                            | Description | Notes      |
+| ------------------------------------------ | ------------------------------------------------------------------------------- | ----------- | ---------- |
+| **profile_get_available_profiles_request** | [**ProfileGetAvailableProfilesRequest**](ProfileGetAvailableProfilesRequest.md) |             | [optional] |
 
 ### Return type
 

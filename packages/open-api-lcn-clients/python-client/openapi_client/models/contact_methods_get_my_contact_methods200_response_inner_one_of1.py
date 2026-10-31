@@ -28,12 +28,12 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf1(BaseModel):
     ContactMethodsGetMyContactMethods200ResponseInnerOneOf1
     """ # noqa: E501
     type: StrictStr
-    value: Optional[StrictStr]
-    id: Optional[StrictStr]
-    is_verified: Optional[StrictBool] = Field(alias="isVerified")
+    value: StrictStr
+    id: StrictStr
+    is_verified: StrictBool = Field(alias="isVerified")
     verified_at: Optional[StrictStr] = Field(default=None, alias="verifiedAt")
-    is_primary: Optional[StrictBool] = Field(alias="isPrimary")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    is_primary: StrictBool = Field(alias="isPrimary")
+    created_at: StrictStr = Field(alias="createdAt")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["type", "value", "id", "isVerified", "verifiedAt", "isPrimary", "createdAt"]
 
@@ -89,36 +89,6 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf1(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if value (nullable) is None
-        # and model_fields_set contains the field
-        if self.value is None and "value" in self.model_fields_set:
-            _dict['value'] = None
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if is_verified (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_verified is None and "is_verified" in self.model_fields_set:
-            _dict['isVerified'] = None
-
-        # set to None if verified_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.verified_at is None and "verified_at" in self.model_fields_set:
-            _dict['verifiedAt'] = None
-
-        # set to None if is_primary (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_primary is None and "is_primary" in self.model_fields_set:
-            _dict['isPrimary'] = None
-
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
-            _dict['createdAt'] = None
 
         return _dict
 

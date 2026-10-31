@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,7 +27,7 @@ class InboxApproveGuardianCredentialInAppRequest(BaseModel):
     """
     InboxApproveGuardianCredentialInAppRequest
     """ # noqa: E501
-    inbox_credential_id: Optional[StrictStr] = Field(alias="inboxCredentialId")
+    inbox_credential_id: StrictStr = Field(alias="inboxCredentialId")
     __properties: ClassVar[List[str]] = ["inboxCredentialId"]
 
     model_config = ConfigDict(
@@ -69,11 +69,6 @@ class InboxApproveGuardianCredentialInAppRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if inbox_credential_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.inbox_credential_id is None and "inbox_credential_id" in self.model_fields_set:
-            _dict['inboxCredentialId'] = None
-
         return _dict
 
     @classmethod

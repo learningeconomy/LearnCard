@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.skills_search_framework_skills_request_query import SkillsSearchFrameworkSkillsRequestQuery
+from openapi_client.models.boost_search_skills_available_for_boost_request_query import BoostSearchSkillsAvailableForBoostRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,8 +29,8 @@ class SkillsSearchFrameworkSkillsRequest(BaseModel):
     """
     SkillsSearchFrameworkSkillsRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
-    query: SkillsSearchFrameworkSkillsRequestQuery
+    id: StrictStr
+    query: BoostSearchSkillsAvailableForBoostRequestQuery
     limit: Optional[Annotated[int, Field(le=200, strict=True, ge=1)]] = 50
     cursor: Optional[StrictStr] = None
     __properties: ClassVar[List[str]] = ["id", "query", "limit", "cursor"]
@@ -77,11 +77,6 @@ class SkillsSearchFrameworkSkillsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
         # set to None if cursor (nullable) is None
         # and model_fields_set contains the field
         if self.cursor is None and "cursor" in self.model_fields_set:
@@ -100,7 +95,7 @@ class SkillsSearchFrameworkSkillsRequest(BaseModel):
 
         _values = {
             "id": obj.get("id"),
-            "query": SkillsSearchFrameworkSkillsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
+            "query": BoostSearchSkillsAvailableForBoostRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
             "limit": obj.get("limit") if obj.get("limit") is not None else 50,
             "cursor": obj.get("cursor")
         }

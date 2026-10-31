@@ -29,14 +29,14 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
     """
     ActivityGetMyActivities200ResponseRecordsInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    activity_id: Optional[StrictStr] = Field(alias="activityId")
+    id: StrictStr
+    activity_id: StrictStr = Field(alias="activityId")
     event_type: StrictStr = Field(alias="eventType")
-    timestamp: Optional[StrictStr]
+    timestamp: StrictStr
     actor_profile_id: Optional[StrictStr] = Field(default=None, alias="actorProfileId")
     on_behalf_of: Optional[StrictStr] = Field(default=None, alias="onBehalfOf")
     recipient_type: StrictStr = Field(alias="recipientType")
-    recipient_identifier: Optional[StrictStr] = Field(alias="recipientIdentifier")
+    recipient_identifier: StrictStr = Field(alias="recipientIdentifier")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     credential_uri: Optional[StrictStr] = Field(default=None, alias="credentialUri")
     inbox_credential_id: Optional[StrictStr] = Field(default=None, alias="inboxCredentialId")
@@ -131,56 +131,6 @@ class ActivityGetMyActivities200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if activity_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.activity_id is None and "activity_id" in self.model_fields_set:
-            _dict['activityId'] = None
-
-        # set to None if timestamp (nullable) is None
-        # and model_fields_set contains the field
-        if self.timestamp is None and "timestamp" in self.model_fields_set:
-            _dict['timestamp'] = None
-
-        # set to None if actor_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.actor_profile_id is None and "actor_profile_id" in self.model_fields_set:
-            _dict['actorProfileId'] = None
-
-        # set to None if on_behalf_of (nullable) is None
-        # and model_fields_set contains the field
-        if self.on_behalf_of is None and "on_behalf_of" in self.model_fields_set:
-            _dict['onBehalfOf'] = None
-
-        # set to None if recipient_identifier (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_identifier is None and "recipient_identifier" in self.model_fields_set:
-            _dict['recipientIdentifier'] = None
-
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
-            _dict['boostUri'] = None
-
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
-            _dict['credentialUri'] = None
-
-        # set to None if inbox_credential_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.inbox_credential_id is None and "inbox_credential_id" in self.model_fields_set:
-            _dict['inboxCredentialId'] = None
-
-        # set to None if integration_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.integration_id is None and "integration_id" in self.model_fields_set:
-            _dict['integrationId'] = None
 
         return _dict
 

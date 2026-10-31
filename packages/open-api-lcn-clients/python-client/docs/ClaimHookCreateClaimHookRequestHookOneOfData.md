@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name            | Type                                                                                      | Description | Notes |
-| --------------- | ----------------------------------------------------------------------------------------- | ----------- | ----- |
-| **claim_uri**   | **str**                                                                                   |             |
-| **target_uri**  | **str**                                                                                   |             |
-| **permissions** | [**BoostCreateBoostRequestClaimPermissions**](BoostCreateBoostRequestClaimPermissions.md) |             |
+| Name            | Type                                                                                        | Description | Notes |
+| --------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **claim_uri**   | **str**                                                                                     |             |
+| **target_uri**  | **str**                                                                                     |             |
+| **permissions** | [**BoostSendRequestTemplateClaimPermissions**](BoostSendRequestTemplateClaimPermissions.md) |             |
 
 ## Example
 
