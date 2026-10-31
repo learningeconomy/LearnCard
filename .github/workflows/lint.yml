@@ -69,6 +69,28 @@ jobs:
             - name: Run LearnCard app and shared library jsx-a11y lint
               run: bun run lint:a11y
 
+    # Fast native lint path (oxlint). Complements WorkspaceLint (ESLint); does not
+    # replace it. #1867 caches ESLint results in WorkspaceLint — leave that job alone.
+    # See .github/OXLINT.md.
+    OxLint:
+        name: Run oxlint (fast path)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            # Same Bun + frozen lockfile as other jobs (cache consumer). package.json
+            # `lint:ox` is SSoT for flags/version — do not re-list them here.
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
+
+            - name: Run oxlint
+              run: bun run lint:ox
+
     WorkspaceLint:
         name: Run workspace lint
         runs-on: ubuntu-latest
