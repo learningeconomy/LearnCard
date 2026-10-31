@@ -1,5 +1,14 @@
 # @learncard/create-http-bridge
 
+## 1.1.264
+
+### Patch Changes
+
+- [#1836](https://github.com/learningeconomy/LearnCard/pull/1836) [`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990) Thanks [@Custard7](https://github.com/Custard7)! - chore: update DIDKit WASM after DIDKit #19
+
+- Updated dependencies []:
+    - @learncard/init@2.5.7
+
 ## 1.1.263
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.90.47
+
+### Patch Changes
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/react@3.0.2
+
 ## 1.90.46
 
 ### Patch Changes
