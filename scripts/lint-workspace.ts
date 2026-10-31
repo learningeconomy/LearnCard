@@ -129,7 +129,7 @@ const runCohort = (paths: readonly string[], index: number): Promise<LintResult[
             '--cache-strategy',
             'content',
             '--cache-location',
-            `.nx-cache/eslint/${index}`,
+            `.nx-cache/eslint/${filesMode ? 'files' : index}`,
             ...existingPaths,
         ],
         {

@@ -13,10 +13,12 @@ A new `debugger` statement still fails. A cache miss simply runs lint cold.
 ## Invalidation and ownership
 
 - `--cache-strategy content` handles fresh-checkout timestamps without trusting
-  size/mtime alone. Each existing cohort keeps its own cache file.
+  size/mtime alone. Each existing cohort keeps its own cache file. Local `--files`
+  runs use a separate `files` cache so they do not replace the first full cohort.
 - The restore prefix includes OS, architecture, a manual schema version, and a
   hash of the lockfile, Bun setup, lint workflow/scripts/baseline, package/project
-  manifests, TypeScript configs, ESLint/Prettier configs and ignore files, and
+  manifests, TypeScript configs, ESLint/Prettier configs, local `eslint-rules`
+  directories, ignore files, and
   editor settings. A change to those inputs starts cold; there is no broader
   fallback prefix. Restore runs before dependency installation.
 - The final key includes the PR head SHA so successful commits can save refreshed
@@ -31,8 +33,9 @@ The current workspace config uses file-local rules, without type-aware linting
 or enabled import-resolution/cycle rules. ESLint does not invalidate a file when
 an imported source file changes. Before adding rules that inspect other files,
 extend invalidation to cover those dependencies or disable this cache; config
-hashing alone only invalidates the first run after a rule change. Keep any new
-external config/rule inputs in **both** key expressions in `lint.yml`.
+hashing alone only invalidates the first run after a rule change. Add any new
+external config/rule inputs to the single `hashFiles` list in the
+**Compute workspace ESLint cache prefix** step in `lint.yml`.
 
 ## Review and troubleshoot
 
@@ -49,8 +52,13 @@ external config/rule inputs in **both** key expressions in `lint.yml`.
    miss that prefix and run cold.
 
 If cache reuse is suspect, delete the affected GitHub Actions cache or bump
-`workspace-eslint-v1` in both key expressions. Reproduce with a cold local run
+`workspace-eslint-v1` in the prefix step. Reproduce with a cold local run
 before changing the lint scope or baseline.
+
+Each successful PR head can save a new immutable cache entry. Check compressed
+entry sizes and overall repository cache usage in **Actions → Caches** after
+hosted runs. If lint entries materially displace other useful caches, consider
+cleanup on PR close. No cleanup job or extra write permissions are added here.
 
 References: [ESLint cache strategy and dependency limitations](https://eslint.org/docs/latest/use/command-line-interface#caching),
 [GitHub cache scope](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache).

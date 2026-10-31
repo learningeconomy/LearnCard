@@ -169,6 +169,25 @@ test('cache invalidates changed rules even when source is unchanged', t => {
     assert.equal(readFileSync(join(root, 'executions'), 'utf8'), 'lint\nlint\n');
 });
 
+test('--files preserves the full run first-cohort cache', t => {
+    const root = createFixtureRoot(t);
+    const config = writeProbeConfig(root);
+    // eslint.config.mjs belongs to the full run's fixed first cohort.
+    writeFileSync(config, readFileSync(config, 'utf8').replace('**/*.js', '**/*.{js,mjs}'));
+    writeFixtureFile(root, 'selected.js', 'void 123;\n');
+    assertPassed(runLint(root));
+    const cohortCache = readFileSync(join(root, '.nx-cache/eslint/0'));
+
+    assertPassed(runLint(root, '--files', 'selected.js'));
+    assert.deepEqual(readFileSync(join(root, '.nx-cache/eslint/0')), cohortCache);
+    assertPassed(runLint(root));
+    assert.equal(readFileSync(join(root, 'executions'), 'utf8'), 'lint\nlint\n');
+
+    // Separate caches still detect content edits in both modes.
+    writeFixtureFile(root, 'selected.js', 'debugger;\n');
+    assertLintError(runLint(root, '--files', 'selected.js'), 'selected.js');
+});
+
 test('cached diagnostics are checked against the current baseline on every run', t => {
     const root = createFixtureRoot(t);
     writeProbeConfig(root);
