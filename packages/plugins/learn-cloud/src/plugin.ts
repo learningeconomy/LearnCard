@@ -89,7 +89,7 @@ export const getLearnCloudPlugin = async (
     const otherClients = new Map<string, Promise<LearnCloudClient>>();
     const learnCloudDids = new WeakMap<LearnCloudClient, Promise<string>>();
 
-    const getLearnCloudDid = (currentClient: LearnCloudClient): Promise<string> => {
+    const getLearnCloudDid = async (currentClient: LearnCloudClient): Promise<string> => {
         let learnCloudDid = learnCloudDids.get(currentClient);
 
         if (!learnCloudDid) {
@@ -97,7 +97,14 @@ export const getLearnCloudPlugin = async (
             learnCloudDids.set(currentClient, learnCloudDid);
         }
 
-        return learnCloudDid;
+        try {
+            return await learnCloudDid;
+        } catch (error) {
+            if (learnCloudDids.get(currentClient) === learnCloudDid) {
+                learnCloudDids.delete(currentClient);
+            }
+            throw error;
+        }
     };
 
     const getOtherClient = async (

@@ -1,7 +1,7 @@
 /*mutations related to boosts */
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type Query } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useWallet, insertItem } from 'learn-card-base';
+import { useWallet, insertItem, switchedProfileStore } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VP, VCValidator } from '@learncard/types';
 
@@ -23,6 +23,8 @@ type useAddCredentialToWalletReturn = {
     vc: VC;
     uri: string;
     id: string;
+    readerDid: string;
+    didWeb: string;
 };
 
 export const useAddCredentialToWallet = () => {
@@ -32,12 +34,11 @@ export const useAddCredentialToWallet = () => {
     return useMutation({
         mutationFn: async (input: AddVCInput) => {
             const wallet = await initWallet();
+            const didWeb = switchedProfileStore.get.switchedDid() ?? '';
             const { uri, id, title, imgUrl, boostUri } = input;
-            let _id = id;
+            const _id = id || uuidv4();
 
             if (!uri) throw new Error('No uri was provided, uri required');
-
-            if (!id) _id = uuidv4();
 
             const vc = await VCValidator.parseAsync(await wallet.read.get(uri));
 
@@ -55,27 +56,33 @@ export const useAddCredentialToWallet = () => {
                 // tags: ['Jamboree 2023'],
             });
 
-            return { vc, category, uri, id };
+            return { vc, category, uri, id: _id, readerDid: wallet.id.did(), didWeb };
         },
         onSuccess: async (data: useAddCredentialToWalletReturn) => {
-            const { category, vc, uri, id } = data;
+            const { category, vc, uri, id, readerDid, didWeb } = data;
+            const listPrefix = ['useGetCredentialList', didWeb];
+            const listFilters = {
+                queryKey: listPrefix,
+                predicate: (query: Query) => query.queryKey[3] === readerDid,
+            };
 
-            await queryClient.cancelQueries({ queryKey: ['useGetCredentialList', category] });
+            await queryClient.cancelQueries(listFilters);
             await queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialCount', category, true],
+                queryKey: ['useGetCredentialCount', didWeb, category],
             });
 
             // Update cache
-            await insertItem(queryClient, ['useGetCredentialList', category], {
+            await insertItem(queryClient, [...listPrefix, category, readerDid], {
                 id,
                 category,
                 uri,
             });
 
             // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({ queryKey: ['useGetCredentials', category] });
-            queryClient.refetchQueries({ queryKey: ['useGetCredentialCount', category] });
-            queryClient.refetchQueries({ queryKey: ['useGetCredentialList', category] });
+            queryClient.refetchQueries({
+                queryKey: ['useGetCredentials', didWeb || undefined, category],
+            });
+            void queryClient.invalidateQueries(listFilters);
 
             await queryClient.cancelQueries({ queryKey: ['useGetIDs'] });
             await queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });

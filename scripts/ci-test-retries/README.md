@@ -50,8 +50,7 @@ No reports are uploaded as artifacts.
 
 All workspace packages whose test script invokes Vitest use the factory, including
 the AI agent and credential viewer's `vite.config.ts` files. Their existing test
-options and Vite plugins/aliases are preserved. The inventory contract checks new
-workspace test scripts for the same wiring.
+options and Vite plugins/aliases are preserved.
 
 ## Nx inputs
 
@@ -93,7 +92,7 @@ node --test scripts/ci-test-retries/retry.test.cjs
 The regression suite starts real Vitest processes with this shared configuration,
 both standalone Vite configs and real Nx build/test fixtures. It checks healthy/flaky/permanent cases,
 concurrent writers, opt-out/misconfiguration, import/setup/teardown failures,
-non-Vitest/build failures, incomplete/corrupt evidence and workflow propagation.
+non-Vitest/build failures and incomplete/corrupt evidence.
 It also proves affected selection and actual cache hits/misses for inherited and
 explicit inputs, shared/config edits, and the retry flag (not report location).
 The non-Vitest fixture is a failing Node command, not the production Rust graph.

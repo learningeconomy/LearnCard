@@ -1,32 +1,41 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { IonIcon, IonSpinner } from '@ionic/react';
+import { IonIcon } from '@ionic/react';
 import { closeOutline } from 'ionicons/icons';
-import { useGetCredentialList } from 'learn-card-base';
+import { useCredentialCollection } from 'learn-card-base';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
-import PassportCredentialCard, { ActivityIndexRecord } from './PassportCredentialCard';
-import { isHiddenActivity, groupByRelativeTime } from './activityFeed.helpers';
+import PassportCredentialCard from './PassportCredentialCard';
+import { groupByRelativeTime } from './activityFeed.helpers';
 import * as m from '../../../paraglide/messages.js';
 
 export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-    const { data, isPending, isFetching, hasNextPage, fetchNextPage } =
-        useGetCredentialList(undefined);
+    const collection = useCredentialCollection();
+    const {
+        records,
+        isPending,
+        isFetching,
+        isComplete,
+        isError,
+        hasNextPage,
+        hasNextIndexPage,
+        fetchNextPage,
+        retry,
+    } = collection;
     const sentinelRef = useRef<HTMLDivElement>(null);
-    const onScreen = useOnScreen(sentinelRef, '300px', [data?.pages?.length]);
+    const onScreen = useOnScreen(sentinelRef, '300px', [records.length]);
 
     useEffect(() => {
-        if (onScreen && hasNextPage) fetchNextPage();
-    }, [onScreen, hasNextPage, fetchNextPage]);
+        if (onScreen && hasNextIndexPage && !isFetching && !isError) void fetchNextPage();
+    }, [onScreen, hasNextIndexPage, isFetching, isError, fetchNextPage]);
 
-    const groups = useMemo(() => {
-        const records = (data?.pages?.flatMap(p => p?.records ?? []) ??
-            []) as ActivityIndexRecord[];
-        const visible = records
-            .filter(r => r?.uri && !isHiddenActivity(r.category))
-            .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
-        return groupByRelativeTime(visible, r => r.date);
-    }, [data]);
-
-    const isEmpty = !isPending && groups.length === 0;
+    const groups = useMemo(
+        () =>
+            groupByRelativeTime(
+                [...records].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
+                record => record.date
+            ),
+        [records]
+    );
+    const isEmpty = isComplete && records.length === 0;
 
     return (
         <section className="h-full w-full bg-white flex flex-col font-poppins">
@@ -45,18 +54,29 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
             </div>
 
             <div className="overflow-y-auto flex-1 px-5 py-4">
-                {isPending && (
-                    <div className="h-full flex items-center justify-center">
-                        <IonSpinner name="lines" role="status" aria-label={m['common.loading']()} />
-                    </div>
-                )}
-                {isEmpty && (
-                    <div className="h-full flex items-center justify-center">
-                        <p className="text-sm text-grayscale-600">
-                            {m['passport.activity.emptyAll']()}
-                        </p>
-                    </div>
-                )}
+                <p
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    className={`text-sm mb-4 ${isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-600'}`}
+                >
+                    {isError
+                        ? records.length > 0
+                            ? m['credentialCollection.loadError']({ count: records.length })
+                            : m['credentialCollection.initialError']()
+                        : isPending
+                          ? m['credentialCollection.loadingCredentials']()
+                          : isEmpty
+                            ? m['passport.activity.emptyAll']()
+                            : isComplete
+                              ? m['credentialCollection.complete']({ count: records.length })
+                              : m['credentialCollection.loaded']({
+                                    count: records.length,
+                                    state: isFetching
+                                        ? m['credentialCollection.loadingMore']()
+                                        : m['credentialCollection.moreAvailable'](),
+                                })}
+                </p>
                 {groups.map(group => (
                     <div key={group.label} className="mb-6">
                         <p className="text-[12px] tracking-[1px] text-grayscale-600 uppercase py-2">
@@ -70,10 +90,21 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
                     </div>
                 ))}
                 <div role="presentation" ref={sentinelRef} />
-                {isFetching && !isPending && (
-                    <div className="flex justify-center py-4">
-                        <IonSpinner name="lines" role="status" aria-label={m['common.loading']()} />
-                    </div>
+                {(isError || hasNextPage) && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (!isFetching) void (isError ? retry() : fetchNextPage());
+                        }}
+                        aria-disabled={isFetching}
+                        className="py-3 px-4 rounded-[20px] border border-grayscale-300 text-sm text-grayscale-700 hover:bg-grayscale-10 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                    >
+                        {isFetching
+                            ? m['credentialCollection.loadingCredentials']()
+                            : isError
+                              ? m['credentialCollection.retry']()
+                              : m['credentialCollection.loadMore']()}
+                    </button>
                 )}
             </div>
         </section>

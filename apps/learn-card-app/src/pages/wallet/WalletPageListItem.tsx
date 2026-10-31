@@ -38,7 +38,7 @@ type WalletPageListItemProps = {
         categoryId: CredentialCategoryEnum;
         labels: { singular: string; plural: string };
     };
-    count: number;
+    count: number | null;
     showNewItemIndicator?: boolean;
     loading?: boolean;
 };
@@ -77,6 +77,8 @@ const WalletPageListItem: React.FC<WalletPageListItemProps> = ({
                     />{' '}
                     {m['wallet.items']()}
                 </div>
+            ) : count === null ? (
+                'Count unavailable'
             ) : count === 1 ? (
                 m['wallet.itemCountOne']({ count })
             ) : (

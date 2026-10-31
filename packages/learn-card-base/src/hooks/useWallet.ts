@@ -546,7 +546,7 @@ export const useWallet = () => {
                             hasMore: boolean;
                             records: CredentialRecord<CredentialMetadata>[];
                         }>
-                    >(['useGetCredentialList', didWeb ?? '', category], data => {
+                    >(['useGetCredentialList', didWeb ?? '', category, wallet.id.did()], data => {
                         const firstPage = data?.pages[0];
 
                         if (firstPage) {
@@ -577,7 +577,7 @@ export const useWallet = () => {
                     }
                 );
                 queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                    queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
                 queryClient.refetchQueries({
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
@@ -681,7 +681,7 @@ export const useWallet = () => {
                         hasMore: boolean;
                         records: CredentialRecord<CredentialMetadata>[];
                     }>
-                >(['useGetCredentialList', didWeb ?? '', category], data => {
+                >(['useGetCredentialList', didWeb ?? '', category, wallet.id.did()], data => {
                     const firstPage = data?.pages[0];
 
                     if (firstPage) {
@@ -711,7 +711,7 @@ export const useWallet = () => {
                     }
                 );
                 queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                    queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
                 queryClient.refetchQueries({
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],

@@ -7,15 +7,13 @@ import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore'
 
 import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
-import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import {
     CredentialCategoryEnum,
-    useGetCredentialList,
     BoostPageViewMode,
     BoostPageViewModeType,
-    searchCredentialsFromCache,
     CredentialListSkeleton,
+    useCredentialCollection,
 } from 'learn-card-base';
 import type { CredentialCategory } from 'learn-card-base/types/credentials';
 import {
@@ -46,68 +44,38 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         Earned boosts query + pagination 
     */
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
-    const {
-        data: records,
-        isLoading: credentialsLoading,
-        isFetching: credentialsFetching,
-        isFetchingNextPage,
-        hasNextPage,
-        fetchNextPage,
-        refetch: earnedBoostsRefetch,
-        error: earnedBoostsError,
-    } = useGetCredentialList(
-        category as
-            | 'Achievement'
-            | 'Skill'
-            | 'ID'
-            | 'Learning History'
-            | 'Work History'
-            | 'Hidden'
-            | 'Social Badge'
-            | 'Membership'
-            | 'Currency'
-            | 'Course'
-            | 'Accomplishment'
-            | 'Accommodation'
-            | 'Relationship'
-            | 'Events'
-            | 'Merit Badge'
-            | 'Family'
-    );
-
     const searchActive = credentialSearchStore.use.isSearchActive();
     const searchString = credentialSearchStore.use.searchString() || '';
-    const searchResults = searchCredentialsFromCache(records);
-    const noSearchResults = searchResults?.length === 0;
-    const searchResultsCount = searchResults?.length;
+    const searching = searchActive && searchString.trim().length > 0;
+    const {
+        records,
+        matches,
+        isComplete,
+        isPending: credentialsLoading,
+        isFetching: credentialsFetching,
+        isError: boostError,
+        hasNextPage,
+        hasNextIndexPage,
+        fetchNextPage,
+        retry,
+    } = useCredentialCollection(category, {
+        mode: searching ? 'search' : 'browse',
+        search: searchString,
+    });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
-    const onScreen = useOnScreen(infiniteScrollRef as any, '-100px', [
-        records?.pages?.[0]?.records?.length,
-    ]);
-
+    const onScreen = useOnScreen(infiniteScrollRef, '-100px', [records.length]);
     useEffect(() => {
-        if (onScreen && hasNextPage) fetchNextPage();
-    }, [fetchNextPage, hasNextPage, onScreen, infiniteScrollRef]);
-    /*
-        Earned boosts query + pagination 
-        * end **
-    */
+        if (onScreen && hasNextIndexPage && !credentialsFetching && !boostError && !searching) {
+            fetchNextPage();
+        }
+    }, [fetchNextPage, hasNextIndexPage, onScreen, credentialsFetching, boostError, searching]);
 
     const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
 
-    const hasCredentialRecords =
-        records?.pages?.some(page => (page?.records?.length ?? 0) > 0) ?? false;
-    const showSkeleton =
-        !earnedBoostsError &&
-        (credentialsLoading || (credentialsFetching && !hasCredentialRecords));
-    const credentialsBackgroundFetching =
-        credentialsFetching && !credentialsLoading && !isFetchingNextPage && hasCredentialRecords;
-
+    const showSkeleton = credentialsLoading && records.length === 0;
+    const credentialsBackgroundFetching = credentialsFetching && !credentialsLoading;
     useLoadingLine(credentialsBackgroundFetching);
-
-    const boostError = earnedBoostsError ? true : false;
 
     const categoryColors = {
         [CredentialCategoryEnum.learningHistory]: 'emerald-700',
@@ -123,75 +91,98 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     const textColor = categoryColors[category];
 
-    const credentials =
-        records?.pages?.flatMap(page =>
-            page?.records
-                ?.filter?.(record => searchResults.find(cred => cred.uri === record?.uri))
-                .map((record, index) => {
-                    return (
-                        <BoostEarnedCard
-                            key={record?.uri || index}
-                            record={record}
-                            defaultImg={defaultImg}
-                            categoryType={
-                                category as
-                                    | 'Achievement'
-                                    | 'Skill'
-                                    | 'ID'
-                                    | 'Learning History'
-                                    | 'Work History'
-                                    | 'Hidden'
-                                    | 'Social Badge'
-                                    | 'Membership'
-                                    | 'Currency'
-                                    | 'Course'
-                                    | 'Accomplishment'
-                                    | 'Accommodation'
-                                    | 'Relationship'
-                                    | 'Events'
-                                    | 'Merit Badge'
-                                    | 'Family'
-                            }
-                            boostPageViewMode={viewMode}
-                            loading={credentialsLoading}
-                            textColor={textColor}
-                        />
-                    );
-                })
-        ) ?? [];
-
-    const handleRefetch = async () => {
-        try {
-            await earnedBoostsRefetch?.();
-        } catch (e) {
-            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
-            throw new Error('There was an error, please try again.');
-        }
-    };
+    const credentials = matches.map((record, index) => (
+        <BoostEarnedCard
+            key={record.uri || index}
+            record={record}
+            defaultImg={defaultImg}
+            categoryType={record.category}
+            boostPageViewMode={viewMode}
+            loading={credentialsLoading}
+            textColor={textColor}
+        />
+    ));
 
     const isCardView = viewMode === BoostPageViewMode.Card;
 
     const searchResultsElement = (
-        <div className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
-            <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
-                {searchString?.trim?.() === '' &&
-                    m['boost.search.searchEarned']({ count: searchResultsCount })}
-                {noSearchResults && m['boost.search.noResultsTitled']({ query: searchString })}
-                {searchResultsCount > 0 &&
-                    searchString?.trim?.() !== '' &&
-                    m['boost.search.foundResults']({
-                        count: searchResultsCount,
-                        query: searchString,
-                    })}
+        <div
+            className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''} ${boostError ? 'rounded-2xl border border-red-100 bg-red-50 p-3' : ''}`}
+        >
+            <span
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className={`font-notoSans text-[14px] font-[700] ${boostError ? 'text-red-700' : 'text-grayscale-900'}`}
+            >
+                {searching
+                    ? isComplete
+                        ? matches.length === 0
+                            ? m['boost.search.noResultsTitled']({ query: searchString })
+                            : m['boost.search.foundResults']({
+                                  count: matches.length,
+                                  query: searchString,
+                              })
+                        : boostError
+                          ? m['credentialCollection.searchIncomplete']({ count: matches.length })
+                          : m['credentialCollection.searching']({ count: matches.length })
+                    : boostError
+                      ? records.length > 0
+                          ? m['credentialCollection.loadError']({ count: records.length })
+                          : m['credentialCollection.loadErrorEmpty']()
+                      : isComplete
+                        ? m['credentialCollection.complete']({ count: records.length })
+                        : m['credentialCollection.loaded']({
+                              count: records.length,
+                              state: credentialsFetching
+                                  ? m['credentialCollection.loadingMore']()
+                                  : m['credentialCollection.moreAvailable'](),
+                          })}
             </span>
+            {boostError && (
+                <button
+                    type="button"
+                    aria-disabled={credentialsFetching}
+                    className="self-start py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    onClick={() => {
+                        if (!credentialsFetching) void retry();
+                    }}
+                >
+                    {credentialsFetching
+                        ? m['credentialCollection.retrying']()
+                        : m['credentialCollection.retry']()}
+                </button>
+            )}
+            {!searching && hasNextPage && !boostError && (
+                <button
+                    type="button"
+                    aria-disabled={credentialsFetching}
+                    className="self-start py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    onClick={() => {
+                        if (!credentialsFetching) void fetchNextPage();
+                    }}
+                >
+                    {credentialsFetching
+                        ? m['credentialCollection.loading']()
+                        : m['credentialCollection.continue']()}
+                </button>
+            )}
             <div className={`h-[1px] bg-sp-blue-ocean mb-[5px] ${noResultsLineColor}`} />
         </div>
     );
 
     return (
         <>
-            {showSkeleton && <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />}
-            {credentials?.length === 0 && !showSkeleton && !searchActive && !boostError && (
+            {showSkeleton && (
+                <div
+                    role="status"
+                    aria-live="polite"
+                    aria-label={m['credentialCollection.loadingEarned']()}
+                >
+                    <CredentialListSkeleton viewMode={isCardView ? 'card' : 'list'} />
+                </div>
+            )}
+            {credentials.length === 0 && !showSkeleton && !searching && isComplete && (
                 <section className="flex relative min-h-[200px] flex-col achievements-list-container pt-[10px] px-[20px] text-center justify-center">
                     <CategoryEmptyPlaceholder category={category} />
                     <div className="text-black mt-10">
@@ -201,12 +192,13 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                     </div>
                 </section>
             )}
-            {!showSkeleton && !boostError && records && (
+            {!showSkeleton && (
                 <>
                     <IonCol className="flex m-auto items-center flex-wrap w-full  achievements-list-container">
                         {isCardView && (
                             <IonGrid className="max-w-[600px] pt-[20px]">
-                                {searchActive && searchResultsElement}
+                                {(searchActive || hasNextPage || boostError) &&
+                                    searchResultsElement}
                                 <IonRow>{credentials}</IonRow>
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </IonGrid>
@@ -214,13 +206,14 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                         {!isCardView && (
                             <>
                                 <div className="flex flex-col gap-[10px] w-full max-w-[600px] px-[20px] pt-[25px]">
-                                    {searchActive && searchResultsElement}
+                                    {(searchActive || hasNextPage || boostError) &&
+                                        searchResultsElement}
                                     {credentials}
                                 </div>
                                 <div role="presentation" ref={infiniteScrollRef} />
                             </>
                         )}
-                        {isFetchingNextPage && (
+                        {credentialsFetching && (
                             <div className="w-full flex items-center justify-center">
                                 <IonSpinner
                                     name="crescent"
@@ -235,8 +228,6 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                     </IonCol>
                 </>
             )}
-
-            {boostError && <BoostErrorsDisplay refetch={handleRefetch} category={category} />}
         </>
     );
 };

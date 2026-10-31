@@ -93,7 +93,6 @@ vi.mock('learn-card-base/hooks/useConsentedContracts', () => ({
 vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
     getOrFetchCredentialRecordForBoost: vi.fn(),
 }));
-vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: vi.fn() }));
 vi.mock('learn-card-base/hooks/useSharedUrisInTerms', () => ({
     getOrCreateSharedUriForWallet: vi.fn(),
 }));

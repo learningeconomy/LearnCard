@@ -34,6 +34,16 @@ See [Tailwind's browser requirements](https://tailwindcss.com/docs/compatibility
 
 ## User Flows
 
+### Finding Your Credentials
+
+Open a Passport category and choose **Search**. Search checks every eligible record in that category without requiring you to scroll first. **Searching…** and **found so far** mean results are incomplete; matching cards stay visible while the remaining records are checked. A final no-results message appears only after the search finishes.
+
+Dashboard credential and credential-category totals exclude hidden and internal records. Totals remain unknown while the collection is loading; a failed count offers **Retry credential totals** instead of showing zero or first-credential onboarding.
+
+**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. In **All credentials**, use **Load more credentials** to continue with a keyboard. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
+
+Titles already saved in the encrypted index are searched locally from metadata. Older records without saved titles may need their credential contents loaded before a search can finish. Totals do not require downloading every credential.
+
 ### Claiming a Credential
 
 ```mermaid

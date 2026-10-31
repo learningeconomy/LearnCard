@@ -65,6 +65,36 @@ describe('LearnCloud Plugin', () => {
         expect(mockClient.utilities.getDid.query).not.toHaveBeenCalled();
     });
 
+    it('shares discovery in flight, but allows an index read to recover after discovery fails', async () => {
+        const discovery = Promise.withResolvers<string>();
+        const getDid = vi
+            .fn()
+            .mockReturnValueOnce(discovery.promise)
+            .mockResolvedValue('did:key:z6MkLearnCloud');
+        const getPage = vi.fn().mockResolvedValue({ records: [], hasMore: false });
+        mockGetClient.mockResolvedValue({
+            ...mockClient,
+            utilities: { getDid: { query: getDid } },
+            index: { get: { query: getPage } },
+        });
+        const learnCard = makeLearnCard();
+        const plugin = await getLearnCloudPlugin(learnCard as never, 'https://cloud.example');
+        const first = plugin.index!.getPage!(learnCard as never, { category: 'Social Badge' });
+        const second = plugin.index!.getPage!(learnCard as never, { category: 'Achievement' });
+        const failures = Promise.allSettled([first, second]);
+        await vi.waitFor(() => expect(getDid).toHaveBeenCalledTimes(1));
+        discovery.reject(new Error('Temporarily offline'));
+        expect((await failures).map(result => result.status)).toEqual(['rejected', 'rejected']);
+        await expect(
+            plugin.index!.getPage!(learnCard as never, { category: 'Social Badge' })
+        ).resolves.toEqual({ records: [], hasMore: false });
+        await expect(
+            plugin.index!.getPage!(learnCard as never, { category: 'Achievement' })
+        ).resolves.toEqual({ records: [], hasMore: false });
+        expect(getDid).toHaveBeenCalledTimes(2);
+        expect(getPage).toHaveBeenCalledTimes(2);
+    });
+
     it('does not load associated DIDs when automatic association is disabled', async () => {
         const learnCard = makeLearnCard();
         const plugin = await getLearnCloudPlugin(

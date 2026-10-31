@@ -24,6 +24,7 @@ type DashboardViewProps = {
 const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
     const {
         brandName,
+        collection,
         header,
         heroSlot,
         checklistItems,
@@ -70,6 +71,38 @@ const DashboardView: React.FC<DashboardViewProps> = ({ vm }) => {
                         }
                     />
                 </GenericErrorBoundary>
+
+                {collection && (
+                    <section
+                        aria-label={m['credentialCollection.totalsAria']()}
+                        className={`text-sm ${collection.isError ? 'rounded-2xl border border-red-100 bg-red-50 p-3 text-red-700' : 'text-grayscale-700'}`}
+                    >
+                        <p role="status" aria-live="polite" aria-atomic="true">
+                            {collection.total !== null && collection.skills !== null
+                                ? m['credentialCollection.totals']({
+                                      credentials: collection.total,
+                                      skills: collection.skills,
+                                  })
+                                : collection.isError
+                                  ? m['credentialCollection.totalsError']()
+                                  : m['credentialCollection.counting']()}
+                        </p>
+                        {collection.isError && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!collection.isFetching) void collection.retry();
+                                }}
+                                aria-disabled={collection.isFetching}
+                                className="mt-2 py-2 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40"
+                            >
+                                {collection.isFetching
+                                    ? m['credentialCollection.retrying']()
+                                    : m['credentialCollection.retryTotals']()}
+                            </button>
+                        )}
+                    </section>
+                )}
 
                 <GenericErrorBoundary>
                     <QuickActionsRow slots={slots} />

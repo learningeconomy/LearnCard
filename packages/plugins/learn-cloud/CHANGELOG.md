@@ -1,5 +1,11 @@
 # learn-card-core
 
+## Unreleased
+
+### Patch Changes
+
+- Allow credential collection retries after failed service identity discovery (LC-2294). Keep successful and in-flight discovery shared, but discard rejected discovery promises so a restored connection can recover without restarting the account.
+
 ## 2.3.48
 
 ### Patch Changes

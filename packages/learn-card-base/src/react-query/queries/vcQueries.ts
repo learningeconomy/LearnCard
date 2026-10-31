@@ -26,7 +26,7 @@ import {
 } from '../mutations/syncConsentFlow';
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
-import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
+import { backfillResolvedCredentialRecord } from 'learn-card-base/helpers/backfills';
 import { getLogger } from '../../logging/logger';
 import { walletStore } from '../../stores/walletStore';
 import {
@@ -47,10 +47,15 @@ const useCredentialReader = () => {
     return switchedDid && wallet?.id.did() !== switchedDid ? null : wallet;
 };
 
+/**
+ * Resolve an account-scoped document and opportunistically backfill that same reader's
+ * missing index metadata. Existing server authorization still applies; a rejected
+ * metadata write never prevents the credential from being displayed.
+ */
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();
-    return useQuery({
+    const result = useQuery({
         ...resolvedCredentialQueryOptions(
             wallet,
             uri,
@@ -58,6 +63,13 @@ export const useGetResolvedCredential = (uri: string | undefined, enabled = true
         ),
         enabled: enabled && Boolean(wallet && uri),
     });
+    useEffect(() => {
+        if (!wallet || !uri || !result.data) return;
+        void backfillResolvedCredentialRecord(queryClient, wallet, uri, result.data).catch(error =>
+            log.warn('Unable to update opened credential metadata', error)
+        );
+    }, [queryClient, wallet, uri, result.data]);
+    return result;
 };
 
 export const getOrFetchResolvedCredential = async (
@@ -115,21 +127,23 @@ export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled
 export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const didWeb = switchedProfileStore.use.switchedDid();
-    const backfillBoostUris = useBackfillBoostUris();
 
+    const reader = useCredentialReader();
     return useInfiniteQuery({
-        queryKey: ['useGetCredentialList', didWeb ?? '', category ?? ''],
-        queryFn: async ({ pageParam }) => {
+        queryKey: ['useGetCredentialList', didWeb ?? '', category ?? '', reader?.id.did() ?? ''],
+        queryFn: async ({ pageParam, signal }) => {
             try {
+                if (!reader) throw new Error('Credential reader is unavailable');
                 const wallet = await initWallet();
-
+                if (wallet.id.did() !== reader.id.did())
+                    throw new Error('Credential reader changed');
+                signal.throwIfAborted();
                 const data = await wallet.index.LearnCloud.getPage<CredentialMetadata>?.(
                     category ? { category } : undefined,
-                    { cursor: pageParam, limit: 12 }
+                    { cursor: pageParam, limit: 12, sort: 'newestFirst' }
                 );
-
-                backfillBoostUris(data?.records ?? []);
-
+                signal.throwIfAborted();
+                if (!data) throw new Error('Credential index is unavailable');
                 return {
                     ...data,
                     records: data?.records.map(record => ({
@@ -137,14 +151,14 @@ export const useGetCredentialList = (category?: CredentialCategory, enabled: boo
                         ...(record.__v && { __v: Number(record.__v) }),
                     })),
                 };
-            } catch (error: any) {
+            } catch (error: unknown) {
                 log.error(error);
-                return Promise.reject(error);
+                throw error;
             }
         },
         initialPageParam: undefined as undefined | string,
         getNextPageParam: lastPage => (lastPage?.hasMore ? lastPage?.cursor : undefined),
-        enabled,
+        enabled: enabled && Boolean(reader),
     });
 };
 
@@ -152,29 +166,33 @@ export const useGetRecordForUri = (uri?: string, enabled = true) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();
+    const reader = useCredentialReader();
 
     return useQuery({
-        queryKey: ['useGetRecordForUri', didWeb ?? '', uri],
+        queryKey: ['useGetRecordForUri', didWeb ?? '', uri, reader?.id.did() ?? ''],
         queryFn: async () => {
             // First, try to find it in existing category cache
             const categoryQueries = queryClient.getQueriesData<
                 InfiniteData<{ hasMore: boolean; cursor?: string; records: LCR[] }>
             >({ queryKey: ['useGetCredentialList', didWeb ?? ''] });
 
-            const records = categoryQueries.flatMap(query =>
-                query[1]?.pages.flatMap(page => page.records)
-            );
+            const records = categoryQueries
+                .filter(([key]) => key[3] === reader?.id.did())
+                .flatMap(([, data]) => data?.pages.flatMap(page => page.records) ?? []);
 
             const found = records.find(record => record?.uri === uri);
 
             if (found) return found;
 
             const wallet = await initWallet();
+            if (!reader || wallet.id.did() !== reader.id.did()) {
+                throw new Error('Credential reader changed');
+            }
 
             // If not found in cache, fetch directly
             return (await wallet.index.LearnCloud.get<CredentialMetadata>({ uri }))[0];
         },
-        enabled: Boolean(uri) && enabled,
+        enabled: Boolean(uri && reader) && enabled,
     });
 };
 
@@ -243,6 +261,15 @@ export const usePrefetchCredentials = (category?: CredentialCategory, enabled = 
 
     return useGetResolvedCredentials(
         data?.pages?.flatMap(page => page?.records?.map(record => record.uri)),
+        enabled
+    );
+};
+
+/** Warm one index page without letting a metadata-only count scan download the entire collection. */
+export const usePrefetchCredentialPage = (category?: CredentialCategory, enabled = true) => {
+    const { data } = useGetCredentialList(category, enabled);
+    return useGetResolvedCredentials(
+        data?.pages[0]?.records?.slice(0, 12).map(record => record.uri),
         enabled
     );
 };
