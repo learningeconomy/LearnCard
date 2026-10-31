@@ -134,21 +134,18 @@ not be manually reset to force retries.
    differs from both escrow and management accounts. There are no cross-account
    roles, vault tokens, host access, SES or DynamoDB grants in this stack.
 2. Verify the staging app resolves to SSS + Nitro and the correct staging Firebase
-   project/API. Finish the existing escrow staging prerequisites first. Register
-   three **ordinary** accounts through normal sign-up, e.g. the placeholder pattern
-   `jackson+canary<n>@learningeconomy.io` with `<n>` replaced locally. Do not add
-   these addresses or actual account identifiers to tracked files. Verify recovery
-   email normally; enroll automatic recovery for all three; set distinct random
-   nontrivial PINs for PIN A/B. Keep the read-only account enrolled without a PIN.
-3. On a trusted, isolated workstation/browser with tracing, screen recording and
-   shell history disabled, sign each account in normally. Obtain the current user's
-   Firebase `User.refreshToken` from that signed-in session (not the short-lived ID
-   token), and the account's existing seed from the app's authorized key-export /
-   developer tooling. If using DevTools, inspect only that disposable account's
-   Firebase session and private-key store; do not print/copy an entire storage dump.
-   Cross-check the seed-derived `did:key` against the account before upload. Never
-   use a Firebase Admin service account or mint custom tokens. Never paste secrets
-   in shell arguments, tickets, PRs, Terraform inputs, logs or screenshots.
+   project/API. Finish the existing escrow staging prerequisites first. Choose three
+   addresses you control for the read-only, PIN A and PIN B accounts, e.g. the
+   placeholder pattern `jackson+canary<n>@learningeconomy.io` with `<n>` replaced
+   locally. Do not add these addresses or actual account identifiers to tracked
+   files. **Nobody signs in to the app with a canary address**: a key the app
+   creates for it is unknown to the canary secret and blocks provisioning (exit 3).
+3. Accounts are created in step 6 by the provisioning tool
+   ([PROVISIONING.md](PROVISIONING.md)), through the normal user path: email-code
+   login, a new SSS key, then escrow opt-in or PIN setup. The tool never holds a
+   Firebase Admin credential; it exchanges the custom token lca-api returns to
+   every email-code login, exactly as the app does. Never paste secrets in shell
+   arguments, tickets, PRs, Terraform inputs, logs or screenshots.
 4. From the repo root, install dependencies and build the workspace SDK dependencies:
 
     ```sh
@@ -174,14 +171,34 @@ not be manually reset to force retries.
     real values are out-of-band and `ignore_changes` prevents reconciliation of
     secret values/stages. Do not import current real secret versions into Terraform.
 
-6. Populate each secret using the monitoring-account Secrets Manager console's
-   plaintext JSON editor in the isolated session, or a trusted SDK process reading
-   the JSON via private stdin. Avoid CLI `--secret-string '<value>'` and files on
-   persistent disks. Close the editor/browser, clear the clipboard and remove any
-   temporary private material after confirming the secret's version metadata
-   (do not log its value). Only the tier's runner role has normal read/write access
-   to its exact secret ARNs; KMS use is restricted through Secrets Manager with
-   the exact secret encryption context. Revoke temporary operator grants.
+6. **Provision** each account from an operator SSO session in the monitoring
+   account, with Node 22 and the built bundle (it loads `didkit.wasm` from `dist/`).
+   Dry-run first; it reads Secrets Manager only and sends nothing:
+
+    ```sh
+    node services/escrow-canary/dist/provision.mjs --environment staging \
+      --expect-account <monitoring account id> --tier 1 --account read-only \
+      --email <read-only address> --dry-run
+    # then without --dry-run; repeat with --tier 2 --account pin-a / pin-b
+    ```
+
+    The tool sends a login code (type it at the hidden prompt), creates the key,
+    writes the secret to a `PROVISIONING`-labelled version **before** any server
+    change, enrolls escrow (tier 2: sets a random PIN and activates, as the app
+    does), runs the runner's checks and only then promotes the version to
+    `AWSCURRENT` with a compare-and-swap. It prints only labels, secret names,
+    version ids, `did:key`s and step results. Re-running resumes safely from the
+    staged version (exit 1 = re-run; 2 = refused, nothing changed; 3 = needs a
+    human). See [PROVISIONING.md](PROVISIONING.md) for the guards and resume rules.
+
+    **Manual fallback** (only if the tool cannot be used): sign each account in
+    on an isolated workstation with tracing, recording and shell history off; read
+    the seed from the app's authorized key-export tooling and the Firebase
+    `User.refreshToken` from that session (never a whole storage dump); cross-check
+    the `did:key`; then paste the JSON above in the Secrets Manager console's
+    plaintext editor (never CLI `--secret-string`, never a file on a persistent
+    disk), clear the clipboard and revoke temporary grants.
+
 7. Confirm the SNS email subscription. With schedules still disabled, invoke tier 1
    with `{"tier":1,"time":"<current UTC ISO timestamp>"}` and tier 2 similarly.
    Supply current timestamps, never replay old events. To exercise both PIN accounts,
@@ -336,15 +353,32 @@ untouched.
    Check that
    `aws sns list-subscriptions-by-topic --topic-arn <ticket_topic_arn>` shows a real
    `SubscriptionArn`, not `PendingConfirmation`, before step 9.
-7. **Create 12 hold accounts** per environment through normal sign-up with the
-   recovery email `<local>+<n>@<inbox_domain>` (account `hold-NN` = `+n`), English,
-   escrow recovery enrolled, **no PIN needed**. Read sign-up mail from the bucket
-   with break-glass access only. Sign each in once on the isolated workstation and
-   populate its secret exactly as in "Staging operator setup" (same schema;
-   `pin` may be a random valid placeholder; `recoveryLanguage` must be `en`; the
-   `recoveryEmail` must be exactly `<inbox_local_part>+<n>@<inbox_domain>` for
-   `hold-0n`, or the runner refuses the account with `config` before any start).
-8. **Seed the ledger**:
+7. **Provision the 12 hold accounts** with the tool (addresses are positional:
+   `hold-0n` = `<inbox_local_part>+<n>@<inbox_domain>`, English, escrow opted in,
+   **no PIN**). The login code is read from the account's own inbox prefix under
+   the full trust checks, with the **login** sender policy (lca-api's tenant
+   `login@` mailbox, not the enclave sender). Pass both values explicitly; they
+   have no defaults and the dry-run prints them:
+
+    ```sh
+    node services/escrow-canary/dist/provision.mjs --environment staging \
+      --expect-account <monitoring account id> --tier 3 --labels hold-01 \
+      --login-sender <lca-api login From address> --login-dkim-domain <its DKIM domain> \
+      --check-mail          # one code, trust + parse only, never verifies
+    # then --labels all --dry-run, then --labels all
+    ```
+
+    Reading the inbox is an operator action: use a dedicated, MFA-protected
+    provisioning permission set limited to the actions in
+    [PROVISIONING.md](PROVISIONING.md) §9 (not created by this change), recorded in
+    CloudTrail like break-glass. A label may only be provisioned while its pool item
+    is absent or quarantined, or the pool is paused. Manual fallback as in
+    "Staging operator setup" step 6 (`pin` may be a random valid placeholder;
+    `recoveryLanguage` must be `en`; `recoveryEmail` must be exactly the label's
+    address, or the runner refuses the account with `config`).
+
+8. **Seed the ledger**: `--init-pool` on the provisioning tool (runs only once all
+   12 hold secrets are live and pass the runner's checks), or
    `bun scripts/tier3-admin.ts <env> <ledger_table_name> init-pool`.
    Then, **within the hour before** the apply that sets `tier3_enabled=true`, run
    `… ready`. It validates the pool and writes META (`enabledAt = now`; re-run it
