@@ -107,3 +107,33 @@ describe('runner boundaries', () => {
         expect(await memory.storage.getShareVersion('pending')).toBeNull();
     });
 });
+
+describe('tier 3 metric rollups', () => {
+    it('keeps Account and Kind diagnostic; alarms use {Environment, Tier}', () => {
+        const lines: string[] = [];
+        const emit = createMetrics('production', 3, line => lines.push(line));
+        emit(
+            'Tier3.Released',
+            0,
+            undefined,
+            { reason: 'did_mismatch' },
+            { holdAccount: 'hold-03', kind: 'daily' }
+        );
+        emit('Tier3.EmailLatency', 1234, undefined, undefined, {
+            holdAccount: 'hold-03',
+            kind: 'code',
+        });
+        const [released, latency] = lines.map(line => JSON.parse(line));
+        expect(released._aws.CloudWatchMetrics[0].Dimensions).toEqual([
+            ['Environment', 'Tier', 'Account', 'Kind', 'Reason'],
+            ['Environment', 'Tier'],
+        ]);
+        expect(released).toMatchObject({ Tier: '3', Account: 'hold-03', Reason: 'did_mismatch' });
+        expect(latency._aws.CloudWatchMetrics[0].Dimensions).toEqual([
+            ['Environment', 'Tier', 'Account', 'Kind'],
+            ['Environment', 'Tier', 'Kind'],
+            ['Environment', 'Tier'],
+        ]);
+        expect(latency._aws.CloudWatchMetrics[0].Metrics[0].Unit).toBe('Milliseconds');
+    });
+});

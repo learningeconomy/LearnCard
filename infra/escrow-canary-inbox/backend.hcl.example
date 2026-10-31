@@ -1,0 +1,7 @@
+# Copy to an ignored local file. Its own state key: neither environment's state
+# may own the account's single active receipt rule set.
+bucket       = "REPLACE-monitoring-production-state-bucket"
+key          = "escrow-canary/inbox-shared.tfstate"
+region       = "us-east-1"
+encrypt      = true
+use_lockfile = true
