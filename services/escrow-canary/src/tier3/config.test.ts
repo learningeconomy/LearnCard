@@ -11,18 +11,17 @@ import {
     warningDeadlineExpired,
 } from './timing';
 
-const accounts = Array.from({ length: 12 }, (_, index) => ({
-    id: `hold-account-${index}`,
-    secretArn: `arn:aws:secretsmanager:us-east-1:000000000000:secret:h-${index}`,
-}));
+const accounts = Array.from({ length: 12 }, (_, index) => `hold-account-${index}`);
 const env = {
     NODE_ENV: 'test' as const,
     CANARY_ENVIRONMENT: 'staging',
     TIER3_LEDGER_TABLE: 'escrow-canary-staging-tier3',
     TIER3_POOL_SIZE: '12',
     CANARY_HOLD_ACCOUNTS_JSON: JSON.stringify(accounts),
+    TIER3_HOLD_SECRET_PREFIX: 'escrow-canary-staging/tier3/',
     INBOX_BUCKET: 'escrow-canary-staging-inbox-000000000000',
     INBOX_DOMAIN: 'inbox.example.com',
+    INBOX_LOCAL_PART: 'canary-staging',
     INBOX_EXPECTED_SENDERS_JSON: JSON.stringify(['recovery@vault.notify.example.com']),
     INBOX_EXPECTED_DKIM_DOMAIN: 'vault.notify.example.com',
 };
@@ -34,7 +33,12 @@ describe('tier 3 configuration', () => {
             startHourUtc: 15,
             holdDurationMs: 604_800_000,
             cancelCooldownHours: 48,
-            inbox: { prefix: 'inbox/', requireDmarc: true },
+            inbox: { prefix: 'inbox/', requireDmarc: true, localPart: 'canary-staging' },
+        });
+        // Ids only in the environment; secrets are addressed by name.
+        expect(loadRunnerConfig(env).holdAccounts[3]).toEqual({
+            id: 'hold-account-3',
+            secretId: 'escrow-canary-staging/tier3/hold-account-3',
         });
         expect(loadEvaluatorConfig(env)).toEqual({
             environment: 'staging',
@@ -55,6 +59,19 @@ describe('tier 3 configuration', () => {
         ],
         ['no sender', { INBOX_EXPECTED_SENDERS_JSON: '[]' }],
         ['pool size', { TIER3_POOL_SIZE: '13' }],
+        [
+            'hold id over 32 characters',
+            {
+                CANARY_HOLD_ACCOUNTS_JSON: JSON.stringify(['x'.repeat(33), ...accounts.slice(1)]),
+            },
+        ],
+        ['missing secret prefix', { TIER3_HOLD_SECRET_PREFIX: undefined }],
+        ['missing local part', { INBOX_LOCAL_PART: undefined }],
+        ['production local part in staging', { INBOX_LOCAL_PART: 'canary' }],
+        [
+            'staging local part in production',
+            { CANARY_ENVIRONMENT: 'production', INBOX_LOCAL_PART: 'canary-staging' },
+        ],
         ['start hour', { TIER3_START_HOUR_UTC: '23' }],
     ])('rejects %s without echoing values', (_name, override) => {
         expect(() => loadRunnerConfig({ ...env, ...override } as NodeJS.ProcessEnv)).toThrow(

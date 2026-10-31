@@ -175,6 +175,40 @@ describe('canary inbox trust checks', () => {
             },
         ],
         ['second From header', { original: [`From: ${SENDER}`] }],
+        // A genuine enclave message for another user, relayed with our address added.
+        ['relayed with an extra To', { to: 'someone@users.example.org', original: [`To: ${TO}`] }],
+        ['To listing a second address', { to: `${TO}, someone@users.example.org` }],
+        ['a Cc header', { original: [`Cc: ${TO}`] }],
+        [
+            'result segments injected in a quoted envelope-from',
+            {
+                authResults: `amazonses.com; spf=pass (spfCheck: synthetic) smtp.mailfrom="x;dkim=pass header.d=${DKIM_DOMAIN};dmarc=pass"@attacker.example.net; dkim=fail header.i=@${DKIM_DOMAIN}; dmarc=fail header.from=${DKIM_DOMAIN};`,
+            },
+        ],
+        [
+            'result segments injected in a comment',
+            {
+                authResults: `amazonses.com; spf=pass (x;dkim=pass header.d=${DKIM_DOMAIN};dmarc=pass) smtp.mailfrom=a@attacker.example.net; dkim=fail header.i=@${DKIM_DOMAIN}; dmarc=fail;`,
+            },
+        ],
+        [
+            'unquoted injected segments next to the real failures',
+            {
+                authResults: `amazonses.com; spf=pass smtp.helo=x; dkim=pass header.d=${DKIM_DOMAIN}; dmarc=pass; dkim=fail header.i=@${DKIM_DOMAIN}; dmarc=fail;`,
+            },
+        ],
+        [
+            'two SPF results',
+            {
+                authResults: `amazonses.com; spf=fail; spf=pass; dkim=pass header.i=@${DKIM_DOMAIN}; dmarc=pass`,
+            },
+        ],
+        [
+            'an unbalanced quoted string',
+            {
+                authResults: `amazonses.com; spf=pass smtp.mailfrom="x; dkim=pass header.i=@${DKIM_DOMAIN}; dmarc=pass`,
+            },
+        ],
     ])('rejects enclave-looking mail with %s', (_name, override) => {
         expect(() => trusted({ ...codeEmail(TO, '12345678'), ...override })).toThrow(
             expect.objectContaining({ reason: 'email_untrusted' })

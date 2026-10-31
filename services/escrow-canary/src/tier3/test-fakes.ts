@@ -15,6 +15,7 @@ import { DAY, HOUR, MINUTE } from './timing';
 export const SENDER = 'recovery@vault.notify.example.com';
 export const DKIM_DOMAIN = 'vault.notify.example.com';
 export const INBOX_DOMAIN = 'inbox.example.com';
+export const INBOX_LOCAL_PART = 'canary-staging';
 export const HOLD_MS = 7 * DAY;
 
 export const baseConfig: Config = {
@@ -41,12 +42,13 @@ export const runnerConfig: RunnerConfig = {
     codePollMs: 6 * MINUTE,
     holdAccounts: Array.from({ length: 12 }, (_, index) => ({
         id: `hold-account-${index + 1}`,
-        secretArn: `arn:aws:secretsmanager:us-east-1:000000000000:secret:hold-${index + 1}`,
+        secretId: `escrow-canary-staging/tier3/hold-account-${index + 1}`,
     })),
     inbox: {
         bucket: 'escrow-canary-staging-inbox-000000000000',
         prefix: 'inbox/',
         domain: INBOX_DOMAIN,
+        localPart: INBOX_LOCAL_PART,
         expectedSenders: [SENDER],
         expectedDkimDomain: DKIM_DOMAIN,
         requireDmarc: true,
@@ -126,7 +128,8 @@ export const startedEmail = (to: string, brand = 'LearnCard'): EmailOptions => (
     body: `Account recovery has started for your ${brand} account.\n\nIf you didn't start this, open the ${brand} app and cancel the recovery right away.`,
 });
 
-export const emailFor = (index: number): string => `canary+${index + 1}@${INBOX_DOMAIN}`;
+export const emailFor = (index: number): string =>
+    `${INBOX_LOCAL_PART}+${index + 1}@${INBOX_DOMAIN}`;
 export const didFor = (label: string): string => `did:key:z${label.replace('-', '')}`;
 export const keyFor = (index: number): string => (index + 1).toString(16).padStart(64, '0');
 
@@ -205,13 +208,13 @@ export class World {
     constructor(start: number) {
         this.now = start;
         runnerConfig.holdAccounts.forEach((account, index) =>
-            this.secrets.set(account.secretArn, makeSecret(index))
+            this.secrets.set(account.secretId, makeSecret(index))
         );
     }
 
     secretOf(label: string): AccountSecret {
         const index = Number(label.slice(5)) - 1;
-        return this.secrets.get(runnerConfig.holdAccounts[index].secretArn)!;
+        return this.secrets.get(runnerConfig.holdAccounts[index].secretId)!;
     }
 
     deliver(label: string, at: number, options: EmailOptions): string {
@@ -269,9 +272,9 @@ export class World {
     };
 
     secretStore = {
-        read: async (arn: string) => structuredClone(this.secrets.get(arn)!),
-        write: async (arn: string, value: AccountSecret) => {
-            this.secrets.set(arn, structuredClone(value));
+        read: async (id: string) => structuredClone(this.secrets.get(id)!),
+        write: async (id: string, value: AccountSecret) => {
+            this.secrets.set(id, structuredClone(value));
             this.secretWrites.push(structuredClone(value));
         },
     };

@@ -24,34 +24,40 @@ export class EvaluationError extends Error {
  * - Overdue: steps past `dueAt` with neither an observation nor an outcome.
  *   An explicit failure (outcome 0) already paged, so it stops counting; a
  *   crash keeps counting until an operator closes the step.
- * - No META yet (before the runner's first tick) is warm-up: StartAge 0.
+ * - StartAge is anchored on META.enabledAt, which `tier3-admin ready` writes
+ *   before tier 3 is enabled, so a runner that never completes a tick still
+ *   pages through StartAge (it never depends on the runner writing META).
  * - Paused (operator `tier3-admin pause`): Overdue and StartAge report 0.
+ * - Closed steps are skipped before the run-header check: DynamoDB TTL deletes
+ *   expired items in no particular order, so a closed step may briefly outlive
+ *   its run header. Only an OPEN step without its run is an inconsistency.
  *
- * Throws on any malformed input or a pool count mismatch: the caller then
- * emits NOTHING, so the missing heartbeat pages.
+ * Throws on any malformed input, a pool count mismatch or a missing META (the
+ * ledger was never made ready): the caller then emits NOTHING, so the missing
+ * heartbeat pages.
  */
 export const evaluate = (items: LedgerItem[], now: number, poolSize: number): Evaluation => {
     if (!Number.isFinite(now)) throw new EvaluationError();
     const metas = items.filter(item => item.type === 'meta');
     const pools = items.filter(item => item.type === 'pool');
-    if (metas.length > 1 || pools.length !== poolSize) throw new EvaluationError();
+    if (metas.length !== 1 || pools.length !== poolSize) throw new EvaluationError();
     if (new Set(pools.map(pool => pool.label)).size !== poolSize) throw new EvaluationError();
     const meta = metas[0];
-    const paused = meta?.paused === true;
+    const paused = meta.paused === true;
     const poolAvailable = pools.filter(
         pool =>
             (pool.state === 'idle' || pool.state === 'cooling') &&
             (pool.availableAt === undefined || pool.availableAt <= now)
     ).length;
-    if (!meta || paused) return { overdue: 0, poolAvailable, startAgeMinutes: 0, paused };
+    if (paused) return { overdue: 0, poolAvailable, startAgeMinutes: 0, paused };
     const runs = new Set(items.filter(item => item.type === 'run').map(item => item.runId));
     let overdue = 0;
     for (const item of items) {
         if (item.type !== 'step') continue;
-        // A step without its run header is an inconsistent ledger, not "nothing due".
+        if (item.observedAt !== undefined || item.outcome !== undefined) continue;
+        // An OPEN step without its run header is an inconsistent ledger, not "nothing due".
         if (!runs.has(item.runId)) throw new EvaluationError();
-        if (item.dueAt <= now && item.observedAt === undefined && item.outcome === undefined)
-            overdue += 1;
+        if (item.dueAt <= now) overdue += 1;
     }
     let anchor = meta.enabledAt;
     for (const item of items)

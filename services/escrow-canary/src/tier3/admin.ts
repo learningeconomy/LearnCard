@@ -8,10 +8,11 @@ import {
     type LedgerItem,
     type MetaItem,
     type PoolItem,
+    type RunItem,
     type StepItem,
     type StepName,
 } from './ledger';
-import { HOUR, ttlSeconds } from './timing';
+import { HOUR, runTtlSeconds, ttlSeconds } from './timing';
 
 /**
  * Operator actions on the tier-3 ledger. Every change is a conditional write;
@@ -49,9 +50,38 @@ export const initPool = async ({ ledger, environment, now }: AdminContext): Prom
     return writes.length;
 };
 
-/** Ready to set tier3_enabled: exactly twelve pool items and an evaluable ledger. */
-export const checkReady = async ({ ledger, now }: AdminContext): Promise<void> => {
-    evaluate(await ledger.scanAll(), now, TIER3_POOL_SIZE);
+/**
+ * Ready to set tier3_enabled: exactly twelve pool items and an evaluable ledger.
+ * Also anchors StartAge: it creates META (enabledAt = now) or, while no run has
+ * ever been recorded, re-anchors it. StartAge therefore never depends on the
+ * runner completing a tick. Run it within an hour before the apply that sets
+ * tier3_enabled=true (the first start follows within 24 h, the alarm is 26 h).
+ */
+export const checkReady = async ({ ledger, environment, now }: AdminContext): Promise<void> => {
+    const items = await ledger.scanAll();
+    const metas = items.filter((item): item is MetaItem => item.type === 'meta');
+    const existing = metas.length === 1 ? metas[0] : undefined;
+    const runsRecorded = items.some(item => item.type === 'run');
+    const anchor = !existing || (!existing.paused && !runsRecorded);
+    const next: MetaItem = existing
+        ? { ...existing, ...(anchor ? { enabledAt: now } : {}) }
+        : {
+              ...keys.meta,
+              type: 'meta',
+              env: environment,
+              version: 1,
+              updatedAt: now,
+              enabledAt: now,
+              paused: false,
+          };
+    // Validate (pool count, labels, open-step integrity) before writing anything.
+    evaluate(
+        metas.length > 1 ? items : [...items.filter(item => item.type !== 'meta'), next],
+        now,
+        TIER3_POOL_SIZE
+    );
+    if (!existing) await ledger.write([create(next)]);
+    else if (anchor) await ledger.write([replace(existing, { enabledAt: now }, now)]);
 };
 
 /** Close one open step (overdue after a crash) with an operator outcome. */
@@ -69,6 +99,61 @@ export const closeStep = async (
             { outcome: 'operator_closed', reason: 'operator_closed', expiresAt: ttlSeconds(now) },
             now
         ),
+    ]);
+};
+
+/**
+ * Escape hatch for a run stuck in any non-closed state: closes the run, marks
+ * its open steps `operator_closed` and moves the account to `orphaned` (the
+ * runner then cancels any pending hold once through the user's own cancel
+ * path) or `quarantined` (operator repairs, then `unquarantine`).
+ */
+export const closeRun = async (
+    { ledger, now }: AdminContext,
+    runId: string,
+    poolState: 'orphaned' | 'quarantined'
+): Promise<void> => {
+    const items = await ledger.run(runId);
+    const run = items.find((item): item is RunItem => item.type === 'run');
+    if (!run || run.state === 'closed') throw new Error('Run is not open');
+    const pool = (await ledger.get(keys.pool(run.label))) as PoolItem | undefined;
+    if (!pool || pool.state !== 'busy' || pool.runId !== runId)
+        throw new Error('Account is not busy with this run');
+    const expiresAt = ttlSeconds(now);
+    await ledger.write([
+        replace(
+            run,
+            {
+                state: 'closed',
+                closedAt: now,
+                closeReason: 'operator_closed',
+                expiresAt: runTtlSeconds(now),
+            },
+            now
+        ),
+        replace(
+            pool,
+            {
+                state: poolState,
+                runId: undefined,
+                stateSince: now,
+                availableAt: undefined,
+                orphanCleanupAttempted: false,
+                quarantineReason: poolState === 'quarantined' ? 'operator_closed' : undefined,
+            },
+            now
+        ),
+        ...items
+            .filter((item): item is StepItem => item.type === 'step')
+            .map(step =>
+                step.observedAt !== undefined || step.outcome !== undefined
+                    ? replace(step, { expiresAt }, now)
+                    : replace(
+                          step,
+                          { outcome: 'operator_closed', reason: 'operator_closed', expiresAt },
+                          now
+                      )
+            ),
     ]);
 };
 
@@ -150,7 +235,7 @@ export const injectOverdue = async ({
             startRequestedAt: now,
             closedAt: now,
             closeReason: 'drill',
-            expiresAt: ttlSeconds(now),
+            expiresAt: runTtlSeconds(now),
         }),
         create({
             ...keys.step(runId, 'Warning'),

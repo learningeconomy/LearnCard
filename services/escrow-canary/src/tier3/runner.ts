@@ -29,10 +29,12 @@ import {
     isDailyStartDue,
     isoWeekKey,
     releaseDue,
+    runTtlSeconds,
     SKEW_MS,
     STEP_DEADLINES,
     ttlSeconds,
     WARNING_HOURS,
+    WARNING_MISSING_GRACE_MS,
     warningDeadlineExpired,
 } from './timing';
 
@@ -146,21 +148,24 @@ export const runTier3 = async (
         const account = accountFor(label);
         let secret: AccountSecret;
         try {
-            secret = await deps.secrets.read(account.secretArn);
+            secret = await deps.secrets.read(account.secretId);
         } catch {
             throw failure('secret_read');
         }
+        // The exact pool address for this label and environment, so the code
+        // email lands in the prefix (and bucket) this runner reads.
+        const expected = `${config.inbox.localPart}+${Number(label.slice(5))}@${config.inbox.domain}`;
         if (
             secret.accountId !== account.id ||
             secret.recoveryLanguage !== 'en' ||
-            !secret.recoveryEmail.toLowerCase().endsWith(`@${config.inbox.domain}`)
+            secret.recoveryEmail.toLowerCase() !== expected
         )
             throw failure('config');
         secrets.set(label, secret);
         return secret;
     };
     const writeSecret = async (label: string, secret: AccountSecret): Promise<void> => {
-        await deps.secrets.write(accountFor(label).secretArn, secret);
+        await deps.secrets.write(accountFor(label).secretId, secret);
         secrets.set(label, secret);
     };
     const sessions = new Map<string, Promise<Session>>();
@@ -251,7 +256,13 @@ export const runTier3 = async (
         const writes: LedgerWrite[] = [
             replace(
                 ctx.run,
-                { ...options.run, state: 'closed', closedAt: at, closeReason: reason, expiresAt },
+                {
+                    ...options.run,
+                    state: 'closed',
+                    closedAt: at,
+                    closeReason: reason,
+                    expiresAt: runTtlSeconds(at),
+                },
                 at
             ),
             poolAfter(ctx.pool, next, at),
@@ -712,7 +723,17 @@ export const runTier3 = async (
             await policyFor(ctx.run.label)
         );
         if (result.untrusted > 0) diagnostic('warning', failure('email_untrusted'), ctx.run.label);
-        if (!result.found) return; // Overdue (evaluator) pages after confirm + 6d + 2h.
+        if (!result.found) {
+            // Overdue (evaluator) pages after confirm + 6d + 2h. A day later, give up:
+            // orphan the account so the user cancel path clears the pending hold
+            // instead of leaving it busy forever.
+            const warning = ctx.steps.get('Warning');
+            if (warning && now() >= warning.dueAt + WARNING_MISSING_GRACE_MS) {
+                outcome('Tier3.Warned', 0, ctx, failure('warning_missing'));
+                await close(ctx, 'warning_missing', { state: 'orphaned' }, { failed: ['Warning'] });
+            }
+            return;
+        }
         const arrival = result.found.lastModified;
         if (result.found.template.hours !== WARNING_HOURS) {
             outcome('Tier3.Warned', 0, ctx, failure('malformed'));

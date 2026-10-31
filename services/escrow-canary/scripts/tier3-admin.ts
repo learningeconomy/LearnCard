@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import {
     checkReady,
+    closeRun,
     closeStep,
     initPool,
     injectOverdue,
@@ -17,6 +18,7 @@ import { createDynamoLedger, parseItem, stepNames, type StepName } from '../src/
  * Operator CLI for the tier-3 ledger (never secrets or escrow state).
  *   bun scripts/tier3-admin.ts <staging|production> <table> <command> [args]
  * Commands: init-pool | ready | list | close-step <runId> <Step> |
+ *   close-run <runId> <orphaned|quarantined> |
  *   unquarantine <hold-NN> | pause | resume | inject-overdue (staging only) |
  *   replay <snapshot.json> <ISO time>   (offline evaluator; no AWS access)
  */
@@ -43,7 +45,7 @@ switch (command) {
         break;
     case 'ready':
         await checkReady(context);
-        console.log('ledger ready: tier3_enabled may be set');
+        console.log('ledger ready (StartAge anchored now): set tier3_enabled within the hour');
         break;
     case 'list':
         for (const line of summarize(await ledger.scanAll())) console.log(line);
@@ -52,6 +54,12 @@ switch (command) {
         const [runId, name] = args;
         if (!runId || !stepNames.includes(name as StepName)) usage();
         await closeStep(context, runId, name as StepName);
+        break;
+    }
+    case 'close-run': {
+        const [runId, state] = args;
+        if (!runId || (state !== 'orphaned' && state !== 'quarantined')) usage();
+        await closeRun(context, runId, state as 'orphaned' | 'quarantined');
         break;
     }
     case 'unquarantine':

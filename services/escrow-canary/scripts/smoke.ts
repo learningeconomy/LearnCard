@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createSdk } from '../src/sdk';
 import { memoryStorage } from '../src/storage';
 import type { Config } from '../src/config';
-import { initPool } from '../src/tier3/admin';
+import { checkReady, initPool } from '../src/tier3/admin';
 import { evaluate } from '../src/tier3/evaluator';
 import { parseMessage, parseTemplate } from '../src/tier3/inbox';
 import { createMemoryLedger } from '../src/tier3/ledger';
@@ -40,6 +40,7 @@ assert.equal(await strategy.reconstructKey(split.localKey, split.remoteKey), key
 // Tier 3: bundled ledger/evaluator/MIME code paths, with no AWS access.
 const ledger = createMemoryLedger();
 await initPool({ ledger, environment: 'staging', now: 0 });
+await checkReady({ ledger, environment: 'staging', now: 0 });
 assert.deepEqual(evaluate(await ledger.scanAll(), 1, 12), {
     overdue: 0,
     poolAvailable: 12,

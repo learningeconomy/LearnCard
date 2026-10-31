@@ -13,9 +13,14 @@ const integer = (fallback: number, min: number, max: number) =>
 /** Fixed positional label for pool index `index` (0-based): hold-01..hold-12. */
 export const holdLabel = (index: number): HoldLabel => `hold-${String(index + 1).padStart(2, '0')}`;
 
-const holdAccount = z
-    .object({ id: identifier, secretArn: z.string().startsWith('arn:aws:secretsmanager:') })
-    .strict();
+/** Hold ids are capped at 32 characters (Lambda's 4 KB environment budget). */
+const holdId = z.string().regex(/^[A-Za-z0-9._-]{1,32}$/);
+/** Secrets Manager name prefix, e.g. `escrow-canary-staging/tier3/`; the id completes the name. */
+const secretPrefix = z
+    .string()
+    .regex(/^[A-Za-z0-9._+=@-]+(\/[A-Za-z0-9._+=@-]+)*\/$/)
+    .max(128);
+const holdAccount = z.object({ id: holdId, secretId: z.string().min(1).max(512) }).strict();
 
 const evaluatorSchema = z
     .object({
@@ -42,6 +47,8 @@ const runnerSchema = evaluatorSchema
                     .regex(/^[a-z0-9/-]{1,64}\/$/)
                     .default('inbox/'),
                 domain: hostname,
+                /** Pool addresses are exactly `<localPart>+<n>@<domain>` for hold-0n. */
+                localPart: z.string().regex(/^[a-z0-9-]{1,32}$/),
                 expectedSenders: z.array(z.string().email().toLowerCase()).min(1).max(3),
                 expectedDkimDomain: hostname,
                 requireDmarc: z.boolean().default(true),
@@ -52,8 +59,10 @@ const runnerSchema = evaluatorSchema
     .refine(
         config =>
             new Set(config.holdAccounts.map(account => account.id)).size === TIER3_POOL_SIZE &&
-            new Set(config.holdAccounts.map(account => account.secretArn)).size ===
+            new Set(config.holdAccounts.map(account => account.secretId)).size ===
                 TIER3_POOL_SIZE &&
+            // Same rule as Terraform: only staging's local part ends with -staging.
+            (config.environment === 'staging') === config.inbox.localPart.endsWith('-staging') &&
             config.inbox.expectedSenders.every(sender => {
                 const domain = sender.split('@')[1];
                 return (
@@ -65,6 +74,15 @@ const runnerSchema = evaluatorSchema
 export type RunnerConfig = z.infer<typeof runnerSchema>;
 
 const json = (value: string | undefined): unknown => JSON.parse(value ?? 'null');
+
+/** The hold list is ids only; each secret is addressed by name (`<prefix><id>`). */
+const holdAccounts = (ids: unknown, prefix: string | undefined): unknown => {
+    const parsedPrefix = secretPrefix.parse(prefix);
+    return z
+        .array(holdId)
+        .parse(ids)
+        .map(id => ({ id, secretId: `${parsedPrefix}${id}` }));
+};
 
 export const loadEvaluatorConfig = (env: NodeJS.ProcessEnv = process.env): EvaluatorConfig => {
     try {
@@ -90,11 +108,15 @@ export const loadRunnerConfig = (env: NodeJS.ProcessEnv = process.env): RunnerCo
             cancelCooldownHours: env.TIER3_CANCEL_COOLDOWN_HOURS,
             orphanCleanupDelayMs: env.TIER3_ORPHAN_CLEANUP_DELAY_MS,
             codePollMs: env.TIER3_CODE_POLL_MS,
-            holdAccounts: json(env.CANARY_HOLD_ACCOUNTS_JSON),
+            holdAccounts: holdAccounts(
+                json(env.CANARY_HOLD_ACCOUNTS_JSON),
+                env.TIER3_HOLD_SECRET_PREFIX
+            ),
             inbox: {
                 bucket: env.INBOX_BUCKET,
                 prefix: env.INBOX_PREFIX,
                 domain: env.INBOX_DOMAIN,
+                localPart: env.INBOX_LOCAL_PART,
                 expectedSenders: json(env.INBOX_EXPECTED_SENDERS_JSON),
                 expectedDkimDomain: env.INBOX_EXPECTED_DKIM_DOMAIN,
                 requireDmarc: env.INBOX_REQUIRE_DMARC !== 'false',

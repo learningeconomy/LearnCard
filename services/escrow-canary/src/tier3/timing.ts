@@ -26,9 +26,21 @@ export const STEP_DEADLINES = {
     Cancelled: 10 * MINUTE,
 } as const;
 
+/**
+ * A daily run whose warning never arrived is closed (orphaned) this long after
+ * the Warning step's due time, so the evaluator's Overdue page always fires first.
+ */
+export const WARNING_MISSING_GRACE_MS = DAY;
+
 /** Closed runs/steps expire from the ledger after this (DynamoDB TTL, seconds). */
 export const CLOSED_TTL_MS = 35 * DAY;
 export const ttlSeconds = (now: number): number => Math.floor((now + CLOSED_TTL_MS) / 1000);
+/**
+ * Run headers expire a day after their steps. DynamoDB TTL deletes in no
+ * guaranteed order; this keeps headers outliving their steps in practice (the
+ * evaluator also tolerates a closed step without its header).
+ */
+export const runTtlSeconds = (now: number): number => ttlSeconds(now + DAY);
 
 export const dayKey = (now: number): string => new Date(now).toISOString().slice(0, 10);
 

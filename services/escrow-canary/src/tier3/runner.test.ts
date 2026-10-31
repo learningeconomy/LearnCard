@@ -106,7 +106,7 @@ const harness = async (start: number, configure?: (world: World) => void) => {
 const leakFree = (lines: string[], world: World) => {
     const text = lines.join('\n');
     expect(text).not.toMatch(
-        /resume-secret|ephemeral-secret|token-hold|refresh-hold|did:key|canary\+|hold-id-/
+        /resume-secret|ephemeral-secret|token-hold|refresh-hold|did:key|canary-staging\+|hold-id-/
     );
     for (const hold of world.holds) expect(text).not.toContain(hold.code);
 };
@@ -159,6 +159,39 @@ describe('tier 3 daily run (fake clock)', () => {
         expect(firstOverdue.at).toBeGreaterThanOrEqual(due);
         expect(firstOverdue.at).toBeLessThan(due + TICK + 7 * MINUTE);
         expect(h.evaluations.filter(e => e.at < due).every(e => e.overdue === 0)).toBe(true);
+    });
+
+    it('a warning that never arrives: Overdue pages first, a day later the run is orphaned and its hold cancelled', async () => {
+        const h = await harness(TUESDAY, world => {
+            world.options.suppressWarning = true;
+        });
+        await h.run(8 * DAY + 6 * HOUR);
+        const first = h.runs().find(run => run.runId.startsWith('daily-2026-10-27'))!;
+        const due = first.confirmedAt! + 6 * DAY + 2 * HOUR;
+        expect(first.state).toBe('closed');
+        expect(first.closeReason).toBe('warning_missing');
+        expect(first.closedAt!).toBeGreaterThanOrEqual(due + DAY);
+        expect(first.closedAt!).toBeLessThan(due + DAY + TICK);
+        // The Overdue page fired before the run was given up.
+        expect(h.evaluations.find(e => e.overdue > 0)!.at).toBeLessThan(first.closedAt!);
+        expect(
+            h.lines
+                .map(line => JSON.parse(line))
+                .find(line => line['Tier3.Warned'] === 0 && line.Account === first.label)
+        ).toMatchObject({ Reason: 'warning_missing' });
+        // The closed Warning step stops counting as overdue once failed.
+        const step = (await h.ledger.get(keys.step(first.runId, 'Warning'))) as {
+            outcome?: string;
+            expiresAt?: number;
+        };
+        expect(step.outcome).toBe('0');
+        // TTL: the run header outlives its steps by a day.
+        expect(first.expiresAt).toBe(step.expiresAt! + DAY / 1000);
+        // Orphan cleanup cancelled the pending hold through the user path.
+        const hold = h.world.holds.find(candidate => candidate.label === first.label)!;
+        expect(hold.status).toBe('cancelled');
+        expect(h.world.secretOf(first.label).hold).toBeUndefined();
+        expect(['cooling', 'busy']).toContain((await h.pool(first.label)).state);
     });
 
     it('scenario (d): the runner alone never emits a heartbeat', async () => {
@@ -334,6 +367,28 @@ describe('tier 3 start, code and orphan handling', () => {
         const run = h.runs()[0];
         expect((await h.pool(run.label)).state).toBe('orphaned');
     });
+
+    it.each([
+        ["the other environment's local part", 'canary+1@inbox.example.com'],
+        ["another account's +n", 'canary-staging+2@inbox.example.com'],
+    ])(
+        'refuses a hold secret registered with %s before any escrow call',
+        async (_name, recoveryEmail) => {
+            const h = await harness(TUESDAY + HOUR, world => {
+                world.secretOf('hold-01').recoveryEmail = recoveryEmail;
+            });
+            await h.tick();
+            expect(h.count('start')).toBe(0);
+            expect(JSON.parse(h.lines.find(l => l.includes('"Tier3.Started"'))!)).toMatchObject({
+                'Tier3.Started': 0,
+                Reason: 'config',
+            });
+            const run = h.runs()[0];
+            expect(run.label).toBe('hold-01');
+            expect(run.closeReason).toBe('start_not_called');
+            expect((await h.pool('hold-01')).state).toBe('idle');
+        }
+    );
 
     it('cleans an orphan once after 24h through the user cancel path', async () => {
         const h = await harness(TUESDAY + HOUR, world => (world.options.codeSent = false));

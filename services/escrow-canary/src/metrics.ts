@@ -42,6 +42,7 @@ const reasons = new Set([
     'did_mismatch',
     'not_enrolled',
     'deadline_mismatch',
+    'warning_missing',
     'code_not_sent',
     'existing_hold',
     'interrupted',

@@ -13,33 +13,33 @@ one to code) and several optional ones.
 
 ## 0. Summary
 
-| Topic          | Implementation                                                                                                                                                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Functions      | Two Lambdas from the existing ZIP: tier-3 **runner** and **deadline evaluator**, both `rate(15 minutes)`, concurrency 1, no retries, 60 s max event age.                                                                             |
-| Ledger         | DynamoDB `escrow-canary-<env>-tier3`. Whole-item compare-and-swap on `version` (or create-if-absent) for every write; multi-item changes are transactions. No secrets.                                                               |
-| Hold secrets   | `hold = {runId, holdId, resumeToken, clientEphemeralPrivateKey, expectations, requestedAt}` and `lastReleasedRunId` in that account's secret, written before any later I/O.                                                          |
-| Inbox          | Shared account-scoped stack `infra/escrow-canary-inbox` owns the zone, SES identity and the single active rule set. Each environment owns only its 12 exact-recipient rules, bucket and key.                                         |
-| Email trust    | The first `Authentication-Results` must be SES's and sit above every original header; `spf=pass`, `dmarc=pass` (configurable), DKIM pass in the configured domain **aligned with From**, allowlisted From, SES verdicts, `To` match. |
-| Refusals       | Classified from a fresh `getEscrowRecoveryStatus`, because the SDK drops refusal bodies.                                                                                                                                             |
-| Metrics        | Namespace `LearnCard/EscrowCanary`, alarm series `{Environment, Tier="3"}`; `Account=hold-NN`, `Kind`, `Step`, `Reason`, `Outcome` are diagnostic.                                                                                   |
-| Off by default | `hold_account_ids = []`, `inbox_enabled = false`, `tier3_enabled = false`: no tier-3 or inbox resource exists (asserted by a Terraform test).                                                                                        |
-| Bundle         | **Not** a no-op for production: the shared ZIP changes (strict tier parse, new dependencies), so the next production apply after a rebuild redeploys the live tier 1/2 functions. Run the bundle in staging first (README).          |
-| api/ and app/  | No change. Only existing SDK calls, made the way the app makes them.                                                                                                                                                                 |
+| Topic          | Implementation                                                                                                                                                                                                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Functions      | Two Lambdas from the existing ZIP: tier-3 **runner** and **deadline evaluator**, both `rate(15 minutes)`, concurrency 1, no retries, 60 s max event age.                                                                                                                                                    |
+| Ledger         | DynamoDB `escrow-canary-<env>-tier3`. Whole-item compare-and-swap on `version` (or create-if-absent) for every write; multi-item changes are transactions. No secrets.                                                                                                                                      |
+| Hold secrets   | `hold = {runId, holdId, resumeToken, clientEphemeralPrivateKey, expectations, requestedAt}` and `lastReleasedRunId` in that account's secret, written before any later I/O.                                                                                                                                 |
+| Inbox          | Shared account-scoped stack `infra/escrow-canary-inbox` owns the zone, SES identity and the single active rule set. Each environment owns only its 12 exact-recipient rules, bucket and key.                                                                                                                |
+| Email trust    | The first `Authentication-Results` must be SES's and sit above every original header; `spf=pass`, `dmarc=pass` (configurable), DKIM pass in the configured domain **aligned with From** and no non-pass DKIM, comment/quote-aware parsing, allowlisted From, SES verdicts, a single exact `To` and no `Cc`. |
+| Refusals       | Classified from a fresh `getEscrowRecoveryStatus`, because the SDK drops refusal bodies.                                                                                                                                                                                                                    |
+| Metrics        | Namespace `LearnCard/EscrowCanary`, alarm series `{Environment, Tier="3"}`; `Account=hold-NN`, `Kind`, `Step`, `Reason`, `Outcome` are diagnostic.                                                                                                                                                          |
+| Off by default | `hold_account_ids = []`, `inbox_enabled = false`, `tier3_enabled = false`: no tier-3 or inbox resource exists (asserted by a Terraform test).                                                                                                                                                               |
+| Bundle         | **Not** a no-op for production: the shared ZIP changes (strict tier parse, new dependencies), so the next production apply after a rebuild redeploys the live tier 1/2 functions. Run the bundle in staging first (README).                                                                                 |
+| api/ and app/  | No change. Only existing SDK calls, made the way the app makes them.                                                                                                                                                                                                                                        |
 
 ## 1. Components
 
-| File                                           | Responsibility                                                                                                           |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `src/handler.ts`                               | Strict `CANARY_TIER` parse (`1`/`2`/`3`, anything else never runs). Tiers 1/2 unchanged; tier 3 dispatch.                |
-| `src/tier3/handler.ts`                         | Wires the runner (ledger, S3 inbox, secrets, SDK) or the evaluator (ledger only).                                        |
-| `src/tier3/config.ts`                          | zod config for both roles; 12 distinct hold accounts; senders must sit inside the DKIM domain.                           |
-| `src/tier3/ledger.ts`                          | Item schemas (strict; unknown items throw), DynamoDB and in-memory ledgers with identical CAS semantics.                 |
-| `src/tier3/runner.ts`                          | Tick orchestration and run state machine.                                                                                |
-| `src/tier3/evaluator.ts`                       | Pure `evaluate(items, now, poolSize)` and the emitting wrapper.                                                          |
-| `src/tier3/inbox.ts`                           | S3 listing/reading with caps, minimal MIME parser, trust checks, templates, message selection.                           |
-| `src/tier3/timing.ts`                          | Pure deadline rules.                                                                                                     |
-| `src/tier3/admin.ts`, `scripts/tier3-admin.ts` | Operator CLI: `init-pool`, `ready`, `list`, `close-step`, `unquarantine`, `pause`, `resume`, `inject-overdue`, `replay`. |
-| `src/tier3/test-fakes.ts`                      | Test-only synthetic escrow world (never imported by the handler; checked absent from the bundle).                        |
+| File                                           | Responsibility                                                                                                                        |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/handler.ts`                               | Strict `CANARY_TIER` parse (`1`/`2`/`3`, anything else never runs). Tiers 1/2 unchanged; tier 3 dispatch.                             |
+| `src/tier3/handler.ts`                         | Wires the runner (ledger, S3 inbox, secrets, SDK) or the evaluator (ledger only).                                                     |
+| `src/tier3/config.ts`                          | zod config for both roles; 12 distinct hold accounts; senders must sit inside the DKIM domain.                                        |
+| `src/tier3/ledger.ts`                          | Item schemas (strict; unknown items throw), DynamoDB and in-memory ledgers with identical CAS semantics.                              |
+| `src/tier3/runner.ts`                          | Tick orchestration and run state machine.                                                                                             |
+| `src/tier3/evaluator.ts`                       | Pure `evaluate(items, now, poolSize)` and the emitting wrapper.                                                                       |
+| `src/tier3/inbox.ts`                           | S3 listing/reading with caps, minimal MIME parser, trust checks, templates, message selection.                                        |
+| `src/tier3/timing.ts`                          | Pure deadline rules.                                                                                                                  |
+| `src/tier3/admin.ts`, `scripts/tier3-admin.ts` | Operator CLI: `init-pool`, `ready`, `list`, `close-step`, `close-run`, `unquarantine`, `pause`, `resume`, `inject-overdue`, `replay`. |
+| `src/tier3/test-fakes.ts`                      | Test-only synthetic escrow world (never imported by the handler; checked absent from the bundle).                                     |
 
 New dependencies: `@aws-sdk/client-dynamodb`, `@aws-sdk/lib-dynamodb`,
 `@aws-sdk/client-s3`. **DECISION (Dep):** no `postal-mime`. The enclave sends one
@@ -53,14 +53,16 @@ Items (all carry `pk`, `sk`, `type`, `env`, `version`, `updatedAt`):
 
 | pk / sk                                                           | Purpose                                                                                                                                                                  |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `META` / `META`                                                   | `enabledAt`, `paused`, `pausedAt?`. Written by the runner's first tick, never by `init-pool`.                                                                            |
+| `META` / `META`                                                   | `enabledAt`, `paused`, `pausedAt?`. Written by `tier3-admin ready` (or, as a fallback, the runner's first tick), never by `init-pool`.                                   |
 | `POOL#hold-NN` / `POOL`                                           | `state` (`idle`, `busy`, `orphaned`, `cooling`, `quarantined`), `runId?`, `stateSince`, `lastReturnedAt`, `availableAt?`, `quarantineReason?`, `orphanCleanupAttempted`. |
 | `SLOT#daily#YYYY-MM-DD` / `SLOT`, `SLOT#cancel#YYYY-Www` / `SLOT` | One daily start, one weekly cancel run.                                                                                                                                  |
 | `RUN#<runId>` / `RUN`                                             | `kind`, `label`, `state`, timestamps, `codeObjectKey` (S3 key, never the code), `confirmRetried`, `releaseAfter`, `closeReason`, `expiresAt`.                            |
 | `RUN#<runId>` / `STEP#<name>`                                     | `dueAt`, `observedAt?`, `outcome?` (`1`, `0`, `abandoned`, `operator_closed`), `reason?`.                                                                                |
 
 `runId = <kind>-<slot>-<label>` is deterministic. A step item exists only once it
-is expected (CANARY.md:163-170). Closed runs and steps get a 35-day TTL. The
+is expected (CANARY.md:163-170). Closed steps get a 35-day TTL and their run
+header 36 days, so headers outlive their steps (DynamoDB TTL deletes in no
+guaranteed order; the evaluator also ignores a closed step without its header). The
 ledger holds no tokens, keys, codes, emails, DIDs or configured account ids;
 `holdId` alone authorizes nothing (`lca-api/src/routes/escrow.ts:1073-1092`).
 
@@ -147,6 +149,11 @@ the parser captures the number and the runner requires 24.
 4. RUN → `warned` with `releaseAfter`; create `Released` and `Reenrolled` due
    `releaseAfter + 2 h`; `Warned=1`.
 
+No warning email: the `Warning` step goes overdue (page) at `confirmedAt + 6 d + 2 h`.
+A day after that due time the run closes `Warned=0` `warning_missing` and the
+account is `orphaned`, so the orphan cleanup (§3.8) cancels the pending hold
+through the user's cancel path instead of leaving the account busy forever.
+
 ### 3.5 Release and re-enrolment
 
 - From `releaseAfter + 120 s`: RUN → `releasing` **before** `executeRecovery`
@@ -203,7 +210,9 @@ path (`escrow.ts:1094-1114`), clear `hold`, then `cooling` (a hold was cancelled
 CANARY.md §5 wording was updated to match.
 
 `quarantined` only clears through `tier3-admin unquarantine` after an owner-path
-repair. A crash before the start call (`startCallAt` absent) closes the run with
+repair. `tier3-admin close-run <runId> <orphaned|quarantined>` is the operator
+escape hatch for a run stuck in any open state: it closes the run, marks open
+steps `operator_closed` and frees the account in the chosen state. A crash before the start call (`startCallAt` absent) closes the run with
 the account `idle`. A `starting` run whose secret already holds `hold.runId`
 advances to `awaiting_code` (`Started=1`, `Outcome=duplicate`).
 
@@ -216,13 +225,17 @@ cooling account: minimum `PoolAvailable` ≈ 3 with 12 accounts. **DECISION (Poo
 ## 4. Evaluator
 
 `evaluate()` scans every item (strongly consistent, paginated) and throws on any
-malformed or unknown item, a pool count other than 12, duplicate META or a step
-without its run. Otherwise:
+malformed or unknown item, a pool count other than 12, a missing or duplicate
+META, or an **open** step without its run (a closed step whose header TTL already
+removed is skipped). Otherwise:
 
 - `Overdue`: steps with `dueAt ≤ now`, no `observedAt` and no `outcome`.
 - `PoolAvailable`: `idle` or `cooling`, and `availableAt` absent or past.
 - `StartAgeMinutes`: from the newest run `startedAt`, or `META.enabledAt`.
-- No META yet (before the runner's first tick): warm-up, `StartAge=0`.
+- No META (ledger never made ready): not evaluable, so the heartbeat pages.
+  `tier3-admin ready` writes META (`enabledAt = now`) and re-anchors it while no
+  run exists, so StartAge never depends on the runner completing a tick: a runner
+  that fails every tick (bad configuration) pages through StartAge after 26 h.
 - Paused: `Overdue=0`, `StartAge=0`, `Paused=1`.
 
 The wrapper emits `Overdue`, `PoolAvailable`, `StartAgeMinutes`, `Paused`, then
@@ -259,13 +272,19 @@ expected sender) counts as `email_untrusted` and never satisfies a step.
    it, and the block must contain exactly one. Authserv-id `amazonses.com`.
    **UNVERIFIED:** SES's header order; capture a redacted real message in staging
    before production.
-2. `spf=pass`; `dmarc=pass` unless `inbox_require_dmarc=false` (the escrow stack
+2. The header value is split on `;` only outside RFC 8601 comments and quoted
+   strings (unbalanced ones fail), so sender-controlled text SES echoes
+   (`smtp.mailfrom`, `smtp.helo`) cannot inject results. Exactly one `spf`
+   result, at most one `dmarc` result, and no `dkim` result other than `pass`.
+   `spf=pass`; `dmarc=pass` unless `inbox_require_dmarc=false` (the escrow stack
    publishes DMARC only with `create_sending_zone`, `infra/escrow-enclave/email.tf:54-81`).
 3. A `dkim=pass` whose `header.d` (or `header.i` domain) is the configured DKIM
    domain or a subdomain **and** aligned (relaxed) with the From domain.
 4. Exactly one `From` header with one address, in `inbox_expected_senders`.
 5. `X-SES-Spam-Verdict` and `X-SES-Virus-Verdict` exactly `PASS` in the SES block.
-6. `To` contains the account's `recoveryEmail`.
+6. Exactly one `To` header with exactly one address, the account's
+   `recoveryEmail`; no `Cc`/`Bcc`. A relayed genuine message for another user
+   cannot pass by adding headers.
 
 Senders and DKIM domain are Terraform inputs copied from the escrow output
 `enclave_email_configuration` (`ESCROW_EMAIL_FROM`, `ESCROW_EMAIL_IDENTITY`;
@@ -280,8 +299,10 @@ Senders and DKIM domain are Terraform inputs copied from the escrow output
 | Warning | `^Your (.{1,64}) recovery completes soon$`      | `^Your (.{1,64}) account recovery will complete in about ([0-9]{1,3}) hours unless you cancel it\.$` |
 | Started | `^Your (.{1,64}) account recovery has started$` | ignored                                                                                              |
 
-Hold accounts must have `recoveryLanguage = en` and a `recoveryEmail` on the inbox
-domain; the runner refuses other secrets.
+Hold accounts must have `recoveryLanguage = en` and a `recoveryEmail` of exactly
+`<INBOX_LOCAL_PART>+<n>@<INBOX_DOMAIN>` for `hold-0n`; the runner refuses other
+secrets (`config`) before any escrow call, so a wrong `+n` or the other
+environment's local part cannot send a code to an inbox it does not read.
 
 ## 6. Metrics
 
@@ -364,9 +385,12 @@ metrics. Tier 1/2 roles unchanged. No escrow-account grants.
 ## 9. Configuration
 
 Lambda environment (runner): base tier 1/2 variables plus `CANARY_ROLE`,
-`CANARY_HOLD_ACCOUNTS_JSON`, `TIER3_LEDGER_TABLE`, `TIER3_POOL_SIZE`,
+`CANARY_HOLD_ACCOUNTS_JSON` (12 ids, at most 32 characters each),
+`TIER3_HOLD_SECRET_PREFIX` (each secret is addressed by name `<prefix><id>`,
+keeping twelve ARNs out of Lambda's 4 KB environment; Terraform checks the size
+with a precondition), `TIER3_LEDGER_TABLE`, `TIER3_POOL_SIZE`,
 `TIER3_START_HOUR_UTC`, `TIER3_HOLD_DURATION_MS`, `TIER3_CANCEL_COOLDOWN_HOURS`,
-`INBOX_BUCKET`, `INBOX_PREFIX`, `INBOX_DOMAIN`, `INBOX_EXPECTED_SENDERS_JSON`,
+`INBOX_BUCKET`, `INBOX_PREFIX`, `INBOX_DOMAIN`, `INBOX_LOCAL_PART`, `INBOX_EXPECTED_SENDERS_JSON`,
 `INBOX_EXPECTED_DKIM_DOMAIN`, `INBOX_REQUIRE_DMARC`. Optional:
 `TIER3_ORPHAN_CLEANUP_DELAY_MS`, `TIER3_CODE_POLL_MS`. Evaluator: environment,
 table and pool size only.

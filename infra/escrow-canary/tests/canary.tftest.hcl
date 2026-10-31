@@ -162,6 +162,16 @@ run "tier3_contract" {
   }
   assert {
     condition = (
+      aws_lambda_function.tier3["runner"].environment[0].variables.CANARY_HOLD_ACCOUNTS_JSON == jsonencode([for i in range(12) : format("hold-%02d", i + 1)]) &&
+      aws_lambda_function.tier3["runner"].environment[0].variables.TIER3_HOLD_SECRET_PREFIX == "escrow-canary-staging/tier3/" &&
+      alltrue([for id, secret in aws_secretsmanager_secret.hold : secret.name == "escrow-canary-staging/tier3/${id}"]) &&
+      aws_lambda_function.tier3["runner"].environment[0].variables.INBOX_LOCAL_PART == "canary-staging" &&
+      local.tier3_runner_env_bytes <= 3800
+    )
+    error_message = "Runner gets hold ids only (secrets addressed by name), the exact inbox local part, and fits Lambda's 4 KB environment."
+  }
+  assert {
+    condition = (
       length(jsondecode(aws_iam_role_policy.tier3_evaluator[0].policy).Statement) == 3 &&
       jsondecode(aws_iam_role_policy.tier3_evaluator[0].policy).Statement[0].Action == ["dynamodb:Scan", "dynamodb:Query", "dynamodb:GetItem"] &&
       !strcontains(aws_iam_role_policy.tier3_evaluator[0].policy, "secretsmanager") &&
@@ -283,3 +293,57 @@ run "rejects_sender_outside_dkim_domain" {
   }
   expect_failures = [var.inbox_expected_senders]
 }
+
+run "max_inputs_fit_runner_environment" {
+  command = plan
+  variables {
+    environment                = "production"
+    tenant_id                  = "learncard-production-tenant"
+    firebase_api_key           = join("", [for i in range(39) : "k"])
+    escrow_key_id              = join("", [for i in range(64) : "e"])
+    authority_generation       = join("", [for i in range(64) : "g"])
+    account_ids                = [for i in range(3) : format("tier12-account-%017d", i)]
+    measurements               = [for t in range(3) : { pcr0 = join("", [for i in range(96) : "a"]), pcr1 = join("", [for i in range(96) : "b"]), pcr2 = join("", [for i in range(96) : "c"]) }]
+    hold_account_ids           = [for i in range(12) : format("hold-account-%019d", i)]
+    inbox_enabled              = true
+    inbox_domain               = "canary-inbox.example.com"
+    inbox_local_part           = "canary"
+    inbox_expected_senders     = ["recovery@vault.notify.example.com", "recovery@new.vault.notify.example.com", "recovery@next.vault.notify.example.com"]
+    inbox_expected_dkim_domain = "vault.notify.example.com"
+  }
+  override_data {
+    target = data.aws_ses_active_receipt_rule_set.current[0]
+    values = { rule_set_name = "escrow-canary-inbox" }
+  }
+  assert {
+    condition     = alltrue([for id in var.hold_account_ids : length(id) == 32]) && local.tier3_runner_env_bytes <= 3800
+    error_message = "Three measurement tuples, three senders and maximum-length hold ids must fit the runner environment."
+  }
+}
+
+run "rejects_oversized_runner_environment" {
+  command = plan
+  variables {
+    tenant_id                  = format("%02500d", 0)
+    hold_account_ids           = [for i in range(12) : format("hold-%02d", i + 1)]
+    inbox_enabled              = true
+    inbox_domain               = "inbox.example.com"
+    inbox_local_part           = "canary-staging"
+    inbox_expected_senders     = ["recovery@vault.notify.example.com"]
+    inbox_expected_dkim_domain = "vault.notify.example.com"
+  }
+  override_data {
+    target = data.aws_ses_active_receipt_rule_set.current[0]
+    values = { rule_set_name = "escrow-canary-inbox" }
+  }
+  expect_failures = [aws_lambda_function.tier3]
+}
+
+run "rejects_long_hold_ids" {
+  command = plan
+  variables {
+    hold_account_ids = [for i in range(12) : format("hold-account-%021d", i)]
+  }
+  expect_failures = [var.hold_account_ids]
+}
+

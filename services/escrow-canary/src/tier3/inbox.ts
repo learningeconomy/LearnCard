@@ -254,10 +254,52 @@ interface AuthResult {
     result: string;
     properties: Record<string, string>;
 }
+/**
+ * Split an Authentication-Results value on top-level ';' only (RFC 8601):
+ * parenthesized comments are dropped and quoted strings are blanked, so
+ * sender-controlled text echoed by SES (envelope-from, helo) cannot inject a
+ * result segment. Unbalanced quotes or comments fail closed.
+ */
+const splitAuthenticationResults = (value: string): string[] => {
+    const segments: string[] = [];
+    let current = '';
+    let depth = 0;
+    let quoted = false;
+    for (let index = 0; index < value.length; index += 1) {
+        const char = value[index];
+        if (char === '\\' && (quoted || depth > 0)) {
+            index += 1; // quoted-pair: skip the escaped character
+            continue;
+        }
+        if (quoted) {
+            if (char === '"') {
+                quoted = false;
+                current += '""';
+            }
+            continue;
+        }
+        if (depth > 0) {
+            if (char === '(') depth += 1;
+            else if (char === ')') depth -= 1;
+            if (depth === 0) current += ' ';
+            continue;
+        }
+        if (char === '"') quoted = true;
+        else if (char === '(') depth = 1;
+        else if (char === ')') throw new InboxError('email_untrusted');
+        else if (char === ';') {
+            segments.push(current);
+            current = '';
+        } else current += char;
+    }
+    if (quoted || depth > 0) throw new InboxError('email_untrusted');
+    segments.push(current);
+    return segments;
+};
 const parseAuthenticationResults = (
     value: string
 ): { authservId: string; results: AuthResult[] } => {
-    const [authserv, ...rest] = value.split(';');
+    const [authserv, ...rest] = splitAuthenticationResults(value);
     return {
         authservId: authserv.trim().split(/\s+/)[0].toLowerCase(),
         results: rest.flatMap(segment => {
@@ -307,9 +349,15 @@ export const isTrusted = (message: ParsedMessage, policy: TrustPolicy): boolean 
     if (all(sesBlock, 'authentication-results').length !== 1) fail();
     const auth = parseAuthenticationResults(message.headers[firstAuth].value);
     if (auth.authservId !== 'amazonses.com') fail();
-    const pass = (method: string) =>
-        auth.results.some(r => r.method === method && r.result === 'pass');
-    if (!pass('spf') || (policy.requireDmarc && !pass('dmarc'))) fail();
+    // Fail closed on ambiguity: one SPF and at most one DMARC result, and no
+    // DKIM result other than pass (a forged pass must never outvote a real fail).
+    const resultsFor = (method: string) => auth.results.filter(r => r.method === method);
+    const spf = resultsFor('spf');
+    const dmarc = resultsFor('dmarc');
+    const dkim = resultsFor('dkim');
+    if (spf.length !== 1 || spf[0].result !== 'pass') fail();
+    if (dmarc.length > 1 || (policy.requireDmarc && dmarc[0]?.result !== 'pass')) fail();
+    if (dkim.some(r => r.result !== 'pass')) fail();
     const fromDomain = domainOf(from[0]);
     const aligned = auth.results.some(result => {
         if (result.method !== 'dkim' || result.result !== 'pass') return false;
@@ -324,8 +372,12 @@ export const isTrusted = (message: ParsedMessage, policy: TrustPolicy): boolean 
     if (!aligned) fail();
     if (all(sesBlock, 'x-ses-spam-verdict').join() !== 'PASS') fail();
     if (all(sesBlock, 'x-ses-virus-verdict').join() !== 'PASS') fail();
-    const to = all(message.headers, 'to').flatMap(addresses);
-    if (!to.includes(policy.recoveryEmail.toLowerCase())) fail();
+    // Exactly one To with exactly this account's address and no copies: a
+    // relayed genuine message for another user cannot pass by adding a To/Cc.
+    const toHeaders = all(message.headers, 'to');
+    const to = toHeaders.length === 1 ? addresses(toHeaders[0]) : [];
+    if (to.length !== 1 || to[0] !== policy.recoveryEmail.toLowerCase()) fail();
+    if (all(message.headers, 'cc').length > 0 || all(message.headers, 'bcc').length > 0) fail();
     return true;
 };
 

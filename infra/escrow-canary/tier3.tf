@@ -106,25 +106,37 @@ locals {
     TIER3_POOL_SIZE    = "12"
   }
   tier3_runner_env = local.tier3 ? {
-    CANARY_ROLE                 = "runner"
-    LCA_API_URL                 = var.lca_api_url
-    TENANT_ID                   = var.tenant_id
-    FIREBASE_API_KEY            = var.firebase_api_key
-    ESCROW_KEY_ID               = var.escrow_key_id
-    AUTHORITY_GENERATION        = var.authority_generation
-    ESCROW_MEASUREMENTS_JSON    = jsonencode(var.measurements)
-    CANARY_ACCOUNTS_JSON        = jsonencode([for id in var.account_ids : { id = id, secretArn = aws_secretsmanager_secret.account[id].arn }])
-    CANARY_HOLD_ACCOUNTS_JSON   = jsonencode([for id in var.hold_account_ids : { id = id, secretArn = aws_secretsmanager_secret.hold[id].arn }])
+    CANARY_ROLE              = "runner"
+    LCA_API_URL              = var.lca_api_url
+    TENANT_ID                = var.tenant_id
+    FIREBASE_API_KEY         = var.firebase_api_key
+    ESCROW_KEY_ID            = var.escrow_key_id
+    AUTHORITY_GENERATION     = var.authority_generation
+    ESCROW_MEASUREMENTS_JSON = jsonencode(var.measurements)
+    CANARY_ACCOUNTS_JSON     = jsonencode([for id in var.account_ids : { id = id, secretArn = aws_secretsmanager_secret.account[id].arn }])
+    # Ids only: the runner addresses each hold secret by name (<prefix><id>), which
+    # keeps twelve full ARNs out of Lambda's 4 KB environment.
+    CANARY_HOLD_ACCOUNTS_JSON   = jsonencode(var.hold_account_ids)
+    TIER3_HOLD_SECRET_PREFIX    = "${local.name}/tier3/"
     TIER3_START_HOUR_UTC        = tostring(var.tier3_start_hour_utc)
     TIER3_HOLD_DURATION_MS      = tostring(var.tier3_hold_duration_ms)
     TIER3_CANCEL_COOLDOWN_HOURS = tostring(var.tier3_cancel_cooldown_hours)
     INBOX_BUCKET                = var.inbox_enabled ? aws_s3_bucket.inbox[0].bucket : ""
     INBOX_PREFIX                = "inbox/"
     INBOX_DOMAIN                = var.inbox_domain
+    INBOX_LOCAL_PART            = var.inbox_local_part
     INBOX_EXPECTED_SENDERS_JSON = jsonencode(var.inbox_expected_senders)
     INBOX_EXPECTED_DKIM_DOMAIN  = var.inbox_expected_dkim_domain
     INBOX_REQUIRE_DMARC         = tostring(var.inbox_require_dmarc)
   } : {}
+  # Lambda rejects environments over 4 KB (keys + values). Secret ARNs are only
+  # known after apply, so size them from their deterministic shape (name plus
+  # the 7-character random suffix); every other value is known at plan.
+  tier3_runner_env_bytes = local.tier3 ? sum([for key, value in merge(local.tier3_common_env, local.tier3_runner_env, {
+    TIER3_LEDGER_TABLE   = "${local.name}-tier3"
+    INBOX_BUCKET         = var.inbox_enabled ? "${local.name}-inbox-${var.monitoring_account_id}" : ""
+    CANARY_ACCOUNTS_JSON = jsonencode([for id in var.account_ids : { id = id, secretArn = "arn:aws:secretsmanager:${var.aws_region}:${var.monitoring_account_id}:secret:${local.name}/${id}-XXXXXX" }])
+  }) : length(key) + length(value)]) : 0
 }
 resource "aws_lambda_function" "tier3" {
   for_each                       = local.tier3_roles
@@ -142,6 +154,13 @@ resource "aws_lambda_function" "tier3" {
     variables = each.key == "runner" ? merge(local.tier3_common_env, local.tier3_runner_env) : merge(local.tier3_common_env, { CANARY_ROLE = "evaluator" })
   }
   depends_on = [aws_iam_role_policy.tier3_runner, aws_iam_role_policy.tier3_evaluator, aws_cloudwatch_log_group.tier3]
+  lifecycle {
+    precondition {
+      # 3800 of 4096 bytes leaves headroom for estimate drift (e.g. a longer partition).
+      condition     = each.key != "runner" || local.tier3_runner_env_bytes <= 3800
+      error_message = "Tier 3 runner environment exceeds 3800 bytes (Lambda limit 4 KB): shorten ids/labels or measurement tuples."
+    }
+  }
 }
 resource "aws_lambda_function_event_invoke_config" "tier3" {
   for_each                     = local.tier3_roles

@@ -66,14 +66,14 @@ variable "alarm_actions_enabled" {
 # --- Tier 3 (7-day recovery) and canary inbox. Everything defaults OFF: with
 # hold_account_ids = [] and inbox_enabled = false no tier-3 resource exists.
 variable "hold_account_ids" {
-  description = "Tier 3 pool: 0 (tier 3 absent) or exactly 12 opaque labels, matching each hold secret's accountId. Never emails or DIDs."
+  description = "Tier 3 pool: 0 (tier 3 absent) or exactly 12 opaque labels (at most 32 characters: Lambda's 4 KB environment budget), matching each hold secret's accountId. Never emails or DIDs."
   type        = list(string)
   default     = []
   validation {
     condition = (length(var.hold_account_ids) == 0 || length(var.hold_account_ids) == 12) && length(toset(var.hold_account_ids)) == length(var.hold_account_ids) && alltrue([
-      for id in var.hold_account_ids : can(regex("^[A-Za-z0-9._-]{1,128}$", id)) && !contains(var.account_ids, id)
+      for id in var.hold_account_ids : can(regex("^[A-Za-z0-9._-]{1,32}$", id)) && !contains(var.account_ids, id)
     ])
-    error_message = "Supply 0 or 12 distinct opaque labels, disjoint from account_ids."
+    error_message = "Supply 0 or 12 distinct opaque labels of at most 32 characters, disjoint from account_ids."
   }
 }
 variable "tier3_enabled" {

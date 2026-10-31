@@ -92,9 +92,10 @@ Environment variables (all non-secret deployment configuration):
 | `CANARY_ACCOUNTS_JSON`     | Exactly three `{id,secretArn}` objects, ordered read-only, PIN A, PIN B                                              |
 
 Tier 3 adds `CANARY_ROLE` (`runner`/`evaluator`), `CANARY_HOLD_ACCOUNTS_JSON`
-(12 `{id,secretArn}`), `TIER3_*` (ledger table, pool size, start hour, hold
-duration, cancel cooldown) and `INBOX_*` (bucket, prefix, domain, expected
-senders, DKIM domain, DMARC requirement); see [TIER3-DESIGN.md](TIER3-DESIGN.md) §9.
+(12 ids; secrets are addressed by name `TIER3_HOLD_SECRET_PREFIX` + id),
+`TIER3_*` (ledger table, pool size, start hour, hold duration, cancel cooldown)
+and `INBOX_*` (bucket, prefix, domain, local part, expected senders, DKIM domain,
+DMARC requirement); see [TIER3-DESIGN.md](TIER3-DESIGN.md) §9.
 The evaluator receives only the environment, ledger table and pool size.
 
 The explicit tenant header takes priority over Origin/Referer in lca-api; a domain
@@ -325,26 +326,39 @@ untouched.
    If staging escrow SES is in the sandbox, it can only send to verified
    recipients: verify the inbox domain in the escrow account or obtain production
    access first.
-6. **Apply the environment** with the 12 `hold_account_ids`, `inbox_enabled=true`
-   and `tier3_enabled=false`. Then `terraform output hold_secret_arns`,
-   `inbox_recipients`, `ledger_table_name`.
+6. **Apply the environment** with the 12 `hold_account_ids` (at most 32
+   characters each), `inbox_enabled=true` and `tier3_enabled=false`. Then
+   `terraform output hold_secret_arns`, `inbox_recipients`, `ledger_table_name`,
+   `ticket_topic_arn`. **Confirm the new `${name}-tickets` email subscription**
+   (click the link in the confirmation mail). It is a separate subscription from
+   the tier 1/2 alarm topic even when `ticket_email` equals `alarm_email`; until it
+   is confirmed, `tier3-pool-low` and `tier3-email-slow` notifications are dropped.
+   Check that
+   `aws sns list-subscriptions-by-topic --topic-arn <ticket_topic_arn>` shows a real
+   `SubscriptionArn`, not `PendingConfirmation`, before step 9.
 7. **Create 12 hold accounts** per environment through normal sign-up with the
    recovery email `<local>+<n>@<inbox_domain>` (account `hold-NN` = `+n`), English,
    escrow recovery enrolled, **no PIN needed**. Read sign-up mail from the bucket
    with break-glass access only. Sign each in once on the isolated workstation and
    populate its secret exactly as in "Staging operator setup" (same schema;
    `pin` may be a random valid placeholder; `recoveryLanguage` must be `en`; the
-   `recoveryEmail` must be on the inbox domain or the runner refuses it).
-8. **Seed and check the ledger**:
-   `bun scripts/tier3-admin.ts <env> <ledger_table_name> init-pool`, then `… ready`.
-   `ready` must pass before `tier3_enabled=true` (otherwise the evaluator throws,
-   no heartbeat is emitted and the silent alarm pages).
+   `recoveryEmail` must be exactly `<inbox_local_part>+<n>@<inbox_domain>` for
+   `hold-0n`, or the runner refuses the account with `config` before any start).
+8. **Seed the ledger**:
+   `bun scripts/tier3-admin.ts <env> <ledger_table_name> init-pool`.
+   Then, **within the hour before** the apply that sets `tier3_enabled=true`, run
+   `… ready`. It validates the pool and writes META (`enabledAt = now`; re-run it
+   to re-anchor while no run exists). StartAge is measured from it, so a runner
+   that fails every tick still pages after 26 h. Without `ready` the evaluator
+   throws (no META), no heartbeat is emitted and the silent alarm pages.
 9. **Staging drills** (below), then set `tier3_enabled=true` in staging. Production
    follows only after the drills and a 7-day observation; the first release
    signal comes 7 days after the first start.
 
 `tier3-admin` commands (ledger only; never secrets or escrow state; record each use):
 `list`, `close-step <runId> <Step>` (close a step left open by a crash),
+`close-run <runId> <orphaned|quarantined>` (close a run stuck in any open state,
+mark its open steps `operator_closed` and free the account),
 `unquarantine <hold-NN>` (after an owner-path repair), `pause` / `resume`,
 `inject-overdue` (refused in code unless the ledger is staging),
 `replay <snapshot.json> <ISO time>` (offline evaluator over an exported scan).
@@ -354,6 +368,10 @@ wait one tick (15 min) for in-flight executions, rotate, `resume`. While paused
 the runner touches nothing and the evaluator reports `Overdue=0`, `StartAge=0`,
 `Paused=1`. `resume` re-anchors start age and gives open steps one hour to catch
 up. Disabling only the schedules instead would page through Overdue/StartAge.
+
+A daily run whose **warning email never arrives** pages through Overdue at
+confirm + 6 d + 2 h; a day later the runner closes it `Warned=0`
+`warning_missing` and orphans the account (cleanup below).
 
 **Quarantine** happens on release failure, DID mismatch, failed re-enrolment,
 an interrupted release, an early release, or a failed orphan cleanup. Repair
