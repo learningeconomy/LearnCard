@@ -2,7 +2,10 @@ import {
     withSQLiteDatabase,
     ensureSQLiteSchema,
     forgetSQLiteSchema,
+    retainSQLiteConnection,
+    releaseSQLiteConnection,
 } from 'learn-card-base/SQL/connection';
+import { prepareNativeEncryption } from 'learn-card-base/SQL/nativeEncryption';
 import React, { useEffect, useState } from 'react';
 import { SQLiteHook, useSQLite } from 'learn-card-base/react-sqlite-hook';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
@@ -151,22 +154,36 @@ export const ensureWriteAheadLogging = async (db: SQLiteDBConnection) => {
 type NativeDatabase = { db: SQLiteDBConnection; sqlite: SQLiteHook };
 let nativeInitialization: Promise<NativeDatabase> | undefined;
 const initializeNativeDatabase = async (sqlite: SQLiteHook): Promise<NativeDatabase> => {
+    const encrypted = (await prepareNativeEncryption()) === 'encrypted';
     const consistent = (await sqlite.checkConnectionsConsistency()).result;
     const connected = (await sqlite.isConnection('learncardDB', false)).result;
     const db =
         consistent && connected
             ? await sqlite.retrieveConnection('learncardDB', false)
-            : await sqlite.createConnection('learncardDB', false, 'no-encryption', 1, false);
-    await withSQLiteDatabase(db, async () => {
-        await ensureUserTableExists(db);
-        await ensureCredentialsTableExists(db);
-        await ensureIndexTableExists(db);
-        await ensureCredentialCacheTableExists(db);
-        await ensureIndexCacheTableExists(db);
-        await ensureIndexPageCacheTableExists(db);
-        await ensureIndexCountCacheTableExists(db);
-        await ensureReactQueryTableExists(db);
-    });
+            : await sqlite.createConnection(
+                  'learncardDB',
+                  encrypted,
+                  encrypted ? 'secret' : 'no-encryption',
+                  1,
+                  false
+              );
+    retainSQLiteConnection(db);
+    try {
+        await withSQLiteDatabase(db, async () => {
+            await ensureUserTableExists(db);
+            await ensureCredentialsTableExists(db);
+            await ensureIndexTableExists(db);
+            await ensureCredentialCacheTableExists(db);
+            await ensureIndexCacheTableExists(db);
+            await ensureIndexPageCacheTableExists(db);
+            await ensureIndexCountCacheTableExists(db);
+            await ensureReactQueryTableExists(db);
+        });
+    } catch (error) {
+        await releaseSQLiteConnection(db).catch(() => undefined);
+        await sqlite.closeConnection('learncardDB', false).catch(() => undefined);
+        throw error;
+    }
     return { db, sqlite };
 };
 /** Native connection initialization is shared by remounts and account consumers. */

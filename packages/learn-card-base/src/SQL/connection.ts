@@ -17,6 +17,38 @@ interface ConnectionState {
 
 const connections = new WeakMap<SQLiteConnectionAccess, ConnectionState>();
 const schemas = new WeakMap<SQLiteConnectionAccess, Map<string, Promise<void>>>();
+const retained = new WeakSet<SQLiteConnectionAccess>();
+
+/** Native SQLCipher owners retain connections to avoid deriving the key for every query. */
+export const retainSQLiteConnection = (db: SQLiteConnectionAccess): void => {
+    retained.add(db);
+};
+
+/** Release retention; overlapping operations finish before the last close. */
+export const releaseSQLiteConnection = async (db: SQLiteConnectionAccess): Promise<void> => {
+    retained.delete(db);
+    const state = connections.get(db);
+    if (!state) return;
+    await transition(state, async () => {
+        if (state.users) return;
+        if (state.open === 'unknown') {
+            const status = await db.isDBOpen?.();
+            if (typeof status?.result !== 'boolean') {
+                throw new Error('SQLite connection state could not be determined');
+            }
+            state.open = status.result;
+        }
+        if (state.open) {
+            try {
+                await db.close();
+                state.open = false;
+            } catch (error) {
+                state.open = 'unknown';
+                throw error;
+            }
+        }
+    });
+};
 
 const transition = (state: ConnectionState, operation: () => Promise<void>): Promise<void> => {
     const result = state.transition.then(operation);
@@ -67,7 +99,7 @@ export const withSQLiteDatabase = async <T, Database extends SQLiteConnectionAcc
     } finally {
         connection.users--;
         await transition(connection, async () => {
-            if (!connection.users && connection.open === true) {
+            if (!connection.users && connection.open === true && !retained.has(db)) {
                 try {
                     await db.close();
                     connection.open = false;
@@ -109,7 +141,9 @@ export const ensureSQLiteSchema = (
     return result;
 };
 
-/** Invalidate schema knowledge after the owning connection's database is deleted. */
+/** Invalidate after database deletion, only when the owner has no active operations. */
 export const forgetSQLiteSchema = (db: SQLiteConnectionAccess): void => {
     schemas.delete(db);
+    connections.delete(db);
+    retained.delete(db);
 };
