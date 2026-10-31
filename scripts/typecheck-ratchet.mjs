@@ -7,6 +7,9 @@
 //     and `--update` refuses to write a baseline from it.
 //   - `--update` (bun run typecheck:baseline) rewrites the baseline from the current counts.
 //   - `--report=PATH` writes full diagnostics for an advisory PR-base comparison.
+//   - `--checker=bun` swaps tsc for `bun check` (Bun >= 1.4.3, TypeScript 7 semantics) over the
+//     same projects and tsconfigs; `--baseline=PATH` points it at a matching baseline. Set
+//     BUN_CHECK_BIN when the Bun that has `check` isn't the `bun` on PATH.
 // Counts depend on build state, so run it the way CI does: install, build the libraries
 // (`nx run-many -t build` over lib projects), compile Paraglide messages, then this script.
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -19,6 +22,7 @@ import { createDiagnosticReport } from './typecheck-diagnostics.mjs';
 
 // Data shapes:
 //   Project = { name, root, checks: Check[], incomplete?: string }   Check = { cmd, args, cwd }
+//   Checker = 'tsc' | 'bun'
 //   Result  = { name, count, errors: string[], incomplete: string | null, tail: string[],
 //               configErrors: number, errorCwds?: string[] }
 
@@ -60,7 +64,33 @@ export const leafConfigs = (path, seen = new Set()) => {
     });
 };
 
-const tscCheck = (repo, tsconfig) => {
+const BUN = () => process.env.BUN_CHECK_BIN || 'bun';
+
+// The same check, as tsc or as `bun check`. `--all` keeps bun from grouping identical errors,
+// so a count means the same thing for both checkers.
+const checkCommand = (checker, repo, tsconfig, extra = []) =>
+    checker === 'bun'
+        ? {
+              cmd: BUN(),
+              args: ['check', '--no-script', '-p', tsconfig, '--no-pretty', '--all', ...extra],
+              cwd: repo,
+          }
+        : {
+              cmd: join(repo, 'node_modules/.bin/tsc'),
+              args: ['--noEmit', '-p', tsconfig, ...extra, '--pretty', 'false'],
+              cwd: repo,
+          };
+
+// A project `typecheck` script made only of `tsc --noEmit [-p X]` steps maps onto `bun check -p X`.
+// Anything else keeps running the script (so still tsc) and is reported as such.
+export const scriptChecks = (script, cwd, checker) => {
+    if (checker !== 'bun') return [{ cmd: 'bun', args: ['run', 'typecheck'], cwd }];
+    const steps = script.split('&&').map(step => /^\s*tsc --noEmit(?: -p (\S+))?\s*$/.exec(step));
+    if (steps.some(step => !step)) return [{ cmd: 'bun', args: ['run', 'typecheck'], cwd }];
+    return steps.map(([, tsconfig = 'tsconfig.json']) => checkCommand('bun', cwd, tsconfig));
+};
+
+const tscCheck = (repo, tsconfig, checker = 'tsc') => {
     // Check workspace dependencies from source (`development` export condition) when the
     // config's module resolution supports custom conditions.
     const { options } = ts.getParsedCommandLineOfConfigFile(
@@ -73,29 +103,24 @@ const tscCheck = (repo, tsconfig) => {
         ts.ModuleResolutionKind.Node16,
         ts.ModuleResolutionKind.NodeNext,
     ].includes(options.moduleResolution);
-    return {
-        cmd: join(repo, 'node_modules/.bin/tsc'),
-        // `--rootDir .` stops a narrow rootDir (e.g. core's `src` while it also includes `test`)
-        // from ending the check at one TS6059 before the real errors are reported.
-        args: ['--noEmit', '-p', tsconfig, '--rootDir', '.', '--pretty', 'false'].concat(
-            conditions ? ['--customConditions', 'development'] : []
-        ),
-        cwd: repo,
-    };
+    // `--rootDir .` stops a narrow rootDir (e.g. core's `src` while it also includes `test`)
+    // from ending the check at one TS6059 before the real errors are reported.
+    return checkCommand(
+        checker,
+        repo,
+        tsconfig,
+        ['--rootDir', '.'].concat(conditions ? ['--customConditions', 'development'] : [])
+    );
 };
 
-export const toProjects = (repo, list) =>
+export const toProjects = (repo, list, checker = 'tsc') =>
     list
         .filter(({ root }) => root && root !== '.')
         .map(({ name, root }) => {
             // A project's own `typecheck` script wins: it names the tsconfigs that matter there.
-            if (readJson(join(repo, root, 'package.json')).scripts?.typecheck) {
-                return {
-                    name,
-                    root,
-                    checks: [{ cmd: 'bun', args: ['run', 'typecheck'], cwd: join(repo, root) }],
-                };
-            }
+            const script = readJson(join(repo, root, 'package.json')).scripts?.typecheck;
+            if (script)
+                return { name, root, checks: scriptChecks(script, join(repo, root), checker) };
             const tsconfig = ['tsconfig.app.json', 'tsconfig.json']
                 .map(f => join(repo, root, f))
                 .find(existsSync);
@@ -122,7 +147,11 @@ export const toProjects = (repo, list) =>
                     incomplete: `${relative(repo, tsconfig)} references no checkable tsconfig`,
                 };
             }
-            return { name, root, checks: leaves.map(leaf => tscCheck(repo, relative(repo, leaf))) };
+            return {
+                name,
+                root,
+                checks: leaves.map(leaf => tscCheck(repo, relative(repo, leaf), checker)),
+            };
         })
         .filter(p => p.checks.length || p.incomplete);
 
@@ -228,12 +257,16 @@ export const nextBaseline = (results, baseline, only) => {
 };
 
 const main = async () => {
-    const BASELINE = 'scripts/typecheck-baseline.json';
+    const arg = name => process.argv.find(a => a.startsWith(`--${name}=`))?.slice(name.length + 3);
+    const checker = arg('checker') ?? 'tsc';
+    if (!['tsc', 'bun'].includes(checker)) throw new Error(`Unknown --checker=${checker}`);
+    const BASELINE = arg('baseline') ?? 'scripts/typecheck-baseline.json';
     const update = process.argv.includes('--update');
     const reportFile = process.argv.find(a => a.startsWith('--report='))?.slice('--report='.length);
     const only = process.argv.filter(a => a.startsWith('--project=')).map(a => a.slice(10));
 
-    const projects = toProjects('.', nxProjects('.')).filter(
+    const started = Date.now();
+    const projects = toProjects('.', nxProjects('.'), checker).filter(
         p => only.length === 0 || only.includes(p.name)
     );
     const queue = [...projects];
@@ -269,7 +302,10 @@ const main = async () => {
         console.log(`${status.padEnd(4)} ${r.name}: ${r.count} (baseline ${allowed})`);
     }
     const total = results.reduce((sum, r) => sum + (r.count ?? 0), 0);
-    console.log(`\n${results.length} projects, ${total} type errors`);
+    console.log(
+        `\n${results.length} projects, ${total} type errors (${checker}, ${workers} workers, ` +
+            `${((Date.now() - started) / 1000).toFixed(1)}s)`
+    );
 
     for (const r of results.filter(result => result.configErrors)) {
         console.log(
