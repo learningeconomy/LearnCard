@@ -90,8 +90,8 @@ exceptions and both SCP size limits), and core `tests/authority.tftest.hcl`
 These are offline checks, not proof of AWS event delivery. The account's missing
 trail previously left governance alarms inert; see the dated evidence in
 [SECURITY.md](SECURITY.md) and mandatory [live drills](STAGING.md#cloudtrail-trail-and-alarm-drills--operator-only).
-Independent archived authority history remains deferred until before 50% rollout,
-subject to security acceptance of R-AUTHORITY-ROLLBACK for earlier stages.
+Independent archived authority history is deferred to post-launch hardening;
+R-AUTHORITY-ROLLBACK is accepted for all stages (LAUNCH-DECISIONS.md RAR).
 
 - The monitor authenticates proposals with security-owned key/measurement pins and
   correlates them with authenticated authority-table receipts. It does not decrypt
