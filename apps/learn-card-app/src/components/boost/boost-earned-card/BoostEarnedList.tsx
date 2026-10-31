@@ -1,30 +1,34 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { useFlags } from 'launchdarkly-react-client-sdk';
 
 import * as m from '../../../paraglide/messages.js';
 import { useLoadingLine } from '../../../stores/loadingStore';
 import useOnScreen from 'learn-card-base/hooks/useOnScreen';
 import credentialSearchStore from 'learn-card-base/stores/credentialSearchStore';
 
-import { IonRow, IonCol, IonGrid, IonSpinner } from '@ionic/react';
+import { IonCol, IonGrid, IonRow, IonSpinner } from '@ionic/react';
 import BoostEarnedCard from '../../../components/boost/boost-earned-card/BoostEarnedCard';
 import BoostErrorsDisplay from '../../../components/boost/boostErrors/BoostErrorsDisplay';
 
 import {
-    CredentialCategoryEnum,
-    useGetCredentialList,
     BoostPageViewMode,
     BoostPageViewModeType,
-    searchCredentialsFromCache,
+    CredentialCategoryEnum,
     CredentialListSkeleton,
+    searchCredentialsFromCache,
+    useGetCredentialList,
 } from 'learn-card-base';
-import type { CredentialCategory } from 'learn-card-base/types/credentials';
+import type { LCR } from 'learn-card-base/types/credential-records';
+import type { CredentialListCategory } from 'learn-card-base/types/credential-records';
 import {
     credentialCategoryToSubheaderType,
     SubheaderContentType,
 } from '../../main-subheader/MainSubHeader.types';
 import CategoryEmptyPlaceholder from '../../empty-placeholder/CategoryEmptyPlaceHolder';
+import { SelectableCredential, toSelectedCredential } from '../../bulk-select/SelectableCredential';
+import { credentialSelectionStore } from '../../../stores/credentialSelectionStore';
 
-type CategoryType = CredentialCategory | 'Hidden';
+type CategoryType = CredentialListCategory;
 
 type BoostEarnedListProps = {
     category: CategoryType;
@@ -41,9 +45,11 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     defaultImg,
     title,
 }) => {
+    const flags = useFlags();
+    const selectionActive = credentialSelectionStore.use.active();
     /*
         * start **
-        Earned boosts query + pagination 
+        Earned boosts query + pagination
     */
     const infiniteScrollRef = useRef<HTMLDivElement>(null);
     const {
@@ -73,6 +79,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
             | 'Events'
             | 'Merit Badge'
             | 'Family'
+            | 'Archived'
     );
 
     const searchActive = credentialSearchStore.use.isSearchActive();
@@ -90,7 +97,7 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         if (onScreen && hasNextPage) fetchNextPage();
     }, [fetchNextPage, hasNextPage, onScreen, infiniteScrollRef]);
     /*
-        Earned boosts query + pagination 
+        Earned boosts query + pagination
         * end **
     */
 
@@ -123,42 +130,77 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     const textColor = categoryColors[category];
 
-    const credentials =
-        records?.pages?.flatMap(page =>
-            page?.records
-                ?.filter?.(record => searchResults.find(cred => cred.uri === record?.uri))
-                .map((record, index) => {
-                    return (
-                        <BoostEarnedCard
-                            key={record?.uri || index}
-                            record={record}
-                            defaultImg={defaultImg}
-                            categoryType={
-                                category as
-                                    | 'Achievement'
-                                    | 'Skill'
-                                    | 'ID'
-                                    | 'Learning History'
-                                    | 'Work History'
-                                    | 'Hidden'
-                                    | 'Social Badge'
-                                    | 'Membership'
-                                    | 'Currency'
-                                    | 'Course'
-                                    | 'Accomplishment'
-                                    | 'Accommodation'
-                                    | 'Relationship'
-                                    | 'Events'
-                                    | 'Merit Badge'
-                                    | 'Family'
-                            }
-                            boostPageViewMode={viewMode}
-                            loading={credentialsLoading}
-                            textColor={textColor}
-                        />
-                    );
-                })
-        ) ?? [];
+    const visibleRecords = useMemo<LCR[]>(
+        () =>
+            records?.pages?.flatMap(page =>
+                (page.records ?? []).filter(record =>
+                    searchResults.find(cred => cred.uri === record?.uri)
+                )
+            ) ?? [],
+        [records, searchResults]
+    );
+
+    useEffect(() => {
+        if (!flags?.bulkCredentialActions || !selectionActive) return undefined;
+        const onKeyDown = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape') {
+                credentialSelectionStore.set.exit();
+                return;
+            }
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a') {
+                event.preventDefault();
+                credentialSelectionStore.set.selectMany(
+                    visibleRecords.flatMap(record => {
+                        const selection = toSelectedCredential(record);
+                        return selection ? [selection] : [];
+                    }),
+                    category
+                );
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [category, flags?.bulkCredentialActions, selectionActive, visibleRecords]);
+
+    const credentials = visibleRecords.map((record, index) => {
+        return (
+            <SelectableCredential
+                key={record?.uri || index}
+                record={record}
+                listId={category}
+                visibleRecords={visibleRecords}
+            >
+                <BoostEarnedCard
+                    record={record}
+                    defaultImg={defaultImg}
+                    categoryType={
+                        category as
+                            | 'Achievement'
+                            | 'Skill'
+                            | 'ID'
+                            | 'Learning History'
+                            | 'Work History'
+                            | 'Hidden'
+                            | 'Social Badge'
+                            | 'Membership'
+                            | 'Currency'
+                            | 'Course'
+                            | 'Accomplishment'
+                            | 'Accommodation'
+                            | 'Relationship'
+                            | 'Events'
+                            | 'Merit Badge'
+                            | 'Family'
+                            | 'Archived'
+                    }
+                    boostPageViewMode={viewMode}
+                    loading={credentialsLoading}
+                    textColor={textColor}
+                    hideCardOptionsMenu={selectionActive}
+                />
+            </SelectableCredential>
+        );
+    });
 
     const handleRefetch = async () => {
         try {
@@ -175,7 +217,9 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         <div className={`flex flex-col gap-[5px] mt-[6px] ${isCardView ? 'px-[15px]' : ''}`}>
             <span className="font-notoSans text-grayscale-900 text-[14px] font-[700]">
                 {searchString?.trim?.() === '' &&
-                    m['boost.search.searchEarned']({ count: searchResultsCount })}
+                    m['boost.search.searchEarned']({
+                        count: searchResultsCount,
+                    })}
                 {noSearchResults && m['boost.search.noResultsTitled']({ query: searchString })}
                 {searchResultsCount > 0 &&
                     searchString?.trim?.() !== '' &&
@@ -196,7 +240,9 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
                     <CategoryEmptyPlaceholder category={category} />
                     <div className="text-black mt-10">
                         <strong>
-                            <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">{`No ${title} yet.`}</p>
+                            <p className="font-montserrat text-[14px] font-[700] text-grayscale-900">
+                                {`No ${title} yet.`}
+                            </p>
                         </strong>
                     </div>
                 </section>

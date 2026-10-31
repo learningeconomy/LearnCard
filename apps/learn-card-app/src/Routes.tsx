@@ -31,6 +31,9 @@ const NotificationsPage = lazyWithRetry(
 const LoginPage = lazyWithRetry(() => import('./pages/login/LoginPage'));
 const CancelRecoveryPage = lazyWithRetry(() => import('./pages/recovery/CancelRecoveryPage'));
 const AchievementsPage = lazyWithRetry(() => import('./pages/achievements/AchievementsPage'));
+const ArchivedCredentialsPage = lazyWithRetry(
+    () => import('./pages/archived/ArchivedCredentialsPage')
+);
 const QualificationsPage = lazyWithRetry(() => import('./pages/qualifications/QualificationsPage'));
 
 const IdsPage = lazyWithRetry(() => import('./pages/ids/IdsPage'));
@@ -296,6 +299,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/contacts/search" component={AddressBook} />
                         <PrivateRoute exact path="/socialBadges" component={SocialBadgesPage} />
                         <PrivateRoute exact path="/achievements" component={AchievementsPage} />
+                        <PrivateRoute exact path="/archived" component={ArchivedCredentialsPage} />
                         <PrivateRoute exact path="/qualifications" component={QualificationsPage} />
                         <PrivateRoute
                             exact

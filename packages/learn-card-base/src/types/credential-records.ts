@@ -1,6 +1,10 @@
 import { CredentialRecord } from '@learncard/types';
 import { CredentialCategory } from './credentials';
 
+export const ARCHIVED_CATEGORY = 'Archived' as const;
+
+export type CredentialListCategory = CredentialCategory | typeof ARCHIVED_CATEGORY;
+
 /**
  * A previously current URI retained as app-local refresh history (LC-2117, LC-2135,
  * LC-2136). Entries are stored on the encrypted LearnCloud index record; the old
@@ -33,7 +37,7 @@ export type CredentialRefreshMetadata = {
 };
 
 export type CredentialMetadata = {
-    category: CredentialCategory;
+    category: CredentialListCategory;
     /**
      * All holder-driven category changes must set 'manual' so automatic backfills preserve them.
      * Unmarked historical categories are treated as automatic defaults.
@@ -48,6 +52,11 @@ export type CredentialMetadata = {
     contractUri?: string;
     boostUri?: string;
     refresh?: CredentialRefreshMetadata;
+    archive?: {
+        fromCategory: CredentialCategory;
+        fromCategorySource?: 'manual';
+        archivedAt: string;
+    } | null;
     __v?: number;
 };
 

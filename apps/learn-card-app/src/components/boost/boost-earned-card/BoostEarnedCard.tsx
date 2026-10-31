@@ -20,6 +20,7 @@ import {
     ModalTypes,
     DisplayTypeEnum,
     categoryMetadata,
+    CredentialCategoryEnum,
     BoostPageViewMode,
     CredentialCategory,
     BoostPageViewModeType,
