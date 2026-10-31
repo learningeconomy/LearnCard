@@ -125,8 +125,11 @@ const runCohort = (paths: readonly string[], index: number): Promise<LintResult[
             'json',
             '--no-error-on-unmatched-pattern',
             '--cache',
+            // Fresh checkouts change mtimes even when source is identical.
+            '--cache-strategy',
+            'content',
             '--cache-location',
-            `.nx-cache/eslint/${index}`,
+            `.nx-cache/eslint/${filesMode ? 'files' : index}`,
             ...existingPaths,
         ],
         {

@@ -78,10 +78,26 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
+            # Restore before installation so hashFiles sees repository inputs only.
+            # Keep the config prefix strict: ESLint's file cache cannot track external inputs.
+            - name: Compute workspace ESLint cache prefix
+              id: lint-cache-key
+              env:
+                  CACHE_PREFIX: ${{ runner.os }}-${{ runner.arch }}-workspace-eslint-v1-${{ hashFiles('bun.lock', 'bunfig.toml', '.github/workflows/lint.yml', '.github/actions/setup/action.yml', 'scripts/lint-workspace*', 'scripts/eslint-baseline.json', '**/package.json', '**/project.json', '**/tsconfig*.json', '**/*eslint*config*', '**/eslint-rules/**', '**/.eslintignore', '**/*prettier*', '**/.editorconfig', '**/.gitignore') }}
+              run: printf 'prefix=%s\n' "$CACHE_PREFIX" >> "$GITHUB_OUTPUT"
+
+            - name: Reuse workspace ESLint cache
+              uses: actions/cache@v6
+              with:
+                  path: .nx-cache/eslint
+                  key: ${{ steps.lint-cache-key.outputs.prefix }}-${{ github.event.pull_request.head.sha }}
+                  restore-keys: |
+                      ${{ steps.lint-cache-key.outputs.prefix }}-
+
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Test lint project discovery
+            - name: Test lint discovery and cache correctness
               run: node --test scripts/lint-workspace.test.mjs
 
             - name: Test proof publisher (offline fixtures)
