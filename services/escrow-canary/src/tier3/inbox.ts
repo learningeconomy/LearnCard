@@ -435,31 +435,47 @@ export const inboxPolicy = (config: RunnerConfig['inbox'], recoveryEmail: string
     recoveryEmail,
 });
 
-const readTrusted = async <K extends Template['kind']>(
+/** One trusted message whose content a caller-supplied parser accepted. */
+export interface ParsedFound<T> {
+    key: string;
+    lastModified: number;
+    value: T;
+}
+export interface ParsedFindResult<T> {
+    found?: ParsedFound<T>;
+    /** Allowlisted-sender mail that failed trust checks: a diagnostic, never satisfies a step. */
+    untrusted: number;
+    /** Trusted or unreadable mail whose MIME or content the parsers rejected (diagnostic). */
+    malformed: number;
+}
+/** `undefined` = not this kind of message (skip); throw `InboxError('malformed')` to reject. */
+export type MessageParser<T> = (message: ParsedMessage) => T | undefined;
+
+const readTrusted = async <T>(
     store: InboxStore,
     object: InboxObject,
-    kind: K,
-    policy: TrustPolicy
-): Promise<FoundMessage<K> | undefined> => {
+    policy: TrustPolicy,
+    parse: MessageParser<T>
+): Promise<ParsedFound<T> | undefined> => {
     const message = parseMessage(await store.get(object.key));
     if (!isTrusted(message, policy)) return undefined;
-    const template = parseTemplate(message);
-    if (!template || template.kind !== kind) return undefined;
-    return {
-        key: object.key,
-        lastModified: object.lastModified,
-        template: template as Extract<Template, { kind: K }>,
-    };
+    const value = parse(message);
+    if (value === undefined) return undefined;
+    return { key: object.key, lastModified: object.lastModified, value };
 };
 
-/** Newest-first; stops at the first trusted message of `kind` that arrived at or after `since`. */
-export const findMessage = async <K extends Template['kind']>(
+/**
+ * Newest-first; stops at the first trusted message that `parse` accepts and
+ * that arrived at or after `since`. Trust checks always apply; the parser only
+ * decides content. Shared by the runner and the provisioning tool.
+ */
+export const findParsed = async <T>(
     store: InboxStore,
     prefix: string,
-    kind: K,
     since: number,
-    policy: TrustPolicy
-): Promise<FindResult<K>> => {
+    policy: TrustPolicy,
+    parse: MessageParser<T>
+): Promise<ParsedFindResult<T>> => {
     const candidates = (await store.list(prefix))
         .filter(
             object =>
@@ -469,21 +485,50 @@ export const findMessage = async <K extends Template['kind']>(
         .sort((a, b) => b.lastModified - a.lastModified)
         .slice(0, MAX_CANDIDATES);
     let untrusted = 0;
+    let malformed = 0;
     for (const object of candidates) {
         if (object.size > MAX_MESSAGE_BYTES) {
             untrusted += 1;
             continue;
         }
         try {
-            const found = await readTrusted(store, object, kind, policy);
-            if (found) return { found, untrusted };
+            const found = await readTrusted(store, object, policy, parse);
+            if (found) return { found, untrusted, malformed };
         } catch (error) {
-            if (error instanceof InboxError)
-                untrusted += error.reason === 'email_untrusted' ? 1 : 0;
-            else throw error;
+            if (!(error instanceof InboxError)) throw error;
+            if (error.reason === 'email_untrusted') untrusted += 1;
+            else malformed += 1;
         }
     }
-    return { untrusted };
+    return { untrusted, malformed };
+};
+
+const templateOf =
+    <K extends Template['kind']>(kind: K): MessageParser<Extract<Template, { kind: K }>> =>
+    message => {
+        const template = parseTemplate(message);
+        return template?.kind === kind ? (template as Extract<Template, { kind: K }>) : undefined;
+    };
+const asFound = <K extends Template['kind']>(
+    found: ParsedFound<Extract<Template, { kind: K }>>
+): FoundMessage<K> => ({
+    key: found.key,
+    lastModified: found.lastModified,
+    template: found.value,
+});
+
+/** Newest-first; stops at the first trusted message of `kind` that arrived at or after `since`. */
+export const findMessage = async <K extends Template['kind']>(
+    store: InboxStore,
+    prefix: string,
+    kind: K,
+    since: number,
+    policy: TrustPolicy
+): Promise<FindResult<K>> => {
+    const result = await findParsed(store, prefix, since, policy, templateOf(kind));
+    return result.found
+        ? { found: asFound(result.found), untrusted: result.untrusted }
+        : { untrusted: result.untrusted };
 };
 
 /** Re-read one known object (crash recovery for a confirm already in flight). */
@@ -495,5 +540,6 @@ export const readKnownMessage = async <K extends Template['kind']>(
 ): Promise<FoundMessage<K> | undefined> => {
     const object = (await store.list(key)).find(candidate => candidate.key === key);
     if (!object || object.size > MAX_MESSAGE_BYTES) return undefined;
-    return readTrusted(store, object, kind, policy);
+    const found = await readTrusted(store, object, policy, templateOf(kind));
+    return found ? asFound(found) : undefined;
 };
