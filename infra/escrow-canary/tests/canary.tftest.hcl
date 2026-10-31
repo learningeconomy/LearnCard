@@ -5,6 +5,9 @@ mock_provider "aws" {
   mock_resource "aws_lambda_function" { defaults = { arn = "arn:aws:lambda:us-east-1:000000000000:function:canary" } }
   mock_resource "aws_cloudwatch_event_rule" { defaults = { arn = "arn:aws:events:us-east-1:000000000000:rule/canary" } }
   mock_resource "aws_sns_topic" { defaults = { arn = "arn:aws:sns:us-east-1:000000000000:canary" } }
+  mock_resource "aws_dynamodb_table" { defaults = { arn = "arn:aws:dynamodb:us-east-1:000000000000:table/canary" } }
+  mock_resource "aws_s3_bucket" { defaults = { arn = "arn:aws:s3:::canary-inbox" } }
+  mock_resource "aws_cloudwatch_log_group" { defaults = { arn = "arn:aws:logs:us-east-1:000000000000:log-group:canary" } }
 }
 variables {
   monitoring_account_id = "000000000000"
@@ -62,4 +65,221 @@ run "monitoring_contract" {
     condition     = alltrue([for config in aws_lambda_function_event_invoke_config.runner : config.maximum_retry_attempts == 0]) && aws_kms_key.secrets.enable_key_rotation
     error_message = "Never automatically retry a recovery; rotate the monitoring secrets CMK."
   }
+}
+
+run "defaults_create_nothing_for_tier3" {
+  command = apply
+  assert {
+    condition = (
+      length(aws_secretsmanager_secret.hold) == 0 && length(aws_dynamodb_table.tier3) == 0 &&
+      length(aws_lambda_function.tier3) == 0 && length(aws_cloudwatch_event_rule.tier3) == 0 &&
+      length(aws_cloudwatch_metric_alarm.tier3) == 0 && length(aws_cloudwatch_metric_alarm.tier3_step) == 0 &&
+      length(aws_sns_topic.tickets) == 0 && length(aws_cloudwatch_dashboard.tier3) == 0 &&
+      length(aws_s3_bucket.inbox) == 0 && length(aws_kms_key.inbox) == 0 && length(aws_ses_receipt_rule.inbox) == 0 &&
+      length(data.aws_ses_active_receipt_rule_set.current) == 0
+    )
+    error_message = "Without hold ids and inbox_enabled, no tier-3 or inbox resource may exist (production plans no change)."
+  }
+  assert {
+    condition     = keys(aws_lambda_function.runner) == ["1", "2"]
+    error_message = "Tier 1/2 resource addresses are unchanged."
+  }
+}
+
+run "tier3_off_by_default" {
+  command = apply
+  variables {
+    enabled                    = true
+    alarm_actions_enabled      = true
+    hold_account_ids           = [for i in range(12) : format("hold-%02d", i + 1)]
+    inbox_enabled              = true
+    inbox_domain               = "inbox.example.com"
+    inbox_local_part           = "canary-staging"
+    inbox_expected_senders     = ["recovery@vault.notify.example.com"]
+    inbox_expected_dkim_domain = "vault.notify.example.com"
+  }
+  override_data {
+    target = data.aws_ses_active_receipt_rule_set.current[0]
+    values = { rule_set_name = "escrow-canary-inbox" }
+  }
+  assert {
+    condition     = alltrue([for rule in aws_cloudwatch_event_rule.tier3 : rule.state == "DISABLED"]) && alltrue([for rule in aws_cloudwatch_event_rule.schedule : rule.state == "ENABLED"])
+    error_message = "Tier 3 schedules stay disabled until tier3_enabled, independently of tiers 1/2."
+  }
+  assert {
+    condition     = alltrue([for alarm in merge(aws_cloudwatch_metric_alarm.tier3, aws_cloudwatch_metric_alarm.tier3_step) : !alarm.actions_enabled])
+    error_message = "Tier 3 alarm actions stay off until tier3_enabled."
+  }
+}
+
+run "tier3_contract" {
+  command = apply
+  variables {
+    enabled                    = true
+    alarm_actions_enabled      = true
+    tier3_enabled              = true
+    hold_account_ids           = [for i in range(12) : format("hold-%02d", i + 1)]
+    inbox_enabled              = true
+    inbox_domain               = "inbox.example.com"
+    inbox_local_part           = "canary-staging"
+    inbox_expected_senders     = ["recovery@vault.notify.example.com"]
+    inbox_expected_dkim_domain = "vault.notify.example.com"
+  }
+  override_data {
+    target = data.aws_ses_active_receipt_rule_set.current[0]
+    values = { rule_set_name = "escrow-canary-inbox" }
+  }
+  override_resource {
+    target = aws_secretsmanager_secret.account
+    values = { arn = "arn:aws:secretsmanager:us-east-1:000000000000:secret:tier12" }
+  }
+  assert {
+    condition = alltrue([for role, fn in aws_lambda_function.tier3 :
+      fn.runtime == "nodejs22.x" && one(fn.architectures) == "arm64" && fn.reserved_concurrent_executions == 1 &&
+      fn.environment[0].variables.CANARY_TIER == "3" && fn.environment[0].variables.CANARY_ROLE == role
+    ]) && aws_lambda_function.tier3["runner"].timeout <= 840 && aws_lambda_function.tier3["evaluator"].timeout == 60
+    error_message = "Tier 3 Lambdas: Node22 arm64, serialized, runner within the 15-minute tick."
+  }
+  assert {
+    condition = alltrue([for role, rule in aws_cloudwatch_event_rule.tier3 : rule.schedule_expression == "rate(15 minutes)" && rule.state == "ENABLED"]) && alltrue([
+      for role, target in aws_cloudwatch_event_target.tier3 : target.retry_policy[0].maximum_retry_attempts == 0 && target.retry_policy[0].maximum_event_age_in_seconds == 60 &&
+      target.input_transformer[0].input_template == "{\"tier\":3,\"role\":\"${role}\",\"time\":<time>}"
+    ]) && alltrue([for config in aws_lambda_function_event_invoke_config.tier3 : config.maximum_retry_attempts == 0 && config.maximum_event_age_in_seconds == 60])
+    error_message = "15-minute schedules, no automatic retries, 60 s maximum event age, role in the event."
+  }
+  assert {
+    condition = (
+      jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[0].Resource == local.hold_secret_arns &&
+      length(jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[0].Resource) == 12 &&
+      !contains(jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[0].Resource, "arn:aws:secretsmanager:us-east-1:000000000000:secret:tier12") &&
+      jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[1].Condition.StringEquals["kms:EncryptionContext:SecretARN"] == local.hold_secret_arns &&
+      !contains(jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[4].Action, "dynamodb:Scan") &&
+      !contains(jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[4].Action, "dynamodb:DeleteItem") &&
+      jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[5].Condition.StringLike["s3:prefix"] == ["inbox/*"] &&
+      jsondecode(aws_iam_role_policy.tier3_runner[0].policy).Statement[7].Condition.StringEquals["kms:ViaService"] == "s3.us-east-1.amazonaws.com"
+    )
+    error_message = "Runner: exactly the 12 hold secrets, ledger without Scan/Delete, inbox prefix read only."
+  }
+  assert {
+    condition = (
+      length(jsondecode(aws_iam_role_policy.tier3_evaluator[0].policy).Statement) == 3 &&
+      jsondecode(aws_iam_role_policy.tier3_evaluator[0].policy).Statement[0].Action == ["dynamodb:Scan", "dynamodb:Query", "dynamodb:GetItem"] &&
+      !strcontains(aws_iam_role_policy.tier3_evaluator[0].policy, "secretsmanager") &&
+      !strcontains(aws_iam_role_policy.tier3_evaluator[0].policy, "s3:") &&
+      !strcontains(aws_iam_role_policy.tier3_evaluator[0].policy, "PutItem") &&
+      !contains(keys(aws_lambda_function.tier3["evaluator"].environment[0].variables), "CANARY_HOLD_ACCOUNTS_JSON")
+    )
+    error_message = "Evaluator: ledger reads and metrics only."
+  }
+  assert {
+    condition = alltrue([for role, policy in aws_iam_role_policy.runner :
+      jsondecode(policy.policy).Statement[0].Resource == local.tier_secrets[role] && length(jsondecode(policy.policy).Statement) == 4
+    ])
+    error_message = "Tier 1/2 roles are unchanged and never gain hold secrets."
+  }
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.tier3["overdue"].treat_missing_data == "notBreaching" && aws_cloudwatch_metric_alarm.tier3["overdue"].period == 900 &&
+      aws_cloudwatch_metric_alarm.tier3["evaluator-silent"].statistic == "SampleCount" && aws_cloudwatch_metric_alarm.tier3["evaluator-silent"].period * aws_cloudwatch_metric_alarm.tier3["evaluator-silent"].evaluation_periods == 2700 &&
+      aws_cloudwatch_metric_alarm.tier3["evaluator-silent"].treat_missing_data == "breaching" &&
+      aws_cloudwatch_metric_alarm.tier3["start-silent"].threshold == 1560 && aws_cloudwatch_metric_alarm.tier3["start-silent"].period >= 1800 &&
+      aws_cloudwatch_metric_alarm.tier3["pool-low"].threshold == 2 && aws_cloudwatch_metric_alarm.tier3["pool-low"].period >= 1800 &&
+      aws_cloudwatch_metric_alarm.tier3["email-slow"].dimensions == tomap({ Environment = "staging", Tier = "3", Kind = "code" }) &&
+      aws_cloudwatch_metric_alarm.tier3["email-slow"].treat_missing_data == "ignore" &&
+      length(aws_cloudwatch_metric_alarm.tier3_step) == 6 &&
+      alltrue([for alarm in aws_cloudwatch_metric_alarm.tier3_step : alarm.treat_missing_data == "notBreaching" && alarm.statistic == "Minimum" && alarm.dimensions == tomap({ Environment = "staging", Tier = "3" })]) &&
+      alltrue([for alarm in merge(aws_cloudwatch_metric_alarm.tier3, aws_cloudwatch_metric_alarm.tier3_step) : alarm.actions_enabled])
+    )
+    error_message = "Tier 3 alarm table (CANARY.md §9 with jitter-tolerant breaching periods)."
+  }
+  assert {
+    condition = (
+      aws_cloudwatch_metric_alarm.tier3["pool-low"].alarm_actions == toset([aws_sns_topic.tickets[0].arn]) &&
+      aws_cloudwatch_metric_alarm.tier3["email-slow"].alarm_actions == toset([aws_sns_topic.tickets[0].arn]) &&
+      aws_cloudwatch_metric_alarm.tier3["overdue"].alarm_actions == toset([aws_sns_topic.alarms.arn]) &&
+      aws_sns_topic_subscription.tickets[0].endpoint == "test@example.invalid"
+    )
+    error_message = "Pool-low and email-slow are tickets; everything else pages."
+  }
+  assert {
+    condition     = aws_dynamodb_table.tier3[0].point_in_time_recovery[0].enabled && aws_dynamodb_table.tier3[0].ttl[0].attribute_name == "expiresAt" && !aws_dynamodb_table.tier3[0].deletion_protection_enabled
+    error_message = "Ledger: PITR and TTL; deletion protection is production-only."
+  }
+  assert {
+    condition = alltrue([for label, rule in aws_ses_receipt_rule.inbox :
+      startswith(rule.name, "escrow-canary-staging-inbox-hold-") && one(rule.recipients) == "canary-staging+${tonumber(substr(label, 5, 2))}@inbox.example.com" &&
+      rule.rule_set_name == "escrow-canary-inbox" && rule.tls_policy == "Require" && rule.scan_enabled &&
+      one(rule.s3_action).object_key_prefix == "inbox/${label}/" && one(rule.s3_action).kms_key_arn == null
+    ]) && length(aws_ses_receipt_rule.inbox) == 12
+    error_message = "Twelve exact-recipient rules, own prefixes, no SES client-side encryption."
+  }
+  assert {
+    condition = (
+      strcontains(aws_s3_bucket_policy.inbox[0].policy, "receipt-rule-set/escrow-canary-inbox:receipt-rule/escrow-canary-staging-inbox-hold-*") &&
+      strcontains(aws_s3_bucket_policy.inbox[0].policy, "aws:SecureTransport") &&
+      strcontains(aws_kms_key.inbox[0].policy, "escrow-canary-staging-inbox-hold-*") &&
+      aws_kms_key.inbox[0].enable_key_rotation &&
+      one(aws_s3_bucket_lifecycle_configuration.inbox[0].rule).expiration[0].days == 7 &&
+      one(aws_s3_bucket_ownership_controls.inbox[0].rule).object_ownership == "BucketOwnerEnforced"
+    )
+    error_message = "Inbox: SES writes scoped to this environment's rules, TLS only, rotated key, 7-day retention."
+  }
+  assert {
+    condition = alltrue([for f in fileset(path.module, "*.tf") :
+      !strcontains(file("${path.module}/${f}"), "resource \"aws_ses_receipt_rule_set\"") &&
+      !strcontains(file("${path.module}/${f}"), "resource \"aws_ses_active_receipt_rule_set\"")
+    ])
+    error_message = "An environment stack must never own the account's single active receipt rule set."
+  }
+}
+
+run "rejects_inactive_shared_rule_set" {
+  command = plan
+  variables {
+    hold_account_ids           = [for i in range(12) : format("hold-%02d", i + 1)]
+    inbox_enabled              = true
+    inbox_domain               = "inbox.example.com"
+    inbox_local_part           = "canary-staging"
+    inbox_expected_senders     = ["recovery@vault.notify.example.com"]
+    inbox_expected_dkim_domain = "vault.notify.example.com"
+  }
+  override_data {
+    target = data.aws_ses_active_receipt_rule_set.current[0]
+    values = { rule_set_name = "someone-elses-rule-set" }
+  }
+  expect_failures = [aws_ses_receipt_rule.inbox]
+}
+
+run "rejects_staging_local_part_without_suffix" {
+  command = plan
+  variables {
+    inbox_local_part = "canary"
+  }
+  expect_failures = [var.inbox_local_part]
+}
+
+run "rejects_overlap_with_tier12_accounts" {
+  command = plan
+  variables {
+    hold_account_ids = concat(["pin-a"], [for i in range(11) : format("hold-%02d", i + 1)])
+  }
+  expect_failures = [var.hold_account_ids]
+}
+
+run "rejects_tier3_without_inbox" {
+  command = plan
+  variables {
+    tier3_enabled    = true
+    hold_account_ids = [for i in range(12) : format("hold-%02d", i + 1)]
+  }
+  expect_failures = [var.tier3_enabled]
+}
+
+run "rejects_sender_outside_dkim_domain" {
+  command = plan
+  variables {
+    inbox_expected_senders     = ["recovery@evil.example.net"]
+    inbox_expected_dkim_domain = "vault.notify.example.com"
+  }
+  expect_failures = [var.inbox_expected_senders]
 }
