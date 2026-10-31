@@ -81,15 +81,15 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
+            # Same Bun + frozen lockfile as other jobs (cache consumer). package.json
+            # `lint:ox` is SSoT for flags/version — do not re-list them here.
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
               with:
-                  bun-version: 1.4.2
+                  save-cache: 'false'
 
-            # Skip composite setup / full install: oxlint ships as a native binary.
-            # Pin the same version as package.json so CI matches local `bun run lint:ox`.
             - name: Run oxlint
-              run: bunx oxlint@1.90.0 . -c .oxlintrc.json --deny-warnings --disable-unicorn-plugin
+              run: bun run lint:ox
 
     WorkspaceLint:
         name: Run workspace lint

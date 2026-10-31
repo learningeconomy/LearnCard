@@ -26,7 +26,7 @@
         "prepare": "husky install",
         "lint": "bun run lint:workspace && bun run lint:a11y",
         "lint:workspace": "bun scripts/lint-workspace.ts",
-        "lint:ox": "oxlint . -c .oxlintrc.json --deny-warnings --disable-unicorn-plugin",
+        "lint:ox": "oxlint . -c .oxlintrc.json --deny-warnings",
         "lint:a11y": "node scripts/lint-a11y.cjs",
         "lint:staged": "lint-staged",
         "typecheck": "nx run-many -t typecheck --projects=helpers,types,network-brain-service,lca-api-service,learn-cloud-service --parallel=1 --skip-nx-cache",

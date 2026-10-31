@@ -2,9 +2,7 @@
 
 ## Why
 
-`WorkspaceLint` (ESLint via `bun run lint:workspace`) is the full monorepo lint gate. On a representative hosted run the **Run workspace lint** step alone took ~12.7 minutes (job wall ~13.6 minutes; Actions run `41160615148` on `main`-line PR lint).
-
-Oxlint is a native Rust linter. Locally on this branch, `bun run lint:ox` completes in ~0.2s on the same tree. The CI job intentionally skips the composite setup / full `bun install` and runs `bunx oxlint@1.90.0`, so wall time is dominated by checkout + Bun setup, not the lint itself.
+`WorkspaceLint` (ESLint via `bun run lint:workspace`) remains the full monorepo lint gate. Oxlint is a native Rust linter that runs a curated correctness subset in well under a second locally, so obvious correctness breaks fail closed without waiting on the ESLint wall.
 
 ## Coexistence with ESLint
 
@@ -19,13 +17,15 @@ Rules of engagement:
 1. **Do not fold oxlint into the WorkspaceLint job.** That would thrash the same job #1867 is optimizing and couple two different tools’ caches.
 2. **ESLint remains required.** Passing oxlint does not waive WorkspaceLint.
 3. **Phase-1 rule set is intentionally small.** `.oxlintrc.json` enables a curated correctness subset that is currently clean on `main`. Broader categories (React compiler rules, unused-vars, unicorn defaults) still fire thousands of findings and stay off until a dedicated cleanup / migrate pass.
-4. **Ignores mirror ESLint’s bulk ignores** (swagger-ui, dist, didkit, etc.) plus a few vendor/script paths that only tripped rules we are not fixing in this spike.
+4. **Ignores mirror ESLint’s bulk ignores** (node_modules, dist/build, swagger-ui, didkit, coverage, and similar build/vendor artifacts). Do not add path ignores to hide live source — fix or ratchet the rule instead.
 
 ## Local
 
 ```bash
 bun run lint:ox
 ```
+
+`package.json` `scripts.lint:ox` and `devDependencies.oxlint` are the single source of truth for flags and version. The `OxLint` CI job runs `bun run lint:ox` after the shared composite setup (`bun install --frozen-lockfile`, cache consumer) so CI matches local with no duplicated CLI. An earlier bunx pin skipped install for wall clock; frozen-lockfile + the script is preferred so the lockfile stays the version pin and flags cannot drift.
 
 ## Expanding coverage
 

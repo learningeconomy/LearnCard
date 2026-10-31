@@ -16,11 +16,7 @@
         "**/*.d.ts",
         "**/lib/didkit/**",
         "**/didkit/pkg/**",
-        "**/*.min.js",
-        "**/generated/**",
-        "docs/snippets/**",
-        "**/scripts/build.mjs",
-        "packages/learn-card-embed-sdk/src/iframe/**"
+        "**/*.min.js"
     ],
     "plugins": ["typescript", "oxc"],
     "categories": {
