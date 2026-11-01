@@ -70,6 +70,9 @@ export const getCredentialLifecycleStatuses = async (
 ): Promise<Map<string, CredentialLifecycleStatus | undefined>> => {
     const invoke = (wallet.invoke ?? {}) as unknown as StatusInvoke;
     const statuses = new Map<string, CredentialLifecycleStatus | undefined>();
+    // URIs the backend could not answer. Without a status list there is nothing else to ask,
+    // so for these "no status list" means unknown, not 'active'.
+    const backendFailed = new Set<string>();
 
     const uris = [...new Set(credentials.map(({ uri }) => uri))];
     const batches: string[][] = [];
@@ -90,9 +93,12 @@ export const getCredentialLifecycleStatuses = async (
                     }
                 } catch {
                     // Fall through to client verification for this batch.
+                    for (const uri of batch) backendFailed.add(uri);
                 }
             })
         );
+    } else {
+        for (const uri of uris) backendFailed.add(uri);
     }
 
     const unanswered = credentials.filter(({ uri }) => !statuses.has(uri));
@@ -100,7 +106,7 @@ export const getCredentialLifecycleStatuses = async (
         for (let next = unanswered.shift(); next; next = unanswered.shift()) {
             const { uri, credential } = next;
             if (!hasStatusEntry(credential)) {
-                statuses.set(uri, 'active');
+                statuses.set(uri, backendFailed.has(uri) ? undefined : 'active');
                 continue;
             }
             try {

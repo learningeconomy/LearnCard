@@ -231,6 +231,25 @@ describe('useGetCredentialsForSkills (LC-2325 MapCountsOnlyValid)', () => {
         expect(resolvedIds(refetched.data)).toEqual([VALID]);
     });
 
+    it('keeps a known network revocation with no status list when the backend later fails', async () => {
+        let fail = false;
+        makeWallet({
+            noStatusList: [VALID, REVOKED],
+            lifecycle: async () => {
+                if (fail) throw new Error('network down');
+                return { [VALID]: 'active', [REVOKED]: 'revoked' };
+            },
+        });
+        const { result } = renderSkills();
+        await waitFor(() => expect(resolvedIds(result.current.data)).toEqual([VALID]));
+
+        fail = true;
+        const refetched = await result.current.refetch();
+
+        expect(refetched.isSuccess).toBe(true);
+        expect(resolvedIds(refetched.data)).toEqual([VALID]);
+    });
+
     it('counts a credential it has never seen revoked when its status cannot be loaded', async () => {
         makeWallet({
             lifecycle: async () => {
