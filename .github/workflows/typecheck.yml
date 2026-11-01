@@ -33,8 +33,9 @@ jobs:
             - name: Test the ratchet script
               run: node --test scripts/typecheck-ratchet.test.mjs scripts/typecheck-diagnostics.test.mjs
 
-            # tsc resolves Node-resolution services against built dist, so every library is built
-            # first. scripts/typecheck-baseline.json is generated in this same state.
+            # Projects that resolve workspace packages through their package exports read built
+            # dist types, so every library is built first. Counts differ without it.
+            # scripts/typecheck-baseline.json is generated in this same state.
             - name: Build libraries
               run: bunx nx run-many -t build --projects="$(bunx nx show projects --type lib --with-target build | paste -sd, -)"
 
@@ -44,7 +45,8 @@ jobs:
                   bun run --cwd apps/learn-card-app i18n:compile
                   bun run --cwd apps/scouts i18n:generate
 
-            # Fails when any project's tsc error count rises above scripts/typecheck-baseline.json.
+            # Fails when any project's `bun check` (TypeScript 7) error count rises above
+            # scripts/typecheck-baseline.json. The composite setup pins a Bun that has `bun check`.
             # Lower the baseline with `bun run typecheck:baseline` after fixing errors.
             - name: Run typecheck ratchet
               id: ratchet
