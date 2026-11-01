@@ -167,6 +167,61 @@ describe('boost payload storage', () => {
         }
     );
 
+    it('does not overlap relationship writes that touch the same credential', async () => {
+        const first = Promise.withResolvers<void>();
+        const sent = Promise.withResolvers<void>();
+        const listing = Promise.withResolvers<void>();
+        const contract = Promise.withResolvers<void>();
+        mocks.instanceOf.mockReturnValueOnce(first.promise);
+        mocks.sent.mockReturnValueOnce(sent.promise);
+        mocks.listing.mockReturnValueOnce(listing.promise);
+        mocks.contract.mockReturnValueOnce(contract.promise);
+        const result = sendBoost(options);
+        await vi.waitFor(() => expect(mocks.instanceOf).toHaveBeenCalledOnce());
+        expect(mocks.sent).not.toHaveBeenCalled();
+        first.resolve();
+        await vi.waitFor(() => expect(mocks.sent).toHaveBeenCalledOnce());
+        expect(mocks.listing).not.toHaveBeenCalled();
+        sent.resolve();
+        await vi.waitFor(() => expect(mocks.listing).toHaveBeenCalledOnce());
+        expect(mocks.contract).not.toHaveBeenCalled();
+        listing.resolve();
+        await vi.waitFor(() => expect(mocks.contract).toHaveBeenCalledOnce());
+        expect(mocks.accept).not.toHaveBeenCalled();
+        expect(mocks.notify).not.toHaveBeenCalled();
+        contract.resolve();
+        await expect(result).resolves.toBe('lc:network:network.example/credential:stored');
+    });
+
+    it.each(['instanceOf', 'sent', 'listing', 'contract'] as const)(
+        'stops after a failed %s relationship without acceptance or notification',
+        async failed => {
+            const error = new Error('graph write failed');
+            mocks[failed].mockRejectedValueOnce(error);
+            await expect(sendBoost(options)).rejects.toBe(error);
+            const order = ['instanceOf', 'sent', 'listing', 'contract'] as const;
+            for (const later of order.slice(order.indexOf(failed) + 1)) {
+                expect(mocks[later]).not.toHaveBeenCalled();
+            }
+            expect(mocks.accept).not.toHaveBeenCalled();
+            expect(mocks.notify).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(['listing', 'another-listing', undefined])(
+        'adds explicit listing attribution only when the listing issuer does not already cover %s',
+        async listingId => {
+            const from = {
+                type: 'appStoreListing',
+                listing: { listing_id: 'listing' },
+                ownerProfile: { profileId: 'org' },
+            } as Parameters<typeof sendBoost>[0]['from'];
+            await sendBoost({ ...options, from, listingId });
+            expect(mocks.sent).toHaveBeenCalledOnce();
+            expect(mocks.listing).toHaveBeenCalledTimes(listingId === 'another-listing' ? 1 : 0);
+        }
+    );
+
     it('does not inspect template-derived fields or add a network signature', async () => {
         const credential = { ...vc, display: { backgroundColor: '#bad' } };
         await sendBoost({ ...options, credential });
