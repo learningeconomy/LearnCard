@@ -79,7 +79,7 @@ type WalletOptions = {
     uris?: string[];
     noStatusList?: string[];
     // Backend lifecycle statuses; URIs left out mimic "holder did not receive this on-network".
-    lifecycle?: () => Promise<Record<string, Status>>;
+    lifecycle?: (options: { uris: string[] }) => Promise<Record<string, Status>>;
     // Client status-list check: which URIs have their revocation bit set.
     verify?: (vc: VC) => Promise<unknown>;
 };
@@ -258,7 +258,7 @@ describe('useGetCredentialsForSkills (LC-2325 MapCountsOnlyValid)', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
         const batchSizes = getMyCredentialLifecycleStatuses.mock.calls.map(
-            ([options]) => (options as unknown as { uris: string[] }).uris.length
+            ([options]) => options.uris.length
         );
         expect(batchSizes.sort()).toEqual([100, 50]);
         expect(verifyCredential).not.toHaveBeenCalled();
