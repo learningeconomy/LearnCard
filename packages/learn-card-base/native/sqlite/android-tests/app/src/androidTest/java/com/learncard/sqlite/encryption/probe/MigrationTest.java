@@ -116,6 +116,60 @@ public class MigrationTest {
         }
         assertFalse(LearnCardEncryptedDatabase.prepare(original, secrets));
     }
+    private void seedColdJournal(File file) throws Exception {
+        seed(file);
+        try (SQLiteDatabase db = SQLiteDatabase.openDatabase(file.getPath(), "", null, SQLiteDatabase.OPEN_READWRITE, null)) {
+            try (Cursor rows = db.rawQuery("PRAGMA journal_mode=PERSIST", null)) {
+                assertTrue(rows.moveToFirst()); assertEquals("persist", rows.getString(0));
+            }
+            db.rawExecSQL("UPDATE users SET privateKey='CURRENT_SYNTHETIC_KEY'");
+        }
+        byte[] journal = Files.readAllBytes(new File(file + "-journal").toPath());
+        assertArrayEquals(new byte[8], java.util.Arrays.copyOf(journal, 8));
+        assertTrue(new String(journal, java.nio.charset.StandardCharsets.ISO_8859_1).contains("SYNTHETIC_PRIVATE_KEY"));
+    }
+    @Test public void coldPersistJournalIsRemovedBeforeReplacementAndOnRetry() throws Exception {
+        for (String fault : new String[] {"none", "after-replace", "before-validate"}) {
+            File file = file("cold-persist"); seedColdJournal(file); Secrets secrets = new Secrets();
+            if (fault.equals("none")) assertTrue(LearnCardEncryptedDatabase.prepare(file, secrets));
+            else {
+                try {
+                    LearnCardEncryptedDatabase.prepare(file, secrets, point -> {
+                        if (point.equals(fault)) throw new Exception("Synthetic interruption");
+                    });
+                    fail("Expected interruption");
+                } catch (Exception expected) { }
+            }
+            File journal = new File(file + "-journal");
+            if (fault.equals("before-validate")) {
+                assertTrue(journal.isFile());
+                check(file, "");
+                assertTrue(LearnCardEncryptedDatabase.prepare(file, secrets));
+            }
+            for (String suffix : new String[] {"-journal", "-wal", "-shm"}) assertFalse(new File(file + suffix).exists());
+            assertFalse(LearnCardEncryptedDatabase.prepare(file, secrets));
+            check(file, secrets.secret);
+            LearnCardEncryptedDatabase.validate(file, secrets.secret);
+            try (SQLiteDatabase db = SQLiteDatabase.openDatabase(file.getPath(), secrets.secret, null, SQLiteDatabase.OPEN_READONLY, null);
+                 Cursor rows = db.rawQuery("SELECT privateKey FROM users", null)) {
+                assertTrue(rows.moveToFirst()); assertEquals("CURRENT_SYNTHETIC_KEY", rows.getString(0));
+            }
+        }
+    }
+    @Test public void sourceWriterCannotCommitAfterExportBeforeReplacement() throws Exception {
+        File file = file("overlap-writer"); seed(file); Secrets secrets = new Secrets();
+        assertTrue(LearnCardEncryptedDatabase.prepare(file, secrets, point -> {
+            if (!point.equals("before-replace")) return;
+            boolean blocked = false;
+            try (SQLiteDatabase writer = SQLiteDatabase.openDatabase(file.getPath(), "", null, SQLiteDatabase.OPEN_READWRITE, null)) {
+                writer.rawExecSQL("PRAGMA busy_timeout=50");
+                writer.rawExecSQL("INSERT INTO reactQuery VALUES ('overlap', 'COMMITTED_AFTER_EXPORT')");
+            } catch (Exception expected) { blocked = true; }
+            assertTrue("A writer must not commit into the exported source", blocked);
+        }));
+        check(file, secrets.secret);
+        LearnCardEncryptedDatabase.validate(file, secrets.secret);
+    }
     @Test public void failureBeforeReplacementPreservesOriginal() throws Exception {
         File file = file("before"); seed(file); Secrets secrets = new Secrets();
         try {
@@ -204,6 +258,13 @@ public class MigrationTest {
         else assertTrue(file.isFile());
         SqliteConfig config = new SqliteConfig(); config.setIsEncryption(true);
         CapacitorSQLite plugin = new CapacitorSQLite(context, config);
+        if (!reopen) {
+            plugin.createConnection("learncardDB", false, "no-encryption", 1, new java.util.Hashtable<>(), false);
+            plugin.open("learncardDB", false);
+            try { plugin.prepareEncryptedDatabase("learncardDB"); fail("A registered plaintext handle must block conversion"); }
+            catch (Exception expected) { check(file, ""); }
+            plugin.closeConnection("learncardDB", false);
+        }
         assertEquals(!reopen, plugin.prepareEncryptedDatabase("learncardDB"));
         assertTrue(plugin.isSecretStored());
         plugin.createConnection("learncardDB", true, "secret", 1, new java.util.Hashtable<>(), false);

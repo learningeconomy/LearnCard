@@ -6,6 +6,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
+    native: false,
+    ready: vi.fn(),
     get: vi.fn(),
     add: vi.fn(),
     upload: vi.fn(),
@@ -24,8 +26,10 @@ vi.mock('localforage', () => ({
         }),
     },
 }));
-vi.mock('../logging/logger', () => ({ getLogger: () => ({ error: mocks.logError }) }));
-vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
+vi.mock('../logging/logger', () => ({
+    getLogger: () => ({ error: mocks.logError, warn: vi.fn(), debug: vi.fn() }),
+}));
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => mocks.native } }));
 vi.mock('@learncard/init', () => ({ initLearnCard: vi.fn() }));
 vi.mock('learn-card-base', () => ({
     CredentialCategoryEnum: {},
@@ -50,7 +54,7 @@ vi.mock('learn-card-base/helpers/privateKeyHelpers', () => ({
     getCurrentUserPrivateKey: vi.fn(),
     requireCurrentUserPrivateKey: vi.fn(),
 }));
-vi.mock('learn-card-base/SQL/sqliteReady', () => ({ waitForSQLiteReady: vi.fn() }));
+vi.mock('learn-card-base/SQL/sqliteReady', () => ({ waitForSQLiteReady: mocks.ready }));
 vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     getDefaultCategoryForCredential: () => 'Achievement',
     isBoostCredential: () => false,
@@ -98,6 +102,8 @@ let records: { id: string; uri: string; inboxDeliveryId?: string }[];
 
 beforeEach(async () => {
     vi.clearAllMocks();
+    mocks.native = false;
+    mocks.ready.mockResolvedValue(undefined);
     clearInAppMessageEvents();
     await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
@@ -451,4 +457,14 @@ it('defers facts and claim events until staged acceptance is finalized', async (
             credential: expect.objectContaining({ uri: 'pending-uri' }),
         }),
     ]);
+});
+
+it('rejects native wallet access after storage initialization fails even with a cached wallet or explicit key', async () => {
+    mocks.native = true;
+    const failure = new Error('Synthetic storage unavailable');
+    mocks.ready.mockRejectedValue(failure);
+    const { initWallet: getWallet, getWalletOrFallback } = useWallet();
+    await expect(getWallet()).rejects.toBe(failure);
+    await expect(getWallet('synthetic-explicit-key')).rejects.toBe(failure);
+    await expect(getWalletOrFallback()).rejects.toBe(failure);
 });

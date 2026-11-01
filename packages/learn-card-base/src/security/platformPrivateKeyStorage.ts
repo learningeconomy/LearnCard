@@ -30,10 +30,7 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
     }
     await waitForSQLiteReady();
     const db = sqliteStore.get.db();
-    if (!db) {
-        currentUserStore.set.currentUserPK(pk);
-        return;
-    }
+    if (!db) throw new Error('Account storage is unavailable. Please try again.');
     const user = currentUserStore.get.currentUser();
     const filter = userFilter();
     try {
@@ -63,7 +60,7 @@ export async function setPlatformPrivateKey(pk: string): Promise<void> {
         });
     } catch (error) {
         log.warn('setPlatformPrivateKey: sqlite error', error);
-        currentUserStore.set.currentUserPK(pk);
+        throw error;
     }
 }
 
@@ -73,7 +70,7 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
     let minimumStrength = userFilter().strength;
     await waitForSQLiteReady();
     const db = sqliteStore.get.db();
-    if (!db) return null;
+    if (!db) throw new Error('Account storage is unavailable. Please try again.');
     // A known account must never inherit another account's key after a miss.
     // Before identity hydration, restore only if exactly one distinct populated key exists.
     // Legacy rows may repeat the same key; LIMIT 2 detects conflicting key values.
@@ -104,6 +101,7 @@ export async function getPlatformPrivateKey(): Promise<string | null> {
                 return result.key;
         } catch (error) {
             log.warn(`getPlatformPrivateKey: sqlite error (attempt ${attempt + 1})`, error);
+            if (attempt === 2) throw error;
         }
         await new Promise(resolve => setTimeout(resolve, 150));
     }

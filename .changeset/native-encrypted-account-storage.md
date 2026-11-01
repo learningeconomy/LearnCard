@@ -3,3 +3,5 @@
 ---
 
 Encrypt native SQLite storage with a protected device secret and safely convert existing plaintext data. Keep older binaries on their existing storage path only when the encryption bootstrap method is unavailable. Existing encrypted files open through the plugin without a separate startup scan; conversion staging still receives full integrity validation.
+
+Propagate native storage failures to account and recovery operations instead of reporting memory-only or no-op writes as saved. Recover the plaintext source before removing obsolete journals, retain its exclusive lock through replacement, and reject conversion while an account plugin connection is registered.

@@ -58,6 +58,7 @@ enum LearnCardEncryptedDatabase {
                 }
             }
         }
+        try checkpoint("before-conversion")
         if secret.isEmpty {
             var bytes = [UInt8](repeating: 0, count: 32)
             guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else {
@@ -77,13 +78,44 @@ enum LearnCardEncryptedDatabase {
         defer {
             for suffix in ["", "-journal", "-wal", "-shm"] { try? manager.removeItem(atPath: staged + suffix) }
         }
+        func finishConversion() throws -> Bool {
+            try checkpoint("before-validate")
+            try validate(path: staged, secret: secret)
+            let stagedFD = Darwin.open(staged, O_RDONLY)
+            guard stagedFD >= 0 else { throw failure("Cannot sync account storage") }
+            let synced = fsync(stagedFD)
+            Darwin.close(stagedFD)
+            guard synced == 0 else { throw failure("Cannot sync account storage") }
+            try checkpoint("before-replace")
+            // The source is recovered/checkpointed, in DELETE mode, and still exclusively locked.
+            // Only now are its old plaintext sidecars obsolete. Remove them before replacement,
+            // so a crash immediately after rename cannot leave a plaintext journal behind.
+            if exists {
+                for suffix in ["-journal", "-wal", "-shm"] where manager.fileExists(atPath: path + suffix) {
+                    try manager.removeItem(atPath: path + suffix)
+                }
+            }
+            guard rename(staged, path) == 0 else { throw failure("Cannot replace account storage") }
+            try checkpoint("after-replace")
+            let directoryFD = Darwin.open(parent, O_RDONLY)
+            guard directoryFD >= 0 else { throw failure("Cannot sync account storage directory") }
+            let directorySynced = fsync(directoryFD)
+            Darwin.close(directoryFD)
+            guard directorySynced == 0 else { throw failure("Cannot sync account storage directory") }
+            return exists
+        }
         if exists {
-            try withDatabase(path: path, secret: "", writable: true) { source in
+            return try withDatabase(path: path, secret: "", writable: true) { source in
                 // Fold WAL into the source before replacing its inode; reject active writers.
                 guard try scalar(source, "PRAGMA wal_checkpoint(TRUNCATE)") == "0" else {
                     throw failure("Account storage is busy")
                 }
                 guard try scalar(source, "PRAGMA journal_mode=DELETE") == "delete" else {
+                    throw failure("Account storage is busy")
+                }
+                // Keep the source lock after COMMIT, through validation and inode replacement.
+                // A separate writer must never commit into an already-exported source.
+                guard try scalar(source, "PRAGMA locking_mode=EXCLUSIVE") == "exclusive" else {
                     throw failure("Account storage is busy")
                 }
                 let version = try scalar(source, "PRAGMA user_version")
@@ -99,6 +131,7 @@ enum LearnCardEncryptedDatabase {
                     throw error
                 }
                 try execute(source, "DETACH DATABASE encrypted")
+                return try finishConversion()
             }
         } else {
             try withDatabase(path: staged, secret: secret, writable: true) { target in
@@ -106,23 +139,8 @@ enum LearnCardEncryptedDatabase {
                 // Force an encrypted header even before application schema initialization.
                 try execute(target, "PRAGMA user_version=1")
             }
+            return try finishConversion()
         }
-        try checkpoint("before-validate")
-        try validate(path: staged, secret: secret)
-        let stagedFD = Darwin.open(staged, O_RDONLY)
-        guard stagedFD >= 0 else { throw failure("Cannot sync account storage") }
-        let synced = fsync(stagedFD)
-        Darwin.close(stagedFD)
-        guard synced == 0 else { throw failure("Cannot sync account storage") }
-        try checkpoint("before-replace")
-        guard rename(staged, path) == 0 else { throw failure("Cannot replace account storage") }
-        try checkpoint("after-replace")
-        let directoryFD = Darwin.open(parent, O_RDONLY)
-        guard directoryFD >= 0 else { throw failure("Cannot sync account storage directory") }
-        let directorySynced = fsync(directoryFD)
-        Darwin.close(directoryFD)
-        guard directorySynced == 0 else { throw failure("Cannot sync account storage directory") }
-        return exists
     }
 
     static func validate(path: String, secret: String) throws {

@@ -1,3 +1,4 @@
+import { atomicShareUpdate } from '../../../sss-key-manager/src/atomic-operations';
 import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ db: null as unknown, warn: vi.fn(), error: vi.fn() }));
@@ -107,5 +108,59 @@ it('initializes recovery storage separately for a replacement connection', async
     } finally {
         first.sqlite.close();
         replacement.sqlite.close();
+    }
+});
+
+it('rejects share reads, writes, versions and cleanup when native storage is missing', async () => {
+    mocks.db = null;
+    const storage = createNativeSSSStorage();
+    for (const operation of [
+        () => storage.getDeviceShare(),
+        () => storage.storeDeviceShare('share'),
+        () => storage.getShareVersion(),
+        () => storage.storeShareVersion(2),
+        () => storage.hasDeviceShare(),
+        () => storage.listAllShares(),
+        () => storage.clearAllShares(),
+        () => storage.deleteShare('id'),
+    ])
+        await expect(operation()).rejects.toThrow('Account storage');
+});
+
+it('stops server share rotation on a local write failure and does not hide read or schema failures', async () => {
+    const { db, sqlite } = database();
+    mocks.db = db;
+    try {
+        const storage = createNativeSSSStorage();
+        await storage.storeDeviceShare('original', 'account');
+        await storage.storeShareVersion(1, 'account');
+        const fail = new Error('Synthetic disk full');
+        const run = vi.spyOn(db, 'run').mockRejectedValue(fail);
+        const storeAuth = vi.fn();
+        await expect(
+            atomicShareUpdate('01'.repeat(32), {
+                storeDevice: share => storage.storeDeviceShare(share, 'pending'),
+                storeAuth,
+            })
+        ).rejects.toMatchObject({ phase: 'store_device' });
+        expect(storeAuth).not.toHaveBeenCalled();
+        await expect(storage.storeShareVersion(2, 'account')).rejects.toBe(fail);
+        run.mockRestore();
+        expect(await storage.getDeviceShare('account')).toBe('original');
+        expect(await storage.getShareVersion('account')).toBe(1);
+        vi.spyOn(db, 'query').mockRejectedValue(fail);
+        await expect(storage.getDeviceShare('account')).rejects.toBe(fail);
+        await expect(storage.getShareVersion('account')).rejects.toBe(fail);
+        await expect(storage.listAllShares()).rejects.toBe(fail);
+        const replacement = database();
+        try {
+            mocks.db = replacement.db;
+            replacement.db.execute.mockRejectedValue(fail);
+            await expect(storage.storeDeviceShare('never-saved')).rejects.toBe(fail);
+        } finally {
+            replacement.sqlite.close();
+        }
+    } finally {
+        sqlite.close();
     }
 });

@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
         keyDerivation: { name: 'web3auth', capabilities: { recovery: false } },
     },
     config: { authProvider: 'firebase', keyDerivation: 'web3auth', providerConfig: {} },
+    native: false,
+    success: vi.fn(),
     build: vi.fn(),
     persist: vi.fn(),
     push: vi.fn(),
@@ -22,6 +24,8 @@ const mocks = vi.hoisted(() => ({
     setMode: vi.fn(),
     log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
+
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => mocks.native } }));
 
 // Only the coordinator input/SDK seams are mocked. The exported Scouts provider
 // mounts its real AuthSessionManager, initialization effects and enriched context.
@@ -123,7 +127,7 @@ vi.mock('@learncard/sss-key-manager', () => ({
 vi.mock('../auth/firebaseProviderInit', () => ({}));
 vi.mock('../components/debug/authDebugEvents', () => ({
     emitAuthDebugEvent: vi.fn(),
-    emitAuthSuccess: vi.fn(),
+    emitAuthSuccess: mocks.success,
     emitAuthError: vi.fn(),
 }));
 vi.mock('../components/recovery/RecoveryFlowModal', () => ({ RecoveryFlowModal: () => null }));
@@ -200,6 +204,7 @@ const expectAccount = async (id: string) => {
 beforeEach(() => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     vi.resetAllMocks();
+    mocks.native = false;
     mocks.coordinator.state = ready();
     mocks.coordinator.hasEndedAuthSession = false;
     mocks.persist.mockResolvedValue(undefined);
@@ -212,6 +217,23 @@ afterEach(() => {
 });
 
 describe('ScoutPass interrupted account initialization', () => {
+    it('does not publish a native account or report success when its key cannot be persisted', async () => {
+        mocks.native = true;
+        mocks.build.mockResolvedValue(account('unsaved-account'));
+        mocks.persist.mockRejectedValue(new Error('Synthetic storage unavailable'));
+        mount();
+        await waitFor(() =>
+            expect(mocks.log.error).toHaveBeenCalledWith(
+                'Wallet initialization failed',
+                expect.any(Error)
+            )
+        );
+        await expectAccount('signed-out');
+        expect(mocks.setStoredWallet).not.toHaveBeenCalled();
+        expect(mocks.setUser).not.toHaveBeenCalled();
+        expect(mocks.push).not.toHaveBeenCalled();
+        expect(mocks.success).not.toHaveBeenCalled();
+    });
     it('restarts initialization after StrictMode effect cleanup without accepting the old result', async () => {
         const oldAttempt = deferred<BespokeLearnCard>();
         mocks.build

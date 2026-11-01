@@ -5,6 +5,7 @@ import { expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     setDb: vi.fn(),
     ready: vi.fn(),
+    failed: vi.fn(),
     create: vi.fn(),
     close: vi.fn(),
 }));
@@ -25,7 +26,10 @@ vi.mock('learn-card-base', () => ({}));
 vi.mock('../../stores/sqliteStore', () => ({
     sqliteStore: { set: { db: mocks.setDb, sqlite: vi.fn() } },
 }));
-vi.mock('learn-card-base/SQL/sqliteReady', () => ({ markSQLiteReady: mocks.ready }));
+vi.mock('learn-card-base/SQL/sqliteReady', () => ({
+    markSQLiteReady: mocks.ready,
+    markSQLiteFailed: mocks.failed,
+}));
 vi.mock('../../logging/logger', () => ({ getLogger: () => ({ warn: vi.fn(), error: vi.fn() }) }));
 
 import { sqliteInit } from '../useSQLiteStorage';
@@ -39,11 +43,12 @@ it('never retries an encrypted-open failure as plaintext or publishes an unusabl
     mocks.create.mockResolvedValue(db);
     mocks.close.mockResolvedValue(undefined);
     const hook = renderHook(() => sqliteInit());
-    await waitFor(() => expect(mocks.ready).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.failed).toHaveBeenCalledOnce());
     expect(mocks.create).toHaveBeenCalledOnce();
     expect(mocks.create).toHaveBeenCalledWith('learncardDB', true, 'secret', 1, false);
     expect(mocks.close).toHaveBeenCalledWith('learncardDB', false);
     expect(mocks.setDb).not.toHaveBeenCalled();
+    expect(mocks.ready).not.toHaveBeenCalled();
     expect(hook.result.current.existingConnection).toBe(false);
     hook.unmount();
 });

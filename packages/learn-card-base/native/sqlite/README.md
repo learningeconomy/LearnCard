@@ -29,7 +29,13 @@ separate; it must retain its own selection rules when both land. Jira: LC-2321.
   mode, export inside an exclusive transaction to an encrypted file in the same directory,
   preserve `user_version`, then validate both SQLite and SQLCipher integrity. The original is
   never renamed aside or deleted first. Sync the staged file, atomically rename it over the
-  original, and sync the directory. Only encrypted staging files and their sidecars are disposable.
+  original, and sync the directory. Keep the source connection in EXCLUSIVE locking mode through
+  staged validation and replacement, including after the export transaction commits. Once source
+  recovery, WAL checkpoint, DELETE-mode export and staged validation have succeeded, remove the
+  obsolete source journal/WAL/SHM under that lock **before** replacement. This removes cold PERSIST
+  journals containing old plaintext pages, even if the process dies just after replacement; failures
+  before validation preserve source sidecars for retry. Existing encrypted-file startup never purges
+  arbitrary sidecars, which may contain valid encrypted recovery data.
 - A zero-byte legacy file with no populated WAL/journal/SHM is treated as a fresh empty database.
   Short nonempty files and empty files with populated recovery sidecars remain intact and fail closed.
 - Process death before replacement leaves a usable original and a stable stored secret; a retry
@@ -51,6 +57,24 @@ Native SQLCipher connections are retained for the JavaScript owner lifetime. Rel
 owner still lets active leases finish. Failed schema initialization releases/closes its connection;
 database deletion invalidates schema and connection knowledge. There is no timer racing a new
 reader. Web and non-retained connection behavior is unchanged.
+
+Native readiness carries an initialization failure to account consumers instead of announcing a
+usable database. The shared auth provider checks required storage before cached-key restore,
+account setup and recovery; wallet access cannot bypass failure with an in-memory key or anonymous
+fallback. Native account-key/share/version writes and recovery reads reject on missing storage or
+SQL errors. A successful null read means the row is absent. App providers publish wallet readiness
+only after required native key persistence, including when a browser-only public-computer preference
+is present. Failed pending-share writes stop the atomic update before its server mutation. Optional
+web SQLite behavior remains unchanged. The existing generic error/retry state is used; a dedicated
+missing-secret recovery/restore UX still needs release review.
+
+Supported startup has one shared JS initialization promise and creates the plugin account connection
+only after preparation. Both manifests run the account app in its default process. A WebView reload
+can retain a native plugin handle: plaintext conversion now rejects registered RW/RO account handles;
+close them only after outstanding operations finish and retry. Existing encrypted connections are
+allowed and skip conversion. Separate-writer regressions also prove a write after export cannot
+commit before replacement. This hardens the conditional helper race; it is not evidence that released
+users experienced it, nor permission to rename a live database from arbitrary external code.
 
 Encryption requires an updated native **binary**: it uses a new plugin method and native backup/config
 changes. If Capacitor reports exactly `code: 'UNIMPLEMENTED'` for that method, the JS bundle uses
@@ -95,7 +119,8 @@ node scripts/verify-native-sqlite-encryption.mjs \
 
 This compiles the production Swift helper and exercises fresh files, wrong/missing secrets,
 preserved account/recovery data and schema version, corrupt originals, secret-write failure,
-stale staging, a real hot rollback journal with uncommitted changes, real uncheckpointed WAL,
+stale staging, a real hot rollback journal with uncommitted changes, cold PERSIST journal cleanup,
+post-export writer exclusion, real uncheckpointed WAL,
 concurrent processes, and process death after secret
 storage/before replacement/after replacement. Fixtures are synthetic and removed after success;
 the CLI secret-file adapter is a test double, **not proof of iOS Keychain behavior**.
@@ -112,7 +137,14 @@ against the user's LearnCard/ScoutPass package or clear another task's emulator.
 Its hot-journal regression snapshots a real spilled, uncommitted transaction without the writer's
 locks, verifies that a read-only scan cannot recover it, then checks conversion rolls back the
 uncommitted key/cache changes while preserving committed account/recovery data and schema version.
-The Swift harness creates its journal by killing a child writer without closing the connection.
+The Swift harness creates its hot journal by killing a child writer without closing the connection.
+Cold PERSIST fixtures retain an obsolete synthetic signing key and assert sidecar removal, current
+key/recovery preservation, validation-failure retry and interruption immediately after replacement.
+Android and hosted iOS plugin fixtures also reject a registered plaintext account connection while
+allowing preparation with a retained encrypted connection.
+
+SQLite references: [locking mode](https://www.sqlite.org/pragma.html#pragma_locking_mode) and
+[rollback journal recovery](https://www.sqlite.org/lockingv3.html#dealing_with_hot_journals).
 
 ```sh
 ANDROID_HOME=/absolute/android/sdk JAVA_HOME=/absolute/jdk21 \

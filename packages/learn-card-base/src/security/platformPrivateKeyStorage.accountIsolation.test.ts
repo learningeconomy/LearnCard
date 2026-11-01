@@ -195,10 +195,10 @@ describe.each(['android', 'ios'])('%s account key isolation', platform => {
         expect(await readKey()).toBeNull();
     });
 
-    it('returns missing when native storage is unavailable', async () => {
+    it('rejects when native storage is unavailable', async () => {
         mocks.db = null;
 
-        expect(await readKey()).toBeNull();
+        await expect(getPlatformPrivateKey()).rejects.toThrow('Account storage is unavailable');
         expect(query).not.toHaveBeenCalled();
     });
 

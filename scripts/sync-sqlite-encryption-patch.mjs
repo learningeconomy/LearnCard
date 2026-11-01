@@ -47,6 +47,12 @@ update(
                         throw new Exception("Cannot persist account storage secret");
                     }
                 }
+            }, point -> {
+                // WebView reload can retain plugin connections. Never replace their plaintext inode.
+                if (point.equals("before-conversion") &&
+                    (dbDict.get("RW_learncardDB") != null || dbDict.get("RO_learncardDB") != null)) {
+                    throw new Exception("Account storage is busy");
+                }
             });
     }
 
@@ -113,6 +119,13 @@ update(
             }
         }, writeSecret: { secret in
             try UtilsSecret.setPassphrase(account: self.account, passphrase: secret)
+        }, checkpoint: { point in
+            // Registered connections can survive a WebView reload. Existing encrypted files
+            // skip conversion; plaintext conversion requires a quiescent account database.
+            if point == "before-conversion" &&
+                (self.dbDict["RW_learncardDB"] != nil || self.dbDict["RO_learncardDB"] != nil) {
+                throw CapacitorSQLiteError.failed(message: "Account storage is busy")
+            }
         })
         var url = URL(fileURLWithPath: path)
         var values = URLResourceValues()

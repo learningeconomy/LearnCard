@@ -111,6 +111,14 @@ if CommandLine.arguments.count > 2 {
             _exit(78) // Leave an actual spilled rollback journal, without closing/rolling back.
         }
     }
+    else if mode == "overlap-writer" {
+        do {
+            try Database.withDatabase(path: path, secret: "", writable: true) { db in
+                sqlite3_busy_timeout(db, 50)
+                try Database.execute(db, "INSERT INTO reactQuery VALUES ('overlap', 'COMMITTED_AFTER_EXPORT')")
+            }
+        } catch { exit(79) }
+    }
     else { _ = try prepare(path, fault: mode == "prepare" ? nil : mode) }
     exit(0)
 }
@@ -136,6 +144,58 @@ try Database.withDatabase(path: interrupted, secret: readSecret(interrupted + ".
 try Database.validate(path: interrupted, secret: readSecret(interrupted + ".synthetic-secret")!)
 try require(try !prepare(interrupted))
 passed.append("hot-rollback-journal-recovers-committed-state-before-conversion")
+
+// A cold PERSIST journal has a zeroed header, yet retains old plaintext page images.
+func seedColdJournal(_ path: String) throws {
+    try seed(path)
+    try Database.withDatabase(path: path, secret: "", writable: true) { db in
+        try require(try Database.scalar(db, "PRAGMA journal_mode=PERSIST") == "persist")
+        try Database.execute(db, "UPDATE users SET privateKey='CURRENT_SYNTHETIC_KEY'")
+    }
+    let journal = try Data(contentsOf: URL(fileURLWithPath: path + "-journal"))
+    try require(journal.prefix(8) == Data(repeating: 0, count: 8))
+    try require(journal.range(of: Data("SYNTHETIC_PRIVATE_KEY".utf8)) != nil)
+}
+for fault in ["none", "after-replace"] {
+    let cold = path("cold-journal-" + fault)
+    try seedColdJournal(cold)
+    if fault == "none" { try require(try prepare(cold)) }
+    else { try require(try child([fault, cold]).terminationStatus == 77) }
+    for suffix in ["-journal", "-wal", "-shm"] {
+        try require(!manager.fileExists(atPath: cold + suffix))
+    }
+    try require(try !prepare(cold))
+    try Database.withDatabase(path: cold, secret: readSecret(cold + ".synthetic-secret")!, writable: false) { db in
+        try require(try Database.scalar(db, "SELECT privateKey FROM users") == "CURRENT_SYNTHETIC_KEY")
+        try require(try Database.scalar(db, "SELECT share FROM sss_shares WHERE id='pending'") == "SYNTHETIC_RESUME_TOKEN")
+    }
+    try Database.validate(path: cold, secret: readSecret(cold + ".synthetic-secret")!)
+}
+passed.append("cold-persist-journal-removed-before-replacement-including-process-death")
+
+let coldFailure = path("cold-journal-failure")
+try seedColdJournal(coldFailure)
+try require(try child(["before-validate", coldFailure]).terminationStatus == 77)
+try require(manager.fileExists(atPath: coldFailure + "-journal"))
+try Database.withDatabase(path: coldFailure, secret: "", writable: false) { db in
+    try require(try Database.scalar(db, "SELECT privateKey FROM users") == "CURRENT_SYNTHETIC_KEY")
+}
+try require(try prepare(coldFailure))
+try require(!manager.fileExists(atPath: coldFailure + "-journal"))
+passed.append("cold-journal-preserved-until-validated-conversion-and-retry")
+
+let overlap = path("overlap-writer")
+try seed(overlap)
+_ = try Database.prepare(path: overlap, readSecret: { try readSecret(overlap + ".synthetic-secret") }, writeSecret: {
+    try $0.write(toFile: overlap + ".synthetic-secret", atomically: true, encoding: .utf8)
+}, checkpoint: { point in
+    if point == "before-replace" {
+        // Writer is a distinct process/SQLite connection, after export has committed.
+        try require(try child(["overlap-writer", overlap]).terminationStatus == 79)
+    }
+})
+try check(overlap, encrypted: true)
+passed.append("source-exclusive-lock-retained-through-validation-and-replacement")
 
 let fresh = path("fresh")
 try require(try !prepare(fresh))

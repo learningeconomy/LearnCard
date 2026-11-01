@@ -73,6 +73,7 @@ public final class LearnCardEncryptedDatabase {
                         }
                     }
                 }
+                checkpoint.reached("before-conversion");
                 if (secret.isEmpty()) {
                     byte[] bytes = new byte[32];
                     new SecureRandom().nextBytes(bytes);
@@ -85,32 +86,36 @@ public final class LearnCardEncryptedDatabase {
                 checkpoint.reached("after-secret");
                 File staged = new File(original + ".encryption.tmp");
                 clearStaging(staged);
+                SQLiteDatabase source = null;
                 try {
                     if (exists) {
-                        try (SQLiteDatabase source = open(original, "", false)) {
-                            if (!"0".equals(scalar(source, "PRAGMA wal_checkpoint(TRUNCATE)"))) {
-                                throw failure("Account storage is busy");
-                            }
-                            if (!"delete".equals(scalar(source, "PRAGMA journal_mode=DELETE"))) {
-                                throw failure("Account storage is busy");
-                            }
-                            String version = scalar(source, "PRAGMA user_version");
-                            try (SQLiteStatement attach = source.compileStatement("ATTACH DATABASE ? AS encrypted KEY ?")) {
-                                attach.bindString(1, staged.getAbsolutePath());
-                                attach.bindString(2, secret);
-                                attach.execute();
-                            }
-                            source.rawExecSQL("PRAGMA encrypted.synchronous=FULL");
-                            source.beginTransaction();
-                            try {
-                                source.rawExecSQL("SELECT sqlcipher_export('encrypted')");
-                                source.rawExecSQL("PRAGMA encrypted.user_version=" + version);
-                                source.setTransactionSuccessful();
-                            } finally {
-                                source.endTransaction();
-                            }
-                            source.rawExecSQL("DETACH DATABASE encrypted");
+                        source = open(original, "", false);
+                        if (!"0".equals(scalar(source, "PRAGMA wal_checkpoint(TRUNCATE)"))) {
+                            throw failure("Account storage is busy");
                         }
+                        if (!"delete".equals(scalar(source, "PRAGMA journal_mode=DELETE"))) {
+                            throw failure("Account storage is busy");
+                        }
+                        // Retain the exclusive source lock after COMMIT until replacement.
+                        if (!"exclusive".equals(scalar(source, "PRAGMA locking_mode=EXCLUSIVE"))) {
+                            throw failure("Account storage is busy");
+                        }
+                        String version = scalar(source, "PRAGMA user_version");
+                        try (SQLiteStatement attach = source.compileStatement("ATTACH DATABASE ? AS encrypted KEY ?")) {
+                            attach.bindString(1, staged.getAbsolutePath());
+                            attach.bindString(2, secret);
+                            attach.execute();
+                        }
+                        source.rawExecSQL("PRAGMA encrypted.synchronous=FULL");
+                        source.beginTransaction();
+                        try {
+                            source.rawExecSQL("SELECT sqlcipher_export('encrypted')");
+                            source.rawExecSQL("PRAGMA encrypted.user_version=" + version);
+                            source.setTransactionSuccessful();
+                        } finally {
+                            source.endTransaction();
+                        }
+                        source.rawExecSQL("DETACH DATABASE encrypted");
                     } else {
                         try (SQLiteDatabase target = open(staged, secret, false)) {
                             target.rawExecSQL("PRAGMA synchronous=FULL");
@@ -124,6 +129,15 @@ public final class LearnCardEncryptedDatabase {
                         file.getFD().sync();
                     }
                     checkpoint.reached("before-replace");
+                    // Source recovery/checkpoint/export succeeded and its exclusive lock is held.
+                    // Remove obsolete plaintext sidecars before rename, including the cold PERSIST
+                    // journal which SQLite can otherwise leave behind after switching to DELETE.
+                    if (exists) {
+                        for (String suffix : new String[] {"-journal", "-wal", "-shm"}) {
+                            File sidecar = new File(original + suffix);
+                            if (sidecar.exists() && !sidecar.delete()) throw failure("Cannot clear account storage sidecars");
+                        }
+                    }
                     // POSIX same-directory replacement; never delete the authoritative DB first.
                     Os.rename(staged.getAbsolutePath(), original.getAbsolutePath());
                     checkpoint.reached("after-replace");
@@ -131,7 +145,8 @@ public final class LearnCardEncryptedDatabase {
                     try { Os.fsync(directory); } finally { Os.close(directory); }
                     return exists;
                 } finally {
-                    // Only our encrypted staging file is disposable. Leave the original untouched on failure.
+                    if (source != null) source.close();
+                    // Leave the authoritative database intact on failure.
                     clearStaging(staged);
                 }
             }

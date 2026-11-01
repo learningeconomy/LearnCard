@@ -133,7 +133,12 @@ export class AuthCoordinator {
     /** Drain escrow writes before clearing a device or changing its signed-in identity. */
     private async runEscrowOperation<T>(operation: () => Promise<T>): Promise<T> {
         if (this.endingSession) throw new Error('This recovery request was cancelled.');
-        const pending = operation();
+        const pending = this.config.ensureStorageReady
+            ? this.config.ensureStorageReady().then(() => {
+                  if (this.endingSession) throw new Error('This recovery request was cancelled.');
+                  return operation();
+              })
+            : operation();
         this.escrowOperations.add(pending);
         try {
             return await pending;
@@ -780,6 +785,7 @@ export class AuthCoordinator {
      *  whose timestamp is more than 6 minutes old, so a stale cached token
      *  (common after Android backgrounds/kills the app) would fail. */
     private async getAuthCredentials(): Promise<{ token: string; providerType: string }> {
+        if (this.config.ensureStorageReady) await this.config.ensureStorageReady();
         const token = await this.config.authProvider.getIdToken(true);
         const providerType = this.config.authProvider.getProviderType();
         return { token, providerType };
@@ -809,6 +815,8 @@ export class AuthCoordinator {
         if (this.endingSession) return this.state;
         this.recoveryFallback = null;
         try {
+            // Storage failure is not a cache miss and must not fall through to account setup.
+            if (this.config.ensureStorageReady) await this.config.ensureStorageReady();
             // --- Private-key-first path ---
             if (this.config.getCachedPrivateKey && this.config.didFromPrivateKey) {
                 try {
@@ -1531,6 +1539,7 @@ export class AuthCoordinator {
      * Delegates the actual recovery logic to the strategy's executeRecovery().
      */
     async recover(input: unknown): Promise<UnifiedAuthState> {
+        if (this.config.ensureStorageReady) await this.config.ensureStorageReady();
         if (isEscrowRecoveryMethod(input)) {
             return this.runEscrowOperation(() => this.executeRecovery(input));
         }

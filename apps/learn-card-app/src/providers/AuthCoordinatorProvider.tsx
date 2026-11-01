@@ -965,14 +965,6 @@ const AuthSessionManager: React.FC<{
                 return;
             }
 
-            // Flip readiness FIRST — the network tail (push sync, recovery
-            // methods) must never gate the app shell, or a stalled call offline
-            // would leave the user stuck on the loader with a valid wallet.
-            walletStore.set.wallet(newWallet);
-            setWallet(newWallet);
-            walletModeRef.current = mode;
-            walletModeStore.set.mode(mode);
-
             const authUser =
                 coordinator.state.status === 'ready' ? coordinator.state.authUser : undefined;
 
@@ -986,20 +978,37 @@ const AuthSessionManager: React.FC<{
                 baseColor: getRandomBaseColor(),
             });
 
-            emitAuthSuccess(
-                'auth:wallet_ready',
-                `Wallet initialized (${mode}) — DID: ${did.slice(0, 30)}...`
-            );
-
             // Persist the private key in secure storage (skip in public computer
             // mode — key stays in memory only so nothing survives tab close).
-            if (!isPublicComputerMode()) {
+            if (Capacitor.isNativePlatform() || !isPublicComputerMode()) {
                 try {
                     await setPlatformPrivateKey(privateKey);
                 } catch (e) {
                     log.warn('Failed to persist private key to secure storage', e);
+                    if (Capacitor.isNativePlatform()) {
+                        if (isStale()) return;
+                        walletInitRef.current = false;
+                        currentUserStore.set.currentUser(null);
+                        emitAuthError(
+                            'auth:coordinator_error',
+                            'Account storage is unavailable. Please try again.'
+                        );
+                        return;
+                    }
                 }
             }
+
+            if (isStale()) return;
+            // Durable account storage gates readiness; the network tail does not.
+            walletStore.set.wallet(newWallet);
+            setWallet(newWallet);
+            walletModeRef.current = mode;
+            walletModeStore.set.mode(mode);
+
+            emitAuthSuccess(
+                'auth:wallet_ready',
+                `Wallet initialized (${mode}) — DID: ${did.slice(0, 30)}...`
+            );
 
             // Network tail — best-effort, must NOT block readiness. Skipped in
             // offline mode; runs in the background otherwise.

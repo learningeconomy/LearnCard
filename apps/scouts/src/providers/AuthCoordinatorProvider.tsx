@@ -760,16 +760,15 @@ const AuthSessionManager: React.FC<{
                     return;
                 }
 
-                walletStore.set.wallet(newWallet);
-
                 // Persist the private key in secure storage (skip in public
                 // computer mode — key stays in memory only so nothing
                 // survives tab close).
-                if (!isPublicComputerMode()) {
+                if (Capacitor.isNativePlatform() || !isPublicComputerMode()) {
                     try {
                         await setPlatformPrivateKey(privateKey);
                     } catch (e) {
                         log.warn('Failed to persist private key to secure storage', e);
+                        if (Capacitor.isNativePlatform()) throw e;
                     }
                 }
 
@@ -794,6 +793,7 @@ const AuthSessionManager: React.FC<{
                 }
                 if (isStale()) return;
 
+                walletStore.set.wallet(newWallet);
                 setWallet(newWallet);
                 walletModeStore.set.mode('full');
 

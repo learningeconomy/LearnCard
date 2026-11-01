@@ -159,6 +159,8 @@ export interface AuthCoordinatorConfig {
     authProvider: AuthProvider;
     keyDerivation: KeyDerivationStrategy;
     onStateChange?: (state: UnifiedAuthState) => void;
+    /** Reject before account/recovery work if required persistent storage is unavailable. */
+    ensureStorageReady?: () => Promise<void>;
     didFromPrivateKey?: (privateKey: string) => Promise<string>;
 
     /**

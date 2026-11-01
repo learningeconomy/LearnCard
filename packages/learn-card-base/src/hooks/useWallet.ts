@@ -147,11 +147,7 @@ export const useWallet = () => {
         try {
             // Ensure SQLite is initialized on native before proceeding
             if (Capacitor.isNativePlatform()) {
-                try {
-                    await waitForSQLiteReady();
-                } catch (readyErr) {
-                    log.warn('Waiting for SQLite readiness failed; continuing anyway', readyErr);
-                }
+                await waitForSQLiteReady();
             }
 
             while (generating) await new Promise(res => setTimeout(res, 250));
@@ -926,6 +922,7 @@ export const useWallet = () => {
     };
 
     const getWalletOrFallback = async () => {
+        if (Capacitor.isNativePlatform()) await waitForSQLiteReady();
         // Don't trust `isLoggedIn` alone: during early boot it can still be
         // false while the private key is already available from secure storage.
         // Keep this read outside the fallback catch so storage failures are not

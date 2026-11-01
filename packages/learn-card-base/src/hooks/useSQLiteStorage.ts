@@ -15,7 +15,8 @@ import { Capacitor } from '@capacitor/core';
 import { CurrentUser } from 'learn-card-base';
 
 import { sqliteStore } from '../stores/sqliteStore';
-import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { markSQLiteReady, markSQLiteFailed } from 'learn-card-base/SQL/sqliteReady';
+import { requireNativeStorage } from '../SQL/requireNativeStorage';
 import { clearUserData } from '../SQL/clearUserData';
 // import { MIGRATIONS, performSqliteMigrations } from 'learn-card-base/SQL/migrations';
 
@@ -201,14 +202,12 @@ export const sqliteInit = () => {
             .then(({ db, sqlite }) => {
                 sqliteStore.set.db(db);
                 sqliteStore.set.sqlite(sqlite);
+                markSQLiteReady();
                 if (!stopped) setExistConnection(true);
             })
             .catch(error => {
+                markSQLiteFailed();
                 log.error('Failed to initialize SQLite database:', error);
-            })
-            .finally(() => {
-                // Failure still releases boot waiters; never store a false DB handle.
-                markSQLiteReady();
             });
         return () => {
             stopped = true;
@@ -221,10 +220,16 @@ export const sqliteInit = () => {
 
 export const useSQLiteStorage = () => {
     const db = sqliteStore.use.db();
+    const getDatabase = async (): Promise<SQLiteDBConnection | null> => {
+        await requireNativeStorage();
+        // A caller may have started before initialization published the handle.
+        return Capacitor.getPlatform() === 'web' ? db : sqliteStore.get.db();
+    };
 
     const setCurrentUser = async (currentUser: Partial<CurrentUser> | null) => {
         try {
             if (!currentUser) return;
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -273,6 +278,7 @@ export const useSQLiteStorage = () => {
             }
         } catch (e) {
             log.warn('😵 useSQLiteStorage::setCurrentUser', e);
+            if (Capacitor.getPlatform() !== 'web') throw e;
         }
         //     }
         // }
@@ -280,6 +286,7 @@ export const useSQLiteStorage = () => {
 
     const getCurrentUser = async (): Promise<CurrentUser | null> => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -293,6 +300,7 @@ export const useSQLiteStorage = () => {
             return null;
         } catch (e) {
             log.warn('😵 useSQLiteStorage::getCurrentUser', e);
+            if (Capacitor.getPlatform() !== 'web') throw e;
 
             return null;
         }
@@ -305,6 +313,7 @@ export const useSQLiteStorage = () => {
         payload: { name: string; profileImage: string }
     ) => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -334,6 +343,7 @@ export const useSQLiteStorage = () => {
 
     const setProviderAuthToken = async (authProviderName: string | null, token: string | null) => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -358,6 +368,7 @@ export const useSQLiteStorage = () => {
             }
         } catch (e) {
             log.warn('😵 useSQLiteStorage::setProviderAuthToken::error', e);
+            if (Capacitor.getPlatform() !== 'web') throw e;
         }
     };
 
@@ -365,6 +376,7 @@ export const useSQLiteStorage = () => {
         authProviderName: string
     ): Promise<{ authProviderName: string; token: string } | undefined> => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -378,6 +390,7 @@ export const useSQLiteStorage = () => {
             }
         } catch (error) {
             log.warn('😵 useSQLiteStorage::getProviderAuthToken::error', error);
+            if (Capacitor.getPlatform() !== 'web') throw error;
         }
         return undefined;
     };

@@ -33,6 +33,10 @@ final class NativeKeychainTests: XCTestCase {
         config.biometricAuth = 0
         config.iosKeychainPrefix = prefix
         let plugin = CapacitorSQLite(config: config)
+        try plugin.createConnection("learncardDB", encrypted: false, mode: "no-encryption", version: 1, vUpgDict: [:], readonly: false)
+        try plugin.open("learncardDB", readonly: false)
+        XCTAssertThrowsError(try plugin.prepareEncryptedDatabase("learncardDB"))
+        try plugin.closeConnection("learncardDB", readonly: false)
         XCTAssertTrue(try plugin.prepareEncryptedDatabase("learncardDB"))
         XCTAssertTrue(try plugin.isSecretStored().boolValue)
         XCTAssertNil(try Data(contentsOf: url).range(of: Data("SYNTHETIC_PRIVATE_KEY".utf8)))

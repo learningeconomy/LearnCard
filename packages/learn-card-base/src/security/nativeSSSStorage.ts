@@ -30,28 +30,23 @@ const DEFAULT_SHARE_ID = 'sss-device-share';
 /**
  * Ensure the `sss_shares` table exists in the SQLite database.
  */
-const ensureTable = async (): Promise<boolean> => {
+const ensureTable = async (): Promise<void> => {
     await waitForSQLiteReady();
 
     const db = sqliteStore.get.db();
 
-    if (!db) return false;
+    if (!db) throw new Error('Account storage is unavailable. Please try again.');
 
-    try {
-        await ensureSQLiteSchema(
-            db,
-            TABLE,
-            `
+    await ensureSQLiteSchema(
+        db,
+        TABLE,
+        `
             CREATE TABLE IF NOT EXISTS ${TABLE} (
                 id TEXT PRIMARY KEY,
                 share TEXT NOT NULL
             )
         `
-        );
-        return true;
-    } catch {
-        return false;
-    }
+    );
 };
 
 export interface NativeShareEntry {
@@ -74,7 +69,7 @@ export interface NativeSSSStorageFunctions {
 
 /**
  * Create a native SSS storage adapter backed by the app's encrypted SQLite DB.
- * Falls back gracefully if the DB is not available (returns null / no-ops).
+ * Storage failures reject; null means a successful lookup found no share.
  */
 export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     const storeDeviceShare = async (share: string, id?: string): Promise<void> => {
@@ -84,8 +79,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         const db = sqliteStore.get.db();
 
         if (!db) {
-            log.warn('[NativeSSSStorage] No SQLite DB available, falling back to no-op');
-            return;
+            throw new Error('Account storage is unavailable. Please try again.');
         }
 
         try {
@@ -97,6 +91,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.error('[NativeSSSStorage] storeDeviceShare failed', e);
+            throw e;
         }
     };
 
@@ -106,7 +101,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         const shareId = id ?? DEFAULT_SHARE_ID;
         const db = sqliteStore.get.db();
 
-        if (!db) return null;
+        if (!db) throw new Error('Account storage is unavailable. Please try again.');
 
         try {
             return await withSQLiteDatabase(db, async () => {
@@ -120,7 +115,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.warn('[NativeSSSStorage] getDeviceShare failed', e);
-            return null;
+            throw e;
         }
     };
 
@@ -130,9 +125,10 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
     };
 
     const clearAllShares = async (id?: string): Promise<void> => {
+        await ensureTable();
         const db = sqliteStore.get.db();
 
-        if (!db) return;
+        if (!db) throw new Error('Account storage is unavailable. Please try again.');
 
         try {
             return await withSQLiteDatabase(db, async () => {
@@ -144,6 +140,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.warn('[NativeSSSStorage] clearAllShares failed', e);
+            throw e;
         }
     };
 
@@ -154,8 +151,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         const db = sqliteStore.get.db();
 
         if (!db) {
-            log.warn('[NativeSSSStorage] No SQLite DB available, falling back to no-op');
-            return;
+            throw new Error('Account storage is unavailable. Please try again.');
         }
 
         try {
@@ -167,6 +163,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.error('[NativeSSSStorage] storeShareVersion failed', e);
+            throw e;
         }
     };
 
@@ -176,7 +173,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
         const versionId = `${id ?? DEFAULT_SHARE_ID}:version`;
         const db = sqliteStore.get.db();
 
-        if (!db) return null;
+        if (!db) throw new Error('Account storage is unavailable. Please try again.');
 
         try {
             return await withSQLiteDatabase(db, async () => {
@@ -194,7 +191,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.warn('[NativeSSSStorage] getShareVersion failed', e);
-            return null;
+            throw e;
         }
     };
 
@@ -203,7 +200,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
 
         const db = sqliteStore.get.db();
 
-        if (!db) return [];
+        if (!db) throw new Error('Account storage is unavailable. Please try again.');
 
         try {
             return await withSQLiteDatabase(db, async () => {
@@ -237,7 +234,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.warn('[NativeSSSStorage] listAllShares failed', e);
-            return [];
+            throw e;
         }
     };
 
@@ -246,7 +243,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
 
         const db = sqliteStore.get.db();
 
-        if (!db) return;
+        if (!db) throw new Error('Account storage is unavailable. Please try again.');
 
         try {
             return await withSQLiteDatabase(db, async () => {
@@ -255,6 +252,7 @@ export const createNativeSSSStorage = (): NativeSSSStorageFunctions => {
             });
         } catch (e) {
             log.warn('[NativeSSSStorage] deleteShare failed', e);
+            throw e;
         }
     };
 
