@@ -48,6 +48,7 @@ export type {
 export { VpError } from './types';
 export { parseDcApiRequest, createDcApiResponse, DcApiError } from './dcApi';
 export type {
+    DcApiChosenCredential,
     DcApiRequest,
     ParsedDcApiRequest,
     DcApiResponse,

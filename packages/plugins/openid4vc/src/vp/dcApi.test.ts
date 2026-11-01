@@ -21,7 +21,12 @@ const request = (overrides: Record<string, unknown> = {}): DcApiRequest => ({
         nonce: 'course-nonce',
         dcql_query: {
             credentials: [
-                { id: 'course', format: 'dc+sd-jwt', meta: { vct_values: [fixture.vct] } },
+                {
+                    id: 'course',
+                    format: 'dc+sd-jwt',
+                    meta: { vct_values: [fixture.vct] },
+                    claims: [{ path: ['course_name'] }, { path: ['completion_date'] }],
+                },
             ],
         },
         ...overrides,
@@ -99,6 +104,57 @@ describe('unsigned DC API response profile', () => {
         expect(context.presenter).not.toHaveBeenCalled();
         expect(context.fetchImpl).not.toHaveBeenCalled();
     });
+
+    it.each([
+        undefined,
+        {},
+        { course_name: true },
+        { course_name: true, completion_date: true, learner_name: true },
+        { course_name: { private: true }, completion_date: true },
+    ])(
+        'rejects omitted, incomplete, nested or extra consent frames before signing: %j',
+        async disclose => {
+            const context = await setup();
+            await expect(
+                context.plugin.methods.createDcApiResponse(
+                    context.learnCard,
+                    request(),
+                    ORIGIN,
+                    // Exercise untyped JS callers too: an omitted frame must fail at runtime.
+                    [{ ...context.chosen[0]!, disclose }] as typeof context.chosen
+                )
+            ).rejects.toMatchObject({ code: 'invalid_request' });
+            expect(context.presenter).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each([undefined, [{ path: ['address', 'street'] }], [{ path: ['address', null] }]])(
+        'rejects whole-credential, nested and wildcard requests: %j',
+        async claims => {
+            const context = await setup();
+            const input = request({
+                dcql_query: {
+                    credentials: [
+                        {
+                            id: 'course',
+                            format: 'dc+sd-jwt',
+                            meta: { vct_values: [fixture.vct] },
+                            ...(claims ? { claims } : {}),
+                        },
+                    ],
+                },
+            });
+            await expect(
+                context.plugin.methods.createDcApiResponse(
+                    context.learnCard,
+                    input,
+                    ORIGIN,
+                    context.chosen
+                )
+            ).rejects.toMatchObject({ code: 'unsupported_profile' });
+            expect(context.presenter).not.toHaveBeenCalled();
+        }
+    );
 
     it('accepts a canonical native certificate origin supplied by the trusted transport', () => {
         const origin = `android:apk-key-hash:${Buffer.alloc(32, 1).toString('base64url')}`;

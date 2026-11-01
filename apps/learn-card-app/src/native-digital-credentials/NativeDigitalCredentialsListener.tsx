@@ -38,6 +38,8 @@ export default function NativeDigitalCredentialsListener() {
         let running = false;
         let dirty = false;
         let enabled = false;
+        let active = true;
+        let retryAttempt = 0;
         // Fence native handles before async wallet replacement. Each WebView has its own
         // JS stores, while the native registry generation is shared by all host Activities.
         const invalidate = () => {
@@ -54,12 +56,13 @@ export default function NativeDigitalCredentialsListener() {
                 invalidate();
         });
         const check = async () => {
-            if (stopped) return;
+            if (stopped || !active) return;
             if (running) {
                 dirty = true;
                 return;
             }
             running = true;
+            let retryRequired = false;
             try {
                 enabled = (await nativeDigitalCredentials.status()).enabled;
                 if (!enabled || stopped) return;
@@ -80,22 +83,27 @@ export default function NativeDigitalCredentialsListener() {
                 const selectedAccount = captureHistoryAccount();
                 const wallet =
                     (await walletInitializer.current()) as unknown as DigitalCredentialWallet;
-                await synchronizeNativeInventory(
+                const result = await synchronizeNativeInventory(
                     wallet,
                     () => !stopped && selectedAccount(),
                     m['nativeCredentials.credentialTitle']()
                 );
+                retryRequired = result.retryRequired;
             } catch {
-                /* A platform/network failure is retried on the next inventory or foreground event. */
+                retryRequired = true;
             } finally {
                 running = false;
                 if (dirty && !stopped) {
                     dirty = false;
                     schedule();
+                } else if (retryRequired && !stopped && active && retryAttempt < 3) {
+                    const delay = [2_000, 10_000, 30_000][retryAttempt++];
+                    timer = setTimeout(() => void check(), delay);
                 }
             }
         };
         const schedule = () => {
+            retryAttempt = 0;
             clearTimeout(timer);
             timer = setTimeout(() => void check(), 350);
         };
@@ -105,6 +113,7 @@ export default function NativeDigitalCredentialsListener() {
             const key = event.query.queryKey[0];
             if (
                 event.type === 'updated' &&
+                (event.action.type === 'success' || event.action.type === 'invalidate') &&
                 [
                     'boosts',
                     'useGetCredentials',
@@ -121,7 +130,9 @@ export default function NativeDigitalCredentialsListener() {
                 schedule();
         });
         const foreground = App.addListener('appStateChange', event => {
-            if (event.isActive) schedule();
+            active = event.isActive;
+            if (active) schedule();
+            else clearTimeout(timer);
         });
         void check();
         return () => {

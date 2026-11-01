@@ -2,7 +2,7 @@ import { parseDcqlQuery } from '../dcql/parse';
 import { buildDcqlPresentations, type DcqlChosenCredential } from '../dcql/build';
 import { buildDcqlResponse, type DcqlResponse } from '../dcql/respond';
 import type { DcqlQuery } from '../dcql/types';
-import type { SdJwtPresenter } from './sign';
+import type { SdJwtDiscloseFrame, SdJwtPresenter } from './sign';
 
 export type DcApiErrorCode =
     'invalid_origin' | 'unsupported_profile' | 'invalid_request' | 'cancelled';
@@ -31,6 +31,11 @@ export interface ParsedDcApiRequest {
 
 export interface DcApiResponse {
     vp_token: DcqlResponse['vpToken'];
+}
+
+/** Explicit consent is mandatory at the public DC API boundary. */
+export interface DcApiChosenCredential extends DcqlChosenCredential {
+    disclose: SdJwtDiscloseFrame;
 }
 
 export interface DcApiResponseOptions {
@@ -123,10 +128,14 @@ export const parseDcApiRequest = (input: unknown, verifiedOrigin: string): Parse
     return { nonce: data.nonce, query, audience: `origin:${verifiedOrigin}` };
 };
 
-/** Build a local JSON response without resolving references or submitting over HTTP. */
+/**
+ * Build local JSON for explicit flat-claim queries and approved disclosure frames.
+ * Nested paths, wildcard/whole-credential queries and alternative claim sets fail
+ * closed until their consent/disclosure semantics are supported here.
+ */
 export const createDcApiResponse = async (
     request: ParsedDcApiRequest,
-    chosen: readonly DcqlChosenCredential[],
+    chosen: readonly DcApiChosenCredential[],
     holder: string,
     sdJwtPresenter: SdJwtPresenter | undefined,
     options: DcApiResponseOptions = {}
@@ -135,7 +144,40 @@ export const createDcApiResponse = async (
         if (options.signal?.aborted) throw new DcApiError('cancelled', 'DC API response cancelled');
     };
     assertNotCancelled();
-    const built = buildDcqlPresentations({ query: request.query, chosen, holder });
+    // Validate EVERY pick before invoking any presenter. Never allow the underlying
+    // SD-JWT library's omitted-frame default (disclose everything) at this boundary.
+    const approved = chosen.map(pick => {
+        const query = request.query.credentials.find(entry => entry.id === pick.credentialQueryId);
+        if (!query || (query.format !== 'dc+sd-jwt' && query.format !== 'vc+sd-jwt'))
+            throw new DcApiError('invalid_request', 'Unknown SD-JWT credential query');
+        if (query.claim_sets || !query.claims?.length)
+            throw new DcApiError('unsupported_profile', 'Explicit flat claim queries are required');
+        const fields = query.claims.map(claim => {
+            if (!('path' in claim) || claim.path.length !== 1 || typeof claim.path[0] !== 'string')
+                throw new DcApiError('unsupported_profile', 'Only flat claim paths are supported');
+            const key = claim.path[0];
+            if (['__proto__', 'prototype', 'constructor'].includes(key))
+                throw new DcApiError('unsupported_profile', 'Unsafe claim path');
+            return key;
+        });
+        const frame = pick.disclose;
+        if (
+            !isRecord(frame) ||
+            ![Object.prototype, null].includes(Object.getPrototypeOf(frame)) ||
+            Object.keys(frame).some(key => !fields.includes(key) || frame[key] !== true) ||
+            fields.some(
+                key => !Object.prototype.hasOwnProperty.call(frame, key) || frame[key] !== true
+            )
+        )
+            throw new DcApiError(
+                'invalid_request',
+                'Approve exactly the requested disclosure fields'
+            );
+        // Copy the validated frame so caller mutation during asynchronous signing
+        // cannot broaden the disclosures of a later pick.
+        return { ...pick, disclose: Object.fromEntries(fields.map(key => [key, true])) };
+    });
+    const built = buildDcqlPresentations({ query: request.query, chosen: approved, holder });
     const response = await buildDcqlResponse(
         { built, audience: request.audience, nonce: request.nonce, holder },
         sdJwtPresenter ? { sdJwtPresenter } : {}
