@@ -72,7 +72,15 @@ export type UnifiedAuthState =
     | { status: 'authenticated'; authUser: AuthUser }
     | { status: 'checking_key_status' }
     | { status: 'needs_setup'; authUser: AuthUser }
-    | { status: 'needs_migration'; authUser: AuthUser; migrationData?: Record<string, unknown> }
+    | {
+          status: 'needs_migration';
+          authUser: AuthUser;
+          /**
+           * `web3AuthKey` (the legacy key), `source` (MigrationKeySource) and
+           * `expectedDid` (the DID the server already holds, if any).
+           */
+          migrationData?: Record<string, unknown>;
+      }
     | {
           status: 'needs_recovery';
           escrowPin?: EscrowPinStatus;
@@ -242,4 +250,29 @@ export interface AuthCoordinatorConfig {
      * nitro/authority-mode enroll/replace, never silently defaulted.
      */
     getRecoveryLanguage?: () => string | undefined;
+
+    /**
+     * Optional: confirm a legacy key belongs to the signed-in account before
+     * `migrate()` writes anything. The first DID stored on the server is
+     * permanent (later writes from another DID are refused), so a wrong key
+     * must be stopped here, not repaired later.
+     *
+     * Not called when the server already holds a DID for this account; the
+     * coordinator compares against that directly. `mismatch` ends in a
+     * non-retryable error; `unknown` (or a throw) proceeds for a freshly
+     * derived key and defers migration for a cached key, which then reaches
+     * `ready` without writing. Omit to keep the previous unchecked behavior.
+     */
+    verifyMigrationIdentity?: (check: MigrationIdentityCheck) => Promise<MigrationIdentityVerdict>;
 }
+
+/** Where a legacy key being migrated came from. */
+export type MigrationKeySource = 'cached' | 'derived';
+
+export interface MigrationIdentityCheck {
+    privateKey: string;
+    did: string;
+    source: MigrationKeySource;
+}
+
+export type MigrationIdentityVerdict = 'match' | 'mismatch' | 'unknown';

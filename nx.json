@@ -25,12 +25,26 @@
         },
         "test": {
             "dependsOn": ["^build"],
-            "outputs": ["{projectRoot}/coverage"]
+            "outputs": ["{projectRoot}/coverage"],
+            "inputs": ["default", "^default", "ciTestConfig"]
         },
         "test:coverage": {
             "dependsOn": ["^build"],
-            "outputs": ["{projectRoot}/coverage"]
+            "outputs": ["{projectRoot}/coverage"],
+            "inputs": ["default", "^default", "ciTestConfig"]
         }
     },
-    "defaultBase": "main"
+    "defaultBase": "main",
+    "namedInputs": {
+        "ciTestConfig": [
+            "{workspaceRoot}/vitest.shared.ts",
+            "{workspaceRoot}/scripts/ci-test-retries/**/*",
+            "{projectRoot}/vitest.config.*",
+            "{projectRoot}/vite.config.*",
+            "{projectRoot}/package.json",
+            {
+                "env": "LC_CI_TEST_RETRY"
+            }
+        ]
+    }
 }

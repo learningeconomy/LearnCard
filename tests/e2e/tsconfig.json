@@ -1,7 +1,7 @@
 {
     "extends": "../../tsconfig.test.json",
     "compilerOptions": {
-        "moduleResolution": "Node",
+        "moduleResolution": "bundler",
         "removeComments": true,
         "preserveConstEnums": true,
         "alwaysStrict": true,

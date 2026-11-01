@@ -28,7 +28,7 @@ vi.mock('@capacitor-community/sqlite', () => ({
         }
     },
 }));
-vi.mock('jeep-sqlite/loader', () => ({ defineCustomElements: mocks.define }));
+vi.mock('jeep-sqlite/dist/components/jeep-sqlite', () => ({ defineCustomElement: mocks.define }));
 vi.mock('../stores/sqliteStore', () => ({
     sqliteStore: {
         get: { sqlite: () => mocks.nativeOwner },
@@ -72,5 +72,43 @@ describe('web SQLite initialization boundary', () => {
         expect(mocks.define).toHaveBeenCalledOnce();
         expect(mocks.connection.initWebStore).toHaveBeenCalledOnce();
         hook.unmount();
+    });
+
+    it('initializes storage when another mount already registered the component', async () => {
+        mocks.platform = 'web';
+        vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+        if (!customElements.get('jeep-sqlite')) {
+            customElements.define('jeep-sqlite', class extends HTMLElement {});
+        }
+        mocks.define.mockImplementation(() => {
+            throw new Error('Component was already registered');
+        });
+        const hook = renderHook(() => useSQLiteInitWeb());
+        await waitFor(() => expect(mocks.setDb).toHaveBeenCalledWith({ database: 'web-only' }));
+        expect(mocks.define).not.toHaveBeenCalled();
+        expect(mocks.connection.initWebStore).toHaveBeenCalledOnce();
+        hook.unmount();
+    });
+
+    it('does not publish readiness after an abandoned mount, but a remount can initialize', async () => {
+        mocks.platform = 'web';
+        vi.spyOn(document, 'readyState', 'get').mockReturnValue('complete');
+        let finish!: () => void;
+        const pending = new Promise<void>(resolve => {
+            finish = resolve;
+        });
+        mocks.connection.initWebStore.mockReturnValueOnce(pending);
+        const abandoned = renderHook(() => useSQLiteInitWeb());
+        await waitFor(() => expect(mocks.connection.initWebStore).toHaveBeenCalledOnce());
+        abandoned.unmount();
+        finish();
+        await pending;
+        expect(mocks.ready).not.toHaveBeenCalled();
+        expect(mocks.setDb).not.toHaveBeenCalled();
+
+        const replacement = renderHook(() => useSQLiteInitWeb());
+        await waitFor(() => expect(mocks.setDb).toHaveBeenCalledOnce());
+        expect(mocks.ready).toHaveBeenCalledOnce();
+        replacement.unmount();
     });
 });

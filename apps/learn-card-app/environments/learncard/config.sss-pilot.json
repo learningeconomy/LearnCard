@@ -1,0 +1,13 @@
+{
+    "_comment": "Production Web3Auth -> SSS pilot. Merges over config.json (production APIs). Built only into the SSS pilot Capgo channel (.github/workflows/capgo-sss-pilot.yml), or served to an sss-pilot.* web host if one is ever aliased. Existing accounts only: see internal-docs/architecture/web3auth-sss-migration-runbook.md.",
+    "stage": "production",
+    "auth": {
+        "keyDerivation": "sss",
+        "sss": {
+            "escrowEnclaveMode": "nitro"
+        }
+    },
+    "features": {
+        "escrowRolloutPercent": 100
+    }
+}

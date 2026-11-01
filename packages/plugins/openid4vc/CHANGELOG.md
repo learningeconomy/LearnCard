@@ -6,6 +6,15 @@
 
 - LC-2159: Add `createDcApiResponse(request, verifiedOrigin, chosen, options?)` for the transport-neutral `openid4vp-v1-unsigned` / `dc_api` SD-JWT VC profile. Validates target-less DCQL request data and a separately trusted canonical HTTPS origin, reuses DCQL presentation building and SD-JWT signing, and returns JSON `{ vp_token }` without HTTP calls. KB-JWTs bind the request nonce and `origin:<verifiedOrigin>`; request claims cannot override that origin. Includes typed `DcApiError` validation/cancellation errors and optional abort-signal cancellation. Existing URI/direct-post flows are unchanged; signed/encrypted profiles and mdoc are unsupported.
 
+## 0.3.14
+
+### Patch Changes
+
+- Updated dependencies [[`d93c1b15856f341b4bd36415bf39052de9b6b198`](https://github.com/learningeconomy/LearnCard/commit/d93c1b15856f341b4bd36415bf39052de9b6b198)]:
+    - @learncard/didkit-plugin@1.10.6
+    - @learncard/core@9.4.41
+    - @learncard/vc-plugin@1.6.7
+
 ## 0.3.13
 
 ### Patch Changes

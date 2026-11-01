@@ -1,4 +1,4 @@
-import { withSQLiteDatabase } from 'learn-card-base/SQL/connection';
+import { withSQLiteDatabase } from './connection';
 import { getLogger } from '../logging/logger';
 const log = getLogger('clear-user-data');
 /**
@@ -28,11 +28,8 @@ export const PRESERVED_TABLES = new Set(['sss_shares', 'sqlite_sequence']);
 export const clearUserData = async (db: SQLiteDBConnection): Promise<void> => {
     try {
         return await withSQLiteDatabase(db, async () => {
-            // Clear well-known app-data tables.
-            await db.query('DELETE FROM users');
-            await db.query('DELETE FROM tokens');
-
-            // Dynamically clear any other tables, but leave preserved ones intact.
+            // Web creates tables lazily. Enumerate only existing tables so absent
+            // users/tokens tables cannot prevent clearing credentials or caches.
             try {
                 const preservedList = [...PRESERVED_TABLES].map(t => `'${t}'`).join(', ');
 
@@ -44,7 +41,14 @@ export const clearUserData = async (db: SQLiteDBConnection): Promise<void> => {
                     const table = row?.name;
 
                     if (table) {
-                        await db.query(`DELETE FROM ${table}`);
+                        // Table names are identifiers, not bindable values.
+                        const identifier = `"${String(table).replace(/"/g, '""')}"`;
+                        try {
+                            await db.query(`DELETE FROM ${identifier}`);
+                        } catch (tableErr) {
+                            // One failed table must not skip the remaining data.
+                            log.warn('clearUserData: table clear failed', tableErr);
+                        }
                     }
                 }
             } catch (tableErr) {

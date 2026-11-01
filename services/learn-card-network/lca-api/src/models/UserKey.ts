@@ -1301,6 +1301,12 @@ export const activateUserKeyByAuthProvider = async (
 /**
  * Lazily discard abandoned migration shares after the P0-1 TTL. New-user
  * provisional records are excluded because their keyProvider is already SSS.
+ *
+ * A migration with a confirmed escrow enrollment is not abandoned: the user
+ * skipped the PIN, but escrow can recover them, and staying provisional keeps
+ * the faster Web3Auth re-derive on new devices. Such records stay until the
+ * user activates (e.g. sets a PIN) or operators activate them before Web3Auth
+ * is retired (internal-docs/architecture/web3auth-sss-migration-runbook.md).
  */
 export const purgeExpiredProvisionalMigrationByAuthProvider = async (
     authProvider: AuthProviderMapping,
@@ -1313,6 +1319,14 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
             keyProvider: 'web3auth',
             sssActivationState: 'provisional',
             provisionalCreatedAt: { $lte: cutoff },
+            $nor: [
+                {
+                    escrowBlob: { $exists: true },
+                    recoveryMethods: {
+                        $elemMatch: { type: 'escrow', confirmationStatus: 'confirmed' },
+                    },
+                },
+            ],
         },
         {
             $set: {

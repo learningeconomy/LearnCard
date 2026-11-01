@@ -68,6 +68,17 @@ To add a tenant, add its stage files to each service and register them in
 Stage files are committed and world-readable in the repo. Treat anything you
 would not publish as a secret and keep it out of them.
 
+### GitHub Actions automation credentials
+
+The runtime bundles above contain values consumed by deployed services. CI-only
+GitHub credentials remain GitHub Actions secrets. For example, generated SDK PRs
+reuse the repository's existing `E2E_RUNNER_APP_ID` and `E2E_RUNNER_PRIVATE_KEY`,
+also used by release-PR automation. The Deploy workflow explicitly passes those
+two secrets to the SDK workflow, which mints a short-lived, repository-scoped App
+token for PR writes. They do not belong in a service runtime bundle or generated
+client. Changing this workflow wiring does not require adding or rotating a
+deployed-service secret.
+
 ### lca-api escrow settings
 
 | Setting                                                                                                                                                | Source                                                       |
