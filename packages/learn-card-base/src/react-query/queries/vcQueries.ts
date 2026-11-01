@@ -27,6 +27,7 @@ import {
 import { getOrFetchConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
 import { getOrFetchCredentialRecordForBoost } from 'learn-card-base/hooks/useGetCredentialRecordForBoost';
 import { useBackfillBoostUris } from 'learn-card-base/helpers/backfills';
+import { getCredentialLifecycleStatuses } from 'learn-card-base/helpers/credentialLifecycleStatus';
 import { getLogger } from '../../logging/logger';
 import { walletStore } from '../../stores/walletStore';
 import {
@@ -442,18 +443,40 @@ export const useGetCredentials = (
     });
 };
 
+// Last known revoked URIs per query cache and profile. Kept outside the query cache on purpose:
+// a data-only cache entry has no observers, so it would be garbage collected after gcTime.
+const knownRevokedUris = new WeakMap<QueryClient, Map<string, Set<string>>>();
+
 /**
  * Revoked credentials stay in the holder's index (LearnCardApp shows them with a revoked
  * badge instead of removing them), so anything that aggregates skills must drop them itself.
- * Fails open: if the network can't answer, skills render as before rather than vanishing.
+ *
+ * Status comes from getCredentialLifecycleStatuses, the same rule the credential card uses, so
+ * LearnCloud copies and imported credentials are checked against their status list too.
+ * A URI whose lookup fails keeps its last known answer: once we have seen it revoked, a flaky
+ * refetch must not bring its skills back. A URI we have never resolved still counts.
  */
-const getRevokedCredentialUris = async (wallet: BespokeLearnCard): Promise<Set<string>> => {
-    try {
-        return new Set((await wallet.invoke?.getRevokedCredentials?.()) ?? []);
-    } catch (error) {
-        log.warn('[useGetCredentialsForSkills] Could not load revoked credentials:', error);
-        return new Set();
-    }
+const dropRevokedCredentials = async (
+    queryClient: QueryClient,
+    wallet: BespokeLearnCard,
+    switchedDid: string | undefined,
+    held: { uri: string; credential: VC }[]
+): Promise<VC[]> => {
+    const byProfile = knownRevokedUris.get(queryClient) ?? new Map<string, Set<string>>();
+    knownRevokedUris.set(queryClient, byProfile);
+    const knownRevoked = byProfile.get(switchedDid ?? '') ?? new Set<string>();
+    const statuses = await getCredentialLifecycleStatuses(wallet, held);
+
+    const isRevoked = (uri: string) => {
+        const status = statuses.get(uri);
+        if (status === undefined) return knownRevoked.has(uri);
+        return status === 'revoked';
+    };
+
+    const revokedSet = new Set(held.map(({ uri }) => uri).filter(isRevoked));
+    byProfile.set(switchedDid ?? '', revokedSet);
+
+    return held.filter(({ uri }) => !revokedSet.has(uri)).map(({ credential }) => credential);
 };
 
 // query for getting all creds to construct an aggregation of all skills
@@ -479,7 +502,6 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ids,
                     skills,
                     selfAssignedSkills,
-                    revokedUris,
                 ] = await Promise.all([
                     wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.learningHistory,
@@ -508,7 +530,6 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.selfAssignedSkills,
                     }),
-                    getRevokedCredentialUris(wallet),
                 ]);
 
                 // combine all creds
@@ -522,17 +543,28 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ...ids,
                     ...skills,
                     ...selfAssignedSkills,
-                ].filter(record => !revokedUris.has(record.uri));
+                ];
 
                 // resolve all creds
-                const resolvedCredentials = (
+                const held = (
                     await Promise.all(
-                        credentialsList.map(
-                            async record =>
-                                await tryFetchResolvedCredential(queryClient, wallet, record.uri)
-                        )
+                        credentialsList.map(async record => ({
+                            uri: record.uri,
+                            credential: await tryFetchResolvedCredential(
+                                queryClient,
+                                wallet,
+                                record.uri
+                            ),
+                        }))
                     )
-                ).filter(Boolean) as VC[];
+                ).filter((item): item is { uri: string; credential: VC } => !!item.credential);
+
+                const resolvedCredentials = await dropRevokedCredentials(
+                    queryClient,
+                    wallet,
+                    switchedDid,
+                    held
+                );
 
                 return resolvedCredentials.sort((a, b) => {
                     const aDate = getIssuanceDate(a) ?? '';
