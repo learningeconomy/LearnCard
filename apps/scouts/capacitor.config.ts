@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
     appId: 'org.scoutpass.app',
     appName: 'ScoutPass',
     webDir: 'build',
-    bundledWebRuntime: false,
     ...nativeBrowserCompatibility({ android: { adjustMarginsForEdgeToEdge: 'force' } }),
     plugins: {
         CapacitorSQLite: {

@@ -2,7 +2,6 @@
     "appId": "org.scoutpass.app",
     "appName": "ScoutPass",
     "webDir": "build",
-    "bundledWebRuntime": false,
     "android": {
         "adjustMarginsForEdgeToEdge": "force",
         "minWebViewVersion": 111
