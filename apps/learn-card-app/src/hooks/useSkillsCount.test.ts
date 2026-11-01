@@ -77,3 +77,58 @@ describe('countSkillsForFrameworks', () => {
         expect(countSkillsForFrameworks(credentials, ['configured-framework'])).toBe(0);
     });
 });
+
+describe('getCredentialAchievementAlignments', () => {
+    it('reads alignments from bare OpenBadgeCredential credentialSubject', async () => {
+        const { getCredentialAchievementAlignments } = await import('./skillAlignment.helpers');
+        const alignments = getCredentialAchievementAlignments({
+            type: ['VerifiableCredential', 'OpenBadgeCredential'],
+            credentialSubject: {
+                achievement: {
+                    alignment: [
+                        {
+                            targetName: 'Persistence',
+                            targetUrl:
+                                'https://staging.network.learncard.com/frameworks/wef-global-skills-taxonomy/skills/persistence',
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(alignments).toHaveLength(1);
+        expect(alignments[0]?.targetName).toBe('Persistence');
+    });
+
+    it('prefers boostCredential alignments when both are present', async () => {
+        const { getCredentialAchievementAlignments } = await import('./skillAlignment.helpers');
+        const alignments = getCredentialAchievementAlignments({
+            boostCredential: {
+                credentialSubject: {
+                    achievement: {
+                        alignment: [
+                            {
+                                targetName: 'FromBoost',
+                                targetUrl:
+                                    'https://x/frameworks/wef-global-skills-taxonomy/skills/a',
+                            },
+                        ],
+                    },
+                },
+            },
+            credentialSubject: {
+                achievement: {
+                    alignment: [
+                        {
+                            targetName: 'FromBare',
+                            targetUrl: 'https://x/frameworks/wef-global-skills-taxonomy/skills/b',
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(alignments).toHaveLength(1);
+        expect(alignments[0]?.targetName).toBe('FromBoost');
+    });
+});

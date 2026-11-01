@@ -9,6 +9,10 @@ import {
     SkillsHubSortOptionsEnum,
 } from '../pages/skills/skillshub-search.helpers';
 import { useGlobalSkillFrameworks } from '../helpers/globalSkillFrameworks.helpers';
+import {
+    getCredentialAchievementAlignments,
+    getCredentialSkillIssuanceDate,
+} from './skillAlignment.helpers';
 
 export type SkillFrameworkNodeWithCredentials = SkillFrameworkNode & {
     credentials?: string[];
@@ -55,24 +59,16 @@ export const useAlignments = (
         refetch,
     } = useGetCredentialsForSkills();
 
-    // filter boosts with alignments
+    // Filter credentials that carry skill alignments (boost wrapper or bare OB3).
     const credentialsWithAlignments = useMemo(() => {
-        return allResolvedCreds?.filter(vc => {
-            const alignment = (vc as VC)?.boostCredential?.credentialSubject?.achievement
-                ?.alignment;
-            if (alignment && alignment.length > 0) return true;
-
-            return false;
-        });
+        return allResolvedCreds?.filter(vc => getCredentialAchievementAlignments(vc).length > 0);
     }, [allResolvedCreds]);
 
     const { alignments, frameworkIds } = useMemo(() => {
         const alignmentMap = new Map<string, AlignmentWithMetadata>();
         credentialsWithAlignments?.forEach(vc => {
-            const credentialAlignments = (vc as VC)?.boostCredential?.credentialSubject?.achievement
-                ?.alignment;
-            const issuanceDate =
-                (vc as VC)?.boostCredential?.issuanceDate ?? vc?.boostCredential?.validFrom ?? '';
+            const credentialAlignments = getCredentialAchievementAlignments(vc);
+            const issuanceDate = getCredentialSkillIssuanceDate(vc);
 
             if (credentialAlignments && Array.isArray(credentialAlignments)) {
                 credentialAlignments.forEach(alignment => {

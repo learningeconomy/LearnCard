@@ -1,6 +1,6 @@
 import { getFrameworkIdAndSkillIdFromUrl } from '../components/boost/alignmentHelpers';
 
-type SkillAlignment = {
+export type SkillAlignment = {
     targetName?: string;
     targetUrl?: string;
     frameworkId?: string;
@@ -8,17 +8,49 @@ type SkillAlignment = {
 
 type CredentialWithSkillAlignments = {
     boostCredential?: {
+        issuanceDate?: string;
+        validFrom?: string;
         credentialSubject?: {
             achievement?: {
                 alignment?: SkillAlignment[];
             };
         };
     };
+    issuanceDate?: string;
+    validFrom?: string;
     credentialSubject?: {
         achievement?: {
             alignment?: SkillAlignment[];
         };
     };
+};
+
+/**
+ * Alignments for the skills hub: prefer CertifiedBoostCredential wrapper, then bare
+ * OpenBadgeCredential `credentialSubject` (Just-me / claim-link skill boosts).
+ * Same fallback as the Alignments panel / countSkillsForFrameworks.
+ */
+export const getCredentialAchievementAlignments = (credential: unknown): SkillAlignment[] => {
+    const resolvedCredential = credential as CredentialWithSkillAlignments;
+
+    return (
+        resolvedCredential.boostCredential?.credentialSubject?.achievement?.alignment ??
+        resolvedCredential.credentialSubject?.achievement?.alignment ??
+        []
+    );
+};
+
+/** Issuance / validFrom used for hub sort — boost wrapper first, then bare VC. */
+export const getCredentialSkillIssuanceDate = (credential: unknown): string => {
+    const resolvedCredential = credential as CredentialWithSkillAlignments;
+
+    return (
+        resolvedCredential.boostCredential?.issuanceDate ??
+        resolvedCredential.boostCredential?.validFrom ??
+        resolvedCredential.issuanceDate ??
+        resolvedCredential.validFrom ??
+        ''
+    );
 };
 
 export const countSkillsForFrameworks = (
@@ -29,11 +61,7 @@ export const countSkillsForFrameworks = (
     const configuredFrameworkIds = new Set(frameworkIds);
 
     credentials?.forEach(credential => {
-        const resolvedCredential = credential as CredentialWithSkillAlignments;
-        const alignments =
-            resolvedCredential.boostCredential?.credentialSubject?.achievement?.alignment ??
-            resolvedCredential.credentialSubject?.achievement?.alignment ??
-            [];
+        const alignments = getCredentialAchievementAlignments(credential);
 
         alignments.forEach(alignment => {
             const { frameworkId } = getFrameworkIdAndSkillIdFromUrl(alignment.targetUrl ?? '');
