@@ -442,6 +442,20 @@ export const useGetCredentials = (
     });
 };
 
+/**
+ * Revoked credentials stay in the holder's index (LearnCardApp shows them with a revoked
+ * badge instead of removing them), so anything that aggregates skills must drop them itself.
+ * Fails open: if the network can't answer, skills render as before rather than vanishing.
+ */
+const getRevokedCredentialUris = async (wallet: BespokeLearnCard): Promise<Set<string>> => {
+    try {
+        return new Set((await wallet.invoke?.getRevokedCredentials?.()) ?? []);
+    } catch (error) {
+        log.warn('[useGetCredentialsForSkills] Could not load revoked credentials:', error);
+        return new Set();
+    }
+};
+
 // query for getting all creds to construct an aggregation of all skills
 export const useGetCredentialsForSkills = (enabled: boolean = true) => {
     const { initWallet } = useWallet();
@@ -465,6 +479,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ids,
                     skills,
                     selfAssignedSkills,
+                    revokedUris,
                 ] = await Promise.all([
                     wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.learningHistory,
@@ -493,6 +508,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     wallet.index.LearnCloud.get({
                         category: CredentialCategoryEnum.selfAssignedSkills,
                     }),
+                    getRevokedCredentialUris(wallet),
                 ]);
 
                 // combine all creds
@@ -506,7 +522,7 @@ export const useGetCredentialsForSkills = (enabled: boolean = true) => {
                     ...ids,
                     ...skills,
                     ...selfAssignedSkills,
-                ];
+                ].filter(record => !revokedUris.has(record.uri));
 
                 // resolve all creds
                 const resolvedCredentials = (
