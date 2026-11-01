@@ -327,7 +327,10 @@ export const specification = workspace => {
             }
         }
     }
-    const bunPath = fs.realpathSync(run('/bin/sh', ['-c', 'command -v bun'], workspace));
+    // Ask Bun directly: no shell shares this runner with dynamic Nx path arguments.
+    const bunPath = fs.realpathSync(
+        run('bun', ['-e', 'process.stdout.write(process.execPath)'], workspace)
+    );
     const identity = {
         schema: 1,
         workspace: fs.realpathSync(workspace),

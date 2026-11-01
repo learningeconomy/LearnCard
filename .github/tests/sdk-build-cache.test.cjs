@@ -13,7 +13,7 @@ const write = (file, value) => {
 function fixture(t) {
     const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'sdk-cache-test-'));
     t.after(() => fs.rmSync(temp, { recursive: true, force: true }));
-    const workspace = path.join(temp, 'repo'),
+    const workspace = path.join(temp, 'repo with spaces;$(touch INJECTED)'),
         cache = path.join(temp, 'snapshot');
     fs.mkdirSync(workspace);
     const spec = { key: 'exact-input-key', roots: ['packages/a/dist', 'services/b/dist'] };
@@ -223,10 +223,10 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
     write(path.join(f.workspace, 'apps/learn-card-app/src/app.ts'), 'frontend-v1');
     write(
         path.join(f.workspace, 'node_modules/nx/package.json'),
-        JSON.stringify({ version: 'fixture', bin: { nx: 'nx.cjs' } })
+        JSON.stringify({ version: 'fixture', bin: { nx: 'nx ; touch INJECTED ; #.cjs' } })
     );
     write(
-        path.join(f.workspace, 'node_modules/nx/nx.cjs'),
+        path.join(f.workspace, 'node_modules/nx/nx ; touch INJECTED ; #.cjs'),
         `const fs=require('fs');const role=process.argv.includes('learn-card-app:docker-build')?'browser':'service';fs.writeFileSync(process.argv.find(a=>a.startsWith('--graph=')).slice(8),JSON.stringify(${JSON.stringify(g)}[role]));`
     );
     git('init', '--quiet');
@@ -272,6 +272,8 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
     }
     write(path.join(f.workspace, '.env.local'), 'PRIVATE_FIXTURE=value');
     assert.throws(() => specification(f.workspace), /environment file/);
+    assert.equal(fs.existsSync(path.join(f.workspace, 'INJECTED')), false);
+    assert.equal(fs.existsSync(path.join(f.temp, 'INJECTED')), false);
 });
 test('workflow publisher is main-only and consumers are exact, read-only, same-path restores', () => {
     const producer = fs.readFileSync(
