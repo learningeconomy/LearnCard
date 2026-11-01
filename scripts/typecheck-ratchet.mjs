@@ -22,7 +22,8 @@ import ts from 'typescript';
 import { createDiagnosticReport } from './typecheck-diagnostics.mjs';
 
 // Data shapes:
-//   Project = { name, root, checks: Check[], incomplete?: string }   Check = { cmd, args, cwd }
+//   Project = { name, root, checks: Check[], incomplete?: string, tscFallback?: string }
+//   Check   = { cmd, args, cwd }
 //   Checker = 'bun' | 'tsc'
 //   Result  = { name, count, errors: string[], incomplete: string | null, tail: string[],
 //               configErrors: number, errorCwds?: string[] }
@@ -86,11 +87,17 @@ const checkCommand = (checker, repo, tsconfig, extra = []) =>
 
 // A project `typecheck` script made only of `tsc --noEmit [-p X]` steps maps onto `bun check -p X`.
 // Anything else keeps running the script (so still tsc) and is reported as such.
-export const scriptChecks = (script, cwd, checker) => {
-    if (checker !== 'bun') return [{ cmd: 'bun', args: ['run', 'typecheck'], cwd }];
+export const plainTscSteps = script => {
     const steps = script.split('&&').map(step => /^\s*tsc --noEmit(?: -p (\S+))?\s*$/.exec(step));
-    if (steps.some(step => !step)) return [{ cmd: 'bun', args: ['run', 'typecheck'], cwd }];
-    return steps.map(([, tsconfig = 'tsconfig.json']) => checkCommand('bun', cwd, tsconfig));
+    return steps.some(step => !step)
+        ? null
+        : steps.map(([, tsconfig = 'tsconfig.json']) => tsconfig);
+};
+
+export const scriptChecks = (script, cwd, checker) => {
+    const tsconfigs = checker === 'bun' ? plainTscSteps(script) : null;
+    if (!tsconfigs) return [{ cmd: 'bun', args: ['run', 'typecheck'], cwd }];
+    return tsconfigs.map(tsconfig => checkCommand('bun', cwd, tsconfig));
 };
 
 const configCheck = (repo, tsconfig, checker) => {
@@ -122,8 +129,11 @@ export const toProjects = (repo, list, checker = DEFAULT_CHECKER) =>
         .map(({ name, root }) => {
             // A project's own `typecheck` script wins: it names the tsconfigs that matter there.
             const script = readJson(join(repo, root, 'package.json')).scripts?.typecheck;
-            if (script)
-                return { name, root, checks: scriptChecks(script, join(repo, root), checker) };
+            if (script) {
+                const checks = scriptChecks(script, join(repo, root), checker);
+                const fallback = checker === 'bun' && !plainTscSteps(script);
+                return { name, root, checks, ...(fallback && { tscFallback: script }) };
+            }
             const tsconfig = ['tsconfig.app.json', 'tsconfig.json']
                 .map(f => join(repo, root, f))
                 .find(existsSync);
@@ -259,12 +269,21 @@ export const nextBaseline = (results, baseline, only) => {
     return Object.fromEntries(Object.entries(next).sort(([a], [b]) => a.localeCompare(b)));
 };
 
+// tsc counts differ from bun check's, so a tsc update must name its own baseline file.
+export const assertUpdateTarget = ({ checker, update, baseline }) => {
+    if (update && checker === 'tsc' && !baseline)
+        throw new Error(
+            '--checker=tsc --update needs --baseline=PATH (the committed baseline holds bun check counts)'
+        );
+};
+
 const main = async () => {
     const arg = name => process.argv.find(a => a.startsWith(`--${name}=`))?.slice(name.length + 3);
     const checker = arg('checker') ?? DEFAULT_CHECKER;
     if (!['tsc', 'bun'].includes(checker)) throw new Error(`Unknown --checker=${checker}`);
-    const BASELINE = arg('baseline') ?? 'scripts/typecheck-baseline.json';
     const update = process.argv.includes('--update');
+    assertUpdateTarget({ checker, update, baseline: arg('baseline') });
+    const BASELINE = arg('baseline') ?? 'scripts/typecheck-baseline.json';
     const reportFile = process.argv.find(a => a.startsWith('--report='))?.slice('--report='.length);
     const only = process.argv.filter(a => a.startsWith('--project=')).map(a => a.slice(10));
 
@@ -313,6 +332,12 @@ const main = async () => {
     for (const r of results.filter(result => result.configErrors)) {
         console.log(
             `note ${r.name}: ${r.configErrors} tsconfig errors, so ${checker} skipped checking its source files.`
+        );
+    }
+
+    for (const p of projects.filter(project => project.tscFallback)) {
+        console.log(
+            `note ${p.name}: typecheck script isn't plain \`tsc --noEmit\`, so it ran under tsc via \`bun run typecheck\` (${p.tscFallback}).`
         );
     }
 
