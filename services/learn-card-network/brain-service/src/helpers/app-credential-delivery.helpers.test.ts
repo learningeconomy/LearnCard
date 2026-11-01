@@ -22,12 +22,15 @@ describe('app credential delivery graph ordering', () => {
     });
 
     it('waits for the activity write to commit and uses its ID before starting delivery', async () => {
-        const pending = Promise.withResolvers<string>();
-        mocks.activity.mockReturnValue(pending.promise);
+        let resolve!: (activityId: string) => void;
+        const promise = new Promise<string>(complete => {
+            resolve = complete;
+        });
+        mocks.activity.mockReturnValue(promise);
         const result = sendAppCredentialWithActivity(activity, delivery);
         expect(mocks.activity).toHaveBeenCalledExactlyOnceWith(activity);
         expect(mocks.send).not.toHaveBeenCalled();
-        pending.resolve('activity:1');
+        resolve('activity:1');
         expect(await result).toBe('credential:1');
         expect(mocks.send).toHaveBeenCalledExactlyOnceWith({
             ...delivery,

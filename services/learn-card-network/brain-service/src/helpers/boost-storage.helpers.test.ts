@@ -107,6 +107,14 @@ const options = {
     integrationId: 'integration',
 } as unknown as Parameters<typeof sendBoost>[0];
 
+const deferred = () => {
+    let resolve!: () => void;
+    const promise = new Promise<void>(complete => {
+        resolve = complete;
+    });
+    return { promise, resolve };
+};
+
 describe('boost payload storage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -168,10 +176,10 @@ describe('boost payload storage', () => {
     );
 
     it('does not overlap relationship writes that touch the same credential', async () => {
-        const first = Promise.withResolvers<void>();
-        const sent = Promise.withResolvers<void>();
-        const listing = Promise.withResolvers<void>();
-        const contract = Promise.withResolvers<void>();
+        const first = deferred();
+        const sent = deferred();
+        const listing = deferred();
+        const contract = deferred();
         mocks.instanceOf.mockReturnValueOnce(first.promise);
         mocks.sent.mockReturnValueOnce(sent.promise);
         mocks.listing.mockReturnValueOnce(listing.promise);

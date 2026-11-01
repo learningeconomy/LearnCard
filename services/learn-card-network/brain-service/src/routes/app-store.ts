@@ -1,5 +1,4 @@
 import { TRPCError } from '@trpc/server';
-import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import {
     PendingListingUpdateValidator,
