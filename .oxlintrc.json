@@ -4,6 +4,7 @@
         "**/node_modules/**",
         "**/dist/**",
         "**/build/**",
+        "!**/src/**/build/**",
         "**/coverage/**",
         "**/.nx/**",
         "**/.nx-cache/**",

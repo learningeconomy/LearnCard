@@ -17,7 +17,7 @@ Rules of engagement:
 1. **Do not fold oxlint into the WorkspaceLint job.** That would thrash the same job #1867 is optimizing and couple two different tools’ caches.
 2. **ESLint remains required.** Passing oxlint does not waive WorkspaceLint.
 3. **Phase-1 rule set is intentionally small.** `.oxlintrc.json` enables a curated correctness subset that is currently clean on `main`. Broader categories (React compiler rules, unused-vars, unicorn defaults) still fire thousands of findings and stay off until a dedicated cleanup / migrate pass.
-4. **Ignores mirror ESLint’s bulk ignores** (node_modules, dist/build, swagger-ui, didkit, coverage, and similar build/vendor artifacts). Do not add path ignores to hide live source — fix or ratchet the rule instead.
+4. **Ignores mirror ESLint’s bulk ignores** (node_modules, dist/build, swagger-ui, didkit, coverage, and similar build/vendor artifacts). `**/build/**` is followed by the negation `!**/src/**/build/**`, so handwritten feature folders named `build` under `src` (e.g. `pages/appStoreDeveloper/build`, `pages/pathways/build`) are still linted. Do not add path ignores to hide live source — fix or ratchet the rule instead.
 
 ## Local
 
