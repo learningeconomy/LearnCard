@@ -20,7 +20,8 @@ export const credentialSearchStore = createStore('credentialSearchStore')<{
         set.isSearchActive(false);
     },
     closeSearchBar: (event: React.MouseEvent<HTMLButtonElement>) => {
-        const isClickInsideButton = event.target.closest('button');
+        const isClickInsideButton =
+            event.target instanceof Element && event.target.closest('button');
         const isSearchActive = get.isSearchActive();
         const searchString = get.searchString();
 

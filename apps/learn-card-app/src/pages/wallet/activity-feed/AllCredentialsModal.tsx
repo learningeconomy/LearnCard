@@ -16,7 +16,6 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
         isComplete,
         isError,
         hasNextPage,
-        hasNextIndexPage,
         fetchNextPage,
         retry,
     } = collection;
@@ -24,8 +23,8 @@ export const AllCredentialsModal: React.FC<{ onClose: () => void }> = ({ onClose
     const onScreen = useOnScreen(sentinelRef, '300px', [records.length]);
 
     useEffect(() => {
-        if (onScreen && hasNextIndexPage && !isFetching && !isError) void fetchNextPage();
-    }, [onScreen, hasNextIndexPage, isFetching, isError, fetchNextPage]);
+        if (onScreen && hasNextPage && !isFetching && !isError) void fetchNextPage();
+    }, [onScreen, hasNextPage, isFetching, isError, fetchNextPage]);
 
     const groups = useMemo(
         () =>

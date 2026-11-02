@@ -5,7 +5,10 @@ import { resolvedCredentialQueryOptions } from './credentialResolution';
 import type { CredentialCategory } from '../../types/credentials';
 import type { LCR } from '../../types/credential-records';
 import type { VC } from '@learncard/types';
-import { getCredentialName } from '../../helpers/credentialHelpers';
+import {
+    getCredentialName,
+    getCredentialSubjectAchievement,
+} from '../../helpers/credentialHelpers';
 import { isCredentialCollectionRecordVisible } from '../../helpers/credentialCollection';
 import { walletStore, switchedProfileStore } from '../../stores/walletStore';
 
@@ -93,14 +96,29 @@ export const useCredentialCollection = (
     const resolving = resolutions.some(result => !result.data && !result.isError);
     const fetchingContents = resolutions.some(result => result.isFetching);
     const names = Object.fromEntries(
-        legacy.map((record, index) => [
-            record.uri,
-            resolutions[index]?.data ? getCredentialName(resolutions[index].data!) : '',
-        ])
+        legacy.map((record, index) => {
+            const credential = resolutions[index]?.data;
+            const achievementName = credential
+                ? getCredentialSubjectAchievement(credential)?.name
+                : undefined;
+            return [
+                record.uri,
+                [
+                    credential ? getCredentialName(credential) : '',
+                    typeof credential?.name === 'string' ? credential.name : '',
+                    typeof achievementName === 'string' ? achievementName : '',
+                    typeof credential?.boostCredential?.name === 'string'
+                        ? credential.boostCredential.name
+                        : '',
+                ],
+            ];
+        })
     );
     const matches = needle
         ? records.filter(record =>
-              (record.title || names[record.uri] || '').toLowerCase().includes(needle)
+              (record.title ? [record.title] : (names[record.uri] ?? [])).some(name =>
+                  name.toLowerCase().includes(needle)
+              )
           )
         : visibleRecords;
     const complete = Boolean(
@@ -156,7 +174,6 @@ export const useCredentialCollection = (
         isError: isError || Boolean(contentError),
         error: query.error || contentError,
         hasNextPage: Boolean(hasNextPage || hasBufferedRecords),
-        hasNextIndexPage: Boolean(hasNextPage),
         fetchNextPage: continueCollection,
         retry,
     };

@@ -57,7 +57,6 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         isFetching: credentialsFetching,
         isError: boostError,
         hasNextPage,
-        hasNextIndexPage,
         fetchNextPage,
         retry,
     } = useCredentialCollection(category, {
@@ -66,9 +65,9 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
     });
     const onScreen = useOnScreen(infiniteScrollRef, '-100px', [records.length]);
     useEffect(() => {
-        if (onScreen && hasNextIndexPage && !credentialsFetching && !boostError && !searching)
+        if (onScreen && hasNextPage && !credentialsFetching && !boostError && !searching)
             fetchNextPage();
-    }, [fetchNextPage, hasNextIndexPage, onScreen, credentialsFetching, boostError, searching]);
+    }, [fetchNextPage, hasNextPage, onScreen, credentialsFetching, boostError, searching]);
 
     const noResultsLineColor =
         SubheaderContentType[credentialCategoryToSubheaderType(category)].bgColor;

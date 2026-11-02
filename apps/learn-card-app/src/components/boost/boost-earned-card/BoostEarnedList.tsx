@@ -55,20 +55,18 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
         isFetching: credentialsFetching,
         isError: boostError,
         hasNextPage,
-        hasNextIndexPage,
         fetchNextPage,
         retry,
     } = useCredentialCollection(category, {
         mode: searching ? 'search' : 'browse',
         search: searchString,
     });
-
     const onScreen = useOnScreen(infiniteScrollRef, '-100px', [records.length]);
     useEffect(() => {
-        if (onScreen && hasNextIndexPage && !credentialsFetching && !boostError && !searching) {
+        if (onScreen && hasNextPage && !credentialsFetching && !boostError && !searching) {
             fetchNextPage();
         }
-    }, [fetchNextPage, hasNextIndexPage, onScreen, credentialsFetching, boostError, searching]);
+    }, [fetchNextPage, hasNextPage, onScreen, credentialsFetching, boostError, searching]);
 
     const { bgColor: noResultsLineColor } =
         SubheaderContentType[credentialCategoryToSubheaderType(category)];
