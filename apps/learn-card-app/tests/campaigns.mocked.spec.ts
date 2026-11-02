@@ -584,6 +584,7 @@ test.describe('campaign composer @mocked', () => {
         mock.on('campaigns.getStats', () => ({
             audience: 0,
             notified: 0,
+            emailed: 0,
             shown: 0,
             clicked: 0,
             dismissed: 0,
