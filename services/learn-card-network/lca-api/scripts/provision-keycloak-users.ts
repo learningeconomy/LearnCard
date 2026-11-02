@@ -5,6 +5,7 @@ import { ObjectId, type Collection } from 'mongodb';
 import { client } from '../src/mongo';
 import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
 import { getAuthSubjectsCollection, getOrCreateAuthSubject } from '../src/models/AuthSubject';
+import { findClassLinkIdentityByFirebaseUid } from '../src/models/ClassLinkIdentity';
 import { maskEmail } from '../src/helpers/maskEmail';
 import { createKeycloakAdmin } from './keycloak-admin';
 import { setTimeout } from 'node:timers/promises';
@@ -23,6 +24,7 @@ export interface ProvisionOptions {
     limit?: number;
     after?: string;
     linkProviders?: boolean;
+    reportClasslink?: boolean;
 }
 export interface ProvisionSummary extends ProviderLinkSummary {
     processed: number;
@@ -30,6 +32,8 @@ export interface ProvisionSummary extends ProviderLinkSummary {
     refused: number;
     mapped: number;
     missingMappings: number;
+    /** UserKeys with no `email:` AuthSubject that fell back to a ClassLinkIdentity subject. */
+    classlinkFallbackUsed: number;
 }
 const log = (message: string): void => {
     process.stdout.write(`${message}\n`);
@@ -108,6 +112,7 @@ export const provisionKeycloakUsers = async (
         refused: 0,
         mapped: 0,
         missingMappings: 0,
+        classlinkFallbackUsed: 0,
         linked: 0,
         alreadyLinked: 0,
         conflicts: 0,
@@ -212,7 +217,23 @@ export const provisionKeycloakUsers = async (
                             continue;
                         }
                         const identityKey = `email:${normalized}`;
-                        let subject = await subjects.findOne({ identityKey });
+                        let subject: { subject: string } | null = await subjects.findOne({
+                            identityKey,
+                        });
+                        // ClassLink-only users have no `email:` AuthSubject; reuse their
+                        // ClassLinkIdentity subject (keyed by the same Firebase uid) instead of
+                        // minting a second, disconnected one.
+                        if (!subject) {
+                            for (const firebaseId of firebaseIds) {
+                                const classlinkIdentity =
+                                    await findClassLinkIdentityByFirebaseUid(firebaseId);
+                                if (classlinkIdentity) {
+                                    subject = { subject: classlinkIdentity.subject };
+                                    summary.classlinkFallbackUsed++;
+                                    break;
+                                }
+                            }
+                        }
                         const matches = await admin.findUsers(normalized);
                         if (matches.length > 1) {
                             refuse('ambiguous Keycloak email');
@@ -368,6 +389,10 @@ export const provisionKeycloakUsers = async (
         log(
             'Cutover approval: NOT EVALUATED. Presence is necessary, not sufficient; validate all existing mappings and authoritative Firebase UID ownership before cutover.'
         );
+        if (options.reportClasslink)
+            log(
+                `ClassLink coverage: ${summary.classlinkFallbackUsed} user(s) resolved via ClassLink identity`
+            );
         return summary;
     } finally {
         log(`Summary: ${JSON.stringify(summary)}`);
@@ -387,6 +412,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
                 limit: { type: 'string' },
                 after: { type: 'string' },
                 'link-providers': { type: 'boolean', default: true },
+                'report-classlink': { type: 'boolean', default: false },
             },
             allowNegative: true,
             strict: true,
@@ -397,6 +423,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
             after: values.after,
             linkProviders: values['link-providers'],
             limit: values.limit === undefined ? undefined : Number(values.limit),
+            reportClasslink: values['report-classlink'],
         });
         if (summary.refused || summary.conflicts) process.exitCode = 1;
     } catch (error) {
