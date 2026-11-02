@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import React from 'react';
-import { cleanup, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import {
     QueryClient,
     QueryClientProvider,
@@ -50,7 +50,12 @@ vi.mock('learn-card-base/hooks/useGetCredentialRecordForBoost', () => ({
 vi.mock('learn-card-base/helpers/backfills', () => ({ useBackfillBoostUris: () => vi.fn() }));
 
 import { insertItem } from '../mutations/mutation.helpers';
-import { isInfiniteData, useGetCredentialList, useGetRecordForUri } from './vcQueries';
+import {
+    isInfiniteData,
+    useGetCredentialCount,
+    useGetCredentialList,
+    useGetRecordForUri,
+} from './vcQueries';
 
 const CATEGORY = 'Merit Badge';
 const KEY = ['useGetCredentialList', '', CATEGORY, 'did:example:reader'];
@@ -68,16 +73,17 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={client}>{children}</QueryClientProvider>
 );
 
-const makeWallet = () => {
+const makeWallet = (did = 'did:example:reader') => {
     const getPage = vi
         .fn()
         .mockResolvedValue({ records: [{ uri: 'uri-1' }], hasMore: true, cursor: 'next' });
     const get = vi.fn().mockResolvedValue([{ uri: 'uri-2' }]);
+    const getCount = vi.fn().mockResolvedValue(7);
     host.wallet = {
-        id: { did: () => 'did:example:reader' },
-        index: { LearnCloud: { getPage, get } },
+        id: { did: () => did },
+        index: { LearnCloud: { getPage, get, getCount } },
     } as unknown as BespokeLearnCard;
-    return { getPage, get };
+    return { getPage, get, getCount };
 };
 
 beforeEach(() => {
@@ -150,6 +156,29 @@ describe('useGetRecordForUri', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data).toEqual({ uri: 'uri-2' });
         expect(get).toHaveBeenCalledOnce();
+    });
+});
+
+describe('useGetCredentialCount', () => {
+    it('does not reuse or admit a late total from another root reader', async () => {
+        const first = makeWallet();
+        let resolveFirst!: (value: number) => void;
+        first.getCount.mockReturnValueOnce(
+            new Promise<number>(resolve => {
+                resolveFirst = resolve;
+            })
+        );
+        const { result, rerender } = renderHook(() => useGetCredentialCount(CATEGORY), { wrapper });
+        await waitFor(() => expect(first.getCount).toHaveBeenCalledOnce());
+
+        const second = makeWallet('did:example:other-reader');
+        second.getCount.mockResolvedValue(2);
+        rerender();
+        expect(result.current.data).toBeUndefined();
+        await waitFor(() => expect(result.current.data).toBe(2));
+
+        await act(async () => resolveFirst(99));
+        expect(result.current.data).toBe(2);
     });
 });
 

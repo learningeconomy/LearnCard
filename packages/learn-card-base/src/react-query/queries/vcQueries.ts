@@ -303,12 +303,17 @@ export const usePrefetchCredentialPage = (category?: CredentialCategory, enabled
 export const useGetCredentialCount = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
     const switchedDid = switchedProfileStore.use.switchedDid();
+    const reader = useCredentialReader();
 
     return useQuery<string | number | null>({
-        queryKey: ['useGetCredentialCount', switchedDid ?? '', category],
-        queryFn: async () => {
+        queryKey: ['useGetCredentialCount', switchedDid ?? '', category, reader?.id.did() ?? ''],
+        queryFn: async ({ signal }) => {
             try {
                 const wallet = await initWallet();
+                if (!reader || wallet.id.did() !== reader.id.did()) {
+                    throw new Error('Credential reader changed');
+                }
+                signal.throwIfAborted();
                 let credentialsCount = null;
 
                 try {
@@ -320,13 +325,14 @@ export const useGetCredentialCount = (category?: CredentialCategory, enabled: bo
                     throw e;
                 }
 
+                signal.throwIfAborted();
                 return credentialsCount;
             } catch (error) {
                 log.error(error);
                 return Promise.reject(new Error(error));
             }
         },
-        enabled,
+        enabled: enabled && Boolean(reader),
     });
 };
 

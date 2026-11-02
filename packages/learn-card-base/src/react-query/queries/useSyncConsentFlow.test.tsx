@@ -5,8 +5,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 
-const LIST_KEY = ['useGetCredentialList', 'did:web:test:scout', 'Merit Badge'];
-const COUNT_KEY = ['useGetCredentialCount', 'did:web:test:scout', 'Merit Badge'];
+const LIST_KEY = [
+    'useGetCredentialList',
+    'did:web:test:scout',
+    'Merit Badge',
+    'did:web:test:scout',
+];
+const COUNT_KEY = [
+    'useGetCredentialCount',
+    'did:web:test:scout',
+    'Merit Badge',
+    'did:web:test:scout',
+];
 
 const host = vi.hoisted(() => ({
     pending: [] as string[],
