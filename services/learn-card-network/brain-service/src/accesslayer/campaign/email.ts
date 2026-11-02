@@ -34,8 +34,8 @@ export const claimCampaignEmail = async (
              OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
              WITH p, c, email, state
              ${test ? '' : 'WHERE state.emailClaimedAt IS NULL AND state.emailedAt IS NULL'}
-             RETURN c.definition AS definition, email.value AS email, p.locale AS locale
-             ORDER BY email.id LIMIT 2`,
+             WITH p, c, email ORDER BY email.id LIMIT 2
+             RETURN c.definition AS definition, email.value AS email, p.locale AS locale`,
             params
         );
         // Ambiguous primary contacts fail closed, as do malformed legacy addresses.
