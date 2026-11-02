@@ -2,7 +2,7 @@
     "compilerOptions": {
         "lib": ["es2022"],
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "removeComments": true,
         "preserveConstEnums": true,
@@ -19,7 +19,6 @@
         "target": "es2022",
         "outDir": "dist",
         "rootDir": ".",
-        "baseUrl": ".",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "allowJs": false,

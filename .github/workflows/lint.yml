@@ -69,6 +69,28 @@ jobs:
             - name: Run LearnCard app and shared library jsx-a11y lint
               run: bun run lint:a11y
 
+    # Fast native lint path (oxlint). Complements WorkspaceLint (ESLint); does not
+    # replace it. #1867 caches ESLint results in WorkspaceLint — leave that job alone.
+    # See .github/OXLINT.md.
+    OxLint:
+        name: Run oxlint (fast path)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+
+            # Same Bun + frozen lockfile as other jobs (cache consumer). package.json
+            # `lint:ox` is SSoT for flags/version — do not re-list them here.
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
+
+            - name: Run oxlint
+              run: bun run lint:ox
+
     WorkspaceLint:
         name: Run workspace lint
         runs-on: ubuntu-latest
@@ -78,10 +100,26 @@ jobs:
               with:
                   ref: ${{ github.event.pull_request.head.sha }}
 
+            # Restore before installation so hashFiles sees repository inputs only.
+            # Keep the config prefix strict: ESLint's file cache cannot track external inputs.
+            - name: Compute workspace ESLint cache prefix
+              id: lint-cache-key
+              env:
+                  CACHE_PREFIX: ${{ runner.os }}-${{ runner.arch }}-workspace-eslint-v1-${{ hashFiles('bun.lock', 'bunfig.toml', '.github/workflows/lint.yml', '.github/actions/setup/action.yml', 'scripts/lint-workspace*', 'scripts/eslint-baseline.json', '**/package.json', '**/project.json', '**/tsconfig*.json', '**/*eslint*config*', '**/eslint-rules/**', '**/.eslintignore', '**/*prettier*', '**/.editorconfig', '**/.gitignore') }}
+              run: printf 'prefix=%s\n' "$CACHE_PREFIX" >> "$GITHUB_OUTPUT"
+
+            - name: Reuse workspace ESLint cache
+              uses: actions/cache@v6
+              with:
+                  path: .nx-cache/eslint
+                  key: ${{ steps.lint-cache-key.outputs.prefix }}-${{ github.event.pull_request.head.sha }}
+                  restore-keys: |
+                      ${{ steps.lint-cache-key.outputs.prefix }}-
+
             - name: Use Composite Setup Action
               uses: ./.github/actions/setup
 
-            - name: Test lint project discovery
+            - name: Test lint discovery and cache correctness
               run: node --test scripts/lint-workspace.test.mjs
 
             - name: Test proof publisher (offline fixtures)
@@ -106,6 +144,9 @@ jobs:
               uses: ruby/setup-ruby@v1
               with:
                   ruby-version: '3.3'
+
+            - name: Test mock E2E CI policy
+              run: node --test scripts/mock-e2e-ci.test.cjs
 
             - name: Run repository shell contracts
               run: |

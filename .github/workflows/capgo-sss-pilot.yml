@@ -41,7 +41,7 @@ jobs:
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.4.2
+                  bun-version: 1.4.4
 
             - name: Validate channel suffix
               env:
@@ -81,6 +81,7 @@ jobs:
             channel: ${{ needs.prepare.outputs.channel }}
             tenant: learncard
             stage: sss-pilot
+            stage_in_build: ${{ 'true' }}
             self_assign: ${{ 'false' }}
             enable_auth_debug_widget: ${{ 'true' }}
         secrets:
