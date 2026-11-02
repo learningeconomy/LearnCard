@@ -21,10 +21,20 @@ export const useCampaignAction = () => {
         setSuccess('');
         try {
             await action();
-        } catch {
+        } catch (error) {
+            const conflict =
+                typeof error === 'object' &&
+                error !== null &&
+                'data' in error &&
+                typeof error.data === 'object' &&
+                error.data !== null &&
+                'code' in error.data &&
+                error.data.code === 'CONFLICT';
             if (mounted.current)
                 setError(
-                    'Something went wrong. Check your connection and try again. The last request may have completed; refresh before retrying.'
+                    conflict
+                        ? 'Campaign changed since you loaded it. Copy any unsaved edits, then reload the latest version before trying again.'
+                        : 'Something went wrong. Check your connection and try again. The last request may have completed; refresh before retrying.'
                 );
         } finally {
             lock.current = false;

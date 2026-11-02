@@ -2,6 +2,15 @@
 
 LC-2270 provides URL-only `/admin/campaigns` and `/admin/campaigns/:id` routes. `/admin/campaigns?create=1` creates a draft. `campaignsIsAdmin` must succeed before list/editor data loads; denied users see a generic not-found page. Each account/network session owns a non-persisted query cache. Server authorization remains authoritative for every operation.
 
+## Concurrent edits
+
+Content saves send the loaded `updatedAt` revision and never send lifecycle status.
+The backend checks that revision under its campaign write lock. A pause or another
+editor's save makes an older form conflict instead of overwriting the newer definition.
+The editor preserves unsaved fields and asks the administrator to copy them before
+reloading and reconciling. It never silently retries a stale form with a fresh revision.
+Status changes remain explicit confirmed actions.
+
 ## Supported
 
 - Paginated list and editor; immutable saved ID; shared `CreateCampaignInputValidator` validation with JSON field paths.

@@ -81,10 +81,11 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     const save = () =>
         void action.run('Saving campaign...', async () => {
             if (!validation.data) return;
-            const { id, ...definition } = validation.data;
+            const { id, status, ...definition } = validation.data;
             const result = saved
                 ? await api.campaignsUpdate({
                       campaignId: saved.id,
+                      expectedUpdatedAt: saved.updatedAt,
                       updates: {
                           ...definition,
                           message: definition.message ?? null,
