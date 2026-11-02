@@ -121,6 +121,7 @@ import {
     mergeAuthUserIntoCurrentUser,
     shouldResetWalletOnStatus,
     decidePinPromptAfterReady,
+    settleEscrowRecoveryMarker,
     type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
@@ -636,8 +637,6 @@ const AuthSessionManager: React.FC<{
                 setRecoveryPinSetupReason('first-time');
             }
 
-            if (readyPinEnabled === true) recoveredViaEscrowRef.current = null;
-
             const prompt = decidePinPromptAfterReady({
                 recoveredVia: recoveredViaEscrowRef.current,
                 pinEnabled: readyPinEnabled,
@@ -664,6 +663,13 @@ const AuthSessionManager: React.FC<{
             } else if (prompt.kind === 'reset-banner') {
                 setShowRecoveryPinReset(true);
             }
+
+            // The first published PIN status decides the post-recovery prompt;
+            // a later status (e.g. a deliberate removal) must not re-trigger it.
+            recoveredViaEscrowRef.current = settleEscrowRecoveryMarker(
+                recoveredViaEscrowRef.current,
+                readyPinEnabled
+            );
         }
     }, [
         coordinator.state.status,
@@ -1277,7 +1283,11 @@ const AuthSessionManager: React.FC<{
                     setEscrowPin: coordinator.setEscrowPin,
                     clearEscrowPin: coordinator.clearEscrowPin,
                 },
-                readyDid
+                readyDid,
+                () => {
+                    // A user-initiated PIN change supersedes any post-recovery prompt.
+                    recoveredViaEscrowRef.current = null;
+                }
             ),
         [
             coordinator.runRecoverySetup,
@@ -1390,12 +1400,20 @@ const AuthSessionManager: React.FC<{
                         onConfirmCode: coordinator.confirmEscrowRecovery,
                         onResendCode: coordinator.resendEscrowRecoveryCode,
                         onRecover: async input => {
-                            await coordinator.recover(input);
-
+                            // Mark before `ready` renders: the first published PIN status
+                            // (kept or cleared) consumes the marker, so it must not be set
+                            // after that ready render has run.
+                            const previous = recoveredViaEscrowRef.current;
                             if (input.method === 'escrow-pin') {
                                 recoveredViaEscrowRef.current = 'pin';
                             } else if (input.method === 'escrow') {
                                 recoveredViaEscrowRef.current = 'hold';
+                            }
+                            try {
+                                await coordinator.recover(input);
+                            } catch (error) {
+                                recoveredViaEscrowRef.current = previous;
+                                throw error;
                             }
                         },
                         canResumeCompleted: () =>
