@@ -409,8 +409,11 @@ using its GitHub secret fallbacks, so services and stages can migrate independen
 
 | Service    | GitHub environment (`dev` / `production`)                                | Bundle ID (`dev` / `production`)                                                             |
 | ---------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| lca-api    | `lca-api-staging` / `lca-api-production`                                 | `lca-api/dev/runtime-secrets` / `lca-api/production/runtime-secrets`                         |
 | Brain      | `learn-cloud-network-api-staging` / `learn-cloud-network-api-production` | `brain-service/dev/runtime-secrets` / `brain-service/production/runtime-secrets`             |
 | LearnCloud | `learn-cloud-storage-api-staging` / `learn-cloud-storage-api-production` | `learn-cloud-service/dev/runtime-secrets` / `learn-cloud-service/production/runtime-secrets` |
+
+lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, `CLASSLINK_CLIENT_SECRET`, and escrow secrets when used. The non-secret stage-config keys (`CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS`, `CLASSLINK_MAX_AUTH_AGE_SECONDS`, `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE`) belong in `config/config.<stage>.json`.
 
 Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,

@@ -230,3 +230,51 @@ See [`docs/how-to-guides/deploy-infrastructure/sss-key-management-config.md`](..
 - [SSS Key Management Config](../../../docs/how-to-guides/deploy-infrastructure/sss-key-management-config.md) — env var reference for deployers
 - [`@learncard/email-templates` README](../../../packages/email-templates/README.md) — template catalog, tenant registry, preview server
 - [`@learncard/sss-key-manager`](../../../packages/sss-key-manager/README.md) — client side of SSS key management
+
+## ClassLink SSO and state transcript requests
+
+ClassLink SSO allows students to sign in using their district credentials and request state transcripts.
+
+### Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant App as LearnCard App
+    participant API as lca-api
+    participant CL as ClassLink
+    participant Issuer as Transcript Issuer
+
+    App->>API: GET /auth/classlink/login (redirect)
+    API->>CL: OIDC Auth Request
+    CL-->>API: OIDC Callback (code)
+    API->>CL: Exchange code for id_token
+    API->>API: Verify id_token & extract state ID
+    API->>API: Mint Firebase custom token
+    API-->>App: Redirect with custom token
+    App->>API: Request transcript (with state ID)
+    API->>Issuer: Request transcript credential
+    Issuer-->>API: Transcript VC
+    API-->>App: Return VC
+```
+
+### Linking Rules & Guardrails
+
+- **Linking**: ClassLink identities are linked to the user's DID via `ClassLinkIdentity` records.
+- **Guardrails**:
+    - Only authorized districts can use ClassLink SSO.
+    - State IDs must be unique and stable.
+    - Transcript requests are only allowed for users with a verified ClassLink identity.
+
+### Configuration
+
+- **Config Keys**: `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS`, `CLASSLINK_MAX_AUTH_AGE_SECONDS`, `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE`.
+- **Secrets**: `CLASSLINK_CLIENT_SECRET` lives in the runtime bundle (Infisical `/learncard/lca-api/runtime`), never in checked-in config.
+- **Native Redirect**: Register native custom-scheme redirect `<bundleId>://auth/classlink/callback`.
+
+### Keycloak-era Path
+
+Today, ClassLink sign-in bypasses Keycloak entirely: lca-api verifies the ClassLink `id_token` directly and hands the app a Firebase custom token. Once Keycloak becomes the primary broker in front of lca-api, ClassLink sign-in would instead terminate in a short-lived **lca-api login ticket** rather than a Firebase custom token. The flow: the student completes ClassLink's OIDC code exchange against lca-api as today (code → `id_token` verification → state-ID resolution), but instead of minting a Firebase token lca-api issues a one-time ticket scoped to that user's stable `identityKey = classlink:<tenant_id>:<sourcedId>`. The browser/app is then redirected into Keycloak's **existing** `lca-api` identity-provider broker (the same broker already used for native email/social sign-in — no new ClassLink-specific Keycloak identity provider or Terraform module is needed) and redeems that ticket as the broker's federation credential. Keycloak resolves it to a local Keycloak user via the federated-identity record whose `userId` equals the person's `AuthSubject.subject` — and because `provision:keycloak` already pre-seeds that federated link for ClassLink-only users by resolving their `subject` through `ClassLinkIdentity` when no `email:` AuthSubject exists, the broker exchange lands on the same account the wallet already uses, with no double-subject and no new identity provider to provision or maintain.
+
+### Orphan Cleanup Script
+
+Use `provision:keycloak --report-classlink` to report ClassLink users and clean up orphans.
