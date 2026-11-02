@@ -41,8 +41,10 @@ export const enterSharePrivacy = (): void => {
 
 /** Also protects navigation breadcrumbs recorded before the viewer mounts. */
 export const scrubShareTelemetry = <T>(value: T): T => {
-    // Only the current path is tracked, so shared non-cyclic references are still scrubbed.
+    // Ancestors mark true cycles. Finished clones are reused, so shared references are
+    // still scrubbed but each object is walked once instead of once per path.
     const ancestors = new WeakSet<object>();
+    const scrubbed = new WeakMap<object, unknown>();
     const scrub = (item: unknown): unknown => {
         if (typeof item === 'string')
             return item.replace(
@@ -51,12 +53,16 @@ export const scrubShareTelemetry = <T>(value: T): T => {
             );
         if (!item || typeof item !== 'object' || item instanceof Date) return item;
         if (ancestors.has(item)) return '[Circular]';
+        if (scrubbed.has(item)) return scrubbed.get(item);
         ancestors.add(item);
         try {
-            if (Array.isArray(item)) return item.map(scrub);
-            return Object.fromEntries(
-                Object.entries(item).map(([key, child]) => [key, scrub(child)])
-            );
+            const clone = Array.isArray(item)
+                ? item.map(scrub)
+                : Object.fromEntries(
+                      Object.entries(item).map(([key, child]) => [key, scrub(child)])
+                  );
+            scrubbed.set(item, clone);
+            return clone;
         } finally {
             ancestors.delete(item);
         }
