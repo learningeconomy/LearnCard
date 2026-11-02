@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import type { MyCampaign } from '@learncard/types';
 
 import { useWallet } from '../hooks/useWallet';
-import { useIsLoggedIn } from '../stores/currentUserStore';
+import { currentUserStore, useIsLoggedIn } from '../stores/currentUserStore';
 import { switchedProfileStore, walletStore } from '../stores/walletStore';
 import { networkStore } from '../stores/NetworkStore';
 import { useIsCurrentUserLCNUser } from '../react-query/queries/queries';
@@ -47,13 +47,26 @@ export const useMyCampaigns = (): CampaignMessageSource => {
         };
     }, [scope, initWallet]);
 
+    // Cached queries can outlive one host mount. Validate the live identity rather
+    // than rejecting a read solely because its original component unmounted.
+    const isCurrentProfile = useCallback(
+        () =>
+            Boolean(
+                scope &&
+                currentUserStore.get.currentUser() &&
+                networkStore.get.networkUrl() === network &&
+                (switchedProfileStore.get.switchedDid() ?? walletStore.get.wallet()?.id.did()) ===
+                    accountDid
+            ),
+        [scope, network, accountDid]
+    );
     const getWallet = useCallback(async () => {
-        if (!scope || active.current !== scope) throw new Error('Campaign profile changed');
+        if (!isCurrentProfile()) throw new Error('Campaign profile changed');
         const current = await initRef.current();
-        if (active.current !== scope || current.id.did() !== accountDid)
+        if (!isCurrentProfile() || current.id.did() !== accountDid)
             throw new Error('Campaign profile changed');
         return current;
-    }, [scope, accountDid]);
+    }, [isCurrentProfile, accountDid]);
 
     const query = useQuery<MyCampaign[]>({
         queryKey: ['useMyCampaigns', network, accountDid],
@@ -65,7 +78,7 @@ export const useMyCampaigns = (): CampaignMessageSource => {
             try {
                 const current = await getWallet();
                 const campaigns = await current.invoke.getMyCampaigns();
-                if (active.current !== scope) throw new Error('Campaign profile changed');
+                if (!isCurrentProfile()) throw new Error('Campaign profile changed');
                 return campaigns;
             } catch (error) {
                 log.warn('Campaign fetch failed');

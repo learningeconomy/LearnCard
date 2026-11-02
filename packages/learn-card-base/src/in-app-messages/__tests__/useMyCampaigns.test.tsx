@@ -19,13 +19,25 @@ const state = vi.hoisted(() => ({
 }));
 vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => false } }));
 vi.mock('../../hooks/useWallet', () => ({ useWallet: () => ({ initWallet: state.init }) }));
-vi.mock('../../stores/currentUserStore', () => ({ useIsLoggedIn: () => state.loggedIn }));
+vi.mock('../../stores/currentUserStore', () => ({
+    useIsLoggedIn: () => state.loggedIn,
+    currentUserStore: { get: { currentUser: () => (state.loggedIn ? {} : null) } },
+}));
 vi.mock('../../stores/walletStore', () => ({
-    walletStore: { use: { wallet: () => ({ id: { did: () => state.did } }) } },
-    switchedProfileStore: { use: { switchedDid: () => state.switchedDid } },
+    walletStore: {
+        use: { wallet: () => ({ id: { did: () => state.did } }) },
+        get: { wallet: () => ({ id: { did: () => state.did } }) },
+    },
+    switchedProfileStore: {
+        use: { switchedDid: () => state.switchedDid },
+        get: { switchedDid: () => state.switchedDid },
+    },
 }));
 vi.mock('../../stores/NetworkStore', () => ({
-    networkStore: { use: { networkUrl: () => 'local-network' } },
+    networkStore: {
+        use: { networkUrl: () => 'local-network' },
+        get: { networkUrl: () => 'local-network' },
+    },
 }));
 vi.mock('../../react-query/queries/queries', () => ({
     useIsCurrentUserLCNUser: () => ({ data: state.lcn, isLoading: false }),
@@ -217,4 +229,33 @@ it('refreshes a fresh cache on every explicit entry before declaring an ID unkno
     await act(async () => finish([item('new-campaign')]));
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.campaigns[0].campaign.id).toBe('new-campaign');
+});
+
+it('fetches after the network profile becomes ready with a fresh wallet callback each render', async () => {
+    const original = state.init;
+    state.lcn = false;
+    const { result, rerender } = renderHook(useMyCampaigns, { wrapper });
+    await act(async () => {});
+    state.lcn = true;
+    state.init = vi.fn((...args) => original(...args));
+    rerender();
+    await waitFor(() => expect(result.current.campaigns).toHaveLength(1));
+    state.init = original;
+});
+
+it('keeps a shared in-flight read usable when the host remounts for the same profile', async () => {
+    let finish!: (wallet: Awaited<ReturnType<typeof state.init>>) => void;
+    const wallet = await state.init();
+    state.init.mockImplementationOnce(
+        () =>
+            new Promise(resolve => {
+                finish = resolve;
+            })
+    );
+    const first = renderHook(useMyCampaigns, { wrapper });
+    await waitFor(() => expect(finish).toBeDefined());
+    first.unmount();
+    const next = renderHook(useMyCampaigns, { wrapper });
+    await act(async () => finish(wallet));
+    await waitFor(() => expect(next.result.current.campaigns).toHaveLength(1));
 });
