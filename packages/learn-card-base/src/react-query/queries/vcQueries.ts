@@ -15,7 +15,11 @@ import { getIssuanceDate } from 'learn-card-base/helpers/credentialHelpers';
 import { getCategoryForCredential } from 'learn-card-base/hooks/useWallet';
 import { CredentialCategory } from '../../types/credentials';
 import { VC, PaginationOptionsType } from '@learncard/types';
-import { CredentialMetadata, LCR } from 'learn-card-base/types/credential-records';
+import {
+    CredentialListCategory,
+    CredentialMetadata,
+    LCR,
+} from 'learn-card-base/types/credential-records';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { credentialWithEditsHelper, CredentialCategoryEnum } from 'learn-card-base';
 import {
@@ -120,7 +124,10 @@ export const isInfiniteData = <TData = unknown>(data: unknown): data is Infinite
     Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pageParams);
 
 // Returns an array of stored idx credentials
-export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
+export const useGetCredentialList = (
+    category?: CredentialListCategory,
+    enabled: boolean = true
+) => {
     const { initWallet } = useWallet();
     const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();

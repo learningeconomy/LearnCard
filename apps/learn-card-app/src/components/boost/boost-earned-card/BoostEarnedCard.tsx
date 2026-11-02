@@ -12,21 +12,22 @@ import useTheme from '../../../theme/hooks/useTheme';
 import useBoostMenu, { BoostMenuType } from '../hooks/useBoostMenu';
 
 import {
-    useModal,
-    CredentialSubjectDisplay,
-    useGetVCInfo,
-    useGetResolvedCredential,
-    useGetCredentialWithEdits,
-    ModalTypes,
-    DisplayTypeEnum,
-    categoryMetadata,
-    BoostPageViewMode,
-    CredentialCategory,
-    BoostPageViewModeType,
-    BoostGenericCardWrapper,
-    resetIonicModalBackground,
     BoostCategoryOptionsEnum,
+    BoostGenericCardWrapper,
+    BoostPageViewMode,
+    BoostPageViewModeType,
+    categoryMetadata,
+    CredentialCategory,
+    CredentialCategoryEnum,
+    CredentialSubjectDisplay,
+    DisplayTypeEnum,
+    ModalTypes,
     newCredsStore,
+    resetIonicModalBackground,
+    useGetCredentialWithEdits,
+    useGetResolvedCredential,
+    useGetVCInfo,
+    useModal,
 } from 'learn-card-base';
 import { IonCol } from '@ionic/react';
 
@@ -49,14 +50,14 @@ import type {
 } from '../boostLinkedCredentials/ClrAchievementsSummaryBox';
 import { getClrLinkedCredentials } from 'learn-card-base/helpers/credentialHelpers';
 import {
-    getClrTranscriptKind,
     getClrTranscriptIssuerInfo,
+    getClrTranscriptKind,
 } from 'learn-card-base/helpers/credentials/clr/kind';
 
 import {
     getIssuanceDate,
-    unwrapBoostCredential,
     isBoostCredential,
+    unwrapBoostCredential,
 } from 'learn-card-base/helpers/credentialHelpers';
 
 import { VC, VerificationItem } from '@learncard/types';
@@ -105,6 +106,7 @@ type BoostEarnedCardProps = {
     renderPreviewTrigger?: (openPreview: () => void) => React.ReactNode;
     /** Displays the signed issuer DID where generic credential cards normally display the subject. */
     displayIssuerAsSubject?: boolean;
+    wrapCardSurface?: (surface: React.ReactNode) => React.ReactNode;
 };
 
 export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
@@ -136,6 +138,7 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     compact = false,
     displayIssuerAsSubject = false,
     renderPreviewTrigger,
+    wrapCardSurface,
 }) => {
     const { newModal, closeModal, closeAllModals } = useModal({
         mobile: ModalTypes.FullScreen,
@@ -253,7 +256,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                                   onDismiss={closeModal}
                               />,
                               {},
-                              { desktop: ModalTypes.FullScreen, mobile: ModalTypes.FullScreen }
+                              {
+                                  desktop: ModalTypes.FullScreen,
+                                  mobile: ModalTypes.FullScreen,
+                              }
                           )
                     : undefined,
             categoryType,
@@ -668,7 +674,10 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
     }
 
     if (categoryType === BoostCategoryOptionsEnum.family) {
-        return <FamilyCard showSkeleton={showSkeleton} credential={cred} boostUri={record?.uri} />;
+        const surface = (
+            <FamilyCard showSkeleton={showSkeleton} credential={cred} boostUri={record?.uri} />
+        );
+        return <>{wrapCardSurface ? wrapCardSurface(surface) : surface}</>;
     }
 
     return (
@@ -680,97 +689,195 @@ export const BoostEarnedCard: React.FC<BoostEarnedCardProps> = ({
                 size-lg={isCardView && !isInSkillsModal ? sizeLg : undefined}
                 className={`flex justify-center items-center relative ${isCardView ? '' : 'p-0'}`}
             >
-                <BoostGenericCardWrapper
-                    lifecycleStatus={lifecycleStatus}
-                    innerOnClick={
-                        cred && !showSkeleton
-                            ? () => {
-                                  resetIonicModalBackground();
-                                  presentModal();
-                              }
-                            : undefined
-                    }
-                    className={`earned-small-card bg-white text-black z-[1000] ${className}`}
-                    customHeaderClass="boost-managed-card"
-                    thumbImgSrc={badgeThumbnail}
-                    optionsTriggerOnClick={
-                        showSkeleton || hideOptionsMenu || hideCardOptionsMenu
-                            ? undefined
-                            : () => {
-                                  handleOptionsMenu();
-                              }
-                    }
-                    showChecked={showChecked}
-                    checkStatus={initialCheckmarkState}
-                    onCheckClick={onCheckMarkClick}
-                    dateDisplay={issueDate}
-                    customDateDisplay={customDateDisplay}
-                    issuerName={issuerName}
-                    customIssuerName={
-                        <CustomIssuerName
+                {wrapCardSurface ? (
+                    wrapCardSurface(
+                        <BoostGenericCardWrapper
+                            lifecycleStatus={lifecycleStatus}
+                            innerOnClick={
+                                cred && !showSkeleton
+                                    ? () => {
+                                          resetIonicModalBackground();
+                                          presentModal();
+                                      }
+                                    : undefined
+                            }
+                            className={`earned-small-card bg-white text-black z-[1000] ${className}`}
+                            customHeaderClass="boost-managed-card"
+                            thumbImgSrc={badgeThumbnail}
+                            optionsTriggerOnClick={
+                                showSkeleton || hideOptionsMenu || hideCardOptionsMenu
+                                    ? undefined
+                                    : () => {
+                                          handleOptionsMenu();
+                                      }
+                            }
+                            showChecked={showChecked}
+                            checkStatus={initialCheckmarkState}
+                            onCheckClick={onCheckMarkClick}
+                            dateDisplay={issueDate}
+                            customDateDisplay={customDateDisplay}
                             issuerName={issuerName}
-                            subjectName={displaySubjectName}
-                            isLoading={showSkeleton}
-                            isClrCredential={isClrCredential}
+                            customIssuerName={
+                                <CustomIssuerName
+                                    issuerName={issuerName}
+                                    subjectName={displaySubjectName}
+                                    isLoading={showSkeleton}
+                                    isClrCredential={isClrCredential}
+                                />
+                            }
+                            customThumbComponent={
+                                showSkeleton ? (
+                                    <BadgeSkeleton
+                                        badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                        badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                                    />
+                                ) : (
+                                    <CredentialBadgeNew
+                                        achievementType={achievementType}
+                                        fallbackCircleText={title}
+                                        boostType={categoryType}
+                                        badgeThumbnail={badgeThumbnail}
+                                        showBackgroundImage
+                                        backgroundImage={backgroundImage}
+                                        backgroundColor={backgroundColor}
+                                        accentColor={accentColor}
+                                        badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                        badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
+                                            isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
+                                        }`}
+                                        badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
+                                        badgeRibbonCustomClass="w-[26px]"
+                                        badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
+                                        displayType={displayType}
+                                        credential={cred}
+                                        clrIssuerName={clrTranscriptIssuerInfo.issuerName}
+                                        clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
+                                        clrBadgeKind={
+                                            isClrCredential && clrBadgeKind !== 'unknown'
+                                                ? clrBadgeKind
+                                                : undefined
+                                        }
+                                    />
+                                )
+                            }
+                            title={title}
+                            customTitle={customTitle}
+                            type={categoryType}
+                            categoryType={categoryType}
+                            boostPageViewMode={boostPageViewMode}
+                            credential={cred}
+                            loading={showSkeleton}
+                            isInSkillsModal={isInSkillsModal}
+                            linkedCredentialsCount={
+                                isClrCredential ? undefined : linkedCredentialCount
+                            }
+                            linkedCredentialsClassName={`bg-${color}`}
+                            displayType={
+                                isClrCredential
+                                    ? getDefaultDisplayType(categoryType as string)
+                                    : displayType
+                            }
+                            uri={record?.uri}
+                            indicatorColor={indicatorColor}
+                            relativeDate={relativeDate}
+                            compact={compact}
+                            isCLR={isClrCredential}
+                            trustedVerifierOnly
                         />
-                    }
-                    customThumbComponent={
-                        showSkeleton ? (
-                            <BadgeSkeleton
-                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                    )
+                ) : (
+                    <BoostGenericCardWrapper
+                        lifecycleStatus={lifecycleStatus}
+                        innerOnClick={
+                            cred && !showSkeleton
+                                ? () => {
+                                      resetIonicModalBackground();
+                                      presentModal();
+                                  }
+                                : undefined
+                        }
+                        className={`earned-small-card bg-white text-black z-[1000] ${className}`}
+                        customHeaderClass="boost-managed-card"
+                        thumbImgSrc={badgeThumbnail}
+                        optionsTriggerOnClick={
+                            showSkeleton || hideOptionsMenu || hideCardOptionsMenu
+                                ? undefined
+                                : () => {
+                                      handleOptionsMenu();
+                                  }
+                        }
+                        showChecked={showChecked}
+                        checkStatus={initialCheckmarkState}
+                        onCheckClick={onCheckMarkClick}
+                        dateDisplay={issueDate}
+                        customDateDisplay={customDateDisplay}
+                        issuerName={issuerName}
+                        customIssuerName={
+                            <CustomIssuerName
+                                issuerName={issuerName}
+                                subjectName={displaySubjectName}
+                                isLoading={showSkeleton}
+                                isClrCredential={isClrCredential}
                             />
-                        ) : (
-                            <CredentialBadgeNew
-                                achievementType={achievementType}
-                                fallbackCircleText={title}
-                                boostType={categoryType}
-                                badgeThumbnail={badgeThumbnail}
-                                showBackgroundImage
-                                backgroundImage={backgroundImage}
-                                backgroundColor={backgroundColor}
-                                accentColor={accentColor}
-                                badgeContainerCustomClass="mt-[0px] mb-[8px]"
-                                badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
-                                    isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
-                                }`}
-                                badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
-                                badgeRibbonCustomClass="w-[26px]"
-                                badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
-                                displayType={displayType}
-                                credential={cred}
-                                clrIssuerName={clrTranscriptIssuerInfo.issuerName}
-                                clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
-                                clrBadgeKind={
-                                    isClrCredential && clrBadgeKind !== 'unknown'
-                                        ? clrBadgeKind
-                                        : undefined
-                                }
-                            />
-                        )
-                    }
-                    title={title}
-                    customTitle={customTitle}
-                    type={categoryType}
-                    categoryType={categoryType}
-                    boostPageViewMode={boostPageViewMode}
-                    credential={cred}
-                    loading={showSkeleton}
-                    isInSkillsModal={isInSkillsModal}
-                    linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
-                    linkedCredentialsClassName={`bg-${color}`}
-                    displayType={
-                        isClrCredential
-                            ? getDefaultDisplayType(categoryType as string)
-                            : displayType
-                    }
-                    uri={record?.uri}
-                    indicatorColor={indicatorColor}
-                    relativeDate={relativeDate}
-                    compact={compact}
-                    isCLR={isClrCredential}
-                    trustedVerifierOnly
-                />
+                        }
+                        customThumbComponent={
+                            showSkeleton ? (
+                                <BadgeSkeleton
+                                    badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                    badgeCircleCustomClass="w-[116px] h-[116px] shadow-3xl mt-1"
+                                />
+                            ) : (
+                                <CredentialBadgeNew
+                                    achievementType={achievementType}
+                                    fallbackCircleText={title}
+                                    boostType={categoryType}
+                                    badgeThumbnail={badgeThumbnail}
+                                    showBackgroundImage
+                                    backgroundImage={backgroundImage}
+                                    backgroundColor={backgroundColor}
+                                    accentColor={accentColor}
+                                    badgeContainerCustomClass="mt-[0px] mb-[8px]"
+                                    badgeCircleCustomClass={`w-[116px]! h-[116px] mt-1 ${
+                                        isAwardDisplay ? 'mt-[17px] mb-[-22px]' : 'shadow-3xl'
+                                    }`}
+                                    badgeRibbonContainerCustomClass="left-[38%] bottom-[-20%]"
+                                    badgeRibbonCustomClass="w-[26px]"
+                                    badgeRibbonIconCustomClass="w-[90%] mt-[4px]"
+                                    displayType={displayType}
+                                    credential={cred}
+                                    clrIssuerName={clrTranscriptIssuerInfo.issuerName}
+                                    clrLogoSrc={clrTranscriptIssuerInfo.logoSrc}
+                                    clrBadgeKind={
+                                        isClrCredential && clrBadgeKind !== 'unknown'
+                                            ? clrBadgeKind
+                                            : undefined
+                                    }
+                                />
+                            )
+                        }
+                        title={title}
+                        customTitle={customTitle}
+                        type={categoryType}
+                        categoryType={categoryType}
+                        boostPageViewMode={boostPageViewMode}
+                        credential={cred}
+                        loading={showSkeleton}
+                        isInSkillsModal={isInSkillsModal}
+                        linkedCredentialsCount={isClrCredential ? undefined : linkedCredentialCount}
+                        linkedCredentialsClassName={`bg-${color}`}
+                        displayType={
+                            isClrCredential
+                                ? getDefaultDisplayType(categoryType as string)
+                                : displayType
+                        }
+                        uri={record?.uri}
+                        indicatorColor={indicatorColor}
+                        relativeDate={relativeDate}
+                        compact={compact}
+                        isCLR={isClrCredential}
+                        trustedVerifierOnly
+                    />
+                )}
             </IonCol>
         </ErrorBoundary>
     );

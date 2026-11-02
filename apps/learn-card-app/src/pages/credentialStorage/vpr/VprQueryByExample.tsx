@@ -9,6 +9,7 @@ const log = getLogger('vpr-query-by-example');
 
 import {
     CurrentUser,
+    ARCHIVED_CATEGORY,
     ModalTypes,
     useModal,
     isVerifiableDataRecord,
@@ -102,7 +103,12 @@ const VprQueryByExample: React.FC<VprQueryByExampleProps> = ({
     });
 
     const eligibleCredentials = allCredentials.filter(credential => {
-        if (!credential.record?.uri || credential.category === 'Hidden') return false;
+        if (
+            !credential.record?.uri ||
+            credential.category === 'Hidden' ||
+            credential.category === ARCHIVED_CATEGORY
+        )
+            return false;
         if (isVerifiableDataRecord(credential.record)) return false;
         if (isVerifiableDataContractCategory(credential.category)) return false;
         if (isAiContractCategory(credential.category)) return false;

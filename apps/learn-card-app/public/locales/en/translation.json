@@ -1,4 +1,20 @@
 {
+    "bulkSelection": {
+        "select": "Select",
+        "done": "Done",
+        "selected": "{{count}} selected",
+        "share": "Share {{count}}",
+        "archive": "Archive {{count}}",
+        "restore": "Restore {{count}}",
+        "delete": "Delete {{count}}",
+        "deleteConfirm": "Delete the selected credentials?",
+        "deleteConfirmAction": "Delete",
+        "working": "Working...",
+        "archiveSuccess": "Credentials archived",
+        "restoreSuccess": "Credentials restored",
+        "deleteSuccess": "Credentials deleted",
+        "actionFailed": "Some credentials could not be updated"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Earned credits not supplied",

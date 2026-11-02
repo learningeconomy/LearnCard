@@ -217,6 +217,15 @@ const WalletPage: React.FC = () => {
                                             />
                                         )}
 
+                                        {flags?.bulkCredentialActions === true && (
+                                            <Link
+                                                to="/archived"
+                                                className="text-sm font-medium text-grayscale-700 hover:text-grayscale-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500"
+                                            >
+                                                {m['alerts.archived']()}
+                                            </Link>
+                                        )}
+
                                         {Capacitor.isNativePlatform() && (
                                             <button
                                                 type="button"

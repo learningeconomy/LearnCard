@@ -1,4 +1,20 @@
 {
+    "bulkSelection": {
+        "select": "Seleccionar",
+        "done": "Listo",
+        "selected": "{{count}} seleccionados",
+        "share": "Compartir {{count}}",
+        "archive": "Archivar {{count}}",
+        "restore": "Restaurar {{count}}",
+        "delete": "Eliminar {{count}}",
+        "deleteConfirm": "¿Eliminar las credenciales seleccionadas?",
+        "deleteConfirmAction": "Eliminar",
+        "working": "Procesando...",
+        "archiveSuccess": "Credenciales archivadas",
+        "restoreSuccess": "Credenciales restauradas",
+        "deleteSuccess": "Credenciales eliminadas",
+        "actionFailed": "No se pudieron actualizar algunas credenciales"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",

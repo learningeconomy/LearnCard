@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     reset: vi.fn(),
 }));
 vi.mock('learn-card-base', () => ({
+    ARCHIVED_CATEGORY: 'Archived',
     getLogger: () => ({ error: vi.fn() }),
     ModalTypes: { FullScreen: 'fullscreen', Center: 'center' },
     useModal: () => ({ newModal: mocks.modal, closeModal: vi.fn() }),

@@ -1,4 +1,20 @@
 {
+    "bulkSelection": {
+        "select": "Sélectionner",
+        "done": "Terminé",
+        "selected": "{{count}} sélectionnés",
+        "share": "Partager {{count}}",
+        "archive": "Archiver {{count}}",
+        "restore": "Restaurer {{count}}",
+        "delete": "Supprimer {{count}}",
+        "deleteConfirm": "Supprimer les informations d'identification sélectionnées ?",
+        "deleteConfirmAction": "Supprimer",
+        "working": "Traitement...",
+        "archiveSuccess": "Informations d'identification archivées",
+        "restoreSuccess": "Informations d'identification restaurées",
+        "deleteSuccess": "Informations d'identification supprimées",
+        "actionFailed": "Certaines informations d'identification n'ont pas pu être mises à jour"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Crédits obtenus non renseignés",

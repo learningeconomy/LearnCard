@@ -48,6 +48,7 @@ const mocks = vi.hoisted(() => ({
     intersect: undefined as undefined | ((entries: { isIntersecting: boolean }[]) => void),
 }));
 vi.mock('learn-card-base', () => ({
+    ARCHIVED_CATEGORY: 'Archived',
     redirectStore: { set: { authRedirect: mocks.redirect.authRedirect } },
     useIsLoggedIn: () => mocks.auth.loggedIn,
     useWallet: () => ({ initWallet: async () => mocks.wallet }),

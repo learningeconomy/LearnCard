@@ -32,6 +32,8 @@ import { ColorSetEnum } from '../../theme/colors';
 
 import * as m from '../../paraglide/messages.js';
 import { getNavBarLinkLabel } from './mobileNavBarI18n';
+import { credentialSelectionStore } from '../../stores/credentialSelectionStore';
+import { BulkCredentialActionDock } from '../bulk-select/BulkCredentialActionDock';
 
 export enum MobileNavBarLinks {
     dashboard = 'dashboard',
@@ -91,6 +93,7 @@ const MobileNavBar: React.FC = () => {
 
     const isSyncing = isWalletSyncing.status === WalletSyncState.Syncing;
     const isCompleted = isWalletSyncing.status === WalletSyncState.Completed;
+    const selectionActive = credentialSelectionStore.use.active();
 
     let walletText: string = m['sidemenu.links.passport']();
     if (isSyncing || isCompleted)
@@ -109,123 +112,127 @@ const MobileNavBar: React.FC = () => {
                 {isLoggedIn &&
                 !/^\/s(?:\/|$)/.test(activePathname) &&
                 showNavBar(activePathname) ? (
-                    <IonTabBar
-                        slot="bottom"
-                        className="lc-footer-nav"
-                        style={{
-                            // Override Ionic's host padding with the design spacing plus
-                            // its live system-bar inset. This updates without a rerender.
-                            paddingBottom: 'calc(15px + var(--ion-safe-area-bottom, 0px))',
-                        }}
-                    >
-                        {/*
+                    selectionActive ? (
+                        <BulkCredentialActionDock />
+                    ) : (
+                        <IonTabBar
+                            slot="bottom"
+                            className="lc-footer-nav"
+                            style={{
+                                // Override Ionic's host padding with the design spacing plus
+                                // its live system-bar inset. This updates without a rerender.
+                                paddingBottom: 'calc(15px + var(--ion-safe-area-bottom, 0px))',
+                            }}
+                        >
+                            {/*
                             tab prop is needed to prevent hard refresh...
                             set href to # to prevent id undefined errors & rerouting
                         */}
-                        <IonTabButton tab="/" href="#" className="mobile-nav-hamburger-button">
-                            <IonMenuToggle menu="appSideMenu">
-                                <BurgerIcon className="text-grayscale-900 h-[35px] w-[35px] m-[10px]" />
-                            </IonMenuToggle>
-                        </IonTabButton>
+                            <IonTabButton tab="/" href="#" className="mobile-nav-hamburger-button">
+                                <IonMenuToggle menu="appSideMenu">
+                                    <BurgerIcon className="text-grayscale-900 h-[35px] w-[35px] m-[10px]" />
+                                </IonMenuToggle>
+                            </IonTabButton>
 
-                        {navlinks.map(link => {
-                            if (link.id === MobileNavBarLinks.dashboard) {
-                                return (
-                                    <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        <div
-                                            className={`${iconPillClass(
-                                                isDashboardTabActive
-                                            )} relative`}
-                                        >
-                                            {DashboardIcon && (
-                                                <DashboardIcon
-                                                    className={`h-[35px] w-[35px] ${
-                                                        isDashboardTabActive
-                                                            ? colors?.activeColor
-                                                            : colors?.inactiveColor
-                                                    }`}
-                                                />
-                                            )}
-                                            {/* New-items indicator, top-right of the icon (Figma).
+                            {navlinks.map(link => {
+                                if (link.id === MobileNavBarLinks.dashboard) {
+                                    return (
+                                        <IonTabButton key={link.id} tab={link.id} href={link.path}>
+                                            <div
+                                                className={`${iconPillClass(
+                                                    isDashboardTabActive
+                                                )} relative`}
+                                            >
+                                                {DashboardIcon && (
+                                                    <DashboardIcon
+                                                        className={`h-[35px] w-[35px] ${
+                                                            isDashboardTabActive
+                                                                ? colors?.activeColor
+                                                                : colors?.inactiveColor
+                                                        }`}
+                                                    />
+                                                )}
+                                                {/* New-items indicator, top-right of the icon (Figma).
                                                 Hidden until the unread/new-items logic exists —
                                                 was hardcoded to always show. */}
-                                            {/* <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" /> */}
-                                        </div>
-                                        <IonLabel
-                                            className={`font-poppins font-semibold text-[11px] mt-[3px] ${
-                                                isDashboardTabActive
-                                                    ? colors?.activeColor
-                                                    : colors?.inactiveColor
-                                            }`}
-                                        >
-                                            {getNavBarLinkLabel(link)}
-                                        </IonLabel>
-                                    </IonTabButton>
-                                );
-                            }
+                                                {/* <span className="absolute top-[4px] right-[2px] h-[6px] w-[6px] rounded-full bg-red-500" /> */}
+                                            </div>
+                                            <IonLabel
+                                                className={`font-poppins font-semibold text-[11px] mt-[3px] ${
+                                                    isDashboardTabActive
+                                                        ? colors?.activeColor
+                                                        : colors?.inactiveColor
+                                                }`}
+                                            >
+                                                {getNavBarLinkLabel(link)}
+                                            </IonLabel>
+                                        </IonTabButton>
+                                    );
+                                }
 
-                            if (link.id === MobileNavBarLinks.wallet) {
-                                return (
-                                    <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        {(isSyncing || isCompleted) && (
-                                            <div className="flex items-center justify-center absolute top-[8px] z-50 h-[30px] w-[30px] rounded-[10px]">
-                                                {isSyncing && (
-                                                    <CustomSpinner
-                                                        className={`h-[18px] w-[18px] ${colors?.syncingColor}`}
+                                if (link.id === MobileNavBarLinks.wallet) {
+                                    return (
+                                        <IonTabButton key={link.id} tab={link.id} href={link.path}>
+                                            {(isSyncing || isCompleted) && (
+                                                <div className="flex items-center justify-center absolute top-[8px] z-50 h-[30px] w-[30px] rounded-[10px]">
+                                                    {isSyncing && (
+                                                        <CustomSpinner
+                                                            className={`h-[18px] w-[18px] ${colors?.syncingColor}`}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                            <div className={iconPillClass(isWalletTabActive)}>
+                                                {WalletIcon && (
+                                                    <WalletIcon
+                                                        isSyncing={isSyncing}
+                                                        isCompleted={isCompleted}
+                                                        version={isWalletTabActive ? '2' : '1'}
+                                                        className="h-[35px] w-[35px]"
                                                     />
                                                 )}
                                             </div>
-                                        )}
-                                        <div className={iconPillClass(isWalletTabActive)}>
-                                            {WalletIcon && (
-                                                <WalletIcon
-                                                    isSyncing={isSyncing}
-                                                    isCompleted={isCompleted}
-                                                    version={isWalletTabActive ? '2' : '1'}
-                                                    className="h-[35px] w-[35px]"
-                                                />
-                                            )}
-                                        </div>
-                                        <IonLabel
-                                            className={`font-poppins font-semibold text-[11px] ${
-                                                isWalletTabActive
-                                                    ? colors?.activeColor
-                                                    : colors?.inactiveColor
-                                            } ${walletTextStyles}`}
-                                        >
-                                            {walletText ?? link.label}
-                                        </IonLabel>
-                                    </IonTabButton>
-                                );
-                            }
+                                            <IonLabel
+                                                className={`font-poppins font-semibold text-[11px] ${
+                                                    isWalletTabActive
+                                                        ? colors?.activeColor
+                                                        : colors?.inactiveColor
+                                                } ${walletTextStyles}`}
+                                            >
+                                                {walletText ?? link.label}
+                                            </IonLabel>
+                                        </IonTabButton>
+                                    );
+                                }
 
-                            if (link.id === MobileNavBarLinks.launchpad) {
-                                return (
-                                    <IonTabButton key={link.id} tab={link.id} href={link.path}>
-                                        <div className={iconPillClass(isLaunchPadTabActive)}>
-                                            {LaunchPadIcon && (
-                                                <LaunchPadIcon
-                                                    version={isLaunchPadTabActive ? '2' : '1'}
-                                                    className="h-[35px] w-[35px]"
-                                                />
-                                            )}
-                                        </div>
-                                        <IonLabel
-                                            className={`font-poppins font-semibold text-[11px] mt-[3px] ${
-                                                isLaunchPadTabActive
-                                                    ? colors?.activeColor
-                                                    : colors?.inactiveColor
-                                            }`}
-                                        >
-                                            {getNavBarLinkLabel(link)}
-                                        </IonLabel>
-                                    </IonTabButton>
-                                );
-                            }
+                                if (link.id === MobileNavBarLinks.launchpad) {
+                                    return (
+                                        <IonTabButton key={link.id} tab={link.id} href={link.path}>
+                                            <div className={iconPillClass(isLaunchPadTabActive)}>
+                                                {LaunchPadIcon && (
+                                                    <LaunchPadIcon
+                                                        version={isLaunchPadTabActive ? '2' : '1'}
+                                                        className="h-[35px] w-[35px]"
+                                                    />
+                                                )}
+                                            </div>
+                                            <IonLabel
+                                                className={`font-poppins font-semibold text-[11px] mt-[3px] ${
+                                                    isLaunchPadTabActive
+                                                        ? colors?.activeColor
+                                                        : colors?.inactiveColor
+                                                }`}
+                                            >
+                                                {getNavBarLinkLabel(link)}
+                                            </IonLabel>
+                                        </IonTabButton>
+                                    );
+                                }
 
-                            return null;
-                        })}
-                    </IonTabBar>
+                                return null;
+                            })}
+                        </IonTabBar>
+                    )
                 ) : (
                     <IonTabBar slot="bottom" style={{ display: 'none' }} />
                 )}

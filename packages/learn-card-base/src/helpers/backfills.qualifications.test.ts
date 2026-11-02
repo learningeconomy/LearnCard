@@ -155,6 +155,13 @@ describe('reconcileQualificationCategories', () => {
             [{ id: 'expired', uri: 'expired', category: 'Achievement', credential: expired }],
             [
                 {
+                    id: 'archived',
+                    uri: 'archived',
+                    category: 'Archived',
+                    categorySource: 'manual',
+                    credential: credential('License'),
+                },
+                {
                     id: 'wrong-category',
                     uri: 'wrong',
                     category: 'Skill',
