@@ -335,3 +335,14 @@ The confirmation lock is released before queue/network work. Later waves still u
 eligibility and audience semantics, so the reviewed count is a snapshot rather than a frozen
 send list. Existing queue retries and receiver deduplication remain unchanged. If enqueue
 fails or the HTTP response is lost, review again before retrying; never reuse the old token.
+
+### Concurrent authoring
+
+Content editors should pass the loaded campaign's `updatedAt` as `expectedUpdatedAt`
+to `campaignsUpdate`, and leave lifecycle status changes to `campaignsSetStatus`.
+The server compares the token after acquiring the campaign write lock and rejects
+stale saves with `CONFLICT`. Reload the latest definition before reconciling edits;
+never automatically retry a full stale form against a fresh token. Successful
+writes advance the timestamp monotonically, including same-millisecond writes.
+Legacy SDK callers may omit the optional token; those callers retain existing
+last-write behavior and do not receive optimistic concurrency protection.

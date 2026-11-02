@@ -7,9 +7,10 @@ export const CampaignStatusValidator = z.enum(['draft', 'live', 'paused', 'archi
 export const CampaignChannelValidator = z.enum(['inApp', 'notify']);
 export const CampaignEventValidator = z.enum(['shown', 'clicked', 'dismissed', 'converted']);
 
-const timestamp = z.iso
-    .datetime({ offset: true })
-    .overwrite(value => new Date(value).toISOString());
+const timestamp = z.iso.datetime({ offset: true }).overwrite(value => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : value;
+});
 const notification = z.object({ title: z.string().min(1), body: z.string().min(1) }).strict();
 const channels = z
     .array(CampaignChannelValidator)
@@ -99,6 +100,7 @@ export const UpdateCampaignInputValidator = z
     .object({
         campaignId: CampaignIdValidator,
         updates: CampaignUpdatesValidator,
+        expectedUpdatedAt: timestamp.optional(),
     })
     .strict();
 

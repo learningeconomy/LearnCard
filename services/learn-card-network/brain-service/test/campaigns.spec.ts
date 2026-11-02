@@ -238,6 +238,66 @@ describe('campaign lifecycle and access', () => {
         }
     );
 
+    it('rejects an editor save after another administrator pauses the campaign', async () => {
+        const opened = await admin.create(draft({ status: 'live' }));
+        const paused = await admin.setStatus({ campaignId: opened.id, status: 'paused' });
+        await expect(
+            admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: opened.updatedAt,
+                updates: { name: 'Stale editor', status: 'live' },
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await admin.get({ campaignId: opened.id })).toEqual(paused);
+    });
+
+    it('serializes two editors saving the same revision without overwriting the winner', async () => {
+        const opened = await admin.create(draft());
+        const results = await Promise.allSettled(
+            ['First editor', 'Second editor'].map(name =>
+                admin.update({
+                    campaignId: opened.id,
+                    expectedUpdatedAt: opened.updatedAt,
+                    updates: { name },
+                })
+            )
+        );
+        const accepted = results.filter(result => result.status === 'fulfilled');
+        const rejected = results.filter(result => result.status === 'rejected');
+        expect(accepted).toHaveLength(1);
+        expect(rejected).toHaveLength(1);
+        expect(rejected[0]?.reason).toMatchObject({ code: 'CONFLICT' });
+        expect(await admin.get({ campaignId: opened.id })).toEqual(accepted[0]?.value);
+    });
+
+    it('advances the revision even when writes share a clock tick', async () => {
+        const opened = await admin.create(draft());
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(opened.updatedAt));
+        try {
+            const updated = await admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: opened.updatedAt,
+                updates: { name: 'First edit' },
+            });
+            expect(Date.parse(updated.updatedAt)).toBe(Date.parse(opened.updatedAt) + 1);
+            await expect(
+                admin.update({
+                    campaignId: opened.id,
+                    expectedUpdatedAt: opened.updatedAt,
+                    updates: { name: 'Stale edit' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const next = await admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: updated.updatedAt,
+                updates: { name: 'Fresh edit' },
+            });
+            expect(Date.parse(next.updatedAt)).toBe(Date.parse(updated.updatedAt) + 1);
+        } finally {
+            clock.mockRestore();
+        }
+    });
+
     it('paginates campaigns by immutable ID and filters status', async () => {
         await admin.create(draft({ id: 'aaa', status: 'live' }));
         await admin.create(draft({ id: 'bbb' }));
