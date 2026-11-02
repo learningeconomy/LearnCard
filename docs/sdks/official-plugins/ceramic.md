@@ -84,7 +84,7 @@ type EncryptionParams = {
 };
 ```
 
-You can play with the following examples in the[ LearnCard CLI](../learncard-cli.md):
+For example, with a LearnCard that includes the Ceramic plugin (the [LearnCard CLI](../learncard-cli.md) REPL does not load it):
 
 ```typescript
 const user = await initLearnCard({ seed: '123', debug: console.log });

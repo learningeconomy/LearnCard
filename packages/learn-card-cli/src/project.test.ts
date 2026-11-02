@@ -191,7 +191,7 @@ describe('project context', () => {
                 LCA_API_URL: 'http://localhost:5200/api',
             }).lcaAPI
         ).toBe('http://localhost:5200/api');
-        expect(() => resolveServices({}, 'file:///tmp/network', {})).toThrow('HTTP');
+        expect(() => resolveServices({}, 'file:///tmp/network', {})).toThrow('Unknown network');
     });
 });
 

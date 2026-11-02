@@ -8,6 +8,18 @@
 - Run single test: `bunx nx test <package-name> --testFile=path/to/test.spec.ts`
 - Run e2e tests: `bunx nx test:e2e e2e`
 
+### Running the LearnCard CLI from source
+
+The CLI reads and writes `.env` (seed, profile ID) in the **current directory**, so run it from source in a fresh temporary folder, never from inside the repo:
+
+```bash
+REPO="$(git rev-parse --show-toplevel)"
+bun --cwd "$REPO/packages/learn-card-cli" scripts/embed-snippets.ts   # once: embeds docs/snippets
+cd "$(mktemp -d)" && bun --conditions=development "$REPO/packages/learn-card-cli/src/index.tsx" <command> --network local
+```
+
+Don't use `bun --cwd packages/learn-card-cli start <command>` for anything that creates an identity: its working directory is `packages/learn-card-cli`, so it would write the seed to `packages/learn-card-cli/.env` and every later run in the repo would share it. Don't use `bunx @learncard/cli` from the repo either: it runs whatever is in `packages/learn-card-cli/dist`, which is often stale and can lack recent commands (and `npx @learncard/cli` from the repo root can fail on workspace overrides). Never point a development build at production (the default network): always pass `--network local` or `--network staging`, and prefer the mocked unit tests (`bun run test` in `packages/learn-card-cli`).
+
 ## Code Style Guidelines
 
 - **TypeScript**: Use strict typing with interfaces in dedicated type files

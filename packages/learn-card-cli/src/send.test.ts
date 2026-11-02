@@ -231,7 +231,11 @@ describe('send --as script generation', () => {
         async existing => {
             const managedDid = 'did:web:staging.network.learncard.com:users:managed';
             const loaded = {
-                env: { SECURE_SEED: 'seed', PROFILE_ID: 'parent' },
+                env: {
+                    SECURE_SEED: 'seed',
+                    PROFILE_ID: 'parent',
+                    ORG_PROFILE_MANAGER_DID: 'did:web:manager',
+                },
                 envPath: '/unused/.env',
                 existing: '',
             };
@@ -241,6 +245,7 @@ describe('send --as script generation', () => {
                 seed: 'seed',
                 profileId: 'parent',
                 displayName: 'Parent',
+                created: false,
             });
             const card = {
                 id: { did: () => managedDid },

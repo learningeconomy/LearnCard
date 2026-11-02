@@ -10,6 +10,7 @@ import {
     type NetworkCard,
 } from './project';
 import { out } from './out';
+import { UsageError } from './errors';
 
 export const authorityName = (project: Project, name?: string): string =>
     name ?? project.env.SIGNING_AUTHORITY_NAME ?? 'default-issuer';
@@ -149,11 +150,22 @@ const registerOwnAuthority = async (
     return { name, endpoint, did, alreadyConfigured: false };
 };
 
+/** Flag checks for `setup-signing`, run before any identity or network work. */
+export const validateSetupSigningOptions = (options: { endpoint?: string; did?: string }): void => {
+    if ((options.endpoint && !options.did) || (!options.endpoint && options.did))
+        throw new UsageError(
+            'Pass both --endpoint and --did to register your own signing service.'
+        );
+    if (options.endpoint && !/^https:\/\//.test(options.endpoint))
+        throw new UsageError('--endpoint must be an https:// URL.');
+    if (options.did && !/^did:/.test(options.did))
+        throw new UsageError('--did must be a DID (did:web:..., did:key:...).');
+};
+
 export const runSetupSigning = async (options: SetupSigningOptions): Promise<void> => {
+    validateSetupSigningOptions(options);
     const project = await loadProject(process.cwd());
     const identity = await ensureIdentity(project, { ...options, name: undefined });
-    if ((options.endpoint && !options.did) || (!options.endpoint && options.did))
-        throw new Error('Pass both --endpoint and --did to register your own signing service.');
     let authority;
     if (options.endpoint) {
         const learnCard = await connect(project, options);
