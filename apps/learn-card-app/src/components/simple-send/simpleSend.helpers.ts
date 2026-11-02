@@ -149,6 +149,8 @@ export interface IssueViaBoostOptions {
 
 export interface IssueViaBoostResult {
     credentialUri?: string;
+    /** Set when `credentialUri` is a LearnCloud copy of this network credential. */
+    networkUri?: string;
     claimLink?: string;
 }
 
@@ -160,6 +162,7 @@ const deliverBoost = async (
 ): Promise<IssueViaBoostResult> => {
     let claimLink: string | undefined;
     let credentialUri: string | undefined = options.mode === 'self' ? undefined : boostUri;
+    let networkUri: string | undefined;
 
     const templateData =
         options.variableValues && Object.keys(options.variableValues).length > 0
@@ -193,6 +196,7 @@ const deliverBoost = async (
                     const indexUri = await wallet.store.LearnCloud.uploadEncrypted(credential);
                     if (indexUri) {
                         credentialUri = indexUri;
+                        networkUri = sentCredentialUri;
                     }
                 }
             }
@@ -246,7 +250,7 @@ const deliverBoost = async (
         )}?iuv=1`;
     }
 
-    return { credentialUri, claimLink };
+    return { credentialUri, networkUri, claimLink };
 };
 
 const deepReplaceVariables = (json: unknown, replacements: Record<string, string>): unknown => {
