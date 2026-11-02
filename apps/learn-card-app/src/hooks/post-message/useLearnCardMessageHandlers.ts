@@ -1345,7 +1345,10 @@ export function useLearnCardMessageHandlers({
                                       if (topicCredential) {
                                           await storeAndAddVCToWallet(
                                               topicCredential,
-                                              { title: topicCredential.name || 'AI Topic' },
+                                              {
+                                                  title: topicCredential.name || 'AI Topic',
+                                                  networkUri: topicCredentialUri as string,
+                                              },
                                               'LearnCloud',
                                               true
                                           );
@@ -1363,7 +1366,10 @@ export function useLearnCardMessageHandlers({
                                       if (sessionCredential) {
                                           await storeAndAddVCToWallet(
                                               sessionCredential,
-                                              { title: sessionCredential.name || 'AI Session' },
+                                              {
+                                                  title: sessionCredential.name || 'AI Session',
+                                                  networkUri: sessionCredentialUri as string,
+                                              },
                                               'LearnCloud',
                                               true
                                           );

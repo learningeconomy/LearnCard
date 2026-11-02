@@ -66,7 +66,7 @@ gh workflow run verification.yml --ref <branch>
 gh run list --workflow verification.yml
 ```
 
-The workflow also runs for non-draft PRs touching the covered surfaces, on an ephemeral GitHub-hosted Ubuntu runner, never `pull_request_target` or a privileged self-hosted runner. It installs the pinned toolchain/dependencies/Chromium, runs the in-app message unit, lint and typecheck steps, prepares and preflights, brings up one owned stack (`up --dir`), drives the in-app message navigation script (`script …/in-app-messages/examples/verify-navigation.mjs --dir … --video`), runs `run all --dir` on that stack, and always attempts ownership-checked teardown. It uploads two artifacts with 14-day retention: selected proof media (screenshots only, no videos) plus sanitized rendering data from the newest run (`bun scripts/proof.ts stage --images-only`, `lc-proof-media-<run id>`) and an allowlisted status/count/duration summary. Raw reports, logs, sessions, traces, seeds and videos stay off artifacts. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
+The workflow also runs for non-draft PRs touching the covered surfaces, on ephemeral GitHub-hosted Ubuntu runners, never `pull_request_target` or privileged self-hosted runners. Three independent jobs run concurrently: unit/static checks (including service declarations and verification typechecking), the production SQLite browser bundle check, and owned-stack runtime verification. Each installs the pinned toolchain and dependencies in its own checkout; no compiled outputs, databases or sessions are transferred between jobs. The runtime job installs Chromium, prepares and preflights, brings up one owned stack (`up --dir`), drives the in-app message navigation script (`script …/in-app-messages/examples/verify-navigation.mjs --dir … --video`), runs `run all --dir` and campaign authorization on that stack serially, and always attempts ownership-checked teardown. The final `verification` check runs after all three jobs and requires each to succeed; failures, cancellations and unexpected skips fail it. The runtime job uploads two artifacts with 14-day retention: selected proof media (screenshots only, no videos) plus sanitized rendering data from the newest run (`bun scripts/proof.ts stage --images-only`, `lc-proof-media-<run id>`) and an allowlisted status/count/duration summary. Raw reports, logs, sessions, traces, seeds and videos stay off artifacts. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
 
 ### Build caching and timings
 
@@ -113,6 +113,24 @@ startup or navigation command cannot appear successful merely because the catalo
 
 The hosted Markdown/JSON summaries retain only allowlisted phase/feature names, statuses,
 coverage counts and validated numeric durations. Raw timestamps and error text are excluded.
+
+CI also runs `python3 -B scripts/profile-verification-traces.py STACK_DIR OUTPUT_DIR`
+(Python 3 standard library) after teardown. It reads the existing per-feature Playwright
+trace archives in place and adds `browser-profile.json` / `.md` to the sanitized-summary
+artifact. The current parser supports the repository-pinned Playwright trace version 8;
+unsupported, malformed, truncated and incomplete traces are counted explicitly.
+Only fixed feature/operation names, counts and numeric durations leave the runner. It
+never extracts or uploads trace payloads, parameters, selectors, URLs, errors or images.
+The profiler is diagnostic and cannot turn a failed verification into success. A two-minute
+step timeout, a 1 GiB total trace-stream budget, per-archive limits and call/line caps bound
+diagnostic cost; hitting a budget is reported as limited input.
+
+Use the per-feature navigation, screenshot, assertion and interaction rows to identify
+where to investigate next. API durations include browser/load/actionability waits, not
+just server work. Active time merges overlapping calls within the feature's browser
+clock; category rows may overlap and must not be added as wall time. SDK work, setup,
+trace/context closure and time between browser calls are outside this profile. It does
+not replace the full feature/command timings or justify removing persistence assertions.
 
 ### Sharing a live stack between agents
 
