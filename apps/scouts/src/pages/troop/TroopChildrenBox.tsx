@@ -29,7 +29,7 @@ import { TroopParentLevel } from './troopConstants';
 
 import { getScoutsRole } from '../../helpers/troop.helpers';
 import { ScoutsRoleEnum } from '../../stores/troopPageStore';
-import { DASHBOARD_TYPE } from 'packages/plugins/lca-api-plugin/src/types';
+import { DASHBOARD_TYPE } from '@learncard/lca-api-plugin';
 import { useLocale } from '../../i18n';
 import * as m from '../../paraglide/messages.js';
 
