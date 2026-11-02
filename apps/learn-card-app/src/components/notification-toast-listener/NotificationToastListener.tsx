@@ -86,7 +86,7 @@ const NotificationToastListener: React.FC = () => {
                 onClick={() => {
                     dismissToast();
                     if (newest.type === 'ANNOUNCEMENT') {
-                        markRead({ notificationId: newest._id });
+                        if (newest._id) markRead({ notificationId: newest._id });
                         history.push(resolveNotificationRoute(newest));
                     } else openNotifications();
                 }}
