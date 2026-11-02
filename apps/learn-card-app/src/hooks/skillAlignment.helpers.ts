@@ -34,11 +34,12 @@ type CredentialWithSkillAlignments = {
 export const getCredentialAchievementAlignments = (credential: unknown): SkillAlignment[] => {
     const resolvedCredential = credential as CredentialWithSkillAlignments;
 
-    return (
+    const alignment: unknown =
         resolvedCredential.boostCredential?.credentialSubject?.achievement?.alignment ??
-        resolvedCredential.credentialSubject?.achievement?.alignment ??
-        []
-    );
+        resolvedCredential.credentialSubject?.achievement?.alignment;
+
+    // Generic VCs can carry arbitrary subject fields, so a non-array alignment must not reach .forEach.
+    return Array.isArray(alignment) ? alignment : [];
 };
 
 /** Issuance / validFrom used for hub sort — boost wrapper first, then bare VC. */

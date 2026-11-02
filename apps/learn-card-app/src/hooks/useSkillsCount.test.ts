@@ -131,6 +131,33 @@ describe('getCredentialAchievementAlignments', () => {
         expect(alignments).toHaveLength(1);
         expect(alignments[0]?.targetName).toBe('FromBoost');
     });
+
+    it('returns [] for a non-array alignment so hub aggregation and counting do not throw', async () => {
+        const {
+            getCredentialAchievementAlignments,
+            aggregateHubSkillAlignments,
+            countSkillsForFrameworks,
+        } = await import('./skillAlignment.helpers');
+        const malformed = {
+            type: ['VerifiableCredential'],
+            credentialSubject: { achievement: { alignment: 'not-an-array' } },
+        };
+        const malformedBoost = {
+            boostCredential: { credentialSubject: { achievement: { alignment: 'oops' } } },
+        };
+
+        expect(getCredentialAchievementAlignments(malformed)).toEqual([]);
+        expect(getCredentialAchievementAlignments(malformedBoost)).toEqual([]);
+        expect(
+            aggregateHubSkillAlignments<unknown>(
+                [malformed, malformedBoost],
+                ['wef-global-skills-taxonomy']
+            )
+        ).toEqual([]);
+        expect(
+            countSkillsForFrameworks([malformed, malformedBoost], ['wef-global-skills-taxonomy'])
+        ).toBe(0);
+    });
 });
 
 describe('aggregateHubSkillAlignments', () => {
