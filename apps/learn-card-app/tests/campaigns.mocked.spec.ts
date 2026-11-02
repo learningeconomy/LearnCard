@@ -673,6 +673,20 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     mock.on('user.getDids', () => [profile.did]);
     mock.on('user.addDid', () => true);
     mock.on('campaigns.getMyCampaigns', () => []);
+    mock.on('campaigns.isAdmin', () => false);
+    // This learner-entry journey owns the background procedures batched with
+    // the global campaign source. It never calls a live campaign service.
+    for (const procedure of [
+        'contracts.getConsentedContracts',
+        'contracts.getAllCredentialsForTerms',
+        'boost.getPaginatedBoosts',
+        'skillFrameworks.getAllAvailableFrameworks',
+        'activity.getMyActivities',
+        'inbox.getMyInboxDeliveries',
+    ])
+        mock.on(procedure, () => ({ records: [], hasMore: false }));
+    mock.on('activity.getMyCredentialLifecycleStatuses', () => ({}));
+    mock.on('profile.pendingConnectionPrompts', () => []);
     const notification = {
         _id: 'synthetic-announcement',
         type: 'ANNOUNCEMENT',
@@ -752,5 +766,40 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         path: 'test-results/campaign-announcement-modal.png',
         animations: 'disabled',
     });
-    await page.getByRole('button', { name: 'Close alerts' }).click();
+    // A newly available campaign must be fetched on notification entry even after
+    // boot cached an empty result. Explicit entry bypasses targeting/seen state.
+    const campaign = CampaignValidator.parse({
+        id: 'synthetic-campaign',
+        name: 'Notification entry QA',
+        channels: ['inApp'],
+        message: {
+            id: 'synthetic-campaign',
+            title: 'Campaign opened from your alert',
+            targeting: { platform: ['ios'] },
+            frequency: 'once',
+            actions: [{ label: 'Close campaign', action: { type: 'dismiss' } }],
+        },
+        createdAt: '2026-10-29T00:00:00Z',
+        updatedAt: '2026-10-29T00:00:00Z',
+    });
+    const events: unknown[] = [];
+    mock.on('campaigns.getMyCampaigns', () => [
+        {
+            campaign: { id: campaign.id, message: campaign.message, selfEnroll: false },
+            state: { shownCount: 1, firstShownAt: '2026-10-30T00:00:00Z' },
+        },
+    ]);
+    mock.on('campaigns.recordEvent', input => {
+        events.push(input);
+        return true;
+    });
+    await card.getByRole('button', { name: 'View', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Close alerts' })).not.toBeVisible();
+    await expect(
+        page.getByRole('heading', { name: 'Campaign opened from your alert', exact: true })
+    ).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
+    await page.screenshot({ path: 'test-results/campaign-notification-entry.png' });
+    await page.getByRole('button', { name: 'Close campaign', exact: true }).click();
+    expect(events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
 });
