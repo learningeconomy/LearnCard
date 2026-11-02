@@ -18,6 +18,14 @@ on:
                 description: 'Browser spec files, separated by spaces'
                 required: false
                 default: 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts'
+            use_sdk_cache:
+                description: 'Restore SDK outputs; false runs an identical cold-build baseline.'
+                type: boolean
+                default: true
+            verify_sdk_producer:
+                description: 'Also validate the SDK producer; feature refs never publish shared output.'
+                type: boolean
+                default: false
 
 permissions:
     contents: read
@@ -30,6 +38,10 @@ env:
     E2E_TESTED_REF: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.ref || github.sha }}
 
 jobs:
+    sdk_cache_probe:
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_sdk_producer }}
+        uses: ./.github/workflows/sdk-build-cache.yml
+
     eligibility:
         name: Determine E2E eligibility
         runs-on: ubuntu-latest
@@ -157,7 +169,13 @@ jobs:
               with:
                   save-cache: 'false'
 
+            - name: Prepare shared SDK build reuse
+              uses: ./.github/actions/sdk-build-cache
+              with:
+                  use-cache: ${{ github.event.inputs.use_sdk_cache != 'false' }}
+
             - name: Run Playwright and accessibility suites
+              # The preceding restore never represents test or app-build success.
               run: bash scripts/e2e-hosted/run-browser.sh
 
             - name: Publish browser diagnostic summary
@@ -272,6 +290,11 @@ jobs:
               with:
                   # One writer per E2E run avoids sibling jobs compressing the same cache.
                   save-cache: ${{ matrix.shard == 1 }}
+
+            - name: Prepare shared SDK build reuse
+              uses: ./.github/actions/sdk-build-cache
+              with:
+                  use-cache: ${{ github.event.inputs.use_sdk_cache != 'false' }}
 
             - name: Run tests/e2e
               run: bash scripts/e2e-hosted/run-service.sh
