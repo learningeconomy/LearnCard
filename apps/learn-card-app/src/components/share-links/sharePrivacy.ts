@@ -41,10 +41,10 @@ export const enterSharePrivacy = (): void => {
 
 /** Also protects navigation breadcrumbs recorded before the viewer mounts. */
 export const scrubShareTelemetry = <T>(value: T): T => {
-    // Ancestors mark true cycles. Finished clones are reused, so shared references are
-    // still scrubbed but each object is walked once instead of once per path.
+    // Ancestors mark true cycles. Later paths to an already scrubbed object get a marker,
+    // not the clone: a shared reference would fan out again when Sentry stringifies it.
     const ancestors = new WeakSet<object>();
-    const scrubbed = new WeakMap<object, unknown>();
+    const seen = new WeakSet<object>();
     const scrub = (item: unknown): unknown => {
         if (typeof item === 'string')
             return item.replace(
@@ -53,16 +53,15 @@ export const scrubShareTelemetry = <T>(value: T): T => {
             );
         if (!item || typeof item !== 'object' || item instanceof Date) return item;
         if (ancestors.has(item)) return '[Circular]';
-        if (scrubbed.has(item)) return scrubbed.get(item);
+        if (seen.has(item)) return '[Shared]';
         ancestors.add(item);
+        seen.add(item);
         try {
-            const clone = Array.isArray(item)
+            return Array.isArray(item)
                 ? item.map(scrub)
                 : Object.fromEntries(
                       Object.entries(item).map(([key, child]) => [key, scrub(child)])
                   );
-            scrubbed.set(item, clone);
-            return clone;
         } finally {
             ancestors.delete(item);
         }

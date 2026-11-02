@@ -56,11 +56,11 @@ describe('share privacy', () => {
         expect(result.self).toBe('[Circular]');
         expect(result.list).toEqual(['[Circular]', { parent: '[Circular]' }]);
         expect(result.a).toEqual({ url: '/s/abc#[redacted]' });
-        expect(result.b).toEqual({ url: '/s/abc#[redacted]' });
+        expect(result.b).toBe('[Shared]');
         expect(JSON.stringify(result)).not.toMatch(/secret|#shared/);
     });
-    it('visits each object once when cyclic subgraphs are shared across paths', () => {
-        // Each node points twice to the next, so a path-only guard walks 2^22 paths.
+    it('serializes shared cyclic subgraphs to a bounded, scrubbed payload', () => {
+        // Each node points twice to the next; reusing clones made JSON.stringify walk 2^22 paths.
         let reads = 0;
         const nodes = Array.from({ length: 22 }, (_, index) => {
             const node: Record<string, unknown> = {};
@@ -78,17 +78,13 @@ describe('share privacy', () => {
             node.left = next;
             node.right = next;
         });
-        const result = scrubShareTelemetry(nodes[0]) as Record<string, unknown>;
+        const serialized = JSON.stringify(scrubShareTelemetry({ request: { data: nodes[0] } }));
         expect(reads).toBe(nodes.length);
-        let current = result;
-        for (let index = 0; index < nodes.length - 1; index += 1) {
-            expect(current.url).toBe(`/s/node-${index}#[redacted]`);
-            expect(current.right).toBe(current.left);
-            current = current.left as Record<string, unknown>;
-        }
-        expect(current.url).toBe(`/s/node-${nodes.length - 1}#[redacted]`);
-        expect(current.left).toBe('[Circular]');
-        expect(current.right).toBe('[Circular]');
+        expect(serialized.length).toBeLessThan(2048);
+        expect(serialized).not.toMatch(/secret/);
+        expect(serialized.match(/\/s\/node-\d+#\[redacted\]/g)).toHaveLength(nodes.length);
+        expect(serialized.match(/"\[Shared\]"/g)).toHaveLength(nodes.length - 1);
+        expect(serialized.match(/"\[Circular\]"/g)).toHaveLength(2);
     });
     it('keeps Date values intact', () => {
         const timestamp = new Date('2026-11-01T00:00:00Z');
