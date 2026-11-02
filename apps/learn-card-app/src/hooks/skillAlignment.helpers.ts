@@ -1,3 +1,4 @@
+import type { BoostCMSAlignment } from '../components/boost/boost';
 import { getFrameworkIdAndSkillIdFromUrl } from '../components/boost/alignmentHelpers';
 
 export type SkillAlignment = {
@@ -83,4 +84,65 @@ export const countSkillsForFrameworks = (
     });
 
     return skills.size;
+};
+
+export type HubSkillAlignment<TCredential> = BoostCMSAlignment & {
+    targetUrl: string;
+    credentials: TCredential[];
+    count: number;
+    frameworkId: string;
+    skillId: string;
+    issuanceDate: string;
+};
+
+/**
+ * Skills hub aggregation, keyed by alignment URL. Alignments without a `targetUrl`
+ * (e.g. bare OB3 `{ targetName, frameworkId }`) cannot be resolved to a hub skill
+ * node, so they are skipped instead of being parsed.
+ */
+export const aggregateHubSkillAlignments = <TCredential>(
+    credentials: readonly TCredential[] | undefined,
+    frameworkIds: readonly string[]
+): HubSkillAlignment<TCredential>[] => {
+    const alignmentMap = new Map<string, HubSkillAlignment<TCredential>>();
+
+    credentials?.forEach(credential => {
+        const issuanceDate = getCredentialSkillIssuanceDate(credential);
+
+        getCredentialAchievementAlignments(credential).forEach(alignment => {
+            const { targetUrl } = alignment;
+            if (!targetUrl) return;
+
+            const existing = alignmentMap.get(targetUrl);
+            if (existing) {
+                existing.credentials.push(credential);
+                existing.count++;
+                // Keep the most recent issuanceDate
+                if (
+                    issuanceDate &&
+                    (!existing.issuanceDate || issuanceDate > existing.issuanceDate)
+                ) {
+                    existing.issuanceDate = issuanceDate;
+                }
+                return;
+            }
+
+            const parsed = getFrameworkIdAndSkillIdFromUrl(targetUrl);
+            alignmentMap.set(targetUrl, {
+                ...alignment,
+                type: 'Alignment',
+                targetName: alignment.targetName ?? '',
+                targetUrl,
+                credentials: [credential],
+                issuanceDate,
+                count: 1,
+                frameworkId: parsed.frameworkId ?? '',
+                skillId: parsed.skillId ?? '',
+            });
+        });
+    });
+
+    return Array.from(alignmentMap.values()).filter(alignment =>
+        frameworkIds.includes(alignment.frameworkId)
+    );
 };
