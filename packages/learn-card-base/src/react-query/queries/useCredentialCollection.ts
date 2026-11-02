@@ -95,7 +95,7 @@ export const useCredentialCollection = (
     const contentError = resolutions.find(result => result.isError)?.error;
     const resolving = resolutions.some(result => !result.data && !result.isError);
     const fetchingContents = resolutions.some(result => result.isFetching);
-    const names = Object.fromEntries(
+    const names: Record<string, string[]> = Object.fromEntries(
         legacy.map((record, index) => {
             const credential = resolutions[index]?.data;
             const achievementName = credential
@@ -115,11 +115,12 @@ export const useCredentialCollection = (
         })
     );
     const matches = needle
-        ? records.filter(record =>
-              (record.title ? [record.title] : (names[record.uri] ?? [])).some(name =>
-                  name.toLowerCase().includes(needle)
-              )
-          )
+        ? records.filter(record => {
+              const indexedTitle = record.title?.trim();
+              return indexedTitle
+                  ? indexedTitle.toLowerCase().includes(needle)
+                  : (names[record.uri]?.some(name => name.toLowerCase().includes(needle)) ?? false);
+          })
         : visibleRecords;
     const complete = Boolean(
         reader && data?.pages.length && !hasNextPage && !isFetching && !isError

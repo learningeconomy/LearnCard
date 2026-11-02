@@ -194,8 +194,8 @@ describe('progressive credential collection', () => {
         expect(getPage).toHaveBeenCalledTimes(4);
         expect(read).not.toHaveBeenCalled();
     });
-    it('searches wrapped Boost names alongside the inner achievement fallback', async () => {
-        const { read } = makeWallet([{ ...record(1), title: undefined }]);
+    it('searches wrapped Boost names and achievements when the indexed title is blank', async () => {
+        const { read } = makeWallet([record(1, '   ')]);
         const wrappedCredential = {
             name: 'Outer Goody credential',
             type: ['VerifiableCredential', 'CertifiedBoostCredential'],
