@@ -38,13 +38,139 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    verification:
+    # Independent runners: no shared build outputs, databases or sessions.
+    source-checks:
+        name: Unit and static checks
         if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
-        # Never run PR code on a privileged/self-hosted runner or via pull_request_target.
+        # PR code runs only on an ephemeral GitHub-hosted runner.
+        runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        steps:
+            - name: Initialize private evidence paths
+              run: |
+                  umask 077
+                  mkdir -p "$RUNNER_TEMP/lc-verification/private" "$RUNNER_TEMP/lc-verification-summary"
+                  {
+                    echo "STACK_DIR=$RUNNER_TEMP/lc-verification/stack"
+                    echo "PRIVATE_LOG_DIR=$RUNNER_TEMP/lc-verification/private"
+                    echo "SUMMARY_DIR=$RUNNER_TEMP/lc-verification-summary"
+                  } >> "$GITHUB_ENV"
+
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
+
+            - name: Build and test message schemas
+              working-directory: packages/learn-card-types
+              run: |
+                  bun run build
+                  bun run test -- src/inAppMessagePresentations.test.ts src/inAppMessagePath.test.ts src/inAppMessages.test.ts
+
+            - name: Test shared messages and modal ownership
+              working-directory: packages/learn-card-base
+              run: bun run test -- src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
+
+            - name: Test message authoring and analytics
+              working-directory: apps/learn-card-app
+              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx src/pages/launchPad/buildEmbedUrlWithPath.test.ts src/pages/launchPad/AppListingPage.navigation.test.tsx src/components/app-url-listener/AppUrlListener.test.tsx
+
+            - name: Typecheck hosted iframe example test
+              run: bunx tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom packages/learn-card-base/src/in-app-messages/__tests__/iframeExample.test.ts
+
+            - name: Lint and format message sources
+              shell: bash
+              run: |
+                  mapfile -t message_files < <(git ls-files -- \
+                    'packages/learn-card-base/src/in-app-messages/*' \
+                    'packages/learn-card-types/src/inAppMessage*.ts' \
+                    'apps/learn-card-app/src/components/debug/*nAppMessage*.ts*')
+                  bun scripts/lint-workspace.ts --files "${message_files[@]}"
+                  bunx prettier --check "${message_files[@]}"
+                  node scripts/check-safe-area.mjs
+
+            - name: Check catalog documentation contract
+              run: bun scripts/check-verification-map.ts
+
+            - name: Prepare clean checkout
+              run: |
+                  mkdir -p "$PRIVATE_LOG_DIR"
+                  bun run --cwd apps/learn-card-app lc verify prepare --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/prepare.log" 2>&1
+
+            - name: Build service declaration prerequisites
+              run: bunx nx run-many -t build --projects=network-brain-service,learn-cloud-service,lca-api-service --parallel=1 --skip-nx-cache > "$PRIVATE_LOG_DIR/declarations.log" 2>&1
+
+            - name: Typecheck verification source
+              run: bunx tsc -p apps/learn-card-app/scripts/verification/tsconfig.json > "$PRIVATE_LOG_DIR/typecheck.log" 2>&1
+
+            - name: Check lifecycle, resolver and persistence boundaries
+              run: |
+                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/command-timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
+                  bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
+
+            - name: Check sanitized timing summaries
+              run: |
+                  node --test scripts/summarize-verification.test.mjs
+                  python3 -B -m unittest discover -s scripts -p test_profile_verification_traces.py
+
+    production-bundle:
+        name: Production SQLite browser bundle
+        if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
+        # PR code runs only on an ephemeral GitHub-hosted runner.
+        runs-on: ubuntu-24.04
+        timeout-minutes: 60
+        steps:
+            - name: Initialize private evidence paths
+              run: |
+                  umask 077
+                  mkdir -p "$RUNNER_TEMP/lc-verification/private" "$RUNNER_TEMP/lc-verification-summary"
+                  {
+                    echo "STACK_DIR=$RUNNER_TEMP/lc-verification/stack"
+                    echo "PRIVATE_LOG_DIR=$RUNNER_TEMP/lc-verification/private"
+                    echo "SUMMARY_DIR=$RUNNER_TEMP/lc-verification-summary"
+                  } >> "$GITHUB_ENV"
+
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
+
+            - name: Install Chromium and Linux libraries
+              run: bunx playwright install --with-deps chromium
+
+            - name: Verify production SQLite browser bundle
+              run: |
+                  node --test scripts/verify-web-sqlite-build.test.mjs
+                  node scripts/verify-web-sqlite-build.mjs --output "$PRIVATE_LOG_DIR/sqlite-web-build" > "$PRIVATE_LOG_DIR/sqlite-web-build.log" 2>&1
+
+    runtime:
+        name: Owned-stack runtime
+        if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
+        # PR code runs only on an ephemeral GitHub-hosted runner.
         runs-on: ubuntu-24.04
         timeout-minutes: 60
         env:
-            LC_VERIFY_TRUST_LOCAL_DOCKER: '1' # Trust the ephemeral GitHub-hosted VM's default daemon.
+            LC_VERIFY_TRUST_LOCAL_DOCKER: '1' # Trust this ephemeral VM's default daemon.
         steps:
             - name: Initialize private evidence paths
               run: |
@@ -106,42 +232,6 @@ jobs:
             - name: Install Chromium and Linux libraries
               run: bunx playwright install --with-deps chromium
 
-            - name: Verify production SQLite browser bundle
-              run: |
-                  node --test scripts/verify-web-sqlite-build.test.mjs
-                  node scripts/verify-web-sqlite-build.mjs --output "$PRIVATE_LOG_DIR/sqlite-web-build" > "$PRIVATE_LOG_DIR/sqlite-web-build.log" 2>&1
-
-            - name: Build and test message schemas
-              working-directory: packages/learn-card-types
-              run: |
-                  bun run build
-                  bun run test -- src/inAppMessagePresentations.test.ts src/inAppMessagePath.test.ts src/inAppMessages.test.ts
-
-            - name: Test shared messages and modal ownership
-              working-directory: packages/learn-card-base
-              run: bun run test -- src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
-
-            - name: Test message authoring and analytics
-              working-directory: apps/learn-card-app
-              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx src/pages/launchPad/buildEmbedUrlWithPath.test.ts src/pages/launchPad/AppListingPage.navigation.test.tsx src/components/app-url-listener/AppUrlListener.test.tsx
-
-            - name: Typecheck hosted iframe example test
-              run: bunx tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom packages/learn-card-base/src/in-app-messages/__tests__/iframeExample.test.ts
-
-            - name: Lint and format message sources
-              shell: bash
-              run: |
-                  mapfile -t message_files < <(git ls-files -- \
-                    'packages/learn-card-base/src/in-app-messages/*' \
-                    'packages/learn-card-types/src/inAppMessage*.ts' \
-                    'apps/learn-card-app/src/components/debug/*nAppMessage*.ts*')
-                  bun scripts/lint-workspace.ts --files "${message_files[@]}"
-                  bunx prettier --check "${message_files[@]}"
-                  node scripts/check-safe-area.mjs
-
-            - name: Check catalog documentation contract
-              run: bun scripts/check-verification-map.ts
-
             - name: Prepare clean checkout
               run: |
                   mkdir -p "$PRIVATE_LOG_DIR"
@@ -149,22 +239,6 @@ jobs:
 
             - name: Check local prerequisites
               run: bun run --cwd apps/learn-card-app lc verify doctor --preflight > "$PRIVATE_LOG_DIR/preflight.log" 2>&1
-
-            - name: Build service declaration prerequisites
-              run: bunx nx run-many -t build --projects=network-brain-service,learn-cloud-service,lca-api-service --parallel=1 --skip-nx-cache > "$PRIVATE_LOG_DIR/declarations.log" 2>&1
-
-            - name: Typecheck verification source
-              run: bunx tsc -p apps/learn-card-app/scripts/verification/tsconfig.json > "$PRIVATE_LOG_DIR/typecheck.log" 2>&1
-
-            - name: Check lifecycle, resolver and persistence boundaries
-              run: |
-                  bun --conditions=development test apps/learn-card-app/scripts/verification/process.test.ts apps/learn-card-app/scripts/verification/learncard-cli.test.ts apps/learn-card-app/scripts/verification/cli-verify-fetch.test.ts apps/learn-card-app/scripts/verification/crash.test.ts apps/learn-card-app/scripts/verification/branding.test.ts apps/learn-card-app/scripts/verification/docker-build.test.ts apps/learn-card-app/scripts/verification/timings.test.ts apps/learn-card-app/scripts/verification/command-timings.test.ts apps/learn-card-app/scripts/verification/startup-timings.test.ts > "$PRIVATE_LOG_DIR/boundaries.log" 2>&1
-                  bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
-
-            - name: Check sanitized timing summaries
-              run: |
-                  node --test scripts/summarize-verification.test.mjs
-                  python3 -B -m unittest discover -s scripts -p test_profile_verification_traces.py
 
             - name: Start owned stack and bootstrap sessions
               id: stack
@@ -263,3 +337,22 @@ jobs:
                       ${{ env.SUMMARY_DIR }}/browser-profile.md
                   if-no-files-found: error
                   retention-days: 14
+
+    # Keep the existing check name; every enabled branch must succeed.
+    verification:
+        needs: [source-checks, production-bundle, runtime]
+        if: ${{ always() && (github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft) }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 5
+        steps:
+            - name: Require all verification jobs
+              env:
+                  SOURCE_RESULT: ${{ needs.source-checks.result }}
+                  BUNDLE_RESULT: ${{ needs.production-bundle.result }}
+                  RUNTIME_RESULT: ${{ needs.runtime.result }}
+              run: |
+                  echo "Verification results: source=$SOURCE_RESULT bundle=$BUNDLE_RESULT runtime=$RUNTIME_RESULT"
+                  if [[ "$SOURCE_RESULT" != 'success' || "$BUNDLE_RESULT" != 'success' || "$RUNTIME_RESULT" != 'success' ]]; then
+                    echo 'Every verification job must succeed; failed, cancelled or skipped jobs cannot pass.' >&2
+                    exit 1
+                  fi
