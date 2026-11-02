@@ -4691,6 +4691,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "View",
         "contract": "your contract",
         "loadErr": "Unable to load activity",
         "updates": "Updates",

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import type { MyCampaign } from '@learncard/types';
@@ -10,6 +10,7 @@ import { networkStore } from '../stores/NetworkStore';
 import { useIsCurrentUserLCNUser } from '../react-query/queries/queries';
 import { getLogger } from '../logging/logger';
 import { EMPTY_CAMPAIGNS, isCampaignInWindow } from './campaignMessages';
+import { useInAppMessageRequest } from './deepLinkRequestStore';
 import type { InAppMessagePresentationEvent } from './presentationTypes';
 
 const log = getLogger('campaigns');
@@ -73,6 +74,19 @@ export const useMyCampaigns = (): CampaignMessageSource => {
         },
     });
     const { refetch } = query;
+    const request = useInAppMessageRequest();
+    const lookupKey = request && scope ? `${scope}:${request.token}` : null;
+    const [resolvedLookup, setResolvedLookup] = useState<string | null>(null);
+    useEffect(() => {
+        if (!lookupKey) return;
+        let canceled = false;
+        void refetch().finally(() => {
+            if (!canceled) setResolvedLookup(lookupKey);
+        });
+        return () => {
+            canceled = true;
+        };
+    }, [lookupKey, refetch]);
     useEffect(() => {
         if (!enabled || !Capacitor.isNativePlatform()) return;
         let disposed = false;
@@ -169,7 +183,9 @@ export const useMyCampaigns = (): CampaignMessageSource => {
         [byId, enroll, getWallet, scope]
     );
 
-    const ready = !profileLoading && (!enabled || query.isFetched);
+    const ready =
+        !profileLoading &&
+        (!enabled || (query.isFetched && (!lookupKey || resolvedLookup === lookupKey)));
     return useMemo(
         () => ({ campaigns, accountDid, ready, enroll, record }),
         [campaigns, accountDid, ready, enroll, record]
