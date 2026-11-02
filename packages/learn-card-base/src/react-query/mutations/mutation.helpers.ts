@@ -142,8 +142,8 @@ export const insertItem = <GenericObject extends Record<string, any>>(
             string | undefined
         >
     >(queryKey, old => {
-        // perhaps this case where no existing data could be better handled
-        if (!old) {
+        // No usable list yet (missing, empty, or a malformed persisted entry): start a fresh one.
+        if (!Array.isArray(old?.pages) || !old.pages[0] || !Array.isArray(old.pageParams)) {
             return { pageParams: [undefined], pages: [{ records: [newItem], hasMore: false }] };
         }
 

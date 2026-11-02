@@ -1,7 +1,7 @@
 /*mutations related to boosts */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
-import { useWallet, insertItem } from 'learn-card-base';
+import { useWallet, insertItem, switchedProfileStore } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
 import { VC, Boost, CredentialRecord, VP, VCValidator } from '@learncard/types';
 
@@ -59,14 +59,18 @@ export const useAddCredentialToWallet = () => {
         },
         onSuccess: async (data: useAddCredentialToWalletReturn) => {
             const { category, vc, uri, id } = data;
+            // Match the keys useGetCredentialList / useGetCredentialCount actually use.
+            const didWeb = switchedProfileStore.get.switchedDid() ?? '';
 
-            await queryClient.cancelQueries({ queryKey: ['useGetCredentialList', category] });
+            await queryClient.cancelQueries({
+                queryKey: ['useGetCredentialList', didWeb, category],
+            });
             await queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialCount', category, true],
+                queryKey: ['useGetCredentialCount', didWeb, category],
             });
 
             // Update cache
-            await insertItem(queryClient, ['useGetCredentialList', category], {
+            await insertItem(queryClient, ['useGetCredentialList', didWeb, category], {
                 id,
                 category,
                 uri,
@@ -74,8 +78,8 @@ export const useAddCredentialToWallet = () => {
 
             // Intentionally don't await these to keep this mutation fast!
             queryClient.refetchQueries({ queryKey: ['useGetCredentials', category] });
-            queryClient.refetchQueries({ queryKey: ['useGetCredentialCount', category] });
-            queryClient.refetchQueries({ queryKey: ['useGetCredentialList', category] });
+            queryClient.refetchQueries({ queryKey: ['useGetCredentialCount', didWeb, category] });
+            queryClient.refetchQueries({ queryKey: ['useGetCredentialList', didWeb, category] });
 
             await queryClient.cancelQueries({ queryKey: ['useGetIDs'] });
             await queryClient.invalidateQueries({ queryKey: ['useGetIDs'] });
