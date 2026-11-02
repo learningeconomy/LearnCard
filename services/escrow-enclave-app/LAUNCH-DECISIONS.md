@@ -18,7 +18,7 @@ in the same PR.
 | ID  | Decision                                     | Blocks                                  | Owner (placeholder)       | Decision                           |
 | --- | -------------------------------------------- | --------------------------------------- | ------------------------- | ---------------------------------- |
 | D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | Jackson Smith             | Accepted (A), stage 1              |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver; 50% stage      | Jackson Smith             | Accepted (A), up to 100%           |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)    | Jackson Smith             | Accepted (A), up to 100%           |
 | RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | Jackson Smith             | Accepted (A), stage 1              |
 | CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_          | _pending_                          |
 | P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith             | Accepted (C)                       |
@@ -93,7 +93,8 @@ detect a coherent loss of all historical rows.
 - Gate wording: [ROLLOUT.md:8-10](ROLLOUT.md), [ROLLOUT.md:89-90](ROLLOUT.md), [ROLLOUT.md:135-139](ROLLOUT.md); [AUTHORITY-ARCHIVER.md:3](AUTHORITY-ARCHIVER.md); [PRODUCTION.md:12](PRODUCTION.md); [AUDIT-COVERAGE.md:94](AUDIT-COVERAGE.md)
 
 ROLLOUT.md says this is **not a launch blocker unless security rejects it**. The
-archiver remains a hard gate before stage 4 (50%).
+original decision kept the archiver as a hard gate before stage 4 (50%); the
+2026-10-31 amendment below removes that gate.
 
 **Options.**
 
@@ -130,6 +131,12 @@ could instead rewrite the KMS key policy (a worse outcome). The archiver adds
 after-the-fact detection against a narrower attacker (table write without full
 admin), not prevention, so it does not justify gating launch. Context: SSS and escrow
 launch together at 100% (decision 2026-10-31), so a percentage cap would block launch.
+
+This amendment clears only the RAR gate. The rationale relies on D10, and D10 and RT
+are still accepted for stage 1 only, each with a revisit before stage 2. Launching
+at 100% also needs D10 and RT amended (or re-accepted) for full exposure; RT's
+depends on the measured request counts and forecast. Until then this is not the
+last gate before the switch.
 
 Conditions (verified 2026-10-31 unless noted):
 
