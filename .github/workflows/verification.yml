@@ -117,11 +117,11 @@ jobs:
 
             - name: Test shared messages and modal ownership
               working-directory: packages/learn-card-base
-              run: bun run test -- src/in-app-messages src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
+              run: bun run test -- src/in-app-messages src/helpers/pushNotificationHelpers.test.ts src/hooks/useWallet.inbox.test.ts src/helpers/__tests__/indexedDBHelpers.test.ts src/components/modals/ModalsContext.test.tsx src/components/modals/surfaces/AppModal.test.tsx
 
             - name: Test message authoring and analytics
               working-directory: apps/learn-card-app
-              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx src/pages/launchPad/buildEmbedUrlWithPath.test.ts src/pages/launchPad/AppListingPage.navigation.test.tsx src/components/app-url-listener/AppUrlListener.test.tsx
+              run: bun run test -- src/components/debug/inAppMessageBuilderState.test.ts src/components/debug/InAppMessageRichFields.test.tsx src/components/debug/inAppMessageDryRun.test.ts src/analytics/InAppMessagesAnalyticsHost.test.tsx src/components/notifications/notificationsV2/NotificationAnnouncementCard.test.tsx src/components/notification-toast-listener/NotificationToastListener.test.tsx src/pages/launchPad/buildEmbedUrlWithPath.test.ts src/pages/launchPad/AppListingPage.navigation.test.tsx src/components/app-url-listener/AppUrlListener.test.tsx
 
             - name: Typecheck hosted iframe example test
               run: bunx tsc --noEmit --strict --skipLibCheck --module esnext --moduleResolution bundler --target es2022 --lib es2022,dom packages/learn-card-base/src/in-app-messages/__tests__/iframeExample.test.ts
