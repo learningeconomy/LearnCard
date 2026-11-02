@@ -11,6 +11,9 @@ import {
     requiredEnvironmentString,
 } from '@learncard/helpers';
 
+const DEFAULT_CLASSLINK_DISCOVERY_URL =
+    'https://launchpad.classlink.com/.well-known/openid-configuration';
+
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LAMBDA_STAGE: optionalEnvironmentString,
@@ -47,6 +50,18 @@ export const lcaApiEnvironmentShape = {
         .pipe(z.number().int().min(1_000).max(25_000)),
     METABASE_SECRET_KEY: optionalEnvironmentString,
     SCOUTS_SSO_CLIENT_SECRET: optionalEnvironmentString,
+    CLASSLINK_CLIENT_ID: optionalEnvironmentString,
+    CLASSLINK_CLIENT_SECRET: optionalEnvironmentString,
+    CLASSLINK_DISCOVERY_URL: optionalEnvironmentString.transform(
+        value => value ?? DEFAULT_CLASSLINK_DISCOVERY_URL
+    ),
+    CLASSLINK_REDIRECT_URIS: optionalEnvironmentString,
+    CLASSLINK_TENANTS: optionalEnvironmentString,
+    CLASSLINK_MAX_AUTH_AGE_SECONDS: optionalEnvironmentString
+        .transform(value => (value === undefined ? 86_400 : Number(value)))
+        .pipe(z.number().int().positive()),
+    TRANSCRIPT_ISSUER_ENDPOINT: optionalEnvironmentString,
+    TRANSCRIPT_ISSUER_AUDIENCE: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_AUDIENCES: optionalEnvironmentString,
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,

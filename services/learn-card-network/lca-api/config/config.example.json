@@ -1,5 +1,10 @@
 {
     "APPLE_OAUTH_CLIENT_IDS": "com.example.app,app.example.www",
+    "CLASSLINK_CLIENT_ID": "example-client-id",
+    "CLASSLINK_DISCOVERY_URL": "https://launchpad.classlink.com/.well-known/openid-configuration",
+    "CLASSLINK_MAX_AUTH_AGE_SECONDS": "86400",
+    "CLASSLINK_REDIRECT_URIS": "https://app.example.com/auth/classlink/callback",
+    "CLASSLINK_TENANTS": "{\"tenant-test\":{\"displayName\":\"Example District\",\"state\":\"XX\",\"stateStudentIdField\":\"studentId\",\"allowedEmailDomains\":[\"example.edu\"],\"transcriptEnabled\":false}}",
     "DOMAIN_NAME": "api.example.com",
     "ESCROW_ENCLAVE_ACTIVE_KEY_ID": "example-2026-01",
     "ESCROW_HOLD_DURATION_MS": "604800000",

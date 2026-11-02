@@ -7,3 +7,5 @@ export * from './Preferences';
 export * from './UserKey';
 export * from './EscrowHold';
 export * from './AuthSubject';
+export * from './ClassLinkIdentity';
+export * from './TranscriptRequest';
