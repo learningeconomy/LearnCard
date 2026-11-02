@@ -46,6 +46,8 @@ constructs:
         worker:
             handler: lambda.notificationsWorker
             timeout: 30
+            # Graph/cache bookkeeping requires the VPC. All webhook HTTP delivery
+            # must retain the connection-time public-address and no-redirect guard.
             vpc:
                 securityGroupIds:
                     - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]

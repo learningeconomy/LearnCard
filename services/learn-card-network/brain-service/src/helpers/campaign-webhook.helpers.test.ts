@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Campaign, LCNNotification } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +12,10 @@ const mocks = vi.hoisted(() => ({
         DOMAIN_NAME: 'brain.example',
         NOTIFICATIONS_SERVICE_WEBHOOK_URL: 'https://inbox.example/notifications',
     },
+}));
+
+vi.mock('./notification-webhook-fetch.helpers', () => ({
+    fetchNotificationWebhook: (...args: unknown[]) => mocks.fetch(...args),
 }));
 
 vi.mock('@environment', () => ({
@@ -61,11 +65,10 @@ const recipient = {
 
 beforeEach(() => {
     vi.resetAllMocks();
-    vi.stubGlobal('fetch', mocks.fetch);
+    mocks.environment.NOTIFICATIONS_SERVICE_WEBHOOK_URL = 'https://inbox.example/notifications';
     mocks.getCampaign.mockResolvedValue(campaign);
     mocks.recipient.mockResolvedValue(recipient);
 });
-afterEach(() => vi.unstubAllGlobals());
 
 describe('campaign custom webhook storage contract', () => {
     it.each([
@@ -83,7 +86,8 @@ describe('campaign custom webhook storage contract', () => {
 
         expect(mocks.fetch).toHaveBeenCalledWith(
             recipient.notificationsWebhook,
-            expect.objectContaining({ method: 'POST' })
+            expect.objectContaining({ method: 'POST' }),
+            false
         );
         expect(mocks.acknowledge).toHaveBeenCalledOnce();
         expect(mocks.acknowledge).toHaveBeenCalledWith(
