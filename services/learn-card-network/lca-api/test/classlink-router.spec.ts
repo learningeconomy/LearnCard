@@ -32,7 +32,7 @@ vi.mock('../src/firebase', () => ({ default: { auth: firebase.auth } }));
 vi.mock('@routes', async () => {
     const { initTRPC } = await import('@trpc/server');
     const t = initTRPC.create();
-    return { t, openRoute: t.procedure };
+    return { t, openRoute: t.procedure, didAndChallengeRoute: t.procedure };
 });
 vi.mock('../src/helpers/classlink.config', () => ({ getClassLinkConfig: vi.fn() }));
 vi.mock('../src/helpers/classlink.helpers', async importOriginal => ({

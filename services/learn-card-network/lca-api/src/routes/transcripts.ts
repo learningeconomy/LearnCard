@@ -13,6 +13,8 @@ import {
     updateTranscriptRequest,
     type MongoTranscriptRequestType,
 } from '../models/TranscriptRequest';
+import { createMinorPreferencesIfAbsent } from '../models/Preferences';
+import { getPreferencesForDid } from '@accesslayer/preferences/read';
 
 const FAILURE = "We couldn't reach your school records right now. Please try again later.";
 const DEDUPE_SECONDS = 600;
@@ -56,6 +58,8 @@ export const transcriptsRouter = t.router({
         .query(async ({ ctx }) => {
             try {
                 const context = await resolveClassLinkContext(ctx.user.did);
+                if (context.identity.isMinorHint && !(await getPreferencesForDid(ctx.user.did)))
+                    await createMinorPreferencesIfAbsent(ctx.user.did);
                 const reason = eligibility(context);
                 const latest = await findLatestTranscriptRequest(
                     context.firebaseUid,

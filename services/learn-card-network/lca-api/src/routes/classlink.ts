@@ -24,7 +24,7 @@ import { createHash } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { environment } from '@environment';
-import { openRoute, t } from '@routes';
+import { didAndChallengeRoute, openRoute, t } from '@routes';
 import app from '../firebase';
 import { getClassLinkConfig } from '@helpers/classlink.config';
 import {
@@ -47,9 +47,13 @@ import {
 } from '../models/AuthSubject';
 import {
     findClassLinkIdentityByIdentityKey,
+    deleteClassLinkIdentitiesByFirebaseUid,
     upsertClassLinkIdentity,
 } from '../models/ClassLinkIdentity';
+import { deleteTranscriptRequestsByFirebaseUid } from '../models/TranscriptRequest';
+import { findUserKeyByDid } from '../models/UserKey';
 import type { ClassLinkConfig } from '../types/classlink';
+import { personalEmailProcedures } from './classlinkPersonalEmail';
 
 const requireConfig = (redirectUri: string): ClassLinkConfig => {
     const config = getClassLinkConfig();
@@ -81,6 +85,7 @@ const redirectUri = z.string().min(1).max(2048);
 const nonce = z.string().min(1).max(512);
 
 export const classlinkRouter = t.router({
+    ...personalEmailProcedures,
     getAuthorizeUrl: openRoute
         .input(
             z
@@ -243,5 +248,20 @@ export const classlinkRouter = t.router({
                     message: 'School sign-in could not be completed. Please try again.',
                 });
             }
+        }),
+    deleteMyData: didAndChallengeRoute
+        .input(z.object({}).strict().optional())
+        .output(z.object({ deleted: z.number().int().nonnegative() }))
+        .mutation(async ({ ctx }) => {
+            const userKey = await findUserKeyByDid(ctx.user.did);
+            if (!userKey) return { deleted: 0 };
+
+            let deleted = 0;
+            for (const provider of userKey.authProviders) {
+                if (provider.type !== 'firebase') continue;
+                deleted += await deleteClassLinkIdentitiesByFirebaseUid(provider.id);
+                deleted += await deleteTranscriptRequestsByFirebaseUid(provider.id);
+            }
+            return { deleted };
         }),
 });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 import mongodb from '@mongo';
 import { ThemeEnum } from '../types/preferences';
 
@@ -46,4 +47,21 @@ export const createPreferencesCollection = async () => {
             },
         },
     });
+};
+
+export const createMinorPreferencesIfAbsent = async (did: string): Promise<boolean> => {
+    const collection = mongodb.collection<MongoPreferencesType>(PREFERENCES_COLLECTION);
+    if (await collection.findOne({ did })) return false;
+    await collection.insertOne({
+        _id: randomUUID(),
+        did,
+        theme: ThemeEnum.Colorful,
+        aiEnabled: false,
+        analyticsEnabled: false,
+        bugReportsEnabled: false,
+        isMinor: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    });
+    return true;
 };
