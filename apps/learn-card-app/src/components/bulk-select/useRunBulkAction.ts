@@ -7,7 +7,10 @@ import {
     useToast,
 } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
-import { credentialSelectionStore } from '../../stores/credentialSelectionStore';
+import {
+    credentialSelectionStore,
+    getCredentialSelectionCount,
+} from '../../stores/credentialSelectionStore';
 
 export type BulkMutationAction = 'archive' | 'restore' | 'delete';
 
@@ -48,6 +51,7 @@ export const useRunBulkAction = () => {
                 credentialSelectionStore.set.deselectMany(
                     result.succeeded.map(record => record.uri)
                 );
+                if (getCredentialSelectionCount() === 0) credentialSelectionStore.set.exit();
                 presentToast(
                     result.failed.length
                         ? m['bulkSelection.actionFailed']()
