@@ -119,6 +119,33 @@ describe('campaign composer', () => {
             )
         );
     });
+    it('replaces the create URL after saving and reloads the same campaign without another create', async () => {
+        const api = apiMock();
+        const save = deferred<Campaign>();
+        api.campaignsCreate.mockReturnValue(save.promise);
+        const view = mount(api, '/admin/campaigns?create=1');
+        fireEvent.change(await screen.findByLabelText('Name'), {
+            target: { value: 'Test campaign' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+        expect(view.history.location.search).toBe('?create=1');
+        await act(async () => save.resolve(campaign()));
+        // This history rejects navigation while Prompt is active, catching a save/blocker race.
+        await waitFor(() =>
+            expect(view.history.location.pathname).toBe('/admin/campaigns/test-campaign')
+        );
+        expect(view.history.action).toBe('REPLACE');
+        expect(view.history.location.search).toBe('');
+        const savedUrl = view.history.location.pathname;
+        view.unmount();
+        api.campaignsGet.mockClear();
+        mount(api, savedUrl);
+        expect(await screen.findByLabelText('Name')).toHaveValue('Test campaign');
+        expect(screen.getByLabelText('Campaign ID')).toHaveValue('test-campaign');
+        expect(screen.getByLabelText('Campaign ID')).toBeDisabled();
+        expect(api.campaignsGet).toHaveBeenCalledWith('test-campaign');
+        expect(api.campaignsCreate).toHaveBeenCalledTimes(1);
+    });
     it('filters through the server instead of only filtering loaded pages', async () => {
         const api = apiMock();
         mount(api, '/admin/campaigns');
@@ -263,7 +290,7 @@ describe('campaign composer', () => {
     });
     it('creates once, locks the saved ID, and never dispatches on go live', async () => {
         const api = apiMock();
-        mount(api, '/admin/campaigns?create=1');
+        const view = mount(api, '/admin/campaigns?create=1');
         await screen.findByLabelText('Name');
         fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Test campaign' } });
         fireEvent.change(screen.getByLabelText('Campaign ID'), {
@@ -273,8 +300,11 @@ describe('campaign composer', () => {
         fireEvent.click(save);
         fireEvent.click(save);
         await waitFor(() => expect(screen.getByLabelText('Campaign ID')).toBeDisabled());
+        await waitFor(() =>
+            expect(view.history.location.pathname).toBe('/admin/campaigns/test-campaign')
+        );
         expect(api.campaignsCreate).toHaveBeenCalledTimes(1);
-        fireEvent.click(screen.getByRole('button', { name: 'Go Live' }));
+        fireEvent.click(await screen.findByRole('button', { name: 'Go Live' }));
         fireEvent.click(screen.getByRole('button', { name: 'Confirm live' }));
         await waitFor(() =>
             expect(api.campaignsSetStatus).toHaveBeenCalledWith('test-campaign', 'live')

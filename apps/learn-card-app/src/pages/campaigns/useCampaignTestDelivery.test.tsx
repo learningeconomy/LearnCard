@@ -3,16 +3,21 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { Router } from 'react-router-dom';
 import { createMemoryHistory } from 'history';
-import { inAppMessageValidator, type MyCampaign } from '@learncard/types';
+import { inAppMessageValidator, type MyCampaign, type InAppMessage } from '@learncard/types';
 import { useCampaignTestDelivery } from './useCampaignTestDelivery';
 
 const state = vi.hoisted(() => ({
+    native: false,
     did: 'did:key:alice',
     uid: 'alice',
     profileReady: true,
     admin: vi.fn(),
     get: vi.fn(),
     record: vi.fn(),
+}));
+vi.mock('learn-card-base/in-app-messages/presentationSupport', () => ({
+    isInAppMessagePresentationSupported: (message: InAppMessage) =>
+        message.presentation !== 'iframe' || !state.native,
 }));
 vi.mock('learn-card-base', () => ({
     useAuthStatus: () => undefined,
@@ -63,6 +68,7 @@ const mount = (path = '/wallet') => {
     };
 };
 beforeEach(() => {
+    state.native = false;
     state.did = 'did:key:alice';
     state.uid = 'alice';
     state.profileReady = true;
@@ -131,4 +137,35 @@ it('waits for profile resolution before requesting admin tests', async () => {
     state.profileReady = true;
     view.rerender();
     await waitFor(() => expect(view.result.current?.message.title).toBe('Private test'));
+});
+
+it('skips unsupported native tests without consuming them or blocking later supported tests', async () => {
+    state.native = true;
+    const iframe = {
+        ...pending,
+        testId: 'bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb',
+        campaign: {
+            ...pending.campaign,
+            message: inAppMessageValidator.parse({
+                id: 'iframe-test',
+                title: 'Web only test',
+                presentation: 'iframe',
+                iframe: { url: 'https://campaign.example/test' },
+            }),
+        },
+    };
+    state.get.mockResolvedValue([iframe, pending]);
+    const native = mount();
+    await waitFor(() => expect(native.result.current?.message.title).toBe('Private test'));
+    act(() => native.result.current?.onShown());
+    expect(state.record).toHaveBeenCalledExactlyOnceWith('private-test', 'shown', testId);
+    act(() => native.result.current?.onClose());
+    expect(native.result.current).toBeUndefined();
+    native.unmount();
+
+    state.native = false;
+    state.get.mockResolvedValue([iframe]);
+    const web = mount();
+    await waitFor(() => expect(web.result.current?.message.title).toBe('Web only test'));
+    expect(state.record).toHaveBeenCalledTimes(1);
 });

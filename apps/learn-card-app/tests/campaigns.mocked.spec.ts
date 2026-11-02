@@ -218,6 +218,13 @@ test.describe('campaign composer @mocked', () => {
         await page.screenshot({ path: 'test-results/campaign-preview.png', fullPage: true });
         await page.getByRole('button', { name: 'Close local preview' }).click();
         await page.getByRole('button', { name: 'Save Draft' }).click();
+        await expect(page).toHaveURL(/\/admin\/campaigns\/[^/?]+$/);
+        const savedUrl = page.url();
+        await page.reload();
+        await expect(page.getByRole('heading', { name: 'Edit campaign', exact: true })).toBeVisible(
+            { timeout: 30_000 }
+        );
+        expect(page.url()).toBe(savedUrl);
         await expect(page.getByLabel('Campaign ID')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
         await page
@@ -602,7 +609,10 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Close private test' }).click();
         const readsBeforeReload = deliveriesRead;
         await page.reload();
-        await expect.poll(() => deliveriesRead).toBeGreaterThan(readsBeforeReload);
+        // A full reload rebuilds the wallet before the private test query can run.
+        await expect
+            .poll(() => deliveriesRead, { timeout: 30_000 })
+            .toBeGreaterThan(readsBeforeReload);
         await expect(
             page.getByRole('heading', { name: 'Private next-visit test', exact: true })
         ).toHaveCount(0);
@@ -723,6 +733,8 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     await page.getByRole('button', { name: 'Active', exact: true }).click();
     await expect(card).toBeVisible();
     await page.reload();
+    // Wait for the authenticated inbox to load before checking persisted state.
+    await expect(card).toBeVisible({ timeout: 60_000 });
     await expect(card.getByText('Read', { exact: true })).toBeVisible();
     expect(updates).toEqual([
         { read: true },

@@ -156,6 +156,35 @@ describe('message host impressions', () => {
         expect(testDelivery.onClose).toHaveBeenCalledOnce();
         expect(screen.queryByText('Private test')).toBeNull();
     });
+    it('lets supported tests and regular messages display while an unsupported native test stays pending', async () => {
+        state.native = true;
+        state.gate = true;
+        const unsupported = {
+            accountDid: 'alice',
+            message: inAppMessageValidator.parse({
+                id: 'web-test',
+                title: 'Web only',
+                presentation: 'iframe',
+                iframe: { url: 'https://campaign.example/test' },
+            }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const supported = {
+            ...unsupported,
+            message: inAppMessageValidator.parse({ id: 'native-test', title: 'Native test' }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const view = render(<InAppMessageHost testDelivery={supported} />);
+        fireEvent.click(await screen.findByText('Native test'));
+        expect(supported.onShown).toHaveBeenCalledOnce();
+        expect(supported.onClose).toHaveBeenCalledOnce();
+        view.rerender(<InAppMessageHost testDelivery={unsupported} />);
+        expect(await screen.findByText('Claim complete')).toBeTruthy();
+        expect(unsupported.onShown).not.toHaveBeenCalled();
+        expect(unsupported.onClose).not.toHaveBeenCalled();
+    });
     it('waits for the gate, bypasses targeting/trigger/seen/cap and localizes a requested message', async () => {
         const onEvent = vi.fn();
         const requested = inAppMessageValidator.parse({

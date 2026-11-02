@@ -6,6 +6,7 @@ import {
     hasNetworkProfile,
     type InAppMessageHostProps,
 } from 'learn-card-base';
+import { isInAppMessagePresentationSupported } from 'learn-card-base/in-app-messages/presentationSupport';
 import type { CampaignTest } from '@learncard/types';
 import { currentUserStore } from 'learn-card-base/stores/currentUserStore';
 import { switchedProfileStore, walletStore } from 'learn-card-base/stores/walletStore';
@@ -84,7 +85,10 @@ export const useCampaignTestDelivery = (): InAppMessageHostProps['testDelivery']
         };
     }, [key, accountDid, authoring]);
 
-    const test = !authoring && session?.key === key ? session?.tests[0] : undefined;
+    const test =
+        !authoring && session?.key === key
+            ? session?.tests.find(item => isInAppMessagePresentationSupported(item.message))
+            : undefined;
     if (!test || !session) return undefined;
     return {
         accountDid: session.accountDid,

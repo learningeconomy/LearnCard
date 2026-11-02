@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
-import type { ManagedTransaction } from 'neo4j-driver';
+import { int, type ManagedTransaction } from 'neo4j-driver';
 import type { Campaign, CampaignDispatchPreview } from '@learncard/types';
 import { neogma } from '@instance';
 import { traceDb } from '@tracing';
@@ -12,27 +12,47 @@ import {
     withCampaignTransaction,
 } from './shared';
 
+export const MAX_CONFIRMED_DISPATCH_RECIPIENTS = 10_000;
+
 /** Count the same eligible, not-yet-notified audience used at delivery time. */
 const readPreview = async (
     campaignId: string,
     transaction?: ManagedTransaction
 ): Promise<{ campaign: Campaign; preview: CampaignDispatchPreview }> => {
-    const params = { campaignId, ...campaignTimeParams() };
+    const params = {
+        campaignId,
+        ...campaignTimeParams(),
+        recipientLimit: int(MAX_CONFIRMED_DISPATCH_RECIPIENTS + 1),
+    };
     const query = `MATCH (c:Campaign {id: $campaignId})
         OPTIONAL MATCH (p:Profile)-[:IN_CAMPAIGN_AUDIENCE]->(c)
         OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
+        WITH c, count(DISTINCT p) AS audience,
+          count(DISTINCT CASE WHEN state.notifiedAt IS NOT NULL THEN p END) AS notified
+        CALL {
+          WITH c
+          MATCH (p:Profile)-[:IN_CAMPAIGN_AUDIENCE]->(c)
+          OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
+          WITH c, p, state WHERE ${campaignAgePredicate} AND state.notifiedAt IS NULL
+          WITH DISTINCT p.profileId AS profileId LIMIT $recipientLimit
+          RETURN collect(profileId) AS recipients
+        }
         RETURN c.definition AS definition, coalesce(c.lockVersion, 0) AS revision,
-          count(DISTINCT p) AS audience,
-          count(DISTINCT CASE WHEN state.notifiedAt IS NOT NULL THEN p END) AS notified,
-          collect(DISTINCT CASE WHEN p IS NOT NULL AND ${campaignAgePredicate}
-            AND state.notifiedAt IS NULL THEN p.profileId END) AS recipients`;
+          audience, notified, recipients`;
     const result = await traceDb('campaign:dispatchPreview', () =>
         transaction ? transaction.run(query, params) : neogma.queryRunner.run(query, params)
     );
     const row = result.records[0];
     if (!row) throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
     const campaign = parseCampaign(row.get('definition'));
-    const recipients = (row.get('recipients') as string[]).sort();
+    const recipients = row.get('recipients') as string[];
+    // Bound collection in Cypher before transferring or sorting IDs. Never authorize a partial set.
+    if (recipients.length > MAX_CONFIRMED_DISPATCH_RECIPIENTS)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Confirmed dispatch supports at most ${MAX_CONFIRMED_DISPATCH_RECIPIENTS} eligible recipients; reduce the audience and preview again`,
+        });
+    recipients.sort();
     let blockedReason: CampaignDispatchPreview['blockedReason'];
     if (!canDispatchCampaign(campaign, params.now)) {
         blockedReason =
