@@ -515,7 +515,11 @@ function buildElement(
         case 'announcement': {
             const d = data as AnnouncementData;
             return {
-                element: React.createElement(Announcement, { branding, ...d, locale }),
+                element: React.createElement(Announcement, {
+                    branding,
+                    ...d,
+                    ...(locale === undefined ? {} : { locale }),
+                }),
                 subject: getAnnouncementSubject(d),
             };
         }
