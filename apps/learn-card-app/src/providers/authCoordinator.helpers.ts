@@ -130,3 +130,14 @@ export const decidePinPromptAfterReady = ({
     }
     return { kind: 'none' };
 };
+
+/**
+ * Returns the escrow-recovery marker to keep after a ready render. The first
+ * published PIN status (enabled or not) is the one that decides the
+ * post-recovery prompt, so it consumes the marker; while the status is still
+ * unknown the marker is kept for the publish that follows.
+ */
+export const settleEscrowRecoveryMarker = (
+    recoveredVia: EscrowRecoveryKind | null,
+    pinEnabled: boolean | undefined
+): EscrowRecoveryKind | null => (pinEnabled === undefined ? recoveredVia : null);
