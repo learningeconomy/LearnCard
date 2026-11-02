@@ -31,12 +31,20 @@ export const sharingFeature: FeatureDefinition = {
                 .getByRole('dialog')
                 .getByRole('button', { name: 'Close', exact: true })
                 .click();
-            await expect(page.getByRole('button', { name: 'Copy Link', exact: true })).toBeHidden();
+            // Closing overlays become aria-hidden before their exit animation/unmount finishes.
+            // Include hidden nodes and require removal, not just accessibility-tree disappearance.
             await expect(
-                page.getByRole('img', { name: 'Share QR code', exact: true })
-            ).toBeHidden();
+                page.getByRole('button', { name: 'Copy Link', exact: true, includeHidden: true })
+            ).toHaveCount(0);
             await expect(
-                page.getByRole('link', { name: 'Post to LinkedIn', exact: true })
+                page.getByRole('img', { name: 'Share QR code', exact: true, includeHidden: true })
+            ).toHaveCount(0);
+            await expect(
+                page.getByRole('link', {
+                    name: 'Post to LinkedIn',
+                    exact: true,
+                    includeHidden: true,
+                })
             ).toHaveCount(0);
             await expect(
                 page.getByRole('dialog').getByRole('button', { name: 'More options', exact: true })
@@ -45,7 +53,7 @@ export const sharingFeature: FeatureDefinition = {
                 .getByRole('dialog')
                 .getByRole('button', { name: 'Close', exact: true })
                 .click();
-            await expect(page.getByRole('dialog')).toHaveCount(0);
+            await expect(page.getByRole('dialog', { includeHidden: true })).toHaveCount(0);
             await expect(page).toHaveURL(BADGES);
         };
         const publishPreview = async (credentialTitle: string): Promise<URL> => {
