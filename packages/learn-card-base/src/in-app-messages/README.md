@@ -670,7 +670,7 @@ the Linux browser catalog cannot establish native isolation.
 ### Engagement and QA
 
 The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`), `messageId`,
-`presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
+`presentation`, `source` (`flag`, `campaign`, `deepLink`, `override`), and optional zero-based `actionIndex`,
 `stepIndex`, `actionSource` (`step` or `message`), and `actionType`. An `actionIndex` indexes
 `steps[stepIndex].actions` when `actionSource` is `step`, otherwise `message.actions`.
 `deepLink` identifies `/m/` and `openMessage` requests. Bridge actions have no authored action index or action source.
