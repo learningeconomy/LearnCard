@@ -766,6 +766,7 @@ export const useManageSelfAssignedSkillsBoost = () => {
                 category,
                 title: SELF_ASSIGNED_SKILLS_BOOST_NAME,
                 boostUri: boostUri,
+                networkUri: sentCredentialUri,
             });
 
             return {

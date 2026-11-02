@@ -1,5 +1,15 @@
 version: 2
 updates:
+    # One root job follows package.json workspaces and updates the shared bun.lock.
+    - package-ecosystem: bun
+      directory: /
+      schedule:
+          interval: weekly
+      open-pull-requests-limit: 3
+      groups:
+          bun-patch-updates:
+              patterns: ['*']
+              update-types: ['patch']
     - package-ecosystem: docker
       directory: /infra/keycloak
       schedule:

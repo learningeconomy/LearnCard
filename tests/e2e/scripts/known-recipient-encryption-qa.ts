@@ -1,6 +1,6 @@
 /**
  * Local manual QA only: real HTTP/SDK calls, random accounts, no database resets.
- * Requires Bun 1.4.2 to install this checkout's version-3 lockfile.
+ * Requires Bun 1.4.4 to install this checkout's version-3 lockfile.
  */
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
@@ -40,7 +40,7 @@ const main = async (): Promise<void> => {
     const command = process.argv[2];
     if (!command || command === '--help') {
         console.log(`Local QA commands: ${commands.join(', ')}`);
-        console.log('Requires Bun 1.4.2. Install dependencies with bun install --frozen-lockfile.');
+        console.log('Requires Bun 1.4.4. Install dependencies with bun install --frozen-lockfile.');
         console.log(
             'Set LC2201_QA_DIR to an empty private directory first. Run setup, then each scenario.'
         );

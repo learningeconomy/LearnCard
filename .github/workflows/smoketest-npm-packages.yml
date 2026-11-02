@@ -174,7 +174,7 @@ jobs:
               if: matrix.package-manager == 'bun'
               uses: oven-sh/setup-bun@v2
               with:
-                  bun-version: 1.4.2
+                  bun-version: 1.4.4
 
             - name: Create clean test workspace (outside the monorepo)
               run: |

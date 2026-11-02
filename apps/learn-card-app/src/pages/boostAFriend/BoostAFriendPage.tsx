@@ -176,7 +176,7 @@ const BoostAFriendPage: React.FC = () => {
                 if (!result.credentialUri) {
                     throw new Error(m['boostAFriend.page.saveErr']());
                 }
-                await addVCtoWallet({ uri: result.credentialUri });
+                await addVCtoWallet({ uri: result.credentialUri, networkUri: result.networkUri });
             }
 
             if (result.claimLink) {

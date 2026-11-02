@@ -42,8 +42,8 @@ Avoid running individual package builds or tests directly, as that can lead to s
 For CI-only case retries, reporting, and cache input requirements, see
 [CI test retries](scripts/ci-test-retries/README.md).
 
-The shared local-service Docker image installs dependencies with Bun 1.4.2 to
-read lockfile v3, then runs services with Bun 1.3.14. Bun 1.4.2's runtime bypasses
+The shared local-service Docker image installs dependencies with Bun 1.4.4 to
+read lockfile v3, then runs services with Bun 1.3.14. Bun 1.4.x's runtime (observed on 1.4.2) bypasses
 the Compose `localhost:host-gateway` mapping used for cross-service DID document
 resolution and notification delivery. Do not run dependency installation with
 the older runtime. Hosted service and browser E2E runners verify Cloud's

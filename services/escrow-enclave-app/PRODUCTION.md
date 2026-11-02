@@ -6,11 +6,11 @@ two-person evidence for every trust change. Commands below are **operator-only**
 no AWS operation is performed by preparing these files. Run from the repository
 root unless stated otherwise; replace every `<PLACEHOLDER>` first.
 
-**Pre-50% gate: the authority Object Lock archiver/outbox is deferred, not a launch
-blocker.** It must be implemented, tested, independently monitored and
-security-approved before stage 4 (50%), or sooner if security rejects
-R-AUTHORITY-ROLLBACK. Earlier stages require explicit acceptance of that residual
-risk and verified CloudTrail data-write/governance alarms; the legacy ledger audit
+**The authority Object Lock archiver/outbox is post-launch hardening, not a launch
+or stage gate.** R-AUTHORITY-ROLLBACK is accepted for all stages
+(LAUNCH-DECISIONS.md RAR, amended 2026-10-31), conditional on authority PITR and
+verified CloudTrail data-write/governance alarms, drilled in production before the
+SSS/escrow switch; the legacy ledger audit
 bucket and authority sweep are not independent archived authority history. Close the live
 authority/email, Roughtime operations, seven-day soak and residual administrator
 risk gates in [SECURITY.md](./SECURITY.md) and [ROLLOUT.md](./ROLLOUT.md).
