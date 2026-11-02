@@ -53,7 +53,9 @@ export const sharingFeature: FeatureDefinition = {
                 .getByRole('dialog')
                 .getByRole('button', { name: 'Close', exact: true })
                 .click();
-            await expect(page.getByRole('dialog', { includeHidden: true })).toHaveCount(0);
+            // These overlays live in the shared modal portal. Legacy Ionic dialogs can stay
+            // mounted elsewhere while hidden, so a global hidden-dialog count is too broad.
+            await expect(page.locator('#modal-mid-root > [data-lc-surface]')).toHaveCount(0);
             await expect(page).toHaveURL(BADGES);
         };
         const publishPreview = async (credentialTitle: string): Promise<URL> => {
