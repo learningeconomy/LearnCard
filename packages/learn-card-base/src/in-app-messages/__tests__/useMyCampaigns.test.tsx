@@ -3,6 +3,7 @@ import React from 'react';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { inAppMessageValidator, type MyCampaign } from '@learncard/types';
+import { requestInAppMessage, clearInAppMessageRequest } from '../deepLinkRequestStore';
 import { useMyCampaigns } from '../useMyCampaigns';
 
 const state = vi.hoisted(() => ({
@@ -43,6 +44,7 @@ let client: QueryClient;
 let sequence = 0;
 beforeEach(() => {
     vi.clearAllMocks();
+    clearInAppMessageRequest();
     state.did = `alice-${++sequence}`;
     state.switchedDid = undefined;
     state.loggedIn = state.lcn = true;
@@ -196,4 +198,23 @@ it('cancels stale wallet resolution before sending an enrollment or engagement a
     expect(await pending).toBe(false);
     expect(state.enroll).not.toHaveBeenCalled();
     expect(result.current.campaigns).toEqual([]);
+});
+
+it('refreshes a fresh cache on every explicit entry before declaring an ID unknown', async () => {
+    state.fetch.mockResolvedValueOnce([]);
+    const { result } = renderHook(useMyCampaigns, { wrapper });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    let finish: (items: MyCampaign[]) => void = () => undefined;
+    state.fetch.mockImplementationOnce(
+        () =>
+            new Promise<MyCampaign[]>(resolve => {
+                finish = resolve;
+            })
+    );
+    act(() => requestInAppMessage('new-campaign'));
+    expect(result.current.ready).toBe(false);
+    await waitFor(() => expect(state.fetch).toHaveBeenCalledTimes(2));
+    await act(async () => finish([item('new-campaign')]));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.campaigns[0].campaign.id).toBe('new-campaign');
 });

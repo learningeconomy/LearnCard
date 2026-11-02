@@ -4996,6 +4996,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "عرض",
         "contract": "عقدك",
         "loadErr": "تعذر تحميل النشاط",
         "updates": "التحديثات",
