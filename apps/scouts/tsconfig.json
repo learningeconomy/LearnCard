@@ -1,6 +1,7 @@
 {
     "extends": "../../tsconfig.browser.json",
     "compilerOptions": {
+        "types": ["node", "vitest/globals", "testing-library__jest-dom"],
         "noFallthroughCasesInSwitch": true
     },
     "include": [

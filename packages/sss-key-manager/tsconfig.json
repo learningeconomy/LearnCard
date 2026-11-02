@@ -15,7 +15,6 @@
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "bundler",
-        "baseUrl": ".",
         "paths": {}
     },
     "include": ["src"],
