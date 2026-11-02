@@ -223,6 +223,23 @@ Receiver deduplication lasts while the inbox record exists; hard-deleting it bef
 unacknowledged retry can permit reinsertion. Production pilot QA must include this existing
 notification retention limitation.
 
+### Worker network access
+
+The shared notifications worker uses `PrivateSubnetA` because campaign eligibility and
+acknowledgement need private graph/cache access. This applies to all notification types.
+`serverless.yml` declares the outbound path as `PrivateSubnetA` → `PrivateRouteTable`
+→ `PrivateRoute` (`0.0.0.0/0`) → `NatGateway` in `PublicSubnetA` → `PublicRouteTable`
+→ `PublicRoute` → `InternetGateway` attached to the VPC. The NAT has an Elastic IP;
+`ServerlessSecurityGroup` uses AWS's default outbound allowance. A configuration
+regression test protects this complete path.
+
+This establishes the source configuration, not the deployed AWS state. Before rollout,
+verify the target stack's subnet/route associations, available NAT and internet gateway,
+and effective security-group/network-ACL egress, then exercise an operator-controlled
+external webhook from that worker using a disposable profile. Check both an ordinary
+notification and a campaign acknowledgement. Local and hosted CI do not prove live NAT
+connectivity; no deployment or live delivery is performed by these tests.
+
 ### Deployment and proof
 
 Deploy lca-api (enum plus campaign deduplication), then brain, then the separate app

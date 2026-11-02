@@ -1,7 +1,9 @@
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const require = createRequire(import.meta.url);
+const { load } = require('js-yaml');
 const functions: {
     provider: (input?: {
         options?: Record<string, unknown>;
@@ -31,6 +33,58 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('brain-service serverless provider environment', () => {
+    it('routes the shared notifications worker through NAT to the internet', () => {
+        const service = load(
+            readFileSync(new URL('../../serverless.yml', import.meta.url), 'utf8')
+        );
+        const resources = service.resources.Resources;
+        const properties = (name: string) => resources[name].Properties;
+
+        // All notifications use this worker, including third-party profile webhooks.
+        expect(service.constructs['notifications-queue'].worker.vpc).toEqual({
+            securityGroupIds: [{ 'Fn::GetAtt': ['ServerlessSecurityGroup', 'GroupId'] }],
+            subnetIds: [{ Ref: 'PrivateSubnetA' }],
+        });
+        expect(properties('SubnetRouteTableAssociationLambdaPrivateA')).toEqual({
+            SubnetId: { Ref: 'PrivateSubnetA' },
+            RouteTableId: { Ref: 'PrivateRouteTable' },
+        });
+        expect(properties('PrivateRoute')).toEqual({
+            RouteTableId: { Ref: 'PrivateRouteTable' },
+            DestinationCidrBlock: '0.0.0.0/0',
+            NatGatewayId: { Ref: 'NatGateway' },
+        });
+        expect(properties('NatGateway')).toEqual({
+            AllocationId: { 'Fn::GetAtt': ['IP', 'AllocationId'] },
+            SubnetId: { Ref: 'PublicSubnetA' },
+        });
+        expect(properties('IP').Domain).toBe('vpc');
+        expect(properties('SubnetRouteTableAssociationLambdaPublicA')).toEqual({
+            SubnetId: { Ref: 'PublicSubnetA' },
+            RouteTableId: { Ref: 'PublicRouteTable' },
+        });
+        expect(properties('PublicRoute')).toEqual({
+            RouteTableId: { Ref: 'PublicRouteTable' },
+            DestinationCidrBlock: '0.0.0.0/0',
+            GatewayId: { Ref: 'InternetGateway' },
+        });
+        expect(properties('VPCGatewayAttachment')).toEqual({
+            VpcId: { Ref: 'VPC' },
+            InternetGatewayId: { Ref: 'InternetGateway' },
+        });
+        for (const name of [
+            'PrivateSubnetA',
+            'PublicSubnetA',
+            'PrivateRouteTable',
+            'PublicRouteTable',
+            'ServerlessSecurityGroup',
+        ]) {
+            expect(properties(name).VpcId).toEqual({ Ref: 'VPC' });
+        }
+        // With no explicit egress rules, AWS supplies the default allow-all outbound rule.
+        expect(properties('ServerlessSecurityGroup')).not.toHaveProperty('SecurityGroupEgress');
+    });
+
     it('always emits Redis and queue infrastructure as unresolved references', () => {
         expect(functions.provider({ options: { stage: 'dev' } })).toMatchObject(INFRA_KEYS);
     });
