@@ -4,6 +4,7 @@ import type { Campaign, LCNNotification } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
     getCampaign: vi.fn(),
+    email: vi.fn(),
     pageAudience: vi.fn(),
     recipient: vi.fn(),
     acknowledge: vi.fn(),
@@ -14,12 +15,13 @@ const mocks = vi.hoisted(() => ({
         IS_OFFLINE: false,
         CAMPAIGN_QUEUE_URL: 'https://sqs.example/campaigns',
         CAMPAIGN_DISPATCH_PAGE_SIZE: 1000,
+        CAMPAIGN_EMAIL_PAGE_SIZE: 500,
         CAMPAIGN_DISPATCH_DELAY_SECONDS: 60,
     },
 }));
 vi.mock('@helpers/campaign-email.helpers', () => ({
     assertCampaignEmailConfigured: vi.fn(),
-    sendCampaignEmail: vi.fn(),
+    sendCampaignEmail: mocks.email,
 }));
 vi.mock('@accesslayer/campaign/preferences', () => ({
     getAnnouncementPreferences: async () => ({
@@ -243,5 +245,48 @@ describe('campaign delivery acknowledgement', () => {
         await deliverQueuedNotification(JSON.stringify(first));
         expect(mocks.send).toHaveBeenCalledOnce();
         expect(mocks.recipient).not.toHaveBeenCalled();
+    });
+});
+
+describe('email channel dispatch', () => {
+    it('uses an independent 500-recipient email wave and cursor', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.pageAudience.mockResolvedValue({
+            records: Array.from({ length: 500 }, (_, i) => ({
+                profileId: String(i).padStart(4, '0'),
+            })),
+        });
+        await processCampaignDispatchJob({ ...job, channel: 'email' });
+        expect(mocks.pageAudience).toHaveBeenCalledWith(campaign.id, undefined, 500);
+        expect(mocks.email).toHaveBeenCalledTimes(500);
+        expect(mocks.enqueue).not.toHaveBeenCalled();
+        expect(JSON.parse(mocks.sqs.mock.calls[0]![0].input.MessageBody)).toMatchObject({
+            channel: 'email',
+            afterProfileId: '0499',
+        });
+    });
+    it('sends email self-tests only to the authenticated caller and fails for ineligible email', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            status: 'draft',
+            channels: ['email'],
+            notification: undefined,
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.email.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+        await expect(sendCampaignTestToMe(campaign.id, recipient('admin'))).resolves.toBe(true);
+        expect(mocks.email).toHaveBeenCalledWith(
+            expect.objectContaining({ id: campaign.id }),
+            'admin',
+            true
+        );
+        await expect(sendCampaignTestToMe(campaign.id, recipient('admin'))).rejects.toThrow(
+            'verified primary email'
+        );
+        expect(mocks.enqueue).not.toHaveBeenCalled();
     });
 });
