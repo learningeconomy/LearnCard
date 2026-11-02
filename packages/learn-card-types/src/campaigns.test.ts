@@ -77,6 +77,21 @@ describe('campaign schemas', () => {
             })
         ).toEqual({ campaignId: 'pilot-clr', updates: { name: 'Renamed' } });
     });
+    it('normalizes optimistic save revisions and rejects invalid timestamps', () => {
+        const input = { campaignId: 'pilot-clr', updates: { name: 'Renamed' } };
+        expect(
+            UpdateCampaignInputValidator.parse({
+                ...input,
+                expectedUpdatedAt: '2026-10-22T10:00:00-07:00',
+            }).expectedUpdatedAt
+        ).toBe('2026-10-22T17:00:00.000Z');
+        expect(
+            UpdateCampaignInputValidator.safeParse({
+                ...input,
+                expectedUpdatedAt: 'not-a-revision',
+            }).success
+        ).toBe(false);
+    });
     it('requires exactly one credential sender and rejects unsafe metadata keys', () => {
         const source = { type: 'credentialsSentBy', senderProfileId: 'issuer' };
         for (const input of [
