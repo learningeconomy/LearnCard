@@ -250,6 +250,39 @@ describe('campaign composer', () => {
             expect.objectContaining({ id: 'test-campaign' })
         );
     });
+    it('preserves API-authored email when saving other fields and identifies it before self-test', async () => {
+        const api = apiMock();
+        const emailCampaign = CampaignValidator.parse({
+            ...campaign(),
+            channels: ['inApp', 'notify', 'email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        api.campaignsGet.mockResolvedValue(emailCampaign);
+        api.campaignsUpdate.mockResolvedValue({ ...emailCampaign, name: 'Updated name' });
+        mount(api);
+        fireEvent.change(await screen.findByLabelText('Name'), {
+            target: { value: 'Updated name' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+        await waitFor(() =>
+            expect(api.campaignsUpdate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    expectedUpdatedAt: emailCampaign.updatedAt,
+                    updates: expect.objectContaining({ channels: ['inApp', 'notify', 'email'] }),
+                })
+            )
+        );
+        expect(api.campaignsUpdate.mock.calls[0]?.[0].updates).not.toHaveProperty('email');
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: 'Send Test to Me' })).toBeEnabled()
+        );
+        fireEvent.click(screen.getByRole('button', { name: 'Send Test to Me' }));
+        expect(screen.getByRole('group', { name: 'Confirm campaign action' })).toHaveTextContent(
+            'email to your verified primary address'
+        );
+        expect(api.campaignsSendTestToMe).not.toHaveBeenCalled();
+    });
+
     it('allows archived private tests and notification-only content without a JSON editor', async () => {
         const api = apiMock();
         api.campaignsGet.mockResolvedValue({

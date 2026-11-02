@@ -88,6 +88,10 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                       expectedUpdatedAt: saved.updatedAt,
                       updates: {
                           ...definition,
+                          // Email content is managed through the API until its composer controls exist.
+                          channels: saved.channels.includes('email')
+                              ? [...definition.channels, 'email']
+                              : definition.channels,
                           message: definition.message ?? null,
                           notification: definition.notification ?? null,
                           startsAt: definition.startsAt ?? null,
@@ -110,9 +114,11 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                     const sent = await api.campaignsSendTestToMe(saved.id);
                     if (!sent) throw new Error('Test was not acknowledged');
                     action.setSuccess(
-                        saved.channels.includes('notify')
-                            ? `Test notification sent to your signed-in account.${saved.channels.includes('inApp') ? ' Your in-app test is waiting for your next visit.' : ''} Audience stats are unchanged.`
-                            : 'Your in-app test is waiting for your next visit. Audience stats are unchanged.'
+                        saved.channels.includes('email')
+                            ? 'Email test sent to your verified primary address. Other selected test channels were also requested. Audience stats are unchanged.'
+                            : saved.channels.includes('notify')
+                              ? `Test notification sent to your signed-in account.${saved.channels.includes('inApp') ? ' Your in-app test is waiting for your next visit.' : ''} Audience stats are unchanged.`
+                              : 'Your in-app test is waiting for your next visit. Audience stats are unchanged.'
                     );
                 } else {
                     accept(await api.campaignsSetStatus(saved.id, selected));
@@ -545,7 +551,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     >
                                         <p className="text-sm leading-relaxed">
                                             {confirmation === 'test'
-                                                ? `Send a private test to your account via ${saved.channels.map(channel => (channel === 'inApp' ? 'in-app message on your next visit' : 'inbox / push notification')).join(' and ')}?`
+                                                ? `Send a private test to your account via ${saved.channels.map(channel => (channel === 'inApp' ? 'in-app message on your next visit' : channel === 'email' ? 'email to your verified primary address' : 'inbox / push notification')).join(' and ')}?`
                                                 : confirmation === 'live'
                                                   ? 'Make this campaign live? Eligible members may see its in-app message.'
                                                   : confirmation === 'archived'
