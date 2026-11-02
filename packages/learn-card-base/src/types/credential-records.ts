@@ -47,6 +47,11 @@ export type CredentialMetadata = {
     sharedUris?: Record<string, string[]>; // Full audience cache keys (legacy owner DID keys are retained for selection lookup)
     contractUri?: string;
     boostUri?: string;
+    /**
+     * LearnNetwork URI of the credential this record is a LearnCloud copy of (LC-2325). Revoke
+     * and suspend live on that credential's graph edge, which the copy's own URI cannot reach.
+     */
+    networkUri?: string;
     refresh?: CredentialRefreshMetadata;
     __v?: number;
 };
