@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import type { VC, VerificationCheck } from '@learncard/types';
 
 import type { BespokeLearnCard } from '../types/learn-card';
@@ -34,7 +35,12 @@ const LIFECYCLE_STATUS_BATCH_SIZE = 100;
  */
 const VERIFY_CONCURRENCY = 4;
 
-type HeldCredential = { uri: string; credential: VC };
+/**
+ * A held credential to check. `networkUri` is set when `uri` is a LearnCloud copy of a
+ * network credential: the backend only knows the network URI, and a revocation made on the
+ * graph edge alone (no status-list entry) is only visible through it.
+ */
+export type HeldCredential = { uri: string; credential: VC; networkUri?: string };
 
 type StatusInvoke = {
     getMyCredentialLifecycleStatuses?: (options: {
@@ -57,16 +63,41 @@ const hasStatusEntry = (credential: VC): boolean => {
 };
 
 /**
+ * Like deriveLifecycleStatus, but an 'active' read off a check that still carries errors is
+ * unknown: the Boost verifier turns an inner verification failure into an error result, and
+ * that is not evidence the status list was read.
+ */
+const statusFromCheck = (check: VerificationCheck): CredentialLifecycleStatus | undefined => {
+    const status = deriveLifecycleStatus(check);
+    if (status === 'active' && check.errors?.length) return undefined;
+    return status;
+};
+
+/** Status-list results stay fresh this long, matching the credential card (useCredentialStatus). */
+const VERIFY_STALE_TIME = 5 * 60 * 1000;
+
+/** Under ['credentialStatus'] so the lifecycle mutations' invalidation clears it too. */
+const verifyQueryKey = (uri: string) => ['credentialStatus', uri, 'statusList'];
+
+export type LifecycleStatusOptions = {
+    /** Caches status-list results across refetches. Without it every call re-verifies. */
+    queryClient?: QueryClient;
+};
+
+/**
  * Batched form of useCredentialStatus: the backend lifecycle status (CREDENTIAL_SENT/RECEIVED
- * edge) for every URI, then client verifyCredential on the status list for any URI the backend
- * left out (imported credentials, LearnCloud copies under a new URI) or couldn't answer.
+ * edge) for every credential, asked by its network URI, then client verifyCredential on the
+ * status list for any the backend left out (imported credentials, copies with no known network
+ * URI) or couldn't answer.
  *
- * A URI maps to `undefined` when its status could not be determined (lookup threw), so the
- * caller can decide what a failed lookup means instead of reading it as 'active'.
+ * A URI maps to `undefined` when its status could not be determined (lookup threw, or the
+ * check came back with errors), so the caller can decide what that means instead of reading
+ * it as 'active'. Results are keyed by `uri`, never by `networkUri`.
  */
 export const getCredentialLifecycleStatuses = async (
     wallet: BespokeLearnCard,
-    credentials: HeldCredential[]
+    credentials: HeldCredential[],
+    { queryClient }: LifecycleStatusOptions = {}
 ): Promise<Map<string, CredentialLifecycleStatus | undefined>> => {
     const invoke = (wallet.invoke ?? {}) as unknown as StatusInvoke;
     const statuses = new Map<string, CredentialLifecycleStatus | undefined>();
@@ -74,12 +105,14 @@ export const getCredentialLifecycleStatuses = async (
     // so for these "no status list" means unknown, not 'active'.
     const backendFailed = new Set<string>();
 
-    const uris = [...new Set(credentials.map(({ uri }) => uri))];
+    const statusUri = ({ uri, networkUri }: HeldCredential) => networkUri ?? uri;
+    const statusUris = [...new Set(credentials.map(statusUri))];
     const batches: string[][] = [];
-    for (let i = 0; i < uris.length; i += LIFECYCLE_STATUS_BATCH_SIZE) {
-        batches.push(uris.slice(i, i + LIFECYCLE_STATUS_BATCH_SIZE));
+    for (let i = 0; i < statusUris.length; i += LIFECYCLE_STATUS_BATCH_SIZE) {
+        batches.push(statusUris.slice(i, i + LIFECYCLE_STATUS_BATCH_SIZE));
     }
 
+    const backend = new Map<string, CredentialLifecycleStatus>();
     if (invoke.getMyCredentialLifecycleStatuses) {
         await Promise.all(
             batches.map(async batch => {
@@ -88,7 +121,7 @@ export const getCredentialLifecycleStatuses = async (
                     for (const uri of batch) {
                         const status = result?.[uri];
                         if (status === 'active' || status === 'revoked' || status === 'suspended') {
-                            statuses.set(uri, status);
+                            backend.set(uri, status);
                         }
                     }
                 } catch {
@@ -98,23 +131,44 @@ export const getCredentialLifecycleStatuses = async (
             })
         );
     } else {
-        for (const uri of uris) backendFailed.add(uri);
+        for (const uri of statusUris) backendFailed.add(uri);
     }
+
+    for (const held of credentials) {
+        const status = backend.get(statusUri(held));
+        if (status) statuses.set(held.uri, status);
+    }
+
+    const verify = async ({ uri, credential }: HeldCredential) => {
+        if (!invoke.verifyCredential) throw new Error('verifyCredential unavailable');
+        const check = await invoke.verifyCredential(credential, {}, false);
+        const status = statusFromCheck(check);
+        // Throw on unknown so the query cache never stores it as an answer.
+        if (!status) throw new Error(`indeterminate status check for ${uri}`);
+        return status;
+    };
+    const verifyCached = (held: HeldCredential) =>
+        queryClient
+            ? queryClient.fetchQuery({
+                  queryKey: verifyQueryKey(held.uri),
+                  queryFn: () => verify(held),
+                  staleTime: VERIFY_STALE_TIME,
+                  retry: false,
+              })
+            : verify(held);
 
     const unanswered = credentials.filter(({ uri }) => !statuses.has(uri));
     const verifyWorker = async () => {
         for (let next = unanswered.shift(); next; next = unanswered.shift()) {
-            const { uri, credential } = next;
-            if (!hasStatusEntry(credential)) {
-                statuses.set(uri, backendFailed.has(uri) ? undefined : 'active');
+            const held = next;
+            if (!hasStatusEntry(held.credential)) {
+                statuses.set(held.uri, backendFailed.has(statusUri(held)) ? undefined : 'active');
                 continue;
             }
             try {
-                if (!invoke.verifyCredential) throw new Error('verifyCredential unavailable');
-                const check = await invoke.verifyCredential(credential, {}, false);
-                statuses.set(uri, deriveLifecycleStatus(check));
+                statuses.set(held.uri, await verifyCached(held));
             } catch {
-                statuses.set(uri, undefined);
+                statuses.set(held.uri, undefined);
             }
         }
     };
