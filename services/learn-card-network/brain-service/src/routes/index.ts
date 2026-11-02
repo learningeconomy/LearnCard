@@ -290,7 +290,9 @@ export const PUBLIC_SHARE_LINK_ROUTE_PREFIX = 'publicShareLinks.';
 export const publicShareLinkCacheControlHeaders = (
     paths: readonly string[] | undefined
 ): Record<string, string> =>
-    (paths ?? []).some(path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX))
+    (paths ?? []).some(
+        path => path.startsWith(PUBLIC_SHARE_LINK_ROUTE_PREFIX) || path === 'campaigns.unsubscribe'
+    )
         ? { 'Cache-Control': 'private, no-store' }
         : {};
 

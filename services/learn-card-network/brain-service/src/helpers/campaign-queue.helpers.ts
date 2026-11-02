@@ -1,3 +1,4 @@
+import { assertCampaignEmailConfigured, sendCampaignEmail } from './campaign-email.helpers';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
@@ -41,14 +42,19 @@ export const dispatchCampaign = async (campaignId: string): Promise<{ dispatchId
     if (!canDispatchCampaign(campaign))
         throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Campaign must be live, in its time window, and have the notify channel',
+            message: 'Campaign must be live, in its time window, and have a delivery channel',
         });
     const dispatchId = randomUUID();
-    await addCampaignDispatchToQueue({
-        campaignId,
-        campaignCreatedAt: campaign.createdAt,
-        dispatchId,
-    });
+    if (campaign.channels.includes('email')) assertCampaignEmailConfigured();
+    for (const channel of ['notify', 'email'] as const) {
+        if (campaign.channels.includes(channel))
+            await addCampaignDispatchToQueue({
+                campaignId,
+                campaignCreatedAt: campaign.createdAt,
+                dispatchId,
+                channel,
+            });
+    }
     return { dispatchId };
 };
 
@@ -63,9 +69,17 @@ export const processCampaignDispatchJob = async (rawJob: CampaignDispatchJob): P
             throw error;
         }
         if (campaign.createdAt !== job.campaignCreatedAt || !canDispatchCampaign(campaign)) return;
-        const pageSize = environment.CAMPAIGN_DISPATCH_PAGE_SIZE;
+        if (!campaign.channels.includes(job.channel)) return;
+        const pageSize =
+            job.channel === 'email'
+                ? environment.CAMPAIGN_EMAIL_PAGE_SIZE
+                : environment.CAMPAIGN_DISPATCH_PAGE_SIZE;
         const page = await pageCampaignAudience(job.campaignId, job.afterProfileId, pageSize);
         for (const { profileId } of page.records) {
+            if (job.channel === 'email') {
+                await sendCampaignEmail(campaign, profileId);
+                continue;
+            }
             const recipient = await getCampaignDeliveryRecipient(
                 job.campaignId,
                 job.campaignCreatedAt,

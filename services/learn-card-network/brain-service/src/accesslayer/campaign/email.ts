@@ -1,0 +1,71 @@
+import { z } from 'zod';
+import type { Campaign } from '@learncard/types';
+import {
+    adultProfilePredicate,
+    campaignTimeParams,
+    liveCampaignPredicate,
+    parseCampaign,
+    withCampaignTransaction,
+} from './shared';
+
+export type CampaignEmailRecipient = { campaign: Campaign; email: string; locale?: string };
+
+/** Reserve before external I/O. A lost acknowledgement remains reserved and is never retried automatically. */
+export const claimCampaignEmail = async (
+    campaignId: string,
+    campaignCreatedAt: string,
+    profileId: string,
+    test = false
+): Promise<CampaignEmailRecipient | undefined> =>
+    withCampaignTransaction('campaign:claimEmail', async transaction => {
+        const params = { campaignId, campaignCreatedAt, profileId, ...campaignTimeParams() };
+        await transaction.run(
+            `MATCH (p:Profile {profileId: $profileId})
+            SET p.campaignStateLock = coalesce(p.campaignStateLock, 0) + 1`,
+            params
+        );
+        const result = await transaction.run(
+            `MATCH (p:Profile {profileId: $profileId}), (c:Campaign {id: $campaignId})
+             WHERE c.createdAt = $campaignCreatedAt AND ${adultProfilePredicate}
+               AND coalesce(p.announcementEmailOptOut, false) = false
+               ${test ? '' : `AND ${liveCampaignPredicate} AND EXISTS { MATCH (p)-[:IN_CAMPAIGN_AUDIENCE]->(c) }`}
+             MATCH (p)-[:HAS_CONTACT_METHOD]->(email:ContactMethod)
+             WHERE email.type = 'email' AND email.isPrimary = true AND email.isVerified = true
+             OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
+             WITH p, c, email, state
+             ${test ? '' : 'WHERE state.emailClaimedAt IS NULL AND state.emailedAt IS NULL'}
+             RETURN c.definition AS definition, email.value AS email, p.locale AS locale
+             ORDER BY email.id LIMIT 2`,
+            params
+        );
+        // Ambiguous primary contacts fail closed, as do malformed legacy addresses.
+        if (result.records.length !== 1) return undefined;
+        const row = result.records[0]!;
+        const campaign = parseCampaign(row.get('definition'));
+        const email = z.email().safeParse(row.get('email'));
+        if (!email.success || !campaign.channels.includes('email') || !campaign.email)
+            return undefined;
+        if (!test)
+            await transaction.run(
+                `MATCH (p:Profile {profileId: $profileId}), (c:Campaign {id: $campaignId})
+             MERGE (p)-[state:CAMPAIGN_STATE]->(c) SET state.emailClaimedAt = $now`,
+                params
+            );
+        return { campaign, email: email.data, locale: row.get('locale') ?? undefined };
+    });
+
+/** Provider acceptance only; a claim alone is not an emailed statistic. */
+export const acknowledgeCampaignEmail = async (
+    campaignId: string,
+    campaignCreatedAt: string,
+    profileId: string
+): Promise<void> => {
+    await withCampaignTransaction('campaign:acknowledgeEmail', async transaction => {
+        await transaction.run(
+            `MATCH (p:Profile {profileId: $profileId})-[state:CAMPAIGN_STATE]->(c:Campaign {id: $campaignId})
+             WHERE c.createdAt = $campaignCreatedAt AND state.emailClaimedAt IS NOT NULL
+             SET state.emailedAt = coalesce(state.emailedAt, $now)`,
+            { campaignId, campaignCreatedAt, profileId, ...campaignTimeParams() }
+        );
+    });
+};

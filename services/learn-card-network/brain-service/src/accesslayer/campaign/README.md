@@ -305,3 +305,61 @@ never automatically retry a full stale form against a fresh token. Successful
 writes advance the timestamp monotonically, including same-millisecond writes.
 Legacy SDK callers may omit the optional token; those callers retain existing
 last-write behavior and do not receive optimistic concurrency protection.
+
+## Announcement email (LC-2268)
+
+Campaigns can include `email` alongside `inApp` and `notify`. Supply `email.subject`,
+`title`, `body`, and `ctaLabel`; `heroImageUrl` is optional and must be HTTPS. Body
+copy is plain text, escaped by React. Keep announcement copy free of private learner
+or credential data. Create records capture the request's resolved tenant; queued
+waves use that stored tenant for branding and `/m/<id>?utm_source=email&utm_campaign=<id>`.
+Legacy records without a tenant use the configured default tenant.
+
+Email dispatch requires `POSTMARK_API_KEY`, `DOMAIN_NAME` (the public Brain host),
+`POSTMARK_BROADCAST_STREAM` (default `broadcast`) and `CAMPAIGN_UNSUBSCRIBE_SECRET`
+(a dedicated random secret of at least 32 bytes). The adapter checks the actual
+Postmark stream type is `Broadcast`; transactional streams are rejected. Provisioning
+these values, enabling a stream, deployment and live sends are separate operator
+steps. No production configuration is included here. `CAMPAIGN_EMAIL_PAGE_SIZE`
+defaults to 500 (1–1000); email and notification jobs keep independent cursors and
+use `CAMPAIGN_DISPATCH_DELAY_SECONDS` between waves.
+
+Email requires exactly one valid primary verified ContactMethod email, a known adult
+profile under the existing campaign adult policy, and no announcement email opt-out.
+Unknown ages, children, managed non-service profiles and minors fail closed even if
+`excludeMinors` is false. Parent age-policy sign-off is still outstanding: this does
+not authorize marketing to minors. Self-tests bypass audience/status only; they retain
+email eligibility and preferences and do not change production statistics.
+
+A profile lock serializes durable `emailClaimedAt` reservations. A claim commits before
+provider I/O; accepted sends set `emailedAt` and contribute to `getStats().emailed`.
+Retries, concurrent workers and redispatch cannot resend a reserved recipient. This
+is **at-most-once attempt**, not guaranteed delivery: a crash before sending or lost
+provider acknowledgement leaves a reservation with no `emailedAt`. There is no automatic
+lease expiry/replay; an operator must investigate delivery with the provider before any
+future recovery design permits another send. Never clear claims blindly. Provider
+acceptance is not proof of inbox delivery. Archive/pause, generation, membership,
+age, contact and opt-out state are checked at the reservation boundary.
+
+Browser unsubscribe links use the tenant `/unsubscribe?token=...` page. The
+`List-Unsubscribe` header deliberately uses the Brain HTTPS
+`/campaigns/unsubscribe?token=...` endpoint instead: it accepts the actual RFC 8058
+`application/x-www-form-urlencoded` POST `List-Unsubscribe=One-Click`, without login,
+cookies, redirects or JavaScript. GET does not mutate. Both paths verify the same
+purpose-separated HMAC token, then idempotently set the profile's email opt-out.
+Links remain valid after campaign archive/deletion; rotating the secret invalidates
+old links. Tokens are bearer authority for opt-out only, not authentication. Do not
+log token URLs or capture them in analytics; ingress/proxy access-log redaction for
+this endpoint must be checked at deployment. The public endpoint returns no profile data.
+
+Authenticated `getAnnouncementPreferences` and `updateAnnouncementPreferences` return
+and patch `announcementEmailOptOut` / `announcementPushOptOut`. SDK methods use these
+same names, plus anonymous `unsubscribeFromAnnouncements(token)`. Preference fields
+are private graph properties, omitted from public profile projections. Push opt-out
+suppresses both campaign push and inbox at enqueue/delivery checks; in-app selection
+is unaffected. Partial patches leave the other choice unchanged.
+
+Before rollout, use mocked adapter/HTTP tests and the campaign Neo4j suite. Separately
+verify real broadcast receipt and headers, configured public POST ingress, and cold/warm
+`/m/` universal-link handoff on web, iOS and Android in an authorized environment.
+The composer still needs its email controls, counts/wiring and CSV result follow-up.

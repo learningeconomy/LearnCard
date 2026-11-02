@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Notification } from '../delivery.service';
 
-const mocks = vi.hoisted(() => ({ send: vi.fn(), legacySend: vi.fn(), render: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+    send: vi.fn(),
+    legacySend: vi.fn(),
+    render: vi.fn(),
+    stream: vi.fn(),
+}));
 vi.mock('@environment', () => ({ environment: {} }));
 vi.mock('postmark', () => ({
     ServerClient: class {
+        getMessageStream = mocks.stream;
         sendEmail = mocks.send;
         sendEmailWithTemplate = mocks.legacySend;
     },
@@ -25,6 +31,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.render.mockResolvedValue({ html: '<p>Updated</p>', text: 'Updated', subject: 'Updated' });
     mocks.send.mockResolvedValue({});
+    mocks.stream.mockResolvedValue({ MessageStreamType: 'Broadcast' });
 });
 
 describe('update email provider attempts', () => {
@@ -49,6 +56,47 @@ describe('update email provider attempts', () => {
             'Render failed'
         );
         expect(mocks.send).not.toHaveBeenCalled();
+        expect(mocks.legacySend).not.toHaveBeenCalled();
+    });
+});
+
+describe('campaign provider boundary', () => {
+    const campaignNotification: Notification = {
+        ...notification,
+        templateId: 'campaign-announcement',
+        subject: 'Authored subject',
+        messageStream: 'news',
+        headers: [
+            {
+                Name: 'List-Unsubscribe',
+                Value: '<https://brain.example/campaigns/unsubscribe?token=test>',
+            },
+        ],
+    };
+    it('validates a custom stream is Broadcast and forwards headers and subject', async () => {
+        await new PostmarkAdapter('test-key').send(campaignNotification);
+        expect(mocks.stream).toHaveBeenCalledWith('news');
+        expect(mocks.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                Subject: 'Authored subject',
+                MessageStream: 'news',
+                Headers: campaignNotification.headers,
+            })
+        );
+    });
+    it('rejects a custom transactional stream', async () => {
+        mocks.stream.mockResolvedValue({ MessageStreamType: 'Transactional' });
+        await expect(new PostmarkAdapter('test-key').send(campaignNotification)).rejects.toThrow(
+            'Broadcast'
+        );
+        expect(mocks.send).not.toHaveBeenCalled();
+    });
+    it('never falls back to another send after an uncertain acknowledgement', async () => {
+        mocks.send.mockRejectedValueOnce(new Error('timeout'));
+        await expect(new PostmarkAdapter('test-key').send(campaignNotification)).rejects.toThrow(
+            'timeout'
+        );
+        expect(mocks.send).toHaveBeenCalledOnce();
         expect(mocks.legacySend).not.toHaveBeenCalled();
     });
 });

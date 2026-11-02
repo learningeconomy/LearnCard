@@ -17,6 +17,16 @@ const mocks = vi.hoisted(() => ({
         CAMPAIGN_DISPATCH_DELAY_SECONDS: 60,
     },
 }));
+vi.mock('@helpers/campaign-email.helpers', () => ({
+    assertCampaignEmailConfigured: vi.fn(),
+    sendCampaignEmail: vi.fn(),
+}));
+vi.mock('@accesslayer/campaign/preferences', () => ({
+    getAnnouncementPreferences: async () => ({
+        announcementEmailOptOut: false,
+        announcementPushOptOut: false,
+    }),
+}));
 vi.mock('@environment', () => ({ environment: mocks.environment }));
 vi.mock('@aws-sdk/client-sqs', () => ({
     SQSClient: class {
@@ -96,12 +106,20 @@ describe('campaign wave dispatch', () => {
         expect(mocks.enqueue).toHaveBeenCalledTimes(1000);
         const second = mocks.sqs.mock.calls[0]![0].input;
         expect(second.DelaySeconds).toBe(60);
-        expect(JSON.parse(second.MessageBody)).toEqual({ ...job, afterProfileId: '0999' });
+        expect(JSON.parse(second.MessageBody)).toEqual({
+            ...job,
+            channel: 'notify',
+            afterProfileId: '0999',
+        });
         await processCampaignDispatchJob(JSON.parse(second.MessageBody));
         expect(mocks.enqueue).toHaveBeenCalledTimes(2000);
         const third = mocks.sqs.mock.calls[1]![0].input;
         expect(third.DelaySeconds).toBe(60);
-        expect(JSON.parse(third.MessageBody)).toEqual({ ...job, afterProfileId: '1999' });
+        expect(JSON.parse(third.MessageBody)).toEqual({
+            ...job,
+            channel: 'notify',
+            afterProfileId: '1999',
+        });
         await processCampaignDispatchJob(JSON.parse(third.MessageBody));
         expect(mocks.enqueue).toHaveBeenCalledTimes(2500);
         expect(mocks.sqs).toHaveBeenCalledTimes(2);

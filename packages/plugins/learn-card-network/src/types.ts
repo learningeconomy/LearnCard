@@ -3,6 +3,7 @@ import type { LCNClient } from '@learncard/network-brain-client';
 import type {
     Campaign,
     CampaignAudienceInput,
+    AnnouncementPreferences,
     CampaignEvent,
     CampaignStats,
     CampaignStatus,
@@ -1130,6 +1131,11 @@ export type LearnCardNetworkPluginMethods = {
     }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
+    getAnnouncementPreferences: () => Promise<AnnouncementPreferences>;
+    updateAnnouncementPreferences: (
+        updates: Partial<AnnouncementPreferences>
+    ) => Promise<AnnouncementPreferences>;
+    unsubscribeFromAnnouncements: (token: string) => Promise<boolean>;
     campaignsIsAdmin: () => Promise<boolean>;
     campaignsCreate: (input: CreateCampaignInput) => Promise<Campaign>;
     campaignsUpdate: (input: UpdateCampaignInput) => Promise<Campaign>;

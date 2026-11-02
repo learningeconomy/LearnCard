@@ -123,3 +123,16 @@ describe('campaign network plugin methods', () => {
         );
     });
 });
+
+describe('announcement preferences', () => {
+    it('requires a network profile for private preferences', async () => {
+        const client = mockClient();
+        client.profile.getProfile.query.mockResolvedValue(undefined);
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        await expect(methods.getAnnouncementPreferences(wallet)).rejects.toThrow();
+        await expect(
+            methods.updateAnnouncementPreferences(wallet, { announcementPushOptOut: true })
+        ).rejects.toThrow();
+    });
+});

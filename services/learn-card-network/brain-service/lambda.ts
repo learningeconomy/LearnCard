@@ -59,3 +59,7 @@ export const campaignDispatchWorker = async (
 export const inboxMaintenanceHandler = async (
     ...args: Parameters<LambdaApp['inboxMaintenanceHandler']>
 ) => (await getApplication()).inboxMaintenanceHandler(...args);
+
+export const campaignUnsubscribeHandler = async (
+    ...args: Parameters<LambdaApp['campaignUnsubscribeHandler']>
+) => (await getApplication()).campaignUnsubscribeHandler(...args);

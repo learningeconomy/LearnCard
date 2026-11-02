@@ -1,5 +1,5 @@
 import { waitForInboxCredentialBatch } from './inbox-batch';
-import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
+import { getClient, getApiTokenClient, getAnonymousClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
     LCNProfile,
@@ -3306,6 +3306,17 @@ export async function getLearnCardNetworkPlugin(
                 return client.appStore.isAdmin.query();
             },
 
+            getAnnouncementPreferences: async _learnCard => {
+                await ensureUser();
+                return client.campaigns.getAnnouncementPreferences.query();
+            },
+            updateAnnouncementPreferences: async (_learnCard, updates) => {
+                await ensureUser();
+                return client.campaigns.updateAnnouncementPreferences.mutate(updates);
+            },
+            unsubscribeFromAnnouncements: async (_learnCard, token) => {
+                return getAnonymousClient(url).campaigns.unsubscribe.mutate({ token });
+            },
             campaignsIsAdmin: async _learnCard => {
                 await ensureUser();
                 return client.campaigns.isAdmin.query();

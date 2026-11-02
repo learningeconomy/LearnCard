@@ -25,6 +25,7 @@ import { inboxBatchResponseMeta } from './helpers/inbox-batch-http.helpers';
 import { didFastifyPlugin } from './dids';
 import { skillsViewerFastifyPlugin } from './skills-viewer';
 import { statusListsFastifyPlugin } from './status-lists';
+import { campaignUnsubscribeFastifyPlugin } from './campaign-unsubscribe';
 import { credentialRefreshFastifyPlugin } from './credential-refresh';
 import { deliverQueuedNotification } from '@helpers/notificationQueue.helpers';
 import { startSkillEmbeddingBackfill } from '@helpers/skill-embedding.helpers';
@@ -169,6 +170,7 @@ server.register(didFastifyPlugin);
 server.register(skillsViewerFastifyPlugin);
 server.register(statusListsFastifyPlugin);
 server.register(credentialRefreshFastifyPlugin);
+server.register(campaignUnsubscribeFastifyPlugin);
 
 (async () => {
     try {

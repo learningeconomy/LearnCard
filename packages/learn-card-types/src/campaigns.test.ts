@@ -165,3 +165,45 @@ describe('campaign notification wire shape', () => {
         ).toBe(false);
     });
 });
+
+describe('campaign email schema', () => {
+    const email = { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' };
+    it('requires content for email, allows all three channels, rejects unsafe content', () => {
+        expect(
+            CreateCampaignInputValidator.safeParse({ ...draft, channels: ['email'] }).success
+        ).toBe(false);
+        expect(
+            CreateCampaignInputValidator.safeParse({
+                ...draft,
+                channels: ['inApp', 'notify', 'email'],
+                notification: { title: 'News', body: 'Programs' },
+                email,
+            }).success
+        ).toBe(true);
+        for (const patch of [
+            { subject: 'News\r\nBcc: evil@example.com' },
+            { body: '' },
+            { heroImageUrl: 'javascript:alert(1)' },
+            { heroImageUrl: '/relative.png' },
+        ]) {
+            expect(
+                CreateCampaignInputValidator.safeParse({
+                    ...draft,
+                    channels: ['email'],
+                    email: { ...email, ...patch },
+                }).success
+            ).toBe(false);
+        }
+    });
+    it('keeps tenant identity server-owned', () => {
+        expect(
+            CreateCampaignInputValidator.safeParse({ ...draft, tenantId: 'other' }).success
+        ).toBe(false);
+        expect(
+            UpdateCampaignInputValidator.safeParse({
+                campaignId: draft.id,
+                updates: { tenantId: 'other' },
+            }).success
+        ).toBe(false);
+    });
+});
