@@ -26,6 +26,8 @@ test.describe('campaign composer @mocked', () => {
         mock.on('profile.getProfile', () => adminProfile);
         mock.on('profile.getOtherProfile', () => adminProfile);
         mock.on('profile.createProfile', () => adminProfile.did);
+        // Reloading can batch the app's profile refresh with a campaign mutation.
+        mock.on('profile.updateProfile', () => true);
         mock.on('user.getDids', () => [adminProfile.did]);
         mock.on('user.addDid', () => true);
 
