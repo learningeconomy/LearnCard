@@ -51,7 +51,7 @@
     "linked-claims-plugin": 0,
     "network-brain-client": 66,
     "network-brain-service": 0,
-    "network-plugin": 40,
+    "network-plugin": 1,
     "open-badge-v2-plugin": 0,
     "openid4vc-plugin": 0,
     "partner-connect-core": 0,
