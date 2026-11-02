@@ -119,6 +119,7 @@ const PublishSignInGate = lazyWithRetry(
 );
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
+const ClassLinkCallback = lazyWithRetry(() => import('./pages/auth/ClassLinkCallback'));
 
 // App Store Developer Portal
 const DeveloperPortalRoutes = lazyWithRetry(
@@ -248,6 +249,11 @@ export const Routes: React.FC = () => {
                             component={ViewCredsBundle}
                         />
                         <SentryRoute exact path="/auth/handoff" component={AuthHandoff} />
+                        <SentryRoute
+                            exact
+                            path="/auth/classlink/callback"
+                            component={ClassLinkCallback}
+                        />
                         <SentryRoute exact path="/share-boost" component={ViewSharedBoost} />
                         <SentryRoute exact path="/verify/resume" component={VerifySharedResume} />
                         <SentryRoute path="/waitingsofa" children={<LoadingPage2 />} />

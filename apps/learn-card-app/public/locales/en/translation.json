@@ -1244,6 +1244,11 @@
                 "google": "Google"
             }
         },
+        "classlink": {
+            "cancelled": "ClassLink sign-in was cancelled.",
+            "expired": "That sign-in link expired. Please try again.",
+            "failed": "We couldn't sign you in with ClassLink. Please try again."
+        },
         "welcome": {
             "heading": "Welcome to {{brand}}",
             "subtitle": "Sign in to access your credentials, achievements, and more.",

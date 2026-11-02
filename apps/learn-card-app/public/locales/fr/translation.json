@@ -1123,6 +1123,11 @@
         "korean": "한국어"
     },
     "login": {
+        "classlink": {
+            "cancelled": "La connexion avec ClassLink a été annulée.",
+            "expired": "Ce lien de connexion a expiré. Veuillez réessayer.",
+            "failed": "Nous n'avons pas pu vous connecter avec ClassLink. Veuillez réessayer."
+        },
         "welcome": {
             "heading": "Bienvenue sur {{brand}}",
             "subtitle": "Connectez-vous pour accéder à vos certifications, réalisations et plus.",

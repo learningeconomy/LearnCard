@@ -1,9 +1,23 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { Capacitor } from '@capacitor/core';
 import {
     CLASSLINK_CALLBACK_PATH,
     consumeClassLinkAttempt,
     createClassLinkAttempt,
+    getClassLinkRedirectUri,
 } from './classlinkPkce';
+
+vi.mock('@capacitor/core', () => ({
+    Capacitor: {
+        isNativePlatform: vi.fn(() => false),
+    },
+}));
+
+vi.mock('../../config/tenantConfigState', () => ({
+    getResolvedTenantConfig: vi.fn(() => ({
+        native: { bundleId: 'com.learncard.app' },
+    })),
+}));
 
 const STORAGE_KEY = 'learncard:classlink:attempt';
 const TEN_MINUTES_MS = 10 * 60 * 1000;
@@ -23,6 +37,7 @@ describe('ClassLink PKCE attempt store', () => {
     beforeEach(() => {
         sessionStorage.clear();
         localStorage.clear();
+        vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false);
     });
 
     it('derives the S256 code challenge as base64url(SHA-256(verifier))', async () => {
@@ -77,5 +92,10 @@ describe('ClassLink PKCE attempt store', () => {
 
     it('returns null when no attempt is pending', async () => {
         expect(await consumeClassLinkAttempt('anything')).toBeNull();
+    });
+
+    it('returns custom scheme redirect URI on native', () => {
+        vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true);
+        expect(getClassLinkRedirectUri()).toBe(`com.learncard.app:/${CLASSLINK_CALLBACK_PATH}`);
     });
 });

@@ -341,6 +341,18 @@ export type LCAPluginMethods = {
     verifyNetworkHandoffToken: (
         token: string
     ) => Promise<{ success: boolean; message?: string; token?: string }>;
+    classlinkGetAuthorizeUrl: (args: {
+        redirectUri: string;
+        codeChallenge: string;
+        state: string;
+        nonce: string;
+    }) => Promise<{ url: string }>;
+    classlinkExchangeCode: (args: {
+        code: string;
+        codeVerifier: string;
+        redirectUri: string;
+        nonce: string;
+    }) => Promise<{ token: string }>;
     getProofOfLoginVp: (
         token: string
     ) => Promise<{ success: boolean; error?: string; vp?: string }>;

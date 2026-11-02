@@ -24,6 +24,7 @@ import {
     getSSSConfig,
     useAuthStatus,
     resumeAuthRedirect,
+    useFeatureConfig,
 } from 'learn-card-base';
 
 import { getLogger } from 'learn-card-base';
@@ -33,6 +34,10 @@ import { Capacitor } from '@capacitor/core';
 
 import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
+import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
+import { createClassLinkAttempt } from '../../auth/classlink/classlinkPkce';
+import { openNativeAuthSession } from '../../auth/nativeAuthSession';
+import ClassLinkIcon from 'learn-card-base/assets/images/classlink-circle-icon.svg';
 
 import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
 import { SignInPersistenceError } from './SignInPersistenceError';
@@ -329,8 +334,48 @@ export const LoginContent: React.FC = () => {
     const isReturningUser =
         coordinatorState.status === 'ready' || coordinatorState.status === 'needs_recovery';
 
+    const features = useFeatureConfig();
+    const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
+
+    const classLinkLogin = async () => {
+        try {
+            const attempt = await createClassLinkAttempt();
+            const { url } = await getClassLinkAuthorizeUrl({
+                redirectUri: attempt.redirectUri,
+                codeChallenge: attempt.codeChallenge,
+                state: attempt.state,
+                nonce: attempt.nonce,
+            });
+            if (Capacitor.isNativePlatform()) {
+                const callbackUrl = await openNativeAuthSession(url, {
+                    callbackUrlPrefix: attempt.redirectUri,
+                    callbackScheme: attempt.redirectUri.split(':')[0],
+                });
+                // The native callback URL is processed by the appUrlOpen listener in App.tsx,
+                // which routes to /auth/classlink/callback.
+            } else {
+                window.location.assign(url);
+            }
+            return true;
+        } catch (e) {
+            log.error('ClassLink login failed', e);
+            return false;
+        }
+    };
+
     // custom logins associated with the app
     const extraSocialLogins = [
+        ...(features.classlinkSso
+            ? [
+                  {
+                      id: 3,
+                      src: ClassLinkIcon,
+                      alt: 'classlink',
+                      onClick: classLinkLogin,
+                      type: SocialLoginTypes.classlink,
+                  },
+              ]
+            : []),
         {
             id: 1,
             src: AppleIcon,

@@ -85,10 +85,16 @@ const getStorage = (): Storage => (Capacitor.isNativePlatform() ? localStorage :
  * callback always matches the tenant that's actually running. Never hardcode a domain.
  */
 export const getClassLinkRedirectUri = (): string => {
-    const base = Capacitor.isNativePlatform()
-        ? getTenantBaseUrl(getResolvedTenantConfig())
-        : window.location.origin;
-    return `${base}${CLASSLINK_CALLBACK_PATH}`;
+    if (Capacitor.isNativePlatform()) {
+        const bundleId = getResolvedTenantConfig().native?.bundleId;
+        if (!bundleId) {
+            throw new Error(
+                'Native ClassLink sign-in requires the tenant config native.bundleId to be set'
+            );
+        }
+        return `${bundleId}:/${CLASSLINK_CALLBACK_PATH}`;
+    }
+    return `${window.location.origin}${CLASSLINK_CALLBACK_PATH}`;
 };
 
 const isClassLinkAttempt = (value: unknown): value is ClassLinkAttempt =>

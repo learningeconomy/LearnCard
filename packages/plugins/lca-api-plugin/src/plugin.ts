@@ -410,6 +410,16 @@ export const getLCAPlugin = async (
 
                     return result;
                 },
+                classlinkGetAuthorizeUrl: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.getAuthorizeUrl.query(args);
+                },
+                classlinkExchangeCode: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.exchangeCode.mutate(args);
+                },
                 getProofOfLoginVp: async (_learnCard, token) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
@@ -678,6 +688,14 @@ export const getLCAPlugin = async (
                 verifyNetworkHandoffToken: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { success: false, message: '' };
+                },
+                classlinkGetAuthorizeUrl: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { url: '' };
+                },
+                classlinkExchangeCode: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { token: '' };
                 },
                 getProofOfLoginVp: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');

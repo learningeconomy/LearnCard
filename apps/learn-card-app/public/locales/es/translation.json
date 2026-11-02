@@ -1123,6 +1123,11 @@
         "korean": "한국어"
     },
     "login": {
+        "classlink": {
+            "cancelled": "El inicio de sesión con ClassLink fue cancelado.",
+            "expired": "Ese enlace de inicio de sesión expiró. Por favor, inténtalo de nuevo.",
+            "failed": "No pudimos iniciar sesión con ClassLink. Por favor, inténtalo de nuevo."
+        },
         "welcome": {
             "heading": "Bienvenido a {{brand}}",
             "subtitle": "Inicia sesión para acceder a tus credenciales, logros y más.",
