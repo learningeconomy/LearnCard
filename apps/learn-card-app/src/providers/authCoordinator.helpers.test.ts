@@ -129,10 +129,21 @@ describe('mergeAuthUserIntoCurrentUser', () => {
 describe('decidePinPromptAfterReady', () => {
     const base = { pinEnabled: false, enrollment: 'enrolled', promptFlag: null } as const;
 
-    it('offers a new PIN after a PIN recovery', () => {
+    it('offers a new PIN after a PIN recovery only when the PIN was cleared', () => {
+        // Fallback: re-enrolling with the proven PIN failed and the repair cleared it.
         expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'pin' })).toEqual({
             kind: 'after-recovery',
         });
+    });
+
+    it('does not ask for a PIN the user kept through a PIN recovery', () => {
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: 'pin', pinEnabled: true })
+        ).toEqual({ kind: 'none' });
+        // Status not refreshed yet: wait rather than prompt.
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: 'pin', pinEnabled: undefined })
+        ).toEqual({ kind: 'none' });
     });
 
     it('asks for a new PIN when repair requires a PIN reset, even while unenrolled', () => {

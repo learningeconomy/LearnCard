@@ -1390,12 +1390,20 @@ const AuthSessionManager: React.FC<{
                         onConfirmCode: coordinator.confirmEscrowRecovery,
                         onResendCode: coordinator.resendEscrowRecoveryCode,
                         onRecover: async input => {
-                            await coordinator.recover(input);
-
+                            // Mark before `ready` renders: a PIN recovery that kept the PIN
+                            // reports escrowPin.enabled === true, which clears the marker,
+                            // so it must not be set after that ready render has run.
+                            const previous = recoveredViaEscrowRef.current;
                             if (input.method === 'escrow-pin') {
                                 recoveredViaEscrowRef.current = 'pin';
                             } else if (input.method === 'escrow') {
                                 recoveredViaEscrowRef.current = 'hold';
+                            }
+                            try {
+                                await coordinator.recover(input);
+                            } catch (error) {
+                                recoveredViaEscrowRef.current = previous;
+                                throw error;
                             }
                         },
                         canResumeCompleted: () =>

@@ -1022,6 +1022,43 @@ describe('AuthCoordinator', () => {
                     expect(ensureEscrowEnrollment).toHaveBeenCalledTimes(1);
                 }
             );
+            it('does not clear a PIN the strategy kept after a PIN recovery', async () => {
+                const getEscrowEnrollmentState = vi.fn().mockResolvedValue({
+                    state: 'enrolled',
+                    escrowPin: { enabled: true, attemptsRemaining: 10 },
+                });
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: false });
+                const isEscrowEnrollmentAllowed = vi.fn().mockResolvedValue(true);
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        executeRecovery: vi.fn().mockResolvedValue({
+                            privateKey: 'recovered-pk',
+                            did: 'did:key:z123',
+                            escrowEnrolled: true,
+                            escrowRecovery: true,
+                        }),
+                        ensureEscrowEnrollment,
+                        getEscrowEnrollmentState,
+                    },
+                    config: { signDidAuthVp: vi.fn(), isEscrowEnrollmentAllowed },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                await vi.waitFor(() =>
+                    expect(coordinator.getState()).toMatchObject({
+                        status: 'ready',
+                        escrowEnrollment: 'enrolled',
+                        escrowPin: { enabled: true },
+                    })
+                );
+                // No scoped clear-PIN repair: direct re-enrollment kept the PIN.
+                for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                    expect(params.options?.clearPin).toBeUndefined();
+                }
+            });
             it('calls ensureEscrowEnrollment with the DID when the gate allows it (no status prefetch available)', async () => {
                 const ensureEscrowEnrollment = vi
                     .fn()

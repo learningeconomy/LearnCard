@@ -279,6 +279,7 @@ sequenceDiagram
     alt Correct PIN
         Server-->>AC: recovery share released
         AC->>AC: reconstruct + re-split + store new shares
+        AC->>Server: re-enroll with the same PIN (new salt, fresh 10 attempts)
         AC-->>UI: state: ready
     else Incorrect PIN
         Server-->>AC: EscrowPinMismatchError(attemptsRemaining)
@@ -296,13 +297,25 @@ sequenceDiagram
 "I don't have a PIN" (or a locked-out PIN) falls back to the existing 7-day hold —
 `recover({ method: 'escrow' })` — which supersedes any pending `pin` hold on the server.
 
-### PIN reset after forced rotation
+### What happens to the PIN after recovery
 
-A rotation triggered for another reason (identity recovery, email-link completion, automatic
-repair) can't preserve an in-memory-only PIN, so the server-side PIN is cleared as a side effect.
-The coordinator surfaces this as `state.escrowPin.enabled === false` after the rotation; apps
-should treat that as a nudge to prompt the user to set their PIN again (see LCA's
-`AuthCoordinatorProvider` for the reset-banner pattern).
+Every escrow recovery rebinds the account, and the rebind drops lca-api's PIN record (salt and
+attempt counter), so the old PIN cannot be carried to the new shares.
+
+- **PIN recovery** (`recover({ method: 'escrow-pin', pin })`): after the release succeeds and
+  the recovered key matches the DID, the strategy re-enrolls with the **same PIN** the user just
+  entered: a new salt and verifier, an owner-signed `set` (Nitro: `change`), and a fresh
+  10-attempt budget. The PIN is used only in memory for that call. It is never stored, logged,
+  or kept for a retry. If the PIN fails the current PIN rules, or the re-enrollment fails, the
+  strategy falls back to clearing the PIN (the later repair always clears).
+- **Hold (7-day) recovery**: the PIN is cleared. This is the "forgot my PIN" path, and keeping
+  the old PIN would need lca-api to keep its PIN record through the rebind.
+- **Resuming a pending recovery** (`completeIdentityRecovery` after a failed rebind): no PIN was
+  proven in that call, so the PIN is cleared.
+
+A cleared PIN shows as `state.escrowPin.enabled === false` after the refresh. Apps should treat
+that as a nudge to ask the user to set their PIN again (see LCA's `AuthCoordinatorProvider`).
+When the PIN was kept, `escrowPin.enabled` is `true` and no prompt is needed.
 
 ---
 
