@@ -164,41 +164,44 @@ const BoostEarnedList: React.FC<BoostEarnedListProps> = ({
 
     const credentials = visibleRecords.map((record, index) => {
         return (
-            <SelectableCredential
+            <BoostEarnedCard
                 key={record?.uri || index}
                 record={record}
-                listId={category}
-                visibleRecords={visibleRecords}
-            >
-                <BoostEarnedCard
-                    record={record}
-                    defaultImg={defaultImg}
-                    categoryType={
-                        category as
-                            | 'Achievement'
-                            | 'Skill'
-                            | 'ID'
-                            | 'Learning History'
-                            | 'Work History'
-                            | 'Hidden'
-                            | 'Social Badge'
-                            | 'Membership'
-                            | 'Currency'
-                            | 'Course'
-                            | 'Accomplishment'
-                            | 'Accommodation'
-                            | 'Relationship'
-                            | 'Events'
-                            | 'Merit Badge'
-                            | 'Family'
-                            | 'Archived'
-                    }
-                    boostPageViewMode={viewMode}
-                    loading={credentialsLoading}
-                    textColor={textColor}
-                    hideCardOptionsMenu={selectionActive}
-                />
-            </SelectableCredential>
+                defaultImg={defaultImg}
+                categoryType={
+                    category as
+                        | 'Achievement'
+                        | 'Skill'
+                        | 'ID'
+                        | 'Learning History'
+                        | 'Work History'
+                        | 'Hidden'
+                        | 'Social Badge'
+                        | 'Membership'
+                        | 'Currency'
+                        | 'Course'
+                        | 'Accomplishment'
+                        | 'Accommodation'
+                        | 'Relationship'
+                        | 'Events'
+                        | 'Merit Badge'
+                        | 'Family'
+                        | 'Archived'
+                }
+                boostPageViewMode={viewMode}
+                loading={credentialsLoading}
+                textColor={textColor}
+                hideCardOptionsMenu={selectionActive}
+                wrapCardSurface={surface => (
+                    <SelectableCredential
+                        record={record}
+                        listId={category}
+                        visibleRecords={visibleRecords}
+                    >
+                        {surface}
+                    </SelectableCredential>
+                )}
+            />
         );
     });
 

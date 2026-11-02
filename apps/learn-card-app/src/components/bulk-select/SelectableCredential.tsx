@@ -37,6 +37,8 @@ export const SelectableCredential = ({
     const selected = selection ? Boolean(items[selection.uri]) : false;
     const label = record.title ?? record.metadata?.title ?? record.uri ?? 'Credential';
 
+    if (!flags?.bulkCredentialActions) return <>{children}</>;
+
     const clearPress = () => {
         if (press.current?.timer) clearTimeout(press.current.timer);
         press.current = undefined;
