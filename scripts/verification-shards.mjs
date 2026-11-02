@@ -130,11 +130,12 @@ const featureRows = (report, shard, catalog) => {
 const aliases = count => Array.from({ length: count }, (_, index) => `entry-${index + 1}`);
 
 /** Validate an already-staged report and allowlisted screenshots, never raw evidence. */
-const stagedImages = async (root, rows, shard, catalog) => {
+const stagedImages = async (root, rows, shard, catalog, expectedStatus) => {
     await directory(root);
     const report = await json(join(root, 'report.json'));
     keys(report, ['status', 'script', 'results', 'notRun', 'notSelected']);
     assert(statuses.includes(report.status) && report.script === false);
+    assert.equal(report.status, expectedStatus);
     assert.equal(report.results.length, rows.length);
     sameEntries(
         report.results.map(row => row.feature),
@@ -258,7 +259,13 @@ export const stageShard = async ({
             if (staged.status !== 0) envelope.diagnostics.push('stage-failed');
             else {
                 try {
-                    await stagedImages(media, envelope.features, assignment, catalog);
+                    await stagedImages(
+                        media,
+                        envelope.features,
+                        assignment,
+                        catalog,
+                        envelope.reportStatus
+                    );
                     envelope.evidence = 'success';
                 } catch {
                     envelope.diagnostics.push('invalid-media');
@@ -404,7 +411,8 @@ export const mergeShards = async ({
                         join(folder, 'media'),
                         envelope.features,
                         assignment,
-                        catalog
+                        catalog,
+                        envelope.reportStatus
                     ))
                 );
             else assert(!(await exists(join(folder, 'media'))) || envelope.validReport);

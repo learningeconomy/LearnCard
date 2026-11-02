@@ -322,3 +322,11 @@ test('rejected local staging files are removed before the shard bundle can uploa
         const envelope = JSON.parse(await readFile(join(rejected.out, 'envelope.json'), 'utf8'));
         assert.deepEqual(envelope.diagnostics, ['invalid-media']);
     }));
+
+test('staged report status must match its validated raw envelope', async () =>
+    fixture(async ({ stage, merge }) => {
+        const a = await stage('1');
+        await stage('2');
+        await edit(join(a.out, 'media/report.json'), report => (report.status = 'failed'));
+        assert.equal((await merge()).valid, false);
+    }));
