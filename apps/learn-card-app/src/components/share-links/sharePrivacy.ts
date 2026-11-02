@@ -7,7 +7,8 @@ import * as Sentry from '@sentry/react';
 export const isShareViewerPath = (pathname: string): boolean => /^\/s(?:\/|$)/.test(pathname);
 
 const isShareRoute = () =>
-    typeof window !== 'undefined' && isShareViewerPath(window.location.pathname);
+    typeof window !== 'undefined' &&
+    (isShareViewerPath(window.location.pathname) || window.location.pathname === '/unsubscribe');
 let privateSession = isShareRoute();
 let privacyConfigured = false;
 const listeners = new Set<() => void>();
@@ -47,10 +48,9 @@ export const scrubShareTelemetry = <T>(value: T): T => {
     const seen = new WeakSet<object>();
     const scrub = (item: unknown): unknown => {
         if (typeof item === 'string')
-            return item.replace(
-                /(\/s\/[^\s?#"'<>]+)(?:\?[^\s#"'<>]*)?#[^\s"'<>]*/g,
-                '$1#[redacted]'
-            );
+            return item
+                .replace(/(\/s\/[^\s?#"'<>]+)(?:\?[^\s#"'<>]*)?#[^\s"'<>]*/g, '$1#[redacted]')
+                .replace(/(\/unsubscribe\?)[^\s"'<>]*/g, '$1[redacted]');
         if (!item || typeof item !== 'object' || item instanceof Date) return item;
         if (ancestors.has(item)) return '[Circular]';
         if (seen.has(item)) return '[Shared]';

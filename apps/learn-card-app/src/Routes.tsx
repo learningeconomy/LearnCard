@@ -1,3 +1,4 @@
+import UnsubscribePage from './pages/unsubscribe/UnsubscribePage';
 import React, { Suspense } from 'react';
 import { Redirect, Route, Switch, useLocation } from 'react-router-dom';
 import type { RouteComponentProps, RouteProps } from 'react-router-dom';
@@ -233,6 +234,7 @@ export const Routes: React.FC = () => {
                     <Switch location={background || location}>
                         <SentryRoute exact path="/recovery/cancel" component={CancelRecoveryPage} />
                         <Route exact path="/s/:id" component={ShareLinkViewer} />
+                        <SentryRoute exact path="/unsubscribe" component={UnsubscribePage} />
                         <SentryRoute exact path="/login" component={LoginPage} />
                         <SentryRoute
                             exact
