@@ -66,10 +66,13 @@ describe('LearnCloud Plugin', () => {
     });
 
     it('shares discovery in flight, but allows an index read to recover after discovery fails', async () => {
-        const discovery = Promise.withResolvers<string>();
+        let rejectDiscovery!: (reason: Error) => void;
+        const discovery = new Promise<string>((_resolve, reject) => {
+            rejectDiscovery = reject;
+        });
         const getDid = vi
             .fn()
-            .mockReturnValueOnce(discovery.promise)
+            .mockReturnValueOnce(discovery)
             .mockResolvedValue('did:key:z6MkLearnCloud');
         const getPage = vi.fn().mockResolvedValue({ records: [], hasMore: false });
         mockGetClient.mockResolvedValue({
@@ -83,7 +86,7 @@ describe('LearnCloud Plugin', () => {
         const second = plugin.index!.getPage!(learnCard as never, { category: 'Achievement' });
         const failures = Promise.allSettled([first, second]);
         await vi.waitFor(() => expect(getDid).toHaveBeenCalledTimes(1));
-        discovery.reject(new Error('Temporarily offline'));
+        rejectDiscovery(new Error('Temporarily offline'));
         expect((await failures).map(result => result.status)).toEqual(['rejected', 'rejected']);
         await expect(
             plugin.index!.getPage!(learnCard as never, { category: 'Social Badge' })
