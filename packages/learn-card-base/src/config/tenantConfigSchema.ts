@@ -289,6 +289,12 @@ export const tenantFeatureConfigSchema = z
         introSlides: z.boolean().default(true),
         launchPadQuickActions: z.boolean().default(true),
 
+        /** Enable ClassLink single sign-on for the tenant. */
+        classlinkSso: z.boolean().default(false),
+
+        /** Allow the tenant to opt users into ClassLink transcript sharing. */
+        classlinkTranscriptOptIn: z.boolean().default(false),
+
         /**
          * Pathways v2 — greenfield experimental feature at `/pathways`.
          * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.

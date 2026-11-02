@@ -13,6 +13,8 @@
     },
     "features": {
         "analytics": false,
+        "classlinkSso": true,
+        "classlinkTranscriptOptIn": true,
         "useSeededSkillFrameworks": true,
         "samplePersonas": [
             {

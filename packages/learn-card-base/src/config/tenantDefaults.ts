@@ -106,6 +106,8 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         themeSwitching: true,
         introSlides: true,
         launchPadQuickActions: true,
+        classlinkSso: false,
+        classlinkTranscriptOptIn: false,
         pathways: false,
         dashboardHome: false,
         useSeededSkillFrameworks: false,
