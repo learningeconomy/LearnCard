@@ -413,12 +413,42 @@ export const getLCAPlugin = async (
                 classlinkGetAuthorizeUrl: async (_learnCard, args) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
-                    return client.classlink.getAuthorizeUrl.query(args);
+                    return client.classlink.getAuthorizeUrl.mutate(args);
+                },
+                classlinkGetPersonalEmail: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.getPersonalEmail.query();
+                },
+                classlinkStartPersonalEmail: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.startPersonalEmail.mutate(args);
+                },
+                classlinkVerifyPersonalEmail: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.verifyPersonalEmail.mutate(args);
                 },
                 classlinkExchangeCode: async (_learnCard, args) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
                     return client.classlink.exchangeCode.mutate(args);
+                },
+                deleteMyClassLinkData: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.classlink.deleteMyData.mutate();
+                },
+                transcriptsGetStatus: async _learnCard => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.transcripts.getStatus.query();
+                },
+                transcriptsRequest: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.transcripts.request.mutate(args);
                 },
                 getProofOfLoginVp: async (_learnCard, token) => {
                     await initialized;
@@ -693,9 +723,26 @@ export const getLCAPlugin = async (
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { url: '' };
                 },
+                classlinkGetPersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkStartPersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
+                classlinkVerifyPersonalEmail: async () => {
+                    throw new Error('Unable to connect to LCA API.');
+                },
                 classlinkExchangeCode: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { token: '' };
+                },
+                transcriptsGetStatus: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { eligible: false, stateDisplayName: '' };
+                },
+                transcriptsRequest: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { status: 'failed', requestedAt: new Date().toISOString() };
                 },
                 getProofOfLoginVp: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
@@ -742,6 +789,10 @@ export const getLCAPlugin = async (
                 deleteUserKey: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { success: false };
+                },
+                deleteMyClassLinkData: async () => {
+                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
+                    return { deleted: 0 };
                 },
             },
         };

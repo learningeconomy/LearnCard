@@ -302,6 +302,9 @@ export * from './svgs/walletsIconsFormal/WalletIconsFormal';
 export * from './svgs/displayTypes/displayTypes';
 export * from './react-query/queries/checklist';
 export * from './react-query/queries/user-contact';
+export * from './react-query/queries/transcripts';
+export * from './react-query/queries/classlinkPersonalEmail';
+export * from './react-query/mutations/transcripts';
 export * from './svgs/attachmentTypes/attachmentIcons';
 
 export * from './security/webSecureStorage';

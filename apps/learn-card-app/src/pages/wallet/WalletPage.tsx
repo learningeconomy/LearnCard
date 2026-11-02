@@ -36,6 +36,8 @@ import ScanIcon from 'learn-card-base/svgs/ScanIcon';
 import AddToPassportMenu from '../../components/add-to-passport/AddToPassportMenu';
 import NewCredentialsPill from '../../components/main-subheader/NewCredentialsPill';
 import PassportSharingMenu from './PassportSharingMenu';
+import { PersonalEmailPrompt } from '../../components/classlink/PersonalEmailPrompt';
+import { TranscriptOptInCard } from '../../components/classlink/TranscriptOptInCard';
 
 import { useTheme } from '../../theme/hooks/useTheme';
 import { chatBotStore } from '../../stores/chatBotStore';
@@ -189,6 +191,8 @@ const WalletPage: React.FC = () => {
                     }
                 >
                     <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
+                        <PersonalEmailPrompt />
+                        <TranscriptOptInCard />
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
                                 <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">

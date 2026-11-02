@@ -1,4 +1,36 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Añade un correo personal",
+        "body": "Para conservar tu cuenta cuando dejes la escuela.",
+        "email": "Correo personal",
+        "code": "Código de 6 dígitos",
+        "send": "Enviar código",
+        "sending": "Enviando…",
+        "verify": "Verificar",
+        "verifying": "Verificando…",
+        "skip": "Omitir por ahora",
+        "success": "Correo personal añadido.",
+        "schoolError": "Usa un correo personal, no el de tu escuela",
+        "conflictError": "Este correo ya está asociado a otra cuenta.",
+        "codeError": "El código no es válido o ha caducado. Inténtalo de nuevo.",
+        "limitError": "Has solicitado demasiados códigos. Inténtalo más tarde.",
+        "error": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "transcriptOptIn": {
+        "title": "Obtén tu expediente académico de {{state}}",
+        "body": "Le pediremos a los registros escolares que envíen tu expediente académico aquí.",
+        "consent": "Acepto compartir mi identificación de estudiante con los registros escolares de {{state}}.",
+        "submit": "Obtener Mi Expediente",
+        "requesting": "Solicitando…",
+        "requested": "Tu expediente académico está en camino. Te avisaremos cuando llegue.",
+        "noneYet": "Todavía no hay un expediente académico para ti. Vuelve a consultar más tarde.",
+        "reauthRequired": "Inicia sesión con ClassLink de nuevo para continuar",
+        "reauthButton": "Iniciar Sesión de Nuevo",
+        "reauthing": "Iniciando sesión…",
+        "noStateId": "No pudimos encontrar tu registro de estudiante. Pide a tu escuela que revise tu cuenta de ClassLink.",
+        "error": "No pudimos comunicarnos con los registros de tu escuela en este momento. Inténtalo de nuevo más tarde.",
+        "tryAgain": "Intentar de Nuevo"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "No se han proporcionado los créditos obtenidos",

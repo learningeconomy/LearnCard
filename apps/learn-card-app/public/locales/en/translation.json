@@ -1,4 +1,36 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Add a personal email",
+        "body": "So you can keep your account after you leave school.",
+        "email": "Personal email",
+        "code": "6-digit code",
+        "send": "Send Code",
+        "sending": "Sending…",
+        "verify": "Verify",
+        "verifying": "Verifying…",
+        "skip": "Skip for Now",
+        "success": "Personal email added.",
+        "schoolError": "Use a personal email, not your school email",
+        "conflictError": "This email is already used by another account.",
+        "codeError": "Invalid or expired code. Please try again.",
+        "limitError": "Too many codes requested. Please try again later.",
+        "error": "Something went wrong. Please try again."
+    },
+    "transcriptOptIn": {
+        "title": "Get your {{state}} transcript",
+        "body": "We'll ask your school records to send your transcript here.",
+        "consent": "I agree to share my student ID with {{state}} school records.",
+        "submit": "Get My Transcript",
+        "requesting": "Requesting…",
+        "requested": "Your transcript is on its way. We'll let you know when it arrives.",
+        "noneYet": "There's no transcript for you yet. Check back later.",
+        "reauthRequired": "Sign in with ClassLink again to continue",
+        "reauthButton": "Sign In Again",
+        "reauthing": "Signing In…",
+        "noStateId": "We couldn't find your student record. Ask your school to check your ClassLink account.",
+        "error": "We couldn't reach your school records right now. Please try again later.",
+        "tryAgain": "Try Again"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Earned credits not supplied",

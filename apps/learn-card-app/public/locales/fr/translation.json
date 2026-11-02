@@ -1,4 +1,36 @@
 {
+    "classlinkPersonalEmail": {
+        "title": "Ajoutez une adresse e-mail personnelle",
+        "body": "Pour conserver votre compte après votre départ de l’école.",
+        "email": "Adresse e-mail personnelle",
+        "code": "Code à 6 chiffres",
+        "send": "Envoyer le code",
+        "sending": "Envoi en cours…",
+        "verify": "Vérifier",
+        "verifying": "Vérification en cours…",
+        "skip": "Pas maintenant",
+        "success": "Adresse e-mail personnelle ajoutée.",
+        "schoolError": "Utilisez une adresse personnelle, pas celle de votre école",
+        "conflictError": "Cette adresse e-mail est déjà utilisée par un autre compte.",
+        "codeError": "Code incorrect ou expiré. Veuillez réessayer.",
+        "limitError": "Trop de codes demandés. Veuillez réessayer plus tard.",
+        "error": "Une erreur est survenue. Veuillez réessayer."
+    },
+    "transcriptOptIn": {
+        "title": "Obtenez votre relevé de notes de {{state}}",
+        "body": "Nous demanderons aux registres scolaires d'envoyer votre relevé de notes ici.",
+        "consent": "J'accepte de partager mon numéro d'identification étudiant avec les registres scolaires de {{state}}.",
+        "submit": "Obtenir Mon Relevé",
+        "requesting": "Demande en cours…",
+        "requested": "Votre relevé de notes est en route. Nous vous préviendrons à son arrivée.",
+        "noneYet": "Il n'y a pas encore de relevé de notes pour vous. Revenez plus tard.",
+        "reauthRequired": "Connectez-vous à nouveau avec ClassLink pour continuer",
+        "reauthButton": "Se Reconnecter",
+        "reauthing": "Connexion en cours…",
+        "noStateId": "Nous n'avons pas trouvé votre dossier d'étudiant. Demandez à votre école de vérifier votre compte ClassLink.",
+        "error": "Nous n'avons pas pu joindre les registres de votre école pour le moment. Veuillez réessayer plus tard.",
+        "tryAgain": "Réessayer"
+    },
     "clrTranscript": {
         "credits": {
             "earnedNotSuppliedAria": "Crédits obtenus non renseignés",

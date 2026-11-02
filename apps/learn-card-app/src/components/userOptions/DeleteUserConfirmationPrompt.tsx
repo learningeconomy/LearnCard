@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSignInAdapter } from 'learn-card-base';
-import { getLogger } from 'learn-card-base';
+import { getLogger, useDeleteMyClassLinkData } from 'learn-card-base';
 const log = getLogger('delete-user-confirmation-prompt');
 
 import useFirebase from '../../hooks/useFirebase';
@@ -29,6 +29,7 @@ const DeleteUserConfirmationPrompt: React.FC<{
     const adapter = useSignInAdapter();
     const { removeAllVCsFromWallet, initWallet } = useWallet();
     const { deleteFirebaseUser } = useFirebase();
+    const { mutateAsync: deleteMyClassLinkData } = useDeleteMyClassLinkData();
     const currentUser = useCurrentUser();
     const { newModal } = useModal();
     const authToken = getAuthToken();
@@ -86,6 +87,9 @@ const DeleteUserConfirmationPrompt: React.FC<{
                 confirmationStore.set.showConfirmation(true);
                 setIsLoading(false);
             } else {
+                await deleteMyClassLinkData().catch(error =>
+                    log.warn('classlink.cleanup.failed', error)
+                );
                 const userDeleted = await deleteFirebaseUser();
 
                 if (userDeleted.success) {

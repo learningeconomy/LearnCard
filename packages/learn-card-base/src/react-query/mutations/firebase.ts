@@ -52,6 +52,18 @@ export const useSendLoginVerificationCode = (opts?: { showAlert?: boolean }) => 
     });
 };
 
+export const useDeleteMyClassLinkData = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<{ deleted: number }, Error, void>({
+        mutationFn: async () => {
+            const wallet = await initWallet();
+            const result = await wallet?.invoke?.deleteMyClassLinkData();
+            return result ?? { deleted: 0 };
+        },
+    });
+};
+
 export const useVerifyContactMethodWithProofOfLogin = () => {
     const { initWallet } = useWallet();
     const [presentAlert] = useIonAlert();

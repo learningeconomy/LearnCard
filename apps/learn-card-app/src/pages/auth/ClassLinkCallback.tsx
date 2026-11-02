@@ -88,7 +88,7 @@ const ClassLinkCallback: React.FC = () => {
                 const trpcError = e as { data?: { code?: string }; message?: string };
                 const code = trpcError.data?.code;
 
-                let errorMessage = m['login.classlink.failed']();
+                let errorMessage: string = m['login.classlink.failed']();
                 if (
                     code === 'BAD_REQUEST' ||
                     code === 'CONFLICT' ||
