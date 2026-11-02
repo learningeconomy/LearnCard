@@ -164,3 +164,33 @@ describe('insertItem', () => {
         });
     });
 });
+
+describe('insertItem on a list with more pages', () => {
+    it('keeps hasNextPage when the follow-up refetch fails', async () => {
+        const { getPage } = makeWallet();
+        // Read the fields during render so the hook re-renders when they change.
+        const { result } = renderHook(
+            () => {
+                const { data, hasNextPage, isRefetchError } = useGetCredentialList(CATEGORY);
+                return { data, hasNextPage, isRefetchError };
+            },
+            { wrapper }
+        );
+        await waitFor(() => expect(result.current.hasNextPage).toBe(true));
+
+        getPage.mockRejectedValue(new Error('offline'));
+        await insertItem(client, KEY, { id: 'new', uri: 'uri-new' });
+        await client.refetchQueries({ queryKey: KEY }).catch(() => undefined);
+        await waitFor(() => expect(result.current.isRefetchError).toBe(true));
+
+        expect(result.current.hasNextPage).toBe(true);
+        expect(result.current.data?.pages).toEqual([
+            {
+                records: [{ id: 'new', uri: 'uri-new' }, { uri: 'uri-1' }],
+                hasMore: true,
+                cursor: 'next',
+            },
+        ]);
+        expect(result.current.data?.pageParams).toHaveLength(1);
+    });
+});
