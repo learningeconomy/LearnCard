@@ -41,18 +41,25 @@ export const enterSharePrivacy = (): void => {
 
 /** Also protects navigation breadcrumbs recorded before the viewer mounts. */
 export const scrubShareTelemetry = <T>(value: T): T => {
+    // Only the current path is tracked, so shared non-cyclic references are still scrubbed.
+    const ancestors = new WeakSet<object>();
     const scrub = (item: unknown): unknown => {
         if (typeof item === 'string')
             return item.replace(
                 /(\/s\/[^\s?#"'<>]+)(?:\?[^\s#"'<>]*)?#[^\s"'<>]*/g,
                 '$1#[redacted]'
             );
-        if (Array.isArray(item)) return item.map(scrub);
-        if (item && typeof item === 'object')
+        if (!item || typeof item !== 'object' || item instanceof Date) return item;
+        if (ancestors.has(item)) return '[Circular]';
+        ancestors.add(item);
+        try {
+            if (Array.isArray(item)) return item.map(scrub);
             return Object.fromEntries(
                 Object.entries(item).map(([key, child]) => [key, scrub(child)])
             );
-        return item;
+        } finally {
+            ancestors.delete(item);
+        }
     };
     return scrub(value) as T;
 };

@@ -45,6 +45,24 @@ describe('share privacy', () => {
         expect(event.request.url).toContain('#secret');
         expect(window.location.href).toBe(before);
     });
+    it('scrubs cyclic telemetry without overflowing the stack', () => {
+        const event: Record<string, unknown> = { message: 'Failed /s/abc#secret' };
+        event.self = event;
+        event.list = [event, { parent: event }];
+        const shared = { url: '/s/abc#shared' };
+        event.a = shared;
+        event.b = shared;
+        const result = scrubShareTelemetry(event);
+        expect(result.self).toBe('[Circular]');
+        expect(result.list).toEqual(['[Circular]', { parent: '[Circular]' }]);
+        expect(result.a).toEqual({ url: '/s/abc#[redacted]' });
+        expect(result.b).toEqual({ url: '/s/abc#[redacted]' });
+        expect(JSON.stringify(result)).not.toMatch(/secret|#shared/);
+    });
+    it('keeps Date values intact', () => {
+        const timestamp = new Date('2026-11-01T00:00:00Z');
+        expect(scrubShareTelemetry({ timestamp }).timestamp).toBe(timestamp);
+    });
     it('updates mounted privacy consumers after render without repeating capture resets', async () => {
         const { result, unmount } = renderHook(() => useSharePrivateSession());
         expect(result.current).toBe(false);
