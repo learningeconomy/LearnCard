@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.90.47
+
+### Patch Changes
+
+- [#1888](https://github.com/learningeconomy/LearnCard/pull/1888) [`39dc0d73fbb51a9e2101988e59c047fccd772f9d`](https://github.com/learningeconomy/LearnCard/commit/39dc0d73fbb51a9e2101988e59c047fccd772f9d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop `useGetCredentialList` from crashing on a malformed cached entry (LC-2330). The hook now drops a cache entry that isn't valid infinite-query data and refetches, `useGetRecordForUri` and `insertItem` skip or replace malformed entries, `insertItem` now prepends to the first page without disturbing later pages' cursors (so `hasNextPage` survives a failed refetch), Scouts busts its persisted query cache on each app version, and Scouts' add-credential mutation now targets the real `useGetCredentialList` / `useGetCredentialCount` keys.
+
+- [#1885](https://github.com/learningeconomy/LearnCard/pull/1885) [`b1e3bbf58d89de8a28d13d35f047e8ac85ecf55d`](https://github.com/learningeconomy/LearnCard/commit/b1e3bbf58d89de8a28d13d35f047e8ac85ecf55d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Account Recovery and Edit Card crashing in the My Scouts modal by restoring the current user and wallet hooks removed during SSS hardening.
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/react@3.0.2
+
 ## 1.90.46
 
 ### Patch Changes

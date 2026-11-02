@@ -1,5 +1,11 @@
 # @learncard/sss-key-manager
 
+## 0.2.5
+
+### Patch Changes
+
+- [#1860](https://github.com/learningeconomy/LearnCard/pull/1860) [`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a) Thanks [@goblincore](https://github.com/goblincore)! - Reconcile stale account shares that reuse the same share coordinate instead of stopping sign-in with an error. Preserve pending writes for a delayed server commit and retain existing handling for unrelated failures.
+
 ## 0.2.4
 
 ### Patch Changes
