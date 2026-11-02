@@ -1,3 +1,5 @@
+import { sendCampaignEmail } from './campaign-email.helpers';
+import { getAnnouncementPreferences } from '@accesslayer/campaign/preferences';
 import { randomUUID } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import type { Campaign, LCNNotification } from '@learncard/types';
@@ -12,8 +14,8 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 
 export const canDispatchCampaign = (campaign: Campaign, now = new Date().toISOString()): boolean =>
     campaign.status === 'live' &&
-    campaign.channels.includes('notify') &&
-    Boolean(campaign.notification) &&
+    ((campaign.channels.includes('notify') && Boolean(campaign.notification)) ||
+        (campaign.channels.includes('email') && Boolean(campaign.email))) &&
     (!campaign.startsAt || campaign.startsAt <= now) &&
     (!campaign.endsAt || campaign.endsAt > now);
 
@@ -54,7 +56,9 @@ export const authorizeCampaignNotification = async (
     if (!metadata?.campaignId || !metadata.campaignCreatedAt || !notification.to.profileId)
         throw new Error('Campaign delivery is missing its identity');
     // Test jobs were addressed to the authenticated admin by sendTestToMe.
-    if (metadata.campaignTestId) return true;
+    if (metadata.campaignTestId)
+        return !(await getAnnouncementPreferences(notification.to.profileId))
+            .announcementPushOptOut;
     let campaign: Campaign;
     try {
         campaign = await getCampaign(metadata.campaignId);
@@ -89,18 +93,24 @@ export const sendCampaignTestToMe = async (
     caller: LCNNotification['to']
 ): Promise<boolean> => {
     const campaign = await getCampaign(campaignId);
+    if (!caller.profileId)
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Profile required' });
     const testId = randomUUID();
-    if (campaign.channels.includes('inApp') && !caller.profileId)
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Test requires an administrator profile',
-        });
-    if (campaign.channels.includes('notify')) {
+    const preferences = await getAnnouncementPreferences(caller.profileId);
+    if (campaign.channels.includes('email')) {
+        if (!(await sendCampaignEmail(campaign, caller.profileId, true)))
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message:
+                    'A verified primary email and eligible announcement preferences are required',
+            });
+    }
+    if (campaign.channels.includes('notify') && !preferences.announcementPushOptOut) {
         await enqueueCampaignNotification(
             await buildCampaignNotification(campaign, caller, testId)
         );
     }
-    if (campaign.channels.includes('inApp') && caller.profileId) {
+    if (campaign.channels.includes('inApp')) {
         await queueCampaignInAppTest(campaign, caller.profileId, testId);
     }
     return true;

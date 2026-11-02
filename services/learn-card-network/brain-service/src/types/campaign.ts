@@ -21,9 +21,10 @@ export const CampaignDispatchJobValidator = z
     .object({
         campaignId: CampaignIdValidator,
         campaignCreatedAt: z.iso.datetime(),
+        channel: z.enum(['notify', 'email']).default('notify'),
         afterProfileId: z.string().optional(),
         dispatchId: z.uuid(),
     })
     .strict();
 
-export type CampaignDispatchJob = z.infer<typeof CampaignDispatchJobValidator>;
+export type CampaignDispatchJob = z.input<typeof CampaignDispatchJobValidator>;

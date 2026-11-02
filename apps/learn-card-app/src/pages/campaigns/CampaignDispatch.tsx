@@ -10,6 +10,8 @@ import { Busy, Notice, primaryClass } from './ui';
 
 const reasons: Record<NonNullable<CampaignDispatchPreview['blockedReason']>, string> = {
     not_live: 'Go live before sending audience notifications.',
+    email_confirmation_required:
+        'Email delivery requires a separate recipient review that is not available in this composer yet.',
     notify_disabled: 'Enable Inbox / push notification and save before sending.',
     not_started: 'This campaign has not started yet. Check its start date.',
     ended: 'This campaign has ended. Update its end date and save to send notifications.',
@@ -52,15 +54,17 @@ export const CampaignDispatch: React.FC<{
     }, [campaign.id, campaign.updatedAt, disabled]);
     const unavailable = disabled
         ? 'Save changes and finish other actions before sending.'
-        : campaign.status !== 'live'
-          ? reasons.not_live
-          : !campaign.channels.includes('notify') || !campaign.notification
-            ? reasons.notify_disabled
-            : campaign.startsAt && campaign.startsAt > now
-              ? reasons.not_started
-              : campaign.endsAt && campaign.endsAt <= now
-                ? reasons.ended
-                : undefined;
+        : campaign.channels.includes('email')
+          ? reasons.email_confirmation_required
+          : campaign.status !== 'live'
+            ? reasons.not_live
+            : !campaign.channels.includes('notify') || !campaign.notification
+              ? reasons.notify_disabled
+              : campaign.startsAt && campaign.startsAt > now
+                ? reasons.not_started
+                : campaign.endsAt && campaign.endsAt <= now
+                  ? reasons.ended
+                  : undefined;
     const loadPreview = () =>
         void action.run('Checking recipients...', async () => {
             setPreview(undefined);

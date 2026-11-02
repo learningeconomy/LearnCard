@@ -46,6 +46,12 @@ export const brainServiceEnvironmentShape = {
     APP_STORE_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     CAMPAIGN_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     CAMPAIGN_QUEUE_URL: optionalEnvironmentUrl,
+    CAMPAIGN_UNSUBSCRIBE_SECRET: optionalEnvironmentString,
+    POSTMARK_BROADCAST_STREAM: z.string().trim().min(1).default('broadcast'),
+    CAMPAIGN_EMAIL_PAGE_SIZE: z.preprocess(
+        value => (value === '' ? undefined : value),
+        z.coerce.number().int().min(1).max(1000).default(500)
+    ),
     CAMPAIGN_DISPATCH_PAGE_SIZE: z.preprocess(
         value => (value === '' ? undefined : value),
         z.coerce.number().int().min(1).max(1000).default(1000)

@@ -67,7 +67,8 @@ export interface EmailOptions {
     prepend?: string[];
     /** Extra headers placed in the original message (below the SES block). */
     original?: string[];
-    encoding?: '7bit' | 'quoted-printable' | 'base64';
+    /** `7bit`/`8bit`/`binary` carry the body's UTF-8 bytes raw. */
+    encoding?: '7bit' | '8bit' | 'binary' | 'quoted-printable' | 'base64';
 }
 export const buildEmail = (options: EmailOptions): string => {
     const from = options.from ?? SENDER;
@@ -87,7 +88,13 @@ export const buildEmail = (options: EmailOptions): string => {
                   .toString('base64')
                   .replace(/(.{76})/g, '$1\r\n')
             : options.encoding === 'quoted-printable'
-              ? options.body.replace(/=/g, '=3D').replace(/(.{70})/g, '$1=\r\n')
+              ? Array.from(new TextEncoder().encode(options.body), byte =>
+                    byte === 0x3d || byte > 0x7e
+                        ? `=${byte.toString(16).toUpperCase().padStart(2, '0')}`
+                        : String.fromCharCode(byte)
+                )
+                    .join('')
+                    .replace(/(.{70})/g, '$1=\r\n')
               : options.body;
     return [
         ...(options.prepend ?? []),

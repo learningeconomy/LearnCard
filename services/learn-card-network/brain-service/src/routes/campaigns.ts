@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
+    AnnouncementPreferencesValidator,
     CampaignAudienceInputValidator,
     CampaignDispatchPreviewValidator,
     CampaignDispatchOptionsValidator,
@@ -23,7 +24,7 @@ import {
     type PaginatedCampaigns,
 } from '@learncard/types';
 
-import { t, profileRouteWithoutInputCapture } from '@routes';
+import { t, openRouteWithoutInputCapture, profileRouteWithoutInputCapture } from '@routes';
 import { isCampaignAdmin } from 'src/constants/campaigns';
 import { enforceRateLimits } from '@helpers/rateLimit.helpers';
 import { trace } from '@tracing';
@@ -46,6 +47,12 @@ import { enrollInCampaign, recordCampaignEvent } from '@accesslayer/campaign/sta
 import { dispatchCampaign } from '@helpers/campaign-queue.helpers';
 import { sendCampaignTestToMe } from '@helpers/campaign-notifications.helpers';
 import { getCampaignTests, acknowledgeCampaignTest } from '@accesslayer/campaign/test';
+
+import {
+    getAnnouncementPreferences,
+    updateAnnouncementPreferences,
+} from '@accesslayer/campaign/preferences';
+import { unsubscribeFromCampaignEmails } from '@helpers/campaign-unsubscribe.helpers';
 
 const campaignAdminRoute = profileRouteWithoutInputCapture
     .meta({ requiredScope: 'campaigns:admin' })
@@ -74,6 +81,22 @@ const idInput = z.object({ campaignId: CampaignIdValidator }).strict();
 const noInput = z.object({}).strict().default({});
 
 export const campaignsRouter = t.router({
+    getAnnouncementPreferences: campaignUserRoute
+        .meta({ requiredScope: 'campaigns:read' })
+        .input(noInput)
+        .output(AnnouncementPreferencesValidator)
+        .query(({ ctx }) => getAnnouncementPreferences(ctx.user.profile.profileId)),
+    updateAnnouncementPreferences: campaignUserRoute
+        .meta({ requiredScope: 'campaigns:write' })
+        .input(AnnouncementPreferencesValidator.partial())
+        .output(AnnouncementPreferencesValidator)
+        .mutation(({ ctx, input }) =>
+            updateAnnouncementPreferences(ctx.user.profile.profileId, input)
+        ),
+    unsubscribe: openRouteWithoutInputCapture
+        .input(z.object({ token: z.string().min(1).max(2048) }).strict())
+        .output(z.boolean())
+        .mutation(({ input }) => unsubscribeFromCampaignEmails(input.token)),
     sendTestToMe: campaignAdminRoute
         .input(idInput)
         .output(z.boolean())
@@ -112,7 +135,7 @@ export const campaignsRouter = t.router({
         .output(CampaignValidator)
         .mutation(async ({ ctx, input }): Promise<Campaign> =>
             trace('route', 'campaigns:create', () =>
-                createCampaign(input, ctx.user.profile.profileId)
+                createCampaign(input, ctx.user.profile.profileId, ctx.tenant?.id)
             )
         ),
     update: campaignAdminRoute

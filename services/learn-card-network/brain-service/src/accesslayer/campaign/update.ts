@@ -35,6 +35,7 @@ export const updateCampaign = async (input: UpdateCampaignInput): Promise<Campai
                 updates.notification === null
                     ? undefined
                     : (updates.notification ?? existing.notification),
+            email: updates.email === null ? undefined : (updates.email ?? existing.email),
             startsAt:
                 updates.startsAt === null ? undefined : (updates.startsAt ?? existing.startsAt),
             endsAt: updates.endsAt === null ? undefined : (updates.endsAt ?? existing.endsAt),

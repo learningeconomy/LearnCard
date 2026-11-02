@@ -34,6 +34,7 @@ const readPreview = async (
           MATCH (p:Profile)-[:IN_CAMPAIGN_AUDIENCE]->(c)
           OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
           WITH c, p, state WHERE ${campaignAgePredicate} AND state.notifiedAt IS NULL
+            AND coalesce(p.announcementPushOptOut, false) = false
           WITH DISTINCT p.profileId AS profileId LIMIT $recipientLimit
           RETURN collect(profileId) AS recipients
         }
@@ -54,7 +55,11 @@ const readPreview = async (
         });
     recipients.sort();
     let blockedReason: CampaignDispatchPreview['blockedReason'];
-    if (!canDispatchCampaign(campaign, params.now)) {
+    // Composer confirmation currently describes inbox/push recipients only. Never authorize
+    // an unreviewed email wave through that confirmation. SDK dispatch remains available.
+    if (campaign.channels.includes('email')) {
+        blockedReason = 'email_confirmation_required';
+    } else if (!canDispatchCampaign(campaign, params.now)) {
         blockedReason =
             campaign.status !== 'live'
                 ? 'not_live'

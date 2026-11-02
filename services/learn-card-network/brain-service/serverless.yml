@@ -311,6 +311,16 @@ functions:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}
 
+    campaignUnsubscribe:
+        handler: lambda.campaignUnsubscribeHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: POST /campaigns/unsubscribe
+
     skillsViewer:
         handler: lambda.skillsViewerHandler
         vpc:

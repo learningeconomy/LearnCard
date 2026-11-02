@@ -28,6 +28,13 @@ const VETPASS_BRANDING: Partial<TenantBranding> = {
  * produce output without throwing.
  */
 const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
+    announcement: {
+        title: 'New learning opportunities',
+        body: 'Explore the latest programs.',
+        ctaLabel: 'Explore',
+        ctaUrl: 'https://learncard.app/m/programs?utm_source=email',
+        unsubscribeUrl: 'https://learncard.app/unsubscribe?token=example',
+    },
     'embed-email-verification': {
         verificationCode: '123456',
         verificationEmail: 'test@example.com',
@@ -744,5 +751,24 @@ describe('renderEmail — edge cases', () => {
         });
 
         expect(html).toContain('no-recipient-token');
+    });
+});
+
+describe('announcement', () => {
+    it('renders escaped authored copy, CTA and unsubscribe in HTML and text', async () => {
+        const data = {
+            ...TEMPLATE_FIXTURES.announcement,
+            body: '<script>alert(1)</script>\nSecond line',
+        };
+        const { html, text, subject } = await renderEmail('announcement', VETPASS_BRANDING, data);
+        expect(subject).toBe(data.title);
+        expect(html).toContain('VetPass');
+        expect(html).not.toContain('<script>alert');
+        expect(html).toContain('&lt;script&gt;');
+        for (const output of [html, text]) {
+            expect(output).toContain(data.ctaUrl);
+            expect(output).toContain(data.unsubscribeUrl);
+            expect(output).toContain('Second line');
+        }
     });
 });

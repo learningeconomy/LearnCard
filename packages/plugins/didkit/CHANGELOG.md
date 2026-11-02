@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.10.7
+
+### Patch Changes
+
+- [#1836](https://github.com/learningeconomy/LearnCard/pull/1836) [`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990) Thanks [@Custard7](https://github.com/Custard7)! - chore: update DIDKit WASM after DIDKit #19
+
 ## 1.10.6
 
 ### Patch Changes

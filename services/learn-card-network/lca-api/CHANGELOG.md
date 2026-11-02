@@ -1,5 +1,19 @@
 # @welibraryos/lca-api-service
 
+## 1.6.1
+
+### Patch Changes
+
+- [#1850](https://github.com/learningeconomy/LearnCard/pull/1850) [`578e831f41bc762ff12e5ad9be6ba765f2bed33d`](https://github.com/learningeconomy/LearnCard/commit/578e831f41bc762ff12e5ad9be6ba765f2bed33d) Thanks [@Custard7](https://github.com/Custard7)! - Keep provisional Web3Auth migrations that have a confirmed escrow enrollment out of the 30-day purge of abandoned migrations, so users who skip the recovery PIN don't lose escrow.
+
+- [#1859](https://github.com/learningeconomy/LearnCard/pull/1859) [`b20b375870032c22ea9109d2b102ddbc4a4f3248`](https://github.com/learningeconomy/LearnCard/commit/b20b375870032c22ea9109d2b102ddbc4a4f3248) Thanks [@goblincore](https://github.com/goblincore)! - Use a unique final sort key for escrow reminder, start-notification and cancellation queues so equal-priority records form predictable batches.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a), [`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/init@2.5.7
+    - @learncard/didkit-plugin-node@0.3.7
+
 ## 1.6.0
 
 ### Minor Changes

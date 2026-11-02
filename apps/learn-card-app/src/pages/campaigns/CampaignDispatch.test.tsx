@@ -110,23 +110,25 @@ describe('audience notification dispatch', () => {
         expect(invalidate).toHaveBeenCalledWith({ queryKey: ['campaign-stats', 'test-send'] });
         expect(onBusy).toHaveBeenLastCalledWith(false);
     });
-    it.each(['not_live', 'notify_disabled', 'not_started', 'ended', 'no_recipients'] as const)(
-        'blocks a server preview with reason %s',
-        async blockedReason => {
-            const api = mockApi();
-            api.campaignsPreviewDispatch.mockResolvedValue({
-                ...preview,
-                recipientCount: 0,
-                blockedReason,
-            });
-            mount(api);
-            await review();
-            expect(
-                screen.getByRole('button', { name: 'Confirm notification send' })
-            ).toBeDisabled();
-            expect(api.campaignsDispatch).not.toHaveBeenCalled();
-        }
-    );
+    it.each([
+        'not_live',
+        'notify_disabled',
+        'email_confirmation_required',
+        'not_started',
+        'ended',
+        'no_recipients',
+    ] as const)('blocks a server preview with reason %s', async blockedReason => {
+        const api = mockApi();
+        api.campaignsPreviewDispatch.mockResolvedValue({
+            ...preview,
+            recipientCount: 0,
+            blockedReason,
+        });
+        mount(api);
+        await review();
+        expect(screen.getByRole('button', { name: 'Confirm notification send' })).toBeDisabled();
+        expect(api.campaignsDispatch).not.toHaveBeenCalled();
+    });
     it.each([
         { status: 'draft' },
         { status: 'paused' },
