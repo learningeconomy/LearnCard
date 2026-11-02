@@ -111,14 +111,33 @@ export const useGetResolvedCredentials = (uris?: (string | undefined)[], enabled
     }).map((result, index) => ({ ...result, uri: uris?.[index] }));
 };
 
+/**
+ * React Query's infinite observer reads `data.pages` and `data.pageParams` directly, so a truthy
+ * entry without them (seen in Scouts' persisted cache, LC-2330) throws on mount.
+ */
+export const isInfiniteData = <TData = unknown>(data: unknown): data is InfiniteData<TData> =>
+    Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pages) &&
+    Array.isArray((data as Partial<InfiniteData<TData>> | undefined)?.pageParams);
+
 // Returns an array of stored idx credentials
 export const useGetCredentialList = (category?: CredentialCategory, enabled: boolean = true) => {
     const { initWallet } = useWallet();
+    const queryClient = useQueryClient();
     const didWeb = switchedProfileStore.use.switchedDid();
     const backfillBoostUris = useBackfillBoostUris();
+    const queryKey = ['useGetCredentialList', didWeb ?? '', category ?? ''];
+
+    // Drop a malformed entry before the observer reads it, so the list refetches instead of
+    // crashing. Runs on every render so an entry restored from the persisted cache after mount
+    // is caught on the re-render that ends restoring.
+    const cached = queryClient.getQueryData(queryKey);
+    if (cached !== undefined && !isInfiniteData(cached)) {
+        log.warn('Dropping malformed useGetCredentialList cache entry', queryKey);
+        queryClient.removeQueries({ queryKey, exact: true });
+    }
 
     return useInfiniteQuery({
-        queryKey: ['useGetCredentialList', didWeb ?? '', category ?? ''],
+        queryKey,
         queryFn: async ({ pageParam }) => {
             try {
                 const wallet = await initWallet();
@@ -161,8 +180,10 @@ export const useGetRecordForUri = (uri?: string, enabled = true) => {
                 InfiniteData<{ hasMore: boolean; cursor?: string; records: LCR[] }>
             >({ queryKey: ['useGetCredentialList', didWeb ?? ''] });
 
-            const records = categoryQueries.flatMap(query =>
-                query[1]?.pages.flatMap(page => page.records)
+            const records = categoryQueries.flatMap(([, data]) =>
+                isInfiniteData<{ records?: LCR[] }>(data)
+                    ? data.pages.flatMap(page => page?.records ?? [])
+                    : []
             );
 
             const found = records.find(record => record?.uri === uri);

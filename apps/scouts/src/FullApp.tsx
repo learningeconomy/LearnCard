@@ -35,6 +35,12 @@ import { queryCacheStorage } from './helpers/queryPersistence';
 
 const CACHE_TTL = 1000 * 60 * 60 * 24 * 7; // 1 Week
 
+declare const __APP_VERSION__: string | undefined;
+
+// A new app version discards the persisted query cache, so cache shapes written by an older
+// build can't crash a newer one (LC-2330). Costs one cold cache per release.
+const CACHE_BUSTER = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
+
 const client = new QueryClient({ defaultOptions: { queries: { gcTime: CACHE_TTL } } });
 
 const persister = createAsyncStoragePersister({
@@ -51,7 +57,7 @@ const FullApp: React.FC = () => {
     return (
         <PersistQueryClientProvider
             client={client}
-            persistOptions={{ persister, maxAge: CACHE_TTL }}
+            persistOptions={{ persister, maxAge: CACHE_TTL, buster: CACHE_BUSTER }}
         >
             <div className="app-bar-top relative top-0 left-0 w-full z-[9999] bg-black" />
             <IonReactRouter>
