@@ -47,7 +47,7 @@
         "@types/node": "^18.7.19",
         "@types/react": "^18.0.0",
         "aqu": "0.4.3",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.2",
         "shx": "^0.3.4"
     },
     "types": "./dist/index.d.ts",
@@ -58,7 +58,7 @@
         "@trpc/server": "11.8.0",
         "immer": "^10.0.3",
         "use-immer": "^0.9.0",
-        "zod": "4.6.6"
+        "zod": "4.6.7"
     },
     "sideEffects": false
 }

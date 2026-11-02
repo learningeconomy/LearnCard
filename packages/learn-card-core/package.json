@@ -40,10 +40,10 @@
         "@learncard/types": "workspace:*",
         "@types/node": "^17.0.31",
         "aqu": "0.4.3",
-        "esbuild": "^0.27.1",
+        "esbuild": "^0.28.2",
         "shx": "^0.3.4",
-        "sift": "^17.0.1",
-        "tsc-alias": "^1.8.10"
+        "sift": "^17.1.4",
+        "tsc-alias": "^1.9.9"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
