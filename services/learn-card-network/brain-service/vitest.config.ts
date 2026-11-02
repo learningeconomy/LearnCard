@@ -25,6 +25,7 @@ export default createVitestConfig(brainServicePreset, {
             'test/openapi.spec.ts',
             'src/helpers/posthog.helpers.test.ts',
             'src/helpers/rateLimit.helpers.test.ts',
+            'src/helpers/sentry.helpers.test.ts',
             'src/helpers/credentialSubject.helpers.test.ts',
             'src/helpers/inbox-batch.helpers.test.ts',
             'src/helpers/inbox-queue.helpers.test.ts',
