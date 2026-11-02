@@ -77,6 +77,9 @@ const MyScoutsModal: React.FC<MyScoutsModalProps> = ({
     const flags = useFlags();
     const enableAdminTools = flags.enableAdminTools;
 
+    const { initWallet } = useWallet();
+    const currentUser = useCurrentUser();
+
     const {
         keyDerivation,
         capabilities,
