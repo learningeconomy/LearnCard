@@ -43,6 +43,137 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 describe('roster review workspace', () => {
+    it.each([1440, 390])(
+        'edits multiline descriptions without expanding every row at %spx',
+        width => {
+            vi.stubGlobal('innerWidth', width);
+            const data: RosterDetailsProps = {
+                ...props(2),
+                variables: ['description', 'name'],
+                longTextVariables: ['description'],
+                scopes: { description: 'perRecipient', name: 'perRecipient' },
+                values: { 'row-0': { description: 'First line\nSecond line', name: 'Ada' } },
+            };
+            render(<RosterEditor {...data} onClose={vi.fn()} />);
+            const description = screen.getByRole('textbox', { name: 'Person0 Description' });
+            expect(description.tagName).toBe('TEXTAREA');
+            expect(description).toHaveAttribute('rows', '3');
+            expect(description).not.toHaveAttribute('maxlength');
+            expect(description).toHaveAccessibleDescription('22 / 2,000 characters');
+            fireEvent.click(screen.getByRole('button', { name: 'Expand Person0 Description' }));
+            expect(description).toHaveAttribute('rows', '7');
+            expect(screen.getByRole('textbox', { name: 'Person1 Description' })).toHaveAttribute(
+                'rows',
+                '3'
+            );
+            expect(screen.getByRole('textbox', { name: 'Person0 Name' }).tagName).toBe('INPUT');
+            fireEvent.change(description, {
+                target: { value: 'A long description\nwith another paragraph.' },
+            });
+            expect(data.onChange).toHaveBeenCalledWith(
+                'row-0',
+                'description',
+                'A long description\nwith another paragraph.'
+            );
+        }
+    );
+    it('uses the same multiline editor for shared descriptions and preserves oversized imports', () => {
+        const data: RosterDetailsProps = {
+            ...props(1),
+            variables: ['description'],
+            longTextVariables: ['description'],
+            scopes: { description: 'shared' },
+            shared: { description: 'x'.repeat(2001) },
+            problems: { 'row-0': ['length'] },
+            fieldProblems: {
+                'row-0': { recipient: [], evidence: [], variables: { description: ['length'] } },
+            },
+        };
+        render(<RosterEditor {...data} onClose={vi.fn()} />);
+        fireEvent.click(screen.getByText('Credential fields · 1'));
+        const shared = screen.getByRole('textbox', { name: 'Description', exact: true });
+        expect(shared.tagName).toBe('TEXTAREA');
+        expect(shared).toHaveValue('x'.repeat(2001));
+        expect(shared).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByText('Use at most 2,000 characters for this field.')).toBeVisible();
+        expect(screen.getByRole('textbox', { name: 'Person0 Description' })).toBeDisabled();
+    });
+    it('preserves an oversized paste and identifies the field to shorten', () => {
+        const data: RosterDetailsProps = {
+            ...props(1),
+            variables: ['description'],
+            longTextVariables: ['description'],
+            scopes: { description: 'perRecipient' },
+        };
+        const view = render(<RosterEditor {...data} onClose={vi.fn()} />);
+        const text = 'Full paragraph\n'.repeat(400);
+        fireEvent.change(screen.getByRole('textbox', { name: 'Person0 Description' }), {
+            target: { value: text },
+        });
+        expect(data.onChange).toHaveBeenCalledWith('row-0', 'description', text);
+        view.rerender(
+            <RosterEditor
+                {...data}
+                onClose={vi.fn()}
+                values={{ 'row-0': { description: text } }}
+                problems={{ 'row-0': ['length'] }}
+                fieldProblems={{
+                    'row-0': {
+                        recipient: [],
+                        evidence: [],
+                        variables: { description: ['length'] },
+                    },
+                }}
+            />
+        );
+        const field = screen.getByRole('textbox', { name: 'Person0 Description' });
+        expect(field).toHaveValue(text);
+        expect(field).toHaveAttribute('aria-invalid', 'true');
+        expect(field).toHaveAccessibleDescription(/Use at most 2,000 characters/);
+        expect(screen.getByText('6,000 / 2,000 characters')).toHaveClass('text-red-700');
+    });
+    it('separates evidence for everyone from each person’s extra evidence', () => {
+        const data: RosterDetailsProps = {
+            ...props(2),
+            sharedEvidence: [
+                {
+                    id: 'shared',
+                    type: 'document',
+                    url: 'https://example.test/course.pdf',
+                    title: 'Course outline',
+                },
+            ],
+            attachments: {
+                'row-0': [
+                    {
+                        id: 'personal',
+                        type: 'link',
+                        url: 'https://example.test/ada',
+                        title: 'Ada portfolio',
+                    },
+                ],
+            },
+        };
+        render(<RosterEditor {...data} onClose={vi.fn()} />);
+        const shared = screen.getByRole('region', { name: 'Evidence for everyone' });
+        expect(within(shared).getByText('Course outline')).toBeVisible();
+        expect(
+            within(shared).getByText(
+                'Included for every person. Edit these items in Evidence & media.'
+            )
+        ).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Files & links for this person (1)' })
+        ).toBeVisible();
+        expect(
+            screen.getByRole('button', { name: 'Files & links for this person (0)' })
+        ).toBeVisible();
+        const evidence = screen.getByRole('textbox', { name: 'Extra evidence link for Person1' });
+        expect(evidence).toHaveValue('');
+        fireEvent.change(evidence, { target: { value: 'https://example.test/bao' } });
+        expect(data.onEvidenceChange).toHaveBeenCalledWith('row-1', 'https://example.test/bao');
+        expect(data.sharedEvidence).toHaveLength(1);
+    });
     it.each([1440, 390])('shows shared errors only on editable shared controls at %spx', width => {
         vi.stubGlobal('innerWidth', width);
         const data: RosterDetailsProps = {
@@ -191,7 +322,7 @@ describe('roster review workspace', () => {
             'true'
         );
         expect(screen.getByLabelText('Person0 Credits')).toBeDisabled();
-        expect(screen.getByLabelText('Additional evidence for Person0')).toHaveAttribute(
+        expect(screen.getByLabelText('Extra evidence link for Person0')).toHaveAttribute(
             'aria-invalid',
             'true'
         );
@@ -320,6 +451,6 @@ describe('roster review workspace', () => {
         expect(screen.getByRole('textbox', { name: 'Person0 Score' })).toHaveValue('95');
         expect(screen.getByRole('textbox', { name: 'Person0 Score' })).toBeDisabled();
         expect(screen.getByRole('textbox', { name: /Email for/ })).toBeDisabled();
-        expect(screen.getByRole('textbox', { name: /Additional evidence for/ })).toBeDisabled();
+        expect(screen.getByRole('textbox', { name: /Extra evidence link for/ })).toBeDisabled();
     });
 });

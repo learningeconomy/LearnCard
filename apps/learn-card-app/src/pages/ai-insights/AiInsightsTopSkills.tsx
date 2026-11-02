@@ -34,6 +34,7 @@ const AiInsightsTopSkills: React.FC<AiInsightsTopSkillsProps> = ({
             <div className="w-full flex flex-col items-start justify-start mt-4">
                 {topSkills.map((skill, index) => {
                     let skillName = skill.name;
+                    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
                     let description = '';
                     if (skill.type === 'skill') {
                         skillName = SKILLS.find(s => s.type === skill.name)?.title ?? skillName;

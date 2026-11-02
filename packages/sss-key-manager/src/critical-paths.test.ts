@@ -210,33 +210,29 @@ describe('Critical: Key must NEVER be lost', () => {
             ).rejects.toThrow();
         });
 
-        it('should handle various password strengths', async () => {
-            const passwords = [
-                'short',
-                'medium-length-password',
-                'very-long-password-with-special-characters-!@#$%^&*()',
-                '日本語パスワード', // Unicode
-                '🔐🔑🔒', // Emoji
-            ];
+        it.each([
+            'short',
+            'medium-length-password',
+            'very-long-password-with-special-characters-!@#$%^&*()',
+            '日本語パスワード', // Unicode
+            '🔐🔑🔒', // Emoji
+        ])('should round-trip a backup share with password %j', async password => {
+            const privateKey = await generateEd25519PrivateKey();
+            const shares = await splitPrivateKey(privateKey);
+            const encrypted = await encryptWithPassword(shares.recoveryShare, password);
 
-            for (const password of passwords) {
-                const privateKey = await generateEd25519PrivateKey();
-                const shares = await splitPrivateKey(privateKey);
-                const encrypted = await encryptWithPassword(shares.recoveryShare, password);
+            const decrypted = await decryptWithPassword(
+                encrypted.ciphertext,
+                encrypted.iv,
+                encrypted.salt,
+                password,
+                encrypted.kdfParams
+            );
 
-                const decrypted = await decryptWithPassword(
-                    encrypted.ciphertext,
-                    encrypted.iv,
-                    encrypted.salt,
-                    password,
-                    encrypted.kdfParams
-                );
+            const reconstructed = await reconstructFromShares([decrypted, shares.authShare]);
 
-                const reconstructed = await reconstructFromShares([decrypted, shares.authShare]);
-
-                expect(reconstructed).toBe(privateKey);
-            }
-        }, 15_000);
+            expect(reconstructed).toBe(privateKey);
+        });
     });
 
     describe('Recovery phrase round-trip', () => {

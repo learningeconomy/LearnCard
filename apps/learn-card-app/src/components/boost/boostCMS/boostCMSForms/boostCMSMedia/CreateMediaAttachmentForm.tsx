@@ -50,6 +50,7 @@ type CreateMediaAttachmentFormProps = {
 type BoostCMSMediaTypeSelectorProps = {
     state: BoostCMSMediaState;
     setState: Updater<BoostCMSMediaState>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     onSave: any;
     setActiveMediaType: React.Dispatch<React.SetStateAction<BoostMediaOptionsEnum | undefined>>;
     handleImageSelect: () => void;

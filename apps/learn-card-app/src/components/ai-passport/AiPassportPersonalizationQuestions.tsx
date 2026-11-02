@@ -15,6 +15,7 @@ export const AiPassportPersonalizationQuestions: React.FC<{
         setPersonalizedAnswers(prevState => {
             return {
                 ...prevState,
+                // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                 [questionType]: [...prevState?.[questionType], answer],
             };
         });
@@ -25,6 +26,7 @@ export const AiPassportPersonalizationQuestions: React.FC<{
             return {
                 ...prevState,
                 [questionType]: [
+                    // eslint-disable-next-line no-unsafe-optional-chaining -- existing expression; guarding it changes what this returns or throws
                     ...prevState?.[questionType].filter(_answer => _answer !== answer),
                 ],
             };

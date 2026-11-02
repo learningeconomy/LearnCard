@@ -99,6 +99,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     });
 
     useEffect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const getMetadata = async (attachments: Attachment[]): Promise<any> => {
             const docMetadata: { [docUrl: string]: MediaMetadata | undefined } = {};
             const videoMetadata: { [videoUrl: string]: VideoMetadata | undefined } = {};

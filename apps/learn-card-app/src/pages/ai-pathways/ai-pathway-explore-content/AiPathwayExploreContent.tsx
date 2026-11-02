@@ -6,6 +6,7 @@ import AiPathwayContentListItemSkeleton from './AiPathwayContentItemSkeletonLoad
 import { AiPathwayContent } from './ai-pathway-content.helpers';
 
 const AiPathwayExploreContent: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     occupations?: any[];
     isLoading?: boolean;
 }> = ({ occupations = [], isLoading = false }) => {

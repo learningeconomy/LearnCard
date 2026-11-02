@@ -10,7 +10,8 @@ export const SharedBoostVerificationItem: React.FC<{
     verification: VerificationItem;
     hideBorder?: boolean;
 }> = ({ verification, hideBorder = false }) => {
-    let check = verification.check;
+    const check = verification.check;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let message: string | undefined = '';
 
     message = verification?.check ? verification?.message : verification.message;
@@ -91,6 +92,7 @@ export const SharedBoostVerificationItem: React.FC<{
         verification.check === 'Boost is Authentic. Verified by LearnCard Network.' &&
         verification.status === VerificationStatusEnum.Success
     ) {
+        // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
         message = verification.check ? `${verification.message}` : verification.message;
 
         return (

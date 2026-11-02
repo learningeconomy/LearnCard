@@ -65,7 +65,9 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                 const items: PathwayItem[] = (
                     await Promise.all(
                         creds.filter(Boolean).map(async cred => {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             const vc: any = unwrapBoostCredential(cred as any);
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                             const pathwayBoostUri: string | undefined = (cred as any)?.boostId;
 
                             // Try to find the parent topic via familial lookup
@@ -81,6 +83,7 @@ export const AiSessionLearningPathways: React.FC<{ isLoading: boolean }> = ({ is
                                         }
                                     );
                                     const topic = family?.records?.find(
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                         (r: any) =>
                                             r?.category ===
                                             categoryMetadata[CredentialCategoryEnum.aiTopic]

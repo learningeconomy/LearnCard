@@ -56,6 +56,7 @@ export const LearnCardIDCMS: React.FC<{
         }
     }, []);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleSetState = (key: string, value: any) => {
         _setLearnCardID(prevState => {
             return {

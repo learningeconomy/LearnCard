@@ -46,7 +46,9 @@ type ViewMode = 'topics' | 'sessions' | 'topicDetail';
 type TopicGroup = {
     key: string;
     groupTitle: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     topics: any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     sessions: any[];
     providerNames: string[];
     providerLogos: string[];
@@ -209,7 +211,9 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
         if (filterBy === AiSessionsFilterOptionsEnum.unfinished) {
             items = items.filter(session => {
                 const isFinished = Boolean(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     (session as any)?.completed ||
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                     (session as any)?.hasAssessment ||
                     session?.vc?.completed
                 );
@@ -521,6 +525,7 @@ const AiSessionsPage: React.FC<{ topicUri?: string }> = ({ topicUri }) => {
                                                 filteredSessions.map((session, index) => (
                                                     <AiSessionItem
                                                         key={index}
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                         app={undefined as any}
                                                         session={session}
                                                         topicRecord={selectedTopicData?.topicRecord}

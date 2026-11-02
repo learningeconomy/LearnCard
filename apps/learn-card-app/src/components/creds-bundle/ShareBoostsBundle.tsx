@@ -39,7 +39,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
     const [isSharing, setIsSharing] = useState(false);
 
     const { search } = useLocation();
-    let { skipReload } = queryString.parse(search);
+    const { skipReload } = queryString.parse(search);
     const skipReloadBool = skipReload === 'true';
 
     const {
@@ -97,6 +97,7 @@ const ShareBoostsBundle: React.FC<ShareCredentialsProps> = ({
                 message: e?.toString(),
                 buttons: ['OK'],
             });
+            // eslint-disable-next-line preserve-caught-error -- adding { cause } changes the shape of the thrown error
             throw new Error('There was an error. Please try again later.');
         } finally {
             setIsSharing(false);

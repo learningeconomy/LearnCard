@@ -260,6 +260,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                 },
             },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const category = getDefaultCategoryForCredential(previewCred as any);
         // Map string category to enum value
         const categoryMap: Record<string, BoostCategoryOptionsEnum> = {
@@ -1067,6 +1068,7 @@ export const OBv3CredentialBuilder: React.FC<OBv3CredentialBuilderProps> = ({
                                                                 }),
                                                             },
                                                         },
+                                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                                                     } as any
                                                 }
                                                 categoryType={previewCategory}

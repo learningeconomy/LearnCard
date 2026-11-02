@@ -97,7 +97,7 @@ export const useManagedBoost = (
     const { data: recipientCount } = useCountBoostRecipients(boost?.uri);
     const { data: recipients, isLoading: recipientsLoading } = useGetBoostRecipients(boost?.uri);
 
-    let issueHistory: {
+    const issueHistory: {
         id: number;
         name: string;
         thumb: string;

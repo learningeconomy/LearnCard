@@ -50,7 +50,7 @@ type BoostAddressBookContactOptionsProps = {
     handleCloseModal: () => void;
     showFixedFooter?: boolean;
     showCloseButton?: boolean;
-    title?: String | React.ReactNode;
+    title?: string | React.ReactNode;
     footer?: React.ReactNode;
     search?: string;
     setSearch?: React.Dispatch<React.SetStateAction<string>>;

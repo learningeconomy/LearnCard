@@ -12,13 +12,12 @@
         "lib": ["dom", "es2021"],
         "noLib": false,
         "rootDir": "src",
-        "baseUrl": ".",
         "paths": {
-            "types/*": ["src/types/*"],
-            "types/wallet": ["src/types/wallet"],
-            "@wallet/*": ["src/wallet/*"],
-            "@helpers/*": ["src/wallet/helpers/*"],
-            "@didkit/*": ["src/didkit/*"]
+            "types/*": ["./src/types/*"],
+            "types/wallet": ["./src/types/wallet"],
+            "@wallet/*": ["./src/wallet/*"],
+            "@helpers/*": ["./src/wallet/helpers/*"],
+            "@didkit/*": ["./src/didkit/*"]
         },
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,

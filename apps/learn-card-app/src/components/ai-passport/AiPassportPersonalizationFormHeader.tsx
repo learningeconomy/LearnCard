@@ -23,6 +23,7 @@ export const AiPassportPersonalizationFormHeader: React.FC = () => {
                     <TransP
                         m={m['aiPersonalization.header']}
                         components={[
+                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                             <span
                                 className={`text-${primaryColor} text-[22px] font-semibold font-notoSans`}
                             />,

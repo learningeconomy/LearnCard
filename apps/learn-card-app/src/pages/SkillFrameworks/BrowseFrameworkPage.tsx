@@ -80,6 +80,7 @@ const BrowseFrameworkPage: React.FC<BrowseFrameworkPageProps> = ({
     const [selectedPath, setSelectedPath] = useState<SkillFrameworkNode[]>([]);
     const [isEdit, setIsEdit] = useState(isApproveFlow);
     const [pageWidth, setPageWidth] = useState<number>(0);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const pageRef = useRef<any>(null);
 
     const [addedNodes, setAddedNodes] = useState<

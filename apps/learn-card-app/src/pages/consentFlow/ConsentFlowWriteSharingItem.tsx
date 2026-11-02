@@ -44,6 +44,7 @@ const ConsentFlowWriteSharingItem: React.FC<ConsentFlowWriteSharingItemProps> = 
     infoText,
     onClickOverride,
 }) => {
+    // eslint-disable-next-line prefer-const -- one destructured binding is reassigned; splitting the destructure is out of scope
     let { IconComponent, iconSrc, title, iconClassName, iconCircleClass } = category
         ? getInfoFromContractKey(category)
         : {};

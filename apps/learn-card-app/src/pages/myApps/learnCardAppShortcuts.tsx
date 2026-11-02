@@ -23,6 +23,7 @@ export type LearnCardAppShortcut = {
     title: string;
     gradientFrom: string;
     gradientTo: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     Icon: React.FC<any>;
     getAction: (helpers: ShortcutActionHelpers) => () => void;
 };

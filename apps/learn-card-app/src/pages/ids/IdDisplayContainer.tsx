@@ -82,6 +82,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
     boostPageViewMode = BoostPageViewMode.Card,
     loading,
 }) => {
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let idBody = null;
 
     let credSleeve;
@@ -92,7 +93,7 @@ const IdDisplayContainer: React.FC<IdDisplayContainerProps> = ({
         credSleeve = MembershipSleeve;
     }
 
-    let achievementTypeText = getAchievementTypeDisplayText(achievementType, categoryType);
+    const achievementTypeText = getAchievementTypeDisplayText(achievementType, categoryType);
 
     if (boostPageViewMode === BoostPageViewMode.List) {
         return (

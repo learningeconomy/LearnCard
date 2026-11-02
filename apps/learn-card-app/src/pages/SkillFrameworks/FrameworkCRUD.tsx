@@ -50,6 +50,7 @@ export const FrameworkCRUD: React.FC = () => {
             const boosts = await wallet.invoke.getPaginatedBoosts({ limit: 100 });
             // Filter for membership/ID boosts (networks)
             return boosts.records.filter(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                 (b: any) => b.category === 'membership' || b.category === 'id'
             );
         },
@@ -85,6 +86,7 @@ export const FrameworkCRUD: React.FC = () => {
             });
             setShowCreateForm(false);
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         onError: (error: any) => {
             presentToast({
                 message: `Error: ${error.message}`,
@@ -113,6 +115,7 @@ export const FrameworkCRUD: React.FC = () => {
                 color: 'success',
             });
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         onError: (error: any) => {
             presentToast({
                 message: `Error: ${error.message}`,

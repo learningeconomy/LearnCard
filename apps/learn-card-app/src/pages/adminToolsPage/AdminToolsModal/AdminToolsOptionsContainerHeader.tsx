@@ -12,6 +12,7 @@ export const AdminToolsOptionsContainerHeader: React.FC<{ option: AdminToolOptio
 }) => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let iconComponent: React.ReactNode = null;
 
     switch (option.type) {

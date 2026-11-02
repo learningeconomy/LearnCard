@@ -119,7 +119,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
 
                 <ul className="text-sm text-blue-700 space-y-v3-2">
                     <li className="flex items-start gap-2">
-                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                         <span className="text-blue-400 mt-0.5" aria-hidden="true">
                             •
                         </span>
@@ -127,7 +126,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     </li>
 
                     <li className="flex items-start gap-2">
-                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                         <span className="text-blue-400 mt-0.5" aria-hidden="true">
                             •
                         </span>
@@ -135,7 +133,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                     </li>
 
                     <li className="flex items-start gap-2">
-                        {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                         <span className="text-blue-400 mt-0.5" aria-hidden="true">
                             •
                         </span>
@@ -184,7 +181,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                     </p>
                                     <ul className="space-y-v3-1 text-amber-700">
                                         <li className="flex items-start gap-2">
-                                            {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                                             <span className="text-amber-700" aria-hidden="true">
                                                 •
                                             </span>
@@ -195,7 +191,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                             </span>
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                                             <span className="text-amber-700" aria-hidden="true">
                                                 •
                                             </span>
@@ -206,7 +201,6 @@ export const ProductionStep: React.FC<ProductionStepProps> = ({
                                             </span>
                                         </li>
                                         <li className="flex items-start gap-2">
-                                            {/* eslint-disable-next-line i18next/no-literal-string -- decorative bullet SKIP */}
                                             <span className="text-amber-700" aria-hidden="true">
                                                 •
                                             </span>

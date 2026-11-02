@@ -229,6 +229,7 @@ export const BoostLinkedCredentialsModal: React.FC<{
                                 <TransP
                                     m={m['common.searchResults.noResultsFor']}
                                     values={{ query: search }}
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     components={[<span className="text-black italic" />]}
                                 />
                             </p>

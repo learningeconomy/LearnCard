@@ -2,6 +2,7 @@ import tsParser from '@typescript-eslint/parser';
 import tseslintPlugin from '@typescript-eslint/eslint-plugin';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import i18next from 'eslint-plugin-i18next';
+import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import noFrozenI18nMemo from './eslint-rules/no-frozen-i18n-memo.js';
 import noModuleScopeI18n from './eslint-rules/no-module-scope-i18n.js';
@@ -17,6 +18,7 @@ export default [
             '@typescript-eslint': tseslintPlugin,
             'jsx-a11y': jsxA11y,
             i18next,
+            react,
             'react-hooks': reactHooks,
             local: {
                 rules: {

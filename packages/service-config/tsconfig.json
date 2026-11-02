@@ -16,7 +16,6 @@
         "emitDeclarationOnly": true,
         "outDir": "dist",
         "rootDir": "src",
-        "baseUrl": ".",
         "types": ["node"]
     },
     "include": ["src"],

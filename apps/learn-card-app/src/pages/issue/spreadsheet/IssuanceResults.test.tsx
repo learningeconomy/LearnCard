@@ -1,20 +1,24 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { IssuanceResults } from './IssuanceResults';
 import { DeliveryStatus } from './DeliveryStatus';
 import { makeRun } from './fixtures.test-support';
 
-const modal = vi.hoisted(() => ({ open: vi.fn(() => ({ id: 1, generation: 1 })) }));
+const modal = vi.hoisted(() => ({
+    open: vi.fn((..._args: unknown[]) => ({ id: 1, generation: 1 })),
+    close: vi.fn(),
+}));
 const originalScroll = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
 afterEach(() => {
+    vi.clearAllMocks();
     vi.unstubAllGlobals();
     if (originalScroll)
         Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScroll);
     else Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
 });
 vi.mock('learn-card-base', () => ({
-    useModal: () => ({ newModalWithToken: modal.open, forceCloseModalByToken: vi.fn() }),
+    useModal: () => ({ newModalWithToken: modal.open, forceCloseModalByToken: modal.close }),
     ModalTypes: { Center: 'center', FullScreen: 'fullscreen' },
 }));
 const failedRun = () => {
@@ -32,6 +36,250 @@ const failedRun = () => {
 };
 
 describe('delivery status review', () => {
+    it('announces successful completion once after an active run, and not on restoration', () => {
+        const initial = makeRun(2);
+        const complete = {
+            ...initial,
+            outcomes: { 'row-0': { state: 'sent' as const }, 'row-1': { state: 'sent' as const } },
+        };
+        const onComplete = vi.fn();
+        const callbacks = {
+            onResume: vi.fn(),
+            onRetry: vi.fn(),
+            onDownload: vi.fn(),
+            onNew: vi.fn(),
+            onComplete,
+        };
+        const view = render(<IssuanceResults {...callbacks} run={initial} busy />);
+        view.rerender(<IssuanceResults {...callbacks} run={complete} busy={false} />);
+        expect(screen.getByRole('heading', { name: 'All credentials sent' })).toBeVisible();
+        expect(screen.getByText('2 of 2 sent successfully.')).toBeVisible();
+        expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+            sent: 2,
+            failed: 0,
+            confirming: 0,
+            total: 2,
+        });
+        expect(modal.open).toHaveBeenCalledTimes(1);
+        expect(modal.open.mock.lastCall?.slice(1)).toEqual([
+            { className: 'issue-spreadsheet-completion' },
+            { desktop: 'center', mobile: 'center' },
+        ]);
+        view.rerender(<IssuanceResults {...callbacks} run={{ ...complete }} busy={false} />);
+        expect(onComplete).toHaveBeenCalledTimes(1);
+        expect(modal.open).toHaveBeenCalledTimes(1);
+        view.unmount();
+        onComplete.mockClear();
+        modal.open.mockClear();
+        render(<IssuanceResults {...callbacks} run={complete} busy={false} />);
+        expect(onComplete).not.toHaveBeenCalled();
+        expect(modal.open).not.toHaveBeenCalled();
+    });
+    it.each(['done', 'status'] as const)(
+        'lets the completion dialog close or open recipient status (%s)',
+        action => {
+            const run = makeRun(1);
+            const callbacks = {
+                onResume: vi.fn(),
+                onRetry: vi.fn(),
+                onDownload: vi.fn(),
+                onNew: vi.fn(),
+            };
+            const view = render(<IssuanceResults {...callbacks} run={run} busy />);
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state: 'sent' } } }}
+                    busy={false}
+                />
+            );
+            const popup = render(modal.open.mock.lastCall?.[0] as React.ReactElement);
+            fireEvent.click(
+                within(popup.container).getByRole('button', {
+                    name: action === 'done' ? 'Done' : 'View delivery status',
+                })
+            );
+            expect(modal.close).toHaveBeenCalledWith({ id: 1, generation: 1 });
+            if (action === 'status') {
+                expect(modal.open).toHaveBeenCalledTimes(2);
+                expect(modal.open.mock.lastCall?.[1]).toEqual({
+                    className: 'issue-spreadsheet-dialog',
+                });
+            } else expect(modal.open).toHaveBeenCalledTimes(1);
+            expect(callbacks.onNew).not.toHaveBeenCalled();
+        }
+    );
+    it('celebrates a successful retry after showing a definite failure', () => {
+        const run = makeRun(1);
+        const callbacks = {
+            onResume: vi.fn(),
+            onRetry: vi.fn(),
+            onDownload: vi.fn(),
+            onNew: vi.fn(),
+        };
+        const failed = { ...run, outcomes: { 'row-0': { state: 'failed' as const } } };
+        const sent = { ...run, outcomes: { 'row-0': { state: 'sent' as const } } };
+        const view = render(<IssuanceResults {...callbacks} run={run} busy />);
+        view.rerender(<IssuanceResults {...callbacks} run={failed} busy={false} />);
+        expect(modal.open).not.toHaveBeenCalled();
+        view.rerender(<IssuanceResults {...callbacks} run={failed} busy />);
+        view.rerender(<IssuanceResults {...callbacks} run={sent} busy={false} />);
+        expect(modal.open).toHaveBeenCalledTimes(1);
+        view.rerender(<IssuanceResults {...callbacks} run={sent} busy={false} />);
+        expect(modal.open).toHaveBeenCalledTimes(1);
+    });
+    it.each(['failed', 'confirming'] as const)(
+        'shows %s deliveries as needing attention, never as all sent',
+        state => {
+            const initial = makeRun(2);
+            const onComplete = vi.fn();
+            const callbacks = {
+                onResume: vi.fn(),
+                onRetry: vi.fn(),
+                onDownload: vi.fn(),
+                onNew: vi.fn(),
+                onComplete,
+            };
+            const view = render(<IssuanceResults {...callbacks} run={initial} busy />);
+            const final = {
+                ...initial,
+                outcomes: { 'row-0': { state: 'sent' as const }, 'row-1': { state } },
+            };
+            view.rerender(<IssuanceResults {...callbacks} run={final} busy={false} />);
+            expect(screen.queryByRole('heading', { name: 'All credentials sent' })).toBeNull();
+            expect(screen.getByRole('heading', { name: 'Delivery needs attention' })).toBeVisible();
+            expect(modal.open).not.toHaveBeenCalled();
+            if (state === 'confirming') {
+                expect(onComplete).not.toHaveBeenCalled();
+                return;
+            }
+            expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+                sent: 1,
+                failed: 1,
+                confirming: 0,
+                total: 2,
+            });
+        }
+    );
+    it('does not announce completion while rows remain queued or ready', () => {
+        const run = makeRun(2);
+        const onComplete = vi.fn();
+        const callbacks = {
+            onResume: vi.fn(),
+            onRetry: vi.fn(),
+            onDownload: vi.fn(),
+            onNew: vi.fn(),
+            onComplete,
+        };
+        const view = render(<IssuanceResults {...callbacks} run={run} busy />);
+        view.rerender(
+            <IssuanceResults
+                {...callbacks}
+                run={{
+                    ...run,
+                    outcomes: { 'row-0': { state: 'sent' }, 'row-1': { state: 'queued' } },
+                }}
+                busy={false}
+            />
+        );
+        expect(onComplete).not.toHaveBeenCalled();
+        expect(screen.queryByRole('heading', { name: 'All credentials sent' })).toBeNull();
+        view.rerender(
+            <IssuanceResults
+                {...callbacks}
+                run={{
+                    ...run,
+                    outcomes: { 'row-0': { state: 'sent' }, 'row-1': { state: 'sent' } },
+                }}
+                busy={false}
+            />
+        );
+        expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+            sent: 2,
+            failed: 0,
+            confirming: 0,
+            total: 2,
+        });
+        view.rerender(
+            <IssuanceResults
+                {...callbacks}
+                run={{
+                    ...run,
+                    outcomes: { 'row-0': { state: 'sent' }, 'row-1': { state: 'sent' } },
+                }}
+                busy={false}
+            />
+        );
+        expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+    it.each(['sent', 'failed'] as const)(
+        'waits for an unconfirmed-only result to resolve to %s',
+        state => {
+            const run = makeRun(1);
+            const onComplete = vi.fn();
+            const callbacks = {
+                onResume: vi.fn(),
+                onRetry: vi.fn(),
+                onDownload: vi.fn(),
+                onNew: vi.fn(),
+                onComplete,
+            };
+            const view = render(<IssuanceResults {...callbacks} run={run} busy />);
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state: 'confirming' } } }}
+                    busy={false}
+                />
+            );
+            expect(onComplete).not.toHaveBeenCalled();
+            expect(modal.open).not.toHaveBeenCalled();
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state } } }}
+                    busy={false}
+                />
+            );
+            expect(onComplete).toHaveBeenCalledExactlyOnceWith({
+                sent: state === 'sent' ? 1 : 0,
+                failed: state === 'failed' ? 1 : 0,
+                confirming: 0,
+                total: 1,
+            });
+            expect(modal.open).toHaveBeenCalledTimes(state === 'sent' ? 1 : 0);
+            view.rerender(
+                <IssuanceResults
+                    {...callbacks}
+                    run={{ ...run, outcomes: { 'row-0': { state } } }}
+                    busy={false}
+                />
+            );
+            expect(onComplete).toHaveBeenCalledTimes(1);
+        }
+    );
+    it('keeps progress visible alongside definite failures while other rows are queued', () => {
+        const run = makeRun(2);
+        run.outcomes = { 'row-0': { state: 'failed' }, 'row-1': { state: 'queued' } };
+        const onComplete = vi.fn();
+        const view = render(
+            <IssuanceResults
+                run={run}
+                busy={false}
+                onResume={vi.fn()}
+                onRetry={vi.fn()}
+                onDownload={vi.fn()}
+                onNew={vi.fn()}
+                onComplete={onComplete}
+            />
+        );
+        expect(screen.getByRole('heading', { name: 'Delivery needs attention' })).toBeVisible();
+        expect(screen.getByText('1 waiting')).toBeVisible();
+        expect(
+            view.container.querySelector('.batch-delivery-illustration--active')
+        ).toBeInTheDocument();
+        expect(onComplete).not.toHaveBeenCalled();
+    });
     it('keeps Resume off a draft that has never submitted', () => {
         const run = makeRun();
         run.outcomes = { 'row-0': { state: 'ready' } };

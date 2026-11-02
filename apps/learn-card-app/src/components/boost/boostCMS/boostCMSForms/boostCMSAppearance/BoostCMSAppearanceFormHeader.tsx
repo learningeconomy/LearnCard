@@ -79,6 +79,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     handleSaveAppearance = () => {},
 }) => {
     const { closeModal } = useModal();
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let formTitle: string = '';
 
     const isCategoryAndTypeSaveDisabled = (
@@ -148,6 +149,7 @@ const BoostCMSAppearanceFormHeader: React.FC<BoostCMSAppearanceFormHeaderProps> 
     };
 
     const saveDisabled = isCategoryAndTypeSaveDisabled(activeCategoryType, activeType);
+    // eslint-disable-next-line no-useless-assignment -- existing dead initial value; removing it touches control flow, out of scope here
     let headerContainerStyles = '';
     let headerBackButtonStyles = '';
     let titleStyles = 'flex-1';

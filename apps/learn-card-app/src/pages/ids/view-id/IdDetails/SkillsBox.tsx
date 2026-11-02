@@ -25,6 +25,7 @@ const SkillsBox: React.FC<{
                         const category = boostCMSSKillCategories.find(
                             c => c.type === _skill.category
                         );
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         const skill: any = CATEGORY_TO_SKILLS[
                             _skill.category as BoostCMSSKillsCategoryEnum
                         ].find(s => s.type === _skill.skill) ?? {
@@ -39,6 +40,7 @@ const SkillsBox: React.FC<{
                         const subSkills = SKILLS_TO_SUBSKILLS[_skill.skill];
 
                         const selectedSkills = skills ?? [];
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
                         const skillSelected: any =
                             selectedSkills.find(s => s.skill === skill.type) ?? _skill;
 

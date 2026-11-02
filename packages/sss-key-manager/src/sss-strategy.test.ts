@@ -21,6 +21,7 @@ import {
     createSSSStrategy,
     formatVersionedEmailShare,
     IdentityRecoverySessionConsumedError,
+    DuplicateShareCoordinateError,
     parseVersionedEmailShare,
     selectRecoveryPhraseChallengeIndices,
     withRotationLock,
@@ -1617,6 +1618,16 @@ describe('createSSSStrategy', () => {
             const reconstructed = await strategy.reconstructKey(localKey, remoteKey);
 
             expect(reconstructed).toBe(originalKey);
+        });
+
+        it('classifies duplicate coordinates without changing other reconstruction errors', async () => {
+            const { localKey } = await strategy.splitKey('a'.repeat(64));
+            await expect(strategy.reconstructKey(localKey, localKey)).rejects.toBeInstanceOf(
+                DuplicateShareCoordinateError
+            );
+            await expect(strategy.reconstructKey('bad', 'bad')).rejects.not.toBeInstanceOf(
+                DuplicateShareCoordinateError
+            );
         });
     });
 

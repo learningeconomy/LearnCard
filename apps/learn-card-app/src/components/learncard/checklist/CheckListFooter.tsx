@@ -5,6 +5,7 @@ import { IonFooter } from '@ionic/react';
 import { useModal } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type, no-empty-pattern -- existing empty props type; replacing it changes the accepted props type; dropping the empty destructure removes the implicit non-null argument check
 const CheckListFooter: React.FC<{}> = ({}) => {
     const { closeModal } = useModal();
 

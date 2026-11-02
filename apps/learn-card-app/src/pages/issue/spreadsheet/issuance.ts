@@ -1,4 +1,5 @@
 import { getResultValidationError } from '../components/resultField';
+import { getLongTextVariables, getOverlongTextVariables } from './longText';
 import { SpreadsheetError } from './parseSpreadsheet';
 import {
     IssueInboxCredentialBatchValidator,
@@ -117,22 +118,20 @@ export const isSubmissionCandidate = (
     (run.outcomes[recipientKey(row)]?.state ?? 'ready') === (retryFailed ? 'failed' : 'ready');
 
 const validateSubmissionResults = (run: IssuanceRun, retryFailed = false): void => {
+    const longTextVariables = getLongTextVariables(run.template);
     for (const row of run.draft.recipients.filter(row =>
         isSubmissionCandidate(run, row, retryFailed)
     )) {
-        if (
-            getResultValidationError(
-                run.template,
-                effectiveRowValues(
-                    row,
-                    Object.keys(run.scopes),
-                    run.scopes,
-                    run.shared,
-                    run.draft.values
-                )
-            )
-        )
-            throw new SpreadsheetError('mapping');
+        const values = effectiveRowValues(
+            row,
+            Object.keys(run.scopes),
+            run.scopes,
+            run.shared,
+            run.draft.values
+        );
+        if (getOverlongTextVariables(run.template, values, longTextVariables).length)
+            throw new SpreadsheetError('textLength');
+        if (getResultValidationError(run.template, values)) throw new SpreadsheetError('mapping');
     }
 };
 

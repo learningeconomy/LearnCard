@@ -145,6 +145,23 @@ describe('durable roster issuance', () => {
             expect(api.submit).not.toHaveBeenCalled();
         }
     );
+    it.each([false, true])(
+        'blocks over-limit descriptions before submission (retry=%s)',
+        async retryFailed => {
+            const run = makeRun();
+            run.template.credentialSubject.achievement.description = dynamicField('description');
+            run.scopes = { description: 'perRecipient' };
+            run.draft.values = { 'row-0': { description: 'x'.repeat(2001) } };
+            run.outcomes['row-0'] = { state: retryFailed ? 'failed' : 'ready' };
+            const api = transport();
+            await expect(
+                executeIssuance(run, api, { ...options(run), retryFailed })
+            ).rejects.toThrow('textLength');
+            expect(api.createTemplate).not.toHaveBeenCalled();
+            expect(api.submit).not.toHaveBeenCalled();
+            expect(run.draft.values['row-0'].description).toHaveLength(2001);
+        }
+    );
     it('revalidates rows that become failed while polling an existing receipt', async () => {
         let run = makeRun();
         run.templateUri = 'template';

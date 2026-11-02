@@ -5,7 +5,9 @@ import { IonPage, IonGrid, IonCol, IonRow, IonToolbar, IonHeader, IonContent } f
 import CaretLeft from 'learn-card-base/svgs/CaretLeft';
 
 const MyDataAppsList: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     appsList: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     setSelectedApp: React.Dispatch<any>;
     handleGoBack: () => void;
 }> = ({ appsList = [], setSelectedApp, handleGoBack }) => {

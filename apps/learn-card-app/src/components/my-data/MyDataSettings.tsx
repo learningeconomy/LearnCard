@@ -16,6 +16,7 @@ import { boostVCTypeOptions } from '../boost/boost-options/boostOptions';
 import { ProfilePicture } from 'learn-card-base';
 
 const MyDataSettings: React.FC<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     selectedItem: any;
     handleGoBack: () => void;
 }> = ({ selectedItem, handleGoBack }) => {
@@ -112,6 +113,7 @@ const MyDataSettings: React.FC<{
                                 } = option;
 
                                 return (
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <div className="flex items-center justify-between pb-2 pt-2 border-b-2 border-solid border-grayscale-100">
                                         <div className="flex">
                                             <div
@@ -161,6 +163,7 @@ const MyDataSettings: React.FC<{
                                 } = option;
 
                                 return (
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     <div className="flex items-center justify-between pb-2 pt-2 border-b-2 border-solid border-grayscale-100">
                                         <div className="flex">
                                             <div

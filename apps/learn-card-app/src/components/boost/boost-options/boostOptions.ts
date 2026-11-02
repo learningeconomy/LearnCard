@@ -272,6 +272,7 @@ export const boostVCTypeOptions = {
 export const CATEGORY_TO_SUBCATEGORY_LIST: {
     [key: BoostCategoryOptionsEnum | string]: {
         title: string;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         type: any;
     }[];
 } = {

@@ -9,6 +9,7 @@ import { LCNProfile, LCNProfileManager } from '@learncard/types';
 import useTheme from '../../../theme/hooks/useTheme';
 import { IconSetEnum } from '../../../theme/icons';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 export const ShareChildInsightsList: React.FC<{}> = () => {
     const { getIconSet } = useTheme();
     const icons = getIconSet(IconSetEnum.placeholders);

@@ -159,9 +159,11 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
     const setViewMode = passportPageStore.set.credentialViewMode;
 
     const { data: credentialCount, isLoading: countLoading } = useGetCredentialCount(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         category as any
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const { data: managedBoostData = 0 } = useCountBoosts(category as any);
     const managedBoostCount = typeof managedBoostData === 'number' ? managedBoostData : 0;
 
@@ -169,12 +171,14 @@ const CredentialPage: React.FC<CredentialPageProps> = ({ category }) => {
         data: records,
         isLoading: credentialsLoading,
         isFetching: credentialsFetching,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     } = useGetCredentialList(category as any);
 
     const {
         data: managedBoosts,
         isLoading: managedBoostsLoading,
         isFetching: managedBoostsFetching,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     } = useGetPaginatedManagedBoosts(category as any, { limit: 12 });
 
     const credentialsBackgroundFetching =

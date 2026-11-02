@@ -9,6 +9,7 @@ import { ToastTypeEnum, useToast } from 'learn-card-base/hooks/useToast';
 import useTheme from '../../theme/hooks/useTheme';
 import * as m from '../../paraglide/messages.js';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 const SeedPhraseModal: React.FC<{}> = () => {
     const { colors } = useTheme();
     const primaryColor = colors?.defaults?.primaryColor;

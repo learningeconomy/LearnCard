@@ -287,7 +287,9 @@ app.get('/api/learncard/callback', async (req, res) => {
                     <TransP
                         m={m['developerPortal.guides.consentFlow.redirectHandlerStep.step2Hint']}
                         components={[
+                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                             <code className="bg-gray-100 px-1.5 py-0.5 rounded-sm" />,
+                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                             <code className="bg-gray-100 px-1.5 py-0.5 rounded-sm" />,
                         ]}
                     />
@@ -768,6 +770,7 @@ const SendCredentialsStep: React.FC<{
                     <TransP
                         m={m['developerPortal.guides.consentFlow.sendCredentialsStep.step2Desc']}
                         components={[
+                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                             <code className="bg-gray-100 px-1.5 py-0.5 rounded-sm text-xs" />,
                         ]}
                     />
@@ -884,6 +887,7 @@ log.info('User consent records:', userConsentData.records);`,
                                             'developerPortal.guides.consentFlow.sendCredentialsStep.tip2'
                                         ]
                                     }
+                                    // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                     components={[<code className="bg-amber-100 px-1 rounded-sm" />]}
                                 />
                             </li>
@@ -1215,6 +1219,7 @@ const ConsentFlowGuide: React.FC<GuideProps> = ({ selectedIntegration }) => {
 
     // Allow navigating to current step, any completed step, or any earlier step.
     // Forward navigation requires all previous steps to be complete.
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- existing conditional hook call; restructuring it changes render behavior
     const canNavigateToStep = useCallback(
         (index: number) => {
             if (index === guideState.currentStep) return true;

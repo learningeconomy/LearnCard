@@ -9616,7 +9616,32 @@
                 "evidence": "Evidence link",
                 "awardedDate": "Awarded date"
             },
-            "numberFormatConflict": "This column mixes number formats. Choose the correct format or fix the spreadsheet."
+            "numberFormatConflict": "This column mixes number formats. Choose the correct format or fix the spreadsheet.",
+            "reviewWorkspace": {
+                "characterCount": "{{count}} / {{limit}} characters",
+                "expand": "Expand",
+                "collapse": "Collapse",
+                "expandField": "Expand {{field}}",
+                "collapseField": "Collapse {{field}}",
+                "descriptionTooLong": "Use at most {{limit}} characters for this field.",
+                "sharedEvidence": "Evidence for everyone",
+                "sharedEvidenceHelp": "Included for every person. Edit these items in Evidence & media.",
+                "noSharedEvidence": "No evidence has been added for everyone.",
+                "personalEvidenceHelp": "Evidence added in a row is only sent to that person.",
+                "personalEvidence": "Extra evidence for this person",
+                "personalEvidenceFor": "Extra evidence link for {{name}}",
+                "personalAttachments": "Files & links for this person ({{count}})",
+                "evidenceFor": "Evidence for {{name}}",
+                "rowEvidenceHelp": "Only for this person; evidence for everyone is still included.",
+                "allSent": "All credentials sent",
+                "attention": "Delivery needs attention",
+                "completionCount": "{{sent}} of {{total}} sent successfully.",
+                "completionHelp": "Review delivery status or start another credential.",
+                "confirmationHelp": "Some deliveries are unconfirmed. Check their status before trying again.",
+                "failureHelp": "Review the failed deliveries, then retry only those that failed.",
+                "attentionToast": "{{sent}} of {{total}} sent. Review the remaining deliveries.",
+                "successToast": "Delivery complete: {{count}} sent."
+            }
         },
         "importOptions": {
             "uploadTitle": "Upload a file",

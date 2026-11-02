@@ -73,7 +73,7 @@ const SharedBoostVerificationBlock: React.FC<{
         }
     };
 
-    let worstVerificationStatus = verificationItems.reduce(
+    const worstVerificationStatus = verificationItems.reduce(
         (
             currentWorst: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum],
             verification

@@ -5,7 +5,9 @@ import X from 'learn-card-base/svgs/X';
 
 type ExpiredInviteLinkFooterProps = {
     buttonText?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     icon?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     buttonAction?: (...args: any[]) => void;
     buttonClassName?: string;
 };

@@ -240,6 +240,7 @@ const GaugeDescription: React.FC<{ copy: GaugeComparisonCopy }> = ({ copy }) => 
         <p className="text-sm font-poppins text-grayscale-600 text-center max-w-[250px] mx-auto">
             <TransP
                 m={copy.message}
+                // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                 components={[<span className={`font-bold ${copy.highlightClassName}`} />]}
             />
         </p>

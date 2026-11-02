@@ -387,10 +387,15 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                             ]
                                         }
                                         components={[
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
+                                            // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                             <code />,
                                         ]}
                                     />
@@ -417,6 +422,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                                 'developerPortal.dashboards.tabs.embedCode.sdkOnSuccessDesc'
                                             ]
                                         }
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<code />, <code />, <code />]}
                                     />
                                 </td>
@@ -434,6 +440,7 @@ export const EmbedCodeTab: React.FC<EmbedCodeTabProps> = ({ integration, templat
                                         values={{
                                             url: getResolvedTenantConfig().apis.brainServiceApi,
                                         }}
+                                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                                         components={[<code />]}
                                     />
                                 </td>

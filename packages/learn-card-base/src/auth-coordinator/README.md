@@ -161,6 +161,20 @@ flowchart TD
 
 ## Method Sequence Diagrams
 
+### Stale shares with duplicate coordinates
+
+Independent SSS splits can reuse an x-coordinate (the share's final byte). A stale
+device share paired with a server share from a different split can therefore
+throw during reconstruction instead of producing a mismatched DID.
+
+`createSSSStrategy().reconstructKey()` reports this specific case as
+`DuplicateShareCoordinateError`. During login, the coordinator handles it only
+when an expected DID, DID verifier and reconciliation method are available. It
+reconciles once: verified data reaches `ready`; otherwise only the stale main
+share is removed and `needs_recovery` retains pending candidates for a delayed
+commit. Other reconstruction, network and reconciliation errors keep their
+existing handling. `forgetDevice()` still removes only the active account's data.
+
 ### `setupNewKey(privateKey, did)`
 
 Called by `useAuthCoordinatorAutoSetup` when state is `needs_setup`.

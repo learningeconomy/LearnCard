@@ -69,6 +69,7 @@ const DEFAULT_SHARE_TARGETS: {
     },
 ];
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- existing empty props type; replacing it changes the accepted props type
 type ShareMyLearnCardProps = {};
 
 const ShareMyLearnCard: React.FC<ShareMyLearnCardProps> = () => {
@@ -105,6 +106,7 @@ const ShareMyLearnCard: React.FC<ShareMyLearnCardProps> = () => {
 
                 <ul className="flex flex-col p-0 w-full">
                     {shareTargets.map(target => (
+                        // eslint-disable-next-line react/jsx-key -- existing keyless list; picking keys changes React reconciliation, out of scope here
                         <ShareTarget
                             text={target.text}
                             icon={target.icon}

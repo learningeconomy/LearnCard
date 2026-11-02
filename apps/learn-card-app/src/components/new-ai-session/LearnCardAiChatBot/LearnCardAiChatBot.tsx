@@ -101,6 +101,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
     const [topicInitialized, setTopicInitialized] = useState(() => {
         try {
             const existingThread = currentThreadId.get?.();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
             return (
                 Boolean(existingThread) ||
@@ -161,6 +162,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
         // If there is already an active thread or messages, do not re-initialize
         const existingThread = currentThreadId.get?.();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
         const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
         if (existingThread || (existingMsgs && existingMsgs.length > 0)) {
             setTopicInitialized(true);
@@ -286,6 +288,7 @@ export const LearnCardAiChatBot: React.FC<LearnCardAiChatBotProps> = ({
 
     useEffect(() => {
         if (initialMessages?.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
             const existingMsgs = (messages as any).get?.() as ChatMessage[] | undefined;
             if (!existingMsgs || existingMsgs.length === 0) {
                 messages.set(initialMessages);

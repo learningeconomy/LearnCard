@@ -51,6 +51,7 @@ export enum ShortBoostStepsEnum {
 const ShortBoostUserOptions: React.FC<{
     handleCloseModal: () => void;
     boostCredential: VC | UnsignedVC;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     boost: any;
     boostUri: string;
     profileId: string;

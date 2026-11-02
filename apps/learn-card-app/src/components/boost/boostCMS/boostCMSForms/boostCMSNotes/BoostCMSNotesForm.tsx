@@ -8,6 +8,7 @@ const BoostCMSNotesForm: React.FC<{
     state: BoostCMSState;
     setState: React.Dispatch<React.SetStateAction<BoostCMSState>>;
 }> = ({ state, setState }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- existing loose type; tightening it is a typing change, out of scope for this lint-only PR
     const handleStateChange = (notes: any) => {
         setState({
             ...state,
