@@ -294,3 +294,14 @@ admin denial, caller-only tests, concurrent state acknowledgements and stats. Th
 notification integration suite covers concurrent receiver storage and push suppression.
 Hosted `lc verify` additionally exercises SDK authorization; it does not provision FCM
 or prove iOS/Android device receipt. Those require separately authorized device QA.
+
+### Concurrent authoring
+
+Content editors should pass the loaded campaign's `updatedAt` as `expectedUpdatedAt`
+to `campaignsUpdate`, and leave lifecycle status changes to `campaignsSetStatus`.
+The server compares the token after acquiring the campaign write lock and rejects
+stale saves with `CONFLICT`. Reload the latest definition before reconciling edits;
+never automatically retry a full stale form against a fresh token. Successful
+writes advance the timestamp monotonically, including same-millisecond writes.
+Legacy SDK callers may omit the optional token; those callers retain existing
+last-write behavior and do not receive optimistic concurrency protection.
