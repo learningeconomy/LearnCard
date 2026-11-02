@@ -46,7 +46,7 @@ vi.mock('../../i18n', async () => {
     return { useLocale: runtime.getLocale };
 });
 vi.mock('@learncard/lca-api-plugin', () => ({
-    DASHBOARD_TYPE: { GLOBAL: 'GLOBAL', NSO: 'NSO', TROOP: 'TROOP' },
+    DASHBOARD_TYPE: { NSO: 0, GLOBAL: 1, TROOP: 2 },
 }));
 vi.mock('./TroopsModal', () => ({ default: () => null }));
 vi.mock('./NetworkListDisplay', () => ({ default: () => null }));
