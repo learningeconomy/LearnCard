@@ -32,7 +32,7 @@ runs:
           if: ${{ steps.key.outcome != 'success' }}
           shell: bash
           run: |
-              echo '::notice::SDK reuse unavailable; preserving the complete ordinary Nx graph.'
+              echo '::warning::SDK reuse unavailable: unsupported input or task contract. See the key calculation error above; rebuilding with the complete ordinary Nx graph.'
               echo 'E2E_SDK_CACHE_ENABLED=false' >> "$GITHUB_ENV"
 
         - name: Restore exact SDK snapshot

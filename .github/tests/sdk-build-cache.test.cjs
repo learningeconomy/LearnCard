@@ -270,6 +270,23 @@ test('full key calculation survives app-only second commits, invalidates SDK/con
         assert.notEqual(specification(f.workspace).key, key);
         fs.writeFileSync(path.join(f.workspace, file), previous);
     }
+    // Unsupported tracked inputs must disable reuse rather than hash a link target or
+    // ignore a submodule's contents. Ordinary Nx execution remains the fallback.
+    const unsupported = 'packages/unsupported-input';
+    const location = path.join(f.workspace, unsupported);
+    fs.symlinkSync('common/source.ts', location);
+    git('add', unsupported);
+    assert.throws(() => specification(f.workspace), /Unaudited SDK source input/);
+    git('update-index', '--force-remove', unsupported);
+    fs.unlinkSync(location);
+
+    fs.mkdirSync(location);
+    const commit = git('rev-parse', 'HEAD').toString().trim();
+    git('update-index', '--add', '--cacheinfo', `160000,${commit},${unsupported}`);
+    assert.throws(() => specification(f.workspace), /Unaudited SDK source input/);
+    git('update-index', '--force-remove', unsupported);
+    fs.rmdirSync(location);
+    assert.equal(specification(f.workspace).key, key);
     write(path.join(f.workspace, '.env.local'), 'PRIVATE_FIXTURE=value');
     assert.throws(() => specification(f.workspace), /environment file/);
     assert.equal(fs.existsSync(path.join(f.workspace, 'INJECTED')), false);
@@ -292,5 +309,6 @@ test('workflow publisher is main-only and consumers are exact, read-only, same-p
         assert.match(text, /path: \$\{\{ runner.temp \}\}\/e2e-sdk-snapshot/);
     assert.match(consumer, /inputs.use-cache == 'true'/);
     assert.match(consumer, /E2E_SDK_CACHE_ENABLED=false/);
+    assert.match(consumer, /::warning::SDK reuse unavailable/);
     assert.doesNotMatch(producer + consumer, /path:.*(?:\.nx|test-results|apps\/)/);
 });

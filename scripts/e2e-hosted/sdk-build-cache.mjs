@@ -261,7 +261,7 @@ export const inputKey = (workspace, files, configuration) => {
     for (const file of [...new Set(files)].sort()) {
         const location = path.join(workspace, file);
         const stat = fs.lstatSync(location);
-        if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unaudited SDK source input');
+        if (!stat.isFile()) throw new Error('Unaudited SDK source input');
         append(file);
         append(String(stat.mode & 0o777));
         append(fs.readFileSync(location));
