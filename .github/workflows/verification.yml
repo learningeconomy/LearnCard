@@ -17,6 +17,8 @@ on:
             - 'scripts/verify-web-sqlite-build.mjs'
             - 'scripts/verify-web-sqlite-build.test.mjs'
             - 'scripts/summarize-verification*.mjs'
+            - 'scripts/profile-verification-traces.py'
+            - 'scripts/test_profile_verification_traces.py'
             - 'tests/smoketests/**'
             - 'package.json'
             - 'bun.lock'
@@ -160,7 +162,9 @@ jobs:
                   bun run --cwd apps/learn-card-app test:unit src/helpers/queryPersistence.test.ts src/helpers/createQueryPersister.test.ts > "$PRIVATE_LOG_DIR/persistence.log" 2>&1
 
             - name: Check sanitized timing summaries
-              run: node --test scripts/summarize-verification.test.mjs
+              run: |
+                  node --test scripts/summarize-verification.test.mjs
+                  python3 -B -m unittest discover -s scripts -p test_profile_verification_traces.py
 
             - name: Start owned stack and bootstrap sessions
               id: stack
@@ -229,6 +233,14 @@ jobs:
                     bun run --cwd apps/learn-card-app lc verify down --force --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/teardown.log" 2>&1
                   fi
 
+            # Read retained private traces in place; publish only fixed labels and numbers.
+            - name: Profile retained browser calls
+              if: ${{ always() }}
+              continue-on-error: true
+              run: |
+                  umask 077
+                  python3 -B scripts/profile-verification-traces.py "$STACK_DIR" "$SUMMARY_DIR"
+
             - name: Write sanitized status summary
               if: ${{ always() }}
               env:
@@ -246,5 +258,7 @@ jobs:
                   path: |
                       ${{ env.SUMMARY_DIR }}/summary.json
                       ${{ env.SUMMARY_DIR }}/summary.md
+                      ${{ env.SUMMARY_DIR }}/browser-profile.json
+                      ${{ env.SUMMARY_DIR }}/browser-profile.md
                   if-no-files-found: error
                   retention-days: 14

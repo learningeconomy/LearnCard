@@ -56,4 +56,17 @@ assert.equal(
 );
 assert.equal(summary.env.VERIFICATION_OUTCOME, '${{ steps.catalog.outcome }}');
 
-console.log('verification workflow lifecycle contract passed');
+const profileIndex = steps.findIndex(step => step.name === 'Profile retained browser calls');
+assert.ok(profileIndex > teardownIndex && profileIndex < summaryIndex);
+const profile = steps[profileIndex];
+assert.equal(profile.if, '${{ always() }}');
+assert.equal(profile['continue-on-error'], true, 'diagnostics cannot change verification success');
+assert.match(
+    profile.run,
+    /python3 -B scripts\/profile-verification-traces.py "\$STACK_DIR" "\$SUMMARY_DIR"/
+);
+const upload = steps.find(step => step.name === 'Retain sanitized summary only');
+assert.match(upload.with.path, /browser-profile\.json/);
+assert.match(upload.with.path, /browser-profile\.md/);
+assert.doesNotMatch(upload.with.path, /trace|session|\*\*/);
+console.log('verification lifecycle and sanitized browser profiling contract passed');
