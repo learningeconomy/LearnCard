@@ -30,6 +30,8 @@ export default createVitestConfig(brainServicePreset, {
             'src/helpers/inbox-queue.helpers.test.ts',
             'src/helpers/campaign-queue.helpers.test.ts',
             'src/helpers/campaign-webhook.helpers.test.ts',
+            'src/helpers/notification-webhook-fetch.helpers.test.ts',
+            'src/helpers/notification-delivery-boundary.helpers.test.ts',
             'src/helpers/inbox-batch-http.helpers.test.ts',
             'src/cache/atomic-counter.test.ts',
             'src/helpers/credential-refresh-auth.helpers.test.ts',

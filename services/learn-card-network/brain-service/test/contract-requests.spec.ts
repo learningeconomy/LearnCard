@@ -1,3 +1,4 @@
+import * as notificationTransport from '@helpers/notification-webhook-fetch.helpers';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createServer } from 'node:http';
 import * as runtime from '@environment';
@@ -1052,7 +1053,7 @@ describe('generic contract requests and correlated events', () => {
         const uri = await create([]);
         useDirectWebhook(webhook);
         const fetchSpy = vi
-            .spyOn(globalThis, 'fetch')
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
             .mockResolvedValue(new Response('{}', { status: httpStatus ?? 200 }));
         await expect(accept(uri)).resolves.toMatchObject({ termsUri: expect.any(String) });
         const row = (await eventRows(uri))[0]!;
@@ -1075,7 +1076,7 @@ describe('generic contract requests and correlated events', () => {
             const uri = await create([]);
             useDirectWebhook('https://synthetic.example/events');
             const fetchSpy = vi
-                .spyOn(globalThis, 'fetch')
+                .spyOn(notificationTransport, 'fetchNotificationWebhook')
                 .mockResolvedValue(new Response('{"success":false}', { status: httpStatus }));
             await accept(uri);
             const row = (await eventRows(uri))[0]!;
@@ -1104,7 +1105,7 @@ describe('generic contract requests and correlated events', () => {
         vi.mocked(learnCardHelpers.getDidWebLearnCard).mockRejectedValue(
             new Error('synthetic signing outage')
         );
-        const fetchSpy = vi.spyOn(globalThis, 'fetch');
+        const fetchSpy = vi.spyOn(notificationTransport, 'fetchNotificationWebhook');
         await accept(uri);
         const row = (await eventRows(uri))[0]!;
         expect(row.get('deliveries')[0].properties.state).toBe('pending');
@@ -1411,7 +1412,7 @@ describe('generic contract requests and correlated events', () => {
         const queued = structuredClone(delivered[0]!);
         useDirectWebhook('https://synthetic.example/events');
         const fetchSpy = vi
-            .spyOn(globalThis, 'fetch')
+            .spyOn(notificationTransport, 'fetchNotificationWebhook')
             .mockResolvedValue(new Response('{}', { status: 403 }));
         await expect(deliverQueuedNotification(JSON.stringify(queued))).resolves.toBeUndefined();
         await expect(notifications.sendNotification(structuredClone(queued))).resolves.toBe(false);
@@ -1544,7 +1545,7 @@ describe('generic contract requests and correlated events', () => {
             vi.spyOn(runtime, 'getNotificationRuntimeEnvironment').mockReturnValue({
                 ...runtime.getNotificationRuntimeEnvironment(),
                 NODE_ENV: 'development',
-                IS_OFFLINE: false,
+                IS_OFFLINE: true,
                 NOTIFICATIONS_QUEUE_URL: undefined,
                 IS_E2E_TEST: false,
                 NOTIFICATIONS_SERVICE_WEBHOOK_URL: `http://127.0.0.1:${address.port}/events`,

@@ -255,6 +255,25 @@ acknowledgement need private graph/cache access. This applies to all notificatio
 `ServerlessSecurityGroup` uses AWS's default outbound allowance. A configuration
 regression test protects this complete path.
 
+Private connectivity does not authorize profile-selected HTTP destinations. All hosted
+notification delivery (ordinary notifications, campaigns, explicit queue overrides and
+the default configured webhook) goes through `notification-webhook-fetch.helpers.ts`.
+It accepts HTTP(S) URLs without credentials, rejects nonpublic IP literals, and checks
+every DNS answer before pinning the HTTP connection to a validated literal IP. HTTP Host,
+TLS SNI and certificate verification retain the original hostname. Mixed public/private
+answers and resolution errors fail closed; every attempt resolves again. The transport
+never resolves the hostname a second time, preventing DNS rebinding.
+The IPv6 policy permits global unicast only, excluding special-purpose, documentation
+and transition ranges. Redirects are rejected, so neither the JWT nor notification body
+can be forwarded to a redirect target. The explicit HTTP(S) transport avoids runtime fetch dispatcher differences
+on Node and Bun, and caps acknowledgement bodies at 64 KiB. A blocked delivery does not advance `notifiedAt`; queue failures retain
+the existing retry/dead-letter behavior.
+
+Hosted custom webhooks must resolve exclusively to public addresses and respond directly
+at the configured URL. Private default endpoints are also rejected; no profile or queued
+payload can opt out. Only the trusted `IS_OFFLINE` runtime flag permits local development
+destinations, with redirects still disabled. `NODE_ENV=test` is not an exemption.
+
 This establishes the source configuration, not the deployed AWS state. Before rollout,
 verify the target stack's subnet/route associations, available NAT and internet gateway,
 and effective security-group/network-ACL egress, then exercise an operator-controlled
