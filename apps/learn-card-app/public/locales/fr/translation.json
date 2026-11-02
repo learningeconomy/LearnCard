@@ -4649,6 +4649,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "Voir",
         "contract": "votre contrat",
         "loadErr": "Impossible de charger l'activité",
         "updates": "Mises à jour",

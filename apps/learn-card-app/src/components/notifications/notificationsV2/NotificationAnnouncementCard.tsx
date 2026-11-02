@@ -1,4 +1,5 @@
 import React, { useId, useRef, useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import {
     archiveOutline,
@@ -6,7 +7,13 @@ import {
     checkmarkOutline,
     megaphoneOutline,
 } from 'ionicons/icons';
-import { ToastTypeEnum, useToast, useUpdateNotification } from 'learn-card-base';
+import {
+    ToastTypeEnum,
+    useToast,
+    useUpdateNotification,
+    useModal,
+    resolveNotificationRoute,
+} from 'learn-card-base';
 import type { NotificationType } from '@learncard/lca-api-plugin';
 import * as m from '../../../paraglide/messages.js';
 import { getLocale } from '../../../paraglide/runtime.js';
@@ -18,6 +25,8 @@ type Action = 'read' | 'archive' | 'restore';
 /** Render announcement copy as sent; campaign senders need not have a public profile. */
 export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, className }) => {
     const titleId = useId();
+    const history = useHistory();
+    const { closeAllModals } = useModal();
     const { mutateAsync: updateNotification } = useUpdateNotification();
     const { presentToast } = useToast();
     const inFlight = useRef(false);
@@ -51,6 +60,12 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
             inFlight.current = false;
             setAction(null);
         }
+    };
+
+    const open = (): void => {
+        if (!isRead) void update('read');
+        closeAllModals();
+        history.push(resolveNotificationRoute(notification));
     };
 
     const archiveAction = notification.archived ? 'restore' : 'archive';
@@ -109,6 +124,13 @@ export const NotificationAnnouncementCard: React.FC<Props> = ({ notification, cl
                         }).format(validDate)}
                     </time>
                 )}
+                <button
+                    type="button"
+                    onClick={open}
+                    className={`${buttonStyle} mt-4 bg-grayscale-900 text-white hover:opacity-90`}
+                >
+                    {m['notifications.viewCampaign']()}
+                </button>
                 {notification._id && (
                     <div className="mt-4 flex flex-wrap items-center gap-2">
                         {!isRead || action === 'read' ? (

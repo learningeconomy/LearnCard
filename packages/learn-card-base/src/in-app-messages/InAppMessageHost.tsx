@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import type { InAppMessage } from '@learncard/types';
 
+import { isCampaignInWindow } from './campaignMessages';
+import type { CampaignMessageSource } from './useMyCampaigns';
 import { useInAppMessages } from './useInAppMessages';
 import { markMessageSeen, onDismissalsReset } from './dismissalStore';
 import { iamDebug } from './debug';
@@ -30,6 +32,7 @@ import type {
 } from './presentationTypes';
 
 export interface InAppMessageHostProps extends PresentationGateOptions {
+    campaignSource?: CampaignMessageSource;
     onEvent?: (event: InAppMessagePresentationEvent) => void;
     onOpenApp?: (listingId: string, path?: string) => void;
     /** Account-bound private test; respects the presentation gate but records no engagement. */
@@ -45,6 +48,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     onEvent,
     onOpenApp,
     testDelivery,
+    campaignSource,
     ...gateOptions
 }) => {
     const locale = useI18nLocale();
@@ -52,7 +56,35 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     useLayoutEffect(() => {
         eventRef.current = onEvent;
     }, [onEvent]);
-    const { message, messages, credentialFacts } = useInAppMessages();
+    const { message, messages, credentialFacts, report, context } = useInAppMessages(undefined, {
+        campaigns: campaignSource?.campaigns,
+    });
+    const campaignReady = !campaignSource || campaignSource.ready;
+    const campaignById = useMemo(
+        () => new Map(campaignSource?.campaigns.map(item => [item.campaign.id, item]) ?? []),
+        [campaignSource?.campaigns]
+    );
+    const matchingCampaignIds = useMemo(
+        () =>
+            report.diagnostics
+                .filter(
+                    item =>
+                        item.source === 'campaign' &&
+                        item.enabled &&
+                        item.matched &&
+                        item.presentationSupported
+                )
+                .map(item => item.id),
+        [report.diagnostics]
+    );
+    useEffect(() => {
+        if (!campaignSource || campaignSource.accountDid !== credentialFacts.accountDid) return;
+        for (const id of matchingCampaignIds) void campaignSource.enroll(id);
+    }, [campaignSource, credentialFacts.accountDid, matchingCampaignIds]);
+    const campaignAvailable = (id: string): boolean => {
+        const item = campaignById.get(id);
+        return !item || Boolean(context && isCampaignInWindow(item, context.now));
+    };
     const { canPresent, reason } = useInAppMessagePresentationGate(gateOptions);
     const override = useInAppMessageOverride();
     const request = useInAppMessageRequest();
@@ -87,17 +119,18 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
               item =>
                   item.id === request.messageId &&
                   item.enabled &&
+                  campaignAvailable(item.id) &&
                   isInAppMessagePresentationSupported(item)
           )
         : undefined;
     useEffect(() => {
-        if (!request || requestedMessage || !flagDeliveryReady) return;
+        if (!request || requestedMessage || !flagDeliveryReady || !campaignReady) return;
         const timer = setTimeout(
             () => clearInAppMessageRequest(request.token),
             Math.max(0, request.requestedAt + 5000 - Date.now())
         );
         return () => clearTimeout(timer);
-    }, [flagDeliveryReady, request, requestedMessage]);
+    }, [flagDeliveryReady, campaignReady, request, requestedMessage]);
     const [opening, setOpening] = useState({
         accountDid: credentialFacts.accountDid,
         ready: false,
@@ -157,7 +190,12 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     const accountDid = credentialFacts.accountDid ?? undefined;
     const retained =
         presented?.accountDid === accountDid
-            ? messages.find(current => current.id === presented?.message.id && current.enabled)
+            ? messages.find(
+                  current =>
+                      current.id === presented?.message.id &&
+                      current.enabled &&
+                      campaignAvailable(current.id)
+              )
             : undefined;
     const candidate = retained ?? message;
     const messageKey = candidate ? `${accountDid ?? 'anonymous'}:${candidate.id}` : null;
@@ -185,7 +223,9 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
         (type: InAppMessagePresentationEvent['type'], details: MessageInteraction = {}) => {
             if (!active) return;
             try {
-                eventRef.current?.({
+                const campaignId =
+                    !isOverride && !isTest && campaignById.has(active.id) ? active.id : undefined;
+                const event: InAppMessagePresentationEvent = {
                     type,
                     messageId: active.id,
                     presentation: active.presentation,
@@ -195,14 +235,19 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
                           ? 'test'
                           : isDeepLink
                             ? 'deepLink'
-                            : 'flag',
+                            : campaignId
+                              ? 'campaign'
+                              : 'flag',
+                    ...(campaignId ? { campaignId } : {}),
                     ...details,
-                });
+                };
+                if (!isTest) campaignSource?.record(event, matchingCampaignIds.includes(active.id));
+                eventRef.current?.(event);
             } catch {
                 // Optional telemetry must never prevent presentation or dismissal.
             }
         },
-        [active, isOverride, isTest, isDeepLink]
+        [active, isOverride, isTest, isDeepLink, campaignSource, campaignById, matchingCampaignIds]
     );
 
     // Retain a presented message after its own impression makes it ineligible.
@@ -234,7 +279,16 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
                 return next;
             });
         },
-        [accountDid, override, isTest, testDelivery, isDeepLink, request]
+        [
+            accountDid,
+            override,
+            isTest,
+            testDelivery,
+            isDeepLink,
+            request,
+            setPresented,
+            setClosedIds,
+        ]
     );
 
     const onShown = useCallback(() => {

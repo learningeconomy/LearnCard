@@ -24,6 +24,12 @@ export const resolveNotificationRoute = (notification: LCNNotification): string 
     const { type } = notification;
 
     switch (type) {
+        case LCNNotificationTypeEnumValidator.enum.ANNOUNCEMENT: {
+            const id = notification.data?.metadata?.campaignId;
+            return typeof id === 'string' && id.trim().length > 0
+                ? `/m/${encodeURIComponent(id)}`
+                : '/notifications';
+        }
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST:
             return '/notifications';
         case LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED:

@@ -5,8 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NotificationType } from '@learncard/lca-api-plugin';
 import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 
-const mocks = vi.hoisted(() => ({ update: vi.fn(), toast: vi.fn() }));
-vi.mock('learn-card-base', () => ({
+const mocks = vi.hoisted(() => ({
+    update: vi.fn(),
+    toast: vi.fn(),
+    close: vi.fn(),
+    push: vi.fn(),
+}));
+vi.mock('react-router-dom', () => ({ useHistory: () => ({ push: mocks.push }) }));
+vi.mock('learn-card-base', async () => ({
+    ...(await import('learn-card-base/helpers/pushNotificationHelpers')),
+    useModal: () => ({ closeAllModals: mocks.close }),
     useUpdateNotification: () => ({ mutateAsync: mocks.update }),
     useToast: () => ({ presentToast: mocks.toast }),
     ToastTypeEnum: { Error: 'error' },
@@ -15,6 +23,7 @@ vi.mock('./types', () => ({ notificationCardStyles: { shell: 'notification-shell
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 vi.mock('../../../paraglide/runtime.js', () => ({ getLocale: () => 'en' }));
 vi.mock('../../../paraglide/messages.js', () => ({
+    'notifications.viewCampaign': () => 'View',
     'alerts.announcement': () => 'Announcement',
     'alerts.newAlert': () => 'New',
     'alerts.markRead': () => 'Mark as read',
@@ -139,6 +148,28 @@ describe('announcement notifications', () => {
         expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeInTheDocument();
         expect(document.querySelector('img')).toBeNull();
         expect(document.querySelector('time')).toBeNull();
-        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Mark as read' })).not.toBeInTheDocument();
     });
+});
+
+it.each([
+    ['pilot', '/m/pilot'],
+    [undefined, '/notifications'],
+])('opens campaign %s and marks read once', async (campaignId, path) => {
+    show({ data: { metadata: { campaignId } } });
+    const button = screen.getByRole('button', { name: 'View' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(mocks.push).toHaveBeenCalledWith(path);
+    expect(mocks.close).toHaveBeenCalled();
+    expect(mocks.update).toHaveBeenCalledOnce();
+    await waitFor(() => expect(screen.getByText('Read')).toBeInTheDocument());
+    fireEvent.click(button);
+    expect(mocks.update).toHaveBeenCalledOnce();
+});
+it('opens without an inbox ID and does not submit an invalid read mutation', () => {
+    show({ _id: undefined });
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+    expect(mocks.push).toHaveBeenCalledWith('/m/synthetic-campaign');
+    expect(mocks.update).not.toHaveBeenCalled();
 });

@@ -4,7 +4,8 @@ export interface InAppMessagePresentationEvent {
     type: 'shown' | 'action' | 'dismissed';
     messageId: string;
     presentation: InAppMessage['presentation'];
-    source: 'flag' | 'deepLink' | 'override' | 'test';
+    source: 'flag' | 'campaign' | 'deepLink' | 'override' | 'test';
+    campaignId?: string;
     actionIndex?: number;
     actionSource?: 'step' | 'message';
     actionType?: InAppMessageActionTarget['type'];

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useHistory } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 
 import {
@@ -10,6 +11,8 @@ import {
     shouldToastNotification,
     PushNotificationToast,
     switchedProfileStore,
+    resolveNotificationRoute,
+    useMarkNotificationRead,
 } from 'learn-card-base';
 
 import useOpenNotifications from '../notifications/useOpenNotifications';
@@ -21,6 +24,8 @@ const TOAST_DURATION_MS = 6000;
 // listener only toasts on web — where there is no push channel at all. It still
 // polls everywhere to keep the Alerts badge fresh from the same source.
 const NotificationToastListener: React.FC = () => {
+    const history = useHistory();
+    const { mutate: markRead } = useMarkNotificationRead();
     const isLoggedIn = useIsLoggedIn();
     const switchedDid = switchedProfileStore.use.switchedDid();
     const openNotifications = useOpenNotifications();
@@ -33,8 +38,14 @@ const NotificationToastListener: React.FC = () => {
 
     const seenIdsRef = useRef<Set<string> | null>(null);
 
+    // Reset the baseline on logout OR profile switch — the unread query is
+    // per-DID, so a switched profile must not toast its existing backlog.
     useEffect(() => {
-        if (!data || data === false) return;
+        seenIdsRef.current = null;
+    }, [isLoggedIn, switchedDid]);
+
+    useEffect(() => {
+        if (!data) return;
 
         const notifications = data.notifications ?? [];
         const currentIds = notifications
@@ -74,18 +85,15 @@ const NotificationToastListener: React.FC = () => {
                 imageUrl={imageUrl}
                 onClick={() => {
                     dismissToast();
-                    openNotifications();
+                    if (newest.type === 'ANNOUNCEMENT') {
+                        if (newest._id) markRead({ notificationId: newest._id });
+                        history.push(resolveNotificationRoute(newest));
+                    } else openNotifications();
                 }}
             />,
             { autoDismiss: true, duration: TOAST_DURATION_MS }
         );
-    }, [data, presentToast, dismissToast, openNotifications]);
-
-    // Reset the baseline on logout OR profile switch — the unread query is
-    // per-DID, so a switched profile must not toast its existing backlog.
-    useEffect(() => {
-        seenIdsRef.current = null;
-    }, [isLoggedIn, switchedDid]);
+    }, [data, presentToast, dismissToast, openNotifications, history, markRead]);
 
     return null;
 };

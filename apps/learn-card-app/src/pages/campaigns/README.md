@@ -40,7 +40,7 @@ Dispatch targets the entire stored eligible audience, not just the currently sel
 - Email delivery controls or an emailed metric. Current delivery channels are only `inApp` and `notify`.
 - Email is not a delivery channel. Inbox recipient counts do not guarantee push receipt; `notified` acknowledges inbox storage, not delivery to a device.
 - Newly added counts and per-row `notFound` CSV results. Preview/add return `{count}` of eligible matches, including existing members. DID aliases can resolve to the same profile, so totals across chunks must not be called unique recipients.
-- Notification tap routing: LC-2267. Native push receipt and email integration need separate device/service verification.
+- Native push receipt and email integration need separate device/service verification. Campaign notification routing is supplied by the LC-2267 parent layer.
 - The existing audience minor/DOB policy is preserved. Admin-only private tests bypass audience/status/schedule eligibility, while normal campaign delivery is unchanged. lca-api enum/dedupe must deploy before brain as documented by #1839; this implementation does not deploy anything.
 
 ## Verification
@@ -64,3 +64,13 @@ an untouched draft. The same shared schema still blocks invalid saves.
 Desktop layout uses explicit 1200px/1440px variants because this app does not define `lg`/`xl`.
 Secondary buttons declare solid borders to preserve them through Ionic's reset. The synthetic
 browser suite checks these properties and captures desktop/mobile list and editor screenshots.
+
+## Stack integration
+
+The composer sits above LC-2267, which sits above LC-2266 delivery. The app supplies
+both the ordinary campaign source and private test delivery to the same
+`InAppMessageHost`. Ordinary campaign fetching excludes entries with `testId`;
+those snapshots stay in the account-bound private test path and cannot enroll
+or report ordinary engagement. LaunchDarkly messages continue through the shared
+selector. Announcement cards retain their authored copy and read/archive/restore
+controls, while **View** marks the card read and enters the shared `/m/:id` route.
