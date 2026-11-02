@@ -1,6 +1,6 @@
 # Escrow recovery canary and monitoring
 
-**Status:** Tiers 1–2 runner and monitoring-account infrastructure implemented for staging setup; not deployed or live-verified. See the [staging operator runbook](../escrow-canary/README.md). Phase 1 has reason-count metrics; escrow-account supporting alarms/probes remain follow-up. Tiers 3+ remain proposed.
+**Status:** Tiers 1–2 runner and monitoring-account infrastructure implemented (see the [operator runbook](../escrow-canary/README.md)). Tier 3, the deadline evaluator and the canary inbox (phase 3) are implemented but off by default and not yet deployed or live-verified; see [TIER3-DESIGN.md](../escrow-canary/TIER3-DESIGN.md). Phase 1 has reason-count metrics; escrow-account supporting alarms/probes remain follow-up.
 **Depends on:** the enrollment-authority stack (#1703 → #1706 → #1710 → #1714).
 **Prerequisites:** The production tenant (`apps/learn-card-app/environments/learncard/config.json`) must move to SSS key derivation with the escrow attestation config before the canary (and any escrow rollout) can run; the PCR gate references `auth.sss.escrowEnclaveMeasurements` once it exists.
 **Paths:** `app/` = `services/escrow-enclave-app/`, `api/` = `services/learn-card-network/lca-api/`,
@@ -180,7 +180,7 @@ Validate before production, in staging, with a fake clock in the evaluator:
 
 Emit `Tier3.Started`, `Tier3.Confirmed`, `Tier3.Warned`, `Tier3.Released`,
 `Tier3.Cancelled` (0/1 each, when the step completes or fails) and email delivery
-latency; overdue detection is the evaluator's job (below).
+latency; overdue detection is the evaluator's job (above).
 
 Detection: start/code/confirm/warning regressions within 24 hours; release
 regressions within 24 hours (next scheduled release); a regression in hold
@@ -198,8 +198,10 @@ That last window is inherent: nobody, including us, can shorten the wait.
   leaves a broken account that would fail its next tier-3 run. The runner emits
   `Tier3.PoolAvailable` (healthy idle accounts); an alarm fires below 2, so
   orphans exhaust the buffer loudly instead of stalling tier 3 silently. The runner
-  clears orphaned holds after 24 hours via the user's own supersede path (`startRecovery`
-  with `restart: true`); an operator handles anything else.
+  clears orphaned holds once, after 24 hours, via the user's own DID-authenticated
+  cancel (`cancelRecovery`); this spends no code send and creates no second hold
+  (the `startRecovery` `restart: true` supersede was the original proposal). An
+  operator handles anything else.
 - **Real accounts:** created through normal sign-up in the production tenant,
   with recovery emails on the canary domain. No flags, allowlists or special
   cases anywhere in `api/` or `app/`; the canary must take the user path. They
@@ -323,13 +325,13 @@ These narrow the cause once a canary fails, and catch partial outages:
 
 ## 12. Implementation plan
 
-| Phase | Scope                                                                                                    | Effort   |
-| ----- | -------------------------------------------------------------------------------------------------------- | -------- |
-| 1     | lca-api reason codes + metrics; DynamoDB/SES/KMS alarms; time-server probe                               | 2–3 days |
-| 2     | Runner (Lambda) with in-memory share storage, tier 1 + tier 2, alarms, dashboard; staging first          | 3–5 days |
-| 3     | Canary domain + SES inbound + S3; tier 3 scheduler, pool and run ledger; deadline evaluator; cancel path | 3–5 days |
-| 4     | Image roll gate + CI consistency check                                                                   | 2–3 days |
-| 5     | Production: create canary accounts, enable paging, 2 weeks observation                                   | 2 weeks  |
+| Phase | Scope                                                                                                                                                | Effort   |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1     | lca-api reason codes + metrics; DynamoDB/SES/KMS alarms; time-server probe                                                                           | 2–3 days |
+| 2     | Runner (Lambda) with in-memory share storage, tier 1 + tier 2, alarms, dashboard; staging first                                                      | 3–5 days |
+| 3     | Canary domain + SES inbound + S3; tier 3 scheduler, pool and run ledger; deadline evaluator; cancel path (implemented, off by default; not deployed) | 3–5 days |
+| 4     | Image roll gate + CI consistency check                                                                                                               | 2–3 days |
+| 5     | Production: create canary accounts, enable paging, 2 weeks observation                                                                               | 2 weeks  |
 
 Tier 3 produces its first release signal 7 days after it starts.
 
