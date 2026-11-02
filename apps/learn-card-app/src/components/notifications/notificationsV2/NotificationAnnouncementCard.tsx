@@ -19,7 +19,7 @@ export const NotificationAnnouncementCard: React.FC<{
     const { closeAllModals } = useModal();
     const [read, setRead] = useState(notification.read);
     const open = (): void => {
-        if (!read) {
+        if (!read && notification._id) {
             setRead(true);
             markRead(
                 { notificationId: notification._id },
