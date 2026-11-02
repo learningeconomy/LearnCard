@@ -19,6 +19,8 @@ import { loginTrustPolicy, waitForLoginCode, type LoginMailPolicy } from './logi
 import type { Plan } from './preflight';
 import {
     CURRENT,
+    LEASE_MS,
+    leaseHeld,
     PROVISIONING,
     ProvisioningVersion,
     versionWith,
@@ -81,6 +83,11 @@ export interface ProvisionOptions {
     /** Activate tier 1/3 accounts too (tier 2 always activates, as the app's PIN setup does). */
     activate: boolean;
     initPool: boolean;
+    /**
+     * Resume a staged version younger than the claim lease (`LEASE_MS`). Only for an
+     * operator who knows the run that wrote it has exited.
+     */
+    takeover?: boolean;
     /** Required whenever login mail is read from the inbox (tier 3). */
     loginMail?: LoginMailPolicy;
     /** Optional Firebase project id the ID token's `aud` must equal. */
@@ -385,6 +392,33 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
             return { label: target.label, result: 'planned' };
         }
 
+        // A claimed version may belong to a run that is still changing the server: take
+        // it over only once its lease has expired (its owner fences on RENEW_MS), or when
+        // the operator asserts with --takeover that the earlier run has exited.
+        if (found.kind === 'resume') {
+            const createdAt = await step(
+                target,
+                'classify',
+                () => deps.secrets.createdAt(target.secretId, found.provisioning.versionId),
+                true
+            );
+            if (leaseHeld(createdAt, deps.now())) {
+                if (!options.takeover) {
+                    const wait =
+                        createdAt === undefined
+                            ? LEASE_MS
+                            : Math.max(0, createdAt + LEASE_MS - deps.now());
+                    deps.out(
+                        `${target.label} classify: staged version is claimed and may belong to a running run; re-run in ${Math.ceil(wait / 1000)}s, or with --takeover once no other run is active`
+                    );
+                    throw new ProvisionError('classify', 'provisioning_in_progress');
+                }
+                deps.out(
+                    `${target.label} warning: --takeover of a staged version inside its lease`
+                );
+            }
+        }
+
         // A. Session: a resume first tries its stored refresh token (no new code).
         let auth: { token: string; refreshToken: string } | undefined;
         if (found.kind === 'resume') {
@@ -398,22 +432,25 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
         auth ??= await login(target);
         const { token } = auth;
 
-        // B. Server state decides fresh / resume / stop.
+        // B. Server state decides fresh / resume / stop. Every path claims the
+        // PROVISIONING label (secret-writer.ts) BEFORE its first server change, and
+        // fences on that claim before each later one: of two runs that saw the same
+        // state only one claims, and a later run waits out the claim's lease.
         const memory = memoryStorage(
             found.kind === 'resume' ? found.provisioning.secret.deviceState : undefined
         );
         const strategy = deps.strategy(memory.storage);
-        const status = await step(target, 'status', () =>
-            strategy.fetchServerKeyStatus(token, providerType)
-        );
+        const fetchStatus = () =>
+            step(target, 'status', () => strategy.fetchServerKeyStatus(token, providerType));
 
         let secret: AccountSecret;
         let writer: ProvisioningVersion;
         let needShares: boolean;
         if (found.kind === 'fresh') {
+            const status = await fetchStatus();
             // A key the server knows but no secret holds is orphaned: never add a second one.
             if (status.exists) throw needsHuman('status', 'server_key_without_secret');
-            // C. Generate and write ahead BEFORE any server-side change.
+            // C. Generate and write ahead (the claim) BEFORE any server-side change.
             const privateKey = await deps.randomKey();
             secret = {
                 accountId: target.accountId,
@@ -426,12 +463,10 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
                 deviceState: { shares: {}, versions: {} },
             };
             if (!validatePin(secret.pin).ok) throw new ProvisionError('secret', 'pin');
-            writer = new ProvisioningVersion(
-                deps.secrets,
-                target.secretId,
-                undefined,
-                deps.newToken
-            );
+            writer = new ProvisioningVersion(deps.secrets, target.secretId, undefined, {
+                newToken: deps.newToken,
+                now: deps.now,
+            });
             const versionId = await step(target, 'secret', () => writer.write(secret), true);
             deps.out(`${target.label} write-ahead ok version=${versionId} did=${secret.did}`);
             needShares = true;
@@ -443,17 +478,18 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
             };
             if ((await deps.sdk.did(secret.privateKey)) !== secret.did)
                 throw needsHuman('classify', 'staged_did_mismatch');
+            writer = new ProvisioningVersion(deps.secrets, target.secretId, found.provisioning, {
+                newToken: deps.newToken,
+                now: deps.now,
+            });
+            // Claim the staged version before reading or changing server state: of two
+            // runs resuming it, the second stops here.
+            const versionId = await step(target, 'secret', () => writer.write(secret), true);
+            deps.out(`${target.label} claim ok version=${versionId}`);
+            const status = await fetchStatus();
             if (!status.exists) needShares = true;
             else if (status.primaryDid === secret.did) needShares = false;
             else throw needsHuman('status', 'server_did_mismatch');
-            writer = new ProvisioningVersion(
-                deps.secrets,
-                target.secretId,
-                found.provisioning,
-                deps.newToken
-            );
-            if (secret.refreshToken !== found.provisioning.secret.refreshToken)
-                await step(target, 'secret', () => writer.write(secret));
         }
         const owner = {
             token,
@@ -464,6 +500,7 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
 
         // D. Shares (the app's setupNewKey path).
         if (needShares) {
+            await step(target, 'secret', () => writer.fence(), true);
             await step(target, 'shares', () =>
                 strategy.atomicUpdateShares({ ...owner, did: secret.did })
             );
@@ -473,6 +510,7 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
 
         // E. Escrow: explicit opt-in (tiers 1/3) or PIN setup (tier 2), contact = login address.
         const contact = { recoveryEmail: target.email, recoveryLanguage: 'en' };
+        await step(target, 'secret', () => writer.fence(), true);
         await step(target, 'enroll', async () => {
             if (target.tier === 2) {
                 await strategy.setEscrowPin({ ...owner, pin: secret.pin, options: contact });
@@ -494,7 +532,8 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
                 () => strategy.fetchServerKeyStatus(token, providerType),
                 true
             );
-            if (current.sssActivationState !== 'active')
+            if (current.sssActivationState !== 'active') {
+                await step(target, 'secret', () => writer.fence(), true);
                 await step(target, 'activate', async () =>
                     strategy.activate(
                         token,
@@ -506,6 +545,7 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
                         )
                     )
                 );
+            }
         }
 
         // G. Verify as the runner will, then promote with compare-and-swap.

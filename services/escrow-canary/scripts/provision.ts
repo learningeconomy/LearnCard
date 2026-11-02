@@ -23,7 +23,7 @@ import type { Environment, Tier } from '../src/provision/targets';
  *   node services/escrow-canary/dist/provision.mjs \
  *     --environment <staging|production> --expect-account <12 digits> --tier 3 \
  *     --labels <hold-01,hold-02|all> --login-sender <address> --login-dkim-domain <domain> \
- *     [--dry-run] [--check-mail] [--activate] [--init-pool] [--no-require-dmarc] \
+ *     [--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] [--no-require-dmarc] \
  *     [--firebase-project <id>] [--function <name>]
  *
  *   ... --tier <1|2> --account <read-only|pin-a|pin-b> --email <address>   (code typed at a hidden prompt)
@@ -39,7 +39,7 @@ const usage = (): never => {
     write(
         'Usage: node dist/provision.mjs --environment <staging|production> --expect-account <id> --tier <1|2|3> ' +
             '(--labels <hold-NN,...|all> --login-sender <addr> --login-dkim-domain <domain> | --account <label> --email <addr>) ' +
-            '[--dry-run] [--check-mail] [--activate] [--init-pool] [--no-require-dmarc] [--firebase-project <id>] [--function <name>]'
+            '[--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] [--no-require-dmarc] [--firebase-project <id>] [--function <name>]'
     );
     return exit(2);
 };
@@ -63,6 +63,7 @@ const parsed = (() => {
                 'check-mail': { type: 'boolean', default: false },
                 activate: { type: 'boolean', default: false },
                 'init-pool': { type: 'boolean', default: false },
+                takeover: { type: 'boolean', default: false },
             },
             strict: true,
             allowPositionals: false,
@@ -187,6 +188,7 @@ try {
             checkMail: parsed['check-mail']!,
             activate: parsed.activate!,
             initPool: parsed['init-pool']!,
+            takeover: parsed.takeover!,
             loginMail,
             firebaseProject: parsed['firebase-project'],
         },

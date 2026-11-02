@@ -6,7 +6,8 @@ import { runnerConfig } from '../tier3/test-fakes';
 import { ProvisionError } from './errors';
 import { createProvisioner, randomPin, type ProvisionOptions } from './flow';
 import { containConsole } from './output';
-import { defaultOptions, ProvisionWorld, TIER12_EMAIL, tier12Config } from './test-world';
+import { LEASE_MS, ProvisioningVersion, versionWith } from './secret-writer';
+import { barrier, defaultOptions, ProvisionWorld, TIER12_EMAIL, tier12Config } from './test-world';
 
 const HOLD_01 = runnerConfig.holdAccounts[0].secretId;
 const READ_ONLY = tier12Config.accounts[0].secretArn;
@@ -43,6 +44,10 @@ const failure = async (promise: Promise<unknown>): Promise<ProvisionError> => {
     throw new Error('expected a ProvisionError');
 };
 
+/** The operator re-runs after the failed run's claim lease (secret-writer.ts). */
+const leaseExpires = () => {
+    world.now += LEASE_MS;
+};
 const current = (secretId: string) => world.stageValue(secretId, 'AWSCURRENT');
 const mutations = () =>
     world.calls.filter(call =>
@@ -251,6 +256,7 @@ describe('idempotency and resume', () => {
     it('resume after a crash past the write-ahead reuses the stored key and PIN, without a new code', async () => {
         world.options.sharesFailures = 1;
         const first = await failure(run(3));
+        leaseExpires();
         expect(first.step).toBe('shares');
         const staged = JSON.parse(world.stageValue(HOLD_01, 'PROVISIONING')!);
         expect(current(HOLD_01)).toBe('{}');
@@ -266,6 +272,7 @@ describe('idempotency and resume', () => {
     it('resume falls back to a fresh login when the stored refresh token is unusable', async () => {
         world.options.sharesFailures = 1;
         await failure(run(3));
+        leaseExpires();
         world.options.refreshRejected = true;
         // The login's own refresh round-trip also fails: stop, still no new key.
         const error = await failure(run(3));
@@ -277,6 +284,7 @@ describe('idempotency and resume', () => {
     it('resume after shares were written skips shares and enrolls', async () => {
         world.options.enrollResult = 'opted-out';
         const first = await failure(run(3));
+        leaseExpires();
         expect(first.message).toBe('enroll: not_enrolled_opted-out');
         expect(first.exitCode).toBe(3);
         expect(current(HOLD_01)).toBe('{}');
@@ -291,6 +299,7 @@ describe('idempotency and resume', () => {
     it('resume with a different server DID stops (exit 3)', async () => {
         world.options.sharesFailures = 1;
         await failure(run(3));
+        leaseExpires();
         world.server.set('canary-staging+1@inbox.example.com', {
             did: 'did:key:zsomeoneelse',
             shareVersion: 1,
@@ -372,6 +381,169 @@ describe('idempotency and resume', () => {
         expect(current(HOLD_01)).toBe('{}');
     });
 
+    /** Gate the first two puts and the first two PROVISIONING claims (worst-case interleaving). */
+    const interleaveWrites = () => {
+        const store = world.secretStore;
+        const put = store.putPending;
+        const move = store.moveStage;
+        const puts = barrier(2);
+        const claims = barrier(2);
+        store.putPending = async (...args) => {
+            await puts();
+            return put(...args);
+        };
+        store.moveStage = async (secretId, stage, to, from) => {
+            if (stage === 'PROVISIONING') await claims();
+            return move(secretId, stage, to, from);
+        };
+    };
+    const concurrently = async (count: number) => {
+        const plan = await world.plan(3);
+        // Each send replaces the code; let every concurrent run's verify succeed.
+        const login = {
+            ...world.login,
+            verifyCode: async (email: string) => {
+                world.users.add(email);
+                return `custom-token-${email}`;
+            },
+        };
+        const results = await Promise.allSettled(
+            Array.from({ length: count }, () =>
+                createProvisioner(plan, defaultOptions, world.deps({ login })).run()
+            )
+        );
+        return {
+            won: results.flatMap(result => (result.status === 'fulfilled' ? [result.value] : [])),
+            lost: results.flatMap(result =>
+                result.status === 'rejected' ? [result.reason as ProvisionError] : []
+            ),
+        };
+    };
+
+    it('two fresh runs whose prechecks all pass before either put: only the claimant touches the server', async () => {
+        interleaveWrites();
+        const { won, lost } = await concurrently(2);
+        expect(won).toEqual([[{ label: 'hold-01', result: 'provisioned' }]]);
+        expect(lost.map(error => [error.message, error.exitCode])).toEqual([
+            ['secret: provisioning_label_moved', 3],
+        ]);
+        // Both checked server state and generated a key; only one changed the server.
+        expect(world.calls.filter(call => call === 'put').length).toBeGreaterThanOrEqual(2);
+        expect(world.keysGenerated).toBe(2);
+        expect(world.calls.filter(call => call === 'shares')).toHaveLength(1);
+        expect(world.calls.filter(call => call === 'enroll')).toHaveLength(1);
+        const secret = JSON.parse(current(HOLD_01)!);
+        expect(world.server.get(secret.recoveryEmail)?.did).toBe(secret.did);
+        expect(world.stageValue(HOLD_01, 'PROVISIONING')).toBeUndefined();
+        // Recovery for the losing run: a plain re-run.
+        world.calls = [];
+        expect(await run(3)).toEqual([{ label: 'hold-01', result: 'live' }]);
+    });
+
+    it('two runs resuming the same staged version: the loser stops before any server call', async () => {
+        world.options.sharesFailures = 1;
+        await failure(run(3));
+        leaseExpires();
+        world.calls = [];
+        interleaveWrites();
+        const { won, lost } = await concurrently(2);
+        expect(won).toEqual([[{ label: 'hold-01', result: 'provisioned' }]]);
+        expect(lost.map(error => error.message)).toEqual(['secret: provisioning_label_moved']);
+        expect(world.calls.filter(call => call === 'shares')).toHaveLength(1);
+        expect(world.keysGenerated).toBe(1);
+        const secret = JSON.parse(current(HOLD_01)!);
+        expect(world.server.get(secret.recoveryEmail)?.did).toBe(secret.did);
+    });
+
+    it('an immediate re-run waits for the lease, unless the operator passes --takeover', async () => {
+        world.options.sharesFailures = 1;
+        await failure(run(3));
+        world.calls = [];
+        const error = await failure(run(3));
+        expect([error.message, error.exitCode]).toEqual(['classify: provisioning_in_progress', 1]);
+        expect(mutations()).toEqual([]);
+        expect(world.out.at(-2)).toBe(
+            'hold-01 classify: staged version is claimed and may belong to a running run; re-run in 900s, or with --takeover once no other run is active'
+        );
+        expect(await run(3, ['hold-01'], { takeover: true })).toEqual([
+            { label: 'hold-01', result: 'provisioned' },
+        ]);
+        expect(world.keysGenerated).toBe(1);
+    });
+
+    it('a run that starts while another run holds a fresh claim stops before any server call', async () => {
+        const deps = world.deps();
+        const plan = await world.plan(3);
+        let late: ProvisionError | undefined;
+        const strategy = deps.strategy;
+        deps.strategy = storage => {
+            const inner = strategy(storage);
+            return {
+                ...inner,
+                atomicUpdateShares: async params => {
+                    // A second run (an operator re-run) classifies after this run's claim.
+                    late ??= await failure(run(3));
+                    return inner.atomicUpdateShares(params);
+                },
+            };
+        };
+        expect(await createProvisioner(plan, defaultOptions, deps).run()).toEqual([
+            { label: 'hold-01', result: 'provisioned' },
+        ]);
+        expect(late?.message).toBe('classify: provisioning_in_progress');
+        expect(world.calls.filter(call => call === 'shares')).toHaveLength(1);
+        expect(world.calls.filter(call => call === 'enroll')).toHaveLength(1);
+    });
+
+    it('a run whose claim was taken over stops before its next server change', async () => {
+        const deps = world.deps();
+        const plan = await world.plan(3);
+        const store = world.secretStore;
+        const move = store.moveStage;
+        let claims = 0;
+        store.moveStage = async (secretId, stage, to, from) => {
+            await move(secretId, stage, to, from);
+            if (stage !== 'PROVISIONING' || to === undefined || ++claims !== 2) return;
+            // After the post-shares claim: the lease expires and another run takes over.
+            store.moveStage = move;
+            world.now += LEASE_MS;
+            const secret = JSON.parse(world.stageValue(HOLD_01, 'PROVISIONING')!);
+            await new ProvisioningVersion(store, HOLD_01, { versionId: to, secret }).write(secret);
+        };
+        const error = await failure(createProvisioner(plan, defaultOptions, deps).run());
+        expect([error.message, error.exitCode]).toEqual(['secret: provisioning_label_moved', 3]);
+        expect(world.calls).toContain('shares');
+        expect(world.calls).not.toContain('enroll');
+    });
+
+    it('a run whose claim was taken over after its last write never promotes', async () => {
+        const deps = world.deps();
+        const plan = await world.plan(3);
+        const authority = deps.sdk.authority;
+        let tookOver = false;
+        deps.sdk.authority = async (...args) => {
+            if (!tookOver) {
+                tookOver = true;
+                // This run's claim expires; another run takes the staged version over.
+                world.now += LEASE_MS;
+                const holder = versionWith(
+                    await world.secretStore.describe(HOLD_01),
+                    'PROVISIONING'
+                )!;
+                const secret = JSON.parse(world.stageValue(HOLD_01, 'PROVISIONING')!);
+                await new ProvisioningVersion(world.secretStore, HOLD_01, {
+                    versionId: holder,
+                    secret,
+                }).write(secret);
+            }
+            return authority(...args);
+        };
+        const error = await failure(createProvisioner(plan, defaultOptions, deps).run());
+        expect(error.message).toBe('secret: provisioning_label_moved');
+        expect(error.exitCode).toBe(3);
+        expect(current(HOLD_01)).toBe('{}');
+    });
+
     it('a rotated refresh token is stored before promotion', async () => {
         world.options.rotateRefresh = true;
         await run(3);
@@ -446,6 +618,7 @@ describe('secret containment', () => {
         const containment = containConsole();
         try {
             await failure(run(2, ['pin-a']));
+            leaseExpires();
             await run(2, ['pin-a']);
         } finally {
             containment.restore();

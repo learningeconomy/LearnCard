@@ -12,13 +12,30 @@ import { needsHuman, ProvisionError } from './errors';
 
 /**
  * Staged Secrets Manager writes. Provisioning never writes `AWSCURRENT`
- * directly: every write lands on a new version labelled `PROVISIONING`, which
- * the runner never reads. Only after verification is `AWSCURRENT` moved, with
- * `RemoveFromVersionId` = the placeholder version seen at classification, so a
- * concurrent change to `AWSCURRENT` makes the promotion fail (compare-and-swap).
+ * directly, and never moves `PROVISIONING` unconditionally:
+ * 1. `PutSecretValue` creates a new version labelled only `PROVISIONING_PENDING`
+ *    (a scratch label nothing reads; `PutSecretValue` cannot create an
+ *    unlabelled version and would move its labels unconditionally).
+ * 2. The run CLAIMS that version with `UpdateSecretVersionStage(PROVISIONING,
+ *    MoveToVersionId=new, RemoveFromVersionId=<this run's previous version>)`,
+ *    or with no `RemoveFromVersionId` for its first write. Secrets Manager
+ *    rejects the call when the label is attached to any other version, so of
+ *    two runs that both saw the same state, exactly one claim succeeds.
+ * 3. Only after verification is `AWSCURRENT` moved, with `RemoveFromVersionId` =
+ *    the placeholder version seen at classification (the same compare-and-swap).
+ * The runner reads only `AWSCURRENT`.
+ *
+ * A claim is also a LEASE: a later run may take a claimed version over only once
+ * it is `LEASE_MS` old (or with `--takeover`), and the owner starts a server change
+ * only while its claim is younger than `RENEW_MS`, re-claiming (a new conditional
+ * write) otherwise. A takeover therefore cannot overlap the owner's server changes
+ * as long as one server call finishes within `LEASE_MS - RENEW_MS` (minus clock skew).
  */
 export const PROVISIONING = 'PROVISIONING';
+export const PENDING = 'PROVISIONING_PENDING';
 export const CURRENT = 'AWSCURRENT';
+export const LEASE_MS = 15 * 60_000;
+export const RENEW_MS = 2 * 60_000;
 
 export interface SecretMetadata {
     arn: string;
@@ -33,8 +50,10 @@ export interface StagedSecretStore {
         secretId: string,
         ref: { versionId: string } | { stage: string }
     ): Promise<string | undefined>;
-    /** New version labelled only `PROVISIONING`; returns its version id. */
-    putProvisioning(secretId: string, value: string, requestToken: string): Promise<string>;
+    /** The version's `CreatedDate` (epoch ms); `undefined` when unknown. */
+    createdAt(secretId: string, versionId: string): Promise<number | undefined>;
+    /** New version labelled only `PROVISIONING_PENDING`; returns its version id. */
+    putPending(secretId: string, value: string, requestToken: string): Promise<string>;
     /** Move `stage` to `to` (or detach when `to` is undefined), removing it from `from`. */
     moveStage(
         secretId: string,
@@ -79,12 +98,22 @@ export const createStagedSecretStore = (
             throw new ProvisionError('secret', 'read');
         }
     },
-    async putProvisioning(secretId, value, requestToken) {
+    async createdAt(secretId, versionId) {
+        try {
+            const response = await client.send(
+                new GetSecretValueCommand({ SecretId: secretId, VersionId: versionId })
+            );
+            return response.CreatedDate?.getTime();
+        } catch {
+            throw new ProvisionError('secret', 'read');
+        }
+    },
+    async putPending(secretId, value, requestToken) {
         const response = await client.send(
             new PutSecretValueCommand({
                 SecretId: secretId,
                 SecretString: value,
-                VersionStages: [PROVISIONING],
+                VersionStages: [PENDING],
                 ClientRequestToken: requestToken,
             })
         );
@@ -104,23 +133,38 @@ export const createStagedSecretStore = (
 });
 
 /**
- * One run's handle on its `PROVISIONING` version. Every write checks that the
- * label is still on this run's previous version (or absent before the first
- * write), writes, and confirms the label landed on the new version. A second
- * run on the same label therefore aborts instead of silently re-pointing it.
+ * Whether a `PROVISIONING` version written at `createdAt` may still belong to a
+ * live run. Unknown age counts as held (fail closed).
+ */
+export const leaseHeld = (createdAt: number | undefined, now: number): boolean =>
+    createdAt === undefined || now - createdAt < LEASE_MS;
+
+/**
+ * One run's handle on its `PROVISIONING` version. Every write puts a pending
+ * version and then claims it with a conditional label move from this run's
+ * previous version (or from nowhere, for the first write). The claim is the
+ * guard: a second run that observed the same state fails its claim and stops
+ * before any server change, instead of re-pointing the label. `fence()` keeps
+ * the claim a live lease before each server change and before promotion.
  */
 export class ProvisioningVersion {
     private own: string | undefined;
     private latest: AccountSecret | undefined;
+    /** Local time taken before this run's latest put (never later than its CreatedDate). */
+    private claimedAt: number | undefined;
+    private readonly newToken: () => string;
+    private readonly now: () => number;
 
     constructor(
         private readonly store: StagedSecretStore,
         private readonly secretId: string,
         existing?: { versionId: string; secret: AccountSecret },
-        private readonly newToken: () => string = randomUUID
+        clock: { newToken?: () => string; now?: () => number } = {}
     ) {
         this.own = existing?.versionId;
         this.latest = existing ? structuredClone(existing.secret) : undefined;
+        this.newToken = clock.newToken ?? randomUUID;
+        this.now = clock.now ?? Date.now;
     }
 
     get versionId(): string | undefined {
@@ -129,20 +173,64 @@ export class ProvisioningVersion {
 
     async write(secret: AccountSecret): Promise<string> {
         const value = JSON.stringify(secretSchema.parse(secret));
+        // Early exit only (saves a version); the claim below is what is atomic.
         const before = versionWith(await this.store.describe(this.secretId), PROVISIONING);
         if (before !== this.own) throw needsHuman('secret', 'provisioning_label_moved');
+        const startedAt = this.now();
         let versionId: string;
         try {
-            versionId = await this.store.putProvisioning(this.secretId, value, this.newToken());
+            versionId = await this.store.putPending(this.secretId, value, this.newToken());
         } catch (error) {
             if (error instanceof ProvisionError) throw error;
             throw new ProvisionError('secret', 'write');
         }
-        const after = versionWith(await this.store.describe(this.secretId), PROVISIONING);
-        if (after !== versionId) throw needsHuman('secret', 'provisioning_label_moved');
+        await this.claim(versionId);
         this.own = versionId;
         this.latest = structuredClone(secret);
+        this.claimedAt = startedAt;
         return versionId;
+    }
+
+    /**
+     * Call immediately before a server change or promotion. Requires that this run
+     * still holds `PROVISIONING`; a claim older than `RENEW_MS` is renewed first by
+     * re-writing the latest value (the conditional claim fails if another run took
+     * over), so the change starts well inside the lease.
+     */
+    async fence(): Promise<void> {
+        if (!this.own || !this.latest || this.claimedAt === undefined)
+            throw new ProvisionError('secret', 'not_claimed');
+        if (this.now() - this.claimedAt >= RENEW_MS) {
+            await this.write(this.latest);
+            return;
+        }
+        let holder: string | undefined;
+        try {
+            holder = versionWith(await this.store.describe(this.secretId), PROVISIONING);
+        } catch {
+            throw new ProvisionError('secret', 'describe');
+        }
+        if (holder !== this.own) throw needsHuman('secret', 'provisioning_label_moved');
+    }
+
+    /** Conditional move of `PROVISIONING` from this run's version (or nowhere) to `versionId`. */
+    private async claim(versionId: string): Promise<void> {
+        try {
+            await this.store.moveStage(this.secretId, PROVISIONING, versionId, this.own);
+            return;
+        } catch {
+            // Fall through: decide from the label's actual position.
+        }
+        // `versionId` was just created and is known only to this run, so the label on
+        // it means our claim committed (response lost, SDK retry rejected).
+        const holder = await this.store
+            .describe(this.secretId)
+            .then(metadata => ({ read: true, version: versionWith(metadata, PROVISIONING) }))
+            .catch(() => ({ read: false, version: undefined }));
+        if (holder.read && holder.version === versionId) return;
+        // Still where this run left it: a transient failure, nothing changed. Re-run.
+        if (holder.read && holder.version === this.own) throw new ProvisionError('secret', 'claim');
+        throw needsHuman('secret', 'provisioning_label_moved');
     }
 
     /** Read this run's version back and require it to equal what was written. */
@@ -161,11 +249,14 @@ export class ProvisioningVersion {
     }
 
     /**
-     * Compare-and-swap promotion: `AWSCURRENT` moves only if it is still on
-     * `currentVersionId`; then the `PROVISIONING` label is detached.
+     * Compare-and-swap promotion, fenced: this run must still hold `PROVISIONING`
+     * (a run whose claim was taken over never promotes its superseded version);
+     * `AWSCURRENT` moves only if it is still on `currentVersionId`; then the
+     * staging labels are detached.
      */
     async promote(currentVersionId: string): Promise<void> {
         if (!this.own) throw new ProvisionError('promote', 'nothing_written');
+        await this.fence();
         try {
             await this.store.moveStage(this.secretId, CURRENT, this.own, currentVersionId);
         } catch {
@@ -181,7 +272,20 @@ export class ProvisioningVersion {
         try {
             await this.store.moveStage(this.secretId, PROVISIONING, undefined, this.own);
         } catch {
-            // Promotion already happened; a stale label is harmless and reported by the next run.
+            // Already detached (lost response) or unreadable: harmless, the next run reports
+            // a stale label. On ANOTHER version it means a run took over after the fence:
+            // AWSCURRENT is this run's version, but that run may still be changing the server.
+            const holder = await this.store
+                .describe(this.secretId)
+                .then(metadata => versionWith(metadata, PROVISIONING))
+                .catch(() => undefined);
+            if (holder !== undefined && holder !== this.own)
+                throw needsHuman('promote', 'provisioning_label_moved');
+        }
+        try {
+            await this.store.moveStage(this.secretId, PENDING, undefined, this.own);
+        } catch {
+            // Already moved by a later put (another run's unclaimed version): nothing reads it.
         }
     }
 }

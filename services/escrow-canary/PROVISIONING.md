@@ -44,7 +44,7 @@ node services/escrow-canary/dist/provision.mjs \
   --tier <1|2|3> \
   ( --labels <hold-01,hold-02|all> --login-sender <address> --login-dkim-domain <domain>
   | --account <read-only|pin-a|pin-b> --email <address> ) \
-  [--dry-run] [--check-mail] [--activate] [--init-pool] \
+  [--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] \
   [--no-require-dmarc] [--firebase-project <id>] [--function <name>]
 ```
 
@@ -68,6 +68,8 @@ node services/escrow-canary/dist/provision.mjs \
   lca-api's `verifyIdToken` still rejects a token from another project at the first
   keys call (`lca-api/src/helpers/auth.helpers.ts:60`).
 - There is no `--resume` flag: resume is decided from secret and server state (§6).
+- `--takeover`: resume a staged version that is still inside its claim lease (§6.3).
+  Only when you know the run that wrote it has exited; otherwise wait for the lease.
 - Accounts run sequentially, 2 s apart; the run stops at the first failure.
 - Exit codes: 0 = done; 1 = stopped safely, re-run; 2 = guard or usage refusal,
   nothing changed; 3 = needs a human (§6 "stop").
@@ -82,7 +84,7 @@ src/provision/
   preflight.ts     all guards before any lca-api call; builds the plan
   login.ts         send code, verify code, signInWithCustomToken, ID token check
   login-mail.ts    login trust policy, strict parser, poll loop
-  secret-writer.ts staged Secrets Manager writes (PROVISIONING -> AWSCURRENT, CAS)
+  secret-writer.ts staged Secrets Manager writes (conditional PROVISIONING claim, CAS promotion)
   flow.ts          classification and per-account orchestration
   output.ts        console containment and crash handlers
   test-world.ts    test-only fakes
@@ -168,9 +170,9 @@ storage starts from the staged `deviceState`. `fetchServerKeyStatus(T,'firebase'
 **C. Key and write-ahead** (fresh only): `generateEd25519PrivateKey()`
 (`sss-key-manager/src/crypto.ts:195-198`), `did = sdk.did(key)`, a random 8-digit PIN
 that passes `validatePin` (`escrow-pin.ts:30-48`; tiers 1/3 never enroll it,
-README "Each secret"). The full secret is validated with `secretSchema` and written
-as a **new version labelled only `PROVISIONING`**, before any server change. The
-runner keeps reading `AWSCURRENT` (`{}`).
+README "Each secret"). The full secret is validated with `secretSchema`, written
+as a new version and **claimed** as `PROVISIONING` (§6.3), before any server
+change. The runner keeps reading `AWSCURRENT` (`{}`).
 
 **D. Shares**: `atomicUpdateShares({token, providerType:'firebase', privateKey, did, signDidAuthVp})`,
 the call the app's `setupNewKey` makes (`AuthCoordinator.ts:1199-1241`). The server
@@ -248,7 +250,7 @@ means a Postmark inactive recipient or suppression.
 | Classification | Server record (`fetchServerKeyStatus`) | Action                                                        |
 | -------------- | -------------------------------------- | ------------------------------------------------------------- |
 | fresh          | none                                   | C -> G                                                        |
-| fresh          | exists                                 | **stop, exit 3**: a key with no secret (orphaned, §6.4)       |
+| fresh          | exists                                 | **stop, exit 3**: a key with no secret (orphaned, §6.5)       |
 | resume         | none                                   | D -> G with the **stored** key and PIN                        |
 | resume         | `primaryDid` = staged DID              | E -> G (opt-in returns `changed:false` when already enrolled) |
 | resume         | any other DID                          | **stop, exit 3**                                              |
@@ -256,21 +258,88 @@ means a Postmark inactive recipient or suppression.
 
 A resume reuses the stored key **and the stored PIN**; neither is regenerated. It
 tries the stored refresh token first, so a crash after the write-ahead usually needs
-no new login code. Empty or stale device state is safe: enrollment re-splits from
+no new login code. A resume takes a staged version over only after its claim lease
+has expired (or with `--takeover`), and claims it (§6.3) before it reads server
+state, so of two runs resuming one version only one reaches the server. Empty or
+stale device state is safe: enrollment re-splits from
 the private key (`sss-strategy.ts:1660-1675`), as the runner's crash repair does
 (`runner.ts:107-111`).
 
-### 6.3 Staged writes with compare-and-swap
+### 6.3 Staged writes: a conditional claim, then compare-and-swap promotion
 
-- Before every `PutSecretValue` the tool checks (`DescribeSecret`) that
-  `PROVISIONING` is still on this run's last version (or absent before the first
-  write); after it, that the label is on the new version. Otherwise exit 3: another
-  run is working on the label.
-- Promotion: `UpdateSecretVersionStage(AWSCURRENT, MoveToVersionId=own, RemoveFromVersionId=<placeholder version seen at classification>)`,
-  which fails if `AWSCURRENT` moved meanwhile (exit 3). Then the `PROVISIONING`
-  label is detached.
+`PutSecretValue` moves the labels it is given **unconditionally**, so it can never
+be the guard: two fresh runs could both see no `PROVISIONING`, both put, and the
+one that later loses would already have changed the server. Every write is
+therefore two calls:
 
-### 6.4 Orphaned hold addresses (tier 3)
+1. `PutSecretValue(VersionStages=[PROVISIONING_PENDING], ClientRequestToken=<new uuid>)`.
+   `PROVISIONING_PENDING` is a scratch label that nothing reads (the API cannot
+   create an unlabelled version). The token makes an SDK retry idempotent.
+2. **Claim**: `UpdateSecretVersionStage(PROVISIONING, MoveToVersionId=<new>, RemoveFromVersionId=<this run's previous version>)`,
+   with no `RemoveFromVersionId` on a run's first write. Secrets Manager rejects
+   the call when the label is attached to any other version (or, without
+   `RemoveFromVersionId`, attached at all). Two runs that observed the same state
+   therefore cannot both claim: the second claim fails and that run stops with
+   `secret: provisioning_label_moved` (exit 3).
+
+Every path claims before its first server change: a fresh run's write-ahead (C) is
+its first claim; a resume claims right after login, before `fetchServerKeyStatus`.
+A `DescribeSecret` precheck before each put is only an early exit.
+
+**The claim is a lease.** A one-time claim alone would not stop a run that starts
+_later_: it would classify the first run's version as `resume` and claim it away
+while the first run is still changing the server. So:
+
+- A resume first reads the staged version's `CreatedDate` (`GetSecretValue` by
+  version id) and stops with `classify: provisioning_in_progress` (exit 1) while it
+  is younger than `LEASE_MS` (15 min), printing how long to wait. `--takeover`
+  skips this for an operator who knows the earlier run has exited (e.g. it already
+  printed `FAILED`).
+- The owner calls a fence immediately before each server change (shares, enroll,
+  activate) and before promotion: it requires `PROVISIONING` on its own version and,
+  if its latest claim is older than `RENEW_MS` (2 min), renews it with a new
+  conditional write first. Every write renews the lease.
+
+A takeover therefore cannot overlap the owner's server changes as long as one
+server call finishes within `LEASE_MS - RENEW_MS` (13 min) minus clock skew between
+the two operators' clocks and AWS. That bound is an assumption, not enforced: a
+request still in flight past it could land after a takeover.
+
+A failed claim is re-read with `DescribeSecret`: the label on the new version
+means the claim committed and only its response was lost (the version id is new
+and known to no other run), so the run continues; the label still where this run
+left it means nothing changed (`secret: claim`, exit 1, re-run); anywhere else is
+exit 3.
+
+- Promotion: first the fence (a run whose claim was taken over never promotes its
+  superseded version: `secret: provisioning_label_moved`, exit 3, `AWSCURRENT`
+  untouched); then `UpdateSecretVersionStage(AWSCURRENT, MoveToVersionId=own, RemoveFromVersionId=<placeholder version seen at classification>)`,
+  which fails if `AWSCURRENT` moved meanwhile (exit 3). Then `PROVISIONING` and
+  `PROVISIONING_PENDING` are detached from the promoted version. A failed
+  `PROVISIONING` detach is ignored when the label is gone (lost response) but
+  reported as `promote: provisioning_label_moved` (exit 3) when it sits on another
+  version.
+
+**UNVERIFIED**: AWS documents that a mismatched or missing `RemoveFromVersionId`
+fails the call; it does not state that the check and the move are atomic under
+concurrent calls. The promotion CAS already relies on the same property.
+
+### 6.4 Stranded staged state and recovery
+
+Nothing is deleted automatically. A version that was never claimed was never used
+on the server (the claim precedes every server change).
+
+| State after a stop                                                              | Recovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Losing concurrent run (`secret: provisioning_label_moved`)                      | Another run holds the claim. If the loser had not yet claimed (two runs that saw the same state), nothing of it reached the server. If its claim was taken over (lease expired or `--takeover`), it stopped at its fence before its next server change; changes it made earlier are on the server and the new owner continues from them. Wait for the other run, then re-run: it classifies `live` or resumes.                                                                  |
+| `classify: provisioning_in_progress` (exit 1)                                   | The staged version was written less than 15 min ago. Re-run after the printed wait, or with `--takeover` once you know no other run is active (the earlier run printed `FAILED` or its process is gone).                                                                                                                                                                                                                                                                        |
+| `promote: provisioning_label_moved` (exit 3)                                    | This run promoted its version, then found `PROVISIONING` on another version (a run took over after the fence, which needs a step to outlast the lease or a misused `--takeover`). Stop the other run. Re-run (it classifies `live` and runs the read-only checks); if they pass, detach the stale label: `update-secret-version-stage --secret-id <name> --version-stage PROVISIONING --remove-from-version-id <id>`. If they fail, escalate: do not edit `AWSCURRENT` by hand. |
+| `secret: claim` (exit 1)                                                        | Re-run.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `PROVISIONING_PENDING` on a version without `PROVISIONING`                      | An unclaimed write (crash between put and claim, or a losing run). Never read; the next put moves the label. Optional tidy-up: `aws secretsmanager update-secret-version-stage --secret-id <name> --version-stage PROVISIONING_PENDING --remove-from-version-id <id>`.                                                                                                                                                                                                          |
+| Crash after a claim                                                             | Re-run: classification resumes that version (§6.1-6.2).                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `PROVISIONING` holds a key the server does NOT have, and resume cannot continue | First confirm with `--dry-run` (stored token) or the server state that **no** server key exists for the address; then detach it: `update-secret-version-stage --secret-id <name> --version-stage PROVISIONING --remove-from-version-id <id>`. The next run is fresh. Never detach a label whose DID is the server's `primaryDid`: that version is the only copy of the key. A server key with another DID is orphaned (§6.5).                                                   |
+
+### 6.5 Orphaned hold addresses (tier 3)
 
 Hold addresses are positional: receipt rules exist only for `+1..12`
 (`infra/escrow-canary/inbox.tf:7,105`), the runner derives the address from the
@@ -311,13 +380,28 @@ idempotent). `ready` stays a manual `tier3-admin` step so a human anchors META.
 
 - `sts:GetCallerIdentity`; `lambda:GetFunctionConfiguration` on the canary functions.
 - `secretsmanager:DescribeSecret`, `GetSecretValue`, `PutSecretValue`,
-  `UpdateSecretVersionStage` on `escrow-canary-<env>/*`; `kms:Decrypt` /
+  `UpdateSecretVersionStage` on `escrow-canary-<env>/*` (the claim and the
+  promotion are both `UpdateSecretVersionStage`, and the lease age is
+  `GetSecretValue`'s `CreatedDate`; no new action); `kms:Decrypt` /
   `kms:GenerateDataKey` with `kms:ViaService = secretsmanager.<region>.amazonaws.com`
   and a `kms:EncryptionContext:SecretARN` condition, as the runner role has
   (`infra/escrow-canary/main.tf:50`).
 - Tier 3: `s3:ListBucket` (prefix `inbox/hold-*`), `s3:GetObject` on `inbox/hold-*`,
   `kms:Decrypt` via S3 on the inbox key (`inbox.tf:22` delegates to IAM); no put or
-  delete. `dynamodb:GetItem` on the ledger; `PutItem` only with `--init-pool`.
+  delete. On the ledger table: `dynamodb:GetItem` and `dynamodb:BatchGetItem`
+  (every tier 3 preflight: `checkTier3Ledger` reads META with `GetItem` and the
+  pool items with `ledger.getMany` -> `BatchGetCommand`; `--init-pool` reads them
+  the same way); `dynamodb:PutItem` only with `--init-pool` (`ledger.write` uses
+  `PutCommand` for one item and `TransactWriteCommand` for several, which IAM
+  authorizes as `PutItem` per item). The table uses the AWS-owned key
+  (`tier3.tf:30-51`), so no KMS grant.
+
+SDK commands the tool sends (the list above covers each): STS
+`GetCallerIdentity`; Lambda `GetFunctionConfiguration`; Secrets Manager
+`DescribeSecret`, `GetSecretValue`, `PutSecretValue`, `UpdateSecretVersionStage`;
+S3 `ListObjectsV2` (`s3:ListBucket`), `GetObject`; DynamoDB `GetItem`,
+`BatchGetItem`, `PutItem` / `TransactWriteItems`.
+
 - MFA, named operators only, CloudTrail data events on the bucket and secrets.
   Production uses the production monitoring account, never the escrow account
   (`infra/escrow-canary/variables.tf:17`).
@@ -369,9 +453,22 @@ idempotent). `ready` stays a manual `tier3-admin` step so a human anchors META.
   live secret untouched with no login; live secret for another account; malformed
   `AWSCURRENT` / `PROVISIONING`; resume reuses key and PIN without a new code; stored
   token fallback; resume after shares; server DID mismatch; readback mismatch; CAS on
-  promotion; moved `PROVISIONING` label; rotated refresh token; dry-run makes no
+  promotion; moved `PROVISIONING` label; two fresh runs whose prechecks all pass
+  before either put (only the claimant reaches the server) and two concurrent
+  resumes; a run that starts while another holds a fresh claim (refused, no
+  server call); an immediate re-run waits for the lease unless `--takeover`; a
+  taken-over run stops before its next server change and never promotes; rotated
+  refresh token; dry-run makes no
   mutating call; `--init-pool`; `--check-mail`; sentinel secrets never in output when
   the fake SDK logs raw values.
+- `secret-writer.test.ts`: interleaved first writes and resumes (exactly one claim
+  wins), lost claim response, uncommitted claim failure, promotion detaches both
+  staging labels; lease age, fence pass / renewal / taken over, fenced promotion,
+  a takeover between the fence and the detach is reported, a lost detach response.
+- `tier3/inbox.test.ts`: 7bit/8bit/binary/QP/base64 bodies with UTF-8 bytes
+  0x80-0x9F survive byte for byte, also when `TextDecoder('latin1')` follows WHATWG
+  windows-1252 (Bun); `login-mail.test.ts` runs the real-template drift test in
+  each encoding.
 - `boundaries.test.ts`: the Lambda's import graph never reaches `src/provision/`.
 
 ## 13. Open items

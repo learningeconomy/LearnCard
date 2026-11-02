@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
     decodeHeaderWords,
     findMessage,
@@ -247,6 +247,89 @@ describe('canary inbox trust checks', () => {
 
     it('rejects oversized input before parsing', () => {
         expect(() => parseMessage(new Uint8Array(MAX_MESSAGE_BYTES + 1))).toThrow(InboxError);
+    });
+});
+
+/**
+ * Real template punctuation plus U+2000-U+201F (UTF-8 e2 80 80-9f), so every
+ * continuation byte that windows-1252 remaps (0x80-0x9F) appears at least once.
+ */
+const UNICODE_TEXT = `If you didn’t start this — “cancel” it. € ™ 🔐\n${String.fromCodePoint(
+    ...Array.from({ length: 32 }, (_, i) => 0x2000 + i)
+)}`;
+
+/** WHATWG windows-1252 for 0x80-0x9F: what `TextDecoder('latin1')` returns in Bun. */
+const WINDOWS_1252 = [
+    0x20ac, 0x81, 0x201a, 0x192, 0x201e, 0x2026, 0x2020, 0x2021, 0x2c6, 0x2030, 0x160, 0x2039,
+    0x152, 0x8d, 0x17d, 0x8f, 0x90, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x2dc,
+    0x2122, 0x161, 0x203a, 0x153, 0x9d, 0x17e, 0x178,
+];
+
+describe('canary inbox MIME bytes', () => {
+    it('the sample really contains every 0x80-0x9F byte', () => {
+        const bytes = new Set(new TextEncoder().encode(UNICODE_TEXT));
+        expect(
+            Array.from({ length: 32 }, (_, i) => 0x80 + i).filter(b => bytes.has(b)).length
+        ).toBe(32);
+    });
+
+    it.each(['7bit', '8bit', 'binary', 'quoted-printable', 'base64'] as const)(
+        'keeps UTF-8 text byte for byte with %s transfer encoding',
+        encoding => {
+            const body = `Your LearnCard recovery code is: 01234567\n\n${UNICODE_TEXT}`;
+            const message = parse({ ...codeEmail(TO, '01234567'), body, encoding });
+            expect(message.text).toBe(body);
+            expect(parseTemplate(message)).toMatchObject({ kind: 'code', code: '01234567' });
+        }
+    );
+
+    it('rejects 8bit bytes that are not UTF-8 instead of guessing a charset', () => {
+        const raw = new TextEncoder().encode(
+            buildEmail({ ...codeEmail(TO, '01234567'), encoding: '8bit' })
+        );
+        const bad = new Uint8Array([...raw, 0x80, 0x99]);
+        expect(() => parseMessage(bad)).toThrow(InboxError);
+    });
+
+    it('does not depend on how the runtime decodes the "latin1" label (Bun, WHATWG)', async () => {
+        const Native = globalThis.TextDecoder;
+        class WhatwgDecoder extends Native {
+            readonly #windows1252: boolean;
+            constructor(label?: string, options?: TextDecoderOptions) {
+                const windows1252 = ['latin1', 'iso-8859-1', 'windows-1252'].includes(
+                    (label ?? '').toLowerCase()
+                );
+                super(windows1252 ? 'utf-8' : label, options);
+                this.#windows1252 = windows1252;
+            }
+            override decode(input?: AllowSharedBufferSource, options?: TextDecodeOptions): string {
+                if (!this.#windows1252) return super.decode(input, options);
+                const bytes = new Uint8Array(input as ArrayBuffer);
+                return Array.from(bytes, byte =>
+                    String.fromCharCode(
+                        byte >= 0x80 && byte <= 0x9f ? WINDOWS_1252[byte - 0x80] : byte
+                    )
+                ).join('');
+            }
+        }
+        vi.stubGlobal('TextDecoder', WhatwgDecoder);
+        vi.resetModules();
+        try {
+            const fresh = await import('./inbox');
+            const body = `Your LearnCard recovery code is: 76543210\n\n${UNICODE_TEXT}`;
+            for (const encoding of ['8bit', 'quoted-printable'] as const) {
+                const message = fresh.parseMessage(
+                    new TextEncoder().encode(
+                        buildEmail({ ...codeEmail(TO, '76543210'), body, encoding })
+                    )
+                );
+                expect(message.text).toBe(body);
+                expect(fresh.parseTemplate(message)).toMatchObject({ code: '76543210' });
+            }
+        } finally {
+            vi.unstubAllGlobals();
+            vi.resetModules();
+        }
     });
 });
 

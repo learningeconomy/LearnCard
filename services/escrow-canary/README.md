@@ -183,8 +183,10 @@ not be manually reset to force retries.
     ```
 
     The tool sends a login code (type it at the hidden prompt), creates the key,
-    writes the secret to a `PROVISIONING`-labelled version **before** any server
-    change, enrolls escrow (tier 2: sets a random PIN and activates, as the app
+    writes the secret to a new version and claims it as `PROVISIONING` with a
+    conditional label move **before** any server change (a concurrent run on the
+    same label stops; a later re-run waits out a 15-minute claim lease unless given
+    `--takeover`), enrolls escrow (tier 2: sets a random PIN and activates, as the app
     does), runs the runner's checks and only then promotes the version to
     `AWSCURRENT` with a compare-and-swap. It prints only labels, secret names,
     version ids, `did:key`s and step results. Re-running resumes safely from the

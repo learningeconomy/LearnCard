@@ -66,21 +66,32 @@ describe('login-code mail parser', () => {
         expect(() => parseLoginCode(parse({ ...loginEmail(TO, '0'), body }))).toThrow(InboxError);
     });
 
-    it('drift: parses the real login-verification-code template', async () => {
-        const rendered = await renderEmail(
-            'login-verification-code',
-            {},
-            { verificationCode: '904152', verificationEmail: TO, recipient: { name: TO } } as never,
-            'en'
-        );
-        const message = parse({
-            from: LOGIN_SENDER,
-            to: TO,
-            subject: rendered.subject,
-            body: rendered.text,
-        });
-        expect(parseLoginCode(message)).toMatchObject({ code: '904152' });
-    });
+    it.each(['7bit', '8bit', 'quoted-printable', 'base64'] as const)(
+        'drift: parses the real login-verification-code template (%s)',
+        async encoding => {
+            const rendered = await renderEmail(
+                'login-verification-code',
+                {},
+                {
+                    verificationCode: '904152',
+                    verificationEmail: TO,
+                    recipient: { name: TO },
+                } as never,
+                'en'
+            );
+            // The real text is Unicode (`didn’t`, `©`): its UTF-8 bytes must survive intact.
+            expect(rendered.text).toContain('didn’t');
+            const message = parse({
+                from: LOGIN_SENDER,
+                to: TO,
+                subject: rendered.subject,
+                body: rendered.text,
+                encoding,
+            });
+            expect(message.text).toBe(rendered.text.replace(/\r\n/g, '\n'));
+            expect(parseLoginCode(message)).toMatchObject({ code: '904152' });
+        }
+    );
 });
 
 describe('login-code mail trust and selection', () => {

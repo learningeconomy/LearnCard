@@ -84,6 +84,7 @@ interface ServerKey {
 interface Version {
     value: string;
     stages: Set<string>;
+    created: number;
 }
 
 export interface WorldOptions {
@@ -141,7 +142,9 @@ export class ProvisionWorld {
     placeholder(secretId: string): void {
         this.secrets.set(
             secretId,
-            new Map([['v-initial', { value: '{}', stages: new Set(['AWSCURRENT']) }]])
+            new Map([
+                ['v-initial', { value: '{}', stages: new Set(['AWSCURRENT']), created: this.now }],
+            ])
         );
     }
 
@@ -151,7 +154,7 @@ export class ProvisionWorld {
         for (const version of versions.values()) version.stages.delete(stage);
         this.versionSequence += 1;
         const id = `v-external-${this.versionSequence}`;
-        versions.set(id, { value, stages: new Set([stage]) });
+        versions.set(id, { value, stages: new Set([stage]), created: this.now });
         return id;
     }
 
@@ -279,15 +282,24 @@ export class ProvisionWorld {
             }
             return version?.value;
         },
-        putProvisioning: async (secretId, value) => {
+        createdAt: async (secretId, versionId) =>
+            this.secrets.get(secretId)!.get(versionId)?.created,
+        // PutSecretValue semantics: the new version takes the label from any other version.
+        putPending: async (secretId, value) => {
             this.calls.push('put');
             const versions = this.secrets.get(secretId)!;
-            for (const version of versions.values()) version.stages.delete('PROVISIONING');
+            for (const version of versions.values()) version.stages.delete('PROVISIONING_PENDING');
             this.versionSequence += 1;
             const id = `v-${this.versionSequence}`;
-            versions.set(id, { value, stages: new Set(['PROVISIONING']) });
+            versions.set(id, {
+                value,
+                stages: new Set(['PROVISIONING_PENDING']),
+                created: this.now,
+            });
             return id;
         },
+        // UpdateSecretVersionStage semantics: rejected when the label is attached to a
+        // version other than `from` (or attached at all when `from` is omitted).
         moveStage: async (secretId, stage, to, from) => {
             this.calls.push(`move:${stage}`);
             const versions = this.secrets.get(secretId)!;
@@ -484,6 +496,24 @@ export class ProvisionWorld {
         };
     }
 }
+
+/**
+ * The first `parties` callers wait until all of them have arrived, then proceed
+ * together; later callers pass straight through. Forces worst-case interleavings.
+ */
+export const barrier = (parties: number): (() => Promise<void>) => {
+    let arrived = 0;
+    let release: () => void = () => undefined;
+    const open = new Promise<void>(resolve => {
+        release = resolve;
+    });
+    return async () => {
+        arrived += 1;
+        if (arrived > parties) return;
+        if (arrived === parties) release();
+        await open;
+    };
+};
 
 export const defaultOptions: ProvisionOptions = {
     dryRun: false,

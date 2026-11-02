@@ -74,7 +74,29 @@ export interface Header {
     value: string;
 }
 const utf8 = new TextDecoder('utf-8', { fatal: true });
-const latin1 = new TextDecoder('latin1');
+
+/**
+ * Raw message bytes <-> one char per byte (true ISO-8859-1), so 8bit/binary
+ * bodies survive the header split byte for byte. Never `TextDecoder('latin1')`:
+ * WHATWG maps that label to windows-1252 (Bun follows it; Node does not), which
+ * turns 0x80-0x9F into U+20AC etc., and a later `Buffer.from(_, 'latin1')`
+ * truncates those, corrupting UTF-8 (e.g. `’` e2 80 99 -> e2 ac 22).
+ */
+const bytesToBinary = (bytes: Uint8Array): string => {
+    let text = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+        text += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return text;
+};
+const binaryToBytes = (text: string): Uint8Array => {
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i += 1) {
+        const code = text.charCodeAt(i);
+        if (code > 0xff) throw new InboxError('malformed');
+        bytes[i] = code;
+    }
+    return bytes;
+};
 
 const splitHeadersAndBody = (text: string): { headers: Header[]; body: string } => {
     const match = /\r?\n\r?\n/.exec(text);
@@ -142,8 +164,7 @@ const decodeBody = (
         const compact = body.replace(/\s+/g, '');
         if (!/^[A-Za-z0-9+/]*={0,2}$/.test(compact)) throw new InboxError('malformed');
         bytes = Uint8Array.from(Buffer.from(compact, 'base64'));
-    } else if (['7bit', '8bit', 'binary'].includes(transfer))
-        bytes = Uint8Array.from(Buffer.from(body, 'latin1'));
+    } else if (['7bit', '8bit', 'binary'].includes(transfer)) bytes = binaryToBytes(body);
     else throw new InboxError('malformed');
     try {
         return utf8.decode(bytes).replace(/\r\n/g, '\n');
@@ -182,7 +203,7 @@ export interface ParsedMessage {
 /** Headers in original order, decoded subject, and the single text/plain body. */
 export const parseMessage = (raw: Uint8Array): ParsedMessage => {
     if (raw.length > MAX_MESSAGE_BYTES) throw new InboxError('email_untrusted');
-    const { headers, body } = splitHeadersAndBody(latin1.decode(raw));
+    const { headers, body } = splitHeadersAndBody(bytesToBinary(raw));
     const contentType = one(headers, 'content-type') ?? 'text/plain; charset=us-ascii';
     const subject = decodeHeaderWords(one(headers, 'subject') ?? '');
     const mediaType = contentType.split(';')[0].trim().toLowerCase();
