@@ -833,5 +833,14 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     await expect.poll(() => events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
     await page.screenshot({ path: 'test-results/campaign-notification-entry.png' });
     await page.getByRole('button', { name: 'Close campaign', exact: true }).click();
-    expect(events).toEqual([{ campaignId: campaign.id, event: 'shown' }]);
+    await expect(
+        page.getByRole('heading', { name: 'Campaign opened from your alert', exact: true })
+    ).not.toBeVisible();
+    // Dismissal is reported asynchronously; it is distinct from a CTA click.
+    await expect
+        .poll(() => events)
+        .toEqual([
+            { campaignId: campaign.id, event: 'shown' },
+            { campaignId: campaign.id, event: 'dismissed' },
+        ]);
 });
