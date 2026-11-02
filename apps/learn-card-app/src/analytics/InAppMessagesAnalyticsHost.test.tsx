@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
     onEvent: undefined as InAppMessageHostProps['onEvent'],
 }));
 vi.mock('learn-card-base', () => ({
+    useMyCampaigns: () => undefined,
     InAppMessageHost: (props: InAppMessageHostProps) => {
         state.onEvent = props.onEvent;
         return null;
