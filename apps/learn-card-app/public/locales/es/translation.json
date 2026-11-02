@@ -23,6 +23,7 @@
         "totalsAria": "Totales de credenciales",
         "totals": "Credenciales: {{credentials}} · Habilidades: {{skills}}",
         "totalsError": "No se pudieron cargar los totales de credenciales.",
+        "countUnavailable": "Cantidad no disponible",
         "counting": "Contando credenciales…",
         "retryTotals": "Reintentar los totales de credenciales"
     },

@@ -23,6 +23,7 @@
         "totalsAria": "Credential totals",
         "totals": "Credentials: {{credentials}} · Skills: {{skills}}",
         "totalsError": "Credential totals could not be loaded.",
+        "countUnavailable": "Count unavailable",
         "counting": "Counting credentials…",
         "retryTotals": "Retry credential totals"
     },

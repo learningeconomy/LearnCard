@@ -23,6 +23,7 @@
         "totalsAria": "Totaux des justificatifs",
         "totals": "Justificatifs : {{credentials}} · Compétences : {{skills}}",
         "totalsError": "Impossible de charger les totaux des justificatifs.",
+        "countUnavailable": "Nombre indisponible",
         "counting": "Comptage des justificatifs…",
         "retryTotals": "Réessayer de charger les totaux"
     },
