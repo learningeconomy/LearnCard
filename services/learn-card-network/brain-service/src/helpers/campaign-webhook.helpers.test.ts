@@ -36,6 +36,7 @@ vi.mock('@accesslayer/inbox-credential/relationships/create', () => ({
 }));
 vi.mock('@cache', () => ({ default: {} }));
 vi.mock('@accesslayer/campaign/read', () => ({ getCampaign: mocks.getCampaign }));
+vi.mock('@accesslayer/campaign/test', () => ({ queueCampaignInAppTest: vi.fn() }));
 vi.mock('@accesslayer/campaign/delivery', () => ({
     getCampaignDeliveryRecipient: mocks.recipient,
     acknowledgeCampaignNotification: mocks.acknowledge,
