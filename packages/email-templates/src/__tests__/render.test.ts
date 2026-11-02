@@ -166,6 +166,10 @@ const TEMPLATE_FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         releaseAfter: 'October 2, 2026, 3:00 PM',
         cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
     },
+    'escrow-pin-sign-in': {
+        signedInAt: 'October 2, 2026, 3:00 PM',
+        secureUrl: 'https://learncard.app/account/secure',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(TEMPLATE_FIXTURES) as TemplateId[];
@@ -550,6 +554,53 @@ describe('renderEmail — escrow hold lifecycle', () => {
         expect(html).toContain('September 25, 2026, 3:00 PM');
         expect(html).toContain('waiting-period recovery is still available');
         expect(html).not.toContain('undefined');
+    });
+
+    it('escrow-pin-sign-in includes the sign-in date and the secure-account link', async () => {
+        const data = TEMPLATE_FIXTURES['escrow-pin-sign-in'];
+        const { html, text, subject } = await renderEmail(
+            'escrow-pin-sign-in',
+            DEFAULT_BRANDING,
+            data
+        );
+
+        expect(html).toContain(data.signedInAt);
+        expect(html).toContain(data.secureUrl);
+        expect(text).toContain('Not you? Secure your account.');
+        expect(text).toContain('Secure my account');
+        expect(subject).toBe('New device signed in with your PIN');
+        assertNoJargon(html);
+        assertNoJargon(text);
+        assertNoJargon(subject);
+    });
+
+    it('escrow-pin-sign-in formats the ISO timestamp lca-api sends, per locale', async () => {
+        const iso = '2026-11-02T15:04:05.123Z';
+        const en = await renderEmail('escrow-pin-sign-in', DEFAULT_BRANDING, {
+            signedInAt: iso,
+            secureUrl: 'https://learncard.app/account/secure',
+        });
+        const fr = await renderEmail(
+            'escrow-pin-sign-in',
+            DEFAULT_BRANDING,
+            { signedInAt: iso, secureUrl: 'https://learncard.app/account/secure' },
+            'fr'
+        );
+
+        expect(en.text).not.toContain(iso);
+        expect(en.text).toContain('November 2, 2026');
+        expect(en.text).toContain('UTC');
+        expect(fr.text).toContain('2 novembre 2026');
+    });
+
+    it('escrow-pin-sign-in carries tenant branding', async () => {
+        const { html } = await renderEmail('escrow-pin-sign-in', VETPASS_BRANDING, {
+            signedInAt: 'October 2, 2026, 3:00 PM',
+            secureUrl: 'https://vetpass.app/account/secure',
+        });
+
+        expect(html).toContain('VetPass');
+        expect(html).toContain('https://vetpass.app/account/secure');
     });
 
     it('all escrow hold templates include the "This wasn\'t me" cancel CTA when a cancel URL is present', async () => {

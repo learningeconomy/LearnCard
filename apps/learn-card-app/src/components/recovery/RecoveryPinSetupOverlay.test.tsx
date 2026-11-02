@@ -18,7 +18,7 @@ describe('RecoveryPinSetupOverlay', () => {
         vi.resetAllMocks();
     });
 
-    it('explains why a new PIN is needed after a PIN recovery', () => {
+    it('asks for a new PIN when the recovery PIN is no longer active', () => {
         render(
             <RecoveryPinSetupOverlay
                 setPin={mockSetEscrowPin}
@@ -29,7 +29,9 @@ describe('RecoveryPinSetupOverlay', () => {
         );
 
         expect(screen.getByText('Set a new recovery PIN')).toBeInTheDocument();
-        expect(screen.getByText(/The PIN you just used has been retired/)).toBeInTheDocument();
+        expect(screen.getByText(/Your recovery PIN is no longer active/)).toBeInTheDocument();
+        // A PIN sign-in keeps the PIN, so the old "each PIN works once" copy is gone.
+        expect(screen.queryByText(/each PIN works once/)).not.toBeInTheDocument();
         expect(screen.queryByText('Set a recovery PIN')).not.toBeInTheDocument();
     });
 

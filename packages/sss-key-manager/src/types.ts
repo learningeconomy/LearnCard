@@ -16,6 +16,7 @@ export {
     type AuthProvider,
     type RecoveryMethodInfo,
     type RecoveryResult,
+    type RevokeOtherDevicesResult,
     type IdentityRecoverySession,
     type ServerKeyStatus,
     type SssActivationState,
@@ -156,6 +157,18 @@ export class EscrowPinLockedError extends Error {
     }
 }
 
+/**
+ * A PIN sign-in released the key, but the released share version is no longer on the
+ * server (another device secured the account or recovered meanwhile). Nothing was
+ * stored; a revoke is never silently undone.
+ */
+export class PinSignInStaleError extends Error {
+    constructor() {
+        super('Your account changed while signing in. Try again.');
+        this.name = 'PinSignInStaleError';
+    }
+}
+
 export interface PasskeyRecoveryMethod {
     type: 'passkey';
     credentialId?: string;
@@ -180,7 +193,13 @@ export type RecoveryMethod =
  * SSS-specific recovery input — what the user provides to recover their key.
  */
 export type RecoveryInput =
-    | { method: 'escrow-pin'; pin: string; expectedDid?: string }
+    | {
+          method: 'escrow-pin';
+          pin: string;
+          expectedDid?: string;
+          /** Verified recovery-email session; set only when no login is bound yet. */
+          recoverySessionToken?: string;
+      }
     | {
           method: 'escrow';
           holdId: string;

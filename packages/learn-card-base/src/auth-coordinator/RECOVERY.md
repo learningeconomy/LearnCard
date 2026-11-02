@@ -225,8 +225,10 @@ a short denylist (`123456`, `000000`, etc.).
 
 ### Setup, change, and remove
 
-Setting or changing a PIN **rotates the escrow share** — the client never persists the plaintext
-recovery share, so it can't re-seal the old one with a new PIN verifier baked in.
+Setting or changing a PIN **rotates the escrow share** — a signed-in device does not hold the
+plaintext recovery share, so it can't re-seal the old one with a new PIN verifier baked in.
+(Exception: after a PIN sign-in the device's own share _is_ the released recovery share for
+that version; see [PIN sign-in](#pin-sign-in-keep-by-default) below.)
 
 ```ts
 // Set a PIN for the first time, or change the existing one (both rotate).
@@ -262,12 +264,12 @@ try {
 ```
 
 (`EscrowPinMismatchError` / `EscrowPinLockedError` classes are exported from
-`@learncard/sss-key-manager` for `instanceof` checks; `EscrowRecoveryPanel` checks `err.name`
-since the error may cross a serialization boundary.)
+`@learncard/sss-key-manager` for `instanceof` checks; the app's `EscrowPinSignIn` checks
+`err.name` since the error may cross a serialization boundary.)
 
 ```mermaid
 sequenceDiagram
-    participant UI as EscrowRecoveryPanel
+    participant UI as EscrowPinSignIn
     participant AC as AuthCoordinator
     participant Server as SSS Server / Enclave
 
@@ -276,11 +278,16 @@ sequenceDiagram
     Server-->>AC: fresh hold + resumeToken + pinSalt
     AC->>Server: complete(holdId, resumeToken, pinProof)
 
-    alt Correct PIN
-        Server-->>AC: recovery share released
-        AC->>AC: reconstruct + re-split + store new shares
-        AC->>Server: re-enroll with the same PIN (new salt, fresh 10 attempts)
-        AC-->>UI: state: ready
+    alt Correct PIN (login already bound)
+        Server-->>AC: recovery share released (server emails "new device signed in with your PIN")
+        AC->>AC: reconstruct, check DID, store the released share as this device's share at version N
+        AC->>Server: re-enroll at N with the same PIN (new salt, fresh 10 attempts)
+        AC-->>UI: state: ready + pinSignIn (review sheet)
+        opt User chooses "Secure my account"
+            UI->>AC: secureAccount({ pin })
+            AC->>Server: POST /keys/revoke-other-devices (re-split, wipe old versions, unlink other logins)
+            AC->>Server: re-enroll escrow at N+1 (with the PIN, or without for pin: null)
+        end
     else Incorrect PIN
         Server-->>AC: EscrowPinMismatchError(attemptsRemaining)
         Note over Server: hold burned — next attempt is a new hold
@@ -297,21 +304,71 @@ sequenceDiagram
 "I don't have a PIN" (or a locked-out PIN) falls back to the existing 7-day hold —
 `recover({ method: 'escrow' })` — which supersedes any pending `pin` hold on the server.
 
-### What happens to the PIN after recovery
+### PIN sign-in (keep by default)
 
-Every escrow recovery rebinds the account, and the rebind drops lca-api's PIN record (salt and
-attempt counter), so the old PIN cannot be carried to the new shares.
+> **Needs security approval: Taylor.** Login + PIN now signs a new device in without resetting
+> the account. Compensating controls: the server emails every verified address on each PIN
+> release, the app shows a one-time review sheet, and "Secure my account" / "Sign out of all
+> other devices" run the old reset on demand.
 
-- **PIN recovery** (`recover({ method: 'escrow-pin', pin })`): after the release succeeds and
-  the recovered key matches the DID, the strategy re-enrolls with the **same PIN** the user just
-  entered: a new salt and verifier, an owner-signed `set` (Nitro: `change`), and a fresh
-  10-attempt budget. The PIN is used only in memory for that call. It is never stored, logged,
-  or kept for a retry. If the PIN fails the current PIN rules, or the re-enrollment fails, the
-  strategy falls back to clearing the PIN (the later repair always clears).
+A successful PIN release **no longer re-splits the key or rebinds the account**:
+
+- **Login already bound** (`needs_recovery`): the strategy stores the released recovery share as
+  the device share at the released version N (same `shareVersion`), then re-sets the **same
+  PIN** at N (new salt and verifier, owner-signed `set` / Nitro `change`, fresh 10-attempt
+  budget). No auth-share write, no rebind: other devices, the recovery phrase, backup file,
+  passkey and email key all keep working. Result: `pinSignIn: { mode: 'kept' }`.
+- **Lost login** (`identity_recovery`, after the recovery-email code): `recover({ method:
+'escrow-pin', pin })` is now allowed in `choose_method`. The verified session proves the PIN
+  start and is consumed by it, so every attempt needs a fresh code; a failed attempt returns to
+  `enter_email` and rethrows the original error. After the new login,
+  `completeIdentityRecovery` calls `POST /keys/recovery-session/pin-sign-in`, which only links
+  the login (accepted only with a rebind token minted by a PIN release). The PIN is not held
+  across the login step, so the budget is not refreshed. Result: `mode: 'relinked'`. A lost
+  acknowledgement is resolved by reading the account back with the new login.
+- **Version race**: if another device rotated between the release and the store, the device is
+  stored at N while N is still in history (`mode: 'deferred-rotation'`, no PIN re-set); the
+  next start-up's `reconcileShares` advances it with the usual non-wiping rotation. If N is
+  gone (another device secured or recovered the account), the sign-in fails closed with
+  `PinSignInStaleError` and stores nothing. Keep mode never falls back to a rotation or rebind.
+- **PIN re-set fails** or the PIN fails today's PIN rules: the PIN at N stays valid and is not
+  cleared (`pinRefreshed: false`); no clear-PIN repair is scheduled.
+
+The PIN is used only in memory for the call that proves it. It is never stored, logged, or kept
+for a retry.
+
+`ready.pinSignIn` (`PinSignInInfo`) drives the post-sign-in review: `{ mode, pinRefreshed,
+priorWrongAttempts? }`. `priorWrongAttempts` is the server's verified wrong-entry count
+(`escrowPin.wrongAttempts`) as first seen for that account in this coordinator session, so
+misses in this session never count; it is omitted when the server cannot say. A reload during
+recovery takes a new snapshot (which can over-report, never under-report). Clear it with
+`coordinator.acknowledgePinSignIn()`.
+
+`coordinator.secureAccount({ pin })` ("Secure my account", "Sign out of all other devices")
+requires `ready` with a valid session and calls the strategy's `revokeOtherDevices`: one
+atomic `POST /keys/revoke-other-devices` re-splits, drops every older auth-share version and
+unlinks every login except the caller's (other devices and logins can no longer sign in; old
+phrase/backup/passkey/email key off; recovery methods back to pending; account provisional), staged through the pending-candidate slot so a lost
+acknowledgement is promoted by reconciliation. Escrow is then re-enrolled at the new version
+with `pin` (fresh salt) or, for `pin: null`, without a PIN; a failed re-enrollment is repaired
+by the next status refresh, which clears the PIN. Accounts without escrow (or opted out) are
+not enrolled.
+
+The revoke re-splits the **same** private key. It does not evict a device that already holds
+the key: an app with a cached key (private-key-first resume) keeps reaching `ready` without
+the server. The app copy says so; see `SECURITY.md` D19. A PIN-release rebind token that keep
+mode left unspent can no longer wipe and rebind once the account has moved past the released
+version.
+
+### What happens to the PIN after other recoveries
+
+Every non-PIN escrow recovery rebinds the account, and the rebind drops lca-api's PIN record
+(salt and attempt counter), so the old PIN cannot be carried to the new shares.
+
 - **Hold (7-day) recovery**: the PIN is cleared. This is the "forgot my PIN" path, and keeping
   the old PIN would need lca-api to keep its PIN record through the rebind.
-- **Resuming a pending recovery** (`completeIdentityRecovery` after a failed rebind): no PIN was
-  proven in that call, so the PIN is cleared.
+- **Resuming a pending hold recovery** (`completeIdentityRecovery` after a failed rebind): the
+  PIN is cleared.
 
 A cleared PIN shows as `state.escrowPin.enabled === false` after the refresh. Apps should treat
 that as a nudge to ask the user to set their PIN again (see LCA's `AuthCoordinatorProvider`).
@@ -373,11 +430,16 @@ graph TD
 
 ### Key invariant
 
-After **every** recovery, the shares are **re-split** and **re-stored**. This means:
+After every recovery **except a PIN sign-in**, the shares are **re-split** and **re-stored**.
+This means:
 
 - The device share on the new device is fresh (not the old one)
 - The auth share on the server is fresh
 - Old shares are effectively invalidated
+
+A PIN sign-in keeps version N: the new device's share is the released recovery share, and
+nothing on the server changes. `secureAccount()` performs the re-split and invalidation on
+demand (see [PIN sign-in](#pin-sign-in-keep-by-default)).
 
 ---
 
@@ -387,7 +449,43 @@ After **every** recovery, the shares are **re-split** and **re-stored**. This me
 
 ### When shown
 
-The modal is rendered when `coordinator.state.status === 'needs_recovery'`.
+The modal is rendered when `coordinator.state.status === 'needs_recovery'`, and during lost-login
+recovery (`identity_recovery` / `identity_recovery_success`).
+
+### PIN sign-in first
+
+When the account has a usable PIN (`escrowRecovery.pinAvailable`: `needs_recovery`, or
+`identity_recovery` in `choose_method`, with `escrowPin.enabled`) and an escrow method, Screen 1
+leads with PIN entry (`EscrowPinSignIn`, titled "Sign in with your recovery PIN"). Approve from
+another device, passkey and the other methods follow under "Other ways to sign in" in secondary
+styling. The PIN path shows **no** "sign you out on your other devices / turn off your other
+sign-in methods" warning, because a PIN sign-in keeps the account as it is.
+
+"Can't use any of these?" still leads to Screen 2, which is now the **7-day hold only** and keeps
+those warnings (the hold still resets the account). "Use my recovery PIN instead" returns to
+Screen 1. A locked or unavailable PIN hides the PIN entry for the rest of the flow and shows the
+reason; with nothing else to pick, the modal then opens on Screen 2. A hold already pending on
+this browser is still shown on Screen 1, and the PIN is still offered next to it.
+
+After the recovery-email code, a failed PIN try returns the coordinator to `enter_email`; the
+modal shows the PIN error there with a note that each try needs a new code.
+
+### After a PIN sign-in
+
+`ready.pinSignIn` shows `PinSignInReviewSheet` once ("You're in! Did you lose a device, or think
+someone else knows your PIN?"). "No, everything's fine" is the default (focused) answer and calls
+`acknowledgePinSignIn()`. If `priorWrongAttempts > 0` the sheet warns "Your PIN was entered
+incorrectly N times before this sign-in…" and gives "Yes, secure my account" primary styling,
+but never preselects it. The review holds back every other PIN prompt
+(`decidePinPromptAfterReady` → `pin-sign-in-review`).
+
+"Yes, secure my account" opens `SecureAccountFlow`, which is shared with the
+"Sign out of all other devices" section of `RecoverySetupModal` and the `/account/secure` link in
+the PIN sign-in email. It explains what will happen, asks for the PIN again (enter the current
+PIN to keep it, a new one to change it, or continue without one), calls
+`coordinator.secureAccount({ pin })`, and then leads into recovery setup, passkey first. The
+email link carries no token: the route is a `PrivateRoute`, and the flow re-checks the login
+session (Keycloak re-auth resumes it with the `secure-account` intent).
 
 ### Method availability
 
@@ -403,8 +501,8 @@ const methods = [
 
 ### User flow
 
-1. User sees list of available recovery methods
-2. Selects one → enters credentials (passkey auth, phrase, or file + password)
+1. User sees the PIN entry (if the account has a PIN) and the list of available recovery methods
+2. Enters the PIN, or selects a method → enters credentials (passkey auth, phrase, or file + password)
 3. On success → coordinator transitions to `ready` → wallet initializes
 4. On failure → error shown inline, user can try again or pick another method
 5. Cancel → calls `coordinator.logout()` → returns to `idle`

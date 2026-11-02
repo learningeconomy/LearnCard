@@ -53,6 +53,8 @@ import {
     getEscrowHoldCancelledSubject,
     EscrowPinLocked,
     getEscrowPinLockedSubject,
+    EscrowPinSignIn,
+    getEscrowPinSignInSubject,
 } from './templates';
 
 import type {
@@ -75,6 +77,7 @@ import type {
     EscrowHoldCancelledProps,
     EscrowHoldCancelledReason,
     EscrowPinLockedProps,
+    EscrowPinSignInProps,
 } from './templates';
 
 // ---------------------------------------------------------------------------
@@ -190,6 +193,9 @@ export interface TemplateDataMap {
 
     /** lca-api: recovery PIN locked after too many failed attempts */
     'escrow-pin-locked': EscrowPinLockedData;
+
+    /** lca-api: a new device signed in with the recovery PIN — links to "Secure my account" */
+    'escrow-pin-sign-in': EscrowPinSignInData;
 }
 
 export type TemplateId = keyof TemplateDataMap;
@@ -302,6 +308,11 @@ export interface EscrowPinLockedData {
     lockedAt: string;
     releaseAfter?: string;
     cancelUrl?: string;
+}
+
+export interface EscrowPinSignInData {
+    signedInAt: string;
+    secureUrl: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -567,6 +578,16 @@ function buildElement(
             return {
                 element: React.createElement(EscrowPinLocked, props),
                 subject: getEscrowPinLockedSubject(branding, locale),
+            };
+        }
+
+        case 'escrow-pin-sign-in': {
+            const d = data as EscrowPinSignInData;
+            const props: EscrowPinSignInProps = { branding, ...d, locale };
+
+            return {
+                element: React.createElement(EscrowPinSignIn, props),
+                subject: getEscrowPinSignInSubject(branding, locale),
             };
         }
 

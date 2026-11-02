@@ -627,7 +627,7 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
         expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
     });
-    it('keeps the proven PIN after a PIN recovery with an owner-signed change', async () => {
+    it('keeps the account and re-sets the proven PIN with an owner-signed change after a PIN sign-in', async () => {
         const f = await setup();
         await f.strategy.ensureEscrowEnrollment!({
             ...f.params,
@@ -635,6 +635,8 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         });
         f.spend();
         const generation = f.state().pinGeneration;
+        const shareVersion = f.intents.at(-1)!.intent.shareVersion;
+        const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
         const recovered = await f.strategy.executeRecovery({
             token: 'token',
             providerType: 'firebase',
@@ -643,8 +645,16 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             signDidAuthVp: f.params.signDidAuthVp,
             options: f.params.options,
         });
-        expect(recovered).toMatchObject({ escrowEnrolled: true, escrowRecovery: true });
+        expect(recovered).toMatchObject({
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: true },
+        });
+        // Keep mode: no rebind, no re-split; the re-set targets the released version.
+        expect(f.calls).not.toContain('POST:/keys/recovery-session/rebind');
+        expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
         expect(f.intents.at(-1)?.intent).toMatchObject({
+            shareVersion,
             action: 'replace',
             pinAction: 'change',
             recoveryEmail: 'owner@example.com',

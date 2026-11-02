@@ -13,6 +13,15 @@ export type RecoverySessionScope = 'recover' | 'rebind';
 export interface RecoverySessionRecord {
     scope: RecoverySessionScope;
     authProvider: { type: AuthProviderType; id: string };
+    /**
+     * Set only by `/keys/escrow/complete` after a successful PIN release. Keep-mode
+     * PIN sign-in (`/keys/recovery-session/pin-sign-in`) requires it, so tokens from
+     * the waiting-period hold or from `useRecoverySession` can never skip the rotation.
+     */
+    origin?: 'pin-release';
+    /** Account DID and share version the PIN release unlocked (server-side, never client input). */
+    primaryDid?: string;
+    shareVersion?: number;
 }
 
 export interface RecoveryOtpRecord {
@@ -54,6 +63,28 @@ export const createRecoverySession = async (
     await cache.set(getRecoverySessionCacheKey(token), JSON.stringify(record), ttl);
 
     return token;
+};
+
+/**
+ * Read a recovery token without consuming it, so a route can reject a token meant for
+ * another route without burning it. Always follow with `consumeRecoverySession`.
+ */
+export const peekRecoverySession = async (
+    token: string,
+    expectedScope: RecoverySessionScope
+): Promise<RecoverySessionRecord | null> => {
+    const redis = cache.redis ?? cache.node;
+    const raw = await redis.get(getRecoverySessionCacheKey(token));
+
+    if (!raw) return null;
+
+    try {
+        const record = JSON.parse(raw) as RecoverySessionRecord;
+
+        return record.scope === expectedScope ? record : null;
+    } catch {
+        return null;
+    }
 };
 
 /** Atomically consume a recovery token. Every token authorizes exactly one route call. */

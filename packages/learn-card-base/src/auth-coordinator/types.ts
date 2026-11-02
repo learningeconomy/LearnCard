@@ -66,6 +66,23 @@ import type {
  */
 export type RecoveryReason = 'new_device' | 'stale_local_key' | 'missing_server_data';
 
+/**
+ * Set on `ready` after a PIN sign-in, which kept the account instead of resetting it.
+ * The app shows a one-time review ("Did you lose a device, or think someone else knows
+ * your PIN?") and clears it with `acknowledgePinSignIn()` or `secureAccount()`.
+ */
+export interface PinSignInInfo {
+    /** See `RecoveryResult.pinSignIn.mode`. */
+    mode: 'kept' | 'relinked' | 'deferred-rotation';
+    /** False when the fresh-attempt-budget re-set did not run; the PIN stays valid. */
+    pinRefreshed: boolean;
+    /**
+     * Wrong PIN entries recorded before this sign-in session started (misses in this
+     * session never count). Omitted when the server could not say.
+     */
+    priorWrongAttempts?: number;
+}
+
 export type UnifiedAuthState =
     | { status: 'idle' }
     | { status: 'authenticating' }
@@ -105,6 +122,8 @@ export type UnifiedAuthState =
           recoveryMethods: RecoveryMethodInfo[];
           recoveredDid?: string;
           error?: string;
+          /** PIN availability from the verified recovery session, before any attempt. */
+          escrowPin?: EscrowPinStatus;
           /**
            * The verified account's DID, independently known from the
            * verify-recovery-session response (never from an escrow response).
@@ -121,6 +140,7 @@ export type UnifiedAuthState =
           did: string;
           privateKey: string;
           sssActivationState?: SssActivationState | null;
+          pinSignIn?: PinSignInInfo;
       }
     | { status: 'deriving_key' }
     | {
@@ -140,6 +160,8 @@ export type UnifiedAuthState =
            * anything. The app should ask the user to set a new PIN (`setEscrowPin`).
            */
           escrowPinResetRequired?: true;
+          /** Present once after a PIN sign-in; see PinSignInInfo. */
+          pinSignIn?: PinSignInInfo;
           authUser?: AuthUser;
           did: string;
           privateKey: string;

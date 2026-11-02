@@ -53,14 +53,54 @@ sequenceDiagram
 
 Until a second independent time source is in place, waiting-period releases are refused entirely rather than proceed on an unverified wait — the system fails closed.
 
-### What happens to the PIN after recovery
+## Signing In With a PIN
 
-Recovery always creates new key pieces, so the app enrolls automatic recovery again afterwards:
+{% hint style="warning" %}
+This behaviour is new and still needs security approval (owner: Taylor) before it ships to production.
+{% endhint %}
 
-- **Recovered with the PIN**: the user keeps the same PIN. The app enrolls again with the PIN the user just entered, which starts a fresh set of 10 attempts. The PIN is used only in memory for that step and is never stored.
-- **Recovered by waiting out the 7-day hold**: the PIN is removed, because this is the path for users who forgot their PIN. The app asks the user to choose a new PIN.
+On a new device, the PIN is the quickest way back in. A user who signs in with their usual login and enters the correct PIN is signed in **without resetting the account**:
 
-If re-enrolling with the PIN fails, the PIN is removed instead and the app asks the user to set one again. Recovery itself never fails because of the PIN.
+- Their other devices stay signed in.
+- Their recovery phrase, backup file, passkey and email recovery key keep working.
+- The PIN stays the same and normally gets a fresh set of 10 attempts. The PIN is used only in memory for that step and is never stored.
+
+A user who has lost their usual login confirms their recovery email first, then enters the PIN, then signs in with a new login, which is linked to the same account. Each PIN try on this path needs a new email code, and the PIN keeps the attempts it had left (it is not refreshed).
+
+Because the login and the PIN together are now enough to sign in quietly, LearnCard adds three checks:
+
+1. **Email notice.** Every successful PIN sign-in sends a "New device signed in with your PIN. Not you? Secure your account." email to the account's verified addresses, with a link to secure the account. The server sends it when the PIN is accepted, so the app cannot suppress it. A failed send never blocks the sign-in.
+2. **A question after signing in.** The app asks once: "Did you lose a device, or think someone else knows your PIN?" The default answer is "No, everything's fine". If the PIN was entered incorrectly before this sign-in, the app says so and highlights "Secure my account".
+3. **Secure my account.** Available from that question, from the email link, and as "Sign out of all other devices" in Account Recovery settings. It stops other devices and other linked logins from signing in again, and turns off the old recovery phrase, backup file, passkey and email recovery key. The user can keep the PIN (by entering it again), choose a new one, or continue without one, and is then asked to set up new recovery methods, starting with a passkey. The app suggests a new PIN if someone else might know the current one.
+
+Someone who knows both the login and the PIN can also use "Secure my account". The email notice is what tells the real owner.
+
+{% hint style="warning" %}
+"Secure my account" does not change the account's key. A device that already signed in and is still open may keep working until it signs out, and the action cannot undo anything someone already did with the account. It stops new sign-ins with the old pieces, the old recovery methods and other linked logins.
+{% endhint %}
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App as LearnCard App
+    participant Server as LearnCard Server
+    participant Enclave as Hardware Enclave
+
+    User->>App: Sign in on a new device, enter PIN
+    App->>Enclave: Prove the PIN
+    Enclave-->>App: Release the recovery piece
+    Server-->>User: Email: "New device signed in with your PIN"
+    App->>App: Rebuild the key, keep the account as it is
+    App-->>User: "You're in! Did you lose a device…?"
+    opt User chooses "Secure my account"
+        App->>Server: Stop old pieces and other logins, turn off old recovery methods
+        App-->>User: Set up new recovery methods
+    end
+```
+
+### What happens to the PIN after other recoveries
+
+The 7-day hold still resets the account: it signs out other devices and turns off other recovery methods. The PIN is removed, because this is the path for users who forgot their PIN, and the app asks the user to choose a new one.
 
 ## What is Attestation?
 

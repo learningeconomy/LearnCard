@@ -31,6 +31,7 @@ import type {
     EscrowHoldStatus,
     EscrowRecoveryStart,
     EscrowEnrollmentState,
+    RevokeOtherDevicesResult,
 } from './types';
 import {
     EscrowPinLockedError,
@@ -38,6 +39,7 @@ import {
     EscrowPinThrottledError,
     EscrowHoldRestartThrottledError,
     EscrowPinUnavailableError,
+    PinSignInStaleError,
 } from './types';
 import {
     ESCROW_PIN_LOCKED_MESSAGE,
@@ -1110,6 +1112,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
               rebindSessionToken: string;
               /** Recovered from an existing escrow enrollment (hold or PIN), not another method. */
               fromEscrow: boolean;
+              /**
+               * PIN sign-in awaiting a new login: completion only links that login
+               * (no re-split, no history or recovery-method change) at this version.
+               */
+              pinKeep?: { shareVersion: number };
               rebind?: { shares: SSSShares; storageId: string | undefined; attempted: boolean };
           }
         | undefined;
@@ -1357,7 +1364,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         providerType: AuthProviderType,
         privateKey: string,
         primaryDid: string,
-        shares: SSSShares,
+        // Only the recovery share is sealed; a PIN sign-in re-set has no other share.
+        shares: Pick<SSSShares, 'recoveryShare'>,
         shareVersion: number,
         signDidAuthVp?: DidAuthVpSigner,
         verifiedKey?: VerifiedEnclaveIdentity,
@@ -1766,16 +1774,268 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         };
     };
 
+    /** New salt and verifier for a PIN just proven; undefined when it fails the PIN rules. */
+    const freshPinMaterial = async (
+        pin: string
+    ): Promise<{ pinSalt: string; pinVerifier: string } | undefined> => {
+        if (!validatePin(pin).ok) return undefined;
+        try {
+            const pinSalt = generatePinSalt();
+            return { pinSalt, pinVerifier: await derivePinProof(pin, pinSalt) };
+        } catch {
+            return undefined;
+        }
+    };
+
+    /**
+     * Store a PIN-released recovery share as this device's share at its own version.
+     * Only the main slot is written: the recovery share is never staged as a pending
+     * candidate, and unrelated candidates are left for the usual reconciliation, because
+     * a PIN sign-in changes nothing on the server.
+     */
+    const adoptReleasedShare = async (
+        storage: SSSStorageFunctions & { assertCurrent: () => void },
+        storageId: string | undefined,
+        released: { primaryDid: string; recoveryShare: string; authShare: string },
+        shareVersion: number,
+        currentVersion: number
+    ): Promise<void> => {
+        await storage.storeDeviceShare(released.recoveryShare, storageId);
+        await storage.storeShareVersion(shareVersion, storageId);
+        // The released split's email share is not known on this device.
+        lastEmailShare = undefined;
+        lastShareVersion = shareVersion;
+        lastServerSnapshot = {
+            currentVersion,
+            resolvedVersion: shareVersion,
+            authShare: released.authShare,
+            primaryDid: released.primaryDid,
+        };
+    };
+
+    /**
+     * PIN sign-in with the login already bound to the account (the default "keep"
+     * path). Nothing is re-split and no server state changes apart from re-setting the
+     * same PIN for a fresh attempt budget. `pin` is used in this call only: never
+     * stored in pending/retry state, logged or reported.
+     *
+     * Version race: if another device rotated after the release, the device is stored
+     * at the released version as long as the server still holds it in history
+     * (`deferred-rotation`; the next start-up's reconcileShares advances it without
+     * wiping). If that version is gone (a revoke or rebind), it fails closed with
+     * PinSignInStaleError and stores nothing; it never falls back to a rotation.
+     */
+    const completePinSignInKeep = async (
+        params: {
+            token: string;
+            providerType: AuthProviderType;
+            signDidAuthVp?: DidAuthVpSigner;
+            options?: { recoveryEmail?: string; recoveryLanguage?: string };
+        },
+        released: {
+            privateKey: string;
+            primaryDid: string;
+            recoveryShare: string;
+            authShare: string;
+            shareVersion: number;
+        },
+        pin: string
+    ): Promise<RecoveryResult> => {
+        const storage = guardedStorage();
+        const generation = storageGeneration;
+        const storageId = activeStorageId;
+        const assertActive = (): void => {
+            if (activeStorageId !== storageId || storageGeneration !== generation) {
+                throw new Error('This recovery request was cancelled.');
+            }
+        };
+
+        const mode = await withShareUpdateLock(storage, storageId, () =>
+            withRotationLock(async (): Promise<'kept' | 'deferred-rotation'> => {
+                assertActive();
+                const current = await fetchAuthShareRaw(
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    undefined,
+                    tenantId
+                );
+                assertActive();
+                if (
+                    !current ||
+                    current.primaryDid !== released.primaryDid ||
+                    typeof current.shareVersion !== 'number'
+                ) {
+                    throw new PinSignInStaleError();
+                }
+                let mode: 'kept' | 'deferred-rotation';
+                if (current.shareVersion === released.shareVersion) {
+                    if (authShareToString(current.authShare) !== released.authShare) {
+                        throw new PinSignInStaleError();
+                    }
+                    mode = 'kept';
+                } else {
+                    const historical =
+                        current.shareVersion > released.shareVersion
+                            ? await fetchAuthShareRaw(
+                                  serverUrl,
+                                  params.token,
+                                  params.providerType,
+                                  released.shareVersion,
+                                  tenantId
+                              )
+                            : null;
+                    if (authShareToString(historical?.authShare) !== released.authShare) {
+                        throw new PinSignInStaleError();
+                    }
+                    mode = 'deferred-rotation';
+                }
+                assertActive();
+                await adoptReleasedShare(
+                    storage,
+                    storageId,
+                    released,
+                    released.shareVersion,
+                    current.shareVersion
+                );
+                pendingIdentityRecovery = undefined;
+                return mode;
+            })
+        );
+
+        // Same PIN, new salt and verifier, enrolled at the same version: a fresh
+        // attempt budget without a rotation. Skipped after a race (the other device's
+        // rotation already re-enrolled escrow). A failure leaves the PIN at this
+        // version valid, so nothing is cleared and no repair is scheduled.
+        let pinRefreshed = false;
+        if (mode === 'kept' && params.signDidAuthVp) {
+            const pinMaterial = await freshPinMaterial(pin);
+            pinRefreshed =
+                pinMaterial !== undefined &&
+                (await tryEnrollEscrow(
+                    params.token,
+                    params.providerType,
+                    released.privateKey,
+                    released.primaryDid,
+                    { recoveryShare: released.recoveryShare },
+                    released.shareVersion,
+                    params.signDidAuthVp,
+                    undefined,
+                    pinMaterial,
+                    false,
+                    storage.assertCurrent,
+                    params.options?.recoveryEmail,
+                    params.options?.recoveryLanguage
+                ));
+        }
+        assertActive();
+        return {
+            privateKey: released.privateKey,
+            did: released.primaryDid,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: { mode, pinRefreshed },
+        };
+    };
+
+    /**
+     * PIN sign-in completed with a login that is not yet bound (lost-login flow). The
+     * PIN-release rebind token links the login on the server without touching shares,
+     * history, recovery methods or escrow. No PIN is held across the new-login step, so
+     * the attempt budget is not refreshed here.
+     */
+    const completePinSignInRelink = async (
+        params: Parameters<NonNullable<SSSKeyDerivationStrategy['completeIdentityRecovery']>>[0],
+        pending: NonNullable<typeof pendingIdentityRecovery>,
+        signDidAuthVp: DidAuthVpSigner
+    ): Promise<RecoveryResult> => {
+        const storage = guardedStorage();
+        const generation = storageGeneration;
+        const storageId = activeStorageId;
+        const shareVersion = pending.pinKeep!.shareVersion;
+        const assertActive = (): void => {
+            if (
+                activeStorageId !== storageId ||
+                pendingIdentityRecovery !== pending ||
+                storageGeneration !== generation
+            ) {
+                throw new Error('This recovery request was cancelled.');
+            }
+        };
+
+        await withShareUpdateLock(storage, storageId, () =>
+            withRotationLock(async () => {
+                assertActive();
+                const didAuthVp = await requestFreshDidAuthVp(
+                    serverUrl,
+                    pending.privateKey,
+                    pending.primaryDid,
+                    signDidAuthVp,
+                    tenantId
+                );
+                assertActive();
+                try {
+                    const response = await postJson<{
+                        success: true;
+                        shareVersion: number;
+                        linked: boolean;
+                    }>(
+                        `${serverUrl}/keys/recovery-session/pin-sign-in`,
+                        {
+                            recoverySessionToken: pending.rebindSessionToken,
+                            providerType: params.providerType,
+                            primaryDid: pending.primaryDid,
+                        },
+                        {
+                            ...buildHeaders('', didAuthVp, tenantId),
+                            'X-Auth-Token': params.token,
+                        }
+                    );
+                    if (response.shareVersion !== shareVersion) throw new PinSignInStaleError();
+                } catch (error) {
+                    // The single-use token may have been consumed before the response was
+                    // lost (or by an earlier attempt). The link is proven only when this
+                    // login now resolves to the same account, version and auth share.
+                    const current = await fetchAuthShareRaw(
+                        serverUrl,
+                        params.token,
+                        params.providerType,
+                        undefined,
+                        tenantId
+                    ).catch(() => null);
+                    if (
+                        !current ||
+                        current.primaryDid !== pending.primaryDid ||
+                        current.shareVersion !== shareVersion ||
+                        authShareToString(current.authShare) !== pending.authShare
+                    ) {
+                        throw error;
+                    }
+                }
+                assertActive();
+                await adoptReleasedShare(storage, storageId, pending, shareVersion, shareVersion);
+                pendingIdentityRecovery = undefined;
+            })
+        );
+
+        if (activeStorageId !== storageId || storageGeneration !== generation) {
+            throw new Error('This recovery request was cancelled.');
+        }
+        return {
+            privateKey: pending.privateKey,
+            did: pending.primaryDid,
+            escrowEnrolled: true,
+            escrowRecovery: true,
+            pinSignIn: { mode: 'relinked', pinRefreshed: false },
+        };
+    };
+
     /**
      * Rebinds a pending identity recovery to the new sign-in and re-enrolls escrow.
-     * `proven` is only supplied by `executeRecovery` right after an `escrow-pin`
-     * release succeeded for this exact pending recovery, so the re-seal can keep the
-     * PIN the user just proved (fresh attempt budget). It is held in memory for this
-     * call only: never stored in pending/retry state, logged or reported.
+     * A pending PIN sign-in (`pinKeep`) only links the login; see completePinSignInRelink.
      */
     const completeIdentityRecoveryWith = async (
-        params: Parameters<NonNullable<SSSKeyDerivationStrategy['completeIdentityRecovery']>>[0],
-        proven?: { pin: string; pending: NonNullable<typeof pendingIdentityRecovery> }
+        params: Parameters<NonNullable<SSSKeyDerivationStrategy['completeIdentityRecovery']>>[0]
     ): Promise<RecoveryResult> => {
         const storage = guardedStorage();
         const generation = storageGeneration;
@@ -1786,6 +2046,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         if (!signDidAuthVp) {
             throw new Error('DID proof signing is required to bind a new sign-in');
         }
+        if (pending.pinKeep) return completePinSignInRelink(params, pending, signDidAuthVp);
 
         const storageId = activeStorageId;
         const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
@@ -1924,24 +2185,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             })
         );
 
-        // The rebind wiped lca-api's PIN record, so the old PIN cannot be carried.
-        // After a PIN release in this same call, re-set the PIN the user just proved
-        // (owner-signed set/change, fresh attempt budget); otherwise clear it. Any
-        // problem preparing the PIN falls back to clearing so recovery never fails on it.
-        let pinMaterial: { pinSalt: string; pinVerifier: string } | undefined;
-        if (
-            pending.fromEscrow &&
-            proven !== undefined &&
-            proven.pending === pending &&
-            validatePin(proven.pin).ok
-        ) {
-            try {
-                const pinSalt = generatePinSalt();
-                pinMaterial = { pinSalt, pinVerifier: await derivePinProof(proven.pin, pinSalt) };
-            } catch {
-                pinMaterial = undefined;
-            }
-        }
+        // The rebind wiped lca-api's PIN record, so the old PIN cannot be carried and
+        // is cleared. Only a hold (7-day) release reaches this rebind: a PIN release
+        // keeps the account instead (completePinSignInKeep / completePinSignInRelink).
         // Other recovery methods leave enrollment to the caller's rollout gate.
         const enrolled =
             pending.fromEscrow &&
@@ -1954,8 +2200,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 shareVersion,
                 signDidAuthVp,
                 undefined,
-                pinMaterial,
-                !pinMaterial,
+                undefined,
+                true,
                 storage.assertCurrent,
                 params.options?.recoveryEmail,
                 params.options?.recoveryLanguage
@@ -2863,11 +3109,16 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     throw new Error('DID verification is required for escrow recovery');
                 // Each PIN call owns a fresh, single-use hold and in-memory key pair.
                 // Never persist this key or retry completion after a burned attempt.
+                // Without a bound login, the PIN start is proven by the verified
+                // recovery-email session instead (lost-login sign-in).
+                if (input.method === 'escrow-pin' && !token && !input.recoverySessionToken)
+                    throw new Error('PIN recovery requires signing in first.');
                 const start =
                     input.method === 'escrow-pin'
                         ? await this.startEscrowRecovery!({
-                              token,
-                              providerType,
+                              ...(token
+                                  ? { token, providerType }
+                                  : { recoverySessionToken: input.recoverySessionToken }),
                               expectedDid: input.expectedDid,
                               options: { releasePolicy: 'pin' },
                           })
@@ -2935,6 +3186,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                         'Recovery produced an incorrect key. Try another recovery method.'
                     );
                 }
+                // PIN sign-in keeps the account by default: no re-split, no rebind.
+                // Reached only after this call's PIN release succeeded and the DID matched.
+                if (input.method === 'escrow-pin' && token) {
+                    return completePinSignInKeep(
+                        { token, providerType, signDidAuthVp, options: params.options },
+                        {
+                            privateKey,
+                            primaryDid: material.primaryDid,
+                            recoveryShare: plaintext.recoveryShare,
+                            authShare,
+                            shareVersion: material.shareVersion,
+                        },
+                        input.pin
+                    );
+                }
                 pendingIdentityRecovery = {
                     privateKey,
                     primaryDid: material.primaryDid,
@@ -2942,16 +3208,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     authShare,
                     rebindSessionToken: material.rebindSessionToken,
                     fromEscrow: true,
+                    // The PIN itself is not kept across the new-login step.
+                    ...(input.method === 'escrow-pin'
+                        ? { pinKeep: { shareVersion: material.shareVersion } }
+                        : {}),
                 };
-                // The OTP path uses exactly this pending state and atomic rebind operation.
-                // Without a provider session the caller completes it after signing in.
+                // The OTP path uses exactly this pending state. Without a provider session
+                // the caller completes it after signing in: a hold release with the
+                // atomic rebind, a PIN release by linking the new login only.
                 if (!token) return { privateKey, did: material.primaryDid };
-                const pending = pendingIdentityRecovery;
-                return completeIdentityRecoveryWith(
-                    { token, providerType, signDidAuthVp, options: params.options },
-                    // Reached only after this call's PIN release succeeded and the DID matched.
-                    input.method === 'escrow-pin' ? { pin: input.pin, pending } : undefined
-                );
+                return completeIdentityRecoveryWith({
+                    token,
+                    providerType,
+                    signDidAuthVp,
+                    options: params.options,
+                });
             }
 
             let recoveryShare: string;
@@ -3697,8 +3968,184 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
 
         async completeIdentityRecovery(params): Promise<RecoveryResult> {
-            // Public entry (sign-in completion, retry): no PIN was proven in this call.
+            // Public entry (sign-in completion, retry). A pending PIN sign-in only links
+            // the login; any other pending recovery rebinds with a full rotation.
             return completeIdentityRecoveryWith(params);
+        },
+
+        /**
+         * "Secure my account": one atomic server update re-splits the key and drops all
+         * older auth share versions, signing out other devices and turning off the old
+         * phrase/backup/passkey/email key. Staged through the pending-candidate slot, so
+         * a lost acknowledgement is promoted by the usual reconciliation. Escrow is then
+         * re-enrolled with `pin` (fresh salt) or, for `null`, without a PIN. The PIN is
+         * used in this call only and never kept in retry state.
+         */
+        async revokeOtherDevices(params): Promise<RevokeOtherDevicesResult> {
+            const { token, providerType, privateKey, did, signDidAuthVp, pin } = params;
+            if (!signDidAuthVp) throw new Error('DID proof signing is required');
+            if (pin !== null) {
+                const validation = validatePin(pin);
+                if (!validation.ok)
+                    throw new Error(
+                        validation.reason === 'length'
+                            ? 'PIN must contain 6–12 digits.'
+                            : 'Choose a PIN without trivial or sequential patterns.'
+                    );
+            }
+            const storage = guardedStorage();
+            const storageId = activeStorageId;
+            const assertUser = captureActiveUserGuard();
+            const assertActive = (): void => {
+                assertUser();
+                storage.assertCurrent();
+            };
+            const before = await fetchAuthShareRaw(
+                serverUrl,
+                token,
+                providerType,
+                undefined,
+                tenantId
+            );
+            if (!before || before.primaryDid !== did) {
+                throw new Error('This account could not be found. Sign in again.');
+            }
+            // Re-enroll only an account that had escrow and has not opted out.
+            const hadEscrow =
+                !before.escrowOptedOut &&
+                (before.priorEscrowEnrollment === true ||
+                    (Array.isArray(before.recoveryMethods) &&
+                        before.recoveryMethods.some(
+                            (method: { type?: string }) => method?.type === 'escrow'
+                        )));
+            const didFromKey = async (key: string): Promise<string> =>
+                key === privateKey ? did : `${did}:mismatch`;
+
+            const { shares, shareVersion } = await withShareUpdateLock(storage, storageId, () =>
+                withRotationLock(async () => {
+                    const { snapshot } = await resolvePendingShareCandidates(
+                        storage,
+                        storageId,
+                        async () => {
+                            const data = await fetchAuthShareRaw(
+                                serverUrl,
+                                token,
+                                providerType,
+                                undefined,
+                                tenantId
+                            );
+                            return {
+                                currentVersion: data?.shareVersion ?? null,
+                                authShare: authShareToString(data?.authShare),
+                            };
+                        },
+                        did,
+                        didFromKey,
+                        assertActive,
+                        recordPromotion(did),
+                        async version =>
+                            authShareToString(
+                                (
+                                    await fetchAuthShareRaw(
+                                        serverUrl,
+                                        token,
+                                        providerType,
+                                        version,
+                                        tenantId
+                                    )
+                                )?.authShare
+                            )
+                    );
+                    if (!snapshot.currentVersion) {
+                        throw new Error('This account could not be found. Sign in again.');
+                    }
+                    const expectedShareVersion = snapshot.currentVersion;
+                    const didAuthVp = await requestFreshDidAuthVp(
+                        serverUrl,
+                        privateKey,
+                        did,
+                        signDidAuthVp,
+                        tenantId
+                    );
+                    assertActive();
+                    let shareVersion: number | undefined;
+                    let stagedShare = '';
+                    const shares = await atomicShareUpdate(privateKey, {
+                        storeDevice: async share => {
+                            assertActive();
+                            stagedShare = share;
+                            await addPendingShareCandidate(
+                                storage,
+                                { share, createdAt: Date.now() },
+                                storageId
+                            );
+                        },
+                        clearDevice: () =>
+                            removePendingShareCandidate(storage, stagedShare, storageId),
+                        storeAuth: async share => {
+                            assertActive();
+                            const response = await postJson<{
+                                success: true;
+                                shareVersion: number;
+                                recoveryMethodsRequireConfirmation: string[];
+                            }>(
+                                `${serverUrl}/keys/revoke-other-devices`,
+                                {
+                                    authToken: token,
+                                    providerType,
+                                    primaryDid: did,
+                                    authShare: { encryptedData: share, encryptedDek: '', iv: '' },
+                                    expectedShareVersion,
+                                },
+                                buildHeaders(token, didAuthVp, tenantId)
+                            );
+                            shareVersion = response.shareVersion;
+                        },
+                    });
+                    if (shareVersion === undefined) {
+                        throw new Error('Server did not return a share version');
+                    }
+                    await storage.storeDeviceShare(shares.deviceShare, storageId);
+                    await storage.storeShareVersion(shareVersion, storageId);
+                    await removePendingShareCandidate(storage, shares.deviceShare, storageId);
+                    assertActive();
+                    lastEmailShare = shares.emailShare;
+                    lastShareVersion = shareVersion;
+                    lastServerSnapshot = {
+                        currentVersion: shareVersion,
+                        resolvedVersion: shareVersion,
+                        authShare: shares.authShare,
+                        primaryDid: did,
+                    };
+                    return { shares, shareVersion };
+                })
+            );
+
+            // lca-api unset the escrow blob and PIN with the old versions; re-enroll now.
+            if (!hadEscrow || !config.escrow?.enabled) {
+                return { shareVersion, escrowEnrolled: false, pinKept: false };
+            }
+            const pinMaterial = pin === null ? undefined : await freshPinMaterial(pin);
+            const enrolled = await tryEnrollEscrow(
+                token,
+                providerType,
+                privateKey,
+                did,
+                shares,
+                shareVersion,
+                signDidAuthVp,
+                undefined,
+                pinMaterial,
+                !pinMaterial,
+                storage.assertCurrent,
+                params.options?.recoveryEmail,
+                params.options?.recoveryLanguage
+            );
+            if (!enrolled) {
+                // The repair clears: PIN material (an offline-guessable verifier) is never kept.
+                unenrolledRotation = { shares, shareVersion, primaryDid: did, clearPin: true };
+            }
+            return { shareVersion, escrowEnrolled: enrolled, pinKept: enrolled && !!pinMaterial };
         },
 
         // --- Contact method management ---

@@ -680,7 +680,11 @@ export const escrowRouter = t.router({
                         (attestation.previousKeyIds ?? []).includes(oldBlob.enclaveKeyId)) &&
                     input.shareVersion > oldBlob.shareVersion &&
                     // A released blob's PIN is retired: it was just used, or the user forgot it.
-                    !(await hasCompletedEscrowHoldForVersion(authProvider, oldBlob.shareVersion))
+                    // Releases before the PIN was (re-)set do not count: PIN sign-in keeps the
+                    // share version and re-sets the PIN, and that fresh PIN must carry.
+                    !(await hasCompletedEscrowHoldForVersion(authProvider, oldBlob.shareVersion, {
+                        completedAfter: oldPin.enabledAt,
+                    }))
                 ) {
                     try {
                         const carried = await getEscrowEnclave().carryPinVerifier({
@@ -1388,9 +1392,22 @@ export const escrowRouter = t.router({
             const rebindSessionToken = await createRecoverySession({
                 scope: 'rebind',
                 authProvider: hold.authProvider,
+                // Only a PIN release may sign in without rotating (keys.completePinSignIn).
+                ...(hold.releasePolicy === 'pin'
+                    ? {
+                          origin: 'pin-release' as const,
+                          primaryDid: userKey.primaryDid,
+                          shareVersion: hold.shareVersion,
+                      }
+                    : {}),
             });
+            // A PIN release signs a new device in without signing anything out, so the
+            // owner gets the "Not you? Secure your account" notice instead of the plain
+            // recovery confirmation. Sent here, at the only point the server sees a
+            // successful PIN proof, so the client can neither skip nor forge it. Fail-open
+            // with a bounded budget (notifyEscrowHoldEvent never throws).
             await notifyEscrowHoldEvent({
-                kind: 'completed',
+                kind: hold.releasePolicy === 'pin' ? 'pin-sign-in' : 'completed',
                 hold: completed,
                 userKey,
                 tenant: ctx.tenant,

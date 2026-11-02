@@ -114,6 +114,20 @@ export const EscrowPinStatusValidator = SharedEscrowPinStatusValidator.extend({
     salt: EscrowPinSaltValidator.optional(),
 });
 
+/**
+ * Verified wrong entries only. `failedAttempts` is the charged budget (it also counts
+ * successful releases and unresolved reservations), so it is used only when it is 0,
+ * which proves no wrong entry. A legacy record with charges but no verified counter
+ * omits the field rather than guessing.
+ */
+const getVerifiedWrongPinAttempts = (
+    pin: NonNullable<MongoUserKeyType['escrowPin']>
+): { wrongAttempts?: number } => {
+    if (pin.verifiedFailedAttempts !== undefined)
+        return { wrongAttempts: pin.verifiedFailedAttempts };
+    return pin.failedAttempts === 0 ? { wrongAttempts: 0 } : {};
+};
+
 export const getEscrowPinStatus = (
     userKey: MongoUserKeyType
 ): z.infer<typeof EscrowPinStatusValidator> => {
@@ -130,6 +144,7 @@ export const getEscrowPinStatus = (
         enabled,
         attemptsRemaining: pin ? Math.max(0, ESCROW_PIN_MAX_ATTEMPTS - pin.failedAttempts) : 0,
         ...(enabled ? { salt: pin.salt } : {}),
+        ...(pin ? getVerifiedWrongPinAttempts(pin) : {}),
     };
 };
 
@@ -1457,7 +1472,57 @@ export interface CompleteIdentityRebindInput {
     newContactMethod: ContactMethod;
     primaryDid: string;
     authShare: ServerEncryptedShare;
+    /**
+     * Only commit if the account is still at this share version. Set for tokens minted
+     * by a PIN release, so a stale token cannot undo a later "Secure my account".
+     */
+    expectedShareVersion?: number;
 }
+
+/**
+ * The security rotation shared by identity rebind and "Secure my account": a new
+ * auth share at `shareVersion + 1`, every historical auth share purged (so device
+ * shares from the old split stop working), every recovery method kept only as an
+ * unconfirmed descriptor (their external shares belong to the old split), and
+ * escrow cleared (the client re-enrolls on the new split).
+ */
+const buildSecurityRotationUpdate = (
+    existing: MongoUserKeyType,
+    authShare: ServerEncryptedShare,
+    now: Date
+): {
+    shareVersion: number;
+    recoveryMethods: RecoveryMethod[];
+    $set: Record<string, unknown>;
+    $unset: Record<string, ''>;
+} => {
+    const shareVersion = (existing.shareVersion ?? 1) + 1;
+    const recoveryMethods = (existing.recoveryMethods ?? []).map(method => ({
+        type: method.type,
+        createdAt: now,
+        confirmationStatus: 'pending' as const,
+        credentialId: method.credentialId,
+        shareVersion,
+    }));
+
+    return {
+        shareVersion,
+        recoveryMethods,
+        $set: {
+            authShare,
+            shareVersion,
+            shareUpdatedAt: now,
+            previousAuthShares: [],
+            recoveryMethods,
+            keyProvider: 'sss',
+            // The new split has no confirmed recovery method yet. SSS records
+            // are excluded from provisional migration cleanup (Web3Auth only).
+            sssActivationState: 'provisional',
+            updatedAt: now,
+        },
+        $unset: { provisionalCreatedAt: '', escrowBlob: '', escrowPin: '' },
+    };
+};
 
 /**
  * Atomically bind a replacement login identity and commit a security rotation.
@@ -1477,6 +1542,12 @@ export const completeIdentityRebind = async (
     });
 
     if (!existing) return null;
+    if (
+        input.expectedShareVersion !== undefined &&
+        (existing.shareVersion ?? 1) !== input.expectedShareVersion
+    ) {
+        return null;
+    }
 
     const providerConflict = await collection.findOne({
         ...getAuthProviderFilter(input.newAuthProvider),
@@ -1486,7 +1557,6 @@ export const completeIdentityRebind = async (
     if (providerConflict) return null;
 
     const now = new Date();
-    const shareVersion = (existing.shareVersion ?? 1) + 1;
     const remainingAuthProviders = (existing.authProviders ?? []).filter(
         provider =>
             provider.type !== input.oldAuthProvider.type || provider.id !== input.oldAuthProvider.id
@@ -1497,13 +1567,7 @@ export const completeIdentityRebind = async (
     )
         ? remainingAuthProviders
         : [...remainingAuthProviders, input.newAuthProvider];
-    const recoveryMethods = (existing.recoveryMethods ?? []).map(method => ({
-        type: method.type,
-        createdAt: now,
-        confirmationStatus: 'pending' as const,
-        credentialId: method.credentialId,
-        shareVersion,
-    }));
+    const rotation = buildSecurityRotationUpdate(existing, input.authShare, now);
     const result = await collection.findOneAndUpdate(
         {
             ...getAuthProviderFilter(input.oldAuthProvider),
@@ -1512,20 +1576,11 @@ export const completeIdentityRebind = async (
         },
         {
             $set: {
+                ...rotation.$set,
                 authProviders,
                 contactMethod: input.newContactMethod,
-                authShare: input.authShare,
-                shareVersion,
-                shareUpdatedAt: now,
-                previousAuthShares: [],
-                recoveryMethods,
-                keyProvider: 'sss',
-                // The new split has no confirmed recovery method yet. SSS records
-                // are excluded from provisional migration cleanup (Web3Auth only).
-                sssActivationState: 'provisional',
-                updatedAt: now,
             },
-            $unset: { provisionalCreatedAt: '', escrowBlob: '', escrowPin: '' },
+            $unset: rotation.$unset,
         },
         { returnDocument: 'after' }
     );
@@ -1533,7 +1588,109 @@ export const completeIdentityRebind = async (
     if (!result) return null;
 
     return {
-        shareVersion,
-        methodsRequiringConfirmation: recoveryMethods.map(method => method.type),
+        shareVersion: rotation.shareVersion,
+        methodsRequiringConfirmation: rotation.recoveryMethods.map(method => method.type),
+    };
+};
+
+export interface LinkAuthProviderKeepingSharesInput {
+    oldAuthProvider: AuthProviderMapping;
+    newAuthProvider: AuthProviderMapping;
+    primaryDid: string;
+    /** The share version the PIN release unlocked; the link only lands at that version. */
+    shareVersion: number;
+}
+
+/**
+ * PIN sign-in with a different login (keep mode): add the new login to the account
+ * without rotating. Shares, history, recovery methods, escrow, activation state and
+ * the contact method are untouched, and the old login stays linked. Returns null
+ * when the new login belongs to another account or the account moved past
+ * `shareVersion` (a concurrent rotation or revoke), so a revoke is never undone.
+ */
+export const linkAuthProviderKeepingShares = async (
+    input: LinkAuthProviderKeepingSharesInput
+): Promise<{ shareVersion: number } | null> => {
+    const collection = getUserKeysCollection();
+    const existing = await collection.findOne({
+        ...getAuthProviderFilter(input.oldAuthProvider),
+        primaryDid: input.primaryDid,
+    });
+
+    if (!existing) return null;
+
+    const providerConflict = await collection.findOne({
+        ...getAuthProviderFilter(input.newAuthProvider),
+        ...(existing._id ? { _id: { $ne: existing._id } } : {}),
+    });
+
+    if (providerConflict) return null;
+
+    const result = await collection.findOneAndUpdate(
+        {
+            ...getAuthProviderFilter(input.oldAuthProvider),
+            primaryDid: input.primaryDid,
+            shareVersion: input.shareVersion,
+        },
+        {
+            $addToSet: { authProviders: input.newAuthProvider },
+            $set: { updatedAt: new Date() },
+        },
+        { returnDocument: 'after' }
+    );
+
+    return result ? { shareVersion: input.shareVersion } : null;
+};
+
+export interface RevokeOtherDeviceSharesInput {
+    authProvider: AuthProviderMapping;
+    primaryDid: string;
+    /** The version the caller split from; any concurrent rotation makes the revoke miss. */
+    expectedShareVersion: number;
+    authShare: ServerEncryptedShare;
+}
+
+/**
+ * "Secure my account" / "Sign out of all other devices": the same security rotation
+ * as an identity rebind, and every login except the caller's is unlinked (a login
+ * added by a lost-login PIN sign-in must not survive the revoke). The contact method
+ * is unchanged. One CAS document update on `{provider, primaryDid,
+ * expectedShareVersion}`, so it either lands whole or not at all. Returns null on a
+ * version miss.
+ *
+ * This rotates shares, not the key: a device that already holds the private key is
+ * not evicted (SECURITY.md D19).
+ */
+export const revokeOtherDeviceShares = async (
+    input: RevokeOtherDeviceSharesInput
+): Promise<{
+    shareVersion: number;
+    methodsRequiringConfirmation: RecoveryMethod['type'][];
+} | null> => {
+    const collection = getUserKeysCollection();
+    const filter = {
+        ...getAuthProviderFilter(input.authProvider),
+        primaryDid: input.primaryDid,
+        shareVersion: input.expectedShareVersion,
+    };
+    const existing = await collection.findOne(filter);
+
+    if (!existing) return null;
+
+    const rotation = buildSecurityRotationUpdate(existing, input.authShare, new Date());
+    const result = await collection.findOneAndUpdate(
+        filter,
+        {
+            $set: { ...rotation.$set, authProviders: [input.authProvider] },
+            $unset: rotation.$unset,
+        },
+        { returnDocument: 'after' }
+    );
+
+    if (!result) return null;
+
+    return {
+        shareVersion: rotation.shareVersion,
+        methodsRequiringConfirmation: rotation.recoveryMethods.map(method => method.type),
     };
 };

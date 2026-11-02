@@ -62,3 +62,6 @@ export type { EscrowHoldCancelledProps, EscrowHoldCancelledReason } from './escr
 
 export { EscrowPinLocked, getEscrowPinLockedSubject } from './escrow-pin-locked';
 export type { EscrowPinLockedProps } from './escrow-pin-locked';
+
+export { EscrowPinSignIn, getEscrowPinSignInSubject } from './escrow-pin-sign-in';
+export type { EscrowPinSignInProps } from './escrow-pin-sign-in';

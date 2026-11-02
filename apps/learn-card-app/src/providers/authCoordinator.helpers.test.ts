@@ -7,6 +7,7 @@ import {
     mergeAuthUserIntoCurrentUser,
     decidePinPromptAfterReady,
     settleEscrowRecoveryMarker,
+    secureFlowOffersPin,
     type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 
@@ -136,6 +137,28 @@ describe('decidePinPromptAfterReady', () => {
         expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'pin' })).toEqual({
             kind: 'after-recovery',
         });
+    });
+
+    it('shows the PIN sign-in review first and holds every other prompt back', () => {
+        for (const pinEnabled of [true, false, undefined])
+            expect(
+                decidePinPromptAfterReady({
+                    ...base,
+                    recoveredVia: 'pin',
+                    pinEnabled,
+                    pinResetRequired: true,
+                    pinSignInReview: true,
+                })
+            ).toEqual({ kind: 'pin-sign-in-review' });
+        // Once answered, the usual decision applies again.
+        expect(
+            decidePinPromptAfterReady({
+                ...base,
+                recoveredVia: 'pin',
+                pinEnabled: true,
+                pinSignInReview: false,
+            })
+        ).toEqual({ kind: 'none' });
     });
 
     it('does not ask for a PIN the user kept through a PIN recovery', () => {
@@ -288,5 +311,51 @@ describe('settleEscrowRecoveryMarker', () => {
         const cleared = readyRender('pin', false);
         expect(cleared.prompt).toBe('after-recovery');
         expect(cleared.marker).toBeNull();
+    });
+});
+
+describe('secureFlowOffersPin', () => {
+    it('offers the PIN step right after a PIN sign-in, before the status loads', () => {
+        expect(
+            secureFlowOffersPin({
+                afterPinSignIn: true,
+                pinEnabled: undefined,
+                escrowEnrollment: undefined,
+            })
+        ).toBe(true);
+    });
+
+    it('offers it while the escrow status is unknown, so the PIN is never dropped silently', () => {
+        expect(
+            secureFlowOffersPin({
+                afterPinSignIn: false,
+                pinEnabled: undefined,
+                escrowEnrollment: undefined,
+            })
+        ).toBe(true);
+    });
+
+    it('follows the loaded status otherwise', () => {
+        expect(
+            secureFlowOffersPin({
+                afterPinSignIn: false,
+                pinEnabled: true,
+                escrowEnrollment: 'enrolled',
+            })
+        ).toBe(true);
+        expect(
+            secureFlowOffersPin({
+                afterPinSignIn: false,
+                pinEnabled: false,
+                escrowEnrollment: 'enrolled',
+            })
+        ).toBe(false);
+        expect(
+            secureFlowOffersPin({
+                afterPinSignIn: false,
+                pinEnabled: undefined,
+                escrowEnrollment: 'opted-out',
+            })
+        ).toBe(false);
     });
 });

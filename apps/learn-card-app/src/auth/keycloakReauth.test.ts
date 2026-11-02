@@ -26,6 +26,24 @@ describe('Keycloak reauthentication intent', () => {
         clearKeycloakReauth();
         expect(readKeycloakReauth()).toBeNull();
     });
+    it('round-trips the secure-account intent', () => {
+        const intent = beginKeycloakReauth('same-user', 'secure-account');
+        expect(readKeycloakReauth()).toEqual(intent);
+        expect(intent.action).toBe('secure-account');
+    });
+    it('rejects unknown actions', () => {
+        sessionStorage.setItem(
+            'learncard:keycloak:reauth',
+            JSON.stringify({
+                id: 'id',
+                userId: 'same-user',
+                returnTo: '/',
+                action: 'something-else',
+                createdAt: Date.now(),
+            })
+        );
+        expect(readKeycloakReauth()).toBeNull();
+    });
     it('requires matching OIDC state and the same account', () => {
         const intent = beginKeycloakReauth('same-user', 'recovery-setup');
         const user = { id: 'same-user', providerType: 'keycloak' };

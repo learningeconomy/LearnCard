@@ -55,6 +55,7 @@ export type {
     RecoveryInput,
     RecoveryResult,
     RecoveryReason,
+    PinSignInInfo,
     RecoverySetupInput,
     RecoverySetupResult,
     RecoveryConfirmationInput,

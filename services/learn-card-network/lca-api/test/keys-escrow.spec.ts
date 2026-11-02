@@ -2499,11 +2499,13 @@ describe('escrow PIN release', () => {
             enabled: true,
             attemptsRemaining: 10,
             salt: pinSalt,
+            wrongAttempts: 0,
         });
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
             { $set: { 'escrowPin.failedAttempts': 10, 'escrowPin.disabledAt': new Date() } }
         );
+        // Legacy charged history without the verified counter: no wrong-entry count.
         expect((await owner().keys.getAuthShare(auth))?.escrowPin).toEqual({
             state: 'locked',
             enabled: false,
@@ -2518,6 +2520,7 @@ describe('escrow PIN release', () => {
             state: 'stale',
             enabled: false,
             attemptsRemaining: 10,
+            wrongAttempts: 0,
         });
         await expect(startPin()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     });
@@ -2580,6 +2583,7 @@ describe('escrow PIN release', () => {
             enabled: true,
             attemptsRemaining: 10,
             salt: pinSalt,
+            wrongAttempts: 0,
         });
         // Required for a no-provider Nitro escrow start/restart to bind to this account.
         expect(result.primaryDid).toBe(did);

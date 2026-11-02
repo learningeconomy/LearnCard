@@ -1998,14 +1998,20 @@
             "change": "Modifier",
             "afterRecovery": {
                 "title": "Définissez un nouveau PIN de récupération",
-                "body": "Le PIN que vous venez d’utiliser a été retiré : chaque PIN ne sert qu’une fois pour garder votre compte protégé. Choisissez-en un nouveau pour conserver la récupération instantanée.",
+                "body": "Votre PIN de récupération n'est plus actif. Choisissez-en un nouveau pour conserver la récupération instantanée.",
                 "hint": "Mêmes règles : 6 chiffres, rien d’évident."
             },
             "pinResetRequired": {
                 "title": "Définissez un nouveau PIN de récupération",
                 "body": "Votre ancien PIN de récupération ne peut plus être utilisé depuis la récupération de votre compte. Définissez un nouveau PIN à 6 chiffres pour rétablir la récupération automatique."
             },
-            "useInstead": "Utiliser mon code PIN de récupération"
+            "useInstead": "Utiliser mon code PIN de récupération",
+            "incorrect": "PIN incorrect. Il vous reste {{attempts}} tentatives.",
+            "locked": "Trop de tentatives. Vous pouvez toujours récupérer votre compte en attendant 7 jours.",
+            "confirmPin": "Confirmez votre PIN",
+            "confirmPinDesc": "Saisissez à nouveau votre PIN pour le confirmer.",
+            "trivial": "Choisissez un PIN plus difficile à deviner.",
+            "mismatch": "Les PIN ne correspondent pas."
         },
         "confirmCode": {
             "mismatch": "Ce code est incorrect. Réessayez.",
@@ -2276,7 +2282,8 @@
             "successDescription": "Votre compte est connecté à votre nouvel identifiant. Configurez à nouveau la récupération pour le protéger.",
             "tooManyAttempts": "Trop de tentatives incorrectes. Réessayez plus tard.",
             "invalidCode": "Ce code est incorrect ou a expiré. Demandez un nouveau code et réessayez.",
-            "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre."
+            "invalidRecoveryMethod": "Cette méthode n’a pas permis de vérifier votre compte. Essayez-en une autre.",
+            "successDescriptionKept": "Votre compte est associé à votre nouvel identifiant. Vos autres appareils et méthodes de récupération fonctionnent toujours."
         },
         "cancel": {
             "invalidLink": {
@@ -2357,7 +2364,60 @@
             "discardEmail": "Ignorer",
             "discardNote": "Celui que vous avez sauvegardé ne fonctionnera pas. Vous pouvez en créer un nouveau à tout moment."
         },
-        "notFinished": "Non terminé"
+        "notFinished": "Non terminé",
+        "pinHero": {
+            "title": "Connectez-vous avec votre PIN de récupération",
+            "description": "Saisissez le PIN à 6 chiffres que vous avez défini. Vos autres appareils restent connectés.",
+            "otherWays": "Autres moyens de vous connecter"
+        },
+        "pinSignIn": {
+            "verifying": "Vérification de votre PIN...",
+            "incorrectOne": "PIN incorrect. Il vous reste 1 tentative.",
+            "unavailable": "La connexion par PIN n'est pas disponible pour ce compte. Utilisez un autre moyen de vous connecter.",
+            "failed": "Un problème est survenu. Veuillez réessayer.",
+            "newCodeNeeded": "Pour votre sécurité, chaque essai de PIN nécessite un nouveau code par e-mail. Envoyez un nouveau code pour réessayer."
+        },
+        "pinSignInReview": {
+            "title": "Connexion réussie !",
+            "question": "Avez-vous perdu un appareil, ou pensez-vous que quelqu'un d'autre connaît votre PIN ?",
+            "fine": "Non, tout va bien",
+            "secure": "Oui, sécuriser mon compte",
+            "wrongAttemptsOne": "Votre PIN a été saisi incorrectement une fois avant cette connexion. Si ce n'était pas vous, sécurisez votre compte.",
+            "wrongAttempts": "Votre PIN a été saisi incorrectement {{count}} fois avant cette connexion. Si ce n'était pas vous, sécurisez votre compte.",
+            "later": "Vous pouvez aussi le faire plus tard dans Récupération du compte."
+        },
+        "secureAccount": {
+            "title": "Sécurisez votre compte",
+            "intro": "Utilisez cette option si vous pensez que quelqu'un d'autre est entré dans votre compte. Cela va :",
+            "signOut": "Empêcher vos autres appareils et vos autres identifiants de se reconnecter",
+            "turnOff": "Désactiver votre ancienne phrase de récupération, votre fichier de sauvegarde, votre clé d'accès et votre clé de récupération par e-mail",
+            "stayHere": "Garder votre session ouverte sur cet appareil",
+            "openDevices": "Un appareil ouvert en ce moment peut continuer à fonctionner jusqu'à sa déconnexion. Cela ne peut pas annuler ce que quelqu'un a déjà fait avec votre compte.",
+            "afterwards": "Ensuite, vous ajouterez de nouveaux moyens de récupérer votre compte.",
+            "continue": "Sécuriser mon compte",
+            "pinTitle": "Conserver un PIN de récupération",
+            "pinDesc": "Choisissez un PIN à 6 chiffres. Si quelqu'un d'autre connaît peut-être votre PIN actuel, choisissez-en un nouveau. Pour conserver votre PIN actuel, saisissez-le ici.",
+            "skipPin": "Continuer sans PIN",
+            "skipPinNote": "Vous pourrez définir un nouveau PIN plus tard dans Récupération du compte.",
+            "working": "Sécurisation de votre compte...",
+            "workingHint": "Gardez cette page ouverte jusqu'à la fin.",
+            "doneTitle": "Votre compte est sécurisé",
+            "doneBody": "Les autres appareils et identifiants ne peuvent plus se reconnecter, et vos anciennes méthodes de récupération sont désactivées.",
+            "pinKept": "Votre PIN de récupération est activé.",
+            "pinNotKept": "Votre PIN de récupération est désactivé. Vous pouvez en définir un dans Récupération du compte.",
+            "nextStep": "Ajoutez un nouveau moyen de récupérer votre compte pour ne pas en perdre l'accès.",
+            "setUpPasskey": "Configurer une clé d'accès",
+            "setUpRecovery": "Ajouter une méthode de récupération",
+            "conflict": "Votre compte a changé pendant sa sécurisation. Veuillez réessayer.",
+            "failed": "Nous n'avons pas pu terminer la sécurisation de votre compte. Veuillez réessayer.",
+            "sessionExpired": "Votre session a expiré. Reconnectez-vous pour sécuriser votre compte.",
+            "opening": "Ouverture de la sécurité du compte..."
+        },
+        "signOutOtherDevices": {
+            "title": "Une connexion que vous ne reconnaissez pas ?",
+            "description": "Empêchez les autres appareils et identifiants de se reconnecter, et désactivez vos anciennes méthodes de récupération.",
+            "action": "Se déconnecter de tous les autres appareils"
+        }
     },
     "alerts": {
         "title": "Alertes",

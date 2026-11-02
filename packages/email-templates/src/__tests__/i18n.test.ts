@@ -120,6 +120,10 @@ const FIXTURES: { [K in TemplateId]: TemplateDataMap[K] } = {
         releaseAfter: 'October 2, 2026, 3:00 PM',
         cancelUrl: 'https://learncard.app/recovery/cancel?token=abc123',
     },
+    'escrow-pin-sign-in': {
+        signedInAt: 'October 2, 2026, 3:00 PM',
+        secureUrl: 'https://learncard.app/account/secure',
+    },
 };
 
 const ALL_TEMPLATE_IDS = Object.keys(FIXTURES) as TemplateId[];

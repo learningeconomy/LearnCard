@@ -624,3 +624,24 @@ describe('RecoverySetupModal unfinished-check guard', () => {
         click.mockRestore();
     });
 });
+
+describe('RecoverySetupModal sign out of all other devices', () => {
+    it('offers the revoke as its own section when the caller supports it', () => {
+        const onSignOutOtherDevices = vi.fn();
+        renderModal('phrase', vi.fn(), { onSignOutOtherDevices });
+
+        expect(
+            screen.getByRole('region', { name: "Signed in somewhere you don't recognize?" })
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Sign out of all other devices' }));
+        expect(onSignOutOtherDevices).toHaveBeenCalledOnce();
+    });
+
+    it('hides the section without a handler', () => {
+        renderModal('phrase');
+
+        expect(
+            screen.queryByRole('button', { name: 'Sign out of all other devices' })
+        ).not.toBeInTheDocument();
+    });
+});

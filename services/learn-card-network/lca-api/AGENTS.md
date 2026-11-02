@@ -127,6 +127,23 @@ The `escrow` tRPC router is disabled unless `ESCROW_ENCLAVE_MODE` is configured.
 | `POST /keys/escrow/cancel-link` | `escrow.cancelRecoveryByLink` | Cancels a pending hold via the single-use email cancel link (no DID auth) |
 | `POST /keys/escrow/complete`    | `escrow.completeRecovery`     | Claim an elapsed hold and release sealed recovery material once           |
 
+### Recovery sessions, rebind and PIN sign-in
+
+Lost-login recovery issues single-use, 15-minute tokens (`src/cache/recoverySessions.ts`): a `'recover'` token from `/keys/recovery-session/verify`, then a `'rebind'` token from `useRecoverySession` or `/keys/escrow/complete`.
+
+| Route                                     | Procedure                     | Effect                                                                                                                                         |
+| ----------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /keys/recovery-session/rebind`      | `keys.completeRecoveryRebind` | Wiping rebind: new login replaces the old, new split, history purged, methods `pending`, escrow cleared                                        |
+| `POST /keys/recovery-session/pin-sign-in` | `keys.completePinSignIn`      | Keep mode: adds the new login (old one stays); shares, history, methods, escrow and contact unchanged. Only PIN-release tokens are accepted    |
+| `POST /keys/revoke-other-devices`         | `keys.revokeOtherDevices`     | "Secure my account": owner-authenticated security rotation (same wipe as rebind; only the caller's login stays), CAS on `expectedShareVersion` |
+
+- Only `/keys/escrow/complete` for a `releasePolicy:'pin'` hold mints a `'rebind'` token with `origin:'pin-release'` plus the released `primaryDid`/`shareVersion`. Keep mode trusts those server-side fields, never client input. Waiting-period and `useRecoverySession` tokens can only use the wiping rebind.
+- Keep mode never spends the PIN-release token, so `/rebind` only accepts one while `userKey.shareVersion` still equals the released version (a stale token cannot undo a revoke). `/pin-sign-in` peeks at the token before consuming it, so a rejected hold/phrase token or a wrong DID does not burn it.
+- The revoke re-splits the same key; it does not evict a device that already holds the private key (see `services/escrow-enclave-app/SECURITY.md` D19).
+- A successful PIN release sends the `escrow-pin-sign-in` notice ("Not you? Secure your account", link to `/account/secure` on the tenant app URL) instead of `escrow-hold-released`. It is sent fail-open within the escrow notification budget.
+- `getEscrowPinStatus().wrongAttempts` counts verified wrong entries only and is omitted for legacy records that cannot tell.
+- Software-mode PIN carry ignores releases completed before `escrowPin.enabledAt`, so a PIN re-set at the same version after a PIN sign-in survives the next rotation.
+
 ### Important Invariants
 
 - **Auth shares are encrypted at rest** with a KEK derived from `SEED`. Losing `SEED` means every stored auth share is permanently unrecoverable.
