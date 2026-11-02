@@ -152,7 +152,7 @@ trail but are not claimed to page without additional regional forwarding.
 CloudTrail/EventBridge delivery is best effort; an administrator disabling the
 detector can suppress the very tamper event. Monitor logging/delivery independently
 and retain explicit security acceptance of R-AUTHORITY-ROLLBACK. Locked API logs
-are not the deferred signed-authority archiver, required before 50% rollout.
+are not the deferred signed-authority archiver (post-launch hardening).
 
 ## PR 2 authority cutover — operator only
 
