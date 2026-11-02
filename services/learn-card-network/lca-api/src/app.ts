@@ -13,6 +13,7 @@ import { keysRouter } from '@routes/keys';
 import { escrowRouter } from '@routes/escrow';
 import { qrLoginRouter } from '@routes/qr-login';
 import { authRouter } from '@routes/auth';
+import { classlinkRouter } from '@routes/classlink';
 import { testRouter, type TestRouter } from '@routes/test';
 import { environment } from '@environment';
 
@@ -30,6 +31,7 @@ const routes = {
     escrow: escrowRouter,
     qrLogin: qrLoginRouter,
     auth: authRouter,
+    classlink: classlinkRouter,
 };
 
 export const appRouter = t.router<typeof routes & { test?: TestRouter }>({
