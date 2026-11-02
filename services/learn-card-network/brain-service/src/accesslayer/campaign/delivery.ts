@@ -21,6 +21,7 @@ export const getCampaignDeliveryRecipient = async (
             `MATCH (p:Profile {profileId: $profileId})-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
              WHERE c.createdAt = $campaignCreatedAt AND ${liveCampaignPredicate}
                AND ${campaignAgePredicate}
+               AND coalesce(p.announcementPushOptOut, false) = false
              OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
              WITH p, c, state WHERE state.notifiedAt IS NULL
              RETURN properties(p) AS profile, c.definition AS definition`,
