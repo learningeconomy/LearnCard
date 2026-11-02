@@ -237,6 +237,7 @@ jobs:
             - name: Profile retained browser calls
               if: ${{ always() }}
               continue-on-error: true
+              timeout-minutes: 2
               run: |
                   umask 077
                   python3 -B scripts/profile-verification-traces.py "$STACK_DIR" "$SUMMARY_DIR"

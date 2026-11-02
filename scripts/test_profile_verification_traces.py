@@ -126,6 +126,24 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(feature["diagnostics"]["malformedRows"], 2)
         self.assertNotIn("DO-NOT-PUBLISH", profiler.render(profiler.profile(self.root)))
 
+    def test_total_byte_budget_bounds_scanning_across_archives(self):
+        path = self.archive(event_pair(), name="a-trace.zip")
+        self.archive(event_pair(), name="b-trace.zip")
+        with zipfile.ZipFile(path) as archive:
+            size = archive.getinfo("trace.trace").file_size
+        with patch.object(profiler, "MAX_TOTAL_TRACE_BYTES", size + 1):
+            feature = self.feature()
+        self.assertEqual(feature["diagnostics"]["limitedArchives"], 1)
+        self.assertEqual(feature["operations"][0]["calls"], 1)
+
+    def test_duplicate_call_ids_are_visible_and_do_not_overwrite_start(self):
+        before, after = event_pair(start=0, stop=200)
+        duplicate = dict(before, startTime=150)
+        self.archive([before, duplicate, after])
+        feature = self.feature()
+        self.assertEqual(feature["diagnostics"]["malformedRows"], 1)
+        self.assertEqual(feature["operations"][0]["totalMs"], 200)
+
     def test_missing_version_cannot_look_like_supported_measurements(self):
         path = self.folder / "no-version-trace.zip"
         with zipfile.ZipFile(path, "w") as archive:

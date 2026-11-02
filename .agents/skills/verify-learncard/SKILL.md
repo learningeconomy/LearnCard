@@ -121,7 +121,9 @@ artifact. The current parser supports the repository-pinned Playwright trace ver
 unsupported, malformed, truncated and incomplete traces are counted explicitly.
 Only fixed feature/operation names, counts and numeric durations leave the runner. It
 never extracts or uploads trace payloads, parameters, selectors, URLs, errors or images.
-The profiler is diagnostic and cannot turn a failed verification into success.
+The profiler is diagnostic and cannot turn a failed verification into success. A two-minute
+step timeout, a 1 GiB total trace-stream budget, per-archive limits and call/line caps bound
+diagnostic cost; hitting a budget is reported as limited input.
 
 Use the per-feature navigation, screenshot, assertion and interaction rows to identify
 where to investigate next. API durations include browser/load/actionability waits, not

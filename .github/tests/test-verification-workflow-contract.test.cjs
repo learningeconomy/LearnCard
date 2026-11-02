@@ -60,6 +60,7 @@ const profileIndex = steps.findIndex(step => step.name === 'Profile retained bro
 assert.ok(profileIndex > teardownIndex && profileIndex < summaryIndex);
 const profile = steps[profileIndex];
 assert.equal(profile.if, '${{ always() }}');
+assert.equal(profile['timeout-minutes'], 2, 'diagnostics must have a short wall-time bound');
 assert.equal(profile['continue-on-error'], true, 'diagnostics cannot change verification success');
 assert.match(
     profile.run,

@@ -48,6 +48,7 @@ OPERATIONS = {
     ("BrowserContext", "storageState"): "evidence.session",
 }
 MAX_TRACE_BYTES = 256 * 1024 * 1024
+MAX_TOTAL_TRACE_BYTES = 1024 * 1024 * 1024
 MAX_LINE_BYTES = 4 * 1024 * 1024
 MAX_CALLS = 100_000
 MAX_DURATION_MS = 86_400_000
@@ -76,16 +77,20 @@ def empty_diagnostics():
                 limitedArchives=0, malformedRows=0, incompleteCalls=0, unknownCalls=0)
 
 
-def read_archive(path, diagnostics):
+def read_archive(path, diagnostics, budget=None):
     """Return numeric spans with fixed operation labels; discard all other fields."""
     diagnostics["archives"] += 1
     spans = []
     try:
         with zipfile.ZipFile(path) as archive:
             files = [info for info in archive.infolist() if info.filename.endswith(".trace")]
-            if not files or sum(info.file_size for info in files) > MAX_TRACE_BYTES:
+            trace_bytes = sum(info.file_size for info in files)
+            if (not files or trace_bytes > MAX_TRACE_BYTES
+                    or (budget is not None and trace_bytes > budget["bytes"])):
                 diagnostics["limitedArchives"] += 1
                 return []
+            if budget is not None:
+                budget["bytes"] -= trace_bytes
             for info in files:
                 pending = {}
                 supported = False
@@ -128,7 +133,10 @@ def read_archive(path, diagnostics):
                             if not operation:
                                 diagnostics["unknownCalls"] += 1
                             elif isinstance(call_id, str) and number(start) and start >= 0:
-                                pending[call_id] = (operation, start)
+                                if call_id in pending:
+                                    diagnostics["malformedRows"] += 1
+                                else:
+                                    pending[call_id] = (operation, start)
                             else:
                                 diagnostics["malformedRows"] += 1
                         elif supported and kind == "after":
@@ -171,6 +179,7 @@ def summarize(spans, diagnostics):
 def profile(directory):
     runs = directory / "runs"
     results = []
+    budget = {"bytes": MAX_TOTAL_TRACE_BYTES}
     if runs.is_symlink() or not runs.is_dir():
         return dict(schemaVersion=1, runs=[])
     for run in sorted(runs.iterdir()):
@@ -188,7 +197,7 @@ def profile(directory):
                     diagnostics["limitedArchives"] += 1
                     break
                 if trace.is_file() and not trace.is_symlink():
-                    spans.extend(read_archive(trace, diagnostics))
+                    spans.extend(read_archive(trace, diagnostics, budget))
             features.append(dict(feature=feature, **summarize(spans, diagnostics)))
         results.append(dict(features=features))
     return dict(schemaVersion=1, runs=results)
