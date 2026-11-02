@@ -46,8 +46,9 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
 
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
-   host. Remaining: the operators' availability and rate limits for production
-   traffic (time.txryan.com's operator, Tanner Ryan, approved our use on 2026-10-01).
+   host. All three operators acknowledged LearnCard's use (operator-reported,
+   2026-10-30; see LAUNCH-DECISIONS.md RT). Remaining for stage 2: attach the
+   measured per-operation request count and the volume forecast to that record.
 2. **Enrollment authority — verified on staging, not yet deployed to production.**
    Without a configured authority the enclave wires in `UnavailableEnrollment`, so
    create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
@@ -60,9 +61,9 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
    staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
    refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
-   cancellation is signed. Remaining: an operator inbox confirmation of the code
-   email, and the 7-day-since-confirmation soak (jackson+wait3, releasing about
-   2026-10-30) on the new image.
+   cancellation is signed. The 7-day-since-confirmation soak (jackson+wait3) released
+   successfully on 2026-10-30 (operator-reported). Remaining: an operator inbox
+   confirmation of the code email (production pilot hold or tier 3 canary).
 4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
@@ -71,6 +72,15 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    explicitly accept this residual risk (or adopt the immutable-key-policy
    alternative documented in `infra/escrow-enclave/README.md`) before rollout
    proceeds past internal.
+
+**Stage 1 decisions (2026-10-30, Jackson Smith).** Internal-only escrow (SSS pilot
+channel and production canary accounts) proceeds with: item 1 (Roughtime) and
+item 4 (D10) accepted for stage 1, see LAUNCH-DECISIONS.md RT and D10; item 2
+(enrollment authority) and item 3 (attack C) proceed so that stage 1 itself
+provides the production verification (pilot enrollment, PIN and hold
+recoveries, hold-confirmation email), with the staging soak and inbox check
+still to be recorded. None of these close any item (1-4) for stage 2: D10's
+acceptance is stage 1 only and is revisited before stage 2.
 
 **Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
