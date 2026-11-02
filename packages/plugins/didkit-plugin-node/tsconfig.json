@@ -13,7 +13,8 @@
         "rootDir": "src",
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
-        "moduleResolution": "node"
+        "moduleResolution": null,
+        "types": ["node"]
     },
     "include": ["src"],
     "exclude": ["node_modules", "native"]

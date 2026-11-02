@@ -264,6 +264,22 @@ For certain workflows, such as sending a boost (credential) to another profile v
 - Document the expected flow, security implications, and how to set up signing authorities in both code and tests.
 - Prefer direct HTTP calls in E2E tests for service-only routes, and demonstrate signing authority setup in test code.
 
+### Credential delivery write ordering (LC-2312 / CI-20)
+
+App-event issuance uses `sendAppCredentialWithActivity`: complete the activity graph
+before starting `sendBoost`, and carry the returned activity ID into delivery.
+`sendBoost` awaits each relationship write; creating promises up front reintroduces
+parallel auto-commit writes and Neo4j relationship-chain contention. A listing issuer
+already gets a listing `CREDENTIAL_SENT` edge from `createSentCredentialRelationship`;
+only add explicit listing attribution when it names a different listing or the issuer
+is a profile/integration. Preserve the owner-profile edge in every case.
+
+This ordering removes contention within one send, not all possible contention between
+independent requests. Do not retry signing, credential storage or notifications as one
+unit to hide a graph failure. Focused tests cover ordering/failure boundaries, and
+`test/app-credential-delivery.neo4j.spec.ts` verifies real graph counts and activity
+correlation in both the integration and CI inbox configurations.
+
 ## Profile Connection Invites
 
 LearnCard supports creating and managing profile connection invitation links with single-use, multi-use, and unlimited usage, as well as optional expiration.

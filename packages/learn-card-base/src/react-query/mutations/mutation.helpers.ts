@@ -142,29 +142,18 @@ export const insertItem = <GenericObject extends Record<string, any>>(
             string | undefined
         >
     >(queryKey, old => {
-        // perhaps this case where no existing data could be better handled
-        if (!old) {
+        // No usable list yet (missing, empty, or a malformed persisted entry): start a fresh one.
+        if (!Array.isArray(old?.pages) || !old.pages[0] || !Array.isArray(old.pageParams)) {
             return { pageParams: [undefined], pages: [{ records: [newItem], hasMore: false }] };
         }
 
-        // Insert the new item at the start
-        const firstPageResults = [newItem, ...old.pages[0].records];
-
-        // Adjust all pages to respect the page size
-        let carryOverItem = firstPageResults.pop(); // Item to move to the next page
-        const newPages = old.pages.map((page, pageIndex) => {
-            if (pageIndex === 0) return { ...page, records: firstPageResults };
-
-            const newResults = carryOverItem ? [carryOverItem, ...page.records] : page.records;
-            carryOverItem = newResults.pop(); // Update carryOverItem for the next iteration
-
-            return { ...page, records: newResults };
-        });
-
-        // If there's an item to carry over to a new page, add it
-        if (carryOverItem) newPages.push({ records: [carryOverItem], hasMore: false });
-
-        return { ...old, pages: newPages };
+        // Prepend to the first page only. Every page keeps its server cursor and hasMore, and
+        // pages stay aligned with pageParams, so hasNextPage is unchanged until the refetch.
+        const [firstPage, ...rest] = old.pages;
+        return {
+            ...old,
+            pages: [{ ...firstPage, records: [newItem, ...firstPage.records] }, ...rest],
+        };
     });
 };
 
