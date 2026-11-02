@@ -44,7 +44,7 @@ export const Announcement: React.FC<AnnouncementProps> = ({
 }) => (
     <Layout
         branding={branding}
-        locale={locale}
+        {...(locale === undefined ? {} : { locale })}
         preview={title}
         disclaimer={announcementChrome[resolveCatalogLocale(locale)].disclaimer}
     >
@@ -72,7 +72,7 @@ export const Announcement: React.FC<AnnouncementProps> = ({
                 brandName: branding.brandName,
             })}
         </Text>
-        <LinkFallback href={ctaUrl} locale={locale} />
+        <LinkFallback href={ctaUrl} {...(locale === undefined ? {} : { locale })} />
         <Text style={{ fontSize: 14, color: '#6b7280' }}>
             <Link href={unsubscribeUrl}>
                 {announcementChrome[resolveCatalogLocale(locale)].unsubscribe}
