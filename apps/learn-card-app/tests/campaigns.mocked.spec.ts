@@ -1,5 +1,6 @@
 import { test, expect } from './fixtures/mocked-test';
 import { installNetwork } from './mocks/network';
+import type { BrainOutputs, TrpcMock } from './mocks/trpc';
 import { waitForAuthenticatedState } from './test.helpers';
 import { TEST_USER_PROFILE_ID } from './constants';
 import { CampaignValidator } from '@learncard/types';
@@ -10,10 +11,65 @@ import type {
     CampaignAudienceInput,
 } from '@learncard/types';
 
+// Own every companion in the boot/reload batch so admin checks cannot fall through HAR.
+const mockCampaignBoot = (mock: TrpcMock): void => {
+    mock.on(
+        'profile.pendingConnectionPrompts',
+        () => [] satisfies BrainOutputs['profile']['pendingConnectionPrompts']
+    );
+    mock.on(
+        'contracts.getAllCredentialsForTerms',
+        () =>
+            ({
+                records: [],
+                hasMore: false,
+            }) satisfies BrainOutputs['contracts']['getAllCredentialsForTerms']
+    );
+    mock.on(
+        'boost.getPaginatedBoosts',
+        () =>
+            ({ records: [], hasMore: false }) satisfies BrainOutputs['boost']['getPaginatedBoosts']
+    );
+    mock.on(
+        'contracts.getConsentedContracts',
+        () =>
+            ({
+                records: [],
+                hasMore: false,
+            }) satisfies BrainOutputs['contracts']['getConsentedContracts']
+    );
+    mock.on(
+        'skillFrameworks.getAllAvailableFrameworks',
+        () =>
+            ({
+                records: [],
+                hasMore: false,
+            }) satisfies BrainOutputs['skillFrameworks']['getAllAvailableFrameworks']
+    );
+    mock.on(
+        'activity.getMyActivities',
+        () =>
+            ({ records: [], hasMore: false }) satisfies BrainOutputs['activity']['getMyActivities']
+    );
+    mock.on(
+        'inbox.getMyInboxDeliveries',
+        () =>
+            ({
+                records: [],
+                hasMore: false,
+            }) satisfies BrainOutputs['inbox']['getMyInboxDeliveries']
+    );
+    mock.on(
+        'activity.getMyCredentialLifecycleStatuses',
+        () => ({}) satisfies BrainOutputs['activity']['getMyCredentialLifecycleStatuses']
+    );
+};
+
 test.describe('campaign composer @mocked', () => {
     test('admin draft, validation, preview, imports, test send and lifecycle', async ({ page }) => {
         await page.setViewportSize({ width: 1440, height: 1000 });
         const mock = await installNetwork(page);
+        mockCampaignBoot(mock);
         const adminProfile = {
             profileId: TEST_USER_PROFILE_ID,
             displayName: 'Synthetic campaign admin',
@@ -488,6 +544,7 @@ test.describe('campaign composer @mocked', () => {
         page,
     }) => {
         const mock = await installNetwork(page);
+        mockCampaignBoot(mock);
         const profile = {
             profileId: TEST_USER_PROFILE_ID,
             displayName: 'Synthetic campaign admin',
@@ -502,20 +559,6 @@ test.describe('campaign composer @mocked', () => {
         mock.on('profile.createProfile', () => profile.did);
         mock.on('user.getDids', () => [profile.did]);
         mock.on('user.addDid', () => true);
-        // Own background reads that may share a tRPC batch with campaign retrieval.
-        const emptyPage = { records: [], hasMore: false };
-        for (const procedure of [
-            'contracts.getConsentedContracts',
-            'contracts.getAllCredentialsForTerms',
-            'boost.getPaginatedBoosts',
-            'skillFrameworks.getAllAvailableFrameworks',
-            'activity.getMyActivities',
-            'inbox.getMyInboxDeliveries',
-        ]) {
-            mock.on(procedure, () => emptyPage);
-        }
-        mock.on('activity.getMyCredentialLifecycleStatuses', () => ({}));
-        mock.on('profile.pendingConnectionPrompts', () => []);
         mock.on('profile.updateProfile', () => true);
         const testId = 'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa';
         const campaign = CampaignValidator.parse({
@@ -622,6 +665,7 @@ test.describe('campaign composer @mocked', () => {
     });
     test('non-admin sees only not found', async ({ page }) => {
         const mock = await installNetwork(page);
+        mockCampaignBoot(mock);
         const profile = {
             profileId: TEST_USER_PROFILE_ID,
             displayName: 'Synthetic non-admin',
@@ -658,6 +702,7 @@ test.describe('campaign composer @mocked', () => {
 test('campaign announcement inbox @mocked', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
     const mock = await installNetwork(page);
+    mockCampaignBoot(mock);
     const profile = {
         profileId: TEST_USER_PROFILE_ID,
         displayName: 'Synthetic campaign recipient',
@@ -674,19 +719,6 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     mock.on('user.addDid', () => true);
     mock.on('campaigns.getMyCampaigns', () => []);
     mock.on('campaigns.isAdmin', () => false);
-    // This learner-entry journey owns the background procedures batched with
-    // the global campaign source. It never calls a live campaign service.
-    for (const procedure of [
-        'contracts.getConsentedContracts',
-        'contracts.getAllCredentialsForTerms',
-        'boost.getPaginatedBoosts',
-        'skillFrameworks.getAllAvailableFrameworks',
-        'activity.getMyActivities',
-        'inbox.getMyInboxDeliveries',
-    ])
-        mock.on(procedure, () => ({ records: [], hasMore: false }));
-    mock.on('activity.getMyCredentialLifecycleStatuses', () => ({}));
-    mock.on('profile.pendingConnectionPrompts', () => []);
     const notification = {
         _id: 'synthetic-announcement',
         type: 'ANNOUNCEMENT',
