@@ -16,6 +16,8 @@ import {
 import * as notifications from '@helpers/notifications.helpers';
 import * as learnCardHelpers from '@helpers/learnCard.helpers';
 import { getLiveCampaignsForProfile } from '@accesslayer/campaign/read';
+import { MAX_CONFIRMED_DISPATCH_RECIPIENTS } from '@accesslayer/campaign/dispatch';
+import { int } from 'neo4j-driver';
 import { campaignTimeParams } from '@accesslayer/campaign/shared';
 import { constructUri } from '@helpers/uri.helpers';
 import { ensureCampaignConstraints } from '../src/models/campaign-constraints';
@@ -875,6 +877,25 @@ describe('campaign notification delivery state', () => {
         });
         expect((await admin.get({ campaignId: 'pilot-clr' })).status).toBe('draft');
     });
+    it('keeps live campaigns and valid tests visible when another private snapshot is corrupt', async () => {
+        await admin.create(draft({ status: 'live', selfEnroll: true }));
+        await admin.create(draft({ id: 'valid-test' }));
+        await admin.sendTestToMe({ campaignId: 'valid-test' });
+        await admin.sendTestToMe({ campaignId: 'pilot-clr' });
+        for (const message of ['{', JSON.stringify({ id: 'old', presentation: 'obsolete' })]) {
+            await neogma.queryRunner.run(
+                `MATCH (:Profile {profileId: 'campaign-admin'})-[test:CAMPAIGN_TEST]->(:Campaign {id: 'pilot-clr'})
+                 SET test.message = $message`,
+                { message }
+            );
+            const campaigns = await admin.getMyCampaigns();
+            expect(campaigns).toHaveLength(2);
+            expect(
+                campaigns.find(item => item.campaign.id === 'pilot-clr')?.testId
+            ).toBeUndefined();
+            expect(campaigns.find(item => item.campaign.id === 'valid-test')?.testId).toBeTruthy();
+        }
+    });
     it('clears inactive message content and rejects missing active content on merged updates', async () => {
         await admin.create(draft());
         const notification = { title: 'Hello', body: 'Notification only' };
@@ -1030,6 +1051,29 @@ describe('confirmed audience notification dispatch', () => {
             ).toBeUndefined();
         await admin.update({ ...id, updates: { excludeMinors: false } });
         expect(await admin.previewDispatch(id)).toMatchObject({ recipientCount: 5 });
+    });
+    it('accepts the recipient limit and rejects larger previews and confirmations without enqueueing', async () => {
+        await admin.create(live());
+        await neogma.queryRunner.run(
+            `MATCH (c:Campaign {id: $campaignId})
+             UNWIND range(1, $count) AS index
+             CREATE (p:Profile {profileId: 'limit-' + toString(index), dob: '1990-01-01'})
+             CREATE (p)-[:IN_CAMPAIGN_AUDIENCE]->(c)`,
+            { ...id, count: int(MAX_CONFIRMED_DISPATCH_RECIPIENTS) }
+        );
+        const preview = await admin.previewDispatch(id);
+        expect(preview.recipientCount).toBe(MAX_CONFIRMED_DISPATCH_RECIPIENTS);
+        await addLearner();
+        const mocks = deliveryMocks();
+        try {
+            await expect(admin.previewDispatch(id)).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(
+                admin.dispatch({ ...id, expectedPreviewToken: preview.previewToken })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+        } finally {
+            mocks.restore();
+        }
     });
     it.each([
         [{ status: 'draft' }, 'not_live'],

@@ -166,6 +166,7 @@ export const InAppMessageHost: React.FC<InAppMessageHostProps> = ({
     const pendingTest =
         testDelivery &&
         testDelivery.accountDid === accountDid &&
+        isInAppMessagePresentationSupported(testDelivery.message) &&
         !closedIds.has(`${accountDid}:${testDelivery.message.id}`)
             ? testDelivery.message
             : null;

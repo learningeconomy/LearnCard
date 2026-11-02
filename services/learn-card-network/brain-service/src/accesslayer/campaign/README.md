@@ -327,7 +327,10 @@ same-count recipient changes as well as ordinary audience edits. No recipients o
 status/schedule/channel is rejected before enqueue. Preview does not mark anyone notified.
 
 The count query collects eligible profile IDs internally to fingerprint the recipient set;
-those IDs are not returned by the API. Its memory use scales with eligible audience size.
+those IDs are not returned by the API. Confirmed sends support at most 10,000 eligible
+recipients. Cypher limits the collection to 10,001 IDs (one overflow sentinel) before
+transferring them to Node. Larger previews and confirmations return `BAD_REQUEST` and
+require reducing the audience; the server never authorizes a truncated recipient set.
 The confirmation lock is released before queue/network work. Later waves still use current
 eligibility and audience semantics, so the reviewed count is a snapshot rather than a frozen
 send list. Existing queue retries and receiver deduplication remain unchanged. If enqueue

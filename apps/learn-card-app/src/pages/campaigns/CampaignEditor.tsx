@@ -7,7 +7,7 @@ import {
     eyeOutline,
     paperPlaneOutline,
 } from 'ionicons/icons';
-import { Link, Prompt } from 'react-router-dom';
+import { Link, Prompt, useHistory } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { setInAppMessageOverride } from 'learn-card-base/in-app-messages/debugOverrideStore';
 import type { Campaign, CampaignStatus } from '@learncard/types';
@@ -34,6 +34,8 @@ import {
 } from './ui';
 
 const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, campaign }) => {
+    const history = useHistory();
+    const [createdId, setCreatedId] = useState<string>();
     const [edited, setEdited] = useState<Set<keyof CampaignForm>>(() => new Set());
     const [saved, setSaved] = useState(campaign);
     const [form, setForm] = useState(() => (campaign ? campaignToForm(campaign) : initialForm()));
@@ -45,6 +47,12 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
     const queries = useQueryClient();
     const dirty = JSON.stringify(form) !== baseline;
     const busy = Boolean(action.busy) || audienceBusy || dispatchBusy;
+    // Replace only after the successful save has committed and Prompt has unblocked navigation.
+    useEffect(() => {
+        if (!createdId || dirty || busy) return;
+        setCreatedId(undefined);
+        history.replace(`/admin/campaigns/${encodeURIComponent(createdId)}`);
+    }, [createdId, dirty, busy, history]);
     const validation = validateForm(form, saved?.status);
     const preview = previewMessage(form);
     useEffect(() => () => setInAppMessageOverride(null), []);
@@ -88,7 +96,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                 : await api.campaignsCreate({ ...validation.data, status: 'draft' });
             accept(result);
             action.setSuccess('Campaign saved.');
-            // Creation stays in-place so the route blocker never races the successful save.
+            if (!saved) setCreatedId(result.id);
         });
     const confirmedAction = () => {
         if (!saved || !confirmation) return;

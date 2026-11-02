@@ -43,13 +43,19 @@ export const getCampaignTests = async (profileId: string): Promise<CampaignTest[
             { profileId }
         )
     );
-    return result.records.map(record =>
-        CampaignTestValidator.parse({
-            id: record.get('id'),
-            campaignId: record.get('campaignId'),
-            message: JSON.parse(record.get('message')),
-        })
-    );
+    return result.records.flatMap(record => {
+        try {
+            const parsed = CampaignTestValidator.safeParse({
+                id: record.get('id'),
+                campaignId: record.get('campaignId'),
+                message: JSON.parse(record.get('message')),
+            });
+            return parsed.success ? [parsed.data] : [];
+        } catch {
+            // A stale or malformed private snapshot must not hide live campaigns or valid tests.
+            return [];
+        }
+    });
 };
 
 /** An acknowledgement of an older snapshot cannot consume a newly queued test. */
