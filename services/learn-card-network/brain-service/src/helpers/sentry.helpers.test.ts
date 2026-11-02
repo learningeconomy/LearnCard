@@ -14,7 +14,7 @@ vi.mock('@environment', () => ({ environment: { SENTRY_ENV: 'test' } }));
 
 import { handleTrpcError, sentryBeforeSend, shouldReportError } from './sentry.helpers';
 
-const event = { event_id: 'event' };
+const event: Parameters<typeof sentryBeforeSend>[0] = { event_id: 'event', type: undefined };
 
 describe('sentry helpers', () => {
     beforeEach(() => {
