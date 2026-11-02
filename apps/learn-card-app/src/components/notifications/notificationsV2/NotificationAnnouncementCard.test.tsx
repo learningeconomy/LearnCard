@@ -21,8 +21,8 @@ it.each([
     [undefined, '/notifications'],
 ])('opens campaign %s and marks the inbox card read once', (campaignId, path) => {
     const history = createMemoryHistory();
-    const onRead = vi.fn();
     const notification = {
+        _id: 'announcement',
         type: 'ANNOUNCEMENT',
         read: false,
         data: { metadata: { campaignId } },
@@ -36,8 +36,24 @@ it.each([
     expect(screen.getByText('Learn something new')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'View' }));
     expect(history.location.pathname).toBe(path);
-    expect(mocks.mark).toHaveBeenCalledOnce();
+    expect(mocks.mark).toHaveBeenCalledWith({ notificationId: 'announcement' }, expect.any(Object));
     expect(mocks.close).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'View' }));
     expect(mocks.mark).toHaveBeenCalledOnce();
+});
+
+it('still opens a campaign when a malformed notification has no inbox ID', () => {
+    const history = createMemoryHistory();
+    const notification = {
+        type: 'ANNOUNCEMENT',
+        data: { metadata: { campaignId: 'pilot' } },
+    } as NotificationType;
+    render(
+        <Router history={history}>
+            <NotificationAnnouncementCard notification={notification} />
+        </Router>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+    expect(history.location.pathname).toBe('/m/pilot');
+    expect(mocks.mark).not.toHaveBeenCalled();
 });
