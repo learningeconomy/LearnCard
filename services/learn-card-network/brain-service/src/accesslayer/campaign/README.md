@@ -223,6 +223,28 @@ Receiver deduplication lasts while the inbox record exists; hard-deleting it bef
 unacknowledged retry can permit reinsertion. Production pilot QA must include this existing
 notification retention limitation.
 
+### Custom webhook compatibility
+
+Audience selection does not exclude profiles with a custom `notificationsWebhook`.
+Their endpoint takes precedence over the default lca-api webhook in hosted environments;
+do not assume every audience member uses the LearnCard inbox. An arbitrary HTTP 2xx
+response is not proof of durable storage for ANNOUNCEMENT notifications. Compatible
+receivers must persist the notification before returning JSON `true`, or a boolean
+`sent`, `success`, or `ok` flag set to `true` (also accepted under `data` or `result.data`).
+An explicit `false` is a negative acknowledgement. Empty responses (including 204),
+plain text, and unrecognized JSON such as `{"status":"ok"}` remain uncertain and retry;
+they do not advance `notifiedAt`.
+
+Custom receivers must deduplicate retries by sender DID, recipient DID, `campaignId`,
+and `campaignCreatedAt`, adding `campaignTestId` for test sends. Return the same positive
+acknowledgement for an already stored notification without repeating downstream effects.
+Only lca-api's implementation is covered by the inbox/push deduplication guarantee above.
+For a custom receiver, `notified` means its durable-storage acknowledgement was received,
+not that a LearnCard inbox card or device push exists. Before including custom-webhook
+profiles in a pilot, confirm this contract with the receiver owner using disposable test
+profiles; exclude incompatible receivers from the pilot audience until adapted. Production
+audiences and third-party implementations have not been inventoried by this change.
+
 ### Worker network access
 
 The shared notifications worker uses `PrivateSubnetA` because campaign eligibility and
