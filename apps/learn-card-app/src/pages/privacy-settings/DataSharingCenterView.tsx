@@ -17,6 +17,7 @@ import './dataSharingCenter.scss';
 type DataSharingCenterViewProps = {
     vm: DataSharingCenterViewModel;
     verifierHistory?: React.ReactNode;
+    announcements?: React.ReactNode;
     openSaved?: boolean;
     onSavedOpened?: () => void;
     showOwnerLinks?: boolean;
@@ -25,6 +26,7 @@ type DataSharingCenterViewProps = {
 const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
     vm,
     verifierHistory,
+    announcements,
     openSaved = false,
     onSavedOpened,
     showOwnerLinks = true,
@@ -78,6 +80,7 @@ const DataSharingCenterView: React.FC<DataSharingCenterViewProps> = ({
                             />
                         )}
                         {verifierHistory}
+                        {announcements}
 
                         <ConnectedAppsSection
                             contracts={contracts}
