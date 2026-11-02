@@ -126,8 +126,10 @@ test('flaky | <case>', () => {
     assert.equal(report.cases[0].retries, 1);
     assert.equal(report.cases[0].name, 'flaky | <case>');
     assert.doesNotMatch(JSON.stringify(report), /private-error-detail/);
-    const summary = summarize(f.reports, 'success').markdown;
-    assert.match(summary, /flaky \\\| &lt;case&gt;/);
+    const summary = summarize(f.reports, 'success');
+    assert.equal(summary.incomplete, false);
+    assert.match(summary.markdown, /\| passed \| 2 \| 0 \| 0 \| 1 \|/);
+    assert.match(summary.markdown, /flaky \\\| &lt;case&gt;/);
     report.cases[0].line = 'invalid';
     writeFileSync(
         path.join(f.reports, readdirSync(f.reports)[0], 'report.json'),
@@ -146,7 +148,12 @@ test('concurrent flaky', () => expect(++attempts).toBe(2));`
     );
     const results = await Promise.all([f.runAsync(vitest, ['run']), f.runAsync(vitest, ['run'])]);
     for (const result of results) assert.equal(result.status, 0, result.output);
-    assert.equal(f.readReports().length, 2);
+    const reports = f.readReports();
+    assert.equal(reports.length, 2);
+    for (const report of reports) {
+        assert.equal(report.counts.recovered, 1);
+        assert.equal(report.cases[0].retries, 1);
+    }
 });
 
 test('CI retry opt-in without a report directory fails instead of silently omitting evidence', t => {
@@ -290,6 +297,7 @@ test('permanent', () => {appendFileSync('attempts','x'); throw new Error('privat
     assert.equal(report.counts.failed, 1);
     assert.equal(report.counts.recovered, 0);
     assert.equal(report.cases[0].retries, 1);
+    assert.equal(summarize(f.reports, 'failure').incomplete, true);
 });
 
 for (const phase of ['setupFile', 'beforeAll', 'import', 'afterAll']) {
@@ -382,4 +390,5 @@ test('summary CLI fails closed on incomplete reports and preserves a failed Nx o
         GITHUB_STEP_SUMMARY: summaryFile,
     });
     assert.equal(failed.status, 0, failed.stdout + failed.stderr);
+    assert.match(readFileSync(summaryFile, 'utf8'), /Nx test step: \*\*failure\*\*/);
 });
