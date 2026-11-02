@@ -73,7 +73,8 @@ const apiMock = () =>
 const mount = (
     api: CampaignApi,
     path = '/admin/campaigns/test-campaign',
-    element?: React.ReactNode
+    element?: React.ReactNode,
+    container?: HTMLElement
 ) => {
     const queries = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     const history = createMemoryHistory({
@@ -84,7 +85,7 @@ const mount = (
         <QueryClientProvider client={queries}>
             <Router history={history}>{element ?? <CampaignRoutes api={api} />}</Router>
         </QueryClientProvider>,
-        { wrapper: ModalsProvider }
+        { wrapper: ModalsProvider, ...(container ? { container } : {}) }
     );
     return { ...view, history, queries };
 };
@@ -311,6 +312,95 @@ describe('campaign composer', () => {
         );
         expect(api.campaignsSendTestToMe).not.toHaveBeenCalled();
     });
+    it.each(['pause', 'content'] as const)(
+        'preserves unsaved edits when another editor changes %s before saving',
+        async change => {
+            const api = apiMock();
+            let stored: Campaign = { ...campaign(), status: 'live' };
+            const loadedRevision = stored.updatedAt;
+            const advance = () => new Date(Date.parse(stored.updatedAt) + 1).toISOString();
+            api.campaignsGet.mockImplementation(async () => ({ ...stored }));
+            api.campaignsSetStatus.mockImplementation(async (_id, status) => {
+                stored = { ...stored, status, updatedAt: advance() };
+                return stored;
+            });
+            const update = vi
+                .fn<CampaignApi['campaignsUpdate']>()
+                .mockImplementation(async input => {
+                    expect(input.updates).not.toHaveProperty('status');
+                    if (input.expectedUpdatedAt !== stored.updatedAt) {
+                        throw Object.assign(new Error('revision conflict'), {
+                            data: { code: 'CONFLICT' },
+                        });
+                    }
+                    stored = {
+                        ...stored,
+                        name: input.updates.name ?? stored.name,
+                        updatedAt: advance(),
+                    };
+                    return stored;
+                });
+            api.campaignsUpdate = update;
+            const first = mount(api);
+            const editorA = within(first.container);
+            await editorA.findByRole('textbox', { name: 'Name' });
+            // Independent documents model two browser editors without duplicate form IDs.
+            const frame = document.createElement('iframe');
+            document.body.appendChild(frame);
+            const second = mount(api, undefined, undefined, frame.contentDocument!.body);
+            const editorB = within(second.container);
+            await editorB.findByRole('textbox', { name: 'Name' });
+            fireEvent.change(editorA.getByRole('textbox', { name: 'Name' }), {
+                target: { value: 'Unsaved first editor' },
+            });
+            if (change === 'pause') {
+                fireEvent.click(editorB.getByRole('button', { name: 'Pause' }));
+                fireEvent.click(editorB.getByRole('button', { name: 'Confirm paused' }));
+                await editorB.findByText('Campaign is paused.');
+            } else {
+                fireEvent.change(editorB.getByRole('textbox', { name: 'Name' }), {
+                    target: { value: 'Second editor wins' },
+                });
+                fireEvent.click(editorB.getByRole('button', { name: 'Save changes' }));
+                await editorB.findByText('Campaign saved.');
+            }
+            const winning = { ...stored };
+            fireEvent.click(editorA.getByRole('button', { name: 'Save changes' }));
+            expect(await editorA.findByRole('alert')).toHaveTextContent(
+                'Campaign changed since you loaded it'
+            );
+            expect(editorA.getByRole('textbox', { name: 'Name' })).toHaveValue(
+                'Unsaved first editor'
+            );
+            expect(editorA.getByText('Unsaved changes')).toBeVisible();
+            expect(stored).toEqual(winning);
+            expect(update).toHaveBeenLastCalledWith(
+                expect.objectContaining({ expectedUpdatedAt: loadedRevision })
+            );
+            // Retrying never refreshes the token behind the user's back or overwrites the winner.
+            fireEvent.click(editorA.getByRole('button', { name: 'Save changes' }));
+            await editorA.findByRole('alert');
+            expect(stored).toEqual(winning);
+            expect(update).toHaveBeenLastCalledWith(
+                expect.objectContaining({ expectedUpdatedAt: loadedRevision })
+            );
+            first.unmount();
+            second.unmount();
+            frame.remove();
+            const reloaded = mount(api);
+            const editor = within(reloaded.container);
+            expect(await editor.findByRole('textbox', { name: 'Name' })).toHaveValue(winning.name);
+            fireEvent.change(editor.getByRole('textbox', { name: 'Name' }), {
+                target: { value: 'Reconciled edit' },
+            });
+            fireEvent.click(editor.getByRole('button', { name: 'Save changes' }));
+            await editor.findByText('Campaign saved.');
+            expect(update).toHaveBeenLastCalledWith(
+                expect.objectContaining({ expectedUpdatedAt: winning.updatedAt })
+            );
+            expect(stored).toMatchObject({ name: 'Reconciled edit', status: winning.status });
+        }
+    );
     it('shows friendly mutation failures and allows retry', async () => {
         const api = apiMock();
         api.campaignsSetStatus.mockRejectedValueOnce(new Error('secret backend details'));
