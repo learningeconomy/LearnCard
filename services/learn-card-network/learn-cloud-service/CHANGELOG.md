@@ -1,5 +1,13 @@
 # @learncard/network-brain-service
 
+## 2.5.41
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/didkit-plugin-node@0.3.7
+
 ## 2.5.40
 
 ### Patch Changes
