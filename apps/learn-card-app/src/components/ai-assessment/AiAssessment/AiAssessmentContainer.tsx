@@ -149,7 +149,7 @@ export const AiAssessmentContainer: React.FC<{
         return false;
     };
 
-    const handleFinishAssessment = async () => {
+    const handleFinishAssessment = async (answers = assessmentQA) => {
         const learnCard = await initWallet();
         aiLoadingStore.set.isFinishingAssessment(true);
 
@@ -160,9 +160,10 @@ export const AiAssessmentContainer: React.FC<{
             await finishAssessment(
                 {
                     did: learnCard.id.did(),
-                    assessmentQA,
-                    session: session.vc,
+                    assessmentQA: answers,
+                    session: session.vc?.boostCredential ?? session.vc,
                     sessionUri: session.boost.uri,
+                    summaryCredentialUri: session.record?.uri,
                 },
                 {
                     onSettled: () => {
@@ -188,7 +189,7 @@ export const AiAssessmentContainer: React.FC<{
         }
 
         if (index === lastQuestionIndex && answer.trim()) {
-            await handleFinishAssessment();
+            await handleFinishAssessment(updatedQA);
         }
     };
 
@@ -228,6 +229,7 @@ export const AiAssessmentContainer: React.FC<{
                 const { assessment } = await preloadAssessment({
                     did: learnCard.id.did(),
                     summaryCredential,
+                    summaryCredentialUri: session.record?.uri,
                 });
 
                 if (!hasAssessmentQuestions(assessment)) {

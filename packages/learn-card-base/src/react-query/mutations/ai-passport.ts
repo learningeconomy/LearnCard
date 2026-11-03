@@ -116,7 +116,15 @@ export const usePreloadAssessment = () => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
+        mutationFn: async ({
+            did,
+            summaryCredential,
+            summaryCredentialUri,
+        }: {
+            did: string;
+            summaryCredential: VC;
+            summaryCredentialUri?: string;
+        }) => {
             const attemptId = crypto.randomUUID();
             const startedAt = performance.now();
             let stage = 'request';
@@ -129,7 +137,11 @@ export const usePreloadAssessment = () => {
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ summaryCredential, attemptId }),
+                        body: JSON.stringify({
+                            summaryCredential,
+                            summaryCredentialUri,
+                            attemptId,
+                        }),
                     },
                     did
                 );
@@ -174,17 +186,29 @@ type FinishAssessmentPayload = {
     assessmentQA: any;
     session: any;
     sessionUri: string;
+    summaryCredentialUri?: string;
 };
 
 export const useFinishAssessmentMutation = () => {
     return useMutation({
-        mutationFn: async ({ did, assessmentQA, session, sessionUri }: FinishAssessmentPayload) => {
+        mutationFn: async ({
+            did,
+            assessmentQA,
+            session,
+            sessionUri,
+            summaryCredentialUri,
+        }: FinishAssessmentPayload) => {
             const response = await aiPassportFetch(
                 addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/finish-assessment`),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ assessmentQA, session, sessionUri }),
+                    body: JSON.stringify({
+                        assessmentQA,
+                        session,
+                        sessionUri,
+                        summaryCredentialUri,
+                    }),
                 },
                 did
             );

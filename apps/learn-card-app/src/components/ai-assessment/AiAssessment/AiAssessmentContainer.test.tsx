@@ -78,7 +78,13 @@ vi.mock('./AiAssessmentFooter', () => ({ default: () => null }));
 vi.mock('./helpers/ViewAssessmentBadgeButton', () => ({ default: () => null }));
 vi.mock('../FinishedAiSessionAssessmentPreview', () => ({ default: () => null }));
 vi.mock('./helpers/AssessmentAnswerInput', () => ({
-    default: () => <input aria-label="Answer" />,
+    default: ({
+        handleAnswer,
+        index,
+    }: {
+        handleAnswer: (index: number, answer: string) => void;
+        index: number;
+    }) => <input aria-label="Answer" onChange={event => handleAnswer(index, event.target.value)} />,
 }));
 vi.mock('./helpers/AssessmentMultipleChoiceAnswers', () => ({ default: () => null }));
 vi.mock('../../generic/GenericNetworkError', () => ({ default: () => null }));
@@ -124,8 +130,26 @@ describe('AI final assessment loading', () => {
         expect(mocks.preload).toHaveBeenCalledWith({
             did: 'did:example:learner',
             summaryCredential: signedSummary,
+            summaryCredentialUri: 'urn:credential:summary',
         });
         expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+    });
+
+    it('binds completion to the stored summary URI and preserves the final answer', async () => {
+        await showAssessment({
+            type: ['CertifiedBoostCredential'],
+            boostCredential: signedSummary,
+        });
+        fireEvent.change(await screen.findByRole('textbox', { name: 'Answer' }), {
+            target: { value: 'I learned about feedback loops.' },
+        });
+        await waitFor(() => expect(mocks.finish).toHaveBeenCalled());
+        expect(mocks.finish.mock.calls[0][0]).toMatchObject({
+            session: signedSummary,
+            sessionUri: signedSummary.boostId,
+            summaryCredentialUri: 'urn:credential:summary',
+            assessmentQA: [{ ...questions[0], answer: 'I learned about feedback loops.' }],
+        });
     });
 
     it('continues to support legacy wrapped summaries', async () => {

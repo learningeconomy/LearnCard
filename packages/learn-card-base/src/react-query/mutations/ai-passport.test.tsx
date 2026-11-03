@@ -3,8 +3,9 @@ import React, { type ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { VC } from '@learncard/types';
 
-import { usePreloadAssessment } from './ai-passport';
+import { usePreloadAssessment, useFinishAssessmentMutation } from './ai-passport';
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), logError: vi.fn(), logInfo: vi.fn() }));
 vi.mock('learn-card-base', () => ({ UploadTypesEnum: {} }));
@@ -31,7 +32,18 @@ const setup = () => {
     );
     return { ...renderHook(() => usePreloadAssessment(), { wrapper }), queryClient };
 };
-const payload = { did: 'did:example:learner', summaryCredential: { boostId: 'urn:boost:summary' } };
+const payload = {
+    did: 'did:example:learner',
+    summaryCredential: {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential'],
+        issuer: 'did:example:issuer',
+        issuanceDate: '2026-01-01T00:00:00Z',
+        credentialSubject: { id: 'did:example:learner' },
+        boostId: 'urn:boost:summary',
+    } as VC,
+    summaryCredentialUri: 'urn:credential:summary',
+};
 
 describe('assessment request failures', () => {
     beforeEach(() => vi.clearAllMocks());
@@ -80,6 +92,7 @@ describe('assessment request failures', () => {
         await result.current.mutateAsync(payload);
         const request = JSON.parse(mocks.fetch.mock.calls[0][1].body);
         expect(request.summaryCredential).toEqual(payload.summaryCredential);
+        expect(request.summaryCredentialUri).toBe(payload.summaryCredentialUri);
         expect(request.attemptId).toMatch(
             /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
         );
@@ -116,5 +129,28 @@ describe('assessment request failures', () => {
             durationMs: expect.any(Number),
             code: 'request_failed',
         });
+    });
+});
+
+it('keeps the summary credential URI separate from the parent boost when completing', async () => {
+    const queryClient = new QueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify({ success: true })));
+    const { result } = renderHook(() => useFinishAssessmentMutation(), { wrapper });
+    const completion = {
+        did: payload.did,
+        session: payload.summaryCredential,
+        sessionUri: payload.summaryCredential.boostId,
+        summaryCredentialUri: payload.summaryCredentialUri,
+        assessmentQA: [{ question: 'What did you learn?', answer: 'Feedback loops.' }],
+    };
+    await result.current.mutateAsync(completion);
+    expect(JSON.parse(mocks.fetch.mock.calls.at(-1)![1].body)).toEqual({
+        session: completion.session,
+        sessionUri: completion.sessionUri,
+        summaryCredentialUri: completion.summaryCredentialUri,
+        assessmentQA: completion.assessmentQA,
     });
 });
