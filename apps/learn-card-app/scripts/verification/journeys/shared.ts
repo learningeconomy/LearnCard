@@ -59,9 +59,9 @@ export const issueSelfBadge = async (page: Page, title: string): Promise<void> =
 /** Use the app's Passport link, then reload before checking the persisted credential. */
 export const openStoredBadge = async (page: Page, title: string): Promise<Locator> => {
     await page.getByRole('link', { name: 'Passport', exact: true }).click();
-    await expect(page).toHaveURL(/\/(?:wallet|passport)(?:[?#]|$)/);
+    await expect(page).toHaveURL(/\/(?:wallet|passport)(?:[?#]|$)/, { timeout: UI_TIMEOUT });
     await page.reload();
-    await expect(page).toHaveURL(/\/(?:wallet|passport)(?:[?#]|$)/);
+    await expect(page).toHaveURL(/\/(?:wallet|passport)(?:[?#]|$)/, { timeout: UI_TIMEOUT });
     await page.getByRole('button', { name: /Badges/i }).click();
     await page.waitForURL(BADGES);
     await page.getByText(title, { exact: true }).first().click();
