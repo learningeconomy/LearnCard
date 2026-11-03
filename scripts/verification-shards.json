@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "shards": [
+        {
+            "id": "1",
+            "features": ["credentials", "app-store"],
+            "scripts": ["navigation"]
+        },
+        {
+            "id": "2",
+            "features": ["account", "language", "sdk", "cli", "consent-flow", "docs"],
+            "scripts": ["campaigns"]
+        },
+        {
+            "id": "3",
+            "features": ["sharing", "contacts", "sdk-to-app"],
+            "scripts": []
+        }
+    ]
+}
