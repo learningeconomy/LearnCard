@@ -67,6 +67,65 @@ describe('campaign authoring contracts', () => {
                 .errors
         ).toContain('endsAt: End must be after start');
     });
+    it('validates email-only drafts without requiring inactive channel content', () => {
+        const form = {
+            ...valid(),
+            inApp: false,
+            email: true,
+            emailSubject: 'A new opportunity',
+            emailTitle: 'Explore your next step',
+            emailBody: 'Find out more in the app.',
+            messageJson: '{',
+        };
+        const result = validateForm(form);
+        expect(result.errors).toEqual([]);
+        expect(result.data).toMatchObject({
+            channels: ['email'],
+            email: {
+                subject: form.emailSubject,
+                title: form.emailTitle,
+                body: form.emailBody,
+                ctaLabel: 'Open campaign',
+            },
+        });
+        expect(result.data?.message).toBeUndefined();
+        expect(result.data?.notification).toBeUndefined();
+        expect(validateForm({ ...form, emailBody: '' }).errors).toContain(
+            'email.body: Enter an email body (up to 20,000 characters).'
+        );
+        expect(
+            validateForm({ ...form, emailHeroImageUrl: 'http://example.org/image.png' }).data
+        ).toBeUndefined();
+        expect(
+            validateForm({ ...form, emailSubject: 'News\r\nInjected: header' }).data
+        ).toBeUndefined();
+        expect(
+            validateForm({ ...valid(), emailSubject: 'x'.repeat(201) }).data?.email
+        ).toBeUndefined();
+    });
+    it('round trips all email content and omits a cleared optional image', () => {
+        const input = validateForm({
+            ...valid(),
+            email: true,
+            emailSubject: 'News',
+            emailTitle: 'A new opportunity',
+            emailBody: 'First line\nSecond line',
+            emailCtaLabel: 'Explore',
+            emailHeroImageUrl: 'https://example.org/image.png',
+        }).data!;
+        const campaign = CampaignValidator.parse({
+            ...input,
+            message: { ...input.message, id: input.id },
+            createdAt: '2026-10-29T00:00:00Z',
+            updatedAt: '2026-10-29T00:00:00Z',
+        });
+        const form = campaignToForm(campaign);
+        expect(validateForm(form).data?.email).toEqual(campaign.email);
+        expect(
+            validateForm({ ...form, emailHeroImageUrl: '' }).data?.email?.heroImageUrl
+        ).toBeUndefined();
+        expect(validateForm({ ...form, email: false }).data?.email).toBeUndefined();
+    });
     it('round trips saved configuration, including selfEnroll and false excludeMinors', () => {
         const input = validateForm({
             ...valid(),

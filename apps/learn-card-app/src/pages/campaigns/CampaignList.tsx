@@ -53,7 +53,11 @@ const CampaignRow: React.FC<{ api: CampaignApi; campaign: Campaign }> = ({ api, 
                             key={channel}
                             className="rounded-md bg-grayscale-100 px-2 py-1 whitespace-nowrap"
                         >
-                            {channel === 'inApp' ? 'In-app' : 'Inbox + push'}
+                            {channel === 'inApp'
+                                ? 'In-app'
+                                : channel === 'email'
+                                  ? 'Email'
+                                  : 'Inbox + push'}
                         </span>
                     ))}
                 </div>

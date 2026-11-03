@@ -14,7 +14,7 @@ Status changes remain explicit confirmed actions.
 ## Supported
 
 - Paginated list and editor; immutable saved ID; shared `CreateCampaignInputValidator` validation with JSON field paths.
-- Independently selectable `inApp` and `notify` channels (at least one required). Only selected channels require content: in-app JSON or notification title/body. Also supports optional start/end times entered in the browser's local timezone and stored as ISO timestamps, notification title/body, `excludeMinors` and `selfEnroll`.
+- Independently selectable `inApp`, `notify` and `email` channels (at least one required). Only selected channels require content: in-app JSON, notification title/body, or email subject/heading/body/button text with an optional HTTPS image URL. Email uses the shared server schema and locally rendered tenant-branded template. Also supports optional start/end times entered in the browser's local timezone and stored as ISO timestamps, `excludeMinors` and `selfEnroll`.
 - Preview via `setInAppMessageOverride` and the existing real renderer. The existing override path suppresses dismissal storage/engagement telemetry and never calls a campaign dispatch API. Message buttons remain interactive, including navigation; leaving the editor clears the override.
 - Create draft, update, confirmed live/pause/archive transitions, and confirmed `campaignsSendTestToMe` for the saved selected channels. Notification tests use the existing inbox/push queue. In-app tests persist a private snapshot for the requesting administrator and appear on the next app visit outside the editor via `getMyCampaigns`. The real renderer acknowledges presentation through `recordCampaignEvent` with a test ID. Tests do not enroll the administrator or record engagement, fatigue, or audience stats; repeated tests replace the pending snapshot for that administrator/campaign. Unsaved edits block saved-state actions. Go Live permits scheduled in-app presentation; it does not dispatch notifications.
 - DID CSV with a named `did` column or a single column, quoted CSV, prefix validation, stable deduplication, sequential chunks of 1000, progress, and stopping after the current request. Completed writes are retained. Read errors and invalid rows block the whole upload. The 10 MB file limit bounds local parsing.
@@ -46,13 +46,33 @@ Dispatch targets the entire stored eligible audience, not just the currently sel
 
 ## Unsupported / deferred
 
-- Email delivery controls or an emailed metric. Current delivery channels are only `inApp` and `notify`.
-- Email is not a delivery channel. Inbox recipient counts do not guarantee push receipt; `notified` acknowledges inbox storage, not delivery to a device.
+- Bulk email recipient review and dispatch remain unavailable; campaigns containing `email` cannot use Send Notifications. Email authoring and caller-only tests are supported. Inbox recipient counts do not guarantee push receipt; `notified` acknowledges inbox storage, not delivery to a device.
 - Newly added counts and per-row `notFound` CSV results. Preview/add return `{count}` of eligible matches, including existing members. DID aliases can resolve to the same profile, so totals across chunks must not be called unique recipients.
 - Notification tap routing: LC-2267. Native push receipt and email integration need separate device/service verification.
 - The existing audience minor/DOB policy is preserved. Admin-only private tests bypass audience/status/schedule eligibility, while normal campaign delivery is unchanged. lca-api enum/dedupe must deploy before brain as documented by #1839; this implementation does not deploy anything.
 
 ## Verification
+
+### Local Docker email test
+
+Configure `POSTMARK_API_KEY`, `POSTMARK_BROADCAST_STREAM` and a dedicated
+`CAMPAIGN_UNSUBSCRIBE_SECRET` in the private Brain `.env`, then recreate the
+existing stack's `brain` service to reload its environment. No environment values
+belong in screenshots or test fixtures. The Postmark sender must be verified.
+
+1. Open `/admin/campaigns?create=1` as an allowlisted local administrator.
+2. Select Email, fill its subject, heading, plain-text body and button text, and save.
+3. Click Send Test to Me, review the selected channels, then confirm. Email tests
+   require an eligible adult account, exactly one verified primary email and email
+   announcements enabled. They do not require a live campaign or audience membership.
+4. Check the test inbox and Postmark stream Activity. Provider acceptance is not
+   proof of inbox receipt. In-app tests appear after leaving the editor.
+
+Local Compose overrides `DOMAIN_NAME` with localhost. Email receipt can be tested,
+but externally usable one-click unsubscribe needs a public HTTPS Brain endpoint.
+CTA and browser unsubscribe URLs use the tenant's email branding app URL, not the
+current browser origin. A local renderer preview still previews only in-app content;
+use the private email test to inspect the actual branded email.
 
 Run the focused model/component tests with `bun run --cwd apps/learn-card-app test -- src/pages/campaigns`. They cover access denial/failure, mutation errors, repeated clicks, unsaved navigation, optional field clearing, caller-only confirmation, local preview cleanup, CSV cancellation, source contracts and polling teardown.
 

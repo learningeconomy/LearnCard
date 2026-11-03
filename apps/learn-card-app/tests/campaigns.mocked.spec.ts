@@ -135,6 +135,7 @@ test.describe('campaign composer @mocked', () => {
             shown: 0,
             clicked: 0,
             notified,
+            emailed: 0,
             dismissed: 0,
             converted: 0,
             enrolled: 0,
@@ -467,7 +468,64 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Pause', exact: true }).click();
         await page.getByRole('button', { name: 'Confirm paused' }).click();
         await expect(page.getByText('Campaign is paused.')).toBeVisible();
+        await page.getByRole('checkbox', { name: 'Email', exact: true }).check();
+        await page.getByLabel('Email subject', { exact: true }).fill('Synthetic email test');
+        await page.getByLabel('Email heading', { exact: true }).fill('News for our learners');
+        await page
+            .getByLabel('Email body', { exact: true })
+            .fill('A mocked announcement from the composer.');
+        await page.getByLabel('Email button text', { exact: true }).fill('Explore');
+        await page.getByLabel('Email image URL (optional)').fill('https://example.org/hero.png');
+        await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+        await expect(
+            page.getByRole('button', { name: 'Save changes', exact: true })
+        ).toBeDisabled();
+        expect(saved!.channels).toEqual(['inApp', 'notify', 'email']);
+        expect(saved!.email).toEqual({
+            subject: 'Synthetic email test',
+            title: 'News for our learners',
+            body: 'A mocked announcement from the composer.',
+            ctaLabel: 'Explore',
+            heroImageUrl: 'https://example.org/hero.png',
+        });
+        await page.reload();
+        await expect(page.getByLabel('Email subject', { exact: true })).toHaveValue(
+            'Synthetic email test'
+        );
+        await page
+            .getByRole('heading', { name: 'Email content', exact: true })
+            .scrollIntoViewIfNeeded();
+        await page.screenshot({ path: 'test-results/campaign-email-desktop.png', fullPage: true });
+        await page.getByRole('button', { name: 'Send Test to Me' }).click();
+        await expect(page.getByRole('group', { name: 'Confirm campaign action' })).toContainText(
+            'email to your verified primary address'
+        );
+        expect(testSends).toBe(1);
+        await page.getByRole('button', { name: 'Confirm test send' }).click();
+        await expect(
+            page.getByText(/Email test sent to your verified primary address/)
+        ).toBeVisible();
+        expect(testSends).toBe(2);
+        expect(dispatches).toBe(1);
+        await expect(
+            page.getByRole('button', { name: 'Send Notifications', exact: true })
+        ).toBeDisabled();
         await page.setViewportSize({ width: 390, height: 844 });
+        await page
+            .getByRole('heading', { name: 'Email content', exact: true })
+            .scrollIntoViewIfNeeded();
+        for (const label of [
+            'Email subject',
+            'Email heading',
+            'Email body',
+            'Email button text',
+            'Email image URL (optional)',
+        ]) {
+            const bounds = await page.getByLabel(label, { exact: true }).boundingBox();
+            expect(bounds!.x).toBeGreaterThanOrEqual(0);
+            expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+        }
+        await page.screenshot({ path: 'test-results/campaign-email-mobile.png', fullPage: true });
         await page.getByLabel('Audience source', { exact: true }).selectOption('emails');
         await page.getByLabel('Search network members').fill('Synthetic');
         await page
