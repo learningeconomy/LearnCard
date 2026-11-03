@@ -72,6 +72,16 @@ export const lcaApiEnvironmentShape = {
     ESCROW_ENCLAVE_ACTIVE_KEY_ID: optionalEnvironmentString,
     ESCROW_ENCLAVE_REMOTE_URL: optionalEnvironmentUrl,
     ESCROW_ENCLAVE_REMOTE_TOKEN: optionalEnvironmentString,
+    /** The remote enclave's measured authority tenant label (ESCROW_AUTHORITY_TENANT in its
+     *  image). Every app tenant's escrow intents and authority state are checked against it,
+     *  never against the client-supplied X-Tenant-Id: the enclave is single-tenant, so
+     *  VetPass and LearnCard both use "learncard". Defaults to "learncard" (no infra change).
+     *  The default also applies to the ScoutPass deployment (CONFIG_TENANT=scouts), whose app
+     *  has escrow off: enabling ScoutPass escrow on its own enclave must set this in
+     *  config.scouts.<stage>.json, or its escrow routes fail closed. */
+    ESCROW_AUTHORITY_TENANT: optionalEnvironmentString
+        .transform(value => value ?? 'learncard')
+        .pipe(z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)),
     /** Operator-flipped, manual-only kill switch (P7.1). When true, startRecovery/completeRecovery
      *  refuse with a friendly message; hold cancellation and notifications keep working. Never
      *  auto-flipped by the escrow-ledger-monitor — a compromised monitor must not be able to

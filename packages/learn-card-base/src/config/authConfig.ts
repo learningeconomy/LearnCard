@@ -76,6 +76,8 @@ export interface SSSConfig {
     escrowEnclaveMeasurements: EscrowMeasurementPin[];
     escrowEnclaveRootSha256?: string;
     escrowEnclaveMaxAgeMs?: number;
+    /** The enclave's authority tenant label; unset = the app tenant. See `getEscrowAuthorityTenant`. */
+    escrowAuthorityTenant?: string;
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
@@ -199,6 +201,7 @@ export const getAuthConfig = (): AuthConfig => {
         escrowEnclaveMeasurements: sss.escrowEnclaveMeasurements ?? [],
         escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
         escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
+        escrowAuthorityTenant: sss.escrowAuthorityTenant as string | undefined,
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean | undefined) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean | undefined) ?? true,
     };
@@ -234,6 +237,9 @@ export const getSSSConfig = (): SSSConfig => {
             (sss.escrowEnclaveMeasurements as SSSConfig['escrowEnclaveMeasurements']) ?? [],
         escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
         escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
+        ...(sss.escrowAuthorityTenant !== undefined
+            ? { escrowAuthorityTenant: sss.escrowAuthorityTenant as string }
+            : {}),
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
@@ -250,6 +256,59 @@ export const getKeycloakConfig = (): TenantKeycloakConfig | undefined => {
  */
 export const shouldUseSSS = (): boolean => {
     return getAuthConfig().keyDerivation === 'sss';
+};
+
+// -----------------------------------------------------------------
+// Escrow authority tenant
+// -----------------------------------------------------------------
+
+const ESCROW_AUTHORITY_TENANT_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+
+/**
+ * The tenant label the escrow enclave signs and verifies: `escrowAuthorityTenant` when the
+ * tenant config sets it (VetPass shares LearnCard's single-tenant enclave, `"learncard"`),
+ * otherwise the app tenant, otherwise `"learncard"` (the strategy's own default).
+ */
+export const getEscrowAuthorityTenant = (
+    sss: Pick<SSSConfig, 'escrowAuthorityTenant'>,
+    tenantId: string | undefined = getAuthConfig().tenantId
+): string => sss.escrowAuthorityTenant ?? tenantId ?? 'learncard';
+
+/**
+ * The brand the enclave puts on the emails it sends itself (one-time code, recovery started,
+ * release warning). Mirrors `brand_name` in escrow-enclave-app/src/authority/email.rs, which
+ * brands from the measured authority label — keep the two in sync.
+ */
+export const escrowAuthorityBrandName = (authorityTenant: string): string => {
+    if (authorityTenant === 'learncard') return 'LearnCard';
+    if (authorityTenant === 'scouts') return 'ScoutPass';
+    return authorityTenant;
+};
+
+/**
+ * The sender brand to name in the in-app "we'll email you from X" note, or `undefined`
+ * when the enclave's emails already carry this app's brand (no note needed).
+ */
+export const getEscrowEmailSenderBrand = (
+    appBrandName: string | undefined,
+    authorityTenant: string
+): string | undefined => {
+    const sender = escrowAuthorityBrandName(authorityTenant);
+    return appBrandName && sender !== appBrandName ? sender : undefined;
+};
+
+/**
+ * Option A for apps sharing another tenant's escrow enclave (VetPass on LearnCard's): who the
+ * enclave-sent emails come from (`sender`) and this app's display name (`brand`, from
+ * `branding.name`), or `undefined` when the enclave already brands its emails as this app.
+ */
+export const getEscrowEmailSender = (
+    tenant: { tenantId?: string; branding?: { name?: string } },
+    sss: Pick<SSSConfig, 'escrowAuthorityTenant'>
+): { sender: string; brand: string } | undefined => {
+    const brand = tenant.branding?.name;
+    const sender = getEscrowEmailSenderBrand(brand, getEscrowAuthorityTenant(sss, tenant.tenantId));
+    return sender && brand ? { sender, brand } : undefined;
 };
 
 /** Overrides for `getEscrowStrategyConfig`'s production guard — for tests only. */
@@ -286,6 +345,19 @@ export const getEscrowStrategyConfig = (
     const stage = options.stage ?? getAuthConfig().stage;
     const isProductionDeploy = stage !== 'staging' && stage !== 'local';
 
+    if (
+        sss.escrowAuthorityTenant !== undefined &&
+        !ESCROW_AUTHORITY_TENANT_PATTERN.test(sss.escrowAuthorityTenant)
+    ) {
+        log.error('escrow.authority-tenant.invalid', { tenantId });
+        return undefined;
+    }
+    // Only an explicit setting is forwarded; unset keeps the strategy's app-tenant default.
+    const authorityTenant =
+        sss.escrowAuthorityTenant !== undefined
+            ? { authorityTenant: sss.escrowAuthorityTenant }
+            : {};
+
     if (sss.escrowEnclaveMode === 'software') {
         if (isProductionDeploy && isProductionTenant(tenantId)) {
             log.error('escrow.software-mode.blocked-in-production', { tenantId, stage });
@@ -295,6 +367,7 @@ export const getEscrowStrategyConfig = (
         return {
             enabled: true,
             attestation: { mode: 'software', pinnedPublicKeys: sss.escrowEnclavePublicKeys },
+            ...authorityTenant,
         };
     }
 
@@ -313,6 +386,7 @@ export const getEscrowStrategyConfig = (
             rootCertificateSha256: sss.escrowEnclaveRootSha256,
             maxAgeMs: sss.escrowEnclaveMaxAgeMs,
         },
+        ...authorityTenant,
     };
 };
 

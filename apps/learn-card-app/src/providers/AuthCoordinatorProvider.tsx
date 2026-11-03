@@ -49,6 +49,7 @@ import {
     getAuthConfig,
     getSSSConfig,
     getEscrowStrategyConfig,
+    getEscrowEmailSender,
     getLogger,
     useToast,
     ToastTypeEnum,
@@ -289,6 +290,19 @@ const DeviceLinkOverlay: React.FC<{
 // side-effect import above, so this provider-agnostic file never imports the
 // Firebase SDK directly.
 // ---------------------------------------------------------------------------
+
+/**
+ * Option A for apps sharing another tenant's escrow enclave (VetPass on LearnCard's): the
+ * enclave brands the emails it sends (code, recovery started, release warning) from its own
+ * authority tenant, so tell the user who they will hear from. `undefined` when the brands match.
+ */
+const resolveEscrowEmailSender = (): { sender: string; brand: string } | undefined => {
+    try {
+        return getEscrowEmailSender(getResolvedTenantConfig(), getSSSConfig());
+    } catch {
+        return undefined;
+    }
+};
 
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
@@ -1505,6 +1519,7 @@ const AuthSessionManager: React.FC<{
                                   ? coordinator.state.email
                                   : undefined,
                         ]),
+                        emailSender: resolveEscrowEmailSender(),
                         onStart: coordinator.startEscrowRecovery,
                         onStatus: coordinator.getEscrowRecoveryStatus,
                         onConfirmCode: coordinator.confirmEscrowRecovery,

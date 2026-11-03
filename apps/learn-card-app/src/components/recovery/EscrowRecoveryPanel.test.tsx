@@ -73,6 +73,72 @@ describe('EscrowRecoveryPanel', () => {
         expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
     });
 
+    describe('email sender note (app brand differs from the enclave brand)', () => {
+        const emailSender = { sender: 'LearnCard', brand: 'VetPass' };
+        const codeNote =
+            "We'll email you a code from LearnCard, the service that secures your VetPass account.";
+        const updatesNote =
+            'Some emails about this request come from LearnCard, the service that secures your VetPass account.';
+        const pendingHold = (confirmed: boolean) => {
+            const releaseAfter = new Date(Date.now() + 86400000).toISOString();
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: 'hold-confirm-1',
+                resumeToken: 'token',
+                clientEphemeralPrivateKey: 'key',
+                releaseAfter,
+                requiresConfirmation: true,
+                expectations: {
+                    tenant: 'learncard',
+                    did: 'did:key:z6Mkexample',
+                    holdId: 'hold-confirm-1',
+                    clientEphemeralPublicKey: 'ephemeral-pub',
+                    blobHash: 'blob-hash',
+                    authorityGeneration: 'generation-1',
+                    holdDigest: 'hold-digest',
+                    ledgerPublicKey: 'ledger-pub',
+                    keyId: 'key-1',
+                },
+            });
+            return vi.fn().mockResolvedValue({ status: 'pending', confirmed, releaseAfter });
+        };
+        const panel = (props: Partial<React.ComponentProps<typeof EscrowRecoveryPanel>> = {}) => (
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+                {...props}
+            />
+        );
+
+        it('names the sender before a 7-day recovery starts', async () => {
+            render(panel({ emailSender }));
+            expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(screen.getByText(codeNote)).toBeInTheDocument();
+        });
+
+        it('shows nothing when the brands match (no emailSender)', async () => {
+            render(panel());
+            expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(screen.queryByText(/the service that secures your/)).not.toBeInTheDocument();
+        });
+
+        it('names the sender on the confirm-code step', async () => {
+            render(panel({ view: 'status', emailSender, onStatus: pendingHold(false) }));
+            expect(await screen.findByText('Check your email')).toBeInTheDocument();
+            expect(screen.getByText(codeNote)).toBeInTheDocument();
+        });
+
+        it('names the sender of hold updates while the 7 days run', async () => {
+            render(panel({ view: 'status', emailSender, onStatus: pendingHold(true) }));
+            expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+            expect(screen.getByText(updatesNote)).toBeInTheDocument();
+        });
+    });
+
     const mockOnStart = vi.fn();
     const mockOnStatus = vi.fn();
     const mockOnRecover = vi.fn();

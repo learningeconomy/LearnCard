@@ -2502,7 +2502,11 @@
             "caption": "Lost a device or see something unfamiliar?",
             "attention": "Your PIN was entered incorrectly."
         },
-        "inProgress": "Recovery is already running. Wait for it to finish, then try again."
+        "inProgress": "Recovery is already running. Wait for it to finish, then try again.",
+        "emailSender": {
+            "code": "We'll email you a code from {{sender}}, the service that secures your {{brand}} account.",
+            "updates": "Some emails about this request come from {{sender}}, the service that secures your {{brand}} account."
+        }
     },
     "alerts": {
         "accepted": "Accepted",

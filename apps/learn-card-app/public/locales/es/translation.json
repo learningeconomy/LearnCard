@@ -2463,7 +2463,11 @@
             "caption": "¿Perdiste un dispositivo o ves algo desconocido?",
             "attention": "Tu PIN se introdujo incorrectamente."
         },
-        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo."
+        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo.",
+        "emailSender": {
+            "code": "Te enviaremos por correo un código de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "updates": "Algunos correos sobre esta solicitud llegan de {{sender}}, el servicio que protege tu cuenta de {{brand}}."
+        }
     },
     "alerts": {
         "title": "Alertas",

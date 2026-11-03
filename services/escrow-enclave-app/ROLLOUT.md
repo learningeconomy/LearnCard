@@ -234,5 +234,16 @@ switch already does without disrupting existing users.
   and redeploy is required for every stage advance or rollback.
 - Bucketing hashes `${tenantId}:${userDid}`, so the same user can be in the
   rollout for one tenant and not another — stage each tenant independently.
+- **VetPass shares LearnCard's enclave and accounts.** VetPass runs on the
+  LearnCard enclave with `auth.sss.escrowAuthorityTenant: "learncard"`
+  ([SECURITY.md](SECURITY.md) D20). A VetPass user and a LearnCard user with the
+  same sign-in are one account: enrollment, PIN and opt-out are shared, and an
+  account enrolled from either app is enrolled for both. Keep VetPass on the same
+  key derivation, `escrowEnclaveMode` and enclave pins as LearnCard at every stage
+  (enforced by `apps/learn-card-app/src/config/escrowTenantParity.test.ts`); an SSS
+  client with escrow off can leave the shared escrow copy stale. Today VetPass
+  staging and the `sss-pilot` overlay mirror LearnCard's; production VetPass
+  escrow stays off until the SSS switch turns it on for both apps. Update both
+  tenants' pins on every image roll.
 - Never put a raw DID or email in a PR, ticket, or this document — only the
   SHA-256 hash described above.

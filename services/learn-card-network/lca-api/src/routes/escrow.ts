@@ -90,6 +90,7 @@ import {
     getEscrowHoldDurationMs,
     getEscrowHoldRestartMinAgeMs,
     isEscrowRemoteMode,
+    getEscrowAuthorityTenant,
     activeEscrowClientMode,
     getEnclaveAttestationIdentity,
     notifyEscrowHoldEvent,
@@ -498,7 +499,7 @@ const removeEscrow = async (
             !enclave.applyEnrollmentIntent ||
             signed.intent.action !== 'disable' ||
             signed.intent.did !== did ||
-            signed.intent.tenant !== tenant.id
+            signed.intent.tenant !== getEscrowAuthorityTenant()
         )
             throw new TRPCError({
                 code: 'BAD_REQUEST',
@@ -656,7 +657,10 @@ export const escrowRouter = t.router({
             const result = await enclaveOperation(() =>
                 enclave.getEnrollmentState!({ expectedDid: ctx.user.did, nonce: input.nonce })
             );
-            if (result.state.did !== ctx.user.did || result.state.tenant !== ctx.tenant.id)
+            if (
+                result.state.did !== ctx.user.did ||
+                result.state.tenant !== getEscrowAuthorityTenant()
+            )
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
             return result;
         }),
@@ -726,7 +730,7 @@ export const escrowRouter = t.router({
                 const intent = signed.intent;
                 if (
                     intent.did !== ctx.user.did ||
-                    intent.tenant !== ctx.tenant.id ||
+                    intent.tenant !== getEscrowAuthorityTenant() ||
                     intent.action === 'disable' ||
                     intent.shareVersion !== input.shareVersion ||
                     !!input.pinSalt !==
@@ -740,6 +744,10 @@ export const escrowRouter = t.router({
                         nonce: randomBytes(32).toString('hex'),
                     })
                 );
+                // The enclave signs its own (measured) tenant; a different one means this
+                // lca-api's ESCROW_AUTHORITY_TENANT does not match the enclave it talks to.
+                if (current.state.tenant !== intent.tenant)
+                    throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
                 if (
                     current.state.enrollmentVersion !== intent.expectedEnrollmentVersion ||
                     current.state.authorityGeneration !== intent.authorityGeneration

@@ -211,6 +211,31 @@ Restart cancels the old hold as superseded and returns new resume secrets with a
 The pending hold must be at least 24 hours old (configurable with `ESCROW_HOLD_RESTART_MIN_AGE_MS`).
 Earlier attempts throw `EscrowHoldRestartThrottledError`, with `retryAfter` when available; ordinary starts still reuse the existing hold.
 
+## Escrow authority tenant (apps sharing an enclave)
+
+The escrow enclave is single-tenant: it signs every authority record with its measured
+authority label and requires the same label in every signed enrollment intent. An app that
+uses another tenant's enclave sets `auth.sss.escrowAuthorityTenant` to that label; VetPass
+sets `"learncard"`. The strategy uses this value for the intent tenant, the signed
+authority-state, hold-record and code-delivery checks, and the persisted
+`EscrowRecoveryExpectations.tenant`. Everything else (`X-Tenant-Id`, lca-api emails and
+links, `EscrowHold.tenantId`, rollout bucketing) uses the app tenant. Unset, it defaults to
+the app's `tenantId`, so LearnCard and ScoutPass are unchanged.
+
+- A wrong value fails closed with `EscrowAuthorityTenantMismatchError` (an
+  `EscrowEvidenceError` naming both labels) before any share rotation or recovery step.
+- Holds started before a change of this value no longer match their persisted
+  expectations and must be restarted.
+- One sign-in is one account in both apps: enrollment, PIN and opt-out are shared.
+- Emails sent by the enclave carry the enclave's brand. `RecoveryFlowModal`'s
+  `escrowRecovery.emailSender` (from `getEscrowEmailSender`, comparing the app's
+  `branding.name` with the enclave brand) shows "We'll email you a code from LearnCard, the
+  service that secures your VetPass account." on the start and confirm-code steps, and
+  "Some emails about this request come from LearnCard, ..." while the hold runs (lca-api
+  still sends the cancelled and PIN-locked notices under the app brand).
+
+See `services/escrow-enclave-app/SECURITY.md` (D20).
+
 ## Recovery PIN
 
 An **optional** fast path layered on top of escrow recovery. Escrow already seals a recovery

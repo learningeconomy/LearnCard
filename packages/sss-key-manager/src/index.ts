@@ -87,7 +87,11 @@ export type {
     SignedEscrowEnrollmentIntent,
 } from './escrow-enrollment-intent.types';
 export { verifyEnclaveAttestation } from './escrow-attestation';
-export { EscrowEvidenceError } from './escrow-authority.types';
+export {
+    EscrowEvidenceError,
+    EscrowAuthorityTenantMismatchError,
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+} from './escrow-authority.types';
 export type { HistoricalEscrowEvidence } from './escrow-authority.types';
 export type { EscrowRecoveryExpectations } from '@learncard/types';
 export {

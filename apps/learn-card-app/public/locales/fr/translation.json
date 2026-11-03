@@ -2463,7 +2463,11 @@
             "caption": "Appareil perdu ou activité inhabituelle ?",
             "attention": "Votre PIN a été saisi incorrectement."
         },
-        "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez."
+        "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez.",
+        "emailSender": {
+            "code": "Nous vous enverrons par e-mail un code de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "updates": "Certains e-mails concernant cette demande proviennent de {{sender}}, le service qui sécurise votre compte {{brand}}."
+        }
     },
     "alerts": {
         "title": "Alertes",

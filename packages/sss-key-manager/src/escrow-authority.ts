@@ -1,6 +1,10 @@
 import { base64ToBuffer, bufferToBase64, bytesToHex } from './crypto';
 import { parseEscrowEnvelope } from './escrow-crypto';
-import { EscrowEvidenceError } from './escrow-authority.types';
+import {
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+    EscrowAuthorityTenantMismatchError,
+    EscrowEvidenceError,
+} from './escrow-authority.types';
 import type { HistoricalEscrowEvidence } from './escrow-authority.types';
 import type { EscrowAttestationPolicy } from './types';
 import {
@@ -99,6 +103,14 @@ export const verifyEscrowCodeDelivery = async (
 };
 const requireEvidence = (condition: boolean): void => {
     if (!condition) fail();
+};
+/** Only after the signature verified: a well-formed but different signed tenant is a
+ * deployment misconfiguration (wrong `escrowAuthorityTenant`), reported specifically. */
+const requireAuthorityTenant = (signedTenant: unknown, expectedTenant: string): void => {
+    if (signedTenant === expectedTenant) return;
+    if (typeof signedTenant === 'string' && ESCROW_AUTHORITY_TENANT_PATTERN.test(signedTenant))
+        throw new EscrowAuthorityTenantMismatchError(expectedTenant, signedTenant);
+    fail();
 };
 const object = (value: unknown): Record<string, unknown> => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return fail();
@@ -335,7 +347,8 @@ export const verifyEscrowAuthorityState = async (
     const { payload } = await verifyRecord(raw.proof, 'snapshot', identity);
     if (!Array.isArray(payload) || payload.length !== 2 || payload[0] !== nonce) return fail();
     const signed = state(payload[1]);
-    requireEvidence(signed.tenant === tenant && signed.did === did);
+    requireEvidence(signed.did === did);
+    requireAuthorityTenant(signed.tenant, tenant);
     requireEvidence(JSON.stringify(signed) === JSON.stringify(state(raw.state)));
     if (signed.envelope) {
         requireEvidence(
@@ -497,7 +510,8 @@ export const verifyEscrowHoldRecord = async (
     keys(commit, ['schemaVersion', 'binding', 'executionId', 'revisions', 'transactionDigest']);
     const binding = object(commit.binding);
     keys(binding, ['tenant', 'generation', 'didHash']);
-    requireEvidence(commit.schemaVersion === 1 && binding.tenant === expected.tenant);
+    requireEvidence(commit.schemaVersion === 1);
+    requireAuthorityTenant(binding.tenant, expected.tenant);
     const authorityGeneration = text(binding.generation, 128);
     if (historical) requireEvidence(authorityGeneration === historical.authorityGeneration);
     requireEvidence(bytesToHex(bytes(binding.didHash, 32)) === (await hash(utf8(expected.did))));

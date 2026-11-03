@@ -8,6 +8,10 @@ import {
     getSSSConfig,
     isEmailRelayConfigured,
     getEscrowStrategyConfig,
+    getEscrowAuthorityTenant,
+    getEscrowEmailSender,
+    getEscrowEmailSenderBrand,
+    escrowAuthorityBrandName,
     isEmailBackupShareEnabled,
     isProductionTenant,
     setAuthConfigFromTenant,
@@ -235,6 +239,99 @@ describe('authConfig', () => {
             'escrow.software-mode.blocked-in-production',
             { tenantId: 'learncard', stage: 'production' }
         );
+    });
+
+    describe('escrow authority tenant', () => {
+        const pcrTuple = { pcr0: PCR0, pcr1: PCR1, pcr2: PCR2 };
+
+        it('forwards an explicit authority tenant with the nitro trust policy', () => {
+            setAuthConfigOverrides({
+                tenantId: 'vetpass',
+                providerConfig: {
+                    sss: {
+                        escrowEnclaveMode: 'nitro',
+                        escrowEnclaveMeasurements: [pcrTuple],
+                        escrowAuthorityTenant: 'learncard',
+                    },
+                },
+            });
+            expect(getSSSConfig().escrowAuthorityTenant).toBe('learncard');
+            expect(getEscrowStrategyConfig(getSSSConfig())).toMatchObject({
+                enabled: true,
+                attestation: { mode: 'nitro', pinnedMeasurements: [pcrTuple] },
+                authorityTenant: 'learncard',
+            });
+            expect(getEscrowAuthorityTenant(getSSSConfig())).toBe('learncard');
+        });
+
+        it('forwards nothing when unset, so the strategy keeps its app-tenant default', () => {
+            setAuthConfigOverrides({
+                tenantId: 'learncard',
+                providerConfig: {
+                    sss: { escrowEnclaveMode: 'nitro', escrowEnclaveMeasurements: [pcrTuple] },
+                },
+            });
+            expect(getSSSConfig()).not.toHaveProperty('escrowAuthorityTenant');
+            expect(getEscrowStrategyConfig(getSSSConfig())).not.toHaveProperty('authorityTenant');
+            expect(getEscrowAuthorityTenant(getSSSConfig())).toBe('learncard');
+            expect(getEscrowAuthorityTenant({}, 'scoutpass')).toBe('scoutpass');
+            expect(getEscrowAuthorityTenant({}, undefined)).toBe('learncard');
+        });
+
+        it('disables escrow and logs when the authority tenant label is malformed', () => {
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            setAuthConfigOverrides({
+                tenantId: 'vetpass',
+                providerConfig: {
+                    sss: {
+                        escrowEnclaveMode: 'nitro',
+                        escrowEnclaveMeasurements: [pcrTuple],
+                        escrowAuthorityTenant: 'learn card',
+                    },
+                },
+            });
+            expect(getEscrowStrategyConfig(getSSSConfig())).toBeUndefined();
+            expect(errorSpy).toHaveBeenCalledWith(
+                '[auth-config]',
+                'escrow.authority-tenant.invalid',
+                { tenantId: 'vetpass' }
+            );
+        });
+
+        it('names the enclave email sender only when it differs from the app brand', () => {
+            expect(escrowAuthorityBrandName('learncard')).toBe('LearnCard');
+            expect(escrowAuthorityBrandName('scouts')).toBe('ScoutPass');
+            expect(escrowAuthorityBrandName('other')).toBe('other');
+            expect(getEscrowEmailSenderBrand('VetPass', 'learncard')).toBe('LearnCard');
+            expect(getEscrowEmailSenderBrand('LearnCard', 'learncard')).toBeUndefined();
+            expect(getEscrowEmailSenderBrand(undefined, 'learncard')).toBeUndefined();
+        });
+
+        it('reads the app brand from branding.name, not the email block', () => {
+            const sss = { escrowAuthorityTenant: 'learncard' };
+            expect(
+                getEscrowEmailSender({ tenantId: 'vetpass', branding: { name: 'VetPass' } }, sss)
+            ).toEqual({ sender: 'LearnCard', brand: 'VetPass' });
+            expect(
+                getEscrowEmailSender({ tenantId: 'learncard', branding: { name: 'LearnCard' } }, {})
+            ).toBeUndefined();
+            expect(getEscrowEmailSender({ tenantId: 'vetpass' }, sss)).toBeUndefined();
+        });
+
+        it('schema accepts a valid authority tenant and rejects a malformed one', () => {
+            const withTenant = (escrowAuthorityTenant: string) =>
+                tenantConfigSchema.safeParse({
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                    auth: {
+                        ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                        sss: { ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss, escrowAuthorityTenant },
+                    },
+                });
+            expect(withTenant('learncard').success).toBe(true);
+            expect(withTenant('').success).toBe(false);
+            expect(withTenant('learn.card').success).toBe(false);
+            expect(withTenant('x'.repeat(129)).success).toBe(false);
+        });
     });
 
     it('recognizes only known production tenants', () => {

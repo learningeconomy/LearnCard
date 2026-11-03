@@ -123,6 +123,17 @@ export const tenantSSSConfigSchema = z
             .optional(),
         /** Max attestation age in ms. Nitro policy default is 300000 (5 min) when unset. */
         escrowEnclaveMaxAgeMs: z.number().int().positive().max(3_600_000).optional(),
+        /**
+         * The escrow enclave's measured authority tenant label (`ESCROW_AUTHORITY_TENANT`),
+         * used for every value the enclave verifies or signs. Defaults to this tenant's
+         * `tenantId`. Set it when this app shares another tenant's single-tenant enclave:
+         * VetPass uses LearnCard's (`"learncard"`). Branding, emails, X-Tenant-Id and
+         * rollout keep using `tenantId`.
+         */
+        escrowAuthorityTenant: z
+            .string()
+            .regex(/^[A-Za-z0-9_-]{1,128}$/, 'Expected 1-128 letters, digits, "_" or "-"')
+            .optional(),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })

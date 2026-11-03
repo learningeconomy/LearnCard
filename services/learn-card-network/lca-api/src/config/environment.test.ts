@@ -157,3 +157,19 @@ describe('Keycloak startup configuration', () => {
         ).not.toThrow();
     });
 });
+
+describe('escrow authority tenant', () => {
+    const offline = { ...production, IS_OFFLINE: 'true' };
+    it('defaults to the learncard enclave label (no infra change)', () => {
+        expect(parseLcaApiEnvironment(offline).ESCROW_AUTHORITY_TENANT).toBe('learncard');
+    });
+    it('accepts an explicit label and rejects a malformed one', () => {
+        expect(
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'scouts' })
+                .ESCROW_AUTHORITY_TENANT
+        ).toBe('scouts');
+        expect(() =>
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'learn card' })
+        ).toThrow();
+    });
+});

@@ -76,6 +76,15 @@ The escrow P-256 SPKI comes only from signed `user_data`, not the NSM `public_ke
 mode. The strategy sends a fresh hex nonce on each attestation GET; software mode ignores the nonce
 and continues to require a pinned public key.
 
+### Escrow authority tenant
+
+`escrow.authorityTenant` is the enclave's measured authority label. The strategy uses it for every
+value the enclave signs or verifies (intent tenant, authority state, hold and code-delivery records,
+persisted recovery expectations); `tenantId` stays the `X-Tenant-Id` and branding tenant. It defaults
+to `tenantId`, then `'learncard'`. Set it when an app shares another tenant's enclave (VetPass uses
+`'learncard'`). Validly signed evidence for another label throws `EscrowAuthorityTenantMismatchError`,
+a subclass of `EscrowEvidenceError`.
+
 - **Device Share**: Encrypted with non-extractable AES-GCM key stored in IndexedDB
 - **Auth Share**: Server-side envelope encryption (DEK + KMS-encrypted DEK)
 - **Recovery Share**: Password-based uses Argon2id KDF with secure parameters
