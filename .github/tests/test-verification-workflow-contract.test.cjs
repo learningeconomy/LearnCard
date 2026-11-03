@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { readFileSync } = require('node:fs');
 
 const root = path.resolve(__dirname, '../..');
 const workflowPath = path.join(root, '.github/workflows/verification.yml');
@@ -131,6 +132,13 @@ for (const key of Object.keys(proofSuccess))
         );
 assert.equal(workflow.jobs.runtime.strategy['fail-fast'], false);
 assert.deepEqual(workflow.jobs.runtime.strategy.matrix.shard, ['1', '2', '3']);
+assert.deepEqual(
+    workflow.jobs.runtime.strategy.matrix.shard,
+    JSON.parse(
+        readFileSync(path.join(root, 'scripts/verification-shards.json'), 'utf8')
+    ).shards.map(shard => shard.id),
+    'Workflow matrix and partition plan must describe the same workers'
+);
 assert.match(
     source.find(step => step.name === 'Check sanitized timing summaries').run,
     /verification-shards\.test\.mjs/
