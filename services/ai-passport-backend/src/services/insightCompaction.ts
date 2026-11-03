@@ -33,7 +33,24 @@ export class InsightCompactionError extends Error {
 }
 export const InsightCohortSummaryValidator = z
     .object({
-        summary: z.string().trim().min(1).max(INSIGHT_COHORT_SUMMARY_MAX_CHARS),
+        // zod 4.6 counts code points in .max(); the bound (and SUMMARY_SYSTEM) is UTF-16 units,
+        // so a non-BMP character still counts as two.
+        summary: z
+            .string()
+            .trim()
+            .min(1)
+            .max(INSIGHT_COHORT_SUMMARY_MAX_CHARS)
+            .superRefine((value, ctx) => {
+                if (value.length <= INSIGHT_COHORT_SUMMARY_MAX_CHARS) return;
+                ctx.addIssue({
+                    code: 'too_big',
+                    origin: 'string',
+                    maximum: INSIGHT_COHORT_SUMMARY_MAX_CHARS,
+                    inclusive: true,
+                    input: value,
+                    message: `Too big: expected string to have <=${INSIGHT_COHORT_SUMMARY_MAX_CHARS} UTF-16 units`,
+                });
+            }),
     })
     .strict();
 export const InsightCompactionStatsValidator = z
