@@ -160,3 +160,19 @@ assert.ok(artifacts.every(step => step.if === '${{ always() }}'));
 assert.ok(source.every(step => !step.uses?.startsWith('actions/upload-artifact@')));
 assert.ok(bundle.every(step => !step.uses?.startsWith('actions/upload-artifact@')));
 console.log('verification lifecycle, independent jobs and all 64 aggregate outcomes passed');
+
+const profileIndex = steps.findIndex(step => step.name === 'Profile retained browser calls');
+assert.ok(profileIndex > teardownIndex && profileIndex < summaryIndex);
+const profile = steps[profileIndex];
+assert.equal(profile.if, '${{ always() }}');
+assert.equal(profile['timeout-minutes'], 2, 'diagnostics must have a short wall-time bound');
+assert.equal(profile['continue-on-error'], true, 'diagnostics cannot change verification success');
+assert.match(
+    profile.run,
+    /python3 -B scripts\/profile-verification-traces.py "\$STACK_DIR" "\$SUMMARY_DIR"/
+);
+const upload = steps.find(step => step.name === 'Retain sanitized summary only');
+assert.match(upload.with.path, /browser-profile\.json/);
+assert.match(upload.with.path, /browser-profile\.md/);
+assert.doesNotMatch(upload.with.path, /trace|session|\*\*/);
+console.log('verification lifecycle and sanitized browser profiling contract passed');
