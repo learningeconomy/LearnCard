@@ -264,13 +264,9 @@ export const useClassLinkAuthorizeUrl = () => {
         { redirectUri: string; codeChallenge: string; state: string; nonce: string }
     >({
         mutationFn: async args => {
-            try {
-                const wallet = await initWallet('aaa');
-                const data = await wallet?.invoke?.classlinkGetAuthorizeUrl(args);
-                return data;
-            } catch (error) {
-                return Promise.reject(new Error(error as string));
-            }
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet('aaa');
+            return wallet.invoke.classlinkGetAuthorizeUrl(args);
         },
     });
 };
@@ -284,13 +280,9 @@ export const useClassLinkExchangeCode = () => {
         { code: string; codeVerifier: string; redirectUri: string; nonce: string }
     >({
         mutationFn: async args => {
-            try {
-                const wallet = await initWallet('aaa');
-                const data = await wallet?.invoke?.classlinkExchangeCode(args);
-                return data;
-            } catch (error) {
-                return Promise.reject(new Error(error as string));
-            }
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet('aaa');
+            return wallet.invoke.classlinkExchangeCode(args);
         },
     });
 };

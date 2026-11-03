@@ -720,8 +720,7 @@ export const getLCAPlugin = async (
                     return { success: false, message: '' };
                 },
                 classlinkGetAuthorizeUrl: async () => {
-                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
-                    return { url: '' };
+                    throw new Error('Unable to connect to LCA API.');
                 },
                 classlinkGetPersonalEmail: async () => {
                     throw new Error('Unable to connect to LCA API.');
@@ -733,8 +732,7 @@ export const getLCAPlugin = async (
                     throw new Error('Unable to connect to LCA API.');
                 },
                 classlinkExchangeCode: async () => {
-                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
-                    return { token: '' };
+                    throw new Error('Unable to connect to LCA API.');
                 },
                 transcriptsGetStatus: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');

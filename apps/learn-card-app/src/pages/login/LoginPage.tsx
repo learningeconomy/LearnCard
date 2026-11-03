@@ -336,7 +336,8 @@ export const LoginContent: React.FC = () => {
     const features = useFeatureConfig();
     const { mutateAsync: getClassLinkAuthorizeUrl } = useClassLinkAuthorizeUrl();
 
-    const classLinkLogin = () => startClassLinkLogin(getClassLinkAuthorizeUrl);
+    const classLinkLogin = () =>
+        startClassLinkLogin(getClassLinkAuthorizeUrl, path => history.push(path));
 
     // custom logins associated with the app
     const extraSocialLogins = [

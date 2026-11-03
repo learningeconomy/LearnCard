@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline } from 'ionicons/icons';
 import {
@@ -51,6 +52,7 @@ const errorMessage = (error: unknown): string =>
     error instanceof Error && error.message ? error.message : m['transcriptOptIn.error']();
 
 export const TranscriptOptInCard: React.FC = () => {
+    const history = useHistory();
     const features = useFeatureConfig();
     const { state: coordinatorState } = useAppAuth();
     const isReady = coordinatorState.status === 'ready';
@@ -89,7 +91,11 @@ export const TranscriptOptInCard: React.FC = () => {
         if (reauthing) return;
         setReauthing(true);
         setReauthError('');
-        const ok = await startClassLinkLogin(getClassLinkAuthorizeUrl, window.location.pathname);
+        const ok = await startClassLinkLogin(
+            getClassLinkAuthorizeUrl,
+            path => history.push(path),
+            window.location.pathname
+        );
         if (!ok) {
             setReauthError(m['transcriptOptIn.error']());
             setReauthing(false);
