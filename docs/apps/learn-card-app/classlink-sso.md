@@ -1,6 +1,6 @@
 # Sign in with ClassLink
 
-LearnCard supports signing in with your district's ClassLink account. This allows you to use your existing school credentials to access your wallet and request state transcripts.
+LearnCard supports signing in with your district's ClassLink account. You can use your school login to open your account and request your state transcript.
 
 ## How it works
 
@@ -17,12 +17,12 @@ sequenceDiagram
     CL->>User: Prompt for district credentials
     User-->>CL: Enter credentials
     CL-->>App: Return securely to LearnCard
-    App->>App: Sign in to wallet
+    App->>App: Sign in to your account
 ```
 
 ## Requesting State Transcripts
 
-Once signed in with a verified ClassLink account, you may be eligible to request your state transcript. If your district participates, LearnCard will automatically check your eligibility and allow you to request your transcript directly into your wallet.
+Once signed in with a verified ClassLink account, you may be eligible to request your state transcript. If your district participates, LearnCard will automatically check your eligibility and let you request your transcript, which arrives in your account.
 
 ## Troubleshooting
 

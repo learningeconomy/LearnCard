@@ -12,10 +12,7 @@ vi.mock('../src/firebase', () => ({ default: { auth: vi.fn() } }));
 vi.mock('../src/helpers/classlink.config', () => ({ getClassLinkConfig: vi.fn(() => null) }));
 
 import { classlinkRouter } from '../src/routes/classlink';
-import {
-    getClassLinkIdentitiesCollection,
-    upsertClassLinkIdentity,
-} from '../src/models/ClassLinkIdentity';
+import { getClassLinkIdentitiesCollection } from '../src/models/ClassLinkIdentity';
 import {
     getTranscriptRequestsCollection,
     createTranscriptRequest,
@@ -23,6 +20,7 @@ import {
 import { getUserKeysCollection, type MongoUserKeyType } from '../src/models/UserKey';
 import { createMinorPreferencesIfAbsent } from '../src/models/Preferences';
 import { Preferences } from '../src/accesslayer/preferences';
+import { ThemeEnum } from '../src/types/preferences';
 
 const uid = 'classlink_cleanup_uid';
 const did = 'did:key:cleanup';
@@ -32,7 +30,7 @@ const userKey = {
     linkedDids: [],
     authProviders: [{ type: 'firebase', id: uid }],
     contactMethod: { type: 'email', value: 'cleanup@example.test' },
-} as MongoUserKeyType;
+} as unknown as MongoUserKeyType;
 
 beforeEach(async () => {
     await Promise.all([
@@ -70,7 +68,11 @@ beforeEach(async () => {
 
 describe('ClassLink account cleanup', () => {
     it('deletes both data sets and is idempotent', async () => {
-        const caller = classlinkRouter.createCaller({ user: { did } });
+        const caller = classlinkRouter.createCaller({
+            user: { did, isChallengeValid: true },
+            domain: 'api.example',
+            tenant: { id: 'learncard', resolvedVia: 'default', emailBranding: {} },
+        });
         await expect(caller.deleteMyData({})).resolves.toEqual({ deleted: 2 });
         await expect(caller.deleteMyData({})).resolves.toEqual({ deleted: 0 });
         expect(await getClassLinkIdentitiesCollection().countDocuments({})).toBe(0);
@@ -79,7 +81,7 @@ describe('ClassLink account cleanup', () => {
 
     it('keeps rows for live accounts and applies only orphan cleanup', async () => {
         const { cleanupOrphanClassLinkData } =
-            await import('../scripts/cleanup-orphan-classlink-data');
+            await import('../src/helpers/classlinkCleanup.helpers');
         const liveIdentity = await getClassLinkIdentitiesCollection().findOne({});
         const { _id: _ignoredId, ...identityWithoutId } = liveIdentity!;
         await getClassLinkIdentitiesCollection().insertOne({
@@ -117,7 +119,7 @@ describe('ClassLink account cleanup', () => {
         await Preferences.deleteOne({ did: minorDid });
         await Preferences.insertOne({
             did: minorDid,
-            theme: 'colorful',
+            theme: ThemeEnum.Colorful,
             aiEnabled: true,
         });
         await expect(createMinorPreferencesIfAbsent(minorDid)).resolves.toBe(false);

@@ -233,48 +233,66 @@ See [`docs/how-to-guides/deploy-infrastructure/sss-key-management-config.md`](..
 
 ## ClassLink SSO and state transcript requests
 
-ClassLink SSO allows students to sign in using their district credentials and request state transcripts.
+lca-api brokers ClassLink OIDC sign-in on Firebase today and is shaped to carry over to Keycloak. Routes: `src/routes/classlink.ts` (sign-in, data deletion), `src/routes/classlinkPersonalEmail.ts` (personal email, exposed under `classlink.*`), `src/routes/transcripts.ts` (transcript requests). Both routers are registered in `src/app.ts`.
 
-### Flow Diagram
+### Sign-in flow
 
 ```mermaid
 sequenceDiagram
-    participant App as LearnCard App
+    participant App
     participant API as lca-api
     participant CL as ClassLink
-    participant Issuer as Transcript Issuer
-
-    App->>API: GET /auth/classlink/login (redirect)
-    API->>CL: OIDC Auth Request
-    CL-->>API: OIDC Callback (code)
-    API->>CL: Exchange code for id_token
-    API->>API: Verify id_token & extract state ID
-    API->>API: Mint Firebase custom token
-    API-->>App: Redirect with custom token
-    App->>API: Request transcript (with state ID)
-    API->>Issuer: Request transcript credential
-    Issuer-->>API: Transcript VC
-    API-->>App: Return VC
+    App->>App: create PKCE verifier, state, nonce
+    App->>API: classlink.getAuthorizeUrl(redirectUri, codeChallenge, state, nonce)
+    API->>API: redirectUri must exactly match CLASSLINK_REDIRECT_URIS
+    API-->>App: authorize URL
+    App->>CL: browser redirect (web) or auth session (native)
+    CL-->>App: callback with code + state (https web or <bundleId>://auth/classlink/callback)
+    App->>App: consume single-use attempt for state
+    App->>API: classlink.exchangeCode(code, codeVerifier, redirectUri, nonce)
+    API->>CL: token request (client_secret_post, server side)
+    API->>API: verify id_token: issuer, RS256 via JWKS, aud, exp, iat skew, nonce, tenant allowlist
+    API->>API: resolve state student ID from api_fields; link identity; find/create Firebase user
+    API-->>App: Firebase custom token (in the tRPC response)
+    App->>App: signInWithCustomToken
 ```
 
-### Linking Rules & Guardrails
+- The state student ID is read only on the server, from the verified id_token `api_fields`, using the tenant's `stateStudentIdField`. It is never accepted from a client. A missing ID does not block sign-in.
+- An email (`email`, falling back to `or_email`) is required; without one the exchange fails with a friendly `BAD_REQUEST`.
 
-- **Linking**: ClassLink identities are linked to the user's DID via `ClassLinkIdentity` records.
-- **Guardrails**:
-    - Only authorized districts can use ClassLink SSO.
-    - State IDs must be unique and stable.
-    - Transcript requests are only allowed for users with a verified ClassLink identity.
+### Linking rules
+
+- Identity key: `classlink:<tenant_id>:<sourcedId>`, stored as an AuthSubject and a `ClassLinkIdentity` record (tenant, sourcedId, sub, role, state student ID, Firebase uid, subject, last auth time).
+- A known ClassLink identity always reuses its Firebase uid. If its email now belongs to a different Firebase user, the exchange fails closed with `CONFLICT`.
+- A first-time ClassLink identity links to an existing Firebase email user only when the email domain is in the tenant's `allowedEmailDomains`, the Firebase email is verified, and the id_token does not say `email_verified: false`. Otherwise `CONFLICT`. An empty allowlist never links.
+- New users get a deterministic uid: `classlink_` + first 28 hex chars of sha256(identity key).
+- Students get `isMinorHint`; minor privacy defaults are applied the first time the DID calls `transcripts.getStatus`.
+- Code exchange failures are rate limited per IP. Never log email, sub, state student ID, codes or tokens.
+
+### Transcript requests
+
+- `transcripts.getStatus` and `transcripts.request({ consent: true })` are DID-auth routes. The caller's DID resolves DID → UserKey → Firebase uid → ClassLink identity (`src/helpers/classlinkContext.helpers.ts`); inputs never carry a DID, profile ID or state ID.
+- Eligibility: tenant `transcriptEnabled`, ClassLink sign-in younger than `CLASSLINK_MAX_AUTH_AGE_SECONDS` (else `reauth_required`), and a state student ID present (else `no_state_id`).
+- An atomic Redis budget limits requests per DID per hour, and a per-user lock deduplicates requests within 10 minutes. Consent is saved before the outbound call.
+- lca-api signs a 5-minute EdDSA JWT with the service `did:web` `#owner` key (`src/helpers/issuerAssertion.helpers.ts`; claims: iss, aud, sub = student DID, state, state_student_id, ClassLink tenant/sourcedId/auth_time, consent_at, jti, iat, exp) and POSTs it to `TRANSCRIPT_ISSUER_ENDPOINT`. The issuer verifies it against `/.well-known/did.json`.
+- Delivery is asynchronous: the issuer later sends the credential through the existing send API. Responses map to `requested`, `none_yet` or `failed`; there is no automatic retry, webhook or polling.
+
+### Personal email
+
+`classlink.startPersonalEmail` / `verifyPersonalEmail` / `getPersonalEmail` record a verified personal (non-school-domain) email with a single-use 6-digit code (5-minute TTL, attempt and send limits). On success the `email:<addr>` AuthSubject is linked to the ClassLink subject so a later Keycloak email login lands in the same account. It is not a Firebase sign-in method before the Keycloak cutover, and it does not change the Firebase email or `UserKey.contactMethod`.
 
 ### Configuration
 
-- **Config Keys**: `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS`, `CLASSLINK_MAX_AUTH_AGE_SECONDS`, `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE`.
-- **Secrets**: `CLASSLINK_CLIENT_SECRET` lives in the runtime bundle (Infisical `/learncard/lca-api/runtime`), never in checked-in config.
-- **Native Redirect**: Register native custom-scheme redirect `<bundleId>://auth/classlink/callback`.
+All optional; without client ID, secret and tenants the routes return `PRECONDITION_FAILED`.
 
-### Keycloak-era Path
+| Key                                                                                                                                                                                                                                                                                                             | Where                                            |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `CLASSLINK_CLIENT_ID`, `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` (comma list, exact match, include native `<bundleId>://auth/classlink/callback`), `CLASSLINK_TENANTS` (JSON map: displayName, state, stateStudentIdField, allowedEmailDomains, transcriptEnabled), `CLASSLINK_MAX_AUTH_AGE_SECONDS` | stage config                                     |
+| `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE`                                                                                                                                                                                                                                                      | stage config                                     |
+| `CLASSLINK_CLIENT_SECRET`                                                                                                                                                                                                                                                                                       | runtime secrets bundle only (`PROVIDER_SECRETS`) |
 
-Today, ClassLink sign-in bypasses Keycloak entirely: lca-api verifies the ClassLink `id_token` directly and hands the app a Firebase custom token. Once Keycloak becomes the primary broker in front of lca-api, ClassLink sign-in would instead terminate in a short-lived **lca-api login ticket** rather than a Firebase custom token. The flow: the student completes ClassLink's OIDC code exchange against lca-api as today (code → `id_token` verification → state-ID resolution), but instead of minting a Firebase token lca-api issues a one-time ticket scoped to that user's stable `identityKey = classlink:<tenant_id>:<sourcedId>`. The browser/app is then redirected into Keycloak's **existing** `lca-api` identity-provider broker (the same broker already used for native email/social sign-in — no new ClassLink-specific Keycloak identity provider or Terraform module is needed) and redeems that ticket as the broker's federation credential. Keycloak resolves it to a local Keycloak user via the federated-identity record whose `userId` equals the person's `AuthSubject.subject` — and because `provision:keycloak` already pre-seeds that federated link for ClassLink-only users by resolving their `subject` through `ClassLinkIdentity` when no `email:` AuthSubject exists, the broker exchange lands on the same account the wallet already uses, with no double-subject and no new identity provider to provision or maintain.
+### Operations
 
-### Orphan Cleanup Script
-
-Use `provision:keycloak --report-classlink` to report ClassLink users and clean up orphans.
+- Account deletion: the app calls `classlink.deleteMyData` before deleting keys. `scripts/cleanup-orphan-classlink-data.ts` removes ClassLink and transcript rows whose Firebase uid has no UserKey (dry run by default, `--apply` to delete).
+- `provision:keycloak` reuses the ClassLink subject for ClassLink-only users; `--report-classlink` only prints how many users resolved that way.
+- Keycloak era: ClassLink sign-in becomes another lca-api login ticket (`classlink:<tenant>:<sourcedId>`) brokered by Keycloak's existing `lca-api` identity provider, so provisioned federated links keep the same subject and DID.

@@ -33,7 +33,7 @@ vi.mock('@cache', async () => {
 });
 const router = t.router(personalEmailProcedures);
 const did = 'did:key:personal-email-test';
-const branding = { name: 'Example School' };
+const branding = { brandName: 'Example School' };
 const caller = () =>
     router.createCaller({
         user: { did, isChallengeValid: true },
@@ -168,7 +168,11 @@ describe('ClassLink personal email', () => {
     it('requires ClassLink ownership and a live challenge', async () => {
         await expect(
             router
-                .createCaller({ user: { did, isChallengeValid: false }, domain: 'api.example' })
+                .createCaller({
+                    user: { did, isChallengeValid: false },
+                    domain: 'api.example',
+                    tenant: { id: 'learncard', resolvedVia: 'default', emailBranding: branding },
+                })
                 .getPersonalEmail()
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         await getClassLinkIdentitiesCollection().deleteMany({});
