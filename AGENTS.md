@@ -240,6 +240,10 @@ Use focused unit/mock tests and small scripts or a reusable browser in the edit 
 
 Finish agent tasks with the draft-PR proof contract in [ship-with-proof](.agents/skills/ship-with-proof/SKILL.md).
 
+## Internal Engineering Knowledge
+
+Internal plans, ADRs, architecture notes and standards live in Confluence (space LC), not in this public repo. Before publishing a plan, pulling a teammate's plan, or recording a decision, read [lc-knowledge](.agents/skills/lc-knowledge/SKILL.md) and follow the runbook it points to. Keep local working copies in the gitignored `.lc-knowledge/` directory or in your agent's own scratch directory.
+
 ## Monorepo Structure
 
 The project uses Bun workspaces and NX for monorepo management with packages organized in `packages/` directory, services in the `services/` directory, and end-to-end tests in the `tests/` directory

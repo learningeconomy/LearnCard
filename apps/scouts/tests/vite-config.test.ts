@@ -35,7 +35,9 @@ describe('Vite environment definitions', () => {
             if (previousClientId === undefined) delete process.env.VITE_WEB3AUTH_CLIENT_ID;
             else process.env.VITE_WEB3AUTH_CLIENT_ID = previousClientId;
         }
-    }, 30_000);
+        // Starts a real Vite server: ~3s alone, but it exceeded 30s twice under the
+        // full CI suite (#1897), so it gets a larger budget than the config-only cases.
+    }, 120_000);
 
     // The first case cold-imports Vite and its plugin graph; match the other case's CI budget.
     it('bakes the staging tenant domain into production-mode staging/native builds', async () => {

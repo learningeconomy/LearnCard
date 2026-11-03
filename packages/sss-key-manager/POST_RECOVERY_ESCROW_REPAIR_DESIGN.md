@@ -96,8 +96,10 @@ the new device share durably, then tries direct escrow enrollment:
 - Device share and share version are written to storage before enrollment
   (`packages/sss-key-manager/src/sss-strategy.ts:3495-3498`). After a reload the client
   can therefore reconstruct the key and reach `ready` normally.
-- Direct enrollment runs only for escrow recoveries (`pending.fromEscrow`) and always
-  asks for `clearPin=true` (`sss-strategy.ts:3513-3530`).
+- Direct enrollment runs only for escrow recoveries (`pending.fromEscrow`). It asks for
+  `clearPin=true`, except right after a successful PIN release in the same call, when it
+  re-sets the PIN the user just proved (new salt, fresh attempt budget). A failed PIN
+  re-set falls back to the clear repair below; the PIN is never kept for a retry.
 - If it fails, the split is kept only in a closure variable `unenrolledRotation`
   (`sss-strategy.ts:3534-3541`; declared at `sss-strategy.ts:1089-1095` with a TODO noting
   it cannot survive a reload).
