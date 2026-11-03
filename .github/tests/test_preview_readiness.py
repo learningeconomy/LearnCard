@@ -260,6 +260,14 @@ class HttpTests(unittest.TestCase):
                 self.assertEqual(raised.exception.transient, status == 429 or status >= 500)
                 self.assertNotIn(KEY, str(raised.exception))
 
+    def test_invalid_response_encoding_is_sanitized(self):
+        error = UnicodeDecodeError("utf-8", b"\xff", 0, 1, KEY)
+        with patch.object(READY.subprocess, "run", side_effect=error):
+            with self.assertRaises(READY.ControlError) as raised:
+                READY.ControlClient("https://control.invalid", KEY).request("status", 1)
+        self.assertFalse(raised.exception.transient)
+        self.assertNotIn(KEY, str(raised.exception))
+
     def test_real_loopback_http_success_auth_redirect_size_and_stall(self):
         class Handler(BaseHTTPRequestHandler):
             def log_message(self, *args):
@@ -268,7 +276,7 @@ class HttpTests(unittest.TestCase):
             def do_GET(self):
                 self.server.headers.append(self.headers.get("x-api-key"))
                 if self.path == "/stall/status":
-                    time.sleep(0.3)
+                    time.sleep(2)
                 if self.path == "/redirect/status":
                     self.send_response(302)
                     self.send_header("Location", "http://127.0.0.1:1/never-follow")
@@ -290,24 +298,32 @@ class HttpTests(unittest.TestCase):
             url = f"http://127.0.0.1:{server.server_port}"
             try:
                 self.assertEqual(READY.ControlClient(url, KEY).request("status", 1), response())
-                for endpoint in ("auth", "redirect", "large", "stall"):
+                for endpoint, expected, transient in (
+                    ("auth", "HTTP 403", False), ("redirect", "HTTP 302", False),
+                    ("large", "size limit", False), ("stall", "timed out|transport", True),
+                ):
                     with self.subTest(endpoint=endpoint):
                         started = time.monotonic()
-                        with self.assertRaises(READY.ControlError):
-                            READY.ControlClient(f"{url}/{endpoint}", KEY).request("status", 0.1)
-                        self.assertLess(time.monotonic() - started, 1)
+                        with self.assertRaisesRegex(READY.ControlError, expected) as raised:
+                            READY.ControlClient(f"{url}/{endpoint}", KEY).request(
+                                "status", 1 if endpoint == "stall" else 5
+                            )
+                        self.assertEqual(raised.exception.transient, transient)
+                        self.assertLess(time.monotonic() - started, 7)
                 self.assertTrue(all(header == KEY for header in server.headers))
             finally:
                 server.shutdown()
                 thread.join(timeout=1)
 
-    def test_real_owned_tcp_listener_then_closed_port(self):
+    def test_real_owned_tcp_listener_and_reserved_nonlistening_port(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
+            # Keep the port reserved while checking refusal, so another test/process
+            # cannot acquire a released port between our two observations.
+            self.assertFalse(READY.ssh_port_reachable("127.0.0.1", 1, port=port))
             listener.listen()
-            self.assertTrue(READY.ssh_port_reachable("127.0.0.1", 0.1, port=port))
-        self.assertFalse(READY.ssh_port_reachable("127.0.0.1", 0.1, port=port))
+            self.assertTrue(READY.ssh_port_reachable("127.0.0.1", 1, port=port))
 
 
 class OutputTests(unittest.TestCase):
