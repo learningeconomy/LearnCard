@@ -18,7 +18,7 @@ export const assertCampaignEmailConfigured = (): void => {
 export const campaignEmailLinks = (
     campaign: Campaign,
     profileId: string
-): { ctaUrl: string; unsubscribeUrl: string; oneClickUrl: string } => {
+): { ctaUrl?: string; unsubscribeUrl: string; oneClickUrl: string } => {
     const branding = resolveBranding(
         resolveTenantFromRequest({ 'x-tenant-id': campaign.tenantId }).emailBranding
     );
@@ -36,7 +36,9 @@ export const campaignEmailLinks = (
     const oneClick = new URL('/campaigns/unsubscribe', api);
     oneClick.searchParams.set('token', token);
     return {
-        ctaUrl: cta.toString(),
+        ...(campaign.channels.includes('inApp') && campaign.message?.enabled
+            ? { ctaUrl: cta.toString() }
+            : {}),
         unsubscribeUrl: unsubscribe.toString(),
         oneClickUrl: oneClick.toString(),
     };

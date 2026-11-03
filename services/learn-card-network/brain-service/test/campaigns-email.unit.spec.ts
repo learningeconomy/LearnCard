@@ -35,6 +35,8 @@ const campaign = {
     id: 'new-programs',
     createdAt: '2026-01-01T00:00:00.000Z',
     tenantId: 'vetpass',
+    channels: ['inApp', 'email'],
+    message: { id: 'new-programs', enabled: true },
     email: {
         subject: 'New programs',
         title: 'Explore',
@@ -76,6 +78,20 @@ describe('campaign email', () => {
             'https://vetpass.app/m/new-programs?utm_source=email&utm_campaign=new-programs'
         );
         expect(links.unsubscribeUrl).toMatch(/^https:\/\/vetpass.app\/unsubscribe\?token=/);
+    });
+    it.each([
+        { channels: ['email'], message: campaign.message },
+        { channels: ['inApp', 'email'], message: { ...campaign.message!, enabled: false } },
+        { channels: ['inApp', 'email'], message: undefined },
+    ])('omits the campaign destination without enabled in-app content: %j', async variant => {
+        const stored = { ...campaign, ...variant } as Campaign;
+        mocks.claim.mockResolvedValue({ campaign: stored, email: 'adult@example.com' });
+        await sendCampaignEmail(stored, 'adult', true);
+        expect(campaignEmailLinks(stored, 'adult').ctaUrl).toBeUndefined();
+        const model = mocks.send.mock.calls[0][0].templateModel;
+        expect(model.ctaUrl).toBeUndefined();
+        expect(model.body).toBe(campaign.email!.body);
+        expect(model.unsubscribeUrl).toMatch(/^https:\/\/vetpass.app\/unsubscribe\?token=/);
     });
     it('skips recipients rejected by the durable eligibility/claim boundary', async () => {
         mocks.claim.mockResolvedValue(undefined);

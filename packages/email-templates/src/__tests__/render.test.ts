@@ -870,6 +870,19 @@ describe('renderEmail — edge cases', () => {
 });
 
 describe('announcement', () => {
+    it('omits the button and fallback in HTML and text when no campaign destination exists', async () => {
+        const { ctaUrl, ...content } = TEMPLATE_FIXTURES.announcement;
+        const data = { ...content, ctaLabel: 'Unique campaign action' };
+        const { html, text } = await renderEmail('announcement', VETPASS_BRANDING, data);
+        for (const output of [html, text]) {
+            expect(output).not.toContain(ctaUrl);
+            expect(output).not.toContain(data.ctaLabel);
+            expect(output).not.toContain('/m/');
+            expect(output).toContain(data.body);
+            expect(output).toContain(data.unsubscribeUrl);
+        }
+    });
+
     it('renders escaped authored copy, CTA and unsubscribe in HTML and text', async () => {
         const data = {
             ...TEMPLATE_FIXTURES.announcement,

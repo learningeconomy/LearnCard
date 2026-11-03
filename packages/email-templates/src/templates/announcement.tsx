@@ -62,17 +62,19 @@ export const Announcement: React.FC<AnnouncementProps> = ({
         >
             {body}
         </Text>
-        <Section style={{ margin: '24px 0' }}>
-            <EmailButton href={ctaUrl} branding={branding}>
-                {ctaLabel}
-            </EmailButton>
-        </Section>
+        {ctaUrl && (
+            <Section style={{ margin: '24px 0' }}>
+                <EmailButton href={ctaUrl} branding={branding}>
+                    {ctaLabel}
+                </EmailButton>
+            </Section>
+        )}
         <Text>
             {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
                 brandName: branding.brandName,
             })}
         </Text>
-        <LinkFallback href={ctaUrl} {...(locale === undefined ? {} : { locale })} />
+        {ctaUrl && <LinkFallback href={ctaUrl} {...(locale === undefined ? {} : { locale })} />}
         <Text style={{ fontSize: 14, color: '#6b7280' }}>
             <Link href={unsubscribeUrl}>
                 {announcementChrome[resolveCatalogLocale(locale)].unsubscribe}

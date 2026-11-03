@@ -107,7 +107,7 @@ export interface AnnouncementData {
     body: string;
     heroImageUrl?: string;
     ctaLabel: string;
-    ctaUrl: string;
+    ctaUrl?: string;
     unsubscribeUrl: string;
 }
 
