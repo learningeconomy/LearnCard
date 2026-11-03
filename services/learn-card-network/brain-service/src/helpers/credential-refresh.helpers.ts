@@ -858,6 +858,12 @@ export const sendRefreshableCredential = async (
                     : 'Credential refresh was bound concurrently; retry initial delivery',
             });
         }
+        assertInitialCredentialMatches(
+            concurrentlyBoundRoot,
+            rootMaterialDigest,
+            credentialStatusDigest,
+            boost?.id
+        );
 
         const rootId = await ensureInitialRefreshRelationships({
             refreshId,
