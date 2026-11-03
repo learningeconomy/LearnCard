@@ -5,6 +5,7 @@
 ### Patch Changes
 
 - Add progressive, account-scoped credential collection queries with shared visibility, metadata-only totals/title search, and bounded legacy-title resolution (LC-2294). Backfill index metadata only for documents already opened instead of downloading every indexed credential during pagination.
+- Keep credential claim completion and contract sync independent of background paginated list rescans while awaiting optimistic category/count updates (LC-2294).
 
 ## 0.7.7
 

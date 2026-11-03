@@ -68,7 +68,7 @@ vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
     queueAiInsightCredentialRefresh: vi.fn(),
 }));
 vi.mock('learn-card-base/constants/aiPassport', () => ({ LEARNCARD_AI_PASSPORT_CONTRACT_URI: '' }));
-import { QueryClient, QueryObserver } from '@tanstack/react-query';
+import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
 import {
     addCredentialSummary,
@@ -460,6 +460,83 @@ it('defers facts and claim events until staged acceptance is finalized', async (
         }),
     ]);
 });
+it.each([
+    ['storeAndAddVCToWallet', () => useWallet().storeAndAddVCToWallet(credential), false],
+    ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' }), false],
+    [
+        'storeAndAddManyVCsToWallet',
+        () => useWallet().storeAndAddManyVCsToWallet([credential]),
+        false,
+    ],
+    [
+        'a claim whose background scan fails',
+        () => useWallet().storeAndAddVCToWallet(credential),
+        true,
+    ],
+] as const)('%s finishes before a complete-list rescan settles', async (_name, claim, failScan) => {
+    const client = mocks.queryClient!;
+    const reader = 'did:example:claiming-account';
+    const scanStarted = Promise.withResolvers<void>();
+    const scan = Promise.withResolvers<void>();
+    const pages: unknown[] = [];
+    const observer = new InfiniteQueryObserver(client, {
+        queryKey: ['useGetCredentialList', '', '', reader],
+        initialPageParam: undefined as string | undefined,
+        initialData: {
+            pages: [
+                { records: [{ uri: 'old-one' }], cursor: 'second', hasMore: true },
+                { records: [{ uri: 'old-two' }], cursor: undefined, hasMore: false },
+            ],
+            pageParams: [undefined, 'second'],
+        },
+        staleTime: Infinity,
+        getNextPageParam: page => page.cursor,
+        queryFn: async ({ pageParam }) => {
+            pages.push(pageParam);
+            scanStarted.resolve();
+            await scan.promise;
+            return pageParam
+                ? { records: [{ uri: 'old-two' }], cursor: undefined, hasMore: false }
+                : {
+                      records: [{ uri: 'old-one' }],
+                      cursor: 'second',
+                      hasMore: true,
+                  };
+        },
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    let completed = false;
+    const saving = claim().then(() => {
+        completed = true;
+    });
+    try {
+        await scanStarted.promise;
+        await vi.waitFor(() => expect(completed).toBe(true));
+        expect(observer.getCurrentResult().isFetching).toBe(true);
+        expect(pages).toEqual([undefined]);
+        expect(mocks.getConsentedContracts).toHaveBeenCalled();
+        expect(client.getQueryData(['useGetCredentialCount', '', 'Achievement', reader])).toBe(1);
+        expect(
+            client.getQueryData(['useGetCredentialList', '', 'Achievement', reader])
+        ).toMatchObject({
+            pages: [{ records: [expect.objectContaining({ category: 'Achievement' })] }],
+        });
+        expect(records).toEqual([expect.objectContaining({ category: 'Achievement' })]);
+    } finally {
+        if (failScan) scan.reject(new Error('list temporarily unavailable'));
+        else scan.resolve();
+        await saving;
+        await vi.waitFor(() => expect(observer.getCurrentResult().isFetching).toBe(false));
+        unsubscribe();
+    }
+    if (failScan) {
+        expect(observer.getCurrentResult().isError).toBe(true);
+        expect(observer.getCurrentResult().data?.pages[0].records).toEqual([{ uri: 'old-one' }]);
+    } else {
+        expect(pages).toEqual([undefined, 'second']);
+    }
+});
+
 it('refreshes only the originating reader scope and batches successful bulk refreshes', async () => {
     const client = mocks.queryClient!;
     const calls = new Map<string, number>();

@@ -216,24 +216,22 @@ export const useWallet = () => {
             );
         }
 
-        await Promise.all([
-            ...uniqueCategories.map(category =>
-                queryClient.refetchQueries({
-                    queryKey: [...listPrefix, category, readerDid],
-                    exact: true,
-                })
-            ),
-            queryClient.refetchQueries({
-                queryKey: [...listPrefix, '', readerDid],
+        // Optimistic writes must settle before claim completion, but a background
+        // infinite-query rescan must not hold up the claim or its contract sync.
+        for (const category of uniqueCategories) {
+            void queryClient.refetchQueries({
+                queryKey: [...listPrefix, category, readerDid],
                 exact: true,
-            }),
-            ...uniqueCategories.map(category =>
-                queryClient.refetchQueries({
-                    queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
-                    exact: true,
-                })
-            ),
-        ]);
+            });
+            void queryClient.refetchQueries({
+                queryKey: ['useGetCredentialCount', profileDid, category, readerDid],
+                exact: true,
+            });
+        }
+        void queryClient.refetchQueries({
+            queryKey: [...listPrefix, '', readerDid],
+            exact: true,
+        });
     };
 
     const getWallet = async (
