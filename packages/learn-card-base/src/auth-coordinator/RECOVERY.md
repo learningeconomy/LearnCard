@@ -310,7 +310,7 @@ sequenceDiagram
 
 ### PIN sign-in (keep by default)
 
-> **Needs security approval: Taylor.** Login + PIN now signs a new device in without resetting
+> **Security trade-off accepted (Accepted by Jackson Smith (CTO), 2026-11-03; SECURITY.md D19).** Login + PIN now signs a new device in without resetting
 > the account. Compensating controls: the server emails every verified address on each PIN
 > release, the app shows a one-time review sheet, and "Secure my account" / "Sign out of all
 > other devices" run the old reset on demand.

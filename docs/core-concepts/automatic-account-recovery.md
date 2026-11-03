@@ -56,7 +56,7 @@ Until a second independent time source is in place, waiting-period releases are 
 ## Signing In With a PIN
 
 {% hint style="warning" %}
-This behaviour is new and still needs security approval (owner: Taylor) before it ships to production.
+This behaviour is new. Its security trade-off was accepted on 2026-11-03; it ships to production after staging verification.
 {% endhint %}
 
 On a new device, the PIN is the quickest way back in. A user who signs in with their usual login and enters the correct PIN is signed in **without resetting the account**:
