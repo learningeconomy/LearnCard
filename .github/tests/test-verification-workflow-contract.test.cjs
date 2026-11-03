@@ -95,6 +95,7 @@ const evaluate = gate.steps.find(
     step => step.name === 'Require all verification jobs and complete proof'
 );
 assert.equal(evaluate.if, '${{ always() }}');
+assert.equal(evaluate.env.MERGE_RESULT, '${{ steps.merge.outcome }}');
 assert.deepEqual(gate.env, {
     PR_HEAD_SHA: '${{ github.event.pull_request.head.sha || github.sha }}',
     SOURCE_RESULT: '${{ needs.source-checks.result }}',
