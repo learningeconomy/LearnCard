@@ -166,6 +166,27 @@ node --env-file=.env send.mjs you@example.com
 ```
 
 {% endtab %}
+
+{% tab title="Automated / AI agent" %}
+
+For scripts, CI jobs, and AI agents: run on **staging**, never prompt, and read one JSON result per command. You need **Node.js 20 or newer**. In an empty folder dedicated to staging, run:
+
+```bash
+npx @learncard/cli init --network staging --name "Acme Test Issuer" -y --json
+npx @learncard/cli send you@yourdomain.com --network staging -y --json --suppress-delivery
+```
+
+`init` creates the folder's identity and staging profile. `send` prints one line of JSON on stdout. With `--suppress-delivery`, no email is sent: the credential still waits in the recipient's inbox on staging, and `claimUrl` in the result is the link to open instead. Keep `activityId` and check where the credential got to:
+
+```bash
+npx @learncard/cli status <activityId> --network staging --json
+```
+
+`state` in the result is the latest event, for example `CREATED`, `DELIVERED`, or `CLAIMED`. A failure prints `{"ok":false,"error":…,"code":…}` and exits 1.
+
+See [Use LearnCard from an AI Agent](../introduction/for-ai-agents.md) for the JSON contract, which commands change state, and how to move to production.
+
+{% endtab %}
 {% endtabs %}
 
 ## What you should see

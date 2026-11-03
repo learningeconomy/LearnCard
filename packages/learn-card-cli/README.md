@@ -6,8 +6,14 @@
 [![npm downloads](https://img.shields.io/npm/dw/@learncard/cli)](https://www.npmjs.com/package/@learncard/cli)
 [![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/cli)](https://www.npmjs.com/package/@learncard/cli)
 
-**LearnCard CLI** is an easy to use node REPL that instantiates a Learn Card wallet for you and gives
-you all the tools you need to easily play around with the Learn Card SDK!
+**LearnCard CLI** sets up and operates a credential issuer from the terminal: send credentials,
+track claims, manage signing, tokens and organizations, and verify what you receive. It also
+includes an interactive REPL with a LearnCard wallet preloaded for exploring the SDK.
+
+Run it with `npx @learncard/cli <command>` (Node.js 20 or later). A global install
+(`npm i -g @learncard/cli`) exposes the same commands as `learncard <command>`.
+Command reference: https://docs.learncard.com/reference/learncard-cli. Using it from an AI agent or
+script: https://docs.learncard.com/start-here/for-ai-agents.
 
 ![LearnCard CLI](https://user-images.githubusercontent.com/2185016/201382605-13eb7bb2-f6b6-4099-97a1-1a623bf58486.gif)
 
@@ -31,7 +37,7 @@ Prompts for a recipient if omitted (or pass it: `send you@yourdomain.com`), gene
 Run a guided, real-network demonstration without writing code:
 
 ```bash
-learncard demo refresh
+npx @learncard/cli demo refresh
 ```
 
 Press Enter between each step: send a **Provisional Course Certificate**, publish a
@@ -40,11 +46,11 @@ before and after and verifies that the credential keeps its identity. It uses th
 existing `sendBoost` flow with `enableRefresh: true` and publishes using the receipt
 returned by that send. No second badge is sent.
 
-The default network is `http://localhost:4000/trpc`. A developer must first start
-the local services with managed refresh enabled. To present against staging once
-LC-2198's service and SDK changes are deployed, use `learncard demo refresh --network staging`.
-This command requires a CLI build containing this feature; it is not available in
-older published versions. From this branch's repository root, run:
+`demo refresh` requires `@learncard/cli` 3.6.0 or later. The default network is
+`http://localhost:4000/trpc`, so a developer must first start the local services with
+managed refresh enabled. To present against a staging network that has managed refresh
+enabled, use `npx @learncard/cli demo refresh --network staging`. To run the current
+source instead of the published package, run this from the repository root:
 
 ```bash
 bun --cwd packages/learn-card-cli start demo refresh
@@ -104,7 +110,7 @@ the locally configured delivery service to email a **provisional** claim link, y
 in the app, then the school publishes a single visible **final** update.
 
 ```bash
-bun --cwd packages/learn-card-cli start demo refresh --inbox --ui --email you@example.com
+bun --cwd packages/learn-card-cli start demo refresh --inbox --ui --email you@yourdomain.com
 ```
 
 `--email` without a value prompts for the address. It requires `--inbox`, `--ui`, and an
@@ -206,11 +212,17 @@ authority, publication, claim binding, and refresh are all real. The direct
 ### Interactive REPL
 
 ```bash
-npx @learncard/cli
+npx @learncard/cli repl
 
-# Optionally specify a seed
-npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2
+# Optionally specify a deterministic seed (hex)
+LEARNCARD_CLI_SEED=1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2 npx @learncard/cli repl
 ```
+
+Running `npx @learncard/cli` with no command in an interactive terminal also opens the REPL; without a
+TTY it prints help instead. `repl <seed>` takes the seed as an argument, but `LEARNCARD_CLI_SEED` (or
+`SEED`) takes precedence over it and keeps the seed out of your shell history. The REPL does not read
+the folder's `.env` identity: it starts a separate wallet from that seed (random if none is given),
+always on the production network, and prints the seed on startup.
 
 ## Holder continuity export
 

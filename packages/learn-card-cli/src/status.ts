@@ -1,5 +1,6 @@
-import { connect, ensureIdentity, loadProject, type ProjectOptions } from './project';
+import { connect, loadProject, requireIdentity, type ProjectOptions } from './project';
 import { out } from './out';
+import { UsageError } from './errors';
 
 type ActivityEvent = {
     activityId: string;
@@ -43,12 +44,36 @@ export const summarize = (chain: ActivityEvent[]) => {
 
 type StatusOptions = ProjectOptions & { limit?: string; event?: string };
 
+export const STATUS_EVENTS = ['CREATED', 'DELIVERED', 'CLAIMED', 'EXPIRED', 'FAILED'] as const;
+export type StatusEvent = (typeof STATUS_EVENTS)[number];
+
+/** `--limit` for `status`: a whole number the network accepts (1–100); default 20. */
+export const parseStatusLimit = (value: string | undefined): number => {
+    if (value === undefined) return 20;
+    const limit = Number(value);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+        throw new UsageError(`Invalid --limit "${value}". Use a whole number from 1 to 100.`);
+    return limit;
+};
+
+/** `--event` for `status`, case-insensitive. */
+export const parseStatusEvent = (value: string | undefined): StatusEvent | undefined => {
+    if (value === undefined) return undefined;
+    const upper = value.toUpperCase();
+    if (!(STATUS_EVENTS as readonly string[]).includes(upper))
+        throw new UsageError(
+            `Unknown --event "${value}". Use ${STATUS_EVENTS.map(e => e.toLowerCase()).join(', ')}.`
+        );
+    return upper as StatusEvent;
+};
+
 export const runStatus = async (activityId: string | undefined, options: StatusOptions) => {
+    // Validate flags before touching .env or the network.
+    const limit = parseStatusLimit(options.limit);
+    const eventType = parseStatusEvent(options.event);
     const project = await loadProject(process.cwd());
-    if (!project.env.SECURE_SEED)
-        throw new Error('No SECURE_SEED in .env. Send something first: npx @learncard/cli send');
-    await ensureIdentity(project, options);
-    const learnCard = await connect(project, options);
+    requireIdentity(project);
+    const learnCard = await connect(project, { ...options, readOnly: true });
 
     if (activityId) {
         const chain = (await learnCard.invoke.getActivityChain({ activityId })) as ActivityEvent[];
@@ -63,11 +88,9 @@ export const runStatus = async (activityId: string | undefined, options: StatusO
         return;
     }
 
-    const limit = Number(options.limit ?? 20);
-    const eventType = options.event?.toUpperCase();
     const page = await learnCard.invoke.getMyActivities({
         limit,
-        ...(eventType ? { eventType: eventType as never } : {}),
+        ...(eventType ? { eventType } : {}),
     });
     const records = page.records as ActivityEvent[];
     if (!records.length) {
