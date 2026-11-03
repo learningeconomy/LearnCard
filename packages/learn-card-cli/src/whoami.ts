@@ -5,6 +5,7 @@ import {
     connect,
     connectAsDidWeb,
     loadProject,
+    requireIdentity,
     resolveServices,
     type ProjectOptions,
 } from './project';
@@ -38,13 +39,9 @@ export const summarizeServiceAccounts = (
 
 export const runWhoami = async (options: ProjectOptions): Promise<void> => {
     const project = await loadProject(process.cwd());
-    if (!project.env.SECURE_SEED) {
-        throw new Error(
-            'No identity in this folder. Run `npx @learncard/cli send you@example.com` or `org apply` first.'
-        );
-    }
+    requireIdentity(project);
     const services = resolveServices(project.env, options.network);
-    const learnCard = await connect(project, options);
+    const learnCard = await connect(project, { ...options, readOnly: true });
     const profile = await learnCard.invoke.getProfile();
 
     out.log(
@@ -119,7 +116,7 @@ export const registerWhoamiCommand = (program: Command, run: RunCommand): void =
     program
         .command('whoami')
         .description('Show the identity in this folder and the managed profiles --as can target.')
-        .option('--network <url>', 'network tRPC URL or staging (default: production)')
+        .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .action(options =>
             run('whoami', options, async didkit => {

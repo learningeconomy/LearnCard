@@ -50,7 +50,7 @@ Polling this every minute from a cron job is a perfectly good integration. The r
 ### The one-line version
 
 ```bash
-npx @learncard/cli webhook you@example.com --url https://<your-tunnel>
+npx @learncard/cli webhook you@yourdomain.com --url https://<your-tunnel>
 ```
 
 Starts a receiver on port 8787, sends a demo credential with `webhookUrl` set, and prints each event as it arrives. Expose the port first (`ngrok http 8787`) and pass the tunnel URL. It writes the receiver as `webhook.mjs` — the same code Step 1 below walks through.

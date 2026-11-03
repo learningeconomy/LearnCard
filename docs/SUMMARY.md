@@ -7,6 +7,8 @@
 - [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
 - [How LearnCard Works](introduction/how-learncard-works.md)
 - [Glossary](introduction/glossary.md)
+- [Use LearnCard from an AI Agent](introduction/for-ai-agents.md)
+    - [Install the LearnCard Skill](how-to-guides/use-learncard-with-coding-agents.md)
 
 ## 🛠️ Build
 
