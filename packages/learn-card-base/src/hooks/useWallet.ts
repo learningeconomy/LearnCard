@@ -445,6 +445,8 @@ export const useWallet = () => {
             allowDuplicate: boolean;
             inboxDeliveryId: string;
             boostUri: string;
+            /** LearnNetwork URI `vc` was read from, so its revocation follows the copy. */
+            networkUri: string;
             /** Batch callers synchronize once after all local saves are confirmed. */
             deferContractSync: boolean;
         }> = {},
@@ -458,6 +460,7 @@ export const useWallet = () => {
             allowDuplicate,
             inboxDeliveryId,
             boostUri: sourceBoostUri,
+            networkUri,
             deferContractSync,
         } = metadata;
         const _id =
@@ -502,6 +505,7 @@ export const useWallet = () => {
                     uri: uri2,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(networkUri ? { networkUri } : {}),
                     ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
@@ -523,6 +527,7 @@ export const useWallet = () => {
                     uri,
                     category,
                     ...(boostUri ? { boostUri } : {}),
+                    ...(networkUri ? { networkUri } : {}),
                     ...(inboxDeliveryId ? { inboxDeliveryId } : {}),
                     ...(title ? { title } : {}),
                     ...(imgUrl ? { imgUrl } : {}),
@@ -628,6 +633,7 @@ export const useWallet = () => {
             imgUrl,
             contractUri,
             boostUri: sourceBoostUri,
+            networkUri,
             skipSync,
             deferClaim,
         } = input;
@@ -662,6 +668,7 @@ export const useWallet = () => {
                 ...(imgUrl ? { imgUrl } : {}),
                 ...(contractUri ? { contractUri } : {}),
                 ...(boostUri ? { boostUri } : {}),
+                ...(networkUri ? { networkUri } : {}),
                 __v: 1,
             };
 

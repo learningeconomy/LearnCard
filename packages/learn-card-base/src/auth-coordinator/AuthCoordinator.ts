@@ -111,6 +111,11 @@ export class AuthCoordinator {
     private recoveryGeneration = 0;
     private escrowRecoveryInFlight = false;
     private escrowStatusGeneration = 0;
+    /**
+     * Set only when a recovery's direct escrow re-enrollment failed or was deferred.
+     * A PIN recovery that re-enrolled with the proven PIN (`escrowEnrolled: true`)
+     * never sets it, so its PIN is not cleared; the fallback repair always clears.
+     */
     private recoveredEscrowAccount?: {
         did: string;
         userId: string;

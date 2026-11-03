@@ -67,22 +67,6 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const currentId = useRef(0);
     const modalsRef = useRef(modals);
     const pendingUserCloseInstancesRef = useRef(new Set<string>());
-    const pendingCloseTimersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
-    const scheduleModalRemoval = useCallback((remove: () => void) => {
-        const timer = setTimeout(() => {
-            pendingCloseTimersRef.current.delete(timer);
-            remove();
-        }, 300);
-        pendingCloseTimersRef.current.add(timer);
-    }, []);
-
-    useEffect(
-        () => () => {
-            for (const timer of pendingCloseTimersRef.current) clearTimeout(timer);
-            pendingCloseTimersRef.current.clear();
-        },
-        []
-    );
 
     useLayoutEffect(() => {
         modalsRef.current = modals;
@@ -99,6 +83,29 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             });
         });
     }, [modals.length]);
+
+    const removalTimersRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+
+    const activeRef = useRef(true);
+    useLayoutEffect(() => {
+        activeRef.current = true;
+        const timers = removalTimersRef.current;
+        return () => {
+            activeRef.current = false;
+            // The provider owns the delayed close callbacks, including on route/test teardown.
+            timers.forEach(clearTimeout);
+            timers.clear();
+        };
+    }, []);
+
+    const scheduleRemoval = useCallback((remove: () => void) => {
+        if (!activeRef.current) return;
+        const timer = setTimeout(() => {
+            removalTimersRef.current.delete(timer);
+            remove();
+        }, 300);
+        removalTimersRef.current.add(timer);
+    }, []);
 
     const newModalWithToken = useCallback(
         (component: ModalComponent, type: ModalType, options?: ModalOptions) => {
@@ -145,6 +152,7 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const closeModalInstance = useCallback(
         (modalId: number, generation: number | undefined, invokeOnClose: boolean) => {
+            if (!activeRef.current) return;
             setModals(_modals => {
                 const modalToClose = _modals.find(
                     modal =>
@@ -159,7 +167,7 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 clearPendingForModalId(pendingUserCloseInstancesRef.current, modalId);
                 if (invokeOnClose) modalToClose.options?.onClose?.();
 
-                scheduleModalRemoval(() =>
+                scheduleRemoval(() =>
                     setModals(oldModals => {
                         const modalIndex = oldModals.findIndex(
                             modal => modal.id === modalId && modal.generation === closingGeneration
@@ -171,7 +179,7 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 );
             });
         },
-        [scheduleModalRemoval, setModals]
+        [setModals, scheduleRemoval]
     );
 
     const closeModal = useCallback(() => {
@@ -232,10 +240,11 @@ export const ModalsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, [closeModalInstance]);
 
     const closeAllModals = useCallback(() => {
+        if (!activeRef.current) return;
         pendingUserCloseInstancesRef.current.clear();
         setModals(oldModals => oldModals.map(modal => ({ ...modal, open: false })));
-        scheduleModalRemoval(() => setModals([]));
-    }, [scheduleModalRemoval, setModals]);
+        scheduleRemoval(() => setModals([]));
+    }, [setModals, scheduleRemoval]);
 
     return (
         <ModalsContextProvider value={{ modals }}>

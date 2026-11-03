@@ -53,6 +53,15 @@ sequenceDiagram
 
 Until a second independent time source is in place, waiting-period releases are refused entirely rather than proceed on an unverified wait — the system fails closed.
 
+### What happens to the PIN after recovery
+
+Recovery always creates new key pieces, so the app enrolls automatic recovery again afterwards:
+
+- **Recovered with the PIN**: the user keeps the same PIN. The app enrolls again with the PIN the user just entered, which starts a fresh set of 10 attempts. The PIN is used only in memory for that step and is never stored.
+- **Recovered by waiting out the 7-day hold**: the PIN is removed, because this is the path for users who forgot their PIN. The app asks the user to choose a new PIN.
+
+If re-enrolling with the PIN fails, the PIN is removed instead and the app asks the user to set one again. Recovery itself never fails because of the PIN.
+
 ## What is Attestation?
 
 To ensure the hardware enclave is actually running the correct, unmodified code, LearnCard uses a process called **attestation**.

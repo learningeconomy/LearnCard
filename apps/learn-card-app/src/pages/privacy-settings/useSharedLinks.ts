@@ -36,14 +36,15 @@ const isTransientOwnerError = (error: unknown): boolean => {
     );
 };
 
+/** Received collections are available independently of the owner-sharing feature flag. */
 export const useSharedLinks = (
-    enabled: boolean,
+    ownerLinksEnabled: boolean,
     showViewStats: boolean,
     onPreview: (share: ShareLink) => void,
     onPreviewSavedCollection: (collection: SavedCredentialCollection) => void,
     onUpdate: (share: ShareLink) => void,
     onCreateShare: () => void
-): DataSharingSharedLinksViewModel | null => {
+): DataSharingSharedLinksViewModel => {
     const { initWallet } = useWallet();
     const { presentToast } = useToast();
     const walletRef = useRef(initWallet);
@@ -53,7 +54,7 @@ export const useSharedLinks = (
     recordsRef.current = records;
     const [cursor, setCursor] = useState<string>();
     const [hasMore, setHasMore] = useState(false);
-    const [isLoading, setIsLoading] = useState(enabled);
+    const [isLoading, setIsLoading] = useState(ownerLinksEnabled);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState(false);
     const [busyId, setBusyId] = useState<string | null>(null);
@@ -62,7 +63,7 @@ export const useSharedLinks = (
     >({});
     const [filter, setFilter] = useState<SharedLinkFilter>('active');
     const [savedCollections, setSavedCollections] = useState<SavedCredentialCollection[]>([]);
-    const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(enabled);
+    const [savedCollectionsLoading, setSavedCollectionsLoading] = useState(true);
     const [savedCollectionsError, setSavedCollectionsError] = useState(false);
     const savedCollectionsPromiseRef = useRef<Promise<void> | null>(null);
 
@@ -142,10 +143,12 @@ export const useSharedLinks = (
     }, []);
 
     useEffect(() => {
-        if (!enabled) return;
-        void load();
+        if (ownerLinksEnabled) void load();
+    }, [ownerLinksEnabled, load]);
+
+    useEffect(() => {
         void loadSavedCollections();
-    }, [enabled, load, loadSavedCollections]);
+    }, [loadSavedCollections]);
 
     const privateUrl = useCallback(async (share: ShareLink): Promise<string> => {
         const wallet = shareWallet(await walletRef.current());
@@ -337,10 +340,13 @@ export const useSharedLinks = (
         [load, pendingOperations, presentToast, settleMutation]
     );
 
-    const onRefresh = useCallback(() => load(), [load]);
+    const onRefresh = useCallback(
+        () => (ownerLinksEnabled ? load() : Promise.resolve()),
+        [ownerLinksEnabled, load]
+    );
     const onLoadMore = useCallback(
-        () => (cursor ? load(cursor) : Promise.resolve()),
-        [cursor, load]
+        () => (ownerLinksEnabled && cursor ? load(cursor) : Promise.resolve()),
+        [ownerLinksEnabled, cursor, load]
     );
 
     const pendingActions = useMemo(
@@ -372,34 +378,30 @@ export const useSharedLinks = (
     );
 
     return useMemo(
-        (): DataSharingSharedLinksViewModel | null =>
-            enabled
-                ? {
-                      records,
-                      filter,
-                      isLoading,
-                      isLoadingMore,
-                      hasMore,
-                      error,
-                      busyId,
-                      pendingActions,
-                      showViewStats,
-                      savedCollections: savedCollectionsViewModel,
-                      onFilterChange: setFilter,
-                      onRefresh,
-                      onLoadMore,
-                      onCopy: copy,
-                      onGetPrivateUrl: privateUrl,
-                      onChangeExpiry: changeExpiry,
-                      onStop: stop,
-                      onCheckPending: checkPending,
-                      onPreview,
-                      onUpdate,
-                      onCreateShare,
-                  }
-                : null,
+        (): DataSharingSharedLinksViewModel => ({
+            records,
+            filter,
+            isLoading,
+            isLoadingMore,
+            hasMore,
+            error,
+            busyId,
+            pendingActions,
+            showViewStats,
+            savedCollections: savedCollectionsViewModel,
+            onFilterChange: setFilter,
+            onRefresh,
+            onLoadMore,
+            onCopy: copy,
+            onGetPrivateUrl: privateUrl,
+            onChangeExpiry: changeExpiry,
+            onStop: stop,
+            onCheckPending: checkPending,
+            onPreview,
+            onUpdate,
+            onCreateShare,
+        }),
         [
-            enabled,
             records,
             filter,
             isLoading,

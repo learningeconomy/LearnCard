@@ -40,14 +40,11 @@ node_modules
 docs/superpowers/plans/
 docs/superpowers/specs/
 docs/superpowers
-# Internal agent plans and audit records are published to Obsidian/Confluence instead.
+# Internal plans, ADRs and architecture notes live in Confluence (space LC), never in this
+# public repo. See .agents/skills/lc-knowledge. Local working copies go in .lc-knowledge/.
 docs/plans/
-internal-docs/*
-!internal-docs/README.md
-!internal-docs/app-flows/
-!internal-docs/architecture/
-!internal-docs/implementation-notes/
-!internal-docs/plans/
+internal-docs/
+.lc-knowledge/
 .github/copilot-instructions.md
 .worktrees/
 CLAUDE.local.md

@@ -6,17 +6,21 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import {
+    DEFAULT_CHECKER,
+    assertUpdateTarget,
     checkProject,
     incompleteReason,
     isConfigError,
     leafConfigs,
     nextBaseline,
     nxProjects,
+    scriptChecks,
     toProjects,
     verdict,
 } from './typecheck-ratchet.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+const argAfter = (args, flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : undefined);
 const TS_ERROR = "src/a.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.";
 
 const fixture = files => {
@@ -120,10 +124,14 @@ test('package.json-only projects are typechecked and the workspace root is skipp
         'services/relay/tsconfig.json': { include: ['src'] },
     });
     try {
-        const projects = toProjects(repo, [
-            { name: '@x/relay', root: 'services/relay' },
-            { name: 'workspace', root: '.' },
-        ]);
+        const projects = toProjects(
+            repo,
+            [
+                { name: '@x/relay', root: 'services/relay' },
+                { name: 'workspace', root: '.' },
+            ],
+            'tsc'
+        );
         assert.deepEqual(
             projects.map(p => [p.name, p.checks.map(c => c.args.join(' '))]),
             [['@x/relay', ['run typecheck']]]
@@ -286,4 +294,75 @@ test('a cycle-only solution fails closed instead of dropping the project', async
     );
     assert.equal(v.pass, false);
     assert.equal(next, null);
+});
+
+test('bun check is the default checker; --checker=tsc checks the same tsconfigs with tsc', () => {
+    const repo = fixture({ 'apps/web/tsconfig.json': { include: ['src'] } });
+    try {
+        assert.equal(DEFAULT_CHECKER, 'bun');
+        const [bun] = toProjects(repo, [{ name: 'web', root: 'apps/web' }]);
+        const [tsc] = toProjects(repo, [{ name: 'web', root: 'apps/web' }], 'tsc');
+        assert.match(tsc.checks[0].cmd, /node_modules\/\.bin\/tsc$/);
+        assert.equal(bun.checks[0].cmd, process.env.BUN_CHECK_BIN || 'bun');
+        assert.equal(bun.checks[0].args[0], 'check');
+        assert.ok(bun.checks[0].args.includes('--no-script'));
+        // Ungrouped, one-line diagnostics so counts mean the same thing as tsc's.
+        assert.ok(
+            bun.checks[0].args.includes('--all') && bun.checks[0].args.includes('--no-pretty')
+        );
+        // Both checkers check the same tsconfig with the same --rootDir.
+        for (const { args } of [bun.checks[0], tsc.checks[0]]) {
+            assert.equal(argAfter(args, '-p'), 'apps/web/tsconfig.json');
+            assert.equal(argAfter(args, '--rootDir'), '.');
+        }
+    } finally {
+        rmSync(repo, { recursive: true, force: true });
+    }
+});
+
+test('tsc --noEmit typecheck scripts map onto bun check; anything else keeps the script', () => {
+    const script = 'tsc --noEmit -p tsconfig.build.json && tsc --noEmit';
+    assert.deepEqual(
+        scriptChecks(script, '/r/svc', 'bun').map(c => [c.cwd, argAfter(c.args, '-p')]),
+        [
+            ['/r/svc', 'tsconfig.build.json'],
+            ['/r/svc', 'tsconfig.json'],
+        ]
+    );
+    for (const other of ['vue-tsc --noEmit', 'tsc --noEmit && node check.js'])
+        assert.deepEqual(scriptChecks(other, '/r/svc', 'bun'), [
+            { cmd: 'bun', args: ['run', 'typecheck'], cwd: '/r/svc' },
+        ]);
+    assert.deepEqual(scriptChecks(script, '/r/svc', 'tsc'), [
+        { cmd: 'bun', args: ['run', 'typecheck'], cwd: '/r/svc' },
+    ]);
+});
+
+test('a script that stays on tsc under bun check is flagged for reporting', () => {
+    const repo = fixture({
+        'apps/plain/package.json': { scripts: { typecheck: 'tsc --noEmit' } },
+        'apps/vue/package.json': { scripts: { typecheck: 'vue-tsc --noEmit' } },
+    });
+    try {
+        const list = [
+            { name: 'plain', root: 'apps/plain' },
+            { name: 'vue', root: 'apps/vue' },
+        ];
+        const [plain, vue] = toProjects(repo, list);
+        assert.equal(plain.tscFallback, undefined);
+        assert.equal(vue.tscFallback, 'vue-tsc --noEmit');
+        assert.ok(toProjects(repo, list, 'tsc').every(p => p.tscFallback === undefined));
+    } finally {
+        rmSync(repo, { recursive: true, force: true });
+    }
+});
+
+test('--checker=tsc --update refuses to overwrite the committed bun check baseline', () => {
+    assert.throws(
+        () => assertUpdateTarget({ checker: 'tsc', update: true, baseline: undefined }),
+        /--baseline=PATH/
+    );
+    assertUpdateTarget({ checker: 'tsc', update: true, baseline: '/tmp/tsc.json' });
+    assertUpdateTarget({ checker: 'tsc', update: false, baseline: undefined });
+    assertUpdateTarget({ checker: 'bun', update: true, baseline: undefined });
 });

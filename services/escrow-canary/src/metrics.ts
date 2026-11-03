@@ -31,6 +31,22 @@ const reasons = new Set([
     'secret_read',
     'stale_event',
     'auth',
+    // Tier 3 (allowlisted, non-sensitive)
+    'email_untrusted',
+    'email_missing',
+    'early_release',
+    'start_lost',
+    'release_interrupted',
+    'cleanup_failed',
+    'cancel_not_refused',
+    'did_mismatch',
+    'not_enrolled',
+    'deadline_mismatch',
+    'warning_missing',
+    'code_not_sent',
+    'existing_hold',
+    'interrupted',
+    'evidence',
 ]);
 export const safeReason = (error: unknown): string => {
     if (error instanceof EscrowPinMismatchError) return 'pin_mismatch';
@@ -58,11 +74,47 @@ export type Step =
     | 'wrongPin'
     | 'recovery'
     | 'persist'
-    | 'resetPin';
+    | 'resetPin'
+    | 'ledger'
+    | 'start'
+    | 'codeEmail'
+    | 'confirm'
+    | 'status'
+    | 'warning'
+    | 'earlyRelease'
+    | 'release'
+    | 'reenrol'
+    | 'cancel'
+    | 'cleanup';
+export type Tier3Metric =
+    | 'Tier3.Started'
+    | 'Tier3.Confirmed'
+    | 'Tier3.Warned'
+    | 'Tier3.Released'
+    | 'Tier3.Reenrolled'
+    | 'Tier3.Cancelled'
+    | 'Tier3.EmailLatency'
+    | 'Tier3.Overdue'
+    | 'Tier3.PoolAvailable'
+    | 'Tier3.StartAgeMinutes'
+    | 'Tier3.Paused'
+    | 'Tier3.EvaluatorHeartbeat';
 export type Metric =
-    'Tier1.Success' | 'Tier2.Success' | 'Runner.AuthFailure' | 'Step.Latency' | 'Step.Failure';
+    | 'Tier1.Success'
+    | 'Tier2.Success'
+    | 'Runner.AuthFailure'
+    | 'Step.Latency'
+    | 'Step.Failure'
+    | Tier3Metric;
+/** Positional tier-3 pool labels; never configured account identifiers. */
+export type HoldLabel = `hold-${string}`;
 export interface MetricContext {
+    /** Tier 2 only: part of the alarm series. */
     account?: 'pin-a' | 'pin-b';
+    /** Tier 3 only: a diagnostic dimension, never part of an alarm series. */
+    holdAccount?: HoldLabel;
+    /** Tier 3 run/email kind: diagnostic, except the EmailLatency Kind rollup. */
+    kind?: 'daily' | 'cancel' | 'code' | 'warning';
     outcome?: 'duplicate';
     timestamp?: number;
 }
@@ -82,7 +134,7 @@ export const accountForEvent = (tier: 1 | 2, time: number): MetricContext['accou
 export const createMetrics =
     (
         environment: 'staging' | 'production',
-        tier: 1 | 2,
+        tier: 1 | 2 | 3,
         sink: (line: string) => void = console.log
     ): Emit =>
     (name, value, step, error, context) => {
@@ -90,6 +142,8 @@ export const createMetrics =
         const alarm = { ...base, ...(context?.account ? { Account: context.account } : {}) };
         const dimensions = {
             ...alarm,
+            ...(context?.holdAccount ? { Account: context.holdAccount } : {}),
+            ...(context?.kind ? { Kind: context.kind } : {}),
             ...(step ? { Step: step } : {}),
             ...(error !== undefined ? { Reason: safeReason(error) } : {}),
             ...(context?.outcome ? { Outcome: context.outcome } : {}),
@@ -98,6 +152,12 @@ export const createMetrics =
         const sets = [Object.keys(dimensions)];
         if (name.endsWith('.Success') || name === 'Runner.AuthFailure') {
             sets.push(Object.keys(alarm), Object.keys(base));
+        }
+        // Tier 3 alarms use {Environment, Tier} only; EmailLatency also by Kind.
+        if (name.startsWith('Tier3.')) {
+            if (name === 'Tier3.EmailLatency' && context?.kind)
+                sets.push([...Object.keys(base), 'Kind']);
+            sets.push(Object.keys(base));
         }
         // Constructor name only (never the message): a non-dimension log property.
         const cause =
@@ -122,7 +182,10 @@ export const createMetrics =
                             Metrics: [
                                 {
                                     Name: name,
-                                    Unit: name === 'Step.Latency' ? 'Milliseconds' : 'Count',
+                                    Unit:
+                                        name === 'Step.Latency' || name === 'Tier3.EmailLatency'
+                                            ? 'Milliseconds'
+                                            : 'Count',
                                 },
                             ],
                         },
