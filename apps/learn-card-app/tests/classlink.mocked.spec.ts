@@ -31,8 +31,8 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
     // fixme reason: the sign-in helpers call lca-api through a throwaway account
     // (initWallet('aaa')), and no mocked-tier test exercises that path yet: its lca-api
     // plugin boot batches utilities.getEncryptionKey with the ClassLink call and then
-    // fails in DIDKit ("Key mismatch") against the recorded network. Hand-off is covered
-    // by startClassLinkLogin unit tests and the lca-api router/curl checks instead.
+    // fails in DIDKit (\"Key mismatch\") against the recorded network. The Firebase
+    // hand-off is UNVERIFIED in the browser; verify it on staging.
     test.fixme('hands the exchanged code off to Firebase custom-token sign-in', async ({
         page,
     }) => {
@@ -108,8 +108,8 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
 });
 
 test.describe('ClassLink signed-in states @mocked', () => {
-    // The mocked tier has no signed-in boot for a ClassLink account, so the transcript
-    // card and personal-email prompt states are covered by lca-api router tests, not here.
+    // The mocked tier has no signed-in boot for a ClassLink account, so the rendered transcript
+    // card and personal-email prompt states are UNVERIFIED here; verify them on staging.
     test.fixme('transcript card states and personal email prompt (needs a ClassLink signed-in mocked boot)', async () =>
         undefined);
 });
