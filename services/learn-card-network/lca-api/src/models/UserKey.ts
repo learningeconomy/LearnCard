@@ -1625,7 +1625,7 @@ export const activateUserKeyByAuthProvider = async (
  * skipped the PIN, but escrow can recover them, and staying provisional keeps
  * the faster Web3Auth re-derive on new devices. Such records stay until the
  * user activates (e.g. sets a PIN) or operators activate them before Web3Auth
- * is retired (internal-docs/architecture/web3auth-sss-migration-runbook.md).
+ * is retired (Confluence LC: "Production Web3Auth SSS migration runbook").
  */
 export const purgeExpiredProvisionalMigrationByAuthProvider = async (
     authProvider: AuthProviderMapping,
