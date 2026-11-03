@@ -76,7 +76,11 @@ export const sendCampaignEmail = async (
         });
     } catch {
         // Provider errors may contain recipient addresses and bearer unsubscribe URLs.
-        throw new Error('Campaign email delivery failed; reservation retained');
+        throw new Error(
+            test
+                ? 'Campaign test email delivery failed'
+                : 'Campaign email delivery failed; reservation retained'
+        );
     }
     if (!test) await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, profileId);
     return true;

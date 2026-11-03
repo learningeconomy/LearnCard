@@ -31,7 +31,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.render.mockResolvedValue({ html: '<p>Updated</p>', text: 'Updated', subject: 'Updated' });
     mocks.send.mockResolvedValue({});
-    mocks.stream.mockResolvedValue({ MessageStreamType: 'Broadcast' });
+    mocks.stream.mockResolvedValue({ MessageStreamType: 'Broadcasts' });
 });
 
 describe('update email provider attempts', () => {
@@ -73,7 +73,7 @@ describe('campaign provider boundary', () => {
             },
         ],
     };
-    it('validates a custom stream is Broadcast and forwards headers and subject', async () => {
+    it('accepts the Postmark Broadcasts stream type and forwards headers and subject', async () => {
         await new PostmarkAdapter('test-key').send(campaignNotification);
         expect(mocks.stream).toHaveBeenCalledWith('news');
         expect(mocks.send).toHaveBeenCalledWith(

@@ -5,6 +5,7 @@ import type { Campaign, LCNNotification } from '@learncard/types';
 const mocks = vi.hoisted(() => ({
     getCampaign: vi.fn(),
     email: vi.fn(),
+    preferences: vi.fn(),
     pageAudience: vi.fn(),
     recipient: vi.fn(),
     acknowledge: vi.fn(),
@@ -24,10 +25,7 @@ vi.mock('@helpers/campaign-email.helpers', () => ({
     sendCampaignEmail: mocks.email,
 }));
 vi.mock('@accesslayer/campaign/preferences', () => ({
-    getAnnouncementPreferences: async () => ({
-        announcementEmailOptOut: false,
-        announcementPushOptOut: false,
-    }),
+    getAnnouncementPreferences: mocks.preferences,
 }));
 vi.mock('@environment', () => ({ environment: mocks.environment }));
 vi.mock('@aws-sdk/client-sqs', () => ({
@@ -86,6 +84,10 @@ const recipient = (profileId = 'learner') => ({ profileId, did: `did:key:${profi
 
 beforeEach(() => {
     vi.resetAllMocks();
+    mocks.preferences.mockResolvedValue({
+        announcementEmailOptOut: false,
+        announcementPushOptOut: false,
+    });
     mocks.environment.IS_OFFLINE = false;
     mocks.environment.CAMPAIGN_DISPATCH_PAGE_SIZE = 1000;
     mocks.environment.CAMPAIGN_DISPATCH_DELAY_SECONDS = 60;
@@ -232,7 +234,7 @@ describe('campaign delivery acknowledgement', () => {
         mocks.getCampaign.mockResolvedValue({
             ...campaign,
             status: 'archived',
-            channels: ['inApp'],
+            channels: ['notify'],
         });
         await sendCampaignTestToMe(campaign.id, recipient('admin'));
         await sendCampaignTestToMe(campaign.id, recipient('admin'));
@@ -249,6 +251,29 @@ describe('campaign delivery acknowledgement', () => {
 });
 
 describe('email channel dispatch', () => {
+    it.each([
+        { channels: ['notify'] },
+        { channels: ['inApp', 'notify'] },
+        { channels: ['notify', 'email'] },
+        { channels: ['inApp', 'notify', 'email'] },
+    ])(
+        'rejects opted-out notification tests before any channel sends ($channels)',
+        async ({ channels }) => {
+            mocks.preferences.mockResolvedValue({
+                announcementEmailOptOut: false,
+                announcementPushOptOut: true,
+            });
+            mocks.getCampaign.mockResolvedValue({ ...campaign, channels });
+            await expect(
+                sendCampaignTestToMe(campaign.id, recipient('admin'))
+            ).rejects.toMatchObject({
+                code: 'PRECONDITION_FAILED',
+                message: 'Notification tests are disabled by your announcement preferences',
+            });
+            expect(mocks.email).not.toHaveBeenCalled();
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+        }
+    );
     it('uses an independent 500-recipient email wave and cursor', async () => {
         mocks.getCampaign.mockResolvedValue({
             ...campaign,

@@ -61,7 +61,7 @@ export class PostmarkAdapter implements DeliveryService {
         }
         if (notification.templateId === 'campaign-announcement') {
             const stream = await this.client.getMessageStream(notification.messageStream!);
-            if (stream.MessageStreamType !== 'Broadcast')
+            if (stream.MessageStreamType !== 'Broadcasts')
                 throw new Error('Campaign email requires a Postmark Broadcast stream');
         }
         const defaultFrom = environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';

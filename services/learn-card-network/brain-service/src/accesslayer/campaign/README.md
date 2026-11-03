@@ -318,7 +318,7 @@ Legacy records without a tenant use the configured default tenant.
 Email dispatch requires `POSTMARK_API_KEY`, `DOMAIN_NAME` (the public Brain host),
 `POSTMARK_BROADCAST_STREAM` (default `broadcast`) and `CAMPAIGN_UNSUBSCRIBE_SECRET`
 (a dedicated random secret of at least 32 bytes). The adapter checks the actual
-Postmark stream type is `Broadcast`; transactional streams are rejected. Provisioning
+Postmark stream type is `Broadcasts`; transactional streams are rejected. Provisioning
 these values, enabling a stream, deployment and live sends are separate operator
 steps. No production configuration is included here. `CAMPAIGN_EMAIL_PAGE_SIZE`
 defaults to 500 (1–1000); email and notification jobs keep independent cursors and

@@ -95,6 +95,12 @@ export const sendCampaignTestToMe = async (
     if (!caller.profileId)
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Profile required' });
     const preferences = await getAnnouncementPreferences(caller.profileId);
+    // Check before any selected channel sends so a failed test cannot report partial success.
+    if (campaign.channels.includes('notify') && preferences.announcementPushOptOut)
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Notification tests are disabled by your announcement preferences',
+        });
     if (campaign.channels.includes('email')) {
         if (!(await sendCampaignEmail(campaign, caller.profileId, true)))
             throw new TRPCError({
@@ -103,7 +109,7 @@ export const sendCampaignTestToMe = async (
                     'A verified primary email and eligible announcement preferences are required',
             });
     }
-    if (campaign.notification && !preferences.announcementPushOptOut) {
+    if (campaign.channels.includes('notify') && campaign.notification) {
         await enqueueCampaignNotification(
             await buildCampaignNotification(campaign, caller, randomUUID())
         );
