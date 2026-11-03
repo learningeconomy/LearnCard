@@ -75,12 +75,7 @@ export const AiSessionTopics: React.FC<AiSessionTopicsProps> = ({
     const aiTopics = useMemo(() => {
         if (!topics?.length) return [];
 
-        if (activeTab === AiSessionsTabsEnum.gemini) {
-            const geminiProfile = aiPassportApps?.find(
-                app => app?.type === AiPassportAppsEnum.gemini
-            );
-            return topics?.filter(t => t?.topicRecord?.contractUri === geminiProfile?.contractUri);
-        } else if (activeTab === AiSessionsTabsEnum.learnCard) {
+        if (activeTab === AiSessionsTabsEnum.learnCard) {
             const learncardappProfile = aiPassportApps?.find(
                 app => app?.type === AiPassportAppsEnum.learncardapp
             );

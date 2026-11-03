@@ -52,6 +52,7 @@ import type { Boost } from '@learncard/types';
 const RETIRED_CONTRACTS = {
     chatGPT: 'lc:network:network.learncard.com/trpc:contract:469524d4-264c-4fc3-99e4-0c9f06c805e8',
     claude: 'lc:network:network.learncard.com/trpc:contract:5d5447fc-9197-45ac-859a-5f068ff12938',
+    gemini: 'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85',
 };
 
 const learningPathway: LearningPathway = {

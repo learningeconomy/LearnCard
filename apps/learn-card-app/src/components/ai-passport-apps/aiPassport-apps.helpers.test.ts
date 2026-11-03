@@ -30,14 +30,16 @@ describe('getSelectableAiPassportApps', () => {
 });
 
 describe('aiPassportApps catalog', () => {
-    it('lists LearnCard AI and Gemini only', () => {
-        expect(aiPassportApps.map(app => app.type)).toEqual([
-            AiPassportAppsEnum.learncardapp,
-            AiPassportAppsEnum.gemini,
-        ]);
+    it('lists LearnCard AI only', () => {
+        expect(aiPassportApps.map(app => app.type)).toEqual([AiPassportAppsEnum.learncardapp]);
     });
 
-    it('no longer resolves the retired ChatGPT and Claude contracts', () => {
+    it('no longer resolves the retired ChatGPT, Claude, and Gemini contracts', () => {
+        expect(
+            getAiPassportAppByContractUri(
+                'lc:network:network.learncard.com/trpc:contract:fa97a6ae-4020-446d-ae63-298bd7c65d85'
+            )
+        ).toBeUndefined();
         expect(
             getAiPassportAppByContractUri(
                 'lc:network:network.learncard.com/trpc:contract:469524d4-264c-4fc3-99e4-0c9f06c805e8'
