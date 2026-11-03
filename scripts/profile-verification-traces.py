@@ -84,6 +84,12 @@ def read_archive(path, diagnostics, budget=None):
     try:
         with zipfile.ZipFile(path) as archive:
             files = [info for info in archive.infolist() if info.filename.endswith(".trace")]
+            # Playwright uses stored/deflated members. Other decompressors may allocate
+            # unbounded output internally even when ZipExtFile caps the returned bytes.
+            if any(info.compress_type not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED)
+                   for info in files):
+                diagnostics["unsupportedArchives"] += 1
+                return []
             trace_bytes = sum(info.file_size for info in files)
             if (not files or trace_bytes > MAX_TRACE_BYTES
                     or (budget is not None and trace_bytes > budget["bytes"])):
@@ -91,10 +97,10 @@ def read_archive(path, diagnostics, budget=None):
                 return []
             if budget is not None:
                 budget["bytes"] -= trace_bytes
+            calls = 0
             for info in files:
                 pending = {}
                 supported = False
-                calls = 0
                 with archive.open(info) as stream:
                     while True:
                         line = stream.readline(MAX_LINE_BYTES + 1)
@@ -208,6 +214,7 @@ def render(data):
              "Diagnostic only. Fixed operation names, counts and numeric durations; no raw trace payloads.", "",
              "API time includes browser/actionability/load waits. It is not server CPU time.",
              "Active time merges overlapping calls within a feature. Operation rows can overlap; do not add them together.",
+             "Active time assumes a shared driver clock across that feature's traces; independent driver processes are not comparable.",
              "SDK work, untraced setup, trace/context closure and gaps between calls are outside this profile.",
              "Missing, unsupported or incomplete traces are reported, never verification success.", ""]
     for index, run in enumerate(data["runs"], 1):
