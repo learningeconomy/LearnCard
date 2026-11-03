@@ -6,6 +6,8 @@ import {
     shouldResetWalletOnStatus,
     mergeAuthUserIntoCurrentUser,
     decidePinPromptAfterReady,
+    settleEscrowRecoveryMarker,
+    type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 
 describe('registerRecoveryMethodCompletion', () => {
@@ -129,10 +131,21 @@ describe('mergeAuthUserIntoCurrentUser', () => {
 describe('decidePinPromptAfterReady', () => {
     const base = { pinEnabled: false, enrollment: 'enrolled', promptFlag: null } as const;
 
-    it('offers a new PIN after a PIN recovery', () => {
+    it('offers a new PIN after a PIN recovery only when the PIN was cleared', () => {
+        // Fallback: re-enrolling with the proven PIN failed and the repair cleared it.
         expect(decidePinPromptAfterReady({ ...base, recoveredVia: 'pin' })).toEqual({
             kind: 'after-recovery',
         });
+    });
+
+    it('does not ask for a PIN the user kept through a PIN recovery', () => {
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: 'pin', pinEnabled: true })
+        ).toEqual({ kind: 'none' });
+        // Status not refreshed yet: wait rather than prompt.
+        expect(
+            decidePinPromptAfterReady({ ...base, recoveredVia: 'pin', pinEnabled: undefined })
+        ).toEqual({ kind: 'none' });
     });
 
     it('asks for a new PIN when repair requires a PIN reset, even while unenrolled', () => {
@@ -234,5 +247,46 @@ describe('decidePinPromptAfterReady', () => {
                     decidePinPromptAfterReady({ ...base, recoveredVia: null, pinEnabled })
                 ).toEqual({ kind: 'none' });
         });
+    });
+});
+
+describe('settleEscrowRecoveryMarker', () => {
+    it('keeps the marker until a PIN status is published', () => {
+        expect(settleEscrowRecoveryMarker('pin', undefined)).toBe('pin');
+        expect(settleEscrowRecoveryMarker('hold', undefined)).toBe('hold');
+    });
+
+    it('consumes the marker on the first published status, enabled or not', () => {
+        for (const marker of ['pin', 'hold', null] as const) {
+            expect(settleEscrowRecoveryMarker(marker, true)).toBeNull();
+            expect(settleEscrowRecoveryMarker(marker, false)).toBeNull();
+        }
+    });
+
+    // Mirrors the provider's ready effect: decide, then settle the marker.
+    const readyRender = (marker: EscrowRecoveryKind | null, pinEnabled: boolean | undefined) => {
+        const prompt = decidePinPromptAfterReady({
+            recoveredVia: marker,
+            pinEnabled,
+            enrollment: 'enrolled',
+            promptFlag: 'set',
+        });
+        return { prompt: prompt.kind, marker: settleEscrowRecoveryMarker(marker, pinEnabled) };
+    };
+
+    it.each(['pin', 'hold'] as const)(
+        'does not re-prompt after a kept PIN (%s recovery) is later removed',
+        recoveredVia => {
+            const kept = readyRender(recoveredVia, true);
+            expect(kept).toEqual({ prompt: 'none', marker: null });
+            // The user deliberately removes the kept PIN later in the session.
+            expect(readyRender(kept.marker, false).prompt).toBe('reset-banner');
+        }
+    );
+
+    it('still prompts once when the first published status shows the PIN was cleared', () => {
+        const cleared = readyRender('pin', false);
+        expect(cleared.prompt).toBe('after-recovery');
+        expect(cleared.marker).toBeNull();
     });
 });

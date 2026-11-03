@@ -350,6 +350,8 @@ describe('escrow strategy', () => {
                 expect(new Headers(init?.headers).get('X-Auth-Token') === token).toBe(true);
                 authShare = body.authShare.encryptedData;
                 version++;
+                // Mirrors completeIdentityRebind: lca-api drops the PIN record.
+                pinSalt = undefined;
                 return json({ shareVersion: version, recoveryMethodsRequireConfirmation: [] });
             }
             throw new Error('Unexpected test request');
@@ -818,15 +820,106 @@ describe('escrow strategy', () => {
         expect(calls).toHaveLength(0);
     });
 
-    it('recovers with a PIN and rotates to hold-only material', async () => {
+    it('recovers with a PIN and keeps that PIN with a fresh salt and attempt budget', async () => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const previousSalt = pinSalt;
+        attemptsRemaining = 7;
+        calls = [];
         const recovered = await recoverPin();
         expect(recovered).toEqual({ privateKey, did, escrowEnrolled: true, escrowRecovery: true });
         expect(version).toBe(3);
-        expect(blob?.pinVerifier).toBeUndefined();
+        const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        const body = JSON.parse(String(enrollment?.init?.body));
+        expect(body).not.toHaveProperty('clearPin');
+        expect(body.pinSalt).toBe(pinSalt);
+        expect(pinSalt).toBeTruthy();
+        expect(pinSalt).not.toBe(previousSalt);
+        expect(blob?.pinVerifier).toBe(await derivePinProof('135790', pinSalt!));
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            escrowPin: { enabled: true, attemptsRemaining: 10 },
+        });
         expect(await reconstructFromShares([(await storage.getDeviceShare())!, authShare])).toBe(
             privateKey
         );
+        // The kept PIN releases again.
+        await expect(recoverPin()).resolves.toMatchObject({ escrowEnrolled: true });
+    });
+
+    it('clears a released PIN that no longer meets the PIN rules', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        // A legacy PIN the current rules reject (sequential pattern).
+        blob = { ...blob!, pinVerifier: await derivePinProof('123456', pinSalt!) };
+        calls = [];
+        await expect(recoverPin('123456')).resolves.toMatchObject({ escrowEnrolled: true });
+        const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
+        expect(pinSalt).toBeUndefined();
+        expect(blob?.pinVerifier).toBeUndefined();
+    });
+
+    it('falls back to a clear repair without keeping or reporting the PIN when re-set fails', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        let failEnroll = true;
+        vi.mocked(fetch).mockImplementation((url, init) =>
+            failEnroll &&
+            String(url).endsWith('/keys/escrow') &&
+            init?.method === 'POST' &&
+            JSON.parse(String(init.body)).pinSalt
+                ? Promise.resolve(new Response('upstream failure', { status: 500 }))
+                : original(url, init)
+        );
+        const consoles = (['log', 'info', 'warn', 'error', 'debug'] as const).map(level =>
+            vi.spyOn(console, level).mockImplementation(() => undefined)
+        );
+        const recovered = await recoverPin('135790');
+        expect(recovered).toMatchObject({ escrowEnrolled: false, escrowRecovery: true });
+        expect(config.onEscrowError).toHaveBeenCalled();
+        const reported = vi.mocked(config.onEscrowError!).mock.calls.flat();
+        const logged = consoles.flatMap(spy => spy.mock.calls.flat());
+        for (const value of [...reported, ...logged]) {
+            const text =
+                value instanceof Error
+                    ? `${value.message} ${value.stack ?? ''} ${JSON.stringify(value)}`
+                    : typeof value === 'string'
+                      ? value
+                      : JSON.stringify(value);
+            expect(text ?? '').not.toContain('135790');
+        }
+        failEnroll = false;
+        calls = [];
+        // The retained rotation carries no PIN material and repairs with a clear.
+        await expect(
+            strategy.ensureEscrowEnrollment!({ ...params, options: { clearPin: true } })
+        ).resolves.toMatchObject({ enrolled: true });
+        const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        const body = JSON.parse(String(enrollment?.init?.body));
+        expect(body).toMatchObject({ clearPin: true });
+        expect(body).not.toHaveProperty('pinSalt');
+        expect(blob?.pinVerifier).toBeUndefined();
+        expect(version).toBe(3);
+    });
+
+    it('clears the PIN when a pending PIN recovery is resumed without a new release', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const original = vi.mocked(fetch).getMockImplementation()!;
+        let failRebind = true;
+        vi.mocked(fetch).mockImplementation((url, init) =>
+            failRebind && String(url).endsWith('/keys/recovery-session/rebind')
+                ? Promise.resolve(new Response(null, { status: 503 }))
+                : original(url, init)
+        );
+        await expect(recoverPin()).rejects.toThrow();
+        expect(strategy.hasPendingIdentityRecovery!()).toBe(true);
+        failRebind = false;
+        calls = [];
+        await expect(strategy.completeIdentityRecovery!(params)).resolves.toMatchObject({
+            escrowEnrolled: true,
+        });
+        expect(calls.some(call => call.path === '/keys/escrow/complete')).toBe(false);
+        const enrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
+        expect(JSON.parse(String(enrollment?.init?.body))).toMatchObject({ clearPin: true });
+        expect(blob?.pinVerifier).toBeUndefined();
     });
 
     it('burns a wrong PIN hold and uses a fresh hold and key for the next call', async () => {
@@ -970,8 +1063,7 @@ describe('escrow strategy', () => {
     });
 
     it('round trips real crypto, rebinds and persists a new device share', async () => {
-        await strategy.ensureEscrowEnrollment!(params);
-        const complete = vi.spyOn(strategy, 'completeIdentityRecovery');
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
         const options = { recoveryEmail: 'owner@example.com', recoveryLanguage: 'es' };
         const previous = await storage.getDeviceShare();
         const start = await strategy.startEscrowRecovery!({ token, providerType });
@@ -982,7 +1074,6 @@ describe('escrow strategy', () => {
             didFromPrivateKey: async key => (key === privateKey ? did : ''),
         });
         expect(recovered.privateKey === privateKey).toBe(true);
-        expect(complete).toHaveBeenCalledWith(expect.objectContaining({ options }));
         expect((await storage.getDeviceShare()) === previous).toBe(false);
         expect(
             (await reconstructFromShares([(await storage.getDeviceShare())!, authShare])) ===
@@ -992,8 +1083,11 @@ describe('escrow strategy', () => {
         expect(blob?.shareVersion).toBe(3);
         expect(strategy.hasPendingIdentityRecovery!()).toBe(false);
         expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(true);
+        // A hold release proves no PIN and lca-api lost the PIN record, so it is cleared.
         const reEnrollment = calls.filter(call => call.path === '/keys/escrow').at(-1);
         expect(JSON.parse(String(reEnrollment?.init?.body))).toMatchObject({ clearPin: true });
+        expect(JSON.parse(String(reEnrollment?.init?.body))).not.toHaveProperty('pinSalt');
+        expect(blob?.pinVerifier).toBeUndefined();
     });
     it('lets the server carry the PIN after a non-escrow recovery', async () => {
         await strategy.ensureEscrowEnrollment!({ ...params, options: { pin: '135790' } });
