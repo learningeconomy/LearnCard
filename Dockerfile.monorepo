@@ -14,7 +14,17 @@ RUN --mount=type=bind,target=/src \
     && cp bun.lock bunfig.toml /manifests/ \
     && cp -R patches /manifests/patches
 
-FROM oven/bun:1.4.4 AS dependencies
+# Native addons can fall back to node-gyp on Linux/ARM64. Install its toolchain
+# before either dependency install, so local and filtered backend builds agree.
+FROM oven/bun:1.4.4 AS native-build-base
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHON=/usr/bin/python3
+
+FROM native-build-base AS dependencies
 
 ENV SKIP_DIDKIT_NAPI=1
 
@@ -34,7 +44,7 @@ FROM oven/bun:1.3.14 AS compatible-runtime
 
 # Hosted services need production dependencies, not frontend/build/test tooling.
 # Keep manifests for every workspace so the unchanged lockfile can be validated.
-FROM oven/bun:1.4.4 AS backend-dependencies
+FROM native-build-base AS backend-dependencies
 
 ENV SKIP_DIDKIT_NAPI=1
 WORKDIR /app
