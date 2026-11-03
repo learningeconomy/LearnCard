@@ -1151,15 +1151,40 @@ describe('escrow strategy', () => {
             await expect(
                 recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
             ).resolves.toMatchObject({
+                // The refused refresh re-checks the status: the foreign entry shows, so
+                // the user gets the warning sheet, not "You're signed in".
                 pinSignIn: {
                     mode: 'kept',
                     pinRefreshed: false,
-                    newPinRequired: false,
+                    newPinRequired: true,
                     pinRefreshFailed: true,
                 },
             });
             expect(pinSalt).toBe(saltBefore);
             expect(wrongAttempts).toBe(2);
+        });
+
+        it('warns on a 409-refused refresh when the status cannot be re-read', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            let refused = false;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname.replace('/api', '');
+                if (path === '/keys/escrow' && init?.method === 'POST') {
+                    refused = true;
+                    return new Response(JSON.stringify({ message: 'changed' }), { status: 409 });
+                }
+                if (refused && path === '/keys/auth-share') throw new TypeError('offline');
+                return originalFetch(url, init);
+            });
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { pinRefreshed: false, newPinRequired: true, pinRefreshFailed: true },
+            });
         });
 
         it('ignores flow counts taken against another PIN generation (new salt)', async () => {

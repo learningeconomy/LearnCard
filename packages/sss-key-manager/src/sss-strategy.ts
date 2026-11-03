@@ -247,6 +247,10 @@ export class EscrowRequestError extends Error {
     }
 }
 
+/** lca-api refused a write because escrow state changed after the caller's reads (409). */
+const isConflictRefusal = (error: unknown): boolean =>
+    error instanceof EscrowRequestError && error.status === 409;
+
 /** Independently generated splits can reuse a share's final-byte x-coordinate. */
 export class DuplicateShareCoordinateError extends Error {
     constructor() {
@@ -1973,75 +1977,76 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
         };
 
-        const { mode, newPinRequired, refreshCharges } = await withShareUpdateLock(
-            storage,
-            storageId,
-            () =>
-                withRotationLock(async () => {
-                    assertActive();
-                    const current = await fetchAuthShareRaw(
-                        serverUrl,
-                        params.token,
-                        params.providerType,
-                        undefined,
-                        tenantId
-                    );
-                    assertActive();
-                    if (
-                        !current ||
-                        current.primaryDid !== released.primaryDid ||
-                        typeof current.shareVersion !== 'number'
-                    ) {
+        const {
+            mode,
+            newPinRequired: newPinRequiredAtRelease,
+            refreshCharges,
+        } = await withShareUpdateLock(storage, storageId, () =>
+            withRotationLock(async () => {
+                assertActive();
+                const current = await fetchAuthShareRaw(
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    undefined,
+                    tenantId
+                );
+                assertActive();
+                if (
+                    !current ||
+                    current.primaryDid !== released.primaryDid ||
+                    typeof current.shareVersion !== 'number'
+                ) {
+                    throw new PinSignInStaleError();
+                }
+                let mode: 'kept' | 'deferred-rotation';
+                if (current.shareVersion === released.shareVersion) {
+                    if (authShareToString(current.authShare) !== released.authShare) {
                         throw new PinSignInStaleError();
                     }
-                    let mode: 'kept' | 'deferred-rotation';
-                    if (current.shareVersion === released.shareVersion) {
-                        if (authShareToString(current.authShare) !== released.authShare) {
-                            throw new PinSignInStaleError();
-                        }
-                        mode = 'kept';
-                    } else {
-                        const historical =
-                            current.shareVersion > released.shareVersion
-                                ? await fetchAuthShareRaw(
-                                      serverUrl,
-                                      params.token,
-                                      params.providerType,
-                                      released.shareVersion,
-                                      tenantId
-                                  )
-                                : null;
-                        if (authShareToString(historical?.authShare) !== released.authShare) {
-                            throw new PinSignInStaleError();
-                        }
-                        mode = 'deferred-rotation';
+                    mode = 'kept';
+                } else {
+                    const historical =
+                        current.shareVersion > released.shareVersion
+                            ? await fetchAuthShareRaw(
+                                  serverUrl,
+                                  params.token,
+                                  params.providerType,
+                                  released.shareVersion,
+                                  tenantId
+                              )
+                            : null;
+                    if (authShareToString(historical?.authShare) !== released.authShare) {
+                        throw new PinSignInStaleError();
                     }
-                    assertActive();
-                    await adoptReleasedShare(
-                        storage,
-                        storageId,
-                        released,
-                        released.shareVersion,
-                        current.shareVersion
-                    );
-                    pendingIdentityRecovery = undefined;
-                    // Both reads count: the one after this release (a success never resets the
-                    // count) and the one before it (a legacy record without a verified count
-                    // reports 0 once any release has been reserved, so only the earlier read
-                    // shows that its history is unknown). Each must show exactly this flow's
-                    // own wrong entries (zero for callers without a flow context).
-                    const { clean, ownWrongAttempts } = pinSignInClean(
-                        [pinBefore, current.escrowPin],
-                        pinAttempts
-                    );
-                    return {
-                        mode,
-                        newPinRequired: !clean,
-                        refreshCharges: clean
-                            ? refreshablePinCharges(pinBefore, current.escrowPin, ownWrongAttempts)
-                            : undefined,
-                    };
-                })
+                    mode = 'deferred-rotation';
+                }
+                assertActive();
+                await adoptReleasedShare(
+                    storage,
+                    storageId,
+                    released,
+                    released.shareVersion,
+                    current.shareVersion
+                );
+                pendingIdentityRecovery = undefined;
+                // Both reads count: the one after this release (a success never resets the
+                // count) and the one before it (a legacy record without a verified count
+                // reports 0 once any release has been reserved, so only the earlier read
+                // shows that its history is unknown). Each must show exactly this flow's
+                // own wrong entries (zero for callers without a flow context).
+                const { clean, ownWrongAttempts } = pinSignInClean(
+                    [pinBefore, current.escrowPin],
+                    pinAttempts
+                );
+                return {
+                    mode,
+                    newPinRequired: !clean,
+                    refreshCharges: clean
+                        ? refreshablePinCharges(pinBefore, current.escrowPin, ownWrongAttempts)
+                        : undefined,
+                };
+            })
         );
 
         // Same PIN, new salt and verifier, enrolled at the same version: a fresh
@@ -2052,26 +2057,29 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // scheduled.
         let pinRefreshed = false;
         let pinRefreshFailed = false;
+        let newPinRequired = newPinRequiredAtRelease;
         if (mode === 'kept' && !newPinRequired && refreshCharges && params.signDidAuthVp) {
             const pinMaterial = await freshPinMaterial(pin);
-            pinRefreshed =
-                pinMaterial !== undefined &&
-                (await tryEnrollEscrow(
-                    params.token,
-                    params.providerType,
-                    released.privateKey,
-                    released.primaryDid,
-                    { recoveryShare: released.recoveryShare },
-                    released.shareVersion,
-                    params.signDidAuthVp,
-                    undefined,
-                    pinMaterial,
-                    false,
-                    storage.assertCurrent,
-                    params.options?.recoveryEmail,
-                    params.options?.recoveryLanguage,
-                    refreshCharges
-                ));
+            const refresh =
+                pinMaterial === undefined
+                    ? undefined
+                    : await attemptEnrollEscrow(
+                          params.token,
+                          params.providerType,
+                          released.privateKey,
+                          released.primaryDid,
+                          { recoveryShare: released.recoveryShare },
+                          released.shareVersion,
+                          params.signDidAuthVp,
+                          undefined,
+                          pinMaterial,
+                          false,
+                          storage.assertCurrent,
+                          params.options?.recoveryEmail,
+                          params.options?.recoveryLanguage,
+                          refreshCharges
+                      );
+            pinRefreshed = refresh?.enrolled === true;
             // Reported, not swallowed: the PIN keeps (at most) its reduced budget. A commit
             // whose receipt was lost is not confirmed here, so it reports failed too (an
             // under-claim: the budget is in fact full). lca-api either
@@ -2079,6 +2087,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             // authority's commit; a copy left behind is caught by ensureEscrowEnrollment's
             // identity check, which never clears the PIN on its own.
             pinRefreshFailed = pinMaterial !== undefined && !pinRefreshed;
+            // A refused refresh usually means the charges moved after our reads, most
+            // likely someone else's entry: re-check before showing the calm sheet. If the
+            // status can't be read, a 409 (charges changed) still counts as a warning.
+            if (pinRefreshFailed) {
+                const latest = await fetchAuthShareRaw(
+                    serverUrl,
+                    params.token,
+                    params.providerType,
+                    undefined,
+                    tenantId
+                ).catch(() => undefined);
+                newPinRequired = latest
+                    ? !pinSignInClean([pinBefore, latest.escrowPin], pinAttempts).clean
+                    : isConflictRefusal(refresh && !refresh.enrolled ? refresh.error : undefined);
+            }
         }
         assertActive();
         return {
