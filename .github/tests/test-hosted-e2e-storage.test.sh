@@ -17,7 +17,9 @@ make_fixture_commands() {
 #!/usr/bin/env bash
 set -euo pipefail
 target="${@: -1}"
-available="$FAKE_ROOT_FREE_KIB"
+reclaimed=0
+[[ ! -f "$FAKE_STATE_DIR/reclaimed" ]] || reclaimed="$FAKE_RECLAIM_KIB"
+available=$((FAKE_ROOT_FREE_KIB + reclaimed))
 mountpoint=/
 filesystem=/dev/fake-root
 if [[ "$target" == /mnt ]]; then
@@ -30,6 +32,7 @@ elif [[ "$target" == /var/lib/docker && -f "$FAKE_STATE_DIR/docker-on-mnt" ]]; t
     filesystem=/dev/fake-mnt
 elif [[ "$target" == /var/lib/docker ]]; then
     available="$FAKE_DOCKER_FREE_KIB"
+    [[ "$FAKE_DOCKER_DEVICE" != 8:1 ]] || available=$((available + reclaimed))
     mountpoint=/var/lib/docker
     filesystem=/dev/fake-docker
 fi
@@ -101,6 +104,8 @@ if [[ "${1:-}" == info ]]; then
     echo /var/lib/docker
 elif [[ "${1:-} ${2:-}" == 'system df' ]]; then
     echo 'TYPE TOTAL ACTIVE SIZE RECLAIMABLE'
+elif [[ "$*" == 'image prune --all --force' ]]; then
+    printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
 else
     echo "unexpected docker command: $*" >&2
     exit 2
@@ -111,7 +116,9 @@ STUB
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "$FAKE_SUDO_LOG"
-if [[ "${1:-} ${2:-}" == 'mount --bind' ]]; then
+if [[ "${1:-} ${2:-}" == 'rm -rf' ]]; then
+    touch "$FAKE_STATE_DIR/reclaimed"
+elif [[ "${1:-} ${2:-}" == 'mount --bind' ]]; then
     [[ "$FAKE_BIND_SUCCEEDS" != true ]] || touch "$FAKE_STATE_DIR/docker-on-mnt"
 fi
 STUB
@@ -128,6 +135,7 @@ run_case() {
     make_fixture_commands "$fixture_root"
     mkdir -p "$fixture_root/artifacts"
     : > "$fixture_root/sudo.log"
+    : > "$fixture_root/docker.log"
 
     set +e
     PATH="$fixture_root/bin:$PATH" \
@@ -136,7 +144,10 @@ run_case() {
         FAKE_ROOT_FREE_KIB="$root_free_kib" \
         FAKE_MNT_FREE_KIB="$mnt_free_kib" \
         FAKE_DOCKER_FREE_KIB="$docker_free_kib" \
-        FAKE_DOCKER_DEVICE=8:1 \
+        FAKE_DOCKER_DEVICE="${CASE_DOCKER_DEVICE:-8:1}" \
+        FAKE_RECLAIM_KIB="${CASE_RECLAIM_KIB:-0}" \
+        FAKE_DOCKER_LOG="$fixture_root/docker.log" \
+        RUNNER_ENVIRONMENT="${CASE_RUNNER_ENVIRONMENT:-self-hosted}" \
         FAKE_BIND_SUCCEEDS="$bind_succeeds" \
         FAKE_STATE_DIR="$fixture_root/state" \
         FAKE_SUDO_LOG="$fixture_root/sudo.log" \
@@ -207,5 +218,54 @@ grep -Fxq 'result=insufficient-capacity' "$RUN_FIXTURE_ROOT/artifacts/storage-pl
     || fail 'insufficient capacity did not produce an actionable result'
 [[ ! -s "$RUN_FIXTURE_ROOT/sudo.log" ]] || fail 'insufficient /mnt was selected for Docker'
 
+grep -Fxq 'reclaim=skipped-non-hosted' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'persistent runner reclamation decision was not recorded'
+
+CASE_RUNNER_ENVIRONMENT=github-hosted run_case hosted-ample single "$((80 * gib))" "$((80 * gib))"
+[[ "$RUN_STATUS" -eq 0 ]] || fail 'large hosted runner was rejected'
+grep -Fxq 'reclaim=not-needed' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'large hosted runner reclaimed disk space unnecessarily'
+[[ ! -s "$RUN_FIXTURE_ROOT/sudo.log" && ! -s "$RUN_FIXTURE_ROOT/docker.log" ]] \
+    || fail 'large hosted runner deleted preinstalled software'
+
+CASE_RUNNER_ENVIRONMENT=github-hosted CASE_RECLAIM_KIB="$((32 * gib))" \
+    run_case hosted-small-reclaimed single "$((13 * gib))" 0
+[[ "$RUN_STATUS" -eq 0 ]] || fail 'small hosted runner was rejected despite reclaimable space'
+grep -Fxq 'reclaim=performed' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'small hosted runner reclamation was not recorded'
+grep -Fxq "reclaimed_root_kib=$((32 * gib))" "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'reclaimed capacity was not re-measured'
+grep -Fxq "docker_free_kib=$((45 * gib))" "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'Docker capacity on root was not re-measured after reclamation'
+grep -Fxq 'rm -rf -- /usr/local/lib/android' "$RUN_FIXTURE_ROOT/sudo.log" \
+    || fail 'unused Android SDK was not removed'
+grep -Fxq 'image prune --all --force' "$RUN_FIXTURE_ROOT/docker.log" \
+    || fail 'preinstalled Docker images were not pruned'
+grep -Fxq 'phase=reclaimed' "$RUN_FIXTURE_ROOT/artifacts/runner-storage.txt" \
+    || fail 'post-reclamation diagnostics were not captured'
+
+CASE_RUNNER_ENVIRONMENT=github-hosted CASE_RECLAIM_KIB="$((5 * gib))" \
+    run_case hosted-small-unrecoverable single "$((13 * gib))" 0
+[[ "$RUN_STATUS" -ne 0 ]] || fail 'hosted runner was accepted after insufficient reclamation'
+grep -Fxq 'reclaim=performed' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'failed reclamation attempt was not recorded'
+grep -Fxq 'result=insufficient-capacity' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'insufficient reclamation did not produce an actionable result'
+
+CASE_RUNNER_ENVIRONMENT=github-hosted CASE_RECLAIM_KIB="$((10 * gib))" \
+    run_case hosted-dual-root-reclaimed dual "$((12 * gib))" "$((70 * gib))"
+[[ "$RUN_STATUS" -eq 0 ]] || fail 'dual-disk hosted runner was rejected despite reclaimable root space'
+grep -Fxq 'docker_storage=mnt-bind' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'Docker was not relocated after reclaiming root space'
+rm_line="$(grep -nFx 'rm -rf -- /usr/local/lib/android' "$RUN_FIXTURE_ROOT/sudo.log" | cut -d: -f1)"
+mount_line="$(grep -nFx 'mount --bind /mnt/learncard-docker /var/lib/docker' "$RUN_FIXTURE_ROOT/sudo.log" | cut -d: -f1)"
+(( rm_line < mount_line )) || fail 'root space must be reclaimed before relocation is decided'
+
+CASE_RUNNER_ENVIRONMENT=github-hosted CASE_RECLAIM_KIB="$((32 * gib))" \
+    run_case hosted-dual-mnt-sufficient dual "$((16 * gib))" "$((70 * gib))"
+[[ "$RUN_STATUS" -eq 0 ]] || fail 'usable hosted dual-disk runner was rejected'
+grep -Fxq 'reclaim=not-needed' "$RUN_FIXTURE_ROOT/artifacts/storage-plan.txt" \
+    || fail 'reclaimed root space although Docker will move to /mnt'
+
 [[ "$failures" -eq 0 ]] || exit 1
-echo 'Hosted E2E storage tests passed (single, dual, same-device, Docker-root, verification, insufficient)'
+echo 'Hosted E2E storage tests passed (single, dual, same-device, Docker-root, verification, insufficient, reclamation)'
