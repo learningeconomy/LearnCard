@@ -196,9 +196,6 @@ const JOURNEY = [
     'repl',
 ];
 
-const SEND_INPUT_MISTAKE =
-    /is not an email address|is not an email, phone number|is a placeholder address|A recipient is required/;
-
 export interface BuildProgramOptions {
     /** Action for `repl [seed]`; lives in index.tsx with the rest of the console. */
     runRepl: (seed?: string) => Promise<void> | void;
@@ -262,11 +259,10 @@ export const buildProgram = ({ runRepl, run = runCommand }: BuildProgramOptions)
                     await runSend(recipient, { ...options, didkit });
                 },
                 {
-                    // Input mistakes explain themselves; keep the docs link for network/auth failures.
-                    humanFooter: message =>
-                        SEND_INPUT_MISTAKE.test(message)
-                            ? undefined
-                            : 'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong',
+                    // Input mistakes are UsageErrors (CliError), which never get a footer;
+                    // keep the docs link for unexpected network/auth failures.
+                    humanFooter: () =>
+                        'Troubleshooting: https://docs.learncard.com/start-here/your-first-integration#if-something-goes-wrong',
                 }
             )
         );

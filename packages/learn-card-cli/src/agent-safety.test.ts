@@ -32,7 +32,7 @@ import {
     resolveNetworkAlias,
     resolveServices,
 } from './project';
-import { CliError, NoIdentityError, errorEnvelope, NO_IDENTITY_HINT } from './errors';
+import { CliError, NoIdentityError, UsageError, errorEnvelope, NO_IDENTITY_HINT } from './errors';
 import { out } from './out';
 import { planPromotion } from './promote';
 import { runWhoami } from './whoami';
@@ -617,5 +617,35 @@ describe('uniform global flags', () => {
                 network: 'staging',
             });
         }
+    });
+});
+
+describe('human-mode error footer', () => {
+    const footer = (): string => 'FOOTER';
+    const runHuman = async (error: Error): Promise<string[]> => {
+        vi.spyOn(process, 'exit').mockImplementation(code => {
+            throw new ExitSignal(Number(code ?? 0));
+        });
+        await runCommand(
+            'send',
+            {},
+            async () => {
+                throw error;
+            },
+            { humanFooter: footer }
+        ).catch(caught => {
+            if (!(caught instanceof ExitSignal)) throw caught;
+        });
+        return vi.mocked(console.error).mock.calls.map(call => String(call[0]));
+    };
+
+    it('omits the footer for CliErrors such as input mistakes', async () => {
+        expect(await runHuman(new UsageError('"x" is not an email address.'))).not.toContain(
+            'FOOTER'
+        );
+    });
+
+    it('prints the footer for unexpected errors', async () => {
+        expect(await runHuman(new Error('fetch failed'))).toContain('FOOTER');
     });
 });
