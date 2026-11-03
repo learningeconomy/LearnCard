@@ -8,6 +8,7 @@ const {
     rmSync,
     symlinkSync,
     writeFileSync,
+    globSync,
 } = require('node:fs');
 
 const { tmpdir } = require('node:os');
@@ -88,10 +89,25 @@ for (const directory of ['services/learn-card-network/ai-agent', 'examples/crede
             `import config from ${JSON.stringify(path.join(repository, directory, 'vite.config.ts'))};
 export default {...config, root:${JSON.stringify(f.cwd)}};`
         );
+        if (directory.startsWith('services')) {
+            f.put('dist/excluded.test.ts', "throw new Error('Built output must not execute');");
+        }
         f.put(
             'case.test.ts',
-            `import {test,expect} from 'vitest'; let attempt=0;
-test('standalone flaky', () => expect(++attempt).toBe(2));`
+            directory.startsWith('services')
+                ? `let attempt=0;
+test('standalone flaky', () => {
+ expect(typeof document).toBe('undefined');
+ expect(typeof process.versions.node).toBe('string');
+ expect(++attempt).toBe(2);
+});`
+                : `import {test,expect} from 'vitest';
+import {getFixture} from '@learncard/credential-library';
+let attempt=0;
+test('standalone flaky', () => {
+ expect(getFixture('obv3/full-badge')?.credential.type).toContain('OpenBadgeCredential');
+ expect(++attempt).toBe(2);
+});`
         );
         const result = f.run(vitest, ['run']);
         assert.equal(result.status, 0, result.stdout + result.stderr);
@@ -116,7 +132,18 @@ test('flaky | <case>', () => {
 });
 `
     );
-    const result = f.run(vitest, ['run']);
+    f.put(
+        'capture-warnings.cjs',
+        `const {appendFileSync}=require('node:fs');
+const original=console.warn;
+console.warn=(...args)=>{
+ appendFileSync(${JSON.stringify(path.join(f.cwd, 'warnings.jsonl'))}, JSON.stringify(args)+'\\n');
+ original(...args);
+};`
+    );
+    const result = f.run(vitest, ['run'], {
+        NODE_OPTIONS: `--no-experimental-webstorage --require=${path.join(f.cwd, 'capture-warnings.cjs')}`,
+    });
     assert.equal(result.status, 0, result.stdout + result.stderr);
     assert.equal(readFileSync(path.join(f.cwd, 'healthy'), 'utf8'), 'x');
     assert.equal(readFileSync(path.join(f.cwd, 'flaky'), 'utf8'), 'xx');
@@ -126,6 +153,19 @@ test('flaky | <case>', () => {
     assert.equal(report.cases[0].retries, 1);
     assert.equal(report.cases[0].name, 'flaky | <case>');
     assert.doesNotMatch(JSON.stringify(report), /private-error-detail/);
+    const warnings = readFileSync(path.join(f.cwd, 'warnings.jsonl'), 'utf8')
+        .trim()
+        .split('\n')
+        .map(line => JSON.parse(line).join(' '));
+    assert.equal(warnings.filter(warning => warning.includes('flaky | <case>')).length, 1);
+    assert.equal(
+        warnings.some(warning => warning.includes('healthy case')),
+        false
+    );
+    assert.equal(
+        warnings.some(warning => warning.includes('private-error-detail')),
+        false
+    );
     const summary = summarize(f.reports, 'success');
     assert.equal(summary.incomplete, false);
     assert.match(summary.markdown, /\| passed \| 2 \| 0 \| 0 \| 1 \|/);
@@ -154,14 +194,32 @@ test('concurrent flaky', () => expect(++attempts).toBe(2));`
         assert.equal(report.counts.recovered, 1);
         assert.equal(report.cases[0].retries, 1);
     }
+    const summary = summarize(f.reports, 'success');
+    assert.equal(summary.incomplete, false);
+    assert.equal(
+        summary.markdown
+            .split('\n')
+            .filter(line => line.startsWith('| ') && line.includes('| passed |')).length,
+        2
+    );
 });
 
 test('CI retry opt-in without a report directory fails instead of silently omitting evidence', t => {
     const f = fixture(t);
     f.configure();
-    f.put('case.test.ts', `import {test} from 'vitest'; test('healthy', () => {});`);
+    f.put(
+        'case.test.ts',
+        `import {test} from 'vitest'; import {appendFileSync} from 'node:fs';
+test('healthy', () => appendFileSync('attempts','x'));`
+    );
+    const healthy = f.run(vitest, ['run']);
+    assert.equal(healthy.status, 0, healthy.stdout + healthy.stderr);
+    assert.equal(readFileSync(path.join(f.cwd, 'attempts'), 'utf8'), 'x');
+    f.put('attempts', '');
     const result = f.run(vitest, ['run'], { LC_CI_TEST_REPORT_DIR: '' });
     assert.notEqual(result.status, 0);
+    assert.equal(readFileSync(path.join(f.cwd, 'attempts'), 'utf8'), '');
+    assert.equal(f.readReports().length, 1);
 });
 
 test('local/default execution does not opt into retries or reporting', t => {
@@ -177,15 +235,25 @@ test('fails once', () => {appendFileSync('attempts','x'); throw new Error('faile
     assert.equal(readFileSync(path.join(f.cwd, 'attempts'), 'utf8'), 'x');
 });
 
-for (const reporters of ["'verbose'", "['verbose']"]) {
+for (const reporters of ["'./custom-reporter.cjs'", "['./custom-reporter.cjs']"]) {
     test(`CI preserves explicit retry zero and custom reporters ${reporters}`, t => {
         const f = fixture(t);
+        f.put(
+            'custom-reporter.cjs',
+            `const {writeFileSync}=require('node:fs');
+module.exports=class {
+ onTestRunEnd(modules) {
+  writeFileSync('custom-result.json',JSON.stringify(modules.flatMap(module =>
+   [...module.children.allTests()].map(test => ({name:test.fullName,state:test.result().state}))
+  )));
+ }
+};`
+        );
         f.put(
             'vitest.config.ts',
             `
 import {createVitestConfig, nodePreset} from ${JSON.stringify(path.join(repository, 'vitest.shared.ts'))};
 const config = createVitestConfig(nodePreset, {test:{include:['case.test.ts'], retry:0, reporters:${reporters}}});
-
 export default config;`
         );
         f.put(
@@ -197,8 +265,61 @@ test('never retry', () => {appendFileSync('attempts','x'); throw new Error('fail
         assert.equal(result.status, 1, result.stdout + result.stderr);
         assert.equal(readFileSync(path.join(f.cwd, 'attempts'), 'utf8'), 'x');
         assert.equal(f.readReports()[0].cases[0].retries, 0);
+        assert.deepEqual(JSON.parse(readFileSync(path.join(f.cwd, 'custom-result.json'), 'utf8')), [
+            { name: 'never retry', state: 'failed' },
+        ]);
     });
 }
+
+test('shared retry changes select every workspace Vitest test target through real Nx', t => {
+    const f = fixture(t);
+    const run = args =>
+        spawnSync(process.execPath, [nx, ...args], {
+            cwd: repository,
+            encoding: 'utf8',
+            timeout: 60_000,
+            maxBuffer: 8 * 1024 * 1024,
+            env: { ...process.env, NX_DAEMON: 'false', NX_TUI: 'false' },
+        });
+    const graphFile = path.join(f.cwd, 'workspace-graph.json');
+    const graphResult = run(['graph', `--file=${graphFile}`]);
+    assert.equal(graphResult.status, 0, graphResult.stdout + graphResult.stderr);
+    const nodes = JSON.parse(readFileSync(graphFile, 'utf8')).graph.nodes;
+    const workspace = JSON.parse(readFileSync(path.join(repository, 'package.json'), 'utf8'));
+    const vitestProjects = [
+        ...globSync(
+            workspace.workspaces.map(root => `${root}/package.json`),
+            { cwd: repository }
+        ),
+    ].flatMap(manifest => {
+        const pkg = JSON.parse(readFileSync(path.join(repository, manifest), 'utf8'));
+        if (!pkg.scripts?.test?.includes('vitest')) return [];
+        const project = Object.entries(nodes).find(
+            ([, node]) => node.data.root === path.dirname(manifest)
+        );
+        assert.ok(project, `${manifest} is absent from the Nx project graph`);
+        return [project[0]];
+    });
+    for (const file of [
+        'vitest.shared.ts',
+        'scripts/ci-test-retries/reporter.ts',
+        'scripts/ci-test-retries/summary.cjs',
+    ]) {
+        const result = run([
+            'show',
+            'projects',
+            '--affected',
+            '--with-target=test',
+            `--files=${file}`,
+            '--json',
+        ]);
+        assert.equal(result.status, 0, result.stdout + result.stderr);
+        const selected = new Set(JSON.parse(result.stdout));
+        for (const project of vitestProjects) {
+            assert.ok(selected.has(project), `${file} failed to select ${project}`);
+        }
+    }
+});
 
 test('real Nx selects and invalidates tests for shared config and retry policy', t => {
     const f = fixture(t);
@@ -390,5 +511,50 @@ test('summary CLI fails closed on incomplete reports and preserves a failed Nx o
         GITHUB_STEP_SUMMARY: summaryFile,
     });
     assert.equal(failed.status, 0, failed.stdout + failed.stderr);
-    assert.match(readFileSync(summaryFile, 'utf8'), /Nx test step: \*\*failure\*\*/);
+    const publishedStates = [
+        ...readFileSync(summaryFile, 'utf8').matchAll(
+            /\*\*(success|failure|cancelled|skipped)\*\*/g
+        ),
+    ].map(match => match[1]);
+    assert.deepEqual(publishedStates, ['success', 'failure']);
 });
+
+for (const corruption of ['invalid-json', 'missing-count', 'invalid-case-location']) {
+    test(`summary CLI rejects ${corruption} without publishing partial evidence`, t => {
+        const f = fixture(t);
+        const report = {
+            schemaVersion: 1,
+            project: 'valid-project',
+            reason: 'passed',
+            counts: { passed: 1, failed: 0, skipped: 0, pending: 0, recovered: 0 },
+            failedModules: 0,
+            unhandledErrors: 0,
+            cases: [],
+        };
+        f.put('reports/vitest-complete/report.json', JSON.stringify(report));
+        if (corruption === 'missing-count') delete report.counts.passed;
+        if (corruption === 'invalid-case-location') {
+            report.cases = [
+                {
+                    file: 'case.test.ts',
+                    name: 'case',
+                    state: 'passed',
+                    retries: 1,
+                    line: 'invalid',
+                },
+            ];
+        }
+        f.put(
+            'reports/vitest-corrupt/report.json',
+            corruption === 'invalid-json' ? '{' : JSON.stringify(report)
+        );
+        const summaryFile = path.join(f.cwd, 'step-summary.md');
+        f.put('step-summary.md', 'previous summary\n');
+        const result = f.run(path.join(__dirname, 'summary.cjs'), [], {
+            LC_CI_NX_OUTCOME: 'success',
+            GITHUB_STEP_SUMMARY: summaryFile,
+        });
+        assert.equal(result.status, 1, result.stdout + result.stderr);
+        assert.equal(readFileSync(summaryFile, 'utf8'), 'previous summary\n');
+    });
+}
