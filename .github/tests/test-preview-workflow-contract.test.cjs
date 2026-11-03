@@ -28,19 +28,77 @@ const gate = workflow.jobs['should-deploy'];
 const deploy = workflow.jobs['deploy-preview'];
 const e2e = workflow.jobs['run-e2e-tests'];
 
-// The startup helper is from the executing workflow revision, not the remote deployment head.
+// PR merge/workflow SHAs are not trusted sources for secret-bearing control code.
+const controlSelection = deploy.steps.find(s => s.id === 'control-ref');
+assert.deepEqual(controlSelection.env, {
+    PREVIEW_CONTROL_EVENT: '${{ github.event_name }}',
+    PREVIEW_CONTROL_BASE_SHA: '${{ github.event.pull_request.base.sha }}',
+    PREVIEW_CONTROL_WORKFLOW_SHA: '${{ github.workflow_sha }}',
+});
+assert.doesNotMatch(controlSelection.run, /\$\{\{/);
 const controlCheckout = deploy.steps.find(s => s.name === 'Checkout preview control script');
-assert.equal(controlCheckout.with.ref, '${{ github.workflow_sha }}');
+assert.equal(controlCheckout.with.ref, '${{ steps.control-ref.outputs.ref }}');
 assert.equal(controlCheckout.with['persist-credentials'], false);
 assert.equal(controlCheckout.with['sparse-checkout'], '.github/scripts');
+assert.equal(deploy.steps.filter(s => s.uses?.startsWith('actions/checkout')).length, 1);
 const readiness = deploy.steps.find(s => s.id === 'ec2');
 assert.equal(readiness.run, 'python3 .github/scripts/preview-readiness.py');
 assert.equal(readiness['timeout-minutes'], 11);
 assert.equal(deploy['timeout-minutes'], 40);
 assert.equal(readiness.env.PREVIEW_EC2_LAMBDA_URL, '${{ secrets.PREVIEW_EC2_LAMBDA_URL }}');
 assert.equal(readiness.env.PREVIEW_EC2_API_KEY, '${{ secrets.PREVIEW_EC2_API_KEY }}');
+assert.ok(deploy.steps.indexOf(controlSelection) < deploy.steps.indexOf(controlCheckout));
 assert.ok(deploy.steps.indexOf(controlCheckout) < deploy.steps.indexOf(readiness));
+assert.equal(controlSelection.if, undefined);
+assert.equal(controlSelection['continue-on-error'], undefined);
+assert.equal(controlCheckout.if, undefined);
+assert.equal(controlCheckout['continue-on-error'], undefined);
+assert.equal(
+    readiness.if,
+    undefined,
+    'readiness must not bypass failed trusted selection/checkout'
+);
 assert.doesNotMatch(readiness.run, /\$\{\{/);
+
+const controlTemporary = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'preview-ref-'));
+try {
+    const base = 'a'.repeat(40),
+        workflowSha = 'b'.repeat(40);
+    const head = 'c'.repeat(40),
+        merge = 'd'.repeat(40);
+    const cases = [
+        ['labeled PR', 'pull_request', base, merge, base],
+        ['synchronize PR', 'pull_request', base, merge, base],
+        ['comment', 'issue_comment', '', workflowSha, workflowSha],
+        ['manual', 'workflow_dispatch', '', workflowSha, workflowSha],
+        ['missing PR base', 'pull_request', '', merge, null],
+        ['invalid PR base', 'pull_request', 'PRIVATE_INVALID_REF', merge, null],
+        ['missing comment workflow', 'issue_comment', base, '', null],
+        ['invalid dispatch workflow', 'workflow_dispatch', base, 'PRIVATE_INVALID_REF', null],
+    ];
+    for (const [name, event, baseSha, workflow, expected] of cases) {
+        const output = path.join(controlTemporary, 'output');
+        fs.rmSync(output, { force: true });
+        const selected = spawnSync('bash', ['-e', '-c', controlSelection.run], {
+            encoding: 'utf8',
+            env: {
+                ...process.env,
+                PREVIEW_CONTROL_EVENT: event,
+                PREVIEW_CONTROL_BASE_SHA: baseSha,
+                PREVIEW_CONTROL_WORKFLOW_SHA: workflow,
+                PR_HEAD_SHA: head,
+                GITHUB_SHA: merge,
+                GITHUB_OUTPUT: output,
+            },
+        });
+        assert.equal(selected.status, expected ? 0 : 1, name);
+        if (expected) assert.equal(fs.readFileSync(output, 'utf8'), `ref=${expected}\n`, name);
+        else assert.equal(fs.existsSync(output), false, `${name} must not fall back to PR code`);
+        assert.doesNotMatch(selected.stdout + selected.stderr, /PRIVATE_INVALID_REF/);
+    }
+} finally {
+    fs.rmSync(controlTemporary, { recursive: true, force: true });
+}
 const readinessTests = spawnSync(
     'python3',
     ['-B', path.join(root, '.github/tests/test_preview_readiness.py'), '-v'],

@@ -45,11 +45,21 @@ these deadlines; total readiness is bounded to ten minutes. A warm instance proc
 immediately. IP or state changes do not restart the SSH deadline.
 
 Control API authentication/configuration errors fail clearly. Temporary request
-failures are reported and can recover within the same deadline. The API key and raw
+failures are reported and can recover within the same deadline. If a start request
+fails transiently and a later status confirms `stopped`, it is retried with a
+10/20/40/60-second capped backoff within the original boot budget. A successful start
+response or observed `pending`/`running` state disables further start retries, even
+if the instance later stops. The API key and raw
 control responses are not printed. TCP reachability is not an authenticated SSH or
 application-health check: the existing SSH deployment and preview health checks still
 have to succeed afterward. The job allows 40 minutes overall to accommodate readiness,
 the existing 25-minute deployment command and workflow overhead.
+
+The secret-bearing helper is loaded from the PR's base SHA on pull-request events,
+not the PR head or merge commit. Comment/manual events use the executing workflow's
+SHA. Missing or invalid trusted revisions fail before checkout; a missing helper at
+that revision fails closed without falling back to PR code. This helper must first
+land on the base branch before a PR-triggered preview can use it.
 
 Run the secret-free readiness and workflow regressions locally:
 

@@ -191,10 +191,29 @@ jobs:
                       });
                       core.setOutput('comment_id', comment.id);
 
+            - name: Select trusted preview control revision
+              id: control-ref
+              env:
+                  PREVIEW_CONTROL_EVENT: ${{ github.event_name }}
+                  PREVIEW_CONTROL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  PREVIEW_CONTROL_WORKFLOW_SHA: ${{ github.workflow_sha }}
+              run: |
+                  # PR workflow_sha is a PR merge commit, not trusted control code.
+                  if [[ "$PREVIEW_CONTROL_EVENT" == 'pull_request' ]]; then
+                    control_ref="$PREVIEW_CONTROL_BASE_SHA"
+                  else
+                    control_ref="$PREVIEW_CONTROL_WORKFLOW_SHA"
+                  fi
+                  if ! [[ "$control_ref" =~ ^[0-9a-f]{40}$ ]]; then
+                    echo '::error::Missing or invalid trusted preview control revision.' >&2
+                    exit 1
+                  fi
+                  echo "ref=$control_ref" >> "$GITHUB_OUTPUT"
+
             - name: Checkout preview control script
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.workflow_sha }}
+                  ref: ${{ steps.control-ref.outputs.ref }}
                   persist-credentials: false
                   sparse-checkout: .github/scripts
 

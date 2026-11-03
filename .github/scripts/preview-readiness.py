@@ -101,6 +101,9 @@ def wait_for_ready(control, *, clock=time.monotonic, sleep=time.sleep,
     boot_deadline = started + boot_seconds
     overall_deadline = boot_deadline + ssh_seconds
     ssh_deadline = None
+    retry_start = False
+    next_start_at = started
+    start_backoff = 10
 
     def remaining():
         deadline = min(overall_deadline, ssh_deadline or boot_deadline)
@@ -111,14 +114,24 @@ def wait_for_ready(control, *, clock=time.monotonic, sleep=time.sleep,
             raise ReadinessError("Timed out waiting for SSH port 22.")
         return left
 
-    try:
-        control.request("start", min(10, remaining()))
-    except ControlError as error:
-        if not error.transient:
-            raise
-        # A start failure can race with another preview starting this shared instance.
-        # Only successful status + TCP readiness can acknowledge an already-running host.
-        log(f"::warning::{error} Checking actual instance readiness.")
+    def request_start():
+        nonlocal retry_start, next_start_at, start_backoff
+        try:
+            control.request("start", min(10, remaining()))
+            remaining()
+            retry_start = False
+        except ControlError as error:
+            if not error.transient:
+                raise
+            remaining()
+            # The request may have been lost or accepted despite its response failing.
+            # A fresh stopped status is required before another start is attempted.
+            retry_start = True
+            next_start_at = clock() + start_backoff
+            start_backoff = min(60, start_backoff * 2)
+            log(f"::warning::{error} Checking actual instance readiness.")
+
+    request_start()
 
     while True:
         try:
@@ -127,6 +140,14 @@ def wait_for_ready(control, *, clock=time.monotonic, sleep=time.sleep,
             state, ip = parse_status(body)
             if state in ("shutting-down", "terminated"):
                 raise ReadinessError("Preview instance is shutting down or terminated.")
+            if state in ("pending", "running"):
+                # Once boot is acknowledged, never turn a later stop into a restart loop.
+                retry_start = False
+            if (state == "stopped" and retry_start and ssh_deadline is None
+                    and clock() >= next_start_at):
+                log("Instance is stopped after a transient start failure; retrying start.")
+                request_start()
+                continue
             if state == "running" and ip:
                 if ssh_deadline is None:
                     ssh_deadline = min(overall_deadline, clock() + ssh_seconds)

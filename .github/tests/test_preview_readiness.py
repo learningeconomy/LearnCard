@@ -48,12 +48,15 @@ class Scenario:
         self.start_cost, self.body = start_cost, body
         self.calls, self.probes, self.logs = [], [], []
         self.start_error = None
+        self.start_errors = []
         self.status_errors = []
 
     def request(self, action, timeout):
         self.calls.append((action, self.clock(), timeout))
         if action == "start":
             self.clock.now += self.start_cost
+            if self.start_errors:
+                raise self.start_errors.pop(0)
             if self.start_error:
                 raise self.start_error
             return "Starting instance"
@@ -182,6 +185,93 @@ class CoordinatorTests(unittest.TestCase):
         s.start_error = READY.ControlError("Control request timed out.", transient=True)
         with self.assertRaises(READY.ReadinessError):
             s.run()
+
+    def test_lost_start_is_retried_only_after_stopped_status_and_backoff(self):
+        s = Scenario()
+        s.start_errors = [READY.ControlError("Control request timed out.", transient=True)]
+        s.body = lambda now: response(
+            "stopped" if sum(c[0] == "start" for c in s.calls) == 1 else "running"
+        )
+        self.assertEqual(s.run(), IP)
+        self.assertEqual([at for action, at, _ in s.calls if action == "start"], [0, 10])
+        self.assertEqual(s.clock(), 10)
+        self.assertEqual(s.calls[2][0], "status")
+        self.assertIn("retrying start", " ".join(s.logs))
+
+    def test_repeated_start_failures_back_off_without_extending_boot_deadline(self):
+        s = Scenario(body=lambda now: response("stopped", ""))
+        s.start_error = READY.ControlError("Control API returned HTTP 503.", transient=True)
+        with self.assertRaisesRegex(READY.ReadinessError, "EC2 running state"):
+            s.run()
+        self.assertEqual([at for action, at, _ in s.calls if action == "start"],
+                         [0, 10, 30, 70, 130, 190, 250])
+        self.assertEqual(s.clock(), 300)
+        self.assertTrue(all(t <= min(10, 300 - at) for _, at, t in s.calls))
+        self.assertEqual(s.probes, [])
+
+    def test_acknowledged_boot_disarms_start_retries_even_after_later_stop(self):
+        for state, ip in [("pending", ""), ("running", ""), ("running", IP)]:
+            with self.subTest(state=state, ip=ip):
+                s = Scenario(ssh_at=999, body=lambda now: response(
+                    state if now < 20 else "stopped", ip if now < 20 else ""
+                ))
+                s.start_error = READY.ControlError("Control request timed out.", transient=True)
+                with self.assertRaises(READY.ReadinessError):
+                    s.run()
+                self.assertEqual(sum(c[0] == "start" for c in s.calls), 1)
+                self.assertEqual(s.clock(), 300)
+
+    def test_successful_retry_does_not_restart_again_while_status_settles(self):
+        s = Scenario(body=lambda now: response("stopped" if now < 40 else "running"))
+        s.start_errors = [READY.ControlError("Control request timed out.", transient=True)]
+        self.assertEqual(s.run(), IP)
+        self.assertEqual([at for action, at, _ in s.calls if action == "start"], [0, 10])
+        self.assertEqual(s.clock(), 40)
+
+    def test_start_is_not_retried_on_status_errors_or_stopping(self):
+        for status_errors in (False, True):
+            with self.subTest(status_errors=status_errors):
+                s = Scenario(body=lambda now: response("stopping", ""))
+                s.start_error = READY.ControlError("Control request timed out.", transient=True)
+                if status_errors:
+                    s.status_errors = [READY.ControlError(
+                        "Control API returned HTTP 503.", transient=True
+                    ) for _ in range(31)]
+                with self.assertRaises(READY.ReadinessError):
+                    s.run()
+                self.assertEqual(sum(c[0] == "start" for c in s.calls), 1)
+                self.assertEqual(s.clock(), 300)
+
+    def test_auth_failure_during_retry_is_fatal(self):
+        s = Scenario(body=lambda now: response("stopped", ""))
+        s.start_errors = [READY.ControlError("Control request timed out.", transient=True),
+                          READY.ControlError("Control API returned HTTP 403.", transient=False)]
+        with self.assertRaisesRegex(READY.ControlError, "403"):
+            s.run()
+        self.assertEqual(s.clock(), 10)
+        self.assertEqual(s.probes, [])
+
+    def test_late_retry_cannot_extend_boot_deadline(self):
+        for failure in (False, True):
+            with self.subTest(failure=failure):
+                s = Scenario(body=lambda now: response("stopped", ""))
+                s.start_errors = [READY.ControlError("Control request timed out.", transient=True)]
+                original = s.request
+
+                def late(action, timeout):
+                    result = original(action, timeout)
+                    if action == "start":
+                        s.clock.now = 300
+                        if failure:
+                            raise READY.ControlError("Control request timed out.", transient=True)
+                    return result
+
+                with self.assertRaisesRegex(READY.ReadinessError, "EC2 running state"):
+                    READY.wait_for_ready(type("Control", (), {"request": staticmethod(late)})(),
+                                         clock=s.clock, sleep=s.clock.sleep, probe=s.probe,
+                                         log=s.logs.append)
+                self.assertEqual([at for action, at, _ in s.calls if action == "start"], [0, 10])
+                self.assertEqual(s.probes, [])
 
     def test_transient_status_errors_are_visible_and_recover(self):
         s = Scenario()
