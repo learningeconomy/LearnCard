@@ -11,6 +11,9 @@ import { registerInboxCommand } from './inbox';
 import { registerRefreshCommand } from './refresh';
 import { registerWhoamiCommand } from './whoami';
 import { registerPromoteCommand } from './promote';
+import { registerBridgeCommands } from './bridge';
+import { registerSkillCommands } from './skill';
+import { registerManifestCommands } from './commands';
 
 import packageJson from '../package.json';
 
@@ -193,6 +196,11 @@ const JOURNEY = [
     'inbox',
     'refresh',
     'init',
+    'commands',
+    'capabilities',
+    'call',
+    'api',
+    'skill',
     'repl',
 ];
 
@@ -482,6 +490,11 @@ export const buildProgram = ({ runRepl, run = runCommand }: BuildProgramOptions)
         .description('Interactive JavaScript console with a LearnCard preloaded (advanced).')
         .action(runRepl);
 
+    registerBridgeCommands(program, run);
+    registerSkillCommands(program, run);
+    // Last: walks every command registered above to add `--help` examples from the manifest.
+    registerManifestCommands(program, { run });
+
     applyGlobalOptions(program);
 
     program
@@ -505,6 +518,7 @@ export const buildProgram = ({ runRepl, run = runCommand }: BuildProgramOptions)
             'after',
             '\nEvery command except repl: -y skips prompts, --json prints one machine-readable result, --network production|staging|local|<url> picks the network.\n' +
                 'Commands that only read (whoami, status, inbox list, doctor, ...) never create an identity; init, send, and org apply do.\n' +
+                'For agents and scripts: `npx @learncard/cli commands --json` lists every command, its effect, options and examples; `capabilities --json` maps tasks to commands, SDK methods and REST routes.\n' +
                 'Environment:\n' +
                 '  LC_YES=1  Same as passing -y to every command.\n' +
                 '  LCA_API_URL, NETWORK_URL  Override service URLs for self-hosted networks.\n'

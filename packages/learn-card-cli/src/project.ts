@@ -478,6 +478,10 @@ const noteCreatedIdentityDid = (did: string): void => {
  * Open a second wallet on the same seed that authenticates as a `did:web` the
  * network issued to this seed (e.g. a profile manager). Manager-only routes
  * reject the seed's base did:key, so `connect()` alone cannot call them.
+ *
+ * With `readOnly`, LearnCloud's automatic DID association is turned off, so opening
+ * the wallet does not register the did:web with LearnCloud (an `addDid` /
+ * `setPrimaryDid` write that otherwise happens the first time a did:web is used).
  */
 export const connectAsDidWeb = async (
     project: Project,
@@ -487,11 +491,15 @@ export const connectAsDidWeb = async (
     const seed = project.env.SECURE_SEED;
     if (!seed) throw new NoIdentityError();
     const services = resolveServices(project.env, options.network);
+    const cloud = {
+        ...(services.cloud && { url: services.cloud }),
+        ...(options.readOnly && { automaticallyAssociateDids: false }),
+    };
     return initLearnCard({
         seed,
         network: services.network === PRODUCTION_NETWORK ? true : services.network,
         didWeb,
-        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...(Object.keys(cloud).length > 0 && { cloud }),
         ...(options.didkit && { didkit: options.didkit }),
     });
 };
@@ -524,6 +532,10 @@ export const connectAsDidWebSigner = async (
     ) as unknown as LCALearnCard;
 };
 
+/**
+ * Open a wallet as a profile this folder manages (via the folder's profile manager).
+ * `options.readOnly` is forwarded to `connectAsDidWeb` for both wallets.
+ */
 export const connectAsManaged = async (
     project: Project,
     options: ProjectOptions,

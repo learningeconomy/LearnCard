@@ -14,6 +14,7 @@ const snippets = {
     CONSENT_CALLBACK_MJS: 'consentflow/consent-callback.mjs',
     READ_USER_DATA_MJS: 'consentflow/read-user-data.mjs',
     ISSUE_THROUGH_CONTRACT_MJS: 'consentflow/issue-through-contract.mjs',
+    AGENT_SKILL_MD: 'agents/learncard-skill.md',
 };
 /** Deterministic and atomic: independent checkout users never read a partial module. */
 export const embedSnippets = async (signal?: AbortSignal): Promise<void> => {

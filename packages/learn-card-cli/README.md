@@ -312,6 +312,18 @@ npx @learncard/cli promote --from staging --to production --org ./org.yaml
 
 Re-applies your org spec in its own `.learncard/production` folder (each network needs its own `.env`), writes fresh service-account tokens to `<target>/secrets.env` (or `--secrets-out`), and runs `doctor` — then prints the per-network checklist (profile, tokens, signing authority, templates, ConsentFlow contracts, credentials) that doesn't carry over; only your seed's `did:key` does. Add `--dry-run` to preview or `--skip-doctor` to skip the preflight.
 
+## Coding agents and scripts
+
+```bash
+npx @learncard/cli skill install           # LearnCard skill for Claude Code, Cursor or .agents/
+npx @learncard/cli commands --json         # every command: effect, options, output fields, examples
+npx @learncard/cli capabilities --json     # task -> CLI command, SDK method, REST route, docs
+npx @learncard/cli call getProfile --network staging --json          # any learnCard.invoke method
+npx @learncard/cli api GET /profile --network staging --json         # any Network REST route
+```
+
+`call` and `api` run reads as-is and refuse anything that can change data unless you pass `--write` (`--dry-run` shows what would run). Neither creates an identity, and without `--show-secret` neither prints the seed or an API token (`call --show-secret` can print private keys equivalent to the seed, and API tokens). Guide: https://docs.learncard.com/start-here/for-ai-agents/use-learncard-with-coding-agents
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
