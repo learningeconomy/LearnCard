@@ -1,5 +1,17 @@
 # @learncard/escrow-canary
 
+## 0.3.0
+
+### Minor Changes
+
+- [#1878](https://github.com/learningeconomy/LearnCard/pull/1878) [`4c3f904c1c3727461d14f52ece2cf7b0543329b1`](https://github.com/learningeconomy/LearnCard/commit/4c3f904c1c3727461d14f52ece2cf7b0543329b1) Thanks [@Custard7](https://github.com/Custard7)! - Add an operator provisioning tool (`dist/provision.mjs`) that creates canary accounts through the normal user path (email-code login, new SSS key, escrow opt-in or PIN) and writes their secrets with staged, compare-and-swap Secrets Manager updates. Not part of the Lambda bundle.
+
+### Patch Changes
+
+- Updated dependencies [[`372c1431e78a9708454f9c4c2f2c99dd5486b8e9`](https://github.com/learningeconomy/LearnCard/commit/372c1431e78a9708454f9c4c2f2c99dd5486b8e9), [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/sss-key-manager@0.2.6
+    - @learncard/init@2.5.8
+
 ## 0.2.0
 
 ### Minor Changes

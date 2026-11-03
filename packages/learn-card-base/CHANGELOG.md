@@ -7,6 +7,23 @@
 - Add progressive, account-scoped credential collection queries with shared visibility, metadata-only totals/title search, and bounded legacy-title resolution (LC-2294). Backfill index metadata only for documents already opened instead of downloading every indexed credential during pagination.
 - Keep credential claim completion and contract sync independent of background paginated list rescans while awaiting optimistic category/count updates (LC-2294).
 
+## 0.7.8
+
+### Patch Changes
+
+- [#1897](https://github.com/learningeconomy/LearnCard/pull/1897) [`372c1431e78a9708454f9c4c2f2c99dd5486b8e9`](https://github.com/learningeconomy/LearnCard/commit/372c1431e78a9708454f9c4c2f2c99dd5486b8e9) Thanks [@Custard7](https://github.com/Custard7)! - Keep the user's recovery PIN after a PIN recovery: the post-recovery re-enrollment now re-sets the PIN the user just entered (fresh attempt budget) instead of clearing it. Hold recovery, resumed recoveries and failed re-enrollment still clear the PIN, and the app only asks for a new PIN when it was cleared.
+
+- [#1905](https://github.com/learningeconomy/LearnCard/pull/1905) [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0) Thanks [@Custard7](https://github.com/Custard7)! - Make the recovery PIN the main way to sign in on a new device, without resetting the account. A PIN sign-in now keeps the account's shares, history, recovery methods and escrow: the device stores the released recovery piece at the current version and re-sets the same PIN for a fresh attempt budget only when no wrong entry is recorded against it; otherwise the PIN keeps its reduced budget and the app asks for a new, different PIN (refusing the PIN just used, also after a restart on that device, via a tag keyed by the account key), asking again on each app start until one is chosen; the same-PIN refresh is skipped when another charge landed during the release, and lca-api writes it only while the PIN still shows the charges the client saw (`expectedPinCharges`) (a lost login is linked with the new `POST /keys/recovery-session/pin-sign-in`, accepted only after a PIN release). The server emails the account's verified addresses on every PIN sign-in ("New device signed in with your PIN. Not you? Secure your account."), and the PIN status reports earlier wrong entries. The app leads its recovery screen with PIN entry (no sign-out warnings on that path; the 7-day hold keeps them), asks once after signing in whether a device was lost or the PIN is known to someone else (warning about earlier wrong entries), and adds "Secure my account" / "Sign out of all other devices" (`POST /keys/revoke-other-devices`), reachable from that question, Account Recovery settings and the email link `/account/secure`. That action re-splits the key, purges older versions and unlinks every login except the current one; it does not change the key itself, so a device that is already signed in may keep working until it signs out (the app says so). The revoke emails the account's contact and verified recovery addresses (new `account-secured` template, written for an owner who did not do it and may have lost their login: it says the recovery methods were reset and points to the tenant's support address, or to the organization when there is none). Every recovery token (recovery-email code, phrase, passkey, backup, waiting-period hold and PIN) is now bound to an account security epoch that every revoke and wiping rebind advances, so no token minted before one can rebind or re-link after it. Recovery is one-at-a-time: the coordinator rejects a second recovery while one is pending (`RecoveryInProgressError`; after a cancel, a new recovery-email code can be requested at once) and the app disables switching methods while a PIN sign-in is in flight. `@learncard/email-templates` omits an absent `locale` rather than passing `undefined` (`exactOptionalPropertyTypes`-safe) and exports each template from one declaration.
+
+- Updated dependencies [[`372c1431e78a9708454f9c4c2f2c99dd5486b8e9`](https://github.com/learningeconomy/LearnCard/commit/372c1431e78a9708454f9c4c2f2c99dd5486b8e9), [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/sss-key-manager@0.2.6
+    - @learncard/types@5.24.1
+    - @learncard/helpers@1.7.2
+    - @learncard/lca-api-plugin@2.0.14
+    - @learncard/learn-card-plugin@1.2.42
+    - @learncard/ler-rs-plugin@0.1.33
+    - @learncard/render-method-plugin@12.0.1
+
 ## 0.7.7
 
 ### Patch Changes
