@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { ShareWriteRejectedError } from '@learncard/sss-key-manager';
 import { SecureAccountFlow, SecureAccountSessionError } from './SecureAccountFlow';
 
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
     Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))
+        .isSameEscrowPinError,
 }));
 
 const pastePin = (pin: string) =>

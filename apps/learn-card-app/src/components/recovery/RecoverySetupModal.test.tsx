@@ -26,6 +26,8 @@ vi.mock('@ionic/react', () => ({
 
 vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: vi.fn() }),
+    isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))
+        .isSameEscrowPinError,
     Toggle: (
         await import('../../../../../packages/learn-card-base/src/components/form-inputs/Toggle')
     ).default,

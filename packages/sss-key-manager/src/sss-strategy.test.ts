@@ -1360,6 +1360,40 @@ describe('escrow strategy', () => {
             expect(blob?.pinVerifier).toBeUndefined();
         });
 
+        it.each([
+            [403, true, 2],
+            [409, false, 1],
+        ])(
+            'retries the re-enrolment once only after a definite authority refusal (%i)',
+            async (status, pinKept, attempts) => {
+                await strategy.setEscrowPin!({ ...params, pin: '135790' });
+                const original = vi.mocked(fetch).getMockImplementation()!;
+                let refuse = true;
+                vi.mocked(fetch).mockImplementation(async (url, init) => {
+                    const path = new URL(String(url)).pathname.replace('/api', '');
+                    if (refuse && path === '/keys/escrow' && init?.method === 'POST') {
+                        refuse = false;
+                        calls.push({ path, init });
+                        return new Response(null, { status });
+                    }
+                    return original(url, init);
+                });
+                calls = [];
+                await expect(revoke('246802')).resolves.toEqual({
+                    shareVersion: 3,
+                    escrowEnrolled: pinKept,
+                    pinKept,
+                });
+                expect(
+                    calls.filter(
+                        call => call.path === '/keys/escrow' && call.init?.method === 'POST'
+                    )
+                ).toHaveLength(attempts);
+                if (pinKept)
+                    expect(blob?.pinVerifier).toBe(await derivePinProof('246802', pinSalt!));
+            }
+        );
+
         it('does not enroll escrow for an account that never had it', async () => {
             await expect(revoke(null)).resolves.toEqual({
                 shareVersion: 2,

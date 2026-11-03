@@ -127,7 +127,8 @@ export const ESCROW_PIN_COMPARE_TTL_MS = 120_000;
  * Per-account PIN-operation lease (remote/authority mode). Claimed before an
  * owner-signed enrollment intent is sent to the authority, and records what lca-api
  * must persist if the authority commits, so the result can be adopted even when the
- * request that sent it never finishes its own write.
+ * request that sent it never finishes its own write. A security rotation (revoke,
+ * wiping rebind) drops it with the escrow it guards; see `buildSecurityRotationUpdate`.
  */
 export const EscrowEnrollmentLeaseValidator = z.object({
     id: z.string().min(1).max(128),
@@ -1831,7 +1832,20 @@ const buildSecurityRotationUpdate = (
             sssActivationState: 'provisional',
             updatedAt: now,
         },
-        $unset: { provisionalCreatedAt: '', escrowBlob: '', escrowPin: '' },
+        // The PIN-operation lease and compare markers go with the escrow they guard,
+        // so the client's immediate re-enrollment on the new split is not refused as
+        // busy. Nothing they cover can land here any more: every lease commit, settle
+        // adoption and compare write is conditioned on the old `shareVersion` (bumped
+        // above), and at the authority the re-enrollment's intent is a Replace of its
+        // current copy at its current enrollment version, so a superseded intent that
+        // lands first only makes it refuse and re-read, never diverge.
+        $unset: {
+            provisionalCreatedAt: '',
+            escrowBlob: '',
+            escrowPin: '',
+            escrowEnrollmentLease: '',
+            escrowPinCompares: '',
+        },
         // Every wiping rotation retires every recovery token minted before it.
         $inc: { securityEpoch: 1 },
     };

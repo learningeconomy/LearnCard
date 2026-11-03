@@ -144,6 +144,13 @@ const pinGuardTag = async (
 };
 
 const PIN_GUARD_STORAGE_PREFIX = 'learncard:pin-change-guard:';
+/**
+ * A PIN sign-in's tag until that sign-in completes. Never read as a guard: a sign-in
+ * that is cancelled or abandoned (even across a restart) must not leave its PIN refused.
+ * It survives a restart only so a lost-login sign-in that finishes after the new
+ * login's redirect can still promote it.
+ */
+const PIN_GUARD_PENDING_STORAGE_PREFIX = 'learncard:pin-change-guard-pending:';
 
 /** `localStorage` when this runtime has a working one; otherwise the guard is memory-only. */
 const defaultPinGuardStorage = (): PinChangeGuardStorage | null => {
@@ -201,9 +208,10 @@ export class AuthCoordinator {
     /**
      * Tag of the PIN used for a PIN sign-in whose PIN has recorded wrong entries, so
      * `setEscrowPin` / `secureAccount` can reject re-using it. Also persisted per DID
-     * (config.pinChangeGuardStorage) so the rule survives an app restart; cleared once
-     * a new PIN is set, the account is secured, the PIN shows no wrong entries, or the
-     * device is forgotten.
+     * (config.pinChangeGuardStorage) so the rule survives an app restart, but only once
+     * that sign-in completes (until then the tag is pending, see
+     * PIN_GUARD_PENDING_STORAGE_PREFIX); cleared once a new PIN is set, the account is
+     * secured, the PIN shows no wrong entries, or the device is forgotten.
      */
     private signInPinDigest?: { did: string; tag: string };
     private readonly pinGuardStorage: PinChangeGuardStorage | null;
@@ -663,26 +671,58 @@ export class AuthCoordinator {
         }
     }
 
-    /** Drop the guard for `did` (memory and persisted). */
+    /** Drop the guard for `did` (memory, persisted and pending). */
     private forgetPinGuard(did: string | undefined): void {
         if (!did || this.signInPinDigest?.did === did) this.signInPinDigest = undefined;
         if (!did) return;
         try {
             this.pinGuardStorage?.removeItem(PIN_GUARD_STORAGE_PREFIX + did);
+            this.pinGuardStorage?.removeItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did);
         } catch {
             // Best effort: a stale tag only refuses one PIN for an account with that key.
         }
     }
 
-    /** Remember the PIN just used (as a keyed tag) when it must not be re-used. */
+    /**
+     * Remember the PIN just used (as a keyed tag) when it must not be re-used: in memory,
+     * and persisted as pending until `commitSignInPin` (the sign-in completed) or
+     * `abandonSignInPin` (it did not).
+     */
     private async rememberSignInPin(did: string, privateKey: string, pin: string): Promise<void> {
         const tag = await pinGuardTag(privateKey, did, pin);
         this.signInPinDigest = tag ? { did, tag } : undefined;
         if (!tag) return;
         try {
-            this.pinGuardStorage?.setItem(PIN_GUARD_STORAGE_PREFIX + did, tag);
+            this.pinGuardStorage?.setItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did, tag);
         } catch {
             // Memory-only for this session when storage is unavailable.
+        }
+    }
+
+    /** The PIN sign-in for `did` completed: its pending tag becomes the persisted guard. */
+    private commitSignInPin(did: string): void {
+        const memory = this.signInPinDigest?.did === did ? this.signInPinDigest.tag : undefined;
+        try {
+            const tag =
+                this.pinGuardStorage?.getItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did) ?? memory;
+            if (tag) this.pinGuardStorage?.setItem(PIN_GUARD_STORAGE_PREFIX + did, tag);
+            this.pinGuardStorage?.removeItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did);
+        } catch {
+            // Memory-only for this session when storage is unavailable.
+        }
+    }
+
+    /**
+     * The PIN sign-in for `did` was cancelled or abandoned: drop its tag (memory and
+     * pending). A guard persisted by an earlier, completed sign-in is left as it was.
+     */
+    private abandonSignInPin(did: string | undefined): void {
+        if (!did || this.signInPinDigest?.did === did) this.signInPinDigest = undefined;
+        if (!did) return;
+        try {
+            this.pinGuardStorage?.removeItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did);
+        } catch {
+            // Best effort: a pending tag is never read as a guard.
         }
     }
 
@@ -1266,9 +1306,13 @@ export class AuthCoordinator {
                     options: this.recoveryContactOptions({ authUser }),
                 });
                 const pinSignIn = this.takePinSignInInfo(result.did, result);
-                // Keep the lost-login PIN's tag only while a new PIN is required.
+                // The lost-login sign-in completed: keep its PIN's tag only while a new
+                // PIN is required.
                 if (!pinSignIn?.newPinRequired) this.forgetPinGuard(result.did);
-                else if (this.signInPinDigest?.did !== result.did) this.signInPinDigest = undefined;
+                else {
+                    this.commitSignInPin(result.did);
+                    if (this.signInPinDigest?.did !== result.did) this.signInPinDigest = undefined;
+                }
                 // Only a failed or deferred direct enrollment needs the scoped repair.
                 if (!result.escrowEnrolled) {
                     this.recoveredEscrowAccount = {
@@ -1959,18 +2003,18 @@ export class AuthCoordinator {
                     ? await this.keyDerivation.completeIdentityRecovery(params)
                     : await this.keyDerivation.executeRecovery(params);
             const { privateKey, did, escrowEnrolled, escrowRecovery } = result;
-            // Before the cancellation check, so nothing awaits between it and setState.
-            if (
-                result.pinSignIn &&
+            const guardPin =
+                !!result.pinSignIn &&
                 result.pinSignIn.newPinRequired !== false &&
-                isEscrowPinInput(input)
-            )
-                await this.rememberSignInPin(did, privateKey, input.pin);
+                isEscrowPinInput(input);
+            // Before the cancellation check, so nothing awaits between it and setState.
+            if (guardPin) await this.rememberSignInPin(did, privateKey, input.pin);
             if (isEscrow && generation !== this.recoveryGeneration) {
-                this.signInPinDigest = undefined;
+                this.abandonSignInPin(did);
                 this.keyDerivation.cancelIdentityRecovery?.();
                 throw new Error('This recovery request was cancelled.');
             }
+            if (guardPin) this.commitSignInPin(did);
             const pinSignIn = this.takePinSignInInfo(did, result);
 
             if (isEscrow && !escrowEnrolled)
@@ -2041,7 +2085,7 @@ export class AuthCoordinator {
             // the digest is dropped there when it is not.
             await this.rememberSignInPin(result.did, result.privateKey, input.pin);
             if (generation !== this.recoveryGeneration || this.state !== identityState) {
-                this.signInPinDigest = undefined;
+                this.abandonSignInPin(result.did);
                 this.keyDerivation.cancelIdentityRecovery?.();
                 throw new Error('This recovery request was cancelled.');
             }
@@ -2233,6 +2277,12 @@ export class AuthCoordinator {
             return this.state;
         }
 
+        // The lost-login PIN sign-in will not complete: its PIN stays usable.
+        this.abandonSignInPin(
+            this.state.status === 'awaiting_rebind'
+                ? this.state.did || this.signInPinDigest?.did
+                : (this.state.recoveredDid ?? this.signInPinDigest?.did)
+        );
         this.recoveryGeneration++;
         this.keyDerivation.cancelIdentityRecovery?.();
         this.setState({ status: 'idle' });
@@ -2389,7 +2439,8 @@ export class AuthCoordinator {
         log.info('Logout started', { logoutAttemptId });
         this.endingSession = true;
         this.pinAttemptBaseline = undefined;
-        this.signInPinDigest = undefined;
+        // An in-flight PIN sign-in is abandoned; a completed one's persisted guard stays.
+        this.abandonSignInPin(this.signInPinDigest?.did);
         this.escrowPinChangeDismissed = undefined;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;

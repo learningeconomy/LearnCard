@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline } from 'ionicons/icons';
-import { Overlay } from 'learn-card-base';
+import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import { m } from '../../paraglide/messages.js';
@@ -64,8 +64,7 @@ export const RecoveryPinSetupOverlay: React.FC<RecoveryPinSetupOverlayProps> = (
             await savePin(p);
             setStep('success');
         } catch (e) {
-            // Matched by name: the class can come from another bundle copy.
-            if (e instanceof Error && e.name === 'SameEscrowPinError') {
+            if (isSameEscrowPinError(e)) {
                 setError(m['recovery.pin.samePin']());
                 setStep('enter');
                 setPin('');

@@ -104,13 +104,16 @@ export const settleEscrowEnrollmentLease = async (
         if (adopted) return 'adopted';
         // Another request (an expired-lease settle) may already have persisted this
         // exact commit: Mongo then serves the authority's copy, nothing is left to do.
+        // Only on the lease's own split: a security rotation also drops the lease and
+        // the blob, but never wrote this commit (or a disable's opt-out) into Mongo.
         const stored = await findUserKeyByAuthProvider(authProvider.type, authProvider.id);
         const persisted =
             stored !== null &&
+            stored.shareVersion === lease.shareVersion &&
             stored.escrowEnrollmentLease?.id !== lease.id &&
             (current.state.envelope
                 ? stored.escrowBlob?.blobHash === escrowBlobIdentity(current.state.envelope)
-                : !stored.escrowBlob);
+                : !stored.escrowBlob && (!lease.optOut || stored.escrowOptedOutAt !== undefined));
         await releaseEscrowEnrollmentLease(authProvider, lease.id);
         // Otherwise Mongo moved past the blob this lease replaced (a rotation).
         return persisted ? 'adopted' : 'released';

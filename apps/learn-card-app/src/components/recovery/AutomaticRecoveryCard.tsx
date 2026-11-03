@@ -1,13 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, shieldCheckmarkOutline, keypadOutline } from 'ionicons/icons';
-import { Toggle } from 'learn-card-base';
+import { Toggle, isSameEscrowPinError } from 'learn-card-base';
 import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { RecoveryPinInput } from './RecoveryPinInput';
-
-const isSameEscrowPinError = (cause: unknown): boolean =>
-    cause instanceof Error && cause.name === 'SameEscrowPinError';
 
 const pinErrorMessage = (cause: unknown): string => {
     if (isSameEscrowPinError(cause)) return m['recovery.pin.samePin']();

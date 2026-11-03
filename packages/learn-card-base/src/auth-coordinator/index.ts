@@ -16,7 +16,7 @@ export { createWeb3AuthStrategy } from '../key-derivation';
 export type { Web3AuthStrategyConfig } from '../key-derivation';
 
 export { AuthSessionError } from './types';
-export { RecoveryInProgressError, SameEscrowPinError } from './errors';
+export { RecoveryInProgressError, SameEscrowPinError, isSameEscrowPinError } from './errors';
 export { IdentityRecoverySessionConsumedError } from '@learncard/sss-key-manager';
 
 export {

@@ -25,3 +25,10 @@ export class SameEscrowPinError extends Error {
         this.name = 'SameEscrowPinError';
     }
 }
+
+/**
+ * True for a SameEscrowPinError. Checked by name, not `instanceof`, so it also holds
+ * when the error crossed a bundle or package-copy boundary (or a test stub).
+ */
+export const isSameEscrowPinError = (cause: unknown): cause is SameEscrowPinError =>
+    cause instanceof Error && cause.name === 'SameEscrowPinError';

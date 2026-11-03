@@ -5,8 +5,10 @@ import { RecoveryPinSetupOverlay } from './RecoveryPinSetupOverlay';
 import { createRecoveryPinActions } from '../../providers/recoveryPinActions';
 import { createRecoverySetupRunner } from '../../../../../packages/learn-card-base/src/auth-coordinator/recoverySetup';
 
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base', async () => ({
     Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))
+        .isSameEscrowPinError,
 }));
 
 describe('RecoveryPinSetupOverlay', () => {

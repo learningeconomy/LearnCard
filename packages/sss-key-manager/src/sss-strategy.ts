@@ -1479,11 +1479,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         }
     };
 
-    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<boolean> => {
-        if (!config.escrow?.enabled) return false;
+    /** `tryEnrollEscrow` that also returns a failed attempt's error, for callers that retry. */
+    const attemptEnrollEscrow = async (
+        ...args: Parameters<typeof enrollEscrow>
+    ): Promise<{ enrolled: true } | { enrolled: false; error?: unknown }> => {
+        if (!config.escrow?.enabled) return { enrolled: false };
         try {
             await enrollEscrow(...args);
-            return true;
+            return { enrolled: true };
         } catch (err) {
             // A reporting callback must not turn a successful rotation into a failure.
             try {
@@ -1492,9 +1495,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             } catch {
                 console.warn('SSS: escrow error reporting failed');
             }
-            return false;
+            return { enrolled: false, error: err };
         }
     };
+
+    const tryEnrollEscrow = async (...args: Parameters<typeof enrollEscrow>): Promise<boolean> =>
+        (await attemptEnrollEscrow(...args)).enrolled;
 
     /** Report a committed automatic PIN clear so the caller can prompt for a new PIN. */
     const withAutoClear = (
@@ -4259,7 +4265,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 return { shareVersion, escrowEnrolled: false, pinKept: false };
             }
             const pinMaterial = pin === null ? undefined : await freshPinMaterial(pin);
-            const enrolled = await tryEnrollEscrow(
+            const enrollArgs: Parameters<typeof enrollEscrow> = [
                 token,
                 providerType,
                 privateKey,
@@ -4272,8 +4278,19 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 !pinMaterial,
                 storage.assertCurrent,
                 params.options?.recoveryEmail,
-                params.options?.recoveryLanguage
-            );
+                params.options?.recoveryLanguage,
+            ];
+            const attempt = await attemptEnrollEscrow(...enrollArgs);
+            // A definite authority refusal (403): an old-copy PIN compare still in flight
+            // at the revoke can commit while this intent is evaluated, and the authority
+            // then refuses it on its operation revision. Nothing committed and lca-api
+            // released the lease, so one retry (re-derived from the authority's current
+            // state) keeps the PIN just chosen instead of the PIN-clearing repair.
+            const enrolled =
+                attempt.enrolled ||
+                (attempt.error instanceof EscrowRequestError &&
+                    attempt.error.status === 403 &&
+                    (await tryEnrollEscrow(...enrollArgs)));
             if (!enrolled) {
                 // The repair clears: PIN material (an offline-guessable verifier) is never kept.
                 unenrolledRotation = { shares, shareVersion, primaryDid: did, clearPin: true };

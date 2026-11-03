@@ -1876,6 +1876,191 @@ describe('AuthCoordinator', () => {
                         }
                     }
                 });
+                describe('a PIN sign-in that does not complete leaves no guard behind', () => {
+                    const later = <T>() => {
+                        let resolve!: (value: T) => void;
+                        const promise = new Promise<T>(r => {
+                            resolve = r;
+                        });
+                        return { promise, resolve };
+                    };
+                    /** Next app start on this device, signed in with the account key. */
+                    const restartWith = (storage: ReturnType<typeof memoryStorage>) => {
+                        const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                        const harness = setup({
+                            keyDerivation: {
+                                reconstructKey: vi.fn().mockResolvedValue('recovered-pk'),
+                                getEscrowEnrollmentState: vi.fn().mockResolvedValue({
+                                    state: 'enrolled',
+                                    escrowPin: pinStatus(1),
+                                }),
+                                setEscrowPin,
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                        return { ...harness, setEscrowPin };
+                    };
+                    const expectPinUsableAfterRestart = async (
+                        storage: ReturnType<typeof memoryStorage>
+                    ) => {
+                        expect(storage.items.size).toBe(0);
+                        const restarted = restartWith(storage);
+                        await restarted.coordinator.initialize();
+                        await vi.waitFor(() =>
+                            expect(restarted.coordinator.getState()).toMatchObject({
+                                status: 'ready',
+                                escrowPin: { wrongAttempts: 1 },
+                            })
+                        );
+                        await restarted.coordinator.setEscrowPin('135790');
+                        expect(restarted.setEscrowPin).toHaveBeenCalledTimes(1);
+                    };
+                    const lostLogin = (
+                        storage: ReturnType<typeof memoryStorage>,
+                        executeRecovery = vi.fn().mockResolvedValue({
+                            privateKey: 'recovered-pk',
+                            did: 'did:key:z123',
+                        })
+                    ) =>
+                        setup({
+                            keyDerivation: {
+                                startIdentityRecovery: vi.fn().mockResolvedValue(undefined),
+                                verifyIdentityRecovery: vi.fn().mockResolvedValue({
+                                    recoverySessionToken: 'recovery-session-token',
+                                    recoveryMethods: [],
+                                    primaryDid: 'did:key:z123',
+                                }),
+                                executeRecovery,
+                                cancelIdentityRecovery: vi.fn(),
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                    const startLostLogin = async (coordinator: AuthCoordinator) => {
+                        coordinator.beginIdentityRecovery();
+                        await coordinator.sendIdentityRecoveryCode('recovery@example.com');
+                        await coordinator.verifyIdentityRecoveryCode('123456');
+                    };
+
+                    it('signed-in PIN sign-in cancelled (sign-out) while its release returns', async () => {
+                        const storage = memoryStorage();
+                        const release = later<typeof guessedResult>();
+                        const { coordinator } = setup({
+                            keyDerivation: {
+                                hasLocalKey: vi.fn().mockResolvedValue(false),
+                                executeRecovery: vi.fn().mockReturnValue(release.promise),
+                                cancelIdentityRecovery: vi.fn(),
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                        await coordinator.initialize();
+                        const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        const signedOut = coordinator.logout();
+                        release.resolve(guessedResult);
+                        await expect(pin).rejects.toThrow('This recovery request was cancelled.');
+                        await signedOut;
+
+                        await expectPinUsableAfterRestart(storage);
+                    });
+
+                    it('lost-login PIN sign-in cancelled while its release is in flight', async () => {
+                        const storage = memoryStorage();
+                        const release = later<{ privateKey: string; did: string }>();
+                        const { coordinator } = lostLogin(
+                            storage,
+                            vi.fn().mockReturnValue(release.promise)
+                        );
+                        await startLostLogin(coordinator);
+                        const pin = coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        coordinator.cancelIdentityRecovery();
+                        release.resolve({ privateKey: 'recovered-pk', did: 'did:key:z123' });
+                        await expect(pin).rejects.toThrow('This recovery request was cancelled.');
+
+                        await expectPinUsableAfterRestart(storage);
+                    });
+
+                    it.each(['new_login', 'awaiting_rebind'] as const)(
+                        'lost-login PIN sign-in cancelled after its release, at %s',
+                        async phase => {
+                            const storage = memoryStorage();
+                            const { coordinator } = lostLogin(storage);
+                            await startLostLogin(coordinator);
+                            await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                            if (phase === 'awaiting_rebind')
+                                coordinator.continueIdentityRecoveryLogin();
+                            expect(coordinator.getState()).toMatchObject(
+                                phase === 'awaiting_rebind'
+                                    ? { status: 'awaiting_rebind' }
+                                    : { status: 'identity_recovery', phase: 'new_login' }
+                            );
+                            coordinator.cancelIdentityRecovery();
+
+                            await expectPinUsableAfterRestart(storage);
+                        }
+                    );
+
+                    it('lost-login PIN sign-in completed after a restart (new-login redirect) keeps its guard', async () => {
+                        const storage = memoryStorage();
+                        const first = lostLogin(storage);
+                        await startLostLogin(first.coordinator);
+                        await first.coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        first.coordinator.continueIdentityRecoveryLogin();
+
+                        // The app restarts on the new login's redirect and links it.
+                        const setEscrowPin = vi.fn().mockResolvedValue(undefined);
+                        let pending = true;
+                        const { coordinator } = setup({
+                            keyDerivation: {
+                                hasPendingIdentityRecovery: vi.fn(() => pending),
+                                completeIdentityRecovery: vi.fn(async () => {
+                                    pending = false;
+                                    return guessedResult;
+                                }),
+                                setEscrowPin,
+                            },
+                            config: { signDidAuthVp: vi.fn(), pinChangeGuardStorage: storage },
+                        });
+                        await coordinator.initialize();
+                        coordinator.finishIdentityRecovery();
+                        await expect(coordinator.setEscrowPin('135790')).rejects.toBeInstanceOf(
+                            SameEscrowPinError
+                        );
+                        expect(setEscrowPin).not.toHaveBeenCalled();
+                        // Only the completed guard is kept.
+                        expect([...storage.items.keys()]).toEqual([
+                            'learncard:pin-change-guard:did:key:z123',
+                        ]);
+                    });
+
+                    it("an abandoned sign-in leaves a completed earlier sign-in's guard in place", async () => {
+                        const storage = memoryStorage();
+                        const completed = setupGuessed(storage);
+                        await completed.coordinator.initialize();
+                        await completed.coordinator.recover({
+                            method: 'escrow-pin',
+                            pin: '135790',
+                        });
+                        const guard = [...storage.items];
+                        expect(guard).toHaveLength(1);
+
+                        const { coordinator } = lostLogin(storage);
+                        await startLostLogin(coordinator);
+                        await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                        coordinator.cancelIdentityRecovery();
+
+                        expect([...storage.items]).toEqual(guard);
+                        const restarted = restartWith(storage);
+                        await restarted.coordinator.initialize();
+                        await vi.waitFor(() =>
+                            expect(restarted.coordinator.getState()).toMatchObject({
+                                status: 'ready',
+                                escrowPinChangeRequired: true,
+                            })
+                        );
+                        await expect(
+                            restarted.coordinator.setEscrowPin('135790')
+                        ).rejects.toBeInstanceOf(SameEscrowPinError);
+                    });
+                });
             });
 
             describe('one recovery at a time', () => {

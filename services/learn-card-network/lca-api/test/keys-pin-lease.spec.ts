@@ -21,6 +21,7 @@ import {
     upsertUserKeyByAuthProvider,
     getEscrowHoldsCollection,
     claimEscrowEnrollmentLease,
+    addRecoveryMethodToUserKeyByAuthProvider,
     ESCROW_ENROLLMENT_LEASE_TTL_MS,
     ESCROW_PIN_COMPARE_TTL_MS,
     type AuthProviderMapping,
@@ -95,6 +96,7 @@ interface AuthorityModel {
     attemptsUsed: number;
     envelope: EscrowEnvelope | null;
     shareVersion: number | null;
+    disabled: boolean;
 }
 
 let authority: AuthorityModel;
@@ -135,7 +137,7 @@ const installAuthority = async (): Promise<void> => {
                 tenant: 'learncard',
                 authorityGeneration: 'g1',
                 did: input.expectedDid,
-                status: authority.envelope ? 'active' : 'empty',
+                status: authority.envelope ? 'active' : authority.disabled ? 'disabled' : 'empty',
                 enrollmentVersion: authority.enrollmentVersion,
                 enrollmentEpoch: authority.enrollmentEpoch,
                 envelope: authority.envelope,
@@ -156,6 +158,23 @@ const installAuthority = async (): Promise<void> => {
             throw new EscrowPolicyError();
         if ((await identity(input.sourceEnvelope)) !== (await identity(authority.envelope)))
             throw new EscrowPolicyError();
+        if (intent.action === 'disable') {
+            authority.enrollmentVersion += 1;
+            authority.operationRevision += 1;
+            authority.enrollmentEpoch = intent.enrollmentEpoch;
+            authority.envelope = null;
+            authority.shareVersion = null;
+            authority.hasPin = false;
+            authority.disabled = true;
+            await hooks.afterCommit?.();
+            return {
+                envelope: null,
+                receipt,
+                authorityGeneration: 'g1',
+                enrollmentVersion: authority.enrollmentVersion,
+                enrollmentEpoch: authority.enrollmentEpoch,
+            };
+        }
         const plaintext = await decryptEscrowBlob(input.targetEnvelope!, enclaveKeys.privateKey);
         // The authority re-seals: the committed identity is never the submitted target's.
         const envelope = await encryptEscrowBlob(plaintext, enclaveKeys.publicKey, keyId);
@@ -169,6 +188,7 @@ const installAuthority = async (): Promise<void> => {
         authority.enrollmentEpoch = intent.enrollmentEpoch;
         authority.envelope = envelope;
         authority.shareVersion = intent.shareVersion;
+        authority.disabled = false;
         await hooks.afterCommit?.();
         return {
             envelope,
@@ -226,7 +246,7 @@ const sealPin = (shareVersion = 1): Promise<EscrowEnvelope> =>
 
 const signedIntent = async (
     target: EscrowEnvelope,
-    options: { action: 'enroll' | 'replace'; pinAction: 'set' | 'change' }
+    options: { action: 'enroll' | 'replace'; pinAction: 'set' | 'change'; shareVersion?: number }
 ) =>
     signEscrowEnrollmentIntent(
         {
@@ -239,7 +259,7 @@ const signedIntent = async (
             sourceBlobIdentity: await identity(authority.envelope),
             targetBlobIdentity: await getEscrowBlobIdentity(target),
             pinAction: options.pinAction,
-            shareVersion: 1,
+            shareVersion: options.shareVersion ?? 1,
             enrollmentEpoch: authority.enrollmentEpoch + 1,
             requestId: randomUUID(),
             allowRewrap: true,
@@ -280,6 +300,65 @@ const refresh = async (expectedPinCharges: {
         expectedPinCharges,
     });
 };
+
+/**
+ * The SDK's re-enrolment right after "Secure my account": a fresh PIN on the new split
+ * (version 2), its intent derived from the authority's CURRENT state (a Replace of
+ * whatever copy the authority holds, an Enroll when it holds none), as
+ * `revokeOtherDevices` does via `enrollEscrow`.
+ */
+const reEnrollAfterRevoke = async () => {
+    const envelope = await sealPin(2);
+    return owner().escrow.enroll({
+        ...auth,
+        envelope,
+        shareVersion: 2,
+        enclaveKeyId: keyId,
+        pinSalt: refreshSalt,
+        signedIntent: await signedIntent(envelope, {
+            action: authority.envelope ? 'replace' : 'enroll',
+            pinAction: authority.hasPin ? 'change' : 'set',
+            shareVersion: 2,
+        }),
+        sourceEnvelope: authority.envelope,
+    });
+};
+
+/** Owner-signed `escrow.disable` of the version-1 copy. */
+const disableEscrow = async (optOut: boolean) =>
+    owner().escrow.disable({
+        ...auth,
+        optOut,
+        signedIntent: await signEscrowEnrollmentIntent(
+            {
+                version: 2,
+                tenant: 'learncard',
+                did,
+                authorityGeneration: 'g1',
+                expectedEnrollmentVersion: authority.enrollmentVersion,
+                action: 'disable',
+                sourceBlobIdentity: await identity(authority.envelope),
+                targetBlobIdentity: null,
+                pinAction: 'keep',
+                shareVersion: 1,
+                enrollmentEpoch: authority.enrollmentEpoch + 1,
+                requestId: randomUUID(),
+                allowRewrap: false,
+                recoveryEmail: null,
+                recoveryLanguage: null,
+            },
+            pk
+        ),
+        sourceEnvelope: authority.envelope,
+    });
+
+const revoke = () =>
+    owner().keys.revokeOtherDevices({
+        ...auth,
+        primaryDid: did,
+        authShare: { encryptedData: 'secured-split', encryptedDek: '', iv: '' },
+        expectedShareVersion: 1,
+    });
 
 const startPin = () =>
     getClient().escrow.startRecovery({
@@ -343,6 +422,7 @@ beforeEach(async () => {
         attemptsUsed: 0,
         envelope: null,
         shareVersion: null,
+        disabled: false,
     };
     hooks = {};
     applyCalls = 0;
@@ -832,5 +912,221 @@ describe('background rewrap (authority mode)', () => {
 
         await expectConsistent();
         expect((await record())?.escrowBlob?.enclaveKeyId).toBe(nextKeyId);
+    });
+});
+
+describe('"Secure my account" while a PIN-operation lease is held', () => {
+    const liveLease = async (): Promise<EscrowEnrollmentLease> => ({
+        id: randomUUID(),
+        expiresAt: new Date(Date.now() + ESCROW_ENROLLMENT_LEASE_TTL_MS),
+        action: 'replace',
+        pinAction: 'change',
+        pin: 'fresh',
+        pinSalt,
+        shareVersion: 1,
+        authorityGeneration: 'g1',
+        expectedEnrollmentVersion: authority.enrollmentVersion,
+        expectedPinGeneration: authority.pinGeneration,
+        enrollmentEpoch: authority.enrollmentEpoch + 1,
+        sourceBlobHash: (await identity(authority.envelope)) as string,
+        measurements: {},
+    });
+
+    it('drops the lease with the escrow it guarded, so the immediate re-enrolment succeeds', async () => {
+        await signedInWithPin();
+        // A crashed or lost PIN operation left a live lease behind.
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $set: { escrowEnrollmentLease: await liveLease() } }
+        );
+
+        await revoke();
+        expect((await record())?.escrowEnrollmentLease).toBeUndefined();
+
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({
+            success: true,
+            shareVersion: 2,
+        });
+        await expectConsistent();
+        const stored = await record();
+        expect(stored?.escrowBlob?.shareVersion).toBe(2);
+        expect(stored?.escrowPin).toMatchObject({ salt: refreshSalt, shareVersion: 2 });
+        expect(stored?.escrowEnrollmentLease).toBeUndefined();
+        expect(authority.shareVersion).toBe(2);
+    });
+
+    it('a compare still at the authority does not block the re-enrolment, and its outcome never lands', async () => {
+        await signedInWithPin();
+        const attacker = await startPin();
+        const atAuthority = deferred();
+        const proceed = deferred();
+        hooks.beforeRelease = async () => {
+            hooks.beforeRelease = undefined;
+            atAuthority.resolve();
+            await proceed.promise;
+        };
+        const guess = completePin(attacker, wrongProof).catch(error => error);
+        await atAuthority.promise;
+        expect((await record())?.escrowPinCompares).toHaveLength(1);
+
+        await revoke();
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
+
+        // The old copy is gone at the authority: the compare is refused, and nothing it
+        // could write matches the new split's PIN.
+        proceed.resolve();
+        expect(await guess).toMatchObject({ code: 'FORBIDDEN' });
+        await expectConsistent();
+        const stored = await record();
+        expect(stored?.escrowPin).toMatchObject({
+            salt: refreshSalt,
+            shareVersion: 2,
+            failedAttempts: 0,
+        });
+        expect(stored?.escrowPin?.verifiedFailedAttempts ?? 0).toBe(0);
+    });
+
+    it('a superseded lease the authority commits late never writes into the revoked account', async () => {
+        await signedInWithPin();
+        const committedAtAuthority = deferred();
+        const proceed = deferred();
+        // The authority commits the pre-revoke refresh, but its response is held back.
+        hooks.afterCommit = async () => {
+            hooks.afterCommit = undefined;
+            committedAtAuthority.resolve();
+            await proceed.promise;
+        };
+        const superseded = refresh({ attemptsRemaining: 9, wrongAttempts: 0 }).catch(
+            error => error
+        );
+        await committedAtAuthority.promise;
+
+        await revoke();
+        // The late response: its own write and its settle both miss the revoked account.
+        proceed.resolve();
+        expect(await superseded).toMatchObject({ code: 'CONFLICT' });
+        const afterLate = await record();
+        expect(afterLate?.shareVersion).toBe(2);
+        expect(afterLate?.escrowBlob).toBeUndefined();
+        expect(afterLate?.escrowPin).toBeUndefined();
+        expect(afterLate?.escrowEnrollmentLease).toBeUndefined();
+
+        // Derived from the authority's actual state (the superseded commit), the
+        // re-enrolment replaces it.
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
+        await expectConsistent();
+        expect((await record())?.escrowPin).toMatchObject({ salt: refreshSalt, shareVersion: 2 });
+    });
+
+    it('a superseded first enrolment (no source blob to miss on) never writes into the revoked account', async () => {
+        const committedAtAuthority = deferred();
+        const proceed = deferred();
+        hooks.afterCommit = async () => {
+            hooks.afterCommit = undefined;
+            committedAtAuthority.resolve();
+            await proceed.promise;
+        };
+        const superseded = enrollPin().catch(error => error);
+        await committedAtAuthority.promise;
+
+        await revoke();
+        proceed.resolve();
+        // Mongo still has no blob, as the lease expected: only the bumped share version
+        // keeps the version-1 commit (and its adoption) out.
+        expect(await superseded).toMatchObject({ code: 'CONFLICT' });
+        const afterLate = await record();
+        expect(afterLate?.shareVersion).toBe(2);
+        expect(afterLate?.escrowBlob).toBeUndefined();
+        expect(afterLate?.escrowPin).toBeUndefined();
+
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
+        await expectConsistent();
+    });
+
+    it('a superseded opt-out the authority commits late is not reported as done', async () => {
+        await signedInWithPin();
+        await addRecoveryMethodToUserKeyByAuthProvider(authProvider, {
+            type: 'backup',
+            createdAt: new Date(),
+            confirmedAt: new Date(),
+            shareVersion: 1,
+        });
+        const committedAtAuthority = deferred();
+        const proceed = deferred();
+        hooks.afterCommit = async () => {
+            hooks.afterCommit = undefined;
+            committedAtAuthority.resolve();
+            await proceed.promise;
+        };
+        const superseded = disableEscrow(true).catch(error => error);
+        await committedAtAuthority.promise;
+
+        await revoke();
+        // The revoked account also has no blob and no lease, but the opt-out was never
+        // written to it: the request must fail, not claim the disable was persisted.
+        proceed.resolve();
+        expect(await superseded).toMatchObject({ code: 'CONFLICT' });
+        const afterLate = await record();
+        expect(afterLate?.shareVersion).toBe(2);
+        expect(afterLate?.escrowOptedOutAt).toBeUndefined();
+        expect(afterLate?.escrowEnrollmentLease).toBeUndefined();
+
+        // The re-enrolment sees the authority disabled and enrols afresh.
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
+        await expectConsistent();
+    });
+
+    it('a superseded lease that reaches the authority after the re-enrolment is refused and changes nothing', async () => {
+        await signedInWithPin();
+        const atAuthority = deferred();
+        const proceed = deferred();
+        hooks.beforeApply = async () => {
+            hooks.beforeApply = undefined;
+            atAuthority.resolve();
+            await proceed.promise;
+        };
+        const superseded = refresh({ attemptsRemaining: 9, wrongAttempts: 0 }).catch(
+            error => error
+        );
+        await atAuthority.promise;
+
+        await revoke();
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
+        const reEnrolled = await record();
+
+        // The pre-revoke intent was signed against the enrollment version the
+        // re-enrolment has since moved: the authority refuses it.
+        proceed.resolve();
+        expect(await superseded).toMatchObject({ code: 'FORBIDDEN' });
+        await expectConsistent();
+        const stored = await record();
+        expect(stored?.escrowBlob).toEqual(reEnrolled?.escrowBlob);
+        expect(stored?.escrowPin).toEqual(reEnrolled?.escrowPin);
+        expect(stored?.escrowEnrollmentLease).toBeUndefined();
+    });
+
+    it('an expired superseded lease is not settled into the revoked account', async () => {
+        await signedInWithPin();
+        // Lost response after the authority committed, and the authority was unreachable
+        // for the inline settle: the lease stays to be settled later.
+        hooks.afterCommit = async () => {
+            hooks.afterCommit = undefined;
+            stateFailures = 1;
+            throw new EscrowUnavailableError('transport');
+        };
+        await expect(refresh({ attemptsRemaining: 9, wrongAttempts: 0 })).rejects.toThrow();
+        expect((await record())?.escrowEnrollmentLease).toBeDefined();
+
+        await revoke();
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(Date.now() + ESCROW_ENROLLMENT_LEASE_TTL_MS + 1_000);
+
+        // The next request that touches the account finds nothing to adopt.
+        await owner().escrow.getAuthorityState({ ...auth, nonce: 'ab'.repeat(32) });
+        const stored = await record();
+        expect(stored?.escrowBlob).toBeUndefined();
+        expect(stored?.escrowPin).toBeUndefined();
+        await expect(reEnrollAfterRevoke()).resolves.toMatchObject({ success: true });
+        await expectConsistent();
     });
 });

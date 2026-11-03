@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
-import { Overlay } from 'learn-card-base';
+import { Overlay, isSameEscrowPinError } from 'learn-card-base';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import * as m from '../../paraglide/messages.js';
@@ -92,7 +92,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
             setStep('done');
         } catch (cause) {
             // Nothing ran: ask for a different PIN instead of failing the whole flow.
-            if (cause instanceof Error && cause.name === 'SameEscrowPinError') {
+            if (isSameEscrowPinError(cause)) {
                 setPinError(m['recovery.pin.samePin']());
                 setStep('pin');
                 return;

@@ -380,7 +380,11 @@ asking for a new PIN. The coordinator then:
   device. A different PIN goes through the usual owner-signed set, which starts a new PIN
   generation with a full budget and a zero count; the tag and prompt are then cleared. The tag
   is also dropped when the PIN is cleared, when the status shows an untouched new generation
-  (`attemptsRemaining === 10`), and by `forgetDevice()`;
+  (`attemptsRemaining === 10`), and by `forgetDevice()`. Only a completed sign-in persists
+  it: until then it is kept under `learncard:pin-change-guard-pending:<did>` (never read as a
+  guard; it only lets a lost-login sign-in that completes after the new login's redirect
+  promote it), and a sign-in that is cancelled or abandoned (cancelled recovery, sign-out)
+  drops it, leaving any guard from an earlier completed sign-in untouched;
 - `acknowledgePinSignIn()` / `dismissEscrowPinChange()` hide the prompt for this account for
   this session only. The PIN keeps its reduced budget, and the prompt returns on the next app
   start while `escrowPin.wrongAttempts > 0` (it also appears for an owner whose PIN collected
