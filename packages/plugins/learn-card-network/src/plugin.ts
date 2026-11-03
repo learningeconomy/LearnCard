@@ -3388,9 +3388,13 @@ export async function getLearnCardNetworkPlugin(
             },
             getMyCampaigns: async _learnCard => {
                 await ensureUser();
-                return MyCampaignValidator.array().parse(
-                    await client.campaigns.getMyCampaigns.query()
-                );
+                const response = await client.campaigns.getMyCampaigns.query();
+                if (!Array.isArray(response))
+                    throw new Error('Invalid campaigns response: expected an array');
+                return response.flatMap(item => {
+                    const result = MyCampaignValidator.safeParse(item);
+                    return result.success ? [result.data] : [];
+                });
             },
             recordCampaignEvent: async (_learnCard, campaignId, event) => {
                 await ensureUser();

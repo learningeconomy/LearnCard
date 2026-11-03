@@ -59,6 +59,10 @@ describe('campaign network plugin methods', () => {
         };
         client.campaigns.getMyCampaigns.query.mockResolvedValue([item]);
         await expect(methods.getMyCampaigns(wallet)).resolves.toMatchObject([item]);
+        for (const invalid of [null, {}, 'invalid']) {
+            client.campaigns.getMyCampaigns.query.mockResolvedValue(invalid);
+            await expect(methods.getMyCampaigns(wallet)).rejects.toThrow('expected an array');
+        }
 
         for (const message of [
             null,
@@ -70,8 +74,9 @@ describe('campaign network plugin methods', () => {
         ]) {
             client.campaigns.getMyCampaigns.query.mockResolvedValue([
                 { ...item, campaign: { ...item.campaign, message } },
+                item,
             ]);
-            await expect(methods.getMyCampaigns(wallet)).rejects.toThrow();
+            await expect(methods.getMyCampaigns(wallet)).resolves.toMatchObject([item]);
         }
     });
 

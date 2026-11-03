@@ -87,7 +87,9 @@ const NotificationToastListener: React.FC = () => {
                     dismissToast();
                     if (newest.type === 'ANNOUNCEMENT') {
                         if (newest._id) markRead({ notificationId: newest._id });
-                        history.push(resolveNotificationRoute(newest));
+                        const route = resolveNotificationRoute(newest);
+                        if (route === '/notifications') openNotifications();
+                        else history.push(route);
                     } else openNotifications();
                 }}
             />,
