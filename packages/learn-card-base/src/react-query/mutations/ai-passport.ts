@@ -129,7 +129,7 @@ export const usePreloadAssessment = () => {
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ summaryCredential }),
+                        body: JSON.stringify({ summaryCredential, attemptId }),
                     },
                     did
                 );

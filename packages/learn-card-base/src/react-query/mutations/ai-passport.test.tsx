@@ -78,6 +78,14 @@ describe('assessment request failures', () => {
         mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify(assessment)));
         const { result, queryClient } = setup();
         await result.current.mutateAsync(payload);
+        const request = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+        expect(request.summaryCredential).toEqual(payload.summaryCredential);
+        expect(request.attemptId).toMatch(
+            /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        );
+        expect(mocks.logInfo).toHaveBeenCalledWith('ai.assessment.preload.started', {
+            attemptId: request.attemptId,
+        });
         expect(queryClient.getQueryData(['assessment', payload.summaryCredential.boostId])).toEqual(
             assessment
         );
