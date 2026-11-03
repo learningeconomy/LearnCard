@@ -97,6 +97,12 @@ concurrent writers and summary rows, recovered-case warnings, opt-out/misconfigu
 import/setup/teardown failures, non-Vitest/build failures and incomplete/corrupt evidence.
 Corrupt evidence cannot append a partial passing summary, and the summary retains
 each supplied test-step outcome without depending on its surrounding wording.
+Every workspace manifest whose test script invokes Vitest also runs a controlled
+case through its actual resolved CI test options and must emit a valid report.
+Those reporting-only fixtures isolate app plugins and service setup; the standalone
+preservation cases above exercise their normal config pipeline separately.
+This detects a new package bypassing reporting without matching factory source text
+or imposing an arbitrary minimum workspace count.
 It also queries the real workspace Nx graph: shared config/reporter/summary changes
 must select every workspace Vitest test target. Isolated fixtures prove actual
 cache hits/misses for inherited and explicit inputs, shared/config edits, and the

@@ -19,6 +19,19 @@ const { summarize } = require('./summary.cjs');
 const repository = path.resolve(__dirname, '../..');
 const vitest = path.join(repository, 'node_modules/vitest/vitest.mjs');
 const nx = process.env.LC_TEST_NX_BINARY || path.join(repository, 'node_modules/nx/dist/bin/nx.js');
+const workspaceVitestManifests = () => {
+    const workspace = JSON.parse(readFileSync(path.join(repository, 'package.json'), 'utf8'));
+    return [
+        ...globSync(
+            workspace.workspaces.map(root => `${root}/package.json`),
+            { cwd: repository }
+        ),
+    ].filter(manifest =>
+        JSON.parse(readFileSync(path.join(repository, manifest), 'utf8')).scripts?.test?.includes(
+            'vitest'
+        )
+    );
+};
 const fixture = t => {
     const cwd = mkdtempSync(path.join(tmpdir(), 'learncard-test-retries-'));
     t.after(() => rmSync(cwd, { recursive: true, force: true }));
@@ -271,6 +284,53 @@ test('never retry', () => {appendFileSync('attempts','x'); throw new Error('fail
     });
 }
 
+test('every workspace Vitest config emits real CI evidence for an executed case', t => {
+    for (const manifest of workspaceVitestManifests()) {
+        const f = fixture(t);
+        const directory = path.dirname(manifest);
+        const candidates = ['vitest', 'vite'].flatMap(name =>
+            ['ts', 'mts', 'js', 'mjs'].map(extension =>
+                path.join(repository, directory, `${name}.config.${extension}`)
+            )
+        );
+        const config = candidates.find(file => require('node:fs').existsSync(file));
+        assert.ok(config, `${manifest} has no loadable Vitest config`);
+        f.put('package.json', JSON.stringify({ type: 'module' }));
+        // Exercise each real config's CI test options, without invoking unrelated app plugins
+        // or service setup. Standalone plugin/alias behavior has its own runtime cases above.
+        f.put(
+            'vitest.config.ts',
+            `import source from ${JSON.stringify(config)};
+export default async env => {
+ const config = await (typeof source === 'function' ? source(env) : source);
+ return {root:${JSON.stringify(f.cwd)},test:{...config.test,include:['case.test.ts'],setupFiles:[],globalSetup:[]}};
+};`
+        );
+        f.put(
+            'case.test.ts',
+            `import {test} from 'vitest'; import {appendFileSync} from 'node:fs';
+test('reported execution', () => appendFileSync('executed','x'));`
+        );
+        const result = f.run(vitest, ['run']);
+        assert.equal(result.status, 0, `${manifest}\n${result.stdout}${result.stderr}`);
+        assert.equal(readFileSync(path.join(f.cwd, 'executed'), 'utf8'), 'x', manifest);
+        const [report, ...extraReports] = f.readReports();
+        assert.deepEqual(
+            report.counts,
+            {
+                passed: 1,
+                failed: 0,
+                skipped: 0,
+                pending: 0,
+                recovered: 0,
+            },
+            manifest
+        );
+        assert.equal(report.reason, 'passed', manifest);
+        assert.deepEqual(extraReports, [], manifest);
+    }
+});
+
 test('shared retry changes select every workspace Vitest test target through real Nx', t => {
     const f = fixture(t);
     const run = args =>
@@ -285,20 +345,12 @@ test('shared retry changes select every workspace Vitest test target through rea
     const graphResult = run(['graph', `--file=${graphFile}`]);
     assert.equal(graphResult.status, 0, graphResult.stdout + graphResult.stderr);
     const nodes = JSON.parse(readFileSync(graphFile, 'utf8')).graph.nodes;
-    const workspace = JSON.parse(readFileSync(path.join(repository, 'package.json'), 'utf8'));
-    const vitestProjects = [
-        ...globSync(
-            workspace.workspaces.map(root => `${root}/package.json`),
-            { cwd: repository }
-        ),
-    ].flatMap(manifest => {
-        const pkg = JSON.parse(readFileSync(path.join(repository, manifest), 'utf8'));
-        if (!pkg.scripts?.test?.includes('vitest')) return [];
+    const vitestProjects = workspaceVitestManifests().map(manifest => {
         const project = Object.entries(nodes).find(
             ([, node]) => node.data.root === path.dirname(manifest)
         );
         assert.ok(project, `${manifest} is absent from the Nx project graph`);
-        return [project[0]];
+        return project[0];
     });
     for (const file of [
         'vitest.shared.ts',
