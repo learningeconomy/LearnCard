@@ -123,7 +123,14 @@ export const EscrowHoldValidator = z.object({
     notifications: z
         .array(
             z.object({
-                kind: z.enum(['started', 'reminder', 'completed', 'cancelled', 'pin-locked']),
+                kind: z.enum([
+                    'started',
+                    'reminder',
+                    'completed',
+                    'cancelled',
+                    'pin-locked',
+                    'pin-sign-in',
+                ]),
                 sentAt: z.date(),
             })
         )
@@ -428,10 +435,16 @@ export const completeEscrowHold = async (id: string): Promise<EscrowHold | null>
         { returnDocument: 'after' }
     );
 };
-/** Whether escrow material at this share version has already been released. */
+/**
+ * Whether escrow material at this share version has already been released.
+ * `completedAfter` ignores releases at or before that time: a PIN re-set at the
+ * same version after a PIN sign-in (keep mode) is a fresh PIN, so the release
+ * that preceded it must not retire it at the next rotation.
+ */
 export const hasCompletedEscrowHoldForVersion = async (
     authProvider: AuthProviderMapping,
-    shareVersion: number
+    shareVersion: number,
+    options: { completedAfter?: Date } = {}
 ): Promise<boolean> =>
     (await getEscrowHoldsCollection().countDocuments(
         {
@@ -439,6 +452,7 @@ export const hasCompletedEscrowHoldForVersion = async (
             'authProvider.id': authProvider.id,
             shareVersion,
             status: 'completed',
+            ...(options.completedAfter ? { completedAt: { $gt: options.completedAfter } } : {}),
         },
         { limit: 1 }
     )) > 0;

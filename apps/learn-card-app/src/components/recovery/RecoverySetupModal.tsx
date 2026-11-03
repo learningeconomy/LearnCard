@@ -48,6 +48,11 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onCompleted?: (method: RecoverySetupType) => void;
     onClose: () => void;
     registerCloseRequest?: (fn: () => void) => void;
+    /**
+     * "Sign out of all other devices": the same revoke as "Secure my account". The
+     * caller closes this modal and opens the secure flow.
+     */
+    onSignOutOtherDevices?: () => void;
 }
 
 const isValidChallengeOptions = (
@@ -81,6 +86,7 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onEnableEscrowRecovery,
     onSetEscrowPin,
     onClearEscrowPin,
+    onSignOutOtherDevices,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
@@ -1430,6 +1436,30 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         </div>
                     )}
                 </>
+            )}
+
+            {onSignOutOtherDevices && (
+                <section
+                    aria-labelledby="sign-out-other-devices-title"
+                    className="mt-6 p-4 rounded-2xl border border-grayscale-200 bg-white"
+                >
+                    <h3
+                        id="sign-out-other-devices-title"
+                        className="text-sm font-medium text-grayscale-900"
+                    >
+                        {m['recovery.signOutOtherDevices.title']()}
+                    </h3>
+                    <p className="mt-1 text-xs text-grayscale-600 leading-relaxed">
+                        {m['recovery.signOutOtherDevices.description']()}
+                    </p>
+                    <button
+                        onClick={onSignOutOtherDevices}
+                        disabled={loading}
+                        className="mt-3 w-full py-2.5 px-4 rounded-[20px] border border-red-200 text-red-700 font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        {m['recovery.signOutOtherDevices.action']()}
+                    </button>
+                </section>
             )}
 
             {/* Bottom action */}

@@ -270,6 +270,39 @@ export interface RecoveryResult {
     escrowEnrolled?: boolean;
     /** True when the key came from an existing escrow enrollment (hold or PIN). */
     escrowRecovery?: boolean;
+    /**
+     * Set only for a PIN sign-in, which keeps the account's shares, history, recovery
+     * methods and escrow instead of resetting them. `kept`: the login was already
+     * bound; `relinked`: a new login was linked without changing shares;
+     * `deferred-rotation`: another device rotated during sign-in, so this device was
+     * stored at the released (historical) version and the next start-up advances it
+     * with the usual non-wiping reconciliation. `pinRefreshed` is false when the
+     * fresh-attempt-budget re-set did not run or failed; the PIN itself stays valid.
+     * `newPinRequired` is true when wrong PIN entries are recorded against the current
+     * PIN at release time (or the server could not say): the same PIN is then never
+     * re-set, so the user must choose a different PIN to restore the full budget.
+     */
+    pinSignIn?: {
+        mode: 'kept' | 'relinked' | 'deferred-rotation';
+        pinRefreshed: boolean;
+        newPinRequired: boolean;
+        /**
+         * The same-PIN re-set was attempted and could not be confirmed (refused, or
+         * failed before the authority's receipt reached this client). The PIN keeps
+         * working, with at most its reduced budget; a server that committed it anyway
+         * converges on its own.
+         */
+        pinRefreshFailed?: boolean;
+    };
+}
+
+/** Result of signing out every other device ("Secure my account"). */
+export interface RevokeOtherDevicesResult {
+    shareVersion: number;
+    /** False when re-enrollment did not run or failed; the next status refresh repairs it. */
+    escrowEnrolled: boolean;
+    /** True only when escrow was re-enrolled with the PIN the user just entered. */
+    pinKept: boolean;
 }
 
 export interface IdentityRecoverySession {
@@ -277,6 +310,8 @@ export interface IdentityRecoverySession {
     recoveryMethods: RecoveryMethodInfo[];
     /** The verified account's DID (same source as `ServerKeyStatus.primaryDid`). */
     primaryDid: string | null;
+    /** PIN availability at verification time, before any PIN attempt in this session. */
+    escrowPin?: EscrowPinStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -310,6 +345,12 @@ export const EscrowPinStatusValidator = z.object({
     enabled: z.boolean(),
     attemptsRemaining: z.number().int().nonnegative(),
     salt: z.string().optional(),
+    /**
+     * Verified wrong PIN entries against the current PIN (successful releases and
+     * unresolved reservations are not counted). Omitted when the server cannot tell,
+     * e.g. legacy records that predate the verified counter.
+     */
+    wrongAttempts: z.number().int().nonnegative().optional(),
 });
 export type EscrowPinStatus = z.infer<typeof EscrowPinStatusValidator>;
 
@@ -353,6 +394,16 @@ export interface ServerKeyStatus {
     escrowOptedOut?: boolean;
     escrowPin?: EscrowPinStatus;
     escrowStale?: EscrowBlobStaleReason;
+    /**
+     * Identity (blob hash) of the escrow copy the server holds; authority-mode clients
+     * compare it with the signed authority's envelope. Absent from older servers.
+     */
+    escrowBlobIdentity?: string;
+    /**
+     * A PIN operation is in progress server-side: `escrowBlobIdentity` may trail the
+     * authority until it settles (seconds, at most the server's lease TTL).
+     */
+    escrowUpdating?: boolean;
     sssActivationState?: SssActivationState | null;
     /**
      * The server has an escrow recovery method in some confirmation state but none
@@ -763,13 +814,31 @@ export interface KeyDerivationStrategy<
     /** Discard any reconstructed identity recovery that has not been rebound. */
     cancelIdentityRecovery?(): void;
 
-    /** Bind the current provider identity and commit a full share rotation. */
+    /**
+     * Bind the current provider identity. A pending PIN sign-in only links the login
+     * (no share change); any other pending recovery commits a full share rotation.
+     */
     completeIdentityRecovery?(params: {
         token: string;
         providerType: AuthProviderType;
         signDidAuthVp?: DidAuthVpSigner;
         options?: { recoveryEmail?: string; recoveryLanguage?: string };
     }): Promise<RecoveryResult>;
+
+    /**
+     * "Secure my account": re-split the key and drop every older auth share version,
+     * which signs out other devices and turns off the old recovery methods. With a
+     * `pin`, escrow is re-enrolled with that PIN; `null` re-enrolls without one.
+     */
+    revokeOtherDevices?(params: {
+        token: string;
+        providerType: AuthProviderType;
+        privateKey: string;
+        did: string;
+        signDidAuthVp: DidAuthVpSigner;
+        pin: string | null;
+        options?: { recoveryEmail?: string; recoveryLanguage?: string };
+    }): Promise<RevokeOtherDevicesResult>;
 
     // --- Contact method management ---
 

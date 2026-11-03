@@ -2288,7 +2288,8 @@
             "successDescription": "Your account is connected to your new login. Set up recovery again to keep it protected.",
             "tooManyAttempts": "Too many incorrect attempts. Try again later.",
             "invalidCode": "That code is incorrect or expired. Request a new code and try again.",
-            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method."
+            "invalidRecoveryMethod": "That recovery method could not verify your account. Try another method.",
+            "successDescriptionKept": "Your account is connected to your new login. Your other devices and recovery methods still work."
         },
         "pin": {
             "setPin": "Set a recovery PIN",
@@ -2318,7 +2319,7 @@
             "change": "Change",
             "afterRecovery": {
                 "title": "Set a new recovery PIN",
-                "body": "The PIN you just used has been retired — each PIN works once, so your account stays protected. Choose a new one to keep instant recovery ready.",
+                "body": "Your recovery PIN is no longer active. Choose a new one to keep instant recovery ready.",
                 "hint": "Same rules as before: 6 digits, nothing obvious."
             },
             "afterHoldRecovery": {
@@ -2329,7 +2330,13 @@
                 "title": "Set a new recovery PIN",
                 "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
             },
-            "useInstead": "Use my recovery PIN instead"
+            "useInstead": "Use my recovery PIN instead",
+            "samePin": "Choose a different PIN from the one you just used.",
+            "newPinRequired": {
+                "title": "Choose a new recovery PIN",
+                "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
+                "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
+            }
         },
         "confirmCode": {
             "mismatch": "That code isn't right. Try again.",
@@ -2402,7 +2409,65 @@
             "discardEmail": "Discard",
             "discardNote": "The one you saved won't work. You can make a new one anytime."
         },
-        "notFinished": "Not finished"
+        "notFinished": "Not finished",
+        "pinHero": {
+            "title": "Sign in with your recovery PIN",
+            "description": "Enter the 6-digit PIN you set up. Your other devices stay signed in.",
+            "otherWays": "Other ways to sign in"
+        },
+        "pinSignIn": {
+            "verifying": "Checking your PIN...",
+            "incorrectOne": "Incorrect PIN. 1 attempt left.",
+            "unavailable": "PIN sign-in isn't available for this account. Use another way to sign in.",
+            "failed": "Something went wrong. Please try again.",
+            "newCodeNeeded": "For your security, each PIN try needs a new email code. Send a new code to try again."
+        },
+        "pinSignInReview": {
+            "title": "You're in!",
+            "question": "Did you lose a device, or think someone else knows your PIN?",
+            "fine": "No, everything's fine",
+            "secure": "Yes, secure my account",
+            "wrongAttemptsOne": "Your PIN was entered incorrectly once before this sign-in. If that wasn't you, secure your account.",
+            "wrongAttempts": "Your PIN was entered incorrectly {{count}} times before this sign-in. If that wasn't you, secure your account.",
+            "later": "You can also do this later in Account Recovery.",
+            "newPin": "Choose a new PIN to keep your account protected. Until you do, your current PIN keeps working with fewer tries left.",
+            "choosePin": "No, choose a new PIN",
+            "notNow": "Not now"
+        },
+        "secureAccount": {
+            "title": "Secure your account",
+            "intro": "Use this if you think someone else got into your account. It will:",
+            "signOut": "Stop your other devices and other logins from signing in again",
+            "turnOff": "Turn off your old recovery phrase, backup file, passkey and email recovery key",
+            "stayHere": "Keep you signed in on this device",
+            "openDevices": "A device that is open right now may keep working until it signs out. This can't undo anything someone already did with your account.",
+            "afterwards": "Afterwards, you'll add new ways to get back in.",
+            "continue": "Secure my account",
+            "pinTitle": "Keep a recovery PIN",
+            "pinDesc": "Choose a 6-digit PIN. If someone else might know your current PIN, pick a new one. To keep your current PIN, enter it here.",
+            "skipPin": "Continue without a PIN",
+            "skipPinNote": "You can set a new PIN later in Account Recovery.",
+            "working": "Securing your account...",
+            "workingHint": "Keep this page open until it's done.",
+            "doneTitle": "Your account is secured",
+            "doneBody": "Other devices and logins can't sign in again, and your old recovery methods are off.",
+            "pinKept": "Your recovery PIN is on.",
+            "pinNotKept": "Your recovery PIN is off. You can set one again in Account Recovery.",
+            "nextStep": "Add a new way back in so you don't get locked out.",
+            "setUpPasskey": "Set up a passkey",
+            "setUpRecovery": "Add a recovery method",
+            "conflict": "Your account changed while we were securing it. Please try again.",
+            "failed": "We couldn't finish securing your account. Please try again.",
+            "sessionExpired": "Your session expired. Sign in again to secure your account.",
+            "opening": "Opening account security...",
+            "pinDescNewPin": "Choose a new 6-digit PIN, different from your current one."
+        },
+        "signOutOtherDevices": {
+            "title": "Signed in somewhere you don't recognize?",
+            "description": "Stop other devices and logins from signing in again, and turn off your old recovery methods.",
+            "action": "Sign out of all other devices"
+        },
+        "inProgress": "Recovery is already running. Wait for it to finish, then try again."
     },
     "alerts": {
         "accepted": "Accepted",

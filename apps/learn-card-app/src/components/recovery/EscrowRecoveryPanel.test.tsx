@@ -36,34 +36,43 @@ describe('EscrowRecoveryPanel', () => {
         expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
     });
 
-    it.each(['EscrowPinUnavailableError', 'EscrowRequestError'])(
-        'falls back safely for %s',
-        async name => {
-            const error = Object.assign(new Error('private server details'), { name, status: 403 });
-            render(
-                <EscrowRecoveryPanel
-                    view="start"
-                    available
-                    pinAvailable
-                    onStart={vi.fn()}
-                    onStatus={vi.fn()}
-                    onRecover={vi.fn().mockRejectedValue(error)}
-                    onConfirmCode={vi.fn()}
-                    onResendCode={vi.fn()}
-                />
-            );
-            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
-                clipboardData: { getData: () => '135790' },
-            });
-            expect(
-                await screen.findByText(
-                    "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
-                )
-            ).toBeInTheDocument();
-            expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
-            expect(screen.queryByText('private server details')).not.toBeInTheDocument();
-        }
-    );
+    it('only runs the hold: PIN sign-in lives on the first screen', async () => {
+        const onUsePin = vi.fn();
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                pinAvailable
+                onUsePin={onUsePin}
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+        expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+        expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Use my recovery PIN instead' }));
+        expect(onUsePin).toHaveBeenCalledOnce();
+    });
+
+    it('offers no PIN link without a PIN', async () => {
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+        expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+        expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
+    });
+
     const mockOnStart = vi.fn();
     const mockOnStatus = vi.fn();
     const mockOnRecover = vi.fn();
@@ -444,110 +453,6 @@ describe('EscrowRecoveryPanel', () => {
         expect(JSON.stringify(logError.mock.calls)).not.toContain('private@');
     });
 
-    it('shows PIN flow first', async () => {
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        expect(screen.getByText('Enter my recovery PIN')).toBeInTheDocument();
-        expect(screen.getByText("I don't have a PIN")).toBeInTheDocument();
-    });
-
-    it('handles PIN mismatch error', async () => {
-        const error = new Error('Incorrect PIN') as Error & { attemptsRemaining: number };
-        error.name = 'EscrowPinMismatchError';
-        error.attemptsRemaining = 8;
-        mockOnRecover.mockRejectedValueOnce(error);
-
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        const inputs = screen.getAllByLabelText(/PIN digit/);
-        fireEvent.paste(inputs[0], { clipboardData: { getData: () => '135790' } });
-
-        await waitFor(() => {
-            expect(mockOnRecover).toHaveBeenCalledWith({ method: 'escrow-pin', pin: '135790' });
-            expect(screen.getByText('Incorrect PIN. 8 attempts left.')).toBeInTheDocument();
-        });
-    });
-
-    it('keeps the PIN step visible after a temporary throttle without auto-retrying', async () => {
-        const error = new Error('Throttled');
-        error.name = 'EscrowPinThrottledError';
-        mockOnRecover.mockRejectedValueOnce(error);
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
-            clipboardData: { getData: () => '135790' },
-        });
-        expect(
-            await screen.findByText('Too many attempts. Please try again later.')
-        ).toBeInTheDocument();
-        expect(screen.getByText('Enter my recovery PIN')).toBeInTheDocument();
-        expect(screen.getAllByLabelText(/PIN digit/)).toHaveLength(6);
-        expect(mockOnRecover).toHaveBeenCalledTimes(1);
-        expect(mockOnStart).not.toHaveBeenCalled();
-    });
-
-    it('handles PIN locked error and falls back to hold flow', async () => {
-        const error = new Error('Locked');
-        error.name = 'EscrowPinLockedError';
-        mockOnRecover.mockRejectedValueOnce(error);
-
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        const inputs = screen.getAllByLabelText(/PIN digit/);
-        fireEvent.paste(inputs[0], { clipboardData: { getData: () => '135790' } });
-
-        await waitFor(() => {
-            expect(
-                screen.getByText('Too many attempts. You can still recover by waiting 7 days.')
-            ).toBeInTheDocument();
-            expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
-        });
-        expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
-    });
-
     it('shows existing request card when onStart returns null resumeToken', async () => {
         const requestedAt = new Date().toISOString();
         const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -782,25 +687,6 @@ describe('EscrowRecoveryPanel', () => {
                 screen.queryByText('A recovery request is already waiting')
             ).not.toBeInTheDocument();
         });
-    });
-
-    it('switches to hold flow when clicking I dont have a PIN', async () => {
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        fireEvent.click(screen.getByText("I don't have a PIN"));
-
-        expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
     });
 
     // [B] releaseAfter can move after the start-time estimate (e.g. an
