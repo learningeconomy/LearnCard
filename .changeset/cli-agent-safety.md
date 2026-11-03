@@ -1,8 +1,19 @@
 ---
-'@learncard/cli': minor
+'@learncard/cli': major
 ---
 
 Make the CLI safer and more predictable for scripts and AI agents.
+
+**Upgrading from 3.x.** This release is a major version because scripts that parse CLI output or rely on the old behaviour may break:
+
+- `verify --json` prints one line, `{ ok, command: "verify", verified, result }`. Read `verified` and `result` instead of the raw result.
+- `token --json` no longer includes `token`. Read `API_TOKEN` from the `.env` named in `tokenSavedTo`, or pass `--show-secret`.
+- `open --json --url-fragment` returns the URL without `#seed=`. Pass `--show-secret` for the old URL.
+- Read-only commands (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`/`--revoke`, `open`) fail with `NO_IDENTITY` in a folder with no identity instead of creating one. Run `init` (or `org apply`) first.
+- Invalid flag values that used to be accepted are now rejected, as described below.
+- Node 20 or later is required (`engines.node >= 20`).
+
+**All changes:**
 
 - `revoke`, `token --list` and `token --revoke` no longer create a seed, `.env` or profile in an empty folder. All commands that only read or act on an existing identity (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`, `token --revoke`, `open`, `clr validate --dry-run-sign`) now fail in such a folder with `code: "NO_IDENTITY"` and the same hint to run `init`, and no longer write `NETWORK_URL` to `.env`. When `init`, `send`, `org apply` or another setup command creates a new identity, it says so on stderr and adds `identityCreated: { profileId, did, network }` to the `--json` result.
 - `--profile-id`, `send --guardian-email` and `send --webhook-url` are checked before an identity is created, so a malformed value no longer leaves a broken `.env` behind.
