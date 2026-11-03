@@ -104,9 +104,11 @@ preservation cases above exercise their normal config pipeline separately.
 This detects a new package bypassing reporting without matching factory source text
 or imposing an arbitrary minimum workspace count.
 It also queries the real workspace Nx graph: shared config/reporter/summary changes
-must select every workspace Vitest test target. Isolated fixtures prove actual
-cache hits/misses for inherited and explicit inputs, shared/config edits, and the
-retry flag (not report location). The non-Vitest fixture is a failing Node command,
+must select every workspace Vitest project, and each project's resolved `test`
+target inputs must include `ciTestConfig`. A coverage/build target selecting the
+same project cannot substitute for the test target's cache dependency.
+Isolated fixtures prove actual cache hits/misses for inherited and explicit inputs,
+shared/config edits, and the retry flag (not report location). The non-Vitest fixture is a failing Node command,
 not the production Rust graph. Source-pattern inventories and exact YAML-step
 snapshots are not substitutes for these execution checks.
 

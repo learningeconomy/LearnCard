@@ -350,6 +350,12 @@ test('shared retry changes select every workspace Vitest test target through rea
             ([, node]) => node.data.root === path.dirname(manifest)
         );
         assert.ok(project, `${manifest} is absent from the Nx project graph`);
+        const resolved = run(['show', 'project', project[0], '--json']);
+        assert.equal(resolved.status, 0, resolved.stdout + resolved.stderr);
+        assert.ok(
+            JSON.parse(resolved.stdout).targets.test.inputs.includes('ciTestConfig'),
+            `${project[0]}: resolved test inputs must include ciTestConfig; another target selecting the project is insufficient`
+        );
         return project[0];
     });
     for (const file of [
