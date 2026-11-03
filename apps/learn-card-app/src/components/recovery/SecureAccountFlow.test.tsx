@@ -46,6 +46,25 @@ describe('SecureAccountFlow', () => {
         expect(onSecure).not.toHaveBeenCalled();
     });
 
+    it('carries the destructive (red) action on its confirm screen, with a way out', () => {
+        renderFlow();
+
+        // Settings' quiet "Sign out of other devices" row relies on this screen.
+        expect(screen.getByRole('button', { name: 'Secure my account' }).className).toMatch(
+            /bg-red-600/
+        );
+        expect(screen.getByRole('button', { name: 'Cancel' }).className).not.toMatch(/red/);
+    });
+
+    it('focuses Cancel first, so the revoke is never the default action', () => {
+        const { onSecure } = renderFlow({ hasPin: false });
+
+        const cancel = screen.getByRole('button', { name: 'Cancel' });
+        expect(cancel).toHaveFocus();
+        fireEvent.keyDown(cancel, { key: 'Enter' });
+        expect(onSecure).not.toHaveBeenCalled();
+    });
+
     it('keeps the PIN after it is entered and confirmed, then leads to a passkey', async () => {
         const { onSecure, onSetUpRecovery } = renderFlow();
 

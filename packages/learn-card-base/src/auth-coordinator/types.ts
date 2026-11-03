@@ -84,10 +84,13 @@ export interface PinSignInInfo {
      */
     pinRefreshFailed?: boolean;
     /**
-     * Wrong PIN entries are recorded against the current PIN (or the server could not
-     * say), so the same PIN was not re-set: the app asks for a different PIN
-     * (`setEscrowPin`, which rejects the PIN just used with `SameEscrowPinError`).
-     * Until then the PIN keeps its reduced budget.
+     * Wrong PIN entries are recorded against the current PIN that were not this
+     * sign-in's own typing (or the server could not say), so the same PIN was not
+     * re-set: the app asks for a different PIN (`setEscrowPin`, which rejects the PIN
+     * just used with `SameEscrowPinError`). Until then the PIN keeps its reduced budget.
+     * Own-typos rule: wrong entries this device submitted during this sign-in flow
+     * never set it; only entries recorded before the flow started, or any entry from
+     * elsewhere during it, do.
      */
     newPinRequired: boolean;
     /**
@@ -185,6 +188,14 @@ export type UnifiedAuthState =
            * new PIN is set or the account is secured.
            */
           escrowPinChangeRequired?: true;
+          /**
+           * Wrong PIN entries are recorded against the current PIN, other than this
+           * session's own typing excused by a PIN sign-in (own-typos rule). Unlike
+           * `escrowPinChangeRequired`, a dismissal does not hide it. Drives the settings
+           * "Sign out of other devices" attention dot. Legacy records without a verified
+           * count never set it.
+           */
+          escrowPinAttention?: true;
           authUser?: AuthUser;
           did: string;
           privateKey: string;

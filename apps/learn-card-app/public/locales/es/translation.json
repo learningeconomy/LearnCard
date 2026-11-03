@@ -1529,14 +1529,15 @@
             "whoAreYou": "¿Quién eres? (Opcional)",
             "explore": "Explorar {{brand}}",
             "pin": {
-                "title": "Añadir un PIN de recuperación",
-                "body": "Si alguna vez pierdes este dispositivo, un PIN de 6 dígitos te permitirá volver a entrar en segundos.",
+                "title": "Crea tu PIN",
+                "body": "Lo usarás para iniciar sesión en dispositivos nuevos.",
                 "confirmTitle": "Confirma tu PIN",
                 "confirmBody": "Introduce los mismos 6 dígitos de nuevo.",
                 "saving": "Guardando tu PIN…",
                 "success": "Estás protegido",
                 "skip": "Omitir por ahora",
                 "startOver": "Empezar de nuevo",
+                "saveFailedSkip": "No se pudo guardar tu PIN. Inténtalo de nuevo u omítelo por ahora y configúralo más tarde.",
                 "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
             }
         }
@@ -2372,9 +2373,14 @@
         },
         "notFinished": "Sin terminar",
         "pinHero": {
-            "title": "Inicia sesión con tu PIN de recuperación",
-            "description": "Introduce el PIN de 6 dígitos que configuraste. Tus otros dispositivos seguirán con la sesión iniciada.",
-            "otherWays": "Otras formas de iniciar sesión"
+            "title": "Confirma que eres tú",
+            "description": "Introduce tu PIN de 6 dígitos para terminar de iniciar sesión.",
+            "otherWays": "Otras formas de confirmar",
+            "device": "Aprobar desde otro dispositivo",
+            "deviceDesc": "Escanea un código con un dispositivo en el que hayas iniciado sesión",
+            "showMore": "Mostrar {{count}} más",
+            "showLess": "Mostrar menos",
+            "trouble": "¿Problemas para iniciar sesión?"
         },
         "pinSignIn": {
             "verifying": "Comprobando tu PIN...",
@@ -2384,15 +2390,15 @@
             "newCodeNeeded": "Por tu seguridad, cada intento con el PIN necesita un nuevo código por correo. Envía un nuevo código para volver a intentarlo."
         },
         "pinSignInReview": {
-            "title": "¡Ya estás dentro!",
-            "question": "¿Perdiste un dispositivo o crees que alguien más conoce tu PIN?",
-            "fine": "No, todo está bien",
-            "secure": "Sí, proteger mi cuenta",
-            "wrongAttemptsOne": "Tu PIN se introdujo incorrectamente una vez antes de este inicio de sesión. Si no fuiste tú, protege tu cuenta.",
-            "wrongAttempts": "Tu PIN se introdujo incorrectamente {{count}} veces antes de este inicio de sesión. Si no fuiste tú, protege tu cuenta.",
-            "later": "También puedes hacerlo más tarde en Recuperación de cuenta.",
-            "newPin": "Elige un nuevo PIN para mantener tu cuenta protegida. Hasta que lo hagas, tu PIN actual seguirá funcionando con menos intentos.",
-            "choosePin": "No, elegir un nuevo PIN",
+            "title": "Has iniciado sesión",
+            "body": "Tus otros dispositivos también siguen con la sesión iniciada.",
+            "secureLink": "¿Perdiste un dispositivo? Protege tu cuenta",
+            "warnTitle": "Es posible que alguien haya probado tu PIN",
+            "warnBodyOne": "Se introdujo incorrectamente 1 vez antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBodyTwo": "Se introdujo incorrectamente 2 veces antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBody": "Se introdujo incorrectamente {{count}} veces antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBodyUnknown": "Es posible que tu PIN se haya introducido incorrectamente antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "choosePin": "Elegir un nuevo PIN",
             "notNow": "Ahora no"
         },
         "secureAccount": {
@@ -2424,9 +2430,10 @@
             "pinDescNewPin": "Elige un nuevo PIN de 6 dígitos, diferente del actual."
         },
         "signOutOtherDevices": {
-            "title": "¿Hay una sesión iniciada en un lugar que no reconoces?",
-            "description": "Impide que otros dispositivos e inicios de sesión vuelvan a entrar y desactiva tus métodos de recuperación anteriores.",
-            "action": "Cerrar sesión en todos los demás dispositivos"
+            "section": "Seguridad",
+            "label": "Cerrar sesión en otros dispositivos",
+            "caption": "¿Perdiste un dispositivo o ves algo desconocido?",
+            "attention": "Tu PIN se introdujo incorrectamente."
         },
         "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo."
     },

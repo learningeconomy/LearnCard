@@ -2129,6 +2129,13 @@ const AuthSessionManager: React.FC<{
                                     closeRecoverySetup();
                                     openSecureAccount();
                                 }}
+                                // Existing signal only: wrong PIN entries recorded
+                                // against the current PIN, minus this session's own
+                                // typing excused by a PIN sign-in (own-typos rule).
+                                signOutAttention={
+                                    coordinator.state.status === 'ready' &&
+                                    coordinator.state.escrowPinAttention === true
+                                }
                                 existingMethods={[]}
                                 maskedRecoveryEmail={null}
                                 initialMethod={recoverySetupOptionsRef.current.initialMethod}

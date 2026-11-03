@@ -29,6 +29,7 @@ import type {
     DidAuthVpSigner,
     EscrowAttestationPolicy,
     EscrowHoldStatus,
+    EscrowPinAttemptContext,
     EscrowRecoveryStart,
     EscrowEnrollmentState,
     RevokeOtherDevicesResult,
@@ -1117,7 +1118,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                * PIN sign-in awaiting a new login: completion only links that login
                * (no re-split, no history or recovery-method change) at this version.
                */
-              pinKeep?: { shareVersion: number };
+              pinKeep?: { shareVersion: number; pinAttempts?: EscrowPinAttemptContext };
               rebind?: { shares: SSSShares; storageId: string | undefined; attempted: boolean };
           }
         | undefined;
@@ -1814,36 +1815,79 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     };
 
     /**
-     * True unless the server proves no wrong entry is recorded against the current PIN.
-     * A missing count (legacy record, older server, failed lookup) is treated as "wrong
-     * entries recorded", so the same PIN never gets a fresh budget on a guess.
+     * Verified wrong entries recorded against the current PIN, or undefined when the
+     * server cannot prove the count (legacy record, older server, failed lookup). A
+     * status with no PIN counts as zero.
      */
-    const pinHasRecordedWrongAttempts = (escrowPin: unknown): boolean => {
+    const recordedWrongPinAttempts = (escrowPin: unknown): number | undefined => {
         const status = escrowPin as { state?: unknown; wrongAttempts?: unknown } | undefined;
-        if (status?.state === 'none') return false;
-        return typeof status?.wrongAttempts !== 'number' || status.wrongAttempts > 0;
+        if (status?.state === 'none') return 0;
+        const count = status?.wrongAttempts;
+        return typeof count === 'number' && Number.isSafeInteger(count) && count >= 0
+            ? count
+            : undefined;
+    };
+
+    /** A valid, non-negative attempt count from the caller, or undefined. */
+    const attemptCount = (value: unknown): number | undefined =>
+        typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+
+    /**
+     * Whether a PIN sign-in may treat every wrong entry recorded against the PIN as the
+     * user's own typing (own-typos rule, E; approved 2026-11-03). Requires:
+     * - zero wrong entries when the flow started (`priorWrongAttempts`; unknown counts
+     *   as "some"), and
+     * - every status read during this release showing exactly the wrong entries this
+     *   client submitted in the flow (`ownWrongAttempts`), so a guess from anywhere
+     *   else (more entries) or an unexplained count (fewer, unknown) is never excused.
+     * Without `attempts` (older callers), or when a status shows a different PIN
+     * generation than the flow's (`pinSalt`), no own entries are excused and the prior
+     * count is the one read just before this release: the original #1905 rule.
+     */
+    const pinSignInClean = (
+        observed: unknown[],
+        flowAttempts: EscrowPinAttemptContext | undefined
+    ): { clean: boolean; ownWrongAttempts: number } => {
+        const flowSalt = flowAttempts?.pinSalt;
+        const sameGeneration =
+            typeof flowSalt !== 'string' ||
+            observed.every(status => {
+                const salt = (status as { salt?: unknown } | undefined)?.salt;
+                return typeof salt !== 'string' || salt === flowSalt;
+            });
+        const attempts = sameGeneration ? flowAttempts : undefined;
+        const own = attempts ? attemptCount(attempts.ownWrongAttempts) : 0;
+        if (own === undefined) return { clean: false, ownWrongAttempts: 0 };
+        const prior = attempts
+            ? attemptCount(attempts.priorWrongAttempts)
+            : recordedWrongPinAttempts(observed[0]);
+        const clean =
+            prior === 0 &&
+            observed.length > 0 &&
+            observed.every(status => recordedWrongPinAttempts(status) === own);
+        return { clean, ownWrongAttempts: own };
     };
 
     /**
      * The charges a same-PIN refresh may replace, or undefined when it must not run:
-     * zero wrong entries before AND after this release, and exactly one charge between
+     * the sign-in is clean (see pinSignInClean) and exactly one charge landed between
      * the two reads (this release). Any other charge may be someone else's guess still
      * in flight, so the PIN keeps its reduced budget. The server re-checks these
-     * charges in the write itself (`expectedPinCharges`).
+     * charges in the write itself (`expectedPinCharges`), so a guess landing after
+     * these reads still blocks the refresh.
      */
     const refreshablePinCharges = (
         before: unknown,
-        after: unknown
+        after: unknown,
+        ownWrongAttempts: number
     ): { attemptsRemaining: number; wrongAttempts: number } | undefined => {
         const pre = before as { state?: unknown; attemptsRemaining?: unknown } | undefined;
         const post = after as { state?: unknown; attemptsRemaining?: unknown } | undefined;
-        if (pinHasRecordedWrongAttempts(before) || pinHasRecordedWrongAttempts(after))
-            return undefined;
         if (pre?.state !== 'enabled' || post?.state !== 'enabled') return undefined;
         if (typeof pre.attemptsRemaining !== 'number' || typeof post.attemptsRemaining !== 'number')
             return undefined;
         if (post.attemptsRemaining !== pre.attemptsRemaining - 1) return undefined;
-        return { attemptsRemaining: post.attemptsRemaining, wrongAttempts: 0 };
+        return { attemptsRemaining: post.attemptsRemaining, wrongAttempts: ownWrongAttempts };
     };
 
     /** New salt and verifier for a PIN just proven; undefined when it fails the PIN rules. */
@@ -1916,7 +1960,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         },
         pin: string,
         /** PIN status read before this release; undefined when that read failed. */
-        pinBefore: unknown
+        pinBefore: unknown,
+        /** Own-typos context from the caller's PIN sign-in flow (E). */
+        pinAttempts?: EscrowPinAttemptContext
     ): Promise<RecoveryResult> => {
         const storage = guardedStorage();
         const generation = storageGeneration;
@@ -1982,13 +2028,18 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     // Both reads count: the one after this release (a success never resets the
                     // count) and the one before it (a legacy record without a verified count
                     // reports 0 once any release has been reserved, so only the earlier read
-                    // shows that its history is unknown).
+                    // shows that its history is unknown). Each must show exactly this flow's
+                    // own wrong entries (zero for callers without a flow context).
+                    const { clean, ownWrongAttempts } = pinSignInClean(
+                        [pinBefore, current.escrowPin],
+                        pinAttempts
+                    );
                     return {
                         mode,
-                        newPinRequired:
-                            pinHasRecordedWrongAttempts(pinBefore) ||
-                            pinHasRecordedWrongAttempts(current.escrowPin),
-                        refreshCharges: refreshablePinCharges(pinBefore, current.escrowPin),
+                        newPinRequired: !clean,
+                        refreshCharges: clean
+                            ? refreshablePinCharges(pinBefore, current.escrowPin, ownWrongAttempts)
+                            : undefined,
                     };
                 })
         );
@@ -2144,7 +2195,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             pinSignIn: {
                 mode: 'relinked',
                 pinRefreshed: false,
-                newPinRequired: pinHasRecordedWrongAttempts(status?.escrowPin),
+                newPinRequired: !pinSignInClean([status?.escrowPin], pending.pinKeep?.pinAttempts)
+                    .clean,
             },
         };
     };
@@ -3337,7 +3389,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             shareVersion: material.shareVersion,
                         },
                         input.pin,
-                        pinBefore
+                        pinBefore,
+                        input.pinAttempts
                     );
                 }
                 pendingIdentityRecovery = {
@@ -3349,7 +3402,14 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     fromEscrow: true,
                     // The PIN itself is not kept across the new-login step.
                     ...(input.method === 'escrow-pin'
-                        ? { pinKeep: { shareVersion: material.shareVersion } }
+                        ? {
+                              pinKeep: {
+                                  shareVersion: material.shareVersion,
+                                  ...(input.pinAttempts
+                                      ? { pinAttempts: { ...input.pinAttempts } }
+                                      : {}),
+                              },
+                          }
                         : {}),
                 };
                 // The OTP path uses exactly this pending state. Without a provider session
