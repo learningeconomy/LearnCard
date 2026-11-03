@@ -95,6 +95,16 @@ The app Dockerfile builds with the monorepo image, then copies only the generate
 `build/` directory into Nginx. The runtime listens on port 3000, serves SPA routes
 through index.html, and returns 404 for missing assets. Backend containers use the separate backend runtime described above.
 
+## Runner storage
+
+`prepare-storage.sh` requires 15 GiB free on `/` and 35 GiB for Docker. `ubuntu-latest`
+sometimes assigns a 72G copy-on-write VM with about 13G free instead of the usual
+145G disk. When a GitHub-hosted runner is short, the script deletes unused
+preinstalled toolchains (Android, .NET, GHC, CodeQL, Boost, Swift, PowerShell) and
+Docker images, measures again, and records `reclaim=` and `reclaimed_root_kib=` in
+`storage-plan.txt`. Runners large enough already, and persistent runners, are never
+touched. Override the list with `E2E_RECLAIM_PATHS`.
+
 ## Cache writers and cleanup
 
 ### Shared SDK compilation (LC-2312 / CI-15a)

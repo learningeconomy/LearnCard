@@ -249,7 +249,7 @@ Both apps follow the same pattern but differ in feature scope:
 > (`auth.provider`, `auth.keyDerivation`, `auth.sss.*` in
 > `apps/learn-card-app/environments/<tenant>/config*.json`). The variables below
 > are not read by the LearnCard app. See
-> `internal-docs/architecture/web3auth-sss-migration-runbook.md`.
+> the [Production Web3Auth SSS migration runbook](https://welibrary.atlassian.net/wiki/spaces/LC/pages/1040908337) in Confluence (space LC).
 
 Set these in your `.env` file or deployment environment:
 

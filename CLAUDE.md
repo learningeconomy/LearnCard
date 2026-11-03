@@ -54,6 +54,7 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | Developer portal (guides, dashboards)                | `PATTERNS.md` (Dashboard Patterns section)            | Guide/dashboard tab system, guide state access, per-guideType routing                                                                                  |
 | Near-ready cross-surface/network verification       | `.agents/skills/verify-learncard/SKILL.md`            | Linux-owned `lc verify` gate or secret-free hosted workflow; focused scripts/browser reuse during development; honest catalog coverage                  |
 | ConsentFlow test harness                             | `examples/consent-flow-test/README.md`                | Standalone test app for consent redirect + credential sending                                                                                          |
+| Internal plans, ADRs, architecture notes             | `.agents/skills/lc-knowledge/SKILL.md`                | Live in Confluence (space LC), never in this public repo; read the runbook before publishing or pulling plans                                          |
 
 ## Quick Reference
 

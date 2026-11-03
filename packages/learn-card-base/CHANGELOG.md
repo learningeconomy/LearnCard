@@ -1,5 +1,31 @@
 # learn-card-base
 
+## 0.7.7
+
+### Patch Changes
+
+- [#1843](https://github.com/learningeconomy/LearnCard/pull/1843) [`41e3202735655982a2c2c9102681b2cc484b2c78`](https://github.com/learningeconomy/LearnCard/commit/41e3202735655982a2c2c9102681b2cc484b2c78) Thanks [@goblincore](https://github.com/goblincore)! - Bundle the browser SQLite custom element through its explicit component entry so production builds include all required JavaScript without a CDN script.
+
+- [#1888](https://github.com/learningeconomy/LearnCard/pull/1888) [`39dc0d73fbb51a9e2101988e59c047fccd772f9d`](https://github.com/learningeconomy/LearnCard/commit/39dc0d73fbb51a9e2101988e59c047fccd772f9d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop `useGetCredentialList` from crashing on a malformed cached entry (LC-2330). The hook now drops a cache entry that isn't valid infinite-query data and refetches, `useGetRecordForUri` and `insertItem` skip or replace malformed entries, `insertItem` now prepends to the first page without disturbing later pages' cursors (so `hasNextPage` survives a failed refetch), Scouts busts its persisted query cache on each app version, and Scouts' add-credential mutation now targets the real `useGetCredentialList` / `useGetCredentialCount` keys.
+
+- [#1884](https://github.com/learningeconomy/LearnCard/pull/1884) [`b4dcc259f4156c03d133b1a5e3563df69e45c2f4`](https://github.com/learningeconomy/LearnCard/commit/b4dcc259f4156c03d133b1a5e3563df69e45c2f4) Thanks [@goblincore](https://github.com/goblincore)! - Cancel modal-removal timers when their provider unmounts so delayed close callbacks cannot update a destroyed app or test environment.
+
+- [#1860](https://github.com/learningeconomy/LearnCard/pull/1860) [`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a) Thanks [@goblincore](https://github.com/goblincore)! - Reconcile stale account shares that reuse the same share coordinate instead of stopping sign-in with an error. Preserve pending writes for a delayed server commit and retain existing handling for unrelated failures.
+
+- [#1838](https://github.com/learningeconomy/LearnCard/pull/1838) [`095f40762b4d96ae00f5677cb46e272bb6da02a1`](https://github.com/learningeconomy/LearnCard/commit/095f40762b4d96ae00f5677cb46e272bb6da02a1) Thanks [@goblincore](https://github.com/goblincore)! - Keep native cached private-key restoration scoped to the active account. Restore duplicate rows only when they contain a single distinct key, and reject conflicting keys. If a UID lookup has no key, require authentication or recovery rather than restoring an email-only legacy key. Refresh account scope on retries and discard stale results if identity changes while reading.
+
+- [#1882](https://github.com/learningeconomy/LearnCard/pull/1882) [`546ccf5505c4a6cbefb6b24206ece36157b87a54`](https://github.com/learningeconomy/LearnCard/commit/546ccf5505c4a6cbefb6b24206ece36157b87a54) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Skills map and skill counts now drop LearnCloud copies whose network credential was revoked on LearnNetwork with no status list. Copies record the network credential they came from (`networkUri`) and their status is checked through it. A status check that comes back unclear no longer brings back skills from a credential already seen revoked, including when the credential briefly fails to load. Only credentials that carry skills are checked, and status-list results are reused for five minutes or until a revoke or suspend clears them.
+
+- [#1882](https://github.com/learningeconomy/LearnCard/pull/1882) [`546ccf5505c4a6cbefb6b24206ece36157b87a54`](https://github.com/learningeconomy/LearnCard/commit/546ccf5505c4a6cbefb6b24206ece36157b87a54) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Skills map and skill counts no longer include skills from revoked credentials, including LearnCloud copies and imported credentials (checked against their status list). The revoked credential still shows in the wallet with its revoked badge.
+
+- [#1850](https://github.com/learningeconomy/LearnCard/pull/1850) [`578e831f41bc762ff12e5ad9be6ba765f2bed33d`](https://github.com/learningeconomy/LearnCard/commit/578e831f41bc762ff12e5ad9be6ba765f2bed33d) Thanks [@Custard7](https://github.com/Custard7)! - Prepare production for the Web3Auth → SSS migration: point SSS at lca-api's REST base (`/api`), refuse to migrate a key whose DID doesn't match the account (`verifyMigrationIdentity`), re-derive provisional migrations on a new device instead of stranding them, prompt escrow-enrolled accounts without a PIN once per device, and add the `sss-pilot` tenant overlays.
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/lca-api-plugin@2.0.13
+
 ## 0.7.6
 
 ### Patch Changes
