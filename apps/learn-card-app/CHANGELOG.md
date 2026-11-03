@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.100.7
+
+### Patch Changes
+
+- [#1831](https://github.com/learningeconomy/LearnCard/pull/1831) [`02f4f3f703747b5b8cfd63474329cb8ec373d639`](https://github.com/learningeconomy/LearnCard/commit/02f4f3f703747b5b8cfd63474329cb8ec373d639) Thanks [@smurflo2](https://github.com/smurflo2)! - fix: [LC-2257] Clarify that shared collections are saved for reference and guide users to their saved collections in Data & Sharing.
+
+    Keep received collections discoverable without owner-sharing access, avoid loading hidden owner links, and consume the saved-view shortcut after opening its destination.
+
+    Leave no empty shared-section spacing when owner sharing is unavailable and no collections have been received.
+
+- [#1886](https://github.com/learningeconomy/LearnCard/pull/1886) [`a8a94b97e5b984a87500bc21c6d1278ca55d62db`](https://github.com/learningeconomy/LearnCard/commit/a8a94b97e5b984a87500bc21c6d1278ca55d62db) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop the share-link telemetry scrubber from overflowing the stack on cyclic Sentry events and breadcrumbs. Circular references now come back as `'[Circular]'`, and Date values are no longer flattened to `{}`.
+
+- [#1881](https://github.com/learningeconomy/LearnCard/pull/1881) [`f0d032cae7eade9eee2e263a7b549a7eaba9b881`](https://github.com/learningeconomy/LearnCard/commit/f0d032cae7eade9eee2e263a7b549a7eaba9b881) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Count bare OpenBadgeCredential skill alignments in the skills hub, and skip alignments without a `targetUrl` instead of crashing the hub.
+
+- [#1882](https://github.com/learningeconomy/LearnCard/pull/1882) [`546ccf5505c4a6cbefb6b24206ece36157b87a54`](https://github.com/learningeconomy/LearnCard/commit/546ccf5505c4a6cbefb6b24206ece36157b87a54) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Skills map and skill counts now drop LearnCloud copies whose network credential was revoked on LearnNetwork with no status list. Copies record the network credential they came from (`networkUri`) and their status is checked through it. A status check that comes back unclear no longer brings back skills from a credential already seen revoked, including when the credential briefly fails to load. Only credentials that carry skills are checked, and status-list results are reused for five minutes or until a revoke or suspend clears them.
+
+- [#1850](https://github.com/learningeconomy/LearnCard/pull/1850) [`578e831f41bc762ff12e5ad9be6ba765f2bed33d`](https://github.com/learningeconomy/LearnCard/commit/578e831f41bc762ff12e5ad9be6ba765f2bed33d) Thanks [@Custard7](https://github.com/Custard7)! - Prepare production for the Web3Auth → SSS migration: point SSS at lca-api's REST base (`/api`), refuse to migrate a key whose DID doesn't match the account (`verifyMigrationIdentity`), re-derive provisional migrations on a new device instead of stranding them, prompt escrow-enrolled accounts without a PIN once per device, and add the `sss-pilot` tenant overlays.
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/credential-library@2.1.4
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/react@3.0.2
+
 ## 1.100.6
 
 ### Patch Changes

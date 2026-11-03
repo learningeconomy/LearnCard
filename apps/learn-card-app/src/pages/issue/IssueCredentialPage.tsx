@@ -720,7 +720,7 @@ const IssueCredentialPage: React.FC = () => {
                     throw new Error(m['issueFlow.saveFailed']());
                 }
 
-                await addVCtoWallet({ uri: result.credentialUri });
+                await addVCtoWallet({ uri: result.credentialUri, networkUri: result.networkUri });
 
                 await queryClient.invalidateQueries({
                     queryKey: ['useConsentedContracts'],

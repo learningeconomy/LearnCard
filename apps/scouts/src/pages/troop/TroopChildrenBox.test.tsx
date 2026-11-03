@@ -45,8 +45,8 @@ vi.mock('../../i18n', async () => {
     const runtime = await import('../../paraglide/runtime.js');
     return { useLocale: runtime.getLocale };
 });
-vi.mock('packages/plugins/lca-api-plugin/src/types', () => ({
-    DASHBOARD_TYPE: { GLOBAL: 'GLOBAL', NSO: 'NSO', TROOP: 'TROOP' },
+vi.mock('@learncard/lca-api-plugin', () => ({
+    DASHBOARD_TYPE: { NSO: 0, GLOBAL: 1, TROOP: 2 },
 }));
 vi.mock('./TroopsModal', () => ({ default: () => null }));
 vi.mock('./NetworkListDisplay', () => ({ default: () => null }));

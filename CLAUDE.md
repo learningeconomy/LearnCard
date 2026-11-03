@@ -55,6 +55,7 @@ For detailed architecture, read the relevant AGENTS.md when working in that area
 | Near-ready cross-surface/network verification       | `.agents/skills/verify-learncard/SKILL.md`            | Linux-owned `lc verify` gate or secret-free hosted workflow; focused scripts/browser reuse during development; honest catalog coverage                  |
 | ConsentFlow test harness                             | `examples/consent-flow-test/README.md`                | Standalone test app for consent redirect + credential sending                                                                                          |
 | AI Passport (Astro app + backend)                    | `services/ai-passport-backend/README.md`               | API/WS/workers/MCP, privacy runtime, local services; monorepo import notes and follow-ups in `docs/lc-1934-monorepo-import.md`                         |
+| Internal plans, ADRs, architecture notes             | `.agents/skills/lc-knowledge/SKILL.md`                | Live in Confluence (space LC), never in this public repo; read the runbook before publishing or pulling plans                                          |
 
 ## Quick Reference
 

@@ -1,5 +1,18 @@
 # @learncard/network-brain-service
 
+## 4.1.1
+
+### Patch Changes
+
+- [#1887](https://github.com/learningeconomy/LearnCard/pull/1887) [`decc065dcc7ecf3a5aacd06850ed23356f528153`](https://github.com/learningeconomy/LearnCard/commit/decc065dcc7ecf3a5aacd06850ed23356f528153) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop reporting expected `CONFLICT` tRPC errors (like re-consenting to a contract you've already consented to) to Sentry, the same way `BAD_REQUEST`, `NOT_FOUND` and `FORBIDDEN` are already filtered.
+
+- [#1883](https://github.com/learningeconomy/LearnCard/pull/1883) [`9bca968ad4da81ce98674d0e1a3959956d7521ca`](https://github.com/learningeconomy/LearnCard/commit/9bca968ad4da81ce98674d0e1a3959956d7521ca) Thanks [@goblincore](https://github.com/goblincore)! - Sequence app credential activity and delivery graph writes to reduce Neo4j deadlocks, and avoid duplicate listing attribution when the listing is already the issuer.
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/credential-library@2.1.4
+    - @learncard/didkit-plugin-node@0.3.7
+
 ## 4.1.0
 
 ### Minor Changes
