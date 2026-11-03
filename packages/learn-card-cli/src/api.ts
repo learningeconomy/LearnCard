@@ -48,17 +48,72 @@ const READ_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD']);
 
 /**
  * GET routes that change state on the server despite their verb (e.g. one-click email links).
- * They need `--write` like any other mutation. Keep in sync with brain-service routes.
+ * They need `--write` like any other mutation. Patterns match the canonical route path from
+ * {@link routePathCandidates}; trpc-to-openapi matches routes case-insensitively, hence `i`.
+ * Keep in sync with brain-service routes (audit: every OpenAPI `method: 'GET'` handler).
  */
 export const SIDE_EFFECT_GET_PATHS: readonly RegExp[] = [
-    // approveGuardianRequestByPath: consumes the token and approves the profile.
-    /^\/inbox\/guardian-approval\/(?!send$|approve$)[^/]+$/,
+    // inbox.approveGuardianRequestByPath: validates the token, approves the requester's
+    // profile, queues a PROFILE_PARENT_APPROVED notification, emails the requester and
+    // marks the token used. Any segment is a token on GET (send/approve are POST-only).
+    /^\/inbox\/guardian-approval\/[^/]+$/i,
+    // utilities.getChallenges: generates up to 100 challenges and registers them as valid
+    // auth challenges for the caller's DID (setValidChallengesForDid).
+    /^\/challenges$/i,
 ];
+
+/** Origin used only to parse a path the way the request URL will be built; never contacted. */
+const CLASSIFY_ORIGIN = 'http://learncard.invalid';
+
+/** Decode valid `%XX` runs; leave malformed escapes as they are instead of throwing. */
+const safeDecodePath = (path: string): string =>
+    path.replace(/(?:%[0-9a-f]{2})+/gi, run => {
+        try {
+            return decodeURIComponent(run);
+        } catch {
+            return run;
+        }
+    });
+
+/** Collapse duplicate slashes and strip trailing ones, keeping a bare `/`. */
+const canonicalRoutePath = (pathname: string): string =>
+    pathname.replace(/\/{2,}/g, '/').replace(/(.)\/+$/, '$1');
+
+/** Parse a path with the WHATWG URL parser, as the request URL and the server adapters do. */
+const parsedPathname = (path: string): string =>
+    new URL(`${CLASSIFY_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`).pathname;
+
+/** Upper bound on decode + re-parse rounds; each round must change the path to continue. */
+const MAX_DECODE_ROUNDS = 8;
+
+/**
+ * Canonical forms of the route path the server may see for `apiPath` (relative to the REST
+ * base): parsed with the WHATWG URL parser like the real request (so `\` becomes `/`, the
+ * query and fragment are dropped), with duplicate and trailing slashes removed, both
+ * percent-encoded (what the Fastify router matches) and decoded. The decoded path is parsed
+ * again, as the production Lambda adapter does (API Gateway decodes the path parameter and
+ * trpc-to-openapi re-parses it with `new URL()`), so encoded delimiters such as `%5C`, `%3F`,
+ * `%23`, `%20`, `%09` or `..%2F` resolve to the route they reach. Repeats until stable.
+ */
+export const routePathCandidates = (apiPath: string): string[] => {
+    const candidates = new Set<string>();
+    let current = parsedPathname(apiPath);
+    for (let round = 0; round < MAX_DECODE_ROUNDS; round += 1) {
+        const decoded = safeDecodePath(current);
+        const reparsed = parsedPathname(decoded);
+        for (const path of [current, decoded, reparsed]) candidates.add(canonicalRoutePath(path));
+        if (reparsed === current) break;
+        current = reparsed;
+    }
+    return [...candidates];
+};
 
 /** Whether a request only reads: GET/HEAD and not a known side-effecting GET route. */
 export const isReadRequest = (httpMethod: string, apiPath: string): boolean =>
     READ_METHODS.has(httpMethod) &&
-    !SIDE_EFFECT_GET_PATHS.some(pattern => pattern.test(apiPath.split('?')[0]!));
+    !routePathCandidates(apiPath).some(candidate =>
+        SIDE_EFFECT_GET_PATHS.some(pattern => pattern.test(candidate))
+    );
 
 export const DEFAULT_API_TIMEOUT_SECONDS = 30;
 /** Error bodies longer than this are truncated in the envelope's `detail`. */
@@ -127,11 +182,16 @@ export const normalizeApiPath = (path: string): string => {
         );
     if (!trimmed.startsWith('/'))
         throw new UsageError(`API path "${path}" must start with "/", e.g. /profile.`);
+    // A fragment is never sent, so the server would route on a different path than shown.
+    if (trimmed.includes('#'))
+        throw new UsageError(
+            `API path "${path}" must not contain "#": URL fragments are never sent to the server.`
+        );
     // The URL parser treats `\` like `/` and decodes `%2e` before resolving dot segments,
     // so `/%2e%2e/x` and `/..\x` would otherwise climb out of the /api base.
     if (
         trimmed
-            .split(/[?#]/)[0]!
+            .split('?')[0]!
             .split(/[/\\]/)
             .some(segment => /^(?:\.|%2e){1,2}$/i.test(segment))
     )
@@ -173,6 +233,12 @@ export const buildApiUrl = (
         throw new UsageError(`API path "${path}" resolves outside ${apiBase}.`);
     for (const [key, value] of query) url.searchParams.append(key, value);
     return url.toString();
+};
+
+/** The path of a built request URL relative to the REST base (what the server routes on). */
+export const routePathOf = (apiBase: string, url: string): string => {
+    const basePath = new URL(apiBase).pathname.replace(/\/+$/, '');
+    return new URL(url).pathname.slice(basePath.length) || '/';
 };
 
 const truncate = (text: string, maxBytes: number): string => {
@@ -350,7 +416,7 @@ export const runApi = async (
     const apiPath = normalizeApiPath(path);
     const query = parseQuery(options.query);
     const timeout = parseTimeoutSeconds(options.timeout);
-    const isRead = isReadRequest(httpMethod, apiPath);
+    let isRead = isReadRequest(httpMethod, apiPath);
     if (options.data !== undefined && READ_METHODS.has(httpMethod))
         throw new UsageError(
             `${httpMethod} requests have no body; pass parameters with --query key=value.`
@@ -359,21 +425,40 @@ export const runApi = async (
         options.data !== undefined
             ? await readJsonInput(options.data, '--data', deps.io)
             : undefined;
-    const effect = isRead ? 'read' : 'write';
-    if (!isRead && !options.write && !options.dryRun)
+    const assertWriteAllowed = (): void => {
+        if (isRead || options.write || options.dryRun) return;
+        const rerun = `npx @learncard/cli api ${httpMethod} ${apiPath}${options.data !== undefined ? ' --data ...' : ''}${query.length ? ' --query ...' : ''} --write`;
         throw new CliError(
             `${httpMethod} ${apiPath} can change data on the LearnCard Network, so it needs --write.`,
             {
                 code: 'WRITE_REQUIRES_FLAG',
-                hint: `Re-run with --write if you intend this (check first with --dry-run): npx @learncard/cli api ${httpMethod} ${apiPath} --write. -y does not imply --write.`,
+                hint: `Re-run with --write if you intend this (check first with --dry-run): ${rerun}. -y does not imply --write.`,
             }
         );
+    };
+    assertWriteAllowed();
 
     const project = await loadProject(process.cwd());
     const { network } = resolveServices(project.env, options.network, deps.env);
     const { apiBase } = deriveApiUrls(network);
     const url = buildApiUrl(apiBase, apiPath, query);
+    // Re-classify on the exact URL that will be sent, so the gate and the request agree.
+    const routePath = routePathOf(apiBase, url);
+    isRead = isRead && isReadRequest(httpMethod, routePath);
+    assertWriteAllowed();
+    const effect = isRead ? 'read' : 'write';
     const auth = resolveApiToken(project.env, deps.env);
+    const shownBody =
+        body !== undefined
+            ? toJsonSafe(body, {
+                  redact: [
+                      auth?.token,
+                      project.env.API_TOKEN,
+                      deps.env.LEARNCARD_API_KEY,
+                      project.env.SECURE_SEED,
+                  ],
+              })
+            : undefined;
 
     if (options.dryRun) {
         const allowed = isRead || !!options.write;
@@ -381,13 +466,14 @@ export const runApi = async (
         out.log(
             `Authorization: ${auth ? `${MASKED_AUTHORIZATION} (from ${auth.source})` : 'none (no token found)'}`
         );
-        if (body !== undefined) out.log(JSON.stringify(body, null, 2));
+        if (shownBody !== undefined) out.log(JSON.stringify(shownBody, null, 2));
         if (!allowed) out.log('Not allowed yet: add --write to send it.');
         out.set({
             dryRun: true,
             method: httpMethod,
             path: apiPath,
             url,
+            routePath: canonicalRoutePath(routePath),
             effect,
             allowed,
             headers: {
@@ -395,7 +481,7 @@ export const runApi = async (
                 ...(body !== undefined ? { 'content-type': 'application/json' } : {}),
             },
             tokenSource: auth?.source ?? null,
-            ...(body !== undefined ? { body: toJsonSafe(body, { redact: [auth?.token] }) } : {}),
+            ...(shownBody !== undefined ? { body: shownBody } : {}),
         });
         return;
     }
@@ -439,7 +525,12 @@ export const runApi = async (
     }
 
     const data: JsonValue = toJsonSafe(parseBody(text, response.headers.get('content-type')), {
-        redact: [auth.token, project.env.SECURE_SEED],
+        redact: [
+            auth.token,
+            project.env.API_TOKEN,
+            deps.env.LEARNCARD_API_KEY,
+            project.env.SECURE_SEED,
+        ],
     });
     out.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
     out.set({ status: response.status, method: httpMethod, path: apiPath, data });

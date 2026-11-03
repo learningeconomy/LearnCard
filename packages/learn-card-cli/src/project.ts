@@ -41,7 +41,39 @@ export interface ProjectOptions {
     didkit?: Promise<Buffer>;
     json?: boolean;
     readOnly?: boolean;
+    /**
+     * `false` turns off LearnCloud's automatic DID association, so the wallet never
+     * registers a new DID (`addDid` / `setPrimaryDid`) as a side effect of a LearnCloud
+     * call. Unset keeps the SDK default (on), except `connectAsDidWeb` with `readOnly`.
+     */
+    associateDids?: boolean;
+    /** Ethereum plugin chain (`ethereumConfig.network`). Unset keeps the SDK default (mainnet). */
+    ethereumChain?: string;
 }
+
+/**
+ * The `cloud` / `ethereumConfig` init fields `options` asks for (omitted when all are
+ * defaults). With `readOnlyStopsAssociation`, `readOnly` also turns association off.
+ */
+const walletConfig = (
+    options: ProjectOptions,
+    cloudUrl: string | undefined,
+    readOnlyStopsAssociation: boolean
+): {
+    cloud?: { url?: string; automaticallyAssociateDids?: false };
+    ethereumConfig?: { network: string };
+} => {
+    const noAssociation =
+        options.associateDids === false || (readOnlyStopsAssociation && !!options.readOnly);
+    const cloud = {
+        ...(cloudUrl && { url: cloudUrl }),
+        ...(noAssociation && { automaticallyAssociateDids: false as const }),
+    };
+    return {
+        ...(Object.keys(cloud).length > 0 && { cloud }),
+        ...(options.ethereumChain && { ethereumConfig: { network: options.ethereumChain } }),
+    };
+};
 
 export type NetworkCard = NetworkLearnCardFromSeed['returnValue'];
 export type DidWebCard = DidWebNetworkLearnCardFromSeed['returnValue'];
@@ -448,7 +480,7 @@ export async function connect(
     const config = {
         seed,
         network: services.network,
-        ...(services.cloud && { cloud: { url: services.cloud } }),
+        ...walletConfig(options, services.cloud, false),
         ...(options.didkit && { didkit: options.didkit }),
     };
     const learnCard = options.lca
@@ -479,9 +511,9 @@ const noteCreatedIdentityDid = (did: string): void => {
  * network issued to this seed (e.g. a profile manager). Manager-only routes
  * reject the seed's base did:key, so `connect()` alone cannot call them.
  *
- * With `readOnly`, LearnCloud's automatic DID association is turned off, so opening
- * the wallet does not register the did:web with LearnCloud (an `addDid` /
- * `setPrimaryDid` write that otherwise happens the first time a did:web is used).
+ * With `readOnly` (or `associateDids: false`), LearnCloud's automatic DID association is
+ * turned off, so opening the wallet does not register the did:web with LearnCloud (an
+ * `addDid` / `setPrimaryDid` write that otherwise happens the first time a did:web is used).
  */
 export const connectAsDidWeb = async (
     project: Project,
@@ -491,15 +523,11 @@ export const connectAsDidWeb = async (
     const seed = project.env.SECURE_SEED;
     if (!seed) throw new NoIdentityError();
     const services = resolveServices(project.env, options.network);
-    const cloud = {
-        ...(services.cloud && { url: services.cloud }),
-        ...(options.readOnly && { automaticallyAssociateDids: false }),
-    };
     return initLearnCard({
         seed,
         network: services.network === PRODUCTION_NETWORK ? true : services.network,
         didWeb,
-        ...(Object.keys(cloud).length > 0 && { cloud }),
+        ...walletConfig(options, services.cloud, true),
         ...(options.didkit && { didkit: options.didkit }),
     });
 };

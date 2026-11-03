@@ -12,8 +12,9 @@ import type { Argument, Command, Option } from 'commander';
 import packageJson from '../package.json';
 
 /**
- * What a command changes.
- * - `read`: reads remote state (network, cloud) and changes nothing there.
+ * What a command changes, as an upper bound over its flags (e.g. `clr validate` is `read`
+ * because `--dry-run-sign` connects, although plain validation is offline).
+ * - `read`: reads remote state (network, cloud, DID documents) and changes nothing there.
  * - `write`: can create or change remote state (profiles, credentials, grants, ...).
  * - `local`: touches only local files, stdout or the browser; no LearnCard state changes.
  * - `varies`: depends on the arguments (e.g. `call <method>`, `api <METHOD>`).
@@ -25,7 +26,11 @@ export interface CommandMetadata {
     effect: CommandEffect;
     /** May write a new seed / `.env` (and usually a network profile) in the current folder. */
     createsIdentity: boolean;
-    /** Contacts a LearnCard service (network, LearnCloud, LCA). */
+    /**
+     * May make outbound requests with some combination of flags: a LearnCard service
+     * (network, LearnCloud, LCA) or other HTTPS (DID documents, JSON-LD contexts, a
+     * webhook URL). `false` means the command never opens a connection.
+     */
     network: boolean;
     /** Key fields of the `--json` success result. */
     output: string;
@@ -142,12 +147,12 @@ export const COMMAND_METADATA: Readonly<Record<string, CommandMetadata>> = {
         notes: '--list and --revoke only read/act on an existing identity and never create one. The token is saved to .env as API_TOKEN.',
     },
     verify: {
-        effect: 'local',
+        effect: 'read',
         createsIdentity: false,
-        network: false,
+        network: true,
         output: 'verified, result {checks, warnings, errors}',
         examples: [`${CLI} verify credential.json --json`, `cat vp.json | ${CLI} verify -`],
-        notes: 'Exits 1 when the credential does not verify. May fetch DID documents and JSON-LD contexts over HTTPS.',
+        notes: 'Exits 1 when the credential does not verify. Uses no identity, but resolves the issuer DID (did:web over HTTPS) and may fetch JSON-LD contexts and status lists, so it is not offline.',
     },
     revoke: {
         effect: 'write',
@@ -213,15 +218,15 @@ export const COMMAND_METADATA: Readonly<Record<string, CommandMetadata>> = {
         notes: 'Exits 1 when a check fails. --webhook-url sends a test ping to that URL.',
     },
     'clr validate': {
-        effect: 'local',
+        effect: 'read',
         createsIdentity: false,
-        network: false,
+        network: true,
         output: 'ok (valid), errors[], warnings[], summary; with --dry-run-sign: signed, verification',
         examples: [
             `${CLI} clr validate transcript.json --json`,
             `${CLI} clr validate transcript.json --profile official --dry-run-sign --network staging`,
         ],
-        notes: '--dry-run-sign connects read-only to the network and refuses production without --allow-production.',
+        notes: 'Without --dry-run-sign it only reads the file and never connects. --dry-run-sign uses the folder identity, connects and authenticates to the network read-only (hence network: true), signs locally without storing anything, and refuses production without --allow-production.',
     },
     'inbox list': {
         effect: 'read',
@@ -310,24 +315,24 @@ export const COMMAND_METADATA: Readonly<Record<string, CommandMetadata>> = {
         effect: 'varies',
         createsIdentity: false,
         network: true,
-        output: 'method, effect (read|write), as?, result; --list: source, methods[]; --dry-run: dryRun, method, args, effect, secret?, as, network, identity, known, allowed (no connection)',
+        output: 'method, effect (read|write), as?, chain?, result; --list: source, methods[] (secret?, chain?); --dry-run: dryRun, method, args, effect, secret?, chain? {effective, requested, pluginDefault, required}, as, network, identity, known, allowed (no connection)',
         examples: [
             `${CLI} call getProfile --args '["example-academy"]' --json`,
             `${CLI} call --list --json`,
             `${CLI} call createBoost --args @boost.json --write --dry-run --json`,
         ],
-        notes: 'Methods that are not read-only (get/list/verify/...) require --write; -y does not imply it. Methods that return secrets need --show-secret. Never creates an identity.',
+        notes: 'Methods that are not read-only (get/list/verify/...) require --write; -y does not imply it. Methods that return secrets (keys, API tokens, signed login presentations, PKCE verifiers) need --show-secret. On-chain methods (transferTokens) need --chain <name>: the Ethereum plugin defaults to mainnet (real funds) regardless of --network, and the wallet chain is checked before submitting. Never creates an identity; read calls do not register DIDs with LearnCloud.',
     },
     api: {
         effect: 'varies',
         createsIdentity: false,
         network: true,
-        output: 'status, method, path, data; --dry-run: method, path, url, effect, allowed (token masked); --spec: specUrl, docsUrl (+ operations with --fetch)',
+        output: 'status, method, path, data; --dry-run: method, path, url, routePath, effect, allowed (token and seeds masked); --spec: specUrl, docsUrl (+ operations with --fetch)',
         examples: [
             `${CLI} api GET /activity/credentials --query limit=5 --json`,
             `${CLI} api POST /send --data @send.json --write --dry-run --json`,
         ],
-        notes: 'Bearer token from LEARNCARD_API_KEY or API_TOKEN in .env (see `token`). Methods other than GET/HEAD require --write.',
+        notes: 'Bearer token from LEARNCARD_API_KEY or API_TOKEN in .env (see `token`). Methods other than GET/HEAD require --write, and so do the GET routes that change state (GET /challenges, GET /inbox/guardian-approval/{token}) however the path is spelled, including percent-encoded spellings. A `#` in the path is rejected (fragments are never sent).',
     },
     'skill install': {
         effect: 'local',
@@ -339,7 +344,7 @@ export const COMMAND_METADATA: Readonly<Record<string, CommandMetadata>> = {
             `${CLI} skill install --target cursor --dir .`,
             `${CLI} skill install --print`,
         ],
-        notes: 'Refuses to overwrite a different existing file without --force.',
+        notes: 'Refuses to overwrite a different existing file without --force. Never follows symlinks: a symlinked or non-directory path component under --dir is refused (UNSAFE_PATH), even with --force.',
     },
 };
 
@@ -450,6 +455,21 @@ export const ERROR_CODES: CommandManifest['errorCodes'] = [
     {
         code: 'BAD_SPEC',
         meaning: '`api --spec --fetch` did not get an OpenAPI JSON document.',
+    },
+    {
+        code: 'CHAIN_REQUIRED',
+        meaning:
+            '`call` on an on-chain method (transferTokens) without --chain. Ask the user which chain; the plugin default is mainnet (real funds).',
+    },
+    {
+        code: 'CHAIN_MISMATCH',
+        meaning:
+            "`call` connected but the wallet's Ethereum chain differs from --chain (or could not be read); nothing was submitted.",
+    },
+    {
+        code: 'UNSAFE_PATH',
+        meaning:
+            '`skill install` found a symlink or non-directory on the target path under --dir; nothing was written. Replace it with a real directory.',
     },
     {
         code: 'EXISTS',

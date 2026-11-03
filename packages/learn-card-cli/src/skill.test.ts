@@ -197,6 +197,115 @@ describe('installSkill', () => {
     });
 });
 
+describe('installSkill stays inside --dir', () => {
+    let outside: string;
+
+    beforeEach(async () => {
+        outside = await fs.mkdtemp(path.join(os.tmpdir(), 'lc-skill-outside-'));
+    });
+
+    afterEach(async () => {
+        await fs.rm(outside, { recursive: true, force: true });
+    });
+
+    const exists = (file: string): Promise<boolean> =>
+        fs.lstat(file).then(
+            () => true,
+            () => false
+        );
+
+    const expectUnsafe = async (promise: Promise<unknown>): Promise<CliError> => {
+        const error = await promise.catch((caught: unknown) => caught);
+        expect(error).toBeInstanceOf(CliError);
+        expect(error).toMatchObject({ code: 'UNSAFE_PATH' });
+        return error as CliError;
+    };
+
+    it.each([false, true])(
+        'refuses a dangling SKILL.md symlink to an outside path (force: %s)',
+        async force => {
+            const file = path.join(cwd, SKILL_TARGETS.claude.file);
+            const target = path.join(outside, 'pwned.md');
+            await fs.mkdir(path.dirname(file), { recursive: true });
+            await fs.symlink(target, file);
+
+            await expectUnsafe(installSkill({ dir: cwd, targets: ['claude'], force }));
+            expect(await exists(target)).toBe(false);
+            expect((await fs.lstat(file)).isSymbolicLink()).toBe(true);
+        }
+    );
+
+    it('--force does not write through a symlink to an existing outside file', async () => {
+        const file = path.join(cwd, SKILL_TARGETS.cursor.file);
+        const target = path.join(outside, 'important.txt');
+        await fs.writeFile(target, 'keep me\n');
+        await fs.mkdir(path.dirname(file), { recursive: true });
+        await fs.symlink(target, file);
+
+        await expectUnsafe(installSkill({ dir: cwd, targets: ['cursor'], force: true }));
+        expect(await fs.readFile(target, 'utf8')).toBe('keep me\n');
+    });
+
+    it.each(['.claude', '.claude/skills', '.claude/skills/learncard'])(
+        'refuses a symlinked parent directory (%s) and writes nothing outside',
+        async link => {
+            await fs.mkdir(path.dirname(path.join(cwd, link)), { recursive: true });
+            await fs.symlink(outside, path.join(cwd, link));
+
+            const error = await expectUnsafe(installSkill({ dir: cwd, targets: ['claude'] }));
+            expect(error.detail).toBe(path.join(cwd, link));
+            expect(await fs.readdir(outside)).toEqual([]);
+        }
+    );
+
+    it('checks every target before writing any', async () => {
+        await fs.symlink(outside, path.join(cwd, '.cursor'));
+        await expectUnsafe(installSkill({ dir: cwd, targets: ['claude', 'cursor'] }));
+        expect(await exists(path.join(cwd, '.claude'))).toBe(false);
+        expect(await fs.readdir(outside)).toEqual([]);
+    });
+
+    it('refuses a target that is not a regular file', async () => {
+        await fs.mkdir(path.join(cwd, SKILL_TARGETS.claude.file), { recursive: true });
+        await expectUnsafe(installSkill({ dir: cwd, targets: ['claude'], force: true }));
+    });
+
+    it('creates new files exclusively: a symlink planted after the check is not followed', async () => {
+        const file = path.join(cwd, SKILL_TARGETS.claude.file);
+        const target = path.join(outside, 'raced.md');
+        const realLstat = fs.lstat;
+        let checks = 0;
+        // Plant the dangling link right after the write-time existence check reports "missing",
+        // i.e. between the check and the write. Only the exclusive (wx) open can catch it.
+        vi.spyOn(fs, 'lstat').mockImplementation((async (candidate: string) => {
+            try {
+                return await realLstat(candidate);
+            } catch (error) {
+                if (candidate === file && ++checks === 1) await fs.symlink(target, file);
+                throw error;
+            }
+        }) as typeof fs.lstat);
+
+        await expectUnsafe(installSkill({ dir: cwd, targets: ['claude'] }));
+        expect(await exists(target)).toBe(false);
+    });
+
+    it('--force replaces the file atomically and leaves no temp file behind', async () => {
+        const file = path.join(cwd, SKILL_TARGETS.claude.file);
+        await fs.mkdir(path.dirname(file), { recursive: true });
+        await fs.writeFile(file, 'old\n');
+        await installSkill({ dir: cwd, targets: ['claude'], force: true });
+        expect(await read(SKILL_TARGETS.claude.file)).toBe(AGENT_SKILL_MD);
+        expect(await fs.readdir(path.dirname(file))).toEqual(['SKILL.md']);
+    });
+
+    it('runSkillInstall --json reports UNSAFE_PATH', async () => {
+        await fs.symlink(outside, path.join(cwd, '.claude'));
+        await expectUnsafe(runSkillInstall({ target: 'claude', json: true }));
+        expect(await fs.readdir(outside)).toEqual([]);
+    });
+});
+
 describe('runSkillInstall', () => {
     it('installs for Claude by default in the current folder and reports files', async () => {
         out.json = true;

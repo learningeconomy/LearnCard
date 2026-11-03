@@ -24,12 +24,15 @@ import { out } from './out';
 import { STAGING_NETWORK } from './project';
 import {
     assertCallAllowed,
+    effectiveChainOf,
+    normalizeChain,
     normalizeMethodName,
     parseCallArgs,
     registerCallCommand,
     runCall,
 } from './call';
 import {
+    CHAIN_METHODS,
     READ_ALLOWLIST,
     SECRET_METHODS,
     STATIC_INVOKE_METHODS,
@@ -619,5 +622,230 @@ describe('registerCallCommand', () => {
     it('reads --as from LEARNCARD_AS', () => {
         process.env.LEARNCARD_AS = 'acme';
         expect(capture(['getProfile']).options.as).toBe('acme');
+    });
+});
+
+describe('secret audit (OpenID4VC)', () => {
+    it('classifies presentCredentials and the PKCE flow handle as secret', () => {
+        // presentCredentials returns the signed vp_token and, when requested, the id_token.
+        expect(classifyMethod('presentCredentials')).toEqual({ effect: 'write', secret: true });
+        // beginCredentialOfferAuthCode returns flowHandle.pkceVerifier, which redeems the code.
+        expect(classifyMethod('beginCredentialOfferAuthCode')).toEqual({
+            effect: 'write',
+            secret: true,
+        });
+        for (const name of SECRET_METHODS) expect(STATIC_INVOKE_METHODS).toContain(name);
+    });
+
+    it('refuses presentCredentials with --write but without --show-secret, before any I/O', async () => {
+        await writeEnv(`SECURE_SEED=${SEED}\n`);
+        expect(
+            await failCode(
+                runCall('presentCredentials', { write: true, args: '["openid4vp://x", []]' }, noIo)
+            )
+        ).toBe('SECRET_REQUIRES_FLAG');
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+    });
+
+    it('dry-run reports presentCredentials as needing --show-secret', async () => {
+        await writeEnv(`SECURE_SEED=${SEED}\n`);
+        await runCall('presentCredentials', { dryRun: true, write: true }, noIo);
+        expect(out.result).toMatchObject({ secret: true, allowed: false });
+    });
+});
+
+describe('on-chain methods (--chain)', () => {
+    beforeEach(() => writeEnv(`SECURE_SEED=${SEED}\n`));
+
+    const chainWallet = (network: unknown, transferTokens = vi.fn(async () => '0xhash')) =>
+        fakeWallet({ transferTokens, getCurrentNetwork: () => network });
+
+    it('lists transferTokens as an on-chain method that exists in the catalog', () => {
+        expect([...CHAIN_METHODS]).toEqual(['transferTokens']);
+        for (const name of CHAIN_METHODS) expect(STATIC_INVOKE_METHODS).toContain(name);
+    });
+
+    it('refuses transferTokens with --write but without --chain, before any I/O', async () => {
+        try {
+            await runCall(
+                'transferTokens',
+                { write: true, network: 'staging', args: '["ETH", 1, "0xabc"]' },
+                noIo
+            );
+            expect.unreachable();
+        } catch (error) {
+            expect((error as CliError).code).toBe('CHAIN_REQUIRED');
+            expect((error as CliError).hint).toContain('mainnet');
+        }
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+    });
+
+    it('dry-run shows the plugin default chain and that --chain is required', async () => {
+        await runCall('transferTokens', { dryRun: true, write: true, network: 'staging' }, noIo);
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+        expect(out.result).toMatchObject({
+            network: STAGING_NETWORK,
+            allowed: false,
+            chain: {
+                effective: 'mainnet',
+                requested: null,
+                pluginDefault: 'mainnet',
+                required: true,
+            },
+        });
+    });
+
+    it('dry-run with --chain previews that chain and is allowed', async () => {
+        await runCall('transferTokens', { dryRun: true, write: true, chain: 'Sepolia' }, noIo);
+        expect(out.result).toMatchObject({
+            allowed: true,
+            chain: { effective: 'sepolia', requested: 'sepolia', required: true },
+        });
+    });
+
+    it('configures the plugin for --chain and submits only when the wallet reports it', async () => {
+        const transferTokens = vi.fn(async () => '0xhash');
+        mocks.initLearnCard.mockResolvedValue(chainWallet('sepolia', transferTokens));
+        await runCall(
+            'transferTokens',
+            { write: true, chain: 'sepolia', args: '["ETH", 1, "0xabc"]' },
+            noIo
+        );
+        expect(mocks.initLearnCard).toHaveBeenCalledWith(
+            expect.objectContaining({ ethereumConfig: { network: 'sepolia' } })
+        );
+        expect(transferTokens).toHaveBeenCalledWith('ETH', 1, '0xabc');
+        expect(out.result).toMatchObject({ method: 'transferTokens', chain: 'sepolia' });
+    });
+
+    it('refuses to submit when the wallet is on another chain (e.g. mainnet)', async () => {
+        const transferTokens = vi.fn(async () => '0xhash');
+        mocks.initLearnCard.mockResolvedValue(chainWallet('mainnet', transferTokens));
+        expect(
+            await failCode(
+                runCall(
+                    'transferTokens',
+                    { write: true, chain: 'sepolia', args: '["ETH", 1, "0xabc"]' },
+                    noIo
+                )
+            )
+        ).toBe('CHAIN_MISMATCH');
+        expect(transferTokens).not.toHaveBeenCalled();
+    });
+
+    it('refuses to submit when the chain cannot be read', async () => {
+        const transferTokens = vi.fn(async () => '0xhash');
+        mocks.initLearnCard.mockResolvedValue(fakeWallet({ transferTokens }));
+        expect(
+            await failCode(
+                runCall(
+                    'transferTokens',
+                    { write: true, chain: 'sepolia', args: '["ETH", 1, "0xabc"]' },
+                    noIo
+                )
+            )
+        ).toBe('CHAIN_MISMATCH');
+        expect(transferTokens).not.toHaveBeenCalled();
+    });
+
+    it('allows mainnet only when named, accepting the ethers aliases', async () => {
+        const transferTokens = vi.fn(async () => '0xhash');
+        mocks.initLearnCard.mockResolvedValue(
+            chainWallet({ name: 'homestead', chainId: 1 }, transferTokens)
+        );
+        await runCall(
+            'transferTokens',
+            { write: true, chain: 'ethereum', args: '["ETH", 1, "0xabc"]' },
+            noIo
+        );
+        expect(mocks.initLearnCard).toHaveBeenCalledWith(
+            expect.objectContaining({ ethereumConfig: { network: 'mainnet' } })
+        );
+        expect(transferTokens).toHaveBeenCalled();
+    });
+
+    it('normalizes and validates chain names', () => {
+        expect(normalizeChain(' Homestead ')).toBe('mainnet');
+        expect(normalizeChain('sepolia')).toBe('sepolia');
+        expect(() => normalizeChain('https://rpc.example')).toThrow(/not a chain name/);
+        expect(effectiveChainOf(1)).toBe('mainnet');
+        expect(effectiveChainOf(11155111)).toBe('11155111');
+        expect(effectiveChainOf({ chainId: 1 })).toBe('mainnet');
+        expect(effectiveChainOf(undefined)).toBeUndefined();
+    });
+
+    it('rejects a malformed --chain as USAGE before any I/O', async () => {
+        expect(
+            await failCode(runCall('transferTokens', { write: true, chain: '../x' }, noIo))
+        ).toBe('USAGE');
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+    });
+
+    it('--list marks on-chain methods', async () => {
+        await fs.rm(path.join(cwd, '.env'));
+        await runCall(undefined, { list: true }, noIo);
+        const methods = (out.result as { methods: { name: string; chain?: true }[] }).methods;
+        expect(methods.find(entry => entry.name === 'transferTokens')).toMatchObject({
+            chain: true,
+        });
+        expect(methods.find(entry => entry.name === 'getBalance')?.chain).toBeUndefined();
+    });
+});
+
+describe('LearnCloud DID association', () => {
+    beforeEach(() => writeEnv(`SECURE_SEED=${SEED}\n`));
+
+    it('turns automatic association off for read calls (no addDid / setPrimaryDid)', async () => {
+        const learnCloudRead = vi.fn(async () => []);
+        mocks.initLearnCard.mockResolvedValue(fakeWallet({ learnCloudRead }));
+        await runCall('learnCloudRead', { args: '[{}]' }, noIo);
+        expect(learnCloudRead).toHaveBeenCalled();
+        expect(mocks.initLearnCard).toHaveBeenCalledWith(
+            expect.objectContaining({ cloud: { automaticallyAssociateDids: false } })
+        );
+    });
+
+    it('keeps the cloud URL alongside the association switch', async () => {
+        process.env.CLOUD_URL = 'http://127.0.0.1:9';
+        try {
+            mocks.initLearnCard.mockResolvedValue(fakeWallet({ getProfile: vi.fn() }));
+            await runCall('getProfile', {}, noIo);
+            expect(mocks.initLearnCard).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    cloud: { url: 'http://127.0.0.1:9', automaticallyAssociateDids: false },
+                })
+            );
+        } finally {
+            delete process.env.CLOUD_URL;
+        }
+    });
+
+    it('turns it off for --list too', async () => {
+        mocks.initLearnCard.mockResolvedValue(fakeWallet({ getProfile: vi.fn() }));
+        await runCall(undefined, { list: true }, noIo);
+        expect(mocks.initLearnCard).toHaveBeenCalledWith(
+            expect.objectContaining({ cloud: { automaticallyAssociateDids: false } })
+        );
+    });
+
+    it('keeps the SDK default for --write calls', async () => {
+        const learnCloudCreate = vi.fn(async () => true);
+        mocks.initLearnCard.mockResolvedValue(fakeWallet({ learnCloudCreate }));
+        await runCall('learnCloudCreate', { write: true, args: '[{}]' }, noIo);
+        const [config] = mocks.initLearnCard.mock.calls[0]!;
+        expect((config as { cloud?: unknown }).cloud).toBeUndefined();
+    });
+});
+
+describe('registerCallCommand --chain', () => {
+    it('parses --chain and never reads it from the environment', () => {
+        const program = new Command();
+        program.exitOverride();
+        let seen: Record<string, unknown> | undefined;
+        registerCallCommand(program, async (_command, options) => {
+            seen = options as Record<string, unknown>;
+        });
+        program.parse(['node', 'learncard', 'call', 'transferTokens', '--chain', 'sepolia']);
+        expect(seen?.chain).toBe('sepolia');
     });
 });

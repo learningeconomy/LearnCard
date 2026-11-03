@@ -439,14 +439,16 @@ export const WRITE_OVERRIDES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Methods whose result is a secret (a private key, an API token, or a signed
- * presentation / ID token that can authenticate as this identity). `call` refuses them
- * unless `--show-secret` is passed. Generic presentation signers are included because
- * `getAPITokenForAuthGrant` and `getDidAuthVp` are thin wrappers around
+ * Methods whose result is a secret (a private key, an API token, an OAuth/PKCE secret,
+ * or a signed presentation / ID token that can authenticate as this identity). `call`
+ * refuses them unless `--show-secret` is passed. Generic presentation signers are
+ * included because `getAPITokenForAuthGrant` and `getDidAuthVp` are thin wrappers around
  * `issuePresentation` (proofPurpose 'authentication'), so gating only the wrappers
  * would be trivially bypassed.
  */
 export const SECRET_METHODS: ReadonlySet<string> = new Set([
+    // OpenID4VCI: the flow handle carries the PKCE verifier that redeems the auth code.
+    'beginCredentialOfferAuthCode',
     // OpenID4VCI access tokens.
     'exchangeAuthCodeForToken',
     'exchangePreAuthCodeForToken',
@@ -458,10 +460,22 @@ export const SECRET_METHODS: ReadonlySet<string> = new Set([
     'getKey',
     'getSubjectKeypair',
     'issuePresentation',
+    // OpenID4VP end to end: returns the signed vp_token and, when requested, the SIOPv2 id_token.
+    'presentCredentials',
     'presentSdJwtVc',
     'signIdToken',
     'signPresentation',
 ]);
+
+/** The chain the Ethereum plugin uses unless told otherwise, independent of `--network`. */
+export const ETHEREUM_DEFAULT_CHAIN = 'mainnet';
+
+/**
+ * Methods that submit an on-chain transaction signed with this identity's key (the
+ * Ethereum plugin's `transferTokens` moves real ETH/ERC-20 on mainnet). `call` requires
+ * an explicit `--chain` for them and checks the plugin's effective chain before invoking.
+ */
+export const CHAIN_METHODS: ReadonlySet<string> = new Set(['transferTokens']);
 
 export type MethodEffect = 'read' | 'write';
 

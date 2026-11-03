@@ -20,6 +20,7 @@ import {
     parseQuery,
     registerApiCommand,
     resolveApiToken,
+    routePathCandidates,
     runApi,
     type ApiDeps,
 } from './api';
@@ -255,6 +256,82 @@ describe('write gating', () => {
         }
     });
 
+    it('keeps --data and --query in the re-run hint', async () => {
+        const error = await failure(
+            runApi('POST', '/boost/send', { data: '{"a":1}', query: ['x=1'] }, offline())
+        );
+        expect(error.code).toBe('WRITE_REQUIRES_FLAG');
+        expect(error.hint).toContain(
+            'npx @learncard/cli api POST /boost/send --data ... --query ... --write'
+        );
+        // The inline body is never echoed into the hint.
+        expect(error.hint).not.toContain('"a"');
+        const bare = await failure(runApi('DELETE', '/boost', {}, offline()));
+        expect(bare.hint).toContain('npx @learncard/cli api DELETE /boost --write.');
+    });
+
+    it('rejects a fragment in the path, which the server never sees', async () => {
+        const deps = offline();
+        for (const bad of ['/inbox/guardian-approval/tok#/', '/profile#x', '/challenges?#'])
+            expect((await failure(runApi('GET', bad, {}, deps))).code, bad).toBe('USAGE');
+        expect(() => normalizeApiPath('/inbox/guardian-approval/tok#/')).toThrow(/fragment/);
+        expect(deps.fetch).not.toHaveBeenCalled();
+    });
+
+    it('gates side-effecting GETs however the path is spelled', async () => {
+        await writeEnv(`API_TOKEN=${TOKEN}\n`);
+        for (const variant of [
+            '/inbox/guardian-approval/tok',
+            '/inbox/guardian-approval/tok/',
+            '/api/inbox/guardian-approval/tok/',
+            '/api//inbox/guardian-approval/tok',
+            '/inbox//guardian-approval/tok//',
+            '/INBOX/Guardian-Approval/tok',
+            '/inbox/guardian%2Dapproval/tok',
+            '/inbox\\guardian-approval\\tok',
+            '/inbox/guardian-approval/tok?x=1',
+            '/challenges',
+            '/challenges/',
+            '/Challenges?amount=100',
+        ]) {
+            const deps = offline();
+            const error = await failure(runApi('GET', variant, {}, deps));
+            expect(error.code, variant).toBe('WRITE_REQUIRES_FLAG');
+            expect(deps.fetch, variant).not.toHaveBeenCalled();
+        }
+    });
+
+    it('gates side-effecting GETs hidden behind encoded delimiters', async () => {
+        await writeEnv(`API_TOKEN=${TOKEN}\n`);
+        for (const variant of [
+            '/challenges%5C',
+            '/challenges%20',
+            '/challenges%23x',
+            '/x/..%2Fchallenges',
+            '/inbox/guardian-approval%5Ctok',
+            '/x/..%2Finbox/guardian-approval/tok',
+        ]) {
+            const deps = offline();
+            const error = await failure(runApi('GET', variant, {}, deps));
+            expect(error.code, variant).toBe('WRITE_REQUIRES_FLAG');
+            expect(deps.fetch, variant).not.toHaveBeenCalled();
+        }
+    });
+
+    it('does not suggest %23 for a rejected "#"', async () => {
+        const error = await failure(runApi('GET', '/profile#x', {}, offline()));
+        expect(error.hint ?? '').not.toContain('%23');
+    });
+
+    it('sends a side-effecting GET with --write', async () => {
+        await writeEnv(`API_TOKEN=${TOKEN}\n`);
+        const deps = makeDeps(async () => jsonResponse(['c1']));
+        await runApi('GET', '/challenges', { write: true, query: ['amount=1'] }, deps);
+        expect(deps.fetch.mock.calls[0]![0]).toBe(
+            'https://network.learncard.com/api/challenges?amount=1'
+        );
+    });
+
     it('sends a JSON body with --write', async () => {
         await writeEnv(`API_TOKEN=${TOKEN}\n`);
         const deps = makeDeps(async () => jsonResponse('urn:uuid:1'));
@@ -304,6 +381,7 @@ describe('dry run', () => {
             method: 'POST',
             path: '/boost/send',
             url: 'http://localhost:4000/api/boost/send?x=1',
+            routePath: '/boost/send',
             effect: 'write',
             allowed: false,
             headers: { authorization: 'Bearer ***', 'content-type': 'application/json' },
@@ -312,6 +390,54 @@ describe('dry run', () => {
         });
         expect(JSON.stringify(out.result)).not.toContain(TOKEN);
         expect(printed()).not.toContain(TOKEN);
+    });
+
+    it('redacts the token and seed from the printed body, not only the JSON result', async () => {
+        const seed = 'a'.repeat(64);
+        await writeEnv(`API_TOKEN=${TOKEN}\nSECURE_SEED=${seed}\n`);
+        await runApi(
+            'POST',
+            '/boost/send',
+            { dryRun: true, data: JSON.stringify({ token: TOKEN, note: `seed ${seed}` }) },
+            offline()
+        );
+        expect(printed()).toContain('Would send POST');
+        expect(printed()).not.toContain(TOKEN);
+        expect(printed()).not.toContain(seed);
+        expect(JSON.stringify(out.result)).not.toContain(TOKEN);
+        expect(JSON.stringify(out.result)).not.toContain(seed);
+    });
+
+    it('redacts the folder API_TOKEN even when LEARNCARD_API_KEY is the bearer', async () => {
+        const envKey = 'env-key-' + 'b'.repeat(24);
+        await writeEnv(`API_TOKEN=${TOKEN}\n`);
+        const deps = makeDeps(
+            async () => {
+                throw new Error('test tried to reach the network');
+            },
+            { LEARNCARD_API_KEY: envKey }
+        );
+        await runApi(
+            'POST',
+            '/boost/send',
+            { dryRun: true, data: JSON.stringify({ a: TOKEN, b: envKey }) },
+            deps
+        );
+        for (const secret of [TOKEN, envKey]) {
+            expect(printed()).not.toContain(secret);
+            expect(JSON.stringify(out.result)).not.toContain(secret);
+        }
+    });
+
+    it('shows the URL that will be sent and the route path it is gated on', async () => {
+        await runApi('GET', '/api//inbox/Guardian-Approval/tok/', { dryRun: true }, offline());
+        expect(out.result).toMatchObject({
+            url: 'https://network.learncard.com/api//inbox/Guardian-Approval/tok/',
+            routePath: '/inbox/Guardian-Approval/tok',
+            effect: 'write',
+            allowed: false,
+        });
+        expect(printed()).toContain('Not allowed yet');
     });
 
     it('works without a token or identity', async () => {
@@ -471,5 +597,79 @@ describe('isReadRequest', () => {
         // approveGuardianRequestByPath approves the requester's profile.
         expect(isReadRequest('GET', '/inbox/guardian-approval/abc123')).toBe(false);
         expect(isReadRequest('GET', '/inbox/guardian-approval/abc123?x=1')).toBe(false);
+        expect(isReadRequest('HEAD', '/inbox/guardian-approval/abc123')).toBe(false);
+    });
+
+    it('matches a trailing slash, as the server strips it before routing', () => {
+        expect(isReadRequest('GET', '/inbox/guardian-approval/abc123/')).toBe(false);
+        expect(isReadRequest('GET', '/inbox/guardian-approval/abc123//')).toBe(false);
+        expect(isReadRequest('GET', '/inbox/guardian-approval/abc123/?x=1')).toBe(false);
+    });
+
+    it('classifies on the path the server sees, ignoring a fragment', () => {
+        expect(isReadRequest('GET', '/inbox/guardian-approval/abc123#/')).toBe(false);
+        expect(isReadRequest('GET', '/inbox/guardian-approval/abc123#/x/y')).toBe(false);
+        expect(routePathCandidates('/inbox/guardian-approval/abc#/')).toEqual([
+            '/inbox/guardian-approval/abc',
+        ]);
+    });
+
+    it('matches case-insensitively, like trpc-to-openapi routing', () => {
+        expect(isReadRequest('GET', '/Inbox/GUARDIAN-APPROVAL/abc123')).toBe(false);
+        expect(isReadRequest('GET', '/CHALLENGES')).toBe(false);
+    });
+
+    it('matches percent-encoded, backslash and duplicate-slash spellings', () => {
+        expect(isReadRequest('GET', '/inbox/guardian%2Dapproval/abc123')).toBe(false);
+        expect(isReadRequest('GET', '/inbox/guardian-approval/a%2Fb')).toBe(false);
+        expect(isReadRequest('GET', '/inbox\\guardian-approval\\abc123')).toBe(false);
+        expect(isReadRequest('GET', '//inbox//guardian-approval/abc123')).toBe(false);
+        expect(isReadRequest('GET', '/inbox/guardian-approval/%E0%A4%A')).toBe(false);
+    });
+
+    // Production (Lambda) routes on the API Gateway-decoded path parameter, which
+    // trpc-to-openapi re-parses with `new URL()`: `\\` → `/`, `?`/`#` cut, tabs and trailing
+    // spaces dropped, dot segments resolved. These spellings all reach a side-effecting route.
+    const LAMBDA_ENCODED_BYPASSES = [
+        '/challenges%20',
+        '/challenges%5C',
+        '/challenges%5c',
+        '/challenges%3Fx',
+        '/challenges%23x',
+        '/chall%09enges',
+        '/x/..%2Fchallenges',
+        '/x/%2E%2E%2Fchallenges',
+        '/inbox/guardian-approval%5Ctok',
+        '/inbox%5Cguardian-approval/tok',
+        '/x/..%2Finbox/guardian-approval/tok',
+        '/inbox/guardian-approval/tok%3F',
+        '/challenges%2520',
+    ];
+
+    it('gates encoded delimiters that the Lambda adapter decodes and re-parses', () => {
+        for (const path of LAMBDA_ENCODED_BYPASSES)
+            expect(isReadRequest('GET', path), path).toBe(false);
+        expect(routePathCandidates('/x/..%2Fchallenges')).toContain('/challenges');
+        expect(routePathCandidates('/challenges%5C')).toContain('/challenges');
+    });
+
+    it('still treats encoded characters in ordinary read routes as reads', () => {
+        expect(isReadRequest('GET', '/profile%20x')).toBe(true);
+        expect(isReadRequest('GET', '/storage/resolve/lc%3Anetwork%3Aboost')).toBe(true);
+        expect(isReadRequest('GET', '/x/..%2Fprofile')).toBe(true);
+    });
+
+    it('treats GET /challenges as a write (it registers auth challenges)', () => {
+        expect(isReadRequest('GET', '/challenges')).toBe(false);
+        expect(isReadRequest('GET', '/challenges/')).toBe(false);
+        expect(isReadRequest('GET', '/challenges?amount=100')).toBe(false);
+    });
+
+    it('leaves neighbouring read routes alone', () => {
+        expect(isReadRequest('GET', '/inbox/guardian-approval')).toBe(true);
+        expect(isReadRequest('GET', '/inbox/guardian-credential-approval/abc123')).toBe(true);
+        expect(isReadRequest('GET', '/challenges-x')).toBe(true);
+        expect(isReadRequest('GET', '/profile/')).toBe(true);
+        expect(isReadRequest('GET', '/')).toBe(true);
     });
 });

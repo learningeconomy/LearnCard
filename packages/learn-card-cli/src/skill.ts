@@ -127,18 +127,105 @@ export interface InstallSkillOptions {
     source?: string;
 }
 
-const readIfExists = async (file: string): Promise<string | undefined> => {
+const errnoCode = (error: unknown): string | undefined => (error as NodeJS.ErrnoException)?.code;
+
+const unsafePath = (dir: string, candidate: string, reason: string): CliError =>
+    new CliError(
+        `Refusing to write the skill through ${path.relative(dir, candidate) || candidate}: ${reason}.`,
+        {
+            code: 'UNSAFE_PATH',
+            hint: 'Replace it with a real directory/file inside --dir (or remove it), then re-run.',
+            detail: candidate,
+        }
+    );
+
+/**
+ * Check every path component from `dir` (exclusive; the caller chose it) down to `file`
+ * with `lstat`, so the install can never be redirected outside `dir`. A symlink anywhere,
+ * a non-directory parent or a non-file target throws `UNSAFE_PATH`. Returns whether `file`
+ * exists (a missing component means it does not; mkdir and `wx` create the rest).
+ */
+export const inspectSkillPath = async (dir: string, file: string): Promise<boolean> => {
+    const parts = path.relative(dir, file).split(path.sep);
+    if (!parts.length || parts.some(part => part === '' || part === '..'))
+        throw unsafePath(dir, file, 'it is not inside --dir');
+    let current = dir;
+    for (const [index, part] of parts.entries()) {
+        current = path.join(current, part);
+        let stats;
+        try {
+            stats = await fs.lstat(current);
+        } catch (error) {
+            if (errnoCode(error) === 'ENOENT') return false;
+            throw error;
+        }
+        if (stats.isSymbolicLink()) throw unsafePath(dir, current, 'it is a symbolic link');
+        const last = index === parts.length - 1;
+        if (last && !stats.isFile()) throw unsafePath(dir, current, 'it is not a regular file');
+        if (!last && !stats.isDirectory()) throw unsafePath(dir, current, 'it is not a directory');
+    }
+    return true;
+};
+
+/** Create the parent directories of `file` one at a time, refusing symlinked components. */
+const makeParents = async (dir: string, file: string): Promise<void> => {
+    let current = dir;
+    for (const part of path.relative(dir, path.dirname(file)).split(path.sep)) {
+        if (!part) continue;
+        current = path.join(current, part);
+        try {
+            await fs.mkdir(current);
+        } catch (error) {
+            if (errnoCode(error) !== 'EEXIST') throw error;
+            const stats = await fs.lstat(current);
+            if (stats.isSymbolicLink()) throw unsafePath(dir, current, 'it is a symbolic link');
+            if (!stats.isDirectory()) throw unsafePath(dir, current, 'it is not a directory');
+        }
+    }
+};
+
+/**
+ * Write one skill file without ever following a link. A new file is created exclusively
+ * (`wx`: fails if anything, even a dangling symlink, appeared at the path). An overwrite
+ * (`--force`) goes to a temp file in the same directory, then `rename`, which replaces the
+ * directory entry itself and never writes through it.
+ */
+const writeSkillFile = async (
+    dir: string,
+    file: string,
+    content: string,
+    status: SkillFileStatus
+): Promise<void> => {
+    await makeParents(dir, file);
+    const exists = await inspectSkillPath(dir, file);
+    if (status === 'created' || !exists) {
+        try {
+            await fs.writeFile(file, content, { encoding: 'utf8', flag: 'wx' });
+        } catch (error) {
+            if (errnoCode(error) === 'EEXIST')
+                throw unsafePath(dir, file, 'something was created there during the install');
+            throw error;
+        }
+        return;
+    }
+    const temp = path.join(
+        path.dirname(file),
+        `.${path.basename(file)}.${process.pid}.${Date.now().toString(36)}.tmp`
+    );
+    await fs.writeFile(temp, content, { encoding: 'utf8', flag: 'wx' });
     try {
-        return await fs.readFile(file, 'utf8');
+        await inspectSkillPath(dir, file);
+        await fs.rename(temp, file);
     } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined;
+        await fs.rm(temp, { force: true });
         throw error;
     }
 };
 
 /**
- * Write the skill for each target. All targets are checked first: if any target holds a
- * different file and `force` is not set, nothing is written and `EXISTS` is thrown.
+ * Write the skill for each target. All targets are checked first: a symlink or non-file
+ * anywhere under `dir` on a target path throws `UNSAFE_PATH`, and if any target holds a
+ * different file and `force` is not set, `EXISTS` is thrown; either way nothing is written.
  * An identical file is left alone (`unchanged`).
  */
 export const installSkill = async ({
@@ -151,7 +238,9 @@ export const installSkill = async ({
         [...new Set(targets)].map(async target => {
             const file = path.join(dir, SKILL_TARGETS[target].file);
             const content = renderSkill(target, source);
-            const existing = await readIfExists(file);
+            const existing = (await inspectSkillPath(dir, file))
+                ? await fs.readFile(file, 'utf8')
+                : undefined;
             const status: SkillFileStatus =
                 existing === undefined ? 'created' : existing === content ? 'unchanged' : 'updated';
             return { target, file, content, status };
@@ -170,8 +259,7 @@ export const installSkill = async ({
 
     for (const entry of plan) {
         if (entry.status === 'unchanged') continue;
-        await fs.mkdir(path.dirname(entry.file), { recursive: true });
-        await fs.writeFile(entry.file, entry.content, 'utf8');
+        await writeSkillFile(dir, entry.file, entry.content, entry.status);
     }
 
     return plan.map(({ target, file, status }) => ({ target, path: file, status }));

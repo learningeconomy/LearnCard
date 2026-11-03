@@ -25,16 +25,16 @@ It only writes files, never touches the network, and won't overwrite a changed c
 
 Prefer these over scraping rendered HTML:
 
-| Source                      | URL                                                                                                  | Use it for                                                                                                                                               |
-| :-------------------------- | :--------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docs index                  | [`https://docs.learncard.com/llms.txt`](https://docs.learncard.com/llms.txt)                         | A list of every docs page with its URL.                                                                                                                  |
-| Full docs                   | [`https://docs.learncard.com/llms-full.txt`](https://docs.learncard.com/llms-full.txt)               | All pages in one text file.                                                                                                                              |
-| Any single page as Markdown | Append `.md` to the page URL, e.g. `https://docs.learncard.com/start-here/your-first-integration.md` | One page without navigation chrome.                                                                                                                      |
-| Network REST API (OpenAPI)  | [`https://network.learncard.com/docs/openapi.json`](https://network.learncard.com/docs/openapi.json) | Every REST route, its parameters, and its summary.                                                                                                       |
-| Network REST API (browser)  | [`https://network.learncard.com/docs`](https://network.learncard.com/docs)                           | The same spec rendered for people.                                                                                                                       |
-| CLI help                    | `npx @learncard/cli --help`, `npx @learncard/cli <command> --help`                                   | Every command and option of the installed version.                                                                                                       |
-| CLI command manifest        | `npx @learncard/cli commands --json`                                                                 | Every command with its effect (`read`/`write`/`local`/`varies`), whether it creates an identity, options, output fields, examples, and every error code. |
-| Capability map              | `npx @learncard/cli capabilities --json`                                                             | What LearnCard can do, and the CLI command, SDK method (`call`), REST route (`api`) and docs page for each.                                              |
+| Source                      | URL                                                                                                  | Use it for                                                                                                                                                                       |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docs index                  | [`https://docs.learncard.com/llms.txt`](https://docs.learncard.com/llms.txt)                         | A list of every docs page with its URL.                                                                                                                                          |
+| Full docs                   | [`https://docs.learncard.com/llms-full.txt`](https://docs.learncard.com/llms-full.txt)               | All pages in one text file.                                                                                                                                                      |
+| Any single page as Markdown | Append `.md` to the page URL, e.g. `https://docs.learncard.com/start-here/your-first-integration.md` | One page without navigation chrome.                                                                                                                                              |
+| Network REST API (OpenAPI)  | [`https://network.learncard.com/docs/openapi.json`](https://network.learncard.com/docs/openapi.json) | Every REST route, its parameters, and its summary.                                                                                                                               |
+| Network REST API (browser)  | [`https://network.learncard.com/docs`](https://network.learncard.com/docs)                           | The same spec rendered for people.                                                                                                                                               |
+| CLI help                    | `npx @learncard/cli --help`, `npx @learncard/cli <command> --help`                                   | Every command and option of the installed version.                                                                                                                               |
+| CLI command manifest        | `npx @learncard/cli commands --json`                                                                 | Every command with its effect (`read`/`write`/`local`/`varies`), whether it creates an identity or connects (`network`), options, output fields, examples, and every error code. |
+| Capability map              | `npx @learncard/cli capabilities --json`                                                             | What LearnCard can do, and the CLI command, SDK method (`call`), REST route (`api`) and docs page for each.                                                                      |
 
 ## Rules for agents
 
@@ -75,7 +75,7 @@ With `--json`, each command prints exactly one line of JSON on stdout. Human-rea
 | `WRITE_REQUIRES_FLAG` | `call` or `api` would change state, and `--write` was not passed.                            | Confirm with a person, then re-run with `--write` (try `--dry-run` first).             |
 | `HTTP_<status>`       | `api` got a non-2xx response; `detail` holds the response body.                              | 401/403: token or scope; 404: path or ID; 429: wait, then retry.                       |
 
-`commands --json` lists every other code (such as `NO_API_TOKEN`, `UNKNOWN_METHOD` or `EXISTS`) under `errorCodes`.
+`commands --json` lists every other code (such as `NO_API_TOKEN`, `UNKNOWN_METHOD`, `CHAIN_REQUIRED` or `UNSAFE_PATH`) under `errorCodes`.
 
 A few commands report a checked outcome rather than just "it ran": `verify` adds `verified: true|false`, and `doctor` and `clr validate` set `ok` to whether their checks passed. All three exit 1 when the check fails. The full reference is on the [CLI page](../sdks/learncard-cli.md#json-output).
 
@@ -96,6 +96,7 @@ A few commands report a checked outcome rather than just "it ran": `verify` adds
 | `org apply`                                                 | Creates or updates profiles, managed profiles, signing authorities and API tokens. Run `--dry-run` first and show the plan.                   |
 | `init`                                                      | Claims a public profile ID on the network.                                                                                                    |
 | `call --write`, `api` with a method other than `GET`/`HEAD` | Whatever the SDK method or REST route does. Both refuse without `--write`; `-y` does not imply it.                                            |
+| `call transferTokens`                                       | Submits an Ethereum transaction, which can't be reversed. It also needs `--chain`; mainnet (real funds) is used only when named.              |
 
 **If a `send` fails ambiguously** (timeout, network error), check whether it went through before retrying: `npx @learncard/cli status --json` lists recent sends. See [When a send fails ambiguously](../how-to-guides/go-to-production.md#when-a-send-fails-ambiguously).
 
@@ -121,6 +122,6 @@ npx @learncard/cli api GET /profile --network staging --json
 npx @learncard/cli api --spec --json
 ```
 
-Both run reads as-is and refuse anything that can change data unless you pass `--write`. Neither creates an identity. Without `--show-secret`, neither prints the seed or an API token; `call --show-secret` can print private keys (equivalent to the seed) and API tokens, so pass it only when the user asks. Details: [`call`](../sdks/learncard-cli.md#call) and [`api`](../sdks/learncard-cli.md#api).
+Both run reads as-is and refuse anything that can change data unless you pass `--write`; for `api` that includes the few `GET` routes that change state, such as `GET /challenges`. On-chain methods such as `transferTokens` also need `--chain` (for example `--chain sepolia`), because the Ethereum plugin otherwise defaults to mainnet. Neither creates an identity. Without `--show-secret`, neither prints the seed or an API token; `call --show-secret` can print private keys (equivalent to the seed) and API tokens, so pass it only when the user asks. Details: [`call`](../sdks/learncard-cli.md#call) and [`api`](../sdks/learncard-cli.md#api).
 
 When you need real application code, write it against the [LearnCard Wallet SDK](../sdks/learncard-core/README.md) or the [Network REST API](../sdks/learncard-network/README.md). Reuse the folder's `.env` values (`SECURE_SEED`, `NETWORK_URL`, `API_TOKEN`) so the code acts as the same identity on the same network.

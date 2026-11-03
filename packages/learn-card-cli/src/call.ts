@@ -14,6 +14,8 @@ import {
 import { seedRedactions, toJsonSafe, type JsonValue } from './serialize';
 import { defaultJsonInputIo, readJsonInput, type JsonInputIo } from './json-input';
 import {
+    CHAIN_METHODS,
+    ETHEREUM_DEFAULT_CHAIN,
     STATIC_INVOKE_METHODS,
     classifyMethod,
     suggestMethods,
@@ -34,7 +36,73 @@ export interface CallOptions extends ProjectOptions {
     list?: boolean;
     /** Allow methods whose result is a secret (keys, API tokens, DID-Auth VPs). */
     showSecret?: boolean;
+    /**
+     * Ethereum chain for the Ethereum plugin (e.g. `sepolia`, `mainnet`). Required for
+     * on-chain methods (CHAIN_METHODS); never inferred from `--network`.
+     */
+    chain?: string;
 }
+
+const MAINNET_ALIASES: ReadonlySet<string> = new Set(['mainnet', 'homestead', 'ethereum']);
+const CHAIN_NAME = /^[a-z][a-z0-9-]{0,63}$/;
+
+/**
+ * Validate a `--chain` value and canonicalize it: lower case, and the ethers aliases of
+ * Ethereum mainnet (`homestead`, `ethereum`) become `mainnet`.
+ */
+export const normalizeChain = (chain: string): string => {
+    const name = chain.trim().toLowerCase();
+    if (!CHAIN_NAME.test(name))
+        throw new UsageError(
+            `--chain "${chain}" is not a chain name. Use an ethers network name such as sepolia or mainnet.`
+        );
+    return MAINNET_ALIASES.has(name) ? 'mainnet' : name;
+};
+
+/**
+ * The chain an Ethereum plugin reports from `getCurrentNetwork()` (an ethers Networkish:
+ * a name, a chain id, or `{ name, chainId }`), canonicalized like `normalizeChain`;
+ * `undefined` when it cannot be read.
+ */
+export const effectiveChainOf = (network: unknown): string | undefined => {
+    if (typeof network === 'string') {
+        const name = network.trim().toLowerCase();
+        return MAINNET_ALIASES.has(name) ? 'mainnet' : name || undefined;
+    }
+    if (typeof network === 'number') return network === 1 ? 'mainnet' : String(network);
+    if (network && typeof network === 'object') {
+        const { name, chainId } = network as { name?: unknown; chainId?: unknown };
+        return effectiveChainOf(name) ?? effectiveChainOf(chainId);
+    }
+    return undefined;
+};
+
+/**
+ * Read the Ethereum plugin's effective chain from the connected wallet and refuse unless
+ * it is exactly the chain `--chain` asked for. Runs before any on-chain method is invoked.
+ */
+export const assertEffectiveChain = async (
+    invoke: Record<string, unknown>,
+    chain: string
+): Promise<void> => {
+    const getCurrentNetwork = Object.prototype.hasOwnProperty.call(invoke, 'getCurrentNetwork')
+        ? invoke.getCurrentNetwork
+        : undefined;
+    const effective =
+        typeof getCurrentNetwork === 'function'
+            ? effectiveChainOf(await (getCurrentNetwork as () => unknown)())
+            : undefined;
+    if (effective !== chain)
+        throw new CliError(
+            effective
+                ? `The wallet's Ethereum plugin is on ${effective}, not --chain ${chain}; nothing was submitted.`
+                : `Could not confirm the wallet's Ethereum chain is ${chain}; nothing was submitted.`,
+            {
+                code: 'CHAIN_MISMATCH',
+                hint: 'Re-run with the --chain the wallet is on only if that is the chain you intend (check with --dry-run).',
+            }
+        );
+};
 
 const METHOD_NAME = /^[A-Za-z_$][\w$]*$/;
 
@@ -68,7 +136,7 @@ const flagHint = (method: string, flag: string, args: string | undefined): strin
 /** Refuse a write or secret method unless the matching flag was passed. Pure; no I/O. */
 export const assertCallAllowed = (
     method: string,
-    options: Pick<CallOptions, 'write' | 'showSecret' | 'args'>
+    options: Pick<CallOptions, 'write' | 'showSecret' | 'args' | 'chain'>
 ): void => {
     const { effect, secret } = classifyMethod(method);
     if (effect === 'write' && !options.write)
@@ -84,6 +152,14 @@ export const assertCallAllowed = (
             code: 'SECRET_REQUIRES_FLAG',
             hint: `${flagHint(method, '--show-secret', options.args)}. Do not paste the output into logs or chats.`,
         });
+    if (CHAIN_METHODS.has(method) && !options.chain)
+        throw new CliError(
+            `${method} submits an Ethereum transaction, so it needs --chain naming the chain you intend.`,
+            {
+                code: 'CHAIN_REQUIRED',
+                hint: `The Ethereum plugin defaults to ${ETHEREUM_DEFAULT_CHAIN} (real funds) regardless of --network. Pass a testnet such as --chain sepolia; any mainnet (Ethereum, Polygon, Arbitrum, Optimism, ...) moves real funds, so name it only if you mean that, and check first with --dry-run.`,
+            }
+        );
 };
 
 type Invoke = Record<string, unknown>;
@@ -97,12 +173,19 @@ export interface CallListEntry {
     name: string;
     effect: MethodEffect;
     secret?: true;
+    /** Submits an on-chain transaction; needs --chain. */
+    chain?: true;
 }
 
 const listEntries = (names: readonly string[]): CallListEntry[] =>
     names.map(name => {
         const { effect, secret } = classifyMethod(name);
-        return { name, effect, ...(secret ? { secret: true as const } : {}) };
+        return {
+            name,
+            effect,
+            ...(secret ? { secret: true as const } : {}),
+            ...(CHAIN_METHODS.has(name) ? { chain: true as const } : {}),
+        };
     });
 
 /**
@@ -115,7 +198,8 @@ export const runCallList = async (options: CallOptions): Promise<void> => {
     let names: readonly string[];
     let source: 'wallet' | 'static';
     if (project.env.SECURE_SEED && !options.dryRun) {
-        const readOnly = { ...options, readOnly: true };
+        // Enumerating must not write: no .env rewrite and no LearnCloud DID association.
+        const readOnly = { ...options, readOnly: true, associateDids: false };
         const learnCard = options.as
             ? await connectAsManaged(project, readOnly, options.as)
             : await connect(project, readOnly);
@@ -133,9 +217,11 @@ export const runCallList = async (options: CallOptions): Promise<void> => {
     const methods = listEntries(names);
     const width = Math.max(...methods.map(entry => entry.name.length), 4);
     for (const entry of methods)
-        out.log(`${entry.name.padEnd(width)}  ${entry.effect}${entry.secret ? ' (secret)' : ''}`);
+        out.log(
+            `${entry.name.padEnd(width)}  ${entry.effect}${entry.secret ? ' (secret)' : ''}${entry.chain ? ' (on-chain)' : ''}`
+        );
     out.log(
-        '\nread methods run as-is; write methods need --write; secret methods need --show-secret.'
+        '\nread methods run as-is; write methods need --write; secret methods need --show-secret; on-chain methods need --chain.'
     );
     out.set({ source, ...(options.dryRun ? { dryRun: true } : {}), methods });
 };
@@ -175,14 +261,21 @@ export const runCall = async (
             'List methods with `npx @learncard/cli call --list`.'
         );
     const name = normalizeMethodName(method);
+    const chain = options.chain === undefined ? undefined : normalizeChain(options.chain);
     const args = await parseCallArgs(options.args, io);
     const { effect, secret } = classifyMethod(name);
+    const onChain = CHAIN_METHODS.has(name);
 
     if (options.dryRun) {
         // Reads .env only to report the network; never connects or writes.
         const project = await loadProject(process.cwd());
         const { network } = resolveServices(project.env, options.network);
-        const allowed = (effect === 'read' || !!options.write) && (!secret || !!options.showSecret);
+        const missing = [
+            ...(effect === 'write' && !options.write ? ['--write'] : []),
+            ...(secret && !options.showSecret ? ['--show-secret'] : []),
+            ...(onChain && !chain ? ['--chain <name>'] : []),
+        ];
+        const allowed = missing.length === 0;
         const preview = {
             dryRun: true,
             method: name,
@@ -196,14 +289,27 @@ export const runCall = async (
             identity: !!project.env.SECURE_SEED,
             known: STATIC_INVOKE_METHODS.includes(name),
             allowed,
+            // Dry-run never connects: `effective` is what --chain will require the wallet
+            // to report, or the plugin default when --chain is missing.
+            ...((onChain || chain) && {
+                chain: {
+                    effective: chain ?? ETHEREUM_DEFAULT_CHAIN,
+                    requested: chain ?? null,
+                    pluginDefault: ETHEREUM_DEFAULT_CHAIN,
+                    required: onChain,
+                },
+            }),
         };
         out.log(
             `Would call ${name}(${args.length} arg${args.length === 1 ? '' : 's'}) as ${options.as ?? 'this folder'} on ${networkLabel(network)} [${effect}${secret ? ', secret' : ''}].`
         );
-        if (!allowed)
+        if (onChain || chain)
             out.log(
-                `Not allowed yet: add ${effect === 'write' && !options.write ? '--write' : '--show-secret'} to run it.`
+                chain
+                    ? `Ethereum chain: ${chain} (checked against the wallet before submitting).`
+                    : `Ethereum chain: ${ETHEREUM_DEFAULT_CHAIN} by default, independent of --network; --chain is required to run it.`
             );
+        if (!allowed) out.log(`Not allowed yet: add ${missing.join(' and ')} to run it.`);
         if (!preview.identity) out.log('No identity in this folder: the real call would fail.');
         out.set(preview);
         return;
@@ -214,11 +320,22 @@ export const runCall = async (
 
     const project = await loadProject(process.cwd());
     const seed = requireIdentity(project);
-    // Read calls must not write: with --as, readOnly also stops LearnCloud from
-    // registering the managed did:web (see connectAsDidWeb).
+    // Never rewrite .env. Read calls must not write anything: with association off,
+    // LearnCloud cannot addDid / setPrimaryDid the profile's did:web the network plugin
+    // switches to. Writes (--write) keep the SDK default so LearnCloud data stays on
+    // the account the app associates.
+    const connectOptions = {
+        ...options,
+        ...(effect === 'read' && { associateDids: false }),
+        ...(chain && { ethereumChain: chain }),
+    };
     const learnCard = options.as
-        ? await connectAsManaged(project, { ...options, readOnly: effect === 'read' }, options.as)
-        : await connect(project, { ...options, readOnly: true });
+        ? await connectAsManaged(
+              project,
+              { ...connectOptions, readOnly: effect === 'read' },
+              options.as
+          )
+        : await connect(project, { ...connectOptions, readOnly: true });
     const invoke = learnCard.invoke as unknown as Invoke;
     const fn = Object.prototype.hasOwnProperty.call(invoke, name) ? invoke[name] : undefined;
     if (typeof fn !== 'function') {
@@ -230,6 +347,8 @@ export const runCall = async (
                 : 'List methods with `npx @learncard/cli call --list`.',
         });
     }
+
+    if (chain) await assertEffectiveChain(invoke, chain);
 
     let result: unknown;
     try {
@@ -246,7 +365,13 @@ export const runCall = async (
 
     const safe: JsonValue = toJsonSafe(result, { redact: seedRedactions(seed) });
     out.log(JSON.stringify(safe, null, 2));
-    out.set({ method: name, effect, ...(options.as ? { as: options.as } : {}), result: safe });
+    out.set({
+        method: name,
+        effect,
+        ...(options.as ? { as: options.as } : {}),
+        ...(chain ? { chain } : {}),
+        result: safe,
+    });
 };
 
 /** Register `learncard call`. */
@@ -267,6 +392,10 @@ export const registerCallCommand = (program: Command, run: RunCommand): void => 
         )
         .option('--write', 'allow methods that can change data (-y does not imply this)')
         .option('--show-secret', 'allow methods that return secrets (private keys, API tokens)')
+        .option(
+            '--chain <name>',
+            'Ethereum chain for on-chain methods (required for transferTokens; any mainnet moves real funds)'
+        )
         .option('--dry-run', 'print the method, arguments and classification without connecting')
         .option('--list', 'list invoke methods with their read/write classification')
         .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')

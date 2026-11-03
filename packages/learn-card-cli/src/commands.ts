@@ -75,7 +75,7 @@ export const runCommands = async (
     if (commands.some(entry => entry.createsIdentity))
         out.log('* may create an identity (seed + profile) in this folder');
     out.log(
-        'effect: read = reads the network, write = changes network state, local = no LearnCard state, varies = depends on arguments'
+        'effect (upper bound over flags): read = reads remote state, write = changes network state, local = no remote state, varies = depends on arguments'
     );
     out.log(
         'Machine-readable (options, output fields, examples, error codes): npx @learncard/cli commands --json'

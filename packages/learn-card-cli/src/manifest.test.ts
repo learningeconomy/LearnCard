@@ -107,6 +107,46 @@ describe('command metadata completeness', () => {
     });
 });
 
+describe('network and effect flags match the code', () => {
+    /** Source files behind each command marked `network: false`. */
+    const OFFLINE_SOURCES: Record<string, string[]> = {
+        open: ['open.ts'],
+        commands: ['commands.ts', 'manifest.ts'],
+        capabilities: ['capabilities.ts'],
+        'skill install': ['skill.ts'],
+    };
+
+    it('only the audited commands are marked offline', () => {
+        const offline = Object.entries(COMMAND_METADATA)
+            .filter(([, metadata]) => !metadata.network)
+            .map(([name]) => name)
+            .sort();
+        expect(offline).toEqual(Object.keys(OFFLINE_SOURCES).sort());
+    });
+
+    it.each(Object.entries(OFFLINE_SOURCES))(
+        '%s (network: false) never builds a wallet, connects or fetches',
+        (_name, files) => {
+            for (const file of files) {
+                const source = readFileSync(path.join(__dirname, file), 'utf8');
+                expect(source, file).not.toMatch(
+                    /\b(initLearnCard|connectAsDidWeb|fetch)\s*[,(}]|\bconnect\s*[,(}]/
+                );
+            }
+        }
+    );
+
+    it('commands that connect or resolve DIDs are not advertised as offline', () => {
+        // clr validate --dry-run-sign connects and authenticates; verify resolves DIDs.
+        for (const name of ['clr validate', 'verify'])
+            expect(COMMAND_METADATA[name], name).toMatchObject({
+                network: true,
+                effect: 'read',
+                createsIdentity: false,
+            });
+    });
+});
+
 describe('examples are real invocations', () => {
     const cases = Object.entries(COMMAND_METADATA).flatMap(([name, metadata]) =>
         metadata.examples.map(example => [name, example] as const)
