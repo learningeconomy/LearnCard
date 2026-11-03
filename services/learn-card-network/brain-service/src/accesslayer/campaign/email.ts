@@ -15,7 +15,8 @@ export const claimCampaignEmail = async (
     campaignId: string,
     campaignCreatedAt: string,
     profileId: string,
-    test = false
+    test = false,
+    prepare?: (recipient: CampaignEmailRecipient) => Promise<void>
 ): Promise<CampaignEmailRecipient | undefined> =>
     withCampaignTransaction('campaign:claimEmail', async transaction => {
         const params = { campaignId, campaignCreatedAt, profileId, ...campaignTimeParams() };
@@ -45,13 +46,17 @@ export const claimCampaignEmail = async (
         const email = z.email().safeParse(row.get('email'));
         if (!email.success || !campaign.channels.includes('email') || !campaign.email)
             return undefined;
+        const recipient = { campaign, email: email.data, locale: row.get('locale') ?? undefined };
+        // Local preparation only: no provider send inside a retriable transaction.
+        // A render failure aborts before writing the durable claim.
+        await prepare?.(recipient);
         if (!test)
             await transaction.run(
                 `MATCH (p:Profile {profileId: $profileId}), (c:Campaign {id: $campaignId})
              MERGE (p)-[state:CAMPAIGN_STATE]->(c) SET state.emailClaimedAt = $now`,
                 params
             );
-        return { campaign, email: email.data, locale: row.get('locale') ?? undefined };
+        return recipient;
     });
 
 /** Provider acceptance only; a claim alone is not an emailed statistic. */

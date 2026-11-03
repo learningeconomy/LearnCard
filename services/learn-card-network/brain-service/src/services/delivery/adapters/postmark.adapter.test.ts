@@ -84,6 +84,27 @@ describe('campaign provider boundary', () => {
             })
         );
     });
+    it('validates one stream per wave and prepares without sending', async () => {
+        const adapter = new PostmarkAdapter('test-key');
+        await adapter.assertBroadcastStream('news');
+        const first = await adapter.prepareCampaignEmail(campaignNotification);
+        const second = await adapter.prepareCampaignEmail(campaignNotification);
+        expect(mocks.stream).toHaveBeenCalledOnce();
+        expect(mocks.render).toHaveBeenCalledTimes(2);
+        expect(mocks.send).not.toHaveBeenCalled();
+        await first();
+        await second();
+        expect(mocks.send).toHaveBeenCalledTimes(2);
+    });
+    it('does not cache failed stream checks', async () => {
+        const adapter = new PostmarkAdapter('test-key');
+        mocks.stream.mockRejectedValueOnce(new Error('provider private detail'));
+        await expect(adapter.assertBroadcastStream('news')).rejects.toThrow(
+            'stream validation failed'
+        );
+        await adapter.assertBroadcastStream('news');
+        expect(mocks.stream).toHaveBeenCalledTimes(2);
+    });
     it('rejects a custom transactional stream', async () => {
         mocks.stream.mockResolvedValue({ MessageStreamType: 'Transactional' });
         await expect(new PostmarkAdapter('test-key').send(campaignNotification)).rejects.toThrow(

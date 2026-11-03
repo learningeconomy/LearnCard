@@ -978,6 +978,18 @@ describe('campaign email database boundaries', () => {
         );
         return campaign;
     };
+    it('leaves a recipient claimable after local preparation fails', async () => {
+        const campaign = await setup();
+        await expect(
+            claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', false, async () => {
+                throw new Error('Cannot render');
+            })
+        ).rejects.toThrow('Cannot render');
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(0);
+        expect(await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')).toMatchObject({
+            email: 'learner@example.com',
+        });
+    });
     it('atomically claims once across concurrent dispatches and only counts acknowledged sends', async () => {
         const campaign = await setup();
         const claims = await Promise.all(

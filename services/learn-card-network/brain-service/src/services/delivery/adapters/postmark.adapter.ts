@@ -52,17 +52,64 @@ export class PostmarkAdapter implements DeliveryService {
         this.client = new ServerClient(apiKey);
     }
 
-    public async send(notification: Notification): Promise<void> {
-        if (
-            notification.templateId === 'campaign-announcement' &&
-            (!notification.messageStream || notification.messageStream.toLowerCase() === 'outbound')
-        ) {
+    private readonly broadcastStreams = new Map<string, Promise<void>>();
+
+    /** Validate once per adapter/wave; failed checks are never cached. */
+    public async assertBroadcastStream(streamId?: string): Promise<void> {
+        if (!streamId || streamId.toLowerCase() === 'outbound')
             throw new Error('Campaign email requires a broadcast stream');
+        let check = this.broadcastStreams.get(streamId);
+        if (!check) {
+            check = this.client.getMessageStream(streamId).then(stream => {
+                if (stream.MessageStreamType !== 'Broadcasts')
+                    throw new Error('Campaign email requires a Postmark Broadcast stream');
+            });
+            this.broadcastStreams.set(streamId, check);
         }
+        try {
+            await check;
+        } catch {
+            this.broadcastStreams.delete(streamId);
+            throw new Error('Campaign Postmark Broadcast stream validation failed');
+        }
+    }
+
+    /** Prepare without sending, so callers can render before reserving a recipient. */
+    public async prepareCampaignEmail(notification: Notification): Promise<() => Promise<void>> {
+        await this.assertBroadcastStream(notification.messageStream);
+        const branding = resolveBranding(notification.branding);
+        const rendered = await renderEmail(
+            'announcement',
+            branding,
+            notification.templateModel as TemplateDataMap['announcement'],
+            notification.locale
+        );
+        const brandName =
+            notification.branding?.brandName || environment.POSTMARK_BRAND_NAME || 'LearnCard';
+        const from = notification.branding?.fromDomain
+            ? buildFromAddress(brandName, `support@${notification.branding.fromDomain}`)
+            : buildFromAddress(
+                  brandName,
+                  environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io'
+              );
+        return async () => {
+            await this.client.sendEmail({
+                From: from,
+                To: notification.contactMethod.value,
+                Subject: notification.subject ?? rendered.subject,
+                HtmlBody: rendered.html,
+                TextBody: rendered.text,
+                MessageStream: notification.messageStream,
+                Headers: notification.headers,
+            });
+        };
+    }
+
+    public async send(notification: Notification): Promise<void> {
         if (notification.templateId === 'campaign-announcement') {
-            const stream = await this.client.getMessageStream(notification.messageStream!);
-            if (stream.MessageStreamType !== 'Broadcasts')
-                throw new Error('Campaign email requires a Postmark Broadcast stream');
+            const deliver = await this.prepareCampaignEmail(notification);
+            await deliver();
+            return;
         }
         const defaultFrom = environment.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io';
         const defaultBrandName = environment.POSTMARK_BRAND_NAME || 'LearnCard';

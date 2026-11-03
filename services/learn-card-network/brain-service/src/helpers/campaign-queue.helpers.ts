@@ -1,4 +1,8 @@
-import { assertCampaignEmailConfigured, sendCampaignEmail } from './campaign-email.helpers';
+import {
+    CampaignEmailDeliveryError,
+    prepareCampaignEmailDelivery,
+    sendCampaignEmail,
+} from './campaign-email.helpers';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
@@ -45,7 +49,7 @@ export const dispatchCampaign = async (campaignId: string): Promise<{ dispatchId
             message: 'Campaign must be live, in its time window, and have a delivery channel',
         });
     const dispatchId = randomUUID();
-    if (campaign.channels.includes('email')) assertCampaignEmailConfigured();
+    if (campaign.channels.includes('email')) await prepareCampaignEmailDelivery();
     for (const channel of ['notify', 'email'] as const) {
         if (campaign.channels.includes(channel))
             await addCampaignDispatchToQueue({
@@ -70,6 +74,8 @@ export const processCampaignDispatchJob = async (rawJob: CampaignDispatchJob): P
         }
         if (campaign.createdAt !== job.campaignCreatedAt || !canDispatchCampaign(campaign)) return;
         if (!campaign.channels.includes(job.channel)) return;
+        const emailAdapter =
+            job.channel === 'email' ? await prepareCampaignEmailDelivery() : undefined;
         const pageSize =
             job.channel === 'email'
                 ? environment.CAMPAIGN_EMAIL_PAGE_SIZE
@@ -77,7 +83,14 @@ export const processCampaignDispatchJob = async (rawJob: CampaignDispatchJob): P
         const page = await pageCampaignAudience(job.campaignId, job.afterProfileId, pageSize);
         for (const { profileId } of page.records) {
             if (job.channel === 'email') {
-                await sendCampaignEmail(campaign, profileId);
+                try {
+                    await sendCampaignEmail(campaign, profileId, false, emailAdapter);
+                } catch (error) {
+                    // Only post-claim failures can be skipped safely. Configuration,
+                    // rendering and database failures retry the page without consuming claims.
+                    if (!(error instanceof CampaignEmailDeliveryError)) throw error;
+                    console.error('Campaign email delivery failed; reservation retained');
+                }
                 continue;
             }
             const recipient = await getCampaignDeliveryRecipient(

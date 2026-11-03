@@ -44,46 +44,69 @@ export const campaignEmailLinks = (
     };
 };
 
+export class CampaignEmailDeliveryError extends Error {}
+
+/** One adapter per wave keeps stream validation ahead of every durable claim. */
+export const prepareCampaignEmailDelivery = async (): Promise<PostmarkAdapter> => {
+    assertCampaignEmailConfigured();
+    const adapter = new PostmarkAdapter(environment.POSTMARK_API_KEY!);
+    await adapter.assertBroadcastStream(environment.POSTMARK_BROADCAST_STREAM);
+    return adapter;
+};
+
 export const sendCampaignEmail = async (
     campaign: Campaign,
     profileId: string,
-    test = false
+    test = false,
+    preparedAdapter?: PostmarkAdapter
 ): Promise<boolean> => {
-    assertCampaignEmailConfigured();
-    // Validate configured URLs before reserving a recipient.
+    const adapter = preparedAdapter ?? (await prepareCampaignEmailDelivery());
     campaignEmailLinks(campaign, profileId);
-    const recipient = await claimCampaignEmail(campaign.id, campaign.createdAt, profileId, test);
+    let deliver: (() => Promise<void>) | undefined;
+    const recipient = await claimCampaignEmail(
+        campaign.id,
+        campaign.createdAt,
+        profileId,
+        test,
+        async current => {
+            try {
+                const links = campaignEmailLinks(current.campaign, profileId);
+                deliver = await adapter.prepareCampaignEmail({
+                    contactMethod: { type: 'email', value: current.email },
+                    templateId: 'campaign-announcement',
+                    templateModel: {
+                        ...current.campaign.email!,
+                        ctaUrl: links.ctaUrl,
+                        unsubscribeUrl: links.unsubscribeUrl,
+                    },
+                    subject: current.campaign.email!.subject,
+                    messageStream: environment.POSTMARK_BROADCAST_STREAM,
+                    headers: [
+                        { Name: 'List-Unsubscribe', Value: `<${links.oneClickUrl}>` },
+                        { Name: 'List-Unsubscribe-Post', Value: 'List-Unsubscribe=One-Click' },
+                    ],
+                    branding: resolveTenantFromRequest({
+                        'x-tenant-id': current.campaign.tenantId,
+                    }).emailBranding,
+                    locale: current.locale,
+                });
+            } catch {
+                throw new Error('Campaign email preparation failed');
+            }
+        }
+    );
     if (!recipient) return false;
-    const links = campaignEmailLinks(recipient.campaign, profileId);
-    const branding = resolveTenantFromRequest({
-        'x-tenant-id': recipient.campaign.tenantId,
-    }).emailBranding;
+    if (!deliver) throw new Error('Campaign email was not prepared');
     try {
-        await new PostmarkAdapter(environment.POSTMARK_API_KEY!).send({
-            contactMethod: { type: 'email', value: recipient.email },
-            templateId: 'campaign-announcement',
-            templateModel: {
-                ...recipient.campaign.email!,
-                ctaUrl: links.ctaUrl,
-                unsubscribeUrl: links.unsubscribeUrl,
-            },
-            subject: recipient.campaign.email!.subject,
-            messageStream: environment.POSTMARK_BROADCAST_STREAM,
-            headers: [
-                { Name: 'List-Unsubscribe', Value: `<${links.oneClickUrl}>` },
-                { Name: 'List-Unsubscribe-Post', Value: 'List-Unsubscribe=One-Click' },
-            ],
-            branding,
-            locale: recipient.locale,
-        });
+        await deliver();
+        if (!test) await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, profileId);
     } catch {
         // Provider errors may contain recipient addresses and bearer unsubscribe URLs.
-        throw new Error(
+        throw new CampaignEmailDeliveryError(
             test
                 ? 'Campaign test email delivery failed'
                 : 'Campaign email delivery failed; reservation retained'
         );
     }
-    if (!test) await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, profileId);
     return true;
 };

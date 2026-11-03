@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({
     claim: vi.fn(),
     acknowledge: vi.fn(),
     send: vi.fn(),
+    prepare: vi.fn(),
+    stream: vi.fn(),
+    recipient: undefined as unknown,
     update: vi.fn(),
     environment: {
         POSTMARK_API_KEY: 'test-only',
@@ -22,7 +25,8 @@ vi.mock('@accesslayer/campaign/preferences', () => ({
 }));
 vi.mock('../src/services/delivery/adapters/postmark.adapter', () => ({
     PostmarkAdapter: class {
-        send = mocks.send;
+        assertBroadcastStream = mocks.stream;
+        prepareCampaignEmail = mocks.prepare;
     },
 }));
 import { campaignEmailLinks, sendCampaignEmail } from '../src/helpers/campaign-email.helpers';
@@ -48,14 +52,27 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.environment.POSTMARK_BROADCAST_STREAM = 'broadcast';
     mocks.environment.POSTMARK_API_KEY = 'test-only';
-    mocks.claim.mockResolvedValue({ campaign, email: 'adult@example.com' });
+    mocks.recipient = { campaign, email: 'adult@example.com' };
+    mocks.claim.mockImplementation(async (_id, _createdAt, _profileId, _test, prepare) => {
+        if (!mocks.recipient) return undefined;
+        await prepare(mocks.recipient);
+        return mocks.recipient;
+    });
+    mocks.prepare.mockResolvedValue(mocks.send);
+    mocks.stream.mockResolvedValue(undefined);
     mocks.send.mockResolvedValue(undefined);
 });
 describe('campaign email', () => {
     it('uses stored tenant, broadcast stream, authored subject and RFC 8058 headers', async () => {
         await sendCampaignEmail(campaign, 'adult');
-        expect(mocks.claim).toHaveBeenCalledWith(campaign.id, campaign.createdAt, 'adult', false);
-        expect(mocks.send).toHaveBeenCalledWith(
+        expect(mocks.claim).toHaveBeenCalledWith(
+            campaign.id,
+            campaign.createdAt,
+            'adult',
+            false,
+            expect.any(Function)
+        );
+        expect(mocks.prepare).toHaveBeenCalledWith(
             expect.objectContaining({
                 subject: 'New programs',
                 messageStream: 'broadcast',
@@ -85,16 +102,30 @@ describe('campaign email', () => {
         { channels: ['inApp', 'email'], message: undefined },
     ])('omits the campaign destination without enabled in-app content: %j', async variant => {
         const stored = { ...campaign, ...variant } as Campaign;
-        mocks.claim.mockResolvedValue({ campaign: stored, email: 'adult@example.com' });
+        mocks.recipient = { campaign: stored, email: 'adult@example.com' };
         await sendCampaignEmail(stored, 'adult', true);
         expect(campaignEmailLinks(stored, 'adult').ctaUrl).toBeUndefined();
-        const model = mocks.send.mock.calls[0][0].templateModel;
+        const model = mocks.prepare.mock.calls[0][0].templateModel;
         expect(model.ctaUrl).toBeUndefined();
         expect(model.body).toBe(campaign.email!.body);
         expect(model.unsubscribeUrl).toMatch(/^https:\/\/vetpass.app\/unsubscribe\?token=/);
     });
+    it('fails stream preflight before attempting a claim', async () => {
+        mocks.stream.mockRejectedValueOnce(new Error('Invalid stream'));
+        await expect(sendCampaignEmail(campaign, 'adult')).rejects.toThrow('Invalid stream');
+        expect(mocks.claim).not.toHaveBeenCalled();
+        expect(mocks.send).not.toHaveBeenCalled();
+    });
+    it('prepares the actual recipient before sending and never sends on render failure', async () => {
+        mocks.prepare.mockRejectedValueOnce(new Error('Private render detail'));
+        await expect(sendCampaignEmail(campaign, 'adult')).rejects.toThrow(
+            'Campaign email preparation failed'
+        );
+        expect(mocks.send).not.toHaveBeenCalled();
+        expect(mocks.acknowledge).not.toHaveBeenCalled();
+    });
     it('skips recipients rejected by the durable eligibility/claim boundary', async () => {
-        mocks.claim.mockResolvedValue(undefined);
+        mocks.recipient = undefined;
         expect(await sendCampaignEmail(campaign, 'adult')).toBe(false);
         expect(mocks.send).not.toHaveBeenCalled();
         expect(mocks.acknowledge).not.toHaveBeenCalled();
@@ -107,7 +138,13 @@ describe('campaign email', () => {
     });
     it('test sends do not write production emailed stats', async () => {
         await sendCampaignEmail(campaign, 'adult', true);
-        expect(mocks.claim).toHaveBeenCalledWith(campaign.id, campaign.createdAt, 'adult', true);
+        expect(mocks.claim).toHaveBeenCalledWith(
+            campaign.id,
+            campaign.createdAt,
+            'adult',
+            true,
+            expect.any(Function)
+        );
         expect(mocks.acknowledge).not.toHaveBeenCalled();
     });
     it('does not claim a retained reservation or expose provider details for a failed self-test', async () => {

@@ -5,6 +5,7 @@ import type { Campaign, LCNNotification } from '@learncard/types';
 const mocks = vi.hoisted(() => ({
     getCampaign: vi.fn(),
     email: vi.fn(),
+    prepareEmail: vi.fn(),
     preferences: vi.fn(),
     pageAudience: vi.fn(),
     recipient: vi.fn(),
@@ -21,7 +22,8 @@ const mocks = vi.hoisted(() => ({
     },
 }));
 vi.mock('@helpers/campaign-email.helpers', () => ({
-    assertCampaignEmailConfigured: vi.fn(),
+    prepareCampaignEmailDelivery: mocks.prepareEmail,
+    CampaignEmailDeliveryError: class extends Error {},
     sendCampaignEmail: mocks.email,
 }));
 vi.mock('@accesslayer/campaign/preferences', () => ({
@@ -65,6 +67,7 @@ import {
     processCampaignDispatchJob,
     addCampaignDispatchToQueue,
 } from './campaign-queue.helpers';
+import { CampaignEmailDeliveryError } from './campaign-email.helpers';
 import { buildCampaignNotification, sendCampaignTestToMe } from './campaign-notifications.helpers';
 import { deliverQueuedNotification } from './notificationQueue.helpers';
 
@@ -84,6 +87,7 @@ const recipient = (profileId = 'learner') => ({ profileId, did: `did:key:${profi
 
 beforeEach(() => {
     vi.resetAllMocks();
+    mocks.prepareEmail.mockResolvedValue({ prepared: true });
     mocks.preferences.mockResolvedValue({
         announcementEmailOptOut: false,
         announcementPushOptOut: false,
@@ -251,6 +255,60 @@ describe('campaign delivery acknowledgement', () => {
 });
 
 describe('email channel dispatch', () => {
+    it('fails stream preflight before paging or claiming recipients', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.prepareEmail.mockRejectedValueOnce(new Error('Invalid broadcast stream'));
+        await expect(processCampaignDispatchJob({ ...job, channel: 'email' })).rejects.toThrow(
+            'Invalid broadcast stream'
+        );
+        expect(mocks.pageAudience).not.toHaveBeenCalled();
+        expect(mocks.email).not.toHaveBeenCalled();
+    });
+    it('continues the page and schedules the next wave after a reserved send fails', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.pageAudience.mockResolvedValue({
+            records: Array.from({ length: 500 }, (_, i) => recipient(String(i).padStart(4, '0'))),
+        });
+        mocks.email.mockRejectedValueOnce(new CampaignEmailDeliveryError('private details'));
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await processCampaignDispatchJob({ ...job, channel: 'email' });
+            expect(mocks.prepareEmail).toHaveBeenCalledOnce();
+            expect(mocks.email).toHaveBeenCalledTimes(500);
+            expect(mocks.email).toHaveBeenLastCalledWith(expect.anything(), '0499', false, {
+                prepared: true,
+            });
+            expect(JSON.parse(mocks.sqs.mock.calls[0][0].input.MessageBody).afterProfileId).toBe(
+                '0499'
+            );
+            expect(log).toHaveBeenCalledWith(
+                'Campaign email delivery failed; reservation retained'
+            );
+        } finally {
+            log.mockRestore();
+        }
+    });
+    it('retries unclaimed preparation or database failures without advancing the cursor', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.email.mockRejectedValueOnce(new Error('Preparation failed'));
+        await expect(processCampaignDispatchJob({ ...job, channel: 'email' })).rejects.toThrow(
+            'Preparation failed'
+        );
+        expect(mocks.sqs).not.toHaveBeenCalled();
+    });
+
     it.each([
         { channels: ['notify'] },
         { channels: ['inApp', 'notify'] },
