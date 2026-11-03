@@ -1037,6 +1037,20 @@ export const keysRouter = t.router({
                     escrowPin: EscrowPinStatusValidator,
                     escrowStale: z.enum(['mode-mismatch', 'key-rotated']).optional(),
                     /**
+                     * Identity (blob hash) of the escrow copy lca-api holds. Authority-mode
+                     * clients compare it with the authority's envelope and repair a
+                     * mismatch instead of trusting a stale copy.
+                     */
+                    escrowBlobIdentity: z
+                        .string()
+                        .regex(/^[0-9a-f]{64}$/)
+                        .optional(),
+                    /**
+                     * A PIN operation holds the account's lease: lca-api's copy may trail
+                     * the authority until it settles, so a mismatch is not yet stale.
+                     */
+                    escrowUpdating: z.boolean().optional(),
+                    /**
                      * The account has an escrow recovery method (any confirmation state)
                      * but none confirmed at the current share version, e.g. `pending`
                      * after an identity-recovery rebind. A hint only; the client still
@@ -1124,6 +1138,8 @@ export const keysRouter = t.router({
                 escrowStale: userKey.escrowBlob
                     ? await getEscrowBlobStaleReason(userKey.escrowBlob)
                     : undefined,
+                ...(userKey.escrowBlob ? { escrowBlobIdentity: userKey.escrowBlob.blobHash } : {}),
+                ...(userKey.escrowEnrollmentLease ? { escrowUpdating: true } : {}),
                 priorEscrowEnrollment:
                     escrowMethods.length > 0 &&
                     !escrowMethods.some(

@@ -1,7 +1,13 @@
 import {
+    claimEscrowEnrollmentLease,
+    commitEscrowEnrollmentLease,
     findPendingEscrowHoldByAuthProvider,
+    findUserKeyByAuthProvider,
     findUserKeysWithEscrowBlobKeyId,
+    releaseEscrowEnrollmentLease,
     rewrapEscrowBlobByAuthProvider,
+    ESCROW_ENROLLMENT_LEASE_TTL_MS,
+    type EscrowEnrollmentLease,
 } from '@models';
 import {
     getEnclaveAttestationIdentity,
@@ -9,8 +15,13 @@ import {
     isEscrowEnabled,
     isEscrowRemoteMode,
 } from '../services/escrow-enclave';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { EscrowUnavailableError } from '../services/escrow-enclave/types';
+import type { AuthorityMutationResult } from '../services/escrow-enclave/authorityContract';
+import {
+    isDefiniteAuthorityRefusal,
+    settleEscrowEnrollmentLease,
+} from '../services/escrow-enclave/enrollmentLease';
 
 const DEFAULT_REWRAP_BATCH_LIMIT = 200;
 
@@ -82,8 +93,9 @@ export const runEscrowBlobRewrap = async (
     let skippedPendingHold = 0;
     let failed = 0;
 
-    for (const userKey of candidates) {
-        const blob = userKey.escrowBlob;
+    for (const candidate of candidates) {
+        let userKey = candidate;
+        let blob = userKey.escrowBlob;
         const authProvider = userKey.authProviders[0];
         // Already migrated (by this loop's own attestation refresh landing
         // mid-batch, or a concurrent run) since the candidate query ran.
@@ -95,6 +107,27 @@ export const runEscrowBlobRewrap = async (
             }
             const enclave = getEscrowEnclave();
             if (isEscrowRemoteMode()) {
+                // A PIN operation (or an earlier run) left a lease behind: settle it
+                // against the authority first, then work from the converged copy.
+                const stuck = userKey.escrowEnrollmentLease;
+                if (stuck && stuck.expiresAt <= new Date()) {
+                    await settleEscrowEnrollmentLease(authProvider, userKey.primaryDid, stuck, {
+                        releaseIfUncommitted: true,
+                    });
+                    const settled = await findUserKeyByAuthProvider(
+                        authProvider.type,
+                        authProvider.id
+                    );
+                    if (
+                        !settled?.escrowBlob ||
+                        settled.escrowBlob.enclaveKeyId === attestation.keyId
+                    )
+                        continue;
+                    userKey = settled;
+                    blob = settled.escrowBlob;
+                }
+                // A live lease: its operation replaces this blob. Re-tried on a later run.
+                if (userKey.escrowEnrollmentLease) continue;
                 if (!enclave.getEnrollmentState || !blob.authorityGeneration)
                     throw new EscrowUnavailableError();
                 const snapshot = await enclave.getEnrollmentState({
@@ -131,6 +164,65 @@ export const runEscrowBlobRewrap = async (
                     if (stored) rewrapped += 1;
                     continue;
                 }
+                // The authority call itself runs under the account's PIN-operation
+                // lease, like an owner's intent: otherwise a lease claimed between this
+                // commit and its Mongo write would leave the authority re-sealed and
+                // Mongo on the old copy.
+                const lease: EscrowEnrollmentLease = {
+                    id: randomUUID(),
+                    expiresAt: new Date(Date.now() + ESCROW_ENROLLMENT_LEASE_TTL_MS),
+                    action: 'rewrap',
+                    pinAction: 'keep',
+                    pin: 'keep',
+                    shareVersion: blob.shareVersion,
+                    authorityGeneration: current.authorityGeneration,
+                    expectedEnrollmentVersion: current.enrollmentVersion,
+                    expectedPinGeneration: current.pinGeneration,
+                    enrollmentEpoch: blob.enrollmentEpoch,
+                    sourceBlobHash: blob.blobHash,
+                    measurements: attestation.measurements,
+                };
+                const claimed = await claimEscrowEnrollmentLease(authProvider, {
+                    lease,
+                    expectedBlob: blob,
+                    expectedPin: userKey.escrowPin,
+                    requireOptedIn: true,
+                });
+                // Changed since read, a compare in flight, or another lease: next run.
+                if (!claimed) continue;
+                let authority: AuthorityMutationResult | undefined;
+                try {
+                    ({ authority } = await enclave.rewrapEscrowBlob({
+                        envelope: blob.envelope,
+                        expectedDid: userKey.primaryDid,
+                        expectedShareVersion: blob.shareVersion,
+                        sourceEnrollmentEpoch: blob.enrollmentEpoch,
+                    }));
+                    if (!authority?.envelope) throw new EscrowUnavailableError('invalid_response');
+                } catch (error) {
+                    if (isDefiniteAuthorityRefusal(error))
+                        await releaseEscrowEnrollmentLease(authProvider, lease.id);
+                    else
+                        await settleEscrowEnrollmentLease(authProvider, userKey.primaryDid, lease, {
+                            releaseIfUncommitted: false,
+                        }).catch(() => undefined);
+                    throw error;
+                }
+                const committed = await commitEscrowEnrollmentLease(authProvider, lease, {
+                    envelope: authority.envelope,
+                    authorityGeneration: authority.authorityGeneration,
+                    enrollmentVersion: authority.enrollmentVersion,
+                    enrollmentEpoch: authority.enrollmentEpoch,
+                    receipt: authority.receipt,
+                }).catch(() => null);
+                const settled = committed
+                    ? 'adopted'
+                    : await settleEscrowEnrollmentLease(authProvider, userKey.primaryDid, lease, {
+                          received: authority,
+                          releaseIfUncommitted: false,
+                      });
+                if (settled === 'adopted') rewrapped += 1;
+                continue;
             }
             const { envelope, authority } = await enclave.rewrapEscrowBlob({
                 envelope: blob.envelope,

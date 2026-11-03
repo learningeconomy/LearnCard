@@ -286,6 +286,13 @@ export interface RecoveryResult {
         mode: 'kept' | 'relinked' | 'deferred-rotation';
         pinRefreshed: boolean;
         newPinRequired: boolean;
+        /**
+         * The same-PIN re-set was attempted and could not be confirmed (refused, or
+         * failed before the authority's receipt reached this client). The PIN keeps
+         * working, with at most its reduced budget; a server that committed it anyway
+         * converges on its own.
+         */
+        pinRefreshFailed?: boolean;
     };
 }
 
@@ -387,6 +394,16 @@ export interface ServerKeyStatus {
     escrowOptedOut?: boolean;
     escrowPin?: EscrowPinStatus;
     escrowStale?: EscrowBlobStaleReason;
+    /**
+     * Identity (blob hash) of the escrow copy the server holds; authority-mode clients
+     * compare it with the signed authority's envelope. Absent from older servers.
+     */
+    escrowBlobIdentity?: string;
+    /**
+     * A PIN operation is in progress server-side: `escrowBlobIdentity` may trail the
+     * authority until it settles (seconds, at most the server's lease TTL).
+     */
+    escrowUpdating?: boolean;
     sssActivationState?: SssActivationState | null;
     /**
      * The server has an escrow recovery method in some confirmation state but none

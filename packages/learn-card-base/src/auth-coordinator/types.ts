@@ -77,6 +77,13 @@ export interface PinSignInInfo {
     /** False when the fresh-attempt-budget re-set did not run; the PIN stays valid. */
     pinRefreshed: boolean;
     /**
+     * The re-set was attempted and could not be confirmed (for example a concurrent PIN
+     * attempt made lca-api refuse it, or the authority's receipt was lost). The PIN still
+     * works, with at most its reduced budget; it is not a reason to ask for a new PIN by
+     * itself.
+     */
+    pinRefreshFailed?: boolean;
+    /**
      * Wrong PIN entries are recorded against the current PIN (or the server could not
      * say), so the same PIN was not re-set: the app asks for a different PIN
      * (`setEscrowPin`, which rejects the PIN just used with `SameEscrowPinError`).

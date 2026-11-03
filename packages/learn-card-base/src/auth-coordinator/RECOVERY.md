@@ -344,7 +344,16 @@ A successful PIN release **no longer re-splits the key or rebinds the account**:
   gone (another device secured or recovered the account), the sign-in fails closed with
   `PinSignInStaleError` and stores nothing. Keep mode never falls back to a rotation or rebind.
 - **PIN re-set fails** or the PIN fails today's PIN rules: the PIN at N stays valid and is not
-  cleared (`pinRefreshed: false`); no clear-PIN repair is scheduled.
+  cleared (`pinRefreshed: false`); no clear-PIN repair is scheduled. A re-set that was attempted
+  and could not be confirmed is reported as `pinSignIn.pinRefreshFailed: true` (not a reason to
+  ask for a new PIN; if the authority committed it but its receipt was lost, the budget is in fact
+  full again). In authority mode lca-api either refuses it before the authority (a PIN attempt
+  raced it; both copies unchanged) or converges to the authority's commit; any copy mismatch
+  left over is caught by `ensureEscrowEnrollment`, which compares lca-api's
+  `escrowBlobIdentity` with the signed authority envelope and re-enrols (or, for a PIN-protected
+  copy, returns `pin-reset-required`) without clearing the PIN on its own. While lca-api reports
+  `escrowUpdating` (a PIN operation holds its lease) a mismatch is treated as in progress, not
+  stale, and nothing is repaired that cycle.
 
 #### New PIN after wrong entries
 

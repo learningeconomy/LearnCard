@@ -66,6 +66,7 @@ import {
     escrowAuthorityMeasurements,
     type EscrowHoldRecordLike,
 } from './escrow-authority';
+import { getEscrowBlobIdentity } from './escrow-enrollment-intent';
 import type { VerifiedEnclaveIdentity, EscrowAuthorityState } from './escrow-authority.types';
 import { EscrowEvidenceError } from './escrow-authority.types';
 import type { EscrowEnvelope } from './escrow-crypto';
@@ -1586,7 +1587,35 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 current.status === 'active' &&
                 current.shareVersion === status.shareVersion &&
                 current.envelope?.keyId === verifiedKey.keyId;
+            // lca-api must serve the authority's copy: a PIN operation whose result never
+            // reached Mongo leaves the old copy there, and every hold or PIN attempt
+            // against it is refused. Older servers do not report the identity.
+            let identityMismatch = false;
+            if (currentlyEnrolled && current.envelope && status.escrowBlobIdentity !== undefined) {
+                const authorityIdentity = await getEscrowBlobIdentity(current.envelope);
+                if (authorityIdentity !== status.escrowBlobIdentity) {
+                    // The authority-state read settles a crashed operation server-side;
+                    // read lca-api's copy again before treating it as a mismatch.
+                    const reread = await self.fetchServerKeyStatus(
+                        params.token,
+                        params.providerType
+                    );
+                    storage.assertCurrent();
+                    // While a PIN operation holds the server's lease its copy may trail
+                    // the authority for a moment; lca-api converges on its own, so this
+                    // is not (yet) a stale copy and must not prompt a PIN reset.
+                    identityMismatch =
+                        reread.escrowBlobIdentity !== authorityIdentity &&
+                        reread.escrowUpdating !== true;
+                }
+            }
+            if (identityMismatch) currentlyEnrolled = false;
             if (currentlyEnrolled) verifiedEscrowEnvelope = current.envelope ?? undefined;
+            // lca-api's PIN record (salt) belongs to the old copy, so neither a carry nor a
+            // keep can repair a PIN-protected mismatch: only a user-chosen PIN (`set`) or an
+            // explicit clear re-binds both. Never rotate or sign here.
+            if (identityMismatch && current.hasPin && pin === undefined && !clearPinForEnrollment)
+                return { enrolled: false, reason: 'pin-reset-required' };
             hasPin = current.hasPin;
             // After an identity-recovery rebind lca-api has no PIN left to carry, so an
             // automatic carry/keep can only fail.
@@ -1965,6 +1994,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // leaves the PIN at this version valid, so nothing is cleared and no repair is
         // scheduled.
         let pinRefreshed = false;
+        let pinRefreshFailed = false;
         if (mode === 'kept' && !newPinRequired && refreshCharges && params.signDidAuthVp) {
             const pinMaterial = await freshPinMaterial(pin);
             pinRefreshed =
@@ -1985,6 +2015,13 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     params.options?.recoveryLanguage,
                     refreshCharges
                 ));
+            // Reported, not swallowed: the PIN keeps (at most) its reduced budget. A commit
+            // whose receipt was lost is not confirmed here, so it reports failed too (an
+            // under-claim: the budget is in fact full). lca-api either
+            // refused before the authority (both copies unchanged) or converges to the
+            // authority's commit; a copy left behind is caught by ensureEscrowEnrollment's
+            // identity check, which never clears the PIN on its own.
+            pinRefreshFailed = pinMaterial !== undefined && !pinRefreshed;
         }
         assertActive();
         return {
@@ -1992,7 +2029,12 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             did: released.primaryDid,
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode, pinRefreshed, newPinRequired },
+            pinSignIn: {
+                mode,
+                pinRefreshed,
+                newPinRequired,
+                ...(pinRefreshFailed ? { pinRefreshFailed: true } : {}),
+            },
         };
     };
 
@@ -2699,6 +2741,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 escrowOptedOut: data.escrowOptedOut === true,
                 escrowPin: data.escrowPin,
                 escrowStale: data.escrowStale,
+                ...(typeof data.escrowBlobIdentity === 'string'
+                    ? { escrowBlobIdentity: data.escrowBlobIdentity }
+                    : {}),
+                ...(data.escrowUpdating === true ? { escrowUpdating: true } : {}),
                 sssActivationState: data.sssActivationState ?? 'active',
                 ...(typeof data.priorEscrowEnrollment === 'boolean'
                     ? { priorEscrowEnrollment: data.priorEscrowEnrollment }

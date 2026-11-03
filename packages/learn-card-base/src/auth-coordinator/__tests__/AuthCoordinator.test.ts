@@ -1334,6 +1334,47 @@ describe('AuthCoordinator', () => {
                 ).toBeUndefined();
             });
 
+            it('surfaces a failed same-PIN refresh without a clear-PIN repair or a new-PIN prompt', async () => {
+                const ensureEscrowEnrollment = vi
+                    .fn()
+                    .mockResolvedValue({ enrolled: true, changed: false });
+                const { coordinator } = setup({
+                    keyDerivation: {
+                        hasLocalKey: vi.fn().mockResolvedValue(false),
+                        executeRecovery: vi.fn().mockResolvedValue({
+                            ...keptResult,
+                            pinSignIn: {
+                                mode: 'kept',
+                                pinRefreshed: false,
+                                newPinRequired: false,
+                                pinRefreshFailed: true,
+                            },
+                        }),
+                        ensureEscrowEnrollment,
+                    },
+                    config: { signDidAuthVp: vi.fn() },
+                });
+                await coordinator.initialize();
+                await coordinator.recover({ method: 'escrow-pin', pin: '135790' });
+                expect(coordinator.getState()).toMatchObject({
+                    status: 'ready',
+                    pinSignIn: {
+                        pinRefreshed: false,
+                        newPinRequired: false,
+                        pinRefreshFailed: true,
+                    },
+                });
+                expect(
+                    (coordinator.getState() as { escrowPinChangeRequired?: boolean })
+                        .escrowPinChangeRequired
+                ).toBeUndefined();
+                // The PIN still works: never schedule a clear-PIN repair for it.
+                await vi.waitFor(() => expect(ensureEscrowEnrollment).toHaveBeenCalled());
+                for (const [params] of ensureEscrowEnrollment.mock.calls) {
+                    expect(params.options?.clearPin).toBeUndefined();
+                }
+            });
+
             it('omits priorWrongAttempts when the server cannot say', async () => {
                 const { coordinator } = setup({
                     keyDerivation: {

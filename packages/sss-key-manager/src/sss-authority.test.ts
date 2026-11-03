@@ -205,6 +205,15 @@ const setup = async (legacyEnrolled = false) => {
         forgedRebindStatus?: boolean;
         /** lca-api's verified wrong-entry count for the current PIN, when reported. */
         wrongPinAttempts?: number;
+        /**
+         * lca-api's escrow copy identity on /keys/auth-share: 'authority' reports the
+         * authority's current copy; a string is a stale copy (a lost PIN-operation write).
+         */
+        serverBlobIdentity?: 'authority' | string;
+        /** lca-api reports a PIN operation holding its lease (`escrowUpdating`). */
+        serverUpdating?: boolean;
+        /** lca-api refuses the next PIN change (e.g. a concurrent compare): 409. */
+        refusePinChange?: boolean;
     } = {};
     const signHold = async (record: EscrowHoldRecordLike): Promise<EscrowHoldRecordLike> => {
         const h = record.hold;
@@ -271,6 +280,16 @@ const setup = async (legacyEnrolled = false) => {
                     ...(faults.oldServer
                         ? {}
                         : { priorEscrowEnrollment: !enrolled && !!faults.missingPinMetadata }),
+                    ...(faults.serverBlobIdentity === undefined
+                        ? {}
+                        : {
+                              escrowBlobIdentity:
+                                  faults.serverBlobIdentity === 'authority'
+                                      ? state.envelope &&
+                                        (await getEscrowBlobIdentity(state.envelope))
+                                      : faults.serverBlobIdentity,
+                          }),
+                    ...(faults.serverUpdating ? { escrowUpdating: true } : {}),
                     ...(faults.missingPinMetadata
                         ? { escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 } }
                         : faults.wrongPinAttempts !== undefined
@@ -315,6 +334,13 @@ const setup = async (legacyEnrolled = false) => {
                 expect(signed.intent.expectedEnrollmentVersion).toBe(state.enrollmentVersion);
                 intents.push(signed);
                 if (faults.failEnrollment) throw new Error('Temporary enrollment outage');
+                if (faults.refusePinChange && signed.intent.pinAction === 'change') {
+                    faults.refusePinChange = false;
+                    return response(
+                        { message: 'Automatic recovery changed; please refresh.' },
+                        409
+                    );
+                }
                 // Mirror escrow.enroll: rebind removes Mongo metadata, so carry cannot work.
                 if (
                     faults.missingPinMetadata &&
@@ -729,6 +755,136 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             pinGeneration: before.pinGeneration,
             attemptsUsed: before.attemptsUsed,
         });
+    });
+    it('reports a refused same-PIN refresh instead of a silent success, and keeps the PIN', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.spend();
+        f.faults.wrongPinAttempts = 0;
+        f.faults.refusePinChange = true;
+        const before = { ...f.state() };
+        const recovered = await f.strategy.executeRecovery({
+            token: 'token',
+            providerType: 'firebase',
+            input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+            didFromPrivateKey: async () => owner.intent.did,
+            signDidAuthVp: f.params.signDidAuthVp,
+            options: f.params.options,
+        });
+        expect(recovered).toMatchObject({
+            escrowEnrolled: true,
+            pinSignIn: {
+                mode: 'kept',
+                pinRefreshed: false,
+                newPinRequired: false,
+                pinRefreshFailed: true,
+            },
+        });
+        // Nothing committed: the PIN keeps its generation and reduced budget.
+        expect(f.state()).toMatchObject({
+            pinGeneration: before.pinGeneration,
+            attemptsUsed: before.attemptsUsed,
+        });
+    });
+    it('does not report a refresh failure when none was attempted', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.spend();
+        f.faults.wrongPinAttempts = 2;
+        const recovered = await f.strategy.executeRecovery({
+            token: 'token',
+            providerType: 'firebase',
+            input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+            didFromPrivateKey: async () => owner.intent.did,
+            signDidAuthVp: f.params.signDidAuthVp,
+            options: f.params.options,
+        });
+        expect(recovered.pinSignIn).not.toHaveProperty('pinRefreshFailed');
+    });
+    it('treats an enrollment whose lca-api copy differs from the authority as unenrolled', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        expect(f.state()).toMatchObject({ status: 'active', hasPin: false });
+        f.faults.serverBlobIdentity = 'authority';
+        const intents = f.intents.length;
+        // Matching copies: nothing to repair.
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toMatchObject({
+            enrolled: true,
+            changed: false,
+        });
+        expect(f.intents).toHaveLength(intents);
+        // lca-api kept an old copy the authority already replaced: re-enroll (no PIN).
+        f.faults.serverBlobIdentity = 'ef'.repeat(32);
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toMatchObject({
+            enrolled: true,
+            changed: true,
+        });
+        expect(f.intents.length).toBeGreaterThan(intents);
+    });
+    it('leaves a mismatch alone while lca-api reports a PIN operation in progress', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        // Authority committed, lca-api's lease-held write not landed yet.
+        f.faults.serverBlobIdentity = 'ef'.repeat(32);
+        f.faults.serverUpdating = true;
+        const intents = f.intents.length;
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toEqual({
+            enrolled: true,
+            changed: false,
+        });
+        expect(f.intents).toHaveLength(intents);
+        // Once the lease is gone, a copy still left behind is a real mismatch.
+        f.faults.serverUpdating = false;
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'pin-reset-required',
+        });
+    });
+    it('asks for a new PIN, signing nothing, when a PIN-protected copy is stale in lca-api', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.faults.serverBlobIdentity = 'ef'.repeat(32);
+        const intents = f.intents.length;
+        const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toEqual({
+            enrolled: false,
+            reason: 'pin-reset-required',
+        });
+        expect(f.intents).toHaveLength(intents);
+        expect(f.calls.filter(call => call === 'PUT:/keys/auth-share')).toHaveLength(writes);
+        // A user-chosen PIN repairs it.
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '246813' });
+        expect(f.intents.at(-1)?.intent).toMatchObject({ pinAction: 'change' });
+    });
+    it('re-reads lca-api before repairing, so a copy settled by the state read is not re-enrolled', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.faults.serverBlobIdentity = 'ef'.repeat(32);
+        // lca-api adopts the authority's copy while serving the authority-state read.
+        f.faults.beforeSnapshot = async () => {
+            f.faults.serverBlobIdentity = 'authority';
+        };
+        const intents = f.intents.length;
+        await expect(f.strategy.ensureEscrowEnrollment!(f.params)).resolves.toMatchObject({
+            enrolled: true,
+            changed: false,
+        });
+        expect(f.intents).toHaveLength(intents);
     });
     it('still clears the PIN after a hold recovery', async () => {
         const f = await setup();

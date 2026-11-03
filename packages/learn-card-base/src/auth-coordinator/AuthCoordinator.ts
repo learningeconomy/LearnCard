@@ -620,6 +620,7 @@ export class AuthCoordinator {
             pinRefreshed: result.pinSignIn.pinRefreshed,
             // An older strategy that does not say is treated as "wrong entries recorded".
             newPinRequired: result.pinSignIn.newPinRequired !== false,
+            ...(result.pinSignIn.pinRefreshFailed ? { pinRefreshFailed: true } : {}),
             ...(priorWrongAttempts !== undefined ? { priorWrongAttempts } : {}),
         };
     }
@@ -977,15 +978,15 @@ export class AuthCoordinator {
             );
             if (this.state.status === 'ready' && this.state.did === ready.did) {
                 this.resolveEscrowPinChange(ready.did);
-                if (this.state.pinSignIn?.newPinRequired)
+                const pinSignIn = this.state.pinSignIn;
+                if (pinSignIn?.newPinRequired || pinSignIn?.pinRefreshFailed) {
+                    // A new PIN generation has a full budget: nothing failed any more.
+                    const { pinRefreshFailed: _failed, ...rest } = pinSignIn;
                     this.setState({
                         ...this.state,
-                        pinSignIn: {
-                            ...this.state.pinSignIn,
-                            newPinRequired: false,
-                            pinRefreshed: true,
-                        },
+                        pinSignIn: { ...rest, newPinRequired: false, pinRefreshed: true },
                     });
+                }
             }
         } catch (err) {
             if (
