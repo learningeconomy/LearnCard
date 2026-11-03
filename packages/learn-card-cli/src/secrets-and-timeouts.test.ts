@@ -148,6 +148,91 @@ describe('token --json keeps the raw token off stdout', () => {
         await runToken({ network: 'staging', yes: true });
         expect(stdoutText()).toContain('header.payload.signature');
     });
+
+    it('--list reports grants without creating a grant or changing .env', async () => {
+        await writeEnv({
+            SECURE_SEED: SEED,
+            PROFILE_ID: 'acme',
+            NETWORK_URL: 'https://staging.network.learncard.com/trpc',
+        });
+        const before = await fs.readFile(path.join(cwd, '.env'), 'utf8');
+        const addAuthGrant = vi.fn();
+        mocks.initLearnCard.mockResolvedValue({
+            ...fakeCard,
+            invoke: {
+                ...fakeCard.invoke,
+                addAuthGrant,
+                getAuthGrants: async () => [
+                    {
+                        id: 'g1',
+                        name: 'ci',
+                        scope: 'boosts:write',
+                        status: 'active',
+                        expiresAt: '2027-01-01T00:00:00Z',
+                    },
+                ],
+            },
+        });
+        out.json = true;
+        await runToken({ list: true, network: 'staging' });
+        expect(out.result.grants).toEqual([
+            {
+                id: 'g1',
+                name: 'ci',
+                scope: 'boosts:write',
+                status: 'active',
+                expiresAt: '2027-01-01T00:00:00Z',
+            },
+        ]);
+        expect(addAuthGrant).not.toHaveBeenCalled();
+        expect(await fs.readFile(path.join(cwd, '.env'), 'utf8')).toBe(before);
+    });
+
+    it('--list says so when there are no grants', async () => {
+        await writeEnv({
+            SECURE_SEED: SEED,
+            PROFILE_ID: 'acme',
+            NETWORK_URL: 'https://staging.network.learncard.com/trpc',
+        });
+        mocks.initLearnCard.mockResolvedValue({
+            ...fakeCard,
+            invoke: { ...fakeCard.invoke, getAuthGrants: async () => undefined },
+        });
+        await runToken({ list: true, network: 'staging' });
+        expect(out.result.grants).toEqual([]);
+        expect(stdoutText()).toContain('No auth grants yet.');
+    });
+
+    it('--revoke revokes the named grant and reports it', async () => {
+        await writeEnv({
+            SECURE_SEED: SEED,
+            PROFILE_ID: 'acme',
+            NETWORK_URL: 'https://staging.network.learncard.com/trpc',
+        });
+        const revokeAuthGrant = vi.fn(async () => true);
+        mocks.initLearnCard.mockResolvedValue({
+            ...fakeCard,
+            invoke: { ...fakeCard.invoke, revokeAuthGrant },
+        });
+        await runToken({ revoke: 'g1', network: 'staging' });
+        expect(revokeAuthGrant).toHaveBeenCalledWith('g1');
+        expect(out.result).toEqual({ grantId: 'g1' });
+    });
+
+    it('--revoke fails when the network refuses', async () => {
+        await writeEnv({
+            SECURE_SEED: SEED,
+            PROFILE_ID: 'acme',
+            NETWORK_URL: 'https://staging.network.learncard.com/trpc',
+        });
+        mocks.initLearnCard.mockResolvedValue({
+            ...fakeCard,
+            invoke: { ...fakeCard.invoke, revokeAuthGrant: async () => false },
+        });
+        await expect(runToken({ revoke: 'g1', network: 'staging' })).rejects.toThrow(
+            'Could not revoke auth grant.'
+        );
+    });
 });
 
 describe('open: seed delivery and secrets', () => {
