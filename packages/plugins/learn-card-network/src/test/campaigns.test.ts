@@ -63,7 +63,10 @@ describe('campaign network plugin methods', () => {
         for (const message of [
             null,
             { ...item.campaign.message, presentation: 'unsupported' },
-            { ...item.campaign.message, actions: [{ type: 'navigate', path: 'javascript:alert(1)' }] },
+            {
+                ...item.campaign.message,
+                actions: [{ type: 'navigate', path: 'javascript:alert(1)' }],
+            },
         ]) {
             client.campaigns.getMyCampaigns.query.mockResolvedValue([
                 { ...item, campaign: { ...item.campaign, message } },
