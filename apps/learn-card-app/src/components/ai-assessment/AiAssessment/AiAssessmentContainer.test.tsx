@@ -206,6 +206,24 @@ describe('AI final assessment loading', () => {
         expect(mocks.preload).not.toHaveBeenCalled();
     });
 
+    it.each(['response', 'cache'])(
+        'defaults a missing question type to text from %s',
+        async source => {
+            const untypedQuestions = [{ id: 1, title: 'Reflect', question: 'What did you learn?' }];
+            if (source === 'response')
+                mocks.preload.mockResolvedValueOnce({ assessment: untypedQuestions });
+            await showAssessment(signedSummary, source === 'cache' ? untypedQuestions : undefined);
+            fireEvent.change(await screen.findByRole('textbox', { name: 'Answer' }), {
+                target: { value: 'Feedback loops.' },
+            });
+            await waitFor(() => expect(mocks.finish).toHaveBeenCalled());
+            expect(mocks.finish.mock.calls[0][0].assessmentQA).toEqual([
+                { ...untypedQuestions[0], type: 'text', answer: 'Feedback loops.' },
+            ]);
+            expect(mocks.preload).toHaveBeenCalledTimes(source === 'cache' ? 0 : 1);
+        }
+    );
+
     it('shows quota guidance when the server explicitly reports quota exhaustion', async () => {
         mocks.preload.mockRejectedValueOnce(
             new AiServiceError({

@@ -56,7 +56,8 @@ const hasAssessmentQuestions = (value: unknown): value is AiAssessmentQuestion[]
             question &&
             typeof question.question === 'string' &&
             question.question.trim() &&
-            (question.type === AiAssesmentQuestionTypeEnum.text ||
+            (question.type === undefined ||
+                question.type === AiAssesmentQuestionTypeEnum.text ||
                 (question.type === AiAssesmentQuestionTypeEnum.multipleChoice &&
                     Array.isArray(question.choices) &&
                     question.choices.length >= 2 &&
@@ -64,6 +65,12 @@ const hasAssessmentQuestions = (value: unknown): value is AiAssessmentQuestion[]
                         (choice: unknown) => typeof choice === 'string' && choice.trim()
                     )))
     );
+
+const normalizeQuestionTypes = (questions: AiAssessmentQuestion[]): AiAssessmentQuestion[] =>
+    questions.map(question => ({
+        ...question,
+        type: question.type ?? AiAssesmentQuestionTypeEnum.text,
+    }));
 
 export enum AiAssessmentStepEnum {
     assessmentIntro = 'assessmentIntro',
@@ -87,7 +94,7 @@ export const AiAssessmentContainer: React.FC<{
         AiAssessmentStepEnum.assessmentIntro
     );
     const [assessmentQA, setAssessmentQA] = useState<AiAssessmentQuestion[]>(
-        (assessment || []).map(q => ({ ...q, answer: '' }))
+        normalizeQuestionTypes(assessment || []).map(q => ({ ...q, answer: '' }))
     );
     const [isPreLoadingAssessment, setIsPreLoadingAssessment] = useState(false);
     const [preloadError, setPreloadError] = useState<Error | null>(null);
@@ -212,7 +219,7 @@ export const AiAssessmentContainer: React.FC<{
             ]);
 
             if (hasAssessmentQuestions(cached)) {
-                setAssessmentQA(cached);
+                setAssessmentQA(normalizeQuestionTypes(cached));
 
                 const allAnswered = cached.every(q => q.answer?.trim());
                 if (allAnswered) {
@@ -235,7 +242,7 @@ export const AiAssessmentContainer: React.FC<{
                 if (!hasAssessmentQuestions(assessment)) {
                     throw new Error('Assessment response contains no usable questions');
                 }
-                setAssessmentQA(assessment);
+                setAssessmentQA(normalizeQuestionTypes(assessment));
                 const firstUnansweredIndex = assessment.findIndex(q => !q.answer?.trim());
                 setCurrentQuestionIndex(
                     firstUnansweredIndex === -1 ? assessment.length - 1 : firstUnansweredIndex
