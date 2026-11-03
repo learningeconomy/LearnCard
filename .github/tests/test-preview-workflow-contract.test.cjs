@@ -28,6 +28,31 @@ const gate = workflow.jobs['should-deploy'];
 const deploy = workflow.jobs['deploy-preview'];
 const e2e = workflow.jobs['run-e2e-tests'];
 
+// The startup helper is from the executing workflow revision, not the remote deployment head.
+const controlCheckout = deploy.steps.find(s => s.name === 'Checkout preview control script');
+assert.equal(controlCheckout.with.ref, '${{ github.workflow_sha }}');
+assert.equal(controlCheckout.with['persist-credentials'], false);
+assert.equal(controlCheckout.with['sparse-checkout'], '.github/scripts');
+const readiness = deploy.steps.find(s => s.id === 'ec2');
+assert.equal(readiness.run, 'python3 .github/scripts/preview-readiness.py');
+assert.equal(readiness['timeout-minutes'], 11);
+assert.equal(deploy['timeout-minutes'], 40);
+assert.equal(readiness.env.PREVIEW_EC2_LAMBDA_URL, '${{ secrets.PREVIEW_EC2_LAMBDA_URL }}');
+assert.equal(readiness.env.PREVIEW_EC2_API_KEY, '${{ secrets.PREVIEW_EC2_API_KEY }}');
+assert.ok(deploy.steps.indexOf(controlCheckout) < deploy.steps.indexOf(readiness));
+assert.doesNotMatch(readiness.run, /\$\{\{/);
+const readinessTests = spawnSync(
+    'python3',
+    ['-B', path.join(root, '.github/tests/test_preview_readiness.py'), '-v'],
+    {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 30_000,
+    }
+);
+assert.equal(readinessTests.status, 0, readinessTests.stdout + readinessTests.stderr);
+console.log('preview boot/SSH deadlines and isolated HTTP/TCP regressions passed');
+
 // /preview comments only run for the same author associations capgo accepts.
 for (const association of ['OWNER', 'MEMBER', 'COLLABORATOR']) {
     assert.match(gate.if, new RegExp(`"${association}"`), `${association} must be allowed`);
@@ -180,11 +205,21 @@ const commentEvent = {
     assert.ok(ec2.with.envs.split(',').includes('HEAD_SHA'), 'HEAD_SHA must be forwarded over SSH');
     assert.match(ec2.with.script, /\^\[0-9a-f\]\{40\}\$/, 'HEAD_SHA must be validated');
     assert.match(ec2.with.script, /git checkout --detach "\$HEAD_SHA"/);
-    assert.doesNotMatch(ec2.with.script, /origin\/\$BRANCH/, 'EC2 step must not deploy the branch tip');
-    assert.match(ec2.with.script, /deploy-preview\.sh[\s\\]+"\$PR_NUMBER"[\s\\]+"\$BRANCH"[\s\\]+"\$BASE_DOMAIN"[\s\\]+"\$HEAD_SHA"/);
+    assert.doesNotMatch(
+        ec2.with.script,
+        /origin\/\$BRANCH/,
+        'EC2 step must not deploy the branch tip'
+    );
+    assert.match(
+        ec2.with.script,
+        /deploy-preview\.sh[\s\\]+"\$PR_NUMBER"[\s\\]+"\$BRANCH"[\s\\]+"\$BASE_DOMAIN"[\s\\]+"\$HEAD_SHA"/
+    );
 
     // deploy-preview.sh checks out the SHA it's given instead of the branch tip.
-    const deployScript = fs.readFileSync(path.join(root, 'preview/scripts/deploy-preview.sh'), 'utf8');
+    const deployScript = fs.readFileSync(
+        path.join(root, 'preview/scripts/deploy-preview.sh'),
+        'utf8'
+    );
     assert.match(deployScript, /HEAD_SHA="\$\{4:-/);
     assert.match(deployScript, /\^\[0-9a-f\]\{40\}\$/);
     assert.match(deployScript, /git fetch origin "\$HEAD_SHA"/);

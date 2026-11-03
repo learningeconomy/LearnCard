@@ -36,13 +36,38 @@ Any of these will trigger a full-stack preview:
 
 A bot will comment on the PR with the preview URL once it's ready (~5-8 minutes for first build, faster on subsequent deploys due to Docker layer caching).
 
+### Cold-start readiness
+
+The workflow allows up to five minutes for EC2 to report `running` with a valid public
+IPv4 address, followed by up to five minutes for TCP port 22 to become reachable.
+The start request, status requests, connect attempts and sleeps all count toward
+these deadlines; total readiness is bounded to ten minutes. A warm instance proceeds
+immediately. IP or state changes do not restart the SSH deadline.
+
+Control API authentication/configuration errors fail clearly. Temporary request
+failures are reported and can recover within the same deadline. The API key and raw
+control responses are not printed. TCP reachability is not an authenticated SSH or
+application-health check: the existing SSH deployment and preview health checks still
+have to succeed afterward. The job allows 40 minutes overall to accommodate readiness,
+the existing 25-minute deployment command and workflow overhead.
+
+Run the secret-free readiness and workflow regressions locally:
+
+```bash
+node .github/tests/test-preview-workflow-contract.test.cjs
+```
+
+These tests use controlled time plus local HTTP/TCP listeners; they do not start an
+EC2 instance or deploy a preview. A real cold EC2 boot remains a post-merge operational
+check during an ordinary authorized preview deployment.
+
 ### Teardown
 
 Previews are automatically torn down when:
 
--   The PR is **closed or merged**
--   The `preview` **label is removed**
--   The preview is **idle for 4+ hours** (cron job on EC2)
+- The PR is **closed or merged**
+- The `preview` **label is removed**
+- The preview is **idle for 4+ hours** (cron job on EC2)
 
 ### Preview URL Structure
 
@@ -99,9 +124,9 @@ Each PR stack has its own Docker network (`learn-card`) for internal communicati
 
 ### Cost
 
--   **EC2**: One `m5.xlarge` (~$0.19/hr). Auto-stops when no previews are active.
--   **At 4 hours/day average**: ~$23/month
--   **Docker images**: Cached on the instance across deploys
+- **EC2**: One `m5.xlarge` (~$0.19/hr). Auto-stops when no previews are active.
+- **At 4 hours/day average**: ~$23/month
+- **Docker images**: Cached on the instance across deploys
 
 ## One-Time Setup
 
@@ -199,10 +224,10 @@ Comment `/preview+e2e` to deploy a preview AND run the E2E test suite against it
 
 For this to work, the E2E tests need to support configurable service URLs via environment variables:
 
--   `E2E_BRAIN_URL` — Brain service base URL
--   `E2E_CLOUD_URL` — Cloud service base URL
--   `E2E_LCA_API_URL` — LCA API base URL
--   `E2E_MANAGE_DOCKER=false` — Skip Docker Compose management (the preview is already running)
+- `E2E_BRAIN_URL` — Brain service base URL
+- `E2E_CLOUD_URL` — Cloud service base URL
+- `E2E_LCA_API_URL` — LCA API base URL
+- `E2E_MANAGE_DOCKER=false` — Skip Docker Compose management (the preview is already running)
 
 ## Troubleshooting
 
