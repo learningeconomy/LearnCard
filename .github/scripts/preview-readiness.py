@@ -21,18 +21,25 @@ class ControlError(ReadinessError):
         self.transient = transient
 
 
+def bounded_seconds(value, maximum):
+    return (isinstance(value, (int, float)) and not isinstance(value, bool)
+            and 0 < value <= maximum)
+
+
 class ControlClient:
     def __init__(self, base_url, api_key):
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
 
     def request(self, action, timeout):
-        assert action in ("start", "status") and 0 < timeout <= 10
+        if action not in ("start", "status") or not bounded_seconds(timeout, 10):
+            raise ControlError("Invalid control request action or timeout.", transient=False)
         try:
             result = subprocess.run(
                 [
                     "curl", "--silent", "--show-error", "--fail",
                     "--connect-timeout", str(min(5, timeout)),
+                    # curl >=8.4 also bounds transfers without Content-Length.
                     "--max-time", str(timeout), "--max-filesize", "1024",
                     "--header", "@-", "--write-out", "\n%{http_code}",
                     "--", f"{self.base_url}/{action}",
@@ -76,10 +83,10 @@ def parse_status(body):
     ip = address[1]
     if ip:
         try:
-                address = ipaddress.IPv4Address(ip)
-                if not address.is_global or address.is_multicast or address.is_reserved:
-                    raise ipaddress.AddressValueError
-                ip = str(address)
+            address = ipaddress.IPv4Address(ip)
+            if not address.is_global or address.is_multicast or address.is_reserved:
+                raise ipaddress.AddressValueError
+            ip = str(address)
         except ipaddress.AddressValueError:
             raise ReadinessError("Control API returned an invalid IPv4 address.") from None
     return state, ip
@@ -96,7 +103,8 @@ def ssh_port_reachable(ip, timeout, *, port=22):
 def wait_for_ready(control, *, clock=time.monotonic, sleep=time.sleep,
                    probe=ssh_port_reachable, log=print, boot_seconds=300, ssh_seconds=300):
     """A boot budget followed by an SSH budget, both within one fixed overall deadline."""
-    assert 0 < boot_seconds <= 300 and 0 < ssh_seconds <= 300
+    if not bounded_seconds(boot_seconds, 300) or not bounded_seconds(ssh_seconds, 300):
+        raise ReadinessError("Invalid readiness time budgets.")
     started = clock()
     boot_deadline = started + boot_seconds
     overall_deadline = boot_deadline + ssh_seconds

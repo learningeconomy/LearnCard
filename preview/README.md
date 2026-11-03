@@ -61,7 +61,8 @@ SHA. Missing or invalid trusted revisions fail before checkout; a missing helper
 that revision fails closed without falling back to PR code. This helper must first
 land on the base branch before a PR-triggered preview can use it.
 
-Run the secret-free readiness and workflow regressions locally:
+Run the secret-free readiness and workflow regressions locally (requires curl 8.4+
+for response-size enforcement without a `Content-Length` header):
 
 ```bash
 node .github/tests/test-preview-workflow-contract.test.cjs

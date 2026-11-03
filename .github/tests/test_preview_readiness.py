@@ -84,6 +84,16 @@ class Scenario:
 
 
 class CoordinatorTests(unittest.TestCase):
+    def test_invalid_budgets_fail_before_control_requests(self):
+        for value in (0, -1, 301, float("inf"), float("nan"), True, None, "PRIVATE_INVALID"):
+            for parameter in ("boot_seconds", "ssh_seconds"):
+                with self.subTest(value=value, parameter=parameter):
+                    s = Scenario()
+                    with self.assertRaisesRegex(READY.ReadinessError, "Invalid readiness time budgets") as raised:
+                        s.run(**{parameter: value})
+                    self.assertNotIn("PRIVATE_INVALID", str(raised.exception))
+                    self.assertEqual(s.calls, [])
+
     def test_warm_instance_returns_immediately(self):
         s = Scenario()
         self.assertEqual(s.run(), IP)
@@ -318,6 +328,20 @@ class CoordinatorTests(unittest.TestCase):
 
 
 class HttpTests(unittest.TestCase):
+    def test_invalid_request_parameters_fail_before_network(self):
+        cases = [("PRIVATE_INVALID", 1)] + [
+            ("status", value) for value in
+            (0, -1, 11, float("inf"), float("nan"), True, None, "PRIVATE_INVALID")
+        ]
+        for action, timeout in cases:
+            with self.subTest(action=action, timeout=timeout):
+                with patch.object(READY.subprocess, "run") as run:
+                    with self.assertRaises(READY.ControlError) as raised:
+                        READY.ControlClient("https://control.invalid", KEY).request(action, timeout)
+                run.assert_not_called()
+                self.assertFalse(raised.exception.transient)
+                self.assertNotIn("PRIVATE_INVALID", str(raised.exception))
+
     def test_real_curl_has_both_process_and_http_deadlines_and_key_on_stdin(self):
         captured = {}
 
@@ -417,6 +441,33 @@ class HttpTests(unittest.TestCase):
 
 
 class OutputTests(unittest.TestCase):
+    def test_parameter_validation_survives_python_optimization(self):
+        code = """
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location('ready', sys.argv[1])
+ready = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ready)
+def unexpected(*args, **kwargs):
+    raise RuntimeError('Unexpected control I/O')
+ready.subprocess.run = unexpected
+for call in (
+    lambda: ready.ControlClient('https://control.invalid', 'FIXTURE').request('status', 0),
+    lambda: ready.wait_for_ready(None, boot_seconds=301),
+    lambda: ready.wait_for_ready(None, ssh_seconds=0),
+):
+    try:
+        call()
+    except ready.ReadinessError:
+        pass
+    else:
+        raise SystemExit('Validation was disabled')
+"""
+        for mode in ("-O", "-OO"):
+            with self.subTest(mode=mode):
+                result = subprocess.run([sys.executable, "-B", mode, "-c", code, str(SCRIPT)],
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_only_success_writes_validated_ip(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "output"
