@@ -63,6 +63,17 @@ vi.mock('learn-card-base', async () => {
                 fetchNextPage: () => setPageIndex(index => index + 1),
             };
         },
+        useGetPaginatedFamilialBoosts: () => ({
+            ...state.query,
+            hasNextPage: false,
+            fetchNextPage: vi.fn(),
+        }),
+        searchManagedBoostsFromCache: (data: typeof state.query.data) =>
+            data?.pages.flatMap(page =>
+                page.records.filter(record =>
+                    record.name.toLowerCase().includes(state.searchString.toLowerCase())
+                )
+            ) ?? [],
         useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
     };
 });
@@ -75,6 +86,12 @@ vi.mock('../../../components/boost/boostErrors/BoostErrorsDisplay', () => ({
 }));
 vi.mock('learn-card-base/components/boost/NewBoostButton', () => ({ default: () => null }));
 vi.mock('../boost-select-menu/NewBoostSelectMenuOld', () => ({ default: () => null }));
+vi.mock('../boost-select-menu/NewBoostSelectMenu', () => ({
+    EmptyState: () => null,
+}));
+vi.mock('../boost-select-menu/NewBoostSelectMenuCustomTypeButton', () => ({
+    default: () => null,
+}));
 vi.mock('../../main-subheader/MainSubHeader.types', () => ({
     credentialCategoryToSubheaderType: () => 'achievement',
     SubheaderContentType: { achievement: { bgColor: 'bg-blue' } },
@@ -85,6 +102,7 @@ import * as m from '../../../paraglide/messages.js';
 import { setLocale } from '../../../paraglide/runtime.js';
 import { BoostPageViewMode, CredentialCategoryEnum } from 'learn-card-base';
 import BoostManagedList from './BoostManagedList';
+import BoostManagedChildrenList from './BoostManagedChildrenList';
 
 const LocaleSwitcher: React.FC = () => {
     const changeLocale = useChangeLocale();
@@ -139,18 +157,23 @@ describe('BoostManagedList localization runtime', () => {
             isLoading: false,
         };
 
+        const englishStatus = m['common.searchResults.foundOne'](
+            { count: 1, query: 'patch' },
+            { locale: 'en' }
+        );
+        const frenchStatus = m['common.searchResults.foundOne'](
+            { count: 1, query: 'patch' },
+            { locale: 'fr' }
+        );
         renderList();
-        expect(
-            screen.getByText(m['common.searchResults.foundOne']({ count: 1, query: 'patch' }))
-        ).toBeTruthy();
+        expect(screen.getByText(englishStatus)).toBeTruthy();
 
         fireEvent.click(screen.getByRole('button', { name: 'Switch to French' }));
 
         expect(screen.getByText('Patch Trading Pro', { exact: true })).toBeTruthy();
         expect(screen.queryByText('Unmatched Credential', { exact: true })).toBeNull();
-        expect(
-            screen.getByText(m['common.searchResults.foundOne']({ count: 1, query: 'patch' }))
-        ).toBeTruthy();
+        expect(screen.queryByText(englishStatus)).toBeNull();
+        expect(screen.getByText(frenchStatus)).toBeTruthy();
     });
 
     it('exposes the managed loading state through its translated accessible name', () => {
@@ -191,7 +214,93 @@ describe('BoostManagedList localization runtime', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Switch to French' }));
 
         expect(
-            screen.getByText(m['common.searchResults.noManaged']({ query: 'patch' }))
+            screen.getByText(
+                m['common.searchResults.noManaged']({ query: 'patch' }, { locale: 'fr' })
+            )
         ).toBeTruthy();
+    });
+});
+
+describe('BoostManagedChildrenList localization runtime', () => {
+    beforeEach(() => {
+        localStorage.setItem('i18n.language', 'fr');
+        setLocale('fr', { reload: false });
+        state.query = {
+            data: undefined,
+            isLoading: true,
+            isFetching: false,
+            refetch: vi.fn(),
+            error: undefined,
+        };
+        state.searchActive = true;
+        state.searchString = 'patch';
+        state.onScreen = false;
+    });
+
+    afterEach(() => {
+        cleanup();
+        localStorage.removeItem('i18n.language');
+        setLocale('en', { reload: false });
+    });
+
+    const renderChildren = () =>
+        render(
+            <LocaleProvider>
+                <BoostManagedChildrenList
+                    parentUri="urn:parent"
+                    parentGenerations={2}
+                    childGenerations={2}
+                    category={CredentialCategoryEnum.achievement}
+                    viewMode={BoostPageViewMode.Card}
+                    enableCreateButton={false}
+                    useManagedCardSkeleton
+                />
+            </LocaleProvider>
+        );
+
+    it('renders the localized matching-child status without unrelated cards', () => {
+        state.query = {
+            ...state.query,
+            isLoading: false,
+            data: {
+                pages: [
+                    {
+                        records: [
+                            { uri: 'urn:patch', name: 'Patch Trading Pro' },
+                            { uri: 'urn:other', name: 'Unmatched Credential' },
+                        ],
+                    },
+                ],
+            },
+        };
+        renderChildren();
+        expect(
+            screen.getByText(
+                m['common.searchResults.foundOne']({ count: 1, query: 'patch' }, { locale: 'fr' })
+            )
+        ).toBeTruthy();
+        expect(screen.getByText('Patch Trading Pro', { exact: true })).toBeTruthy();
+        expect(screen.queryByText('Unmatched Credential', { exact: true })).toBeNull();
+    });
+
+    it('renders the localized completed no-match state', () => {
+        state.query = { ...state.query, isLoading: false, data: { pages: [{ records: [] }] } };
+        renderChildren();
+        expect(
+            screen.getByText(
+                m['common.searchResults.noManaged']({ query: 'patch' }, { locale: 'fr' })
+            )
+        ).toBeTruthy();
+        expect(screen.queryByRole('article')).toBeNull();
+    });
+
+    it('exposes the localized loading state before any child results exist', () => {
+        renderChildren();
+        expect(
+            screen.getByRole('status', {
+                name: m['common.searchResults.loadingManaged']({}, { locale: 'fr' }),
+            })
+        ).toBeTruthy();
+        expect(screen.queryByRole('article')).toBeNull();
     });
 });
