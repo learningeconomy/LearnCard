@@ -311,7 +311,6 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                             description="Add content for each selected channel."
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
-                            {form.email && <CampaignEmailEditor form={form} onChange={set} />}
                             {form.inApp && (
                                 <CampaignMessageEditor
                                     value={form.messageJson}
@@ -349,6 +348,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                     </Field>
                                 </div>
                             )}
+                            {form.email && <CampaignEmailEditor form={form} onChange={set} />}
                         </fieldset>
                     </section>
                     <section className={panelClass}>
