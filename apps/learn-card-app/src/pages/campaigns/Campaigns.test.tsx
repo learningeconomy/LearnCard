@@ -273,7 +273,7 @@ describe('campaign composer', () => {
                 })
             )
         );
-        expect(api.campaignsUpdate.mock.calls[0]?.[0].updates).not.toHaveProperty('email');
+        expect(api.campaignsUpdate.mock.calls[0]?.[0].updates.email).toEqual(emailCampaign.email);
         await waitFor(() =>
             expect(screen.getByRole('button', { name: 'Send Test to Me' })).toBeEnabled()
         );
@@ -282,6 +282,81 @@ describe('campaign composer', () => {
             'email to your verified primary address'
         );
         expect(api.campaignsSendTestToMe).not.toHaveBeenCalled();
+    });
+
+    it('authors an email-only draft, reloads it, and confirms a caller-only test', async () => {
+        const api = apiMock();
+        api.campaignsCreate.mockImplementation(async input =>
+            CampaignValidator.parse({
+                ...input,
+                createdAt: '2026-10-29T00:00:00Z',
+                updatedAt: '2026-10-29T00:00:00Z',
+            })
+        );
+        const view = mount(api, '/admin/campaigns?create=1');
+        fireEvent.change(await screen.findByLabelText('Name'), {
+            target: { value: 'Email pilot' },
+        });
+        fireEvent.click(screen.getByRole('checkbox', { name: 'Email' }));
+        fireEvent.click(screen.getByRole('checkbox', { name: 'In-app message' }));
+        expect(screen.queryByRole('button', { name: 'Preview message' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Save Draft' })).toBeDisabled();
+        for (const [label, value] of [
+            ['Email subject', 'Local test'],
+            ['Email heading', 'Welcome'],
+            ['Email body', 'Sent from the composer.'],
+            ['Email button text', 'Explore'],
+            ['Email image URL (optional)', 'https://example.org/hero.png'],
+        ])
+            fireEvent.change(screen.getByLabelText(label), { target: { value } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+        await waitFor(() => expect(api.campaignsCreate).toHaveBeenCalledTimes(1));
+        const saved = await api.campaignsCreate.mock.results[0].value;
+        expect(saved.channels).toEqual(['email']);
+        expect(saved.email).toEqual({
+            subject: 'Local test',
+            title: 'Welcome',
+            body: 'Sent from the composer.',
+            ctaLabel: 'Explore',
+            heroImageUrl: 'https://example.org/hero.png',
+        });
+        view.unmount();
+        api.campaignsGet.mockResolvedValue(saved);
+        mount(api, `/admin/campaigns/${saved.id}`);
+        expect(await screen.findByLabelText('Email subject')).toHaveValue('Local test');
+        expect(screen.getByLabelText('Email body')).toHaveValue('Sent from the composer.');
+        fireEvent.click(screen.getByRole('button', { name: 'Send Test to Me' }));
+        expect(screen.getByRole('group', { name: 'Confirm campaign action' })).toHaveTextContent(
+            'email to your verified primary address'
+        );
+        expect(api.campaignsSendTestToMe).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm test send' }));
+        await waitFor(() => expect(api.campaignsSendTestToMe).toHaveBeenCalledWith(saved.id));
+        expect(
+            await screen.findByText(/Email test sent to your verified primary address/)
+        ).toBeVisible();
+        expect(api.campaignsDispatch).not.toHaveBeenCalled();
+    });
+
+    it('clears saved email content when the email channel is disabled', async () => {
+        const api = apiMock();
+        api.campaignsGet.mockResolvedValue({
+            ...campaign(),
+            channels: ['inApp', 'email'],
+            notification: undefined,
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mount(api);
+        fireEvent.click(await screen.findByRole('checkbox', { name: 'Email' }));
+        expect(screen.queryByLabelText('Email subject')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+        await waitFor(() =>
+            expect(api.campaignsUpdate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    updates: expect.objectContaining({ channels: ['inApp'], email: null }),
+                })
+            )
+        );
     });
 
     it('allows archived private tests and notification-only content without a JSON editor', async () => {

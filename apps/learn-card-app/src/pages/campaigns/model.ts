@@ -12,6 +12,12 @@ export const initialForm = (): CampaignForm => ({
     name: '',
     inApp: true,
     notify: false,
+    email: false,
+    emailSubject: '',
+    emailTitle: '',
+    emailBody: '',
+    emailCtaLabel: 'Open campaign',
+    emailHeroImageUrl: '',
     messageJson: JSON.stringify(
         {
             presentation: 'modal',
@@ -42,6 +48,12 @@ export const campaignToForm = (campaign: Campaign): CampaignForm => ({
     name: campaign.name,
     inApp: campaign.channels.includes('inApp'),
     notify: campaign.channels.includes('notify'),
+    email: campaign.channels.includes('email'),
+    emailSubject: campaign.email?.subject ?? '',
+    emailTitle: campaign.email?.title ?? '',
+    emailBody: campaign.email?.body ?? '',
+    emailCtaLabel: campaign.email?.ctaLabel ?? 'Open campaign',
+    emailHeroImageUrl: campaign.email?.heroImageUrl ?? '',
     messageJson: campaign.message
         ? JSON.stringify(campaign.message, null, 2)
         : initialForm().messageJson,
@@ -77,9 +89,22 @@ export const validateForm = (form: CampaignForm, status: CampaignStatus = 'draft
         id: form.id,
         name: form.name,
         status,
-        channels: [form.inApp ? 'inApp' : null, form.notify ? 'notify' : null].filter(Boolean),
+        channels: [
+            form.inApp ? 'inApp' : null,
+            form.notify ? 'notify' : null,
+            form.email ? 'email' : null,
+        ].filter(Boolean),
         message,
         notification: form.notify ? { title: form.title, body: form.body } : undefined,
+        email: form.email
+            ? {
+                  subject: form.emailSubject,
+                  title: form.emailTitle,
+                  body: form.emailBody,
+                  ctaLabel: form.emailCtaLabel,
+                  heroImageUrl: form.emailHeroImageUrl.trim() || undefined,
+              }
+            : undefined,
         startsAt: timestamp(form.startsAt, 'startsAt'),
         endsAt: timestamp(form.endsAt, 'endsAt'),
         excludeMinors: form.excludeMinors,
@@ -95,6 +120,11 @@ export const validateForm = (form: CampaignForm, status: CampaignStatus = 'draft
                     channels: 'Choose at least one channel.',
                     'notification.title': 'Enter a notification title.',
                     'notification.body': 'Enter a notification body.',
+                    'email.subject': 'Enter an email subject (up to 200 characters, one line).',
+                    'email.title': 'Enter an email heading (up to 200 characters).',
+                    'email.body': 'Enter an email body (up to 20,000 characters).',
+                    'email.ctaLabel': 'Enter button text (up to 100 characters).',
+                    'email.heroImageUrl': 'Enter an HTTPS image URL (up to 2,048 characters).',
                 };
                 return `${path}: ${friendly[path] ?? issue.message}`;
             })

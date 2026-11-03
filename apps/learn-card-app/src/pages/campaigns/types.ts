@@ -49,6 +49,12 @@ export interface CampaignForm {
     name: string;
     inApp: boolean;
     notify: boolean;
+    email: boolean;
+    emailSubject: string;
+    emailTitle: string;
+    emailBody: string;
+    emailCtaLabel: string;
+    emailHeroImageUrl: string;
     messageJson: string;
     title: string;
     body: string;

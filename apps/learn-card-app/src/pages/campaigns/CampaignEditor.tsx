@@ -4,6 +4,7 @@ import {
     arrowBackOutline,
     chatbubbleEllipsesOutline,
     notificationsOutline,
+    mailOutline,
     eyeOutline,
     paperPlaneOutline,
 } from 'ionicons/icons';
@@ -16,6 +17,7 @@ import { campaignToForm, initialForm, previewMessage, validateForm } from './mod
 import { CampaignDispatch } from './CampaignDispatch';
 import { CampaignAudience } from './CampaignAudience';
 import { CampaignMessageEditor } from './CampaignMessageEditor';
+import { CampaignEmailEditor } from './CampaignEmailEditor';
 import { CampaignStatsPanel } from './CampaignStats';
 import { useCampaignAction } from './useCampaignAction';
 import {
@@ -88,12 +90,9 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                       expectedUpdatedAt: saved.updatedAt,
                       updates: {
                           ...definition,
-                          // Email content is managed through the API until its composer controls exist.
-                          channels: saved.channels.includes('email')
-                              ? [...definition.channels, 'email']
-                              : definition.channels,
                           message: definition.message ?? null,
                           notification: definition.notification ?? null,
+                          email: definition.email ?? null,
                           startsAt: definition.startsAt ?? null,
                           endsAt: definition.endsAt ?? null,
                       },
@@ -115,7 +114,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                     if (!sent) throw new Error('Test was not acknowledged');
                     action.setSuccess(
                         saved.channels.includes('email')
-                            ? 'Email test sent to your verified primary address. Other selected test channels were also requested. Audience stats are unchanged.'
+                            ? `Email test sent to your verified primary address.${saved.channels.length > 1 ? ' Other selected test channels were also requested.' : ''} Audience stats are unchanged.`
                             : saved.channels.includes('notify')
                               ? `Test notification sent to your signed-in account.${saved.channels.includes('inApp') ? ' Your in-app test is waiting for your next visit.' : ''} Audience stats are unchanged.`
                               : 'Your in-app test is waiting for your next visit. Audience stats are unchanged.'
@@ -133,16 +132,26 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
         const path = error.split(':')[0];
         // The message editor shows its own live field-path validation in both modes.
         if (path.startsWith('message')) return false;
+        const emailFields: Record<string, keyof CampaignForm> = {
+            'email.subject': 'emailSubject',
+            'email.title': 'emailTitle',
+            'email.body': 'emailBody',
+            'email.ctaLabel': 'emailCtaLabel',
+            'email.heroImageUrl': 'emailHeroImageUrl',
+        };
         const field =
-            path === 'notification.title'
+            emailFields[path] ??
+            (path === 'notification.title'
                 ? 'title'
                 : path === 'notification.body'
                   ? 'body'
                   : path === 'channels'
                     ? 'inApp'
-                    : path;
+                    : path);
         return (
-            edited.has(field as keyof CampaignForm) || (path === 'channels' && edited.has('notify'))
+            edited.has(field as keyof CampaignForm) ||
+            (path.startsWith('email.') && edited.has('email')) ||
+            (path === 'channels' && (edited.has('notify') || edited.has('email')))
         );
     });
     return (
@@ -197,7 +206,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                         <SectionHeading
                             step="01"
                             title="Campaign details"
-                            description="Give your campaign a name and choose one or both channels."
+                            description="Give your campaign a name and choose its channels."
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
                             <Field label="Name" htmlFor="campaign-name">
@@ -227,6 +236,12 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                                 'Inbox / push notification',
                                                 'Send to the inbox and attempt push.',
                                                 notificationsOutline,
+                                            ],
+                                            [
+                                                'email',
+                                                'Email',
+                                                'Send to verified primary email addresses.',
+                                                mailOutline,
                                             ],
                                         ] as const
                                     ).map(([key, label, description, icon]) => (
@@ -296,6 +311,7 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                             description="Add content for each selected channel."
                         />
                         <fieldset disabled={busy || archived} className="min-w-0 space-y-5">
+                            {form.email && <CampaignEmailEditor form={form} onChange={set} />}
                             {form.inApp && (
                                 <CampaignMessageEditor
                                     value={form.messageJson}
@@ -411,18 +427,24 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         ? preview?.success
                                             ? preview.data.presentation
                                             : 'Message'
-                                        : 'Inbox / push'}
+                                        : form.email
+                                          ? 'Email'
+                                          : 'Inbox / push'}
                                 </span>
                                 <p className="break-words text-lg font-semibold leading-snug">
                                     {form.inApp
                                         ? preview?.success
                                             ? preview.data.title
                                             : 'Your message preview'
-                                        : form.title || 'Your notification title'}
+                                        : form.email
+                                          ? form.emailTitle || 'Your email heading'
+                                          : form.title || 'Your notification title'}
                                 </p>
                                 <p className="break-words whitespace-pre-wrap text-sm leading-relaxed text-grayscale-600 line-clamp-4">
                                     {!form.inApp
-                                        ? form.body || 'Add a notification body.'
+                                        ? form.email
+                                            ? form.emailBody || 'Add an email body.'
+                                            : form.body || 'Add a notification body.'
                                         : preview?.success
                                           ? preview.data.body ||
                                             'Add a body to tell your audience more.'
@@ -500,9 +522,11 @@ const EditorForm: React.FC<{ api: CampaignApi; campaign?: Campaign }> = ({ api, 
                                         Send Test to Me
                                     </button>
                                     <p className="text-xs leading-relaxed text-grayscale-600">
-                                        {saved.channels.includes('inApp')
-                                            ? 'Your in-app test appears when you next return to the app outside this editor.'
-                                            : 'The test notification goes only to your signed-in account.'}
+                                        {saved.channels.includes('email')
+                                            ? 'Email tests go to your verified primary address and respect your age eligibility and email preferences.'
+                                            : saved.channels.includes('inApp')
+                                              ? 'Your in-app test appears when you next return to the app outside this editor.'
+                                              : 'The test notification goes only to your signed-in account.'}
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         {saved.status !== 'live' ? (
