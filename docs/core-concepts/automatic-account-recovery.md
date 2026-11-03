@@ -53,14 +53,57 @@ sequenceDiagram
 
 Until a second independent time source is in place, waiting-period releases are refused entirely rather than proceed on an unverified wait — the system fails closed.
 
-### What happens to the PIN after recovery
+## Signing In With a PIN
 
-Recovery always creates new key pieces, so the app enrolls automatic recovery again afterwards:
+{% hint style="warning" %}
+This behaviour is new. Its security trade-off was accepted on 2026-11-03; it ships to production after staging verification.
+{% endhint %}
 
-- **Recovered with the PIN**: the user keeps the same PIN. The app enrolls again with the PIN the user just entered, which starts a fresh set of 10 attempts. The PIN is used only in memory for that step and is never stored.
-- **Recovered by waiting out the 7-day hold**: the PIN is removed, because this is the path for users who forgot their PIN. The app asks the user to choose a new PIN.
+On a new device, the PIN is the quickest way back in. A user who signs in with their usual login and enters the correct PIN is signed in **without resetting the account**:
 
-If re-enrolling with the PIN fails, the PIN is removed instead and the app asks the user to set one again. Recovery itself never fails because of the PIN.
+- Their other devices stay signed in.
+- Their recovery phrase, backup file, passkey and email recovery key keep working.
+- The PIN stays the same. It gets a fresh set of 10 attempts only if no wrong entry has been recorded against it. The PIN is used only in memory for that step and is never stored.
+- If someone has entered the PIN incorrectly, the same PIN never gets a fresh set of attempts. It keeps working with the attempts it has left, and the app asks the user to choose a new, different PIN. On the device used to sign in, the app refuses the same PIN, also after a restart. If the user skips this, the app asks again the next time it starts, while those wrong entries are still recorded. So wrong guesses against a PIN share one set of 10 attempts, however many times the owner signs in with it. Every PIN sign-in also uses one attempt, so a user who keeps skipping can eventually lock the PIN and would then need the 7-day wait.
+
+A user who has lost their usual login confirms their recovery email first, then enters the PIN, then signs in with a new login, which is linked to the same account. Each PIN try on this path needs a new email code, and the PIN keeps the attempts it had left (it is not refreshed).
+
+Because the login and the PIN together are now enough to sign in quietly, LearnCard adds three checks:
+
+1. **Email notice.** Every successful PIN sign-in sends a "New device signed in with your PIN. Not you? Secure your account." email to the account's verified addresses, with a link to secure the account. The server sends it when the PIN is accepted, so the app cannot suppress it. A failed send never blocks the sign-in.
+2. **A question after signing in.** The app asks once: "Did you lose a device, or think someone else knows your PIN?" The default answer is "No, everything's fine". If the PIN was entered incorrectly before this sign-in, the app says so and highlights "Secure my account". If wrong entries are recorded against the PIN, the default answer becomes "No, choose a new PIN", and the app refuses the PIN that was just used.
+3. **Secure my account.** Available from that question, from the email link, and as "Sign out of all other devices" in Account Recovery settings. It stops other devices and other linked logins from signing in again, and turns off the old recovery phrase, backup file, passkey and email recovery key. The user can keep the PIN (by entering it again, unless wrong entries are recorded against it right after a PIN sign-in), choose a new one, or continue without one, and is then asked to set up new recovery methods, starting with a passkey. The app suggests a new PIN if someone else might know the current one.
+
+Someone who knows both the login and the PIN can also use "Secure my account", which can remove the owner's other logins. After every "Secure my account", LearnCard emails the account's contact address and its verified recovery email. That email is written for an owner who may not have done this: it does not rely on the "Secure my account" link. It says that the account's recovery methods were reset, so they may no longer work, and tells the owner to contact the organization's support address (or, if the organization has none, the organization that gave them access). The email cannot restore access by itself.
+
+A recovery that was already under way before a "Secure my account" (or before another recovery that reset the account), for example one where the recovery-email code had already been confirmed, cannot be finished after it; it has to start again from the beginning.
+
+{% hint style="warning" %}
+"Secure my account" does not change the account's key. A device that already signed in and is still open may keep working until it signs out, and the action cannot undo anything someone already did with the account. It stops new sign-ins with the old pieces, the old recovery methods and other linked logins.
+{% endhint %}
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant App as LearnCard App
+    participant Server as LearnCard Server
+    participant Enclave as Hardware Enclave
+
+    User->>App: Sign in on a new device, enter PIN
+    App->>Enclave: Prove the PIN
+    Enclave-->>App: Release the recovery piece
+    Server-->>User: Email: "New device signed in with your PIN"
+    App->>App: Rebuild the key, keep the account as it is
+    App-->>User: "You're in! Did you lose a device…?"
+    opt User chooses "Secure my account"
+        App->>Server: Stop old pieces and other logins, turn off old recovery methods
+        App-->>User: Set up new recovery methods
+    end
+```
+
+### What happens to the PIN after other recoveries
+
+The 7-day hold still resets the account: it signs out other devices and turns off other recovery methods. The PIN is removed, because this is the path for users who forgot their PIN, and the app asks the user to choose a new one.
 
 ## What is Attestation?
 

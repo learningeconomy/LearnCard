@@ -26,6 +26,8 @@ vi.mock('@ionic/react', () => ({
 
 vi.mock('learn-card-base', async () => ({
     getLogger: () => ({ error: vi.fn() }),
+    isSameEscrowPinError: (await import('learn-card-base/auth-coordinator/errors'))
+        .isSameEscrowPinError,
     Toggle: (
         await import('../../../../../packages/learn-card-base/src/components/form-inputs/Toggle')
     ).default,
@@ -141,6 +143,38 @@ describe('RecoverySetupModal prompt integration', () => {
 
         fireEvent.click(setPinButton);
         expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
+    });
+
+    it('Change PIN explains a refused same PIN and starts over at the first entry', async () => {
+        const same = new Error('Choose a different PIN from the one you just used.');
+        same.name = 'SameEscrowPinError';
+        const onSetEscrowPin = vi.fn().mockRejectedValueOnce(same).mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: { state: 'enabled' } }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin,
+        });
+        fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
+        const enterPin = (pin: string) =>
+            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                clipboardData: { getData: () => pin },
+            });
+        enterPin('135790');
+        enterPin('135790');
+
+        expect(
+            await screen.findByText('Choose a different PIN from the one you just used.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong. Please try again.')).toBeNull();
+        expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
+        expect(onSetEscrowPin).toHaveBeenCalledWith('135790');
+
+        enterPin('246802');
+        enterPin('246802');
+        await waitFor(() => expect(onSetEscrowPin).toHaveBeenLastCalledWith('246802'));
     });
 
     it('shows Change and Remove buttons when PIN is set', async () => {
@@ -622,5 +656,26 @@ describe('RecoverySetupModal unfinished-check guard', () => {
         expect(props.onClose).not.toHaveBeenCalled();
         vi.unstubAllGlobals();
         click.mockRestore();
+    });
+});
+
+describe('RecoverySetupModal sign out of all other devices', () => {
+    it('offers the revoke as its own section when the caller supports it', () => {
+        const onSignOutOtherDevices = vi.fn();
+        renderModal('phrase', vi.fn(), { onSignOutOtherDevices });
+
+        expect(
+            screen.getByRole('region', { name: "Signed in somewhere you don't recognize?" })
+        ).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Sign out of all other devices' }));
+        expect(onSignOutOtherDevices).toHaveBeenCalledOnce();
+    });
+
+    it('hides the section without a handler', () => {
+        renderModal('phrase');
+
+        expect(
+            screen.queryByRole('button', { name: 'Sign out of all other devices' })
+        ).not.toBeInTheDocument();
     });
 });

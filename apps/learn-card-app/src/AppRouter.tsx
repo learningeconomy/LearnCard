@@ -245,7 +245,7 @@ const AppRouter: React.FC = () => {
         location.pathname.includes('/app-store');
 
     const { newModal } = useModal();
-    const { refreshAuthSession, openRecoverySetup, authProvider } = useAppAuth();
+    const { refreshAuthSession, openRecoverySetup, openSecureAccount, authProvider } = useAppAuth();
     const isKeycloak = useKeycloakRedirect(async intent => {
         assertCurrentKeycloakReauth(intent, (await authProvider?.getCurrentUser())?.id);
         if (!(await refreshAuthSession())) throw new Error('Session could not be restored');
@@ -253,6 +253,8 @@ const AppRouter: React.FC = () => {
         history.replace(intent.returnTo);
         if (intent.action === 'account-recovery') {
             newModal(<MyLearnCardModal branding={BrandingEnum.learncard} resumeRecovery />);
+        } else if (intent.action === 'secure-account') {
+            openSecureAccount();
         } else {
             openRecoverySetup({ initialMethod: intent.initialMethod });
         }

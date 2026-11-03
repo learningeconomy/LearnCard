@@ -23,7 +23,14 @@ not implied by passing offline tests.
   slot modulo two. Both accounts run once per hour. Start with empty memory
   storage and call `executeRecovery({ input: { method: 'escrow-pin', ... } })`.
   The SDK creates/verifies a fresh PIN hold, releases and reconstructs the key,
-  then calls `completeIdentityRecovery` for authenticated atomic rebind/rotation.
+  then keeps the account: it stores the released share at the current version
+  and re-sets the same PIN, with no rebind or rotation (PIN sign-in, accepted
+  2026-11-03; see `services/escrow-enclave-app/SECURITY.md` D19). The
+  same-PIN re-set (fresh budget) only runs while no wrong attempt is recorded
+  against the PIN; if one ever is, each run uses up one more attempt and the
+  canary PIN locks after its remaining budget, so set a new PIN for that
+  canary account. Each
+  run triggers the server's PIN sign-in email to the canary account.
   Independently derive the recovered DID. Save device state **before** calling
   `setEscrowPin`, and save again afterward because setting a PIN also rotates shares.
 - The first run for each account in each UTC Monday-based week prepends one
@@ -71,7 +78,7 @@ browser UI. The ZIP bundles JS and DIDKit WASM, not the native addon or a CDN UR
 `bun run build` includes an offline **Node** smoke for DID/VP signing and SSS
 split/reconstruction with fetch forbidden. That does not prove real Nitro,
 Firebase, API rate limits, Lambda arm64 execution, or recovery against staging.
-The SDK's best-effort automatic post-rebind escrow enrollment does not receive a
+The SDK's best-effort PIN re-set after the sign-in does not receive a
 recovery contact on this path; the explicit final `setEscrowPin` supplies the
 verified recovery email/language and must succeed before the canary is green.
 

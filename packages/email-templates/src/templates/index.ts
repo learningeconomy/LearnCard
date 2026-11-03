@@ -1,64 +1,124 @@
-export { VerificationCode, getVerificationCodeSubject } from './verification-code';
-export type { VerificationCodeProps, VerificationCodeVariant } from './verification-code';
+// One export declaration per template module. Projects that resolve this package
+// through its `development` condition (source) typecheck without `jsx`, and TypeScript
+// reports TS6142 once per declaration that imports a .tsx module from this .ts file;
+// a separate `export type` line for the same module would add a second report.
 
-export { InboxClaim, getInboxClaimSubject } from './inbox-claim';
-export type { InboxClaimProps } from './inbox-claim';
+export {
+    VerificationCode,
+    getVerificationCodeSubject,
+    type VerificationCodeProps,
+    type VerificationCodeVariant,
+} from './verification-code';
 
-export { GuardianApproval, getGuardianApprovalSubject } from './guardian-approval';
-export type { GuardianApprovalProps } from './guardian-approval';
+export { InboxClaim, getInboxClaimSubject, type InboxClaimProps } from './inbox-claim';
 
-export { AccountApproved, getAccountApprovedSubject } from './account-approved';
-export type { AccountApprovedProps } from './account-approved';
+export {
+    GuardianApproval,
+    getGuardianApprovalSubject,
+    type GuardianApprovalProps,
+} from './guardian-approval';
 
-export { RecoveryKey, getRecoveryKeySubject } from './recovery-key';
-export type { RecoveryKeyProps } from './recovery-key';
+export {
+    AccountApproved,
+    getAccountApprovedSubject,
+    type AccountApprovedProps,
+} from './account-approved';
 
-export { EndorsementRequest, getEndorsementRequestSubject } from './endorsement-request';
-export type { EndorsementRequestProps } from './endorsement-request';
+export { RecoveryKey, getRecoveryKeySubject, type RecoveryKeyProps } from './recovery-key';
+
+export {
+    EndorsementRequest,
+    getEndorsementRequestSubject,
+    type EndorsementRequestProps,
+} from './endorsement-request';
 
 export {
     CredentialAwaitingGuardian,
     getCredentialAwaitingGuardianSubject,
+    type CredentialAwaitingGuardianProps,
 } from './credential-awaiting-guardian';
-export type { CredentialAwaitingGuardianProps } from './credential-awaiting-guardian';
 
-export { GuardianApprovedClaim, getGuardianApprovedClaimSubject } from './guardian-approved-claim';
-export type { GuardianApprovedClaimProps } from './guardian-approved-claim';
+export {
+    GuardianApprovedClaim,
+    getGuardianApprovedClaimSubject,
+    type GuardianApprovedClaimProps,
+} from './guardian-approved-claim';
 
 export {
     GuardianCredentialApproval,
     getGuardianCredentialApprovalSubject,
+    type GuardianCredentialApprovalProps,
 } from './guardian-credential-approval';
-export type { GuardianCredentialApprovalProps } from './guardian-credential-approval';
 
-export { GuardianEmailOtp, getGuardianEmailOtpSubject } from './guardian-email-otp';
-export type { GuardianEmailOtpProps } from './guardian-email-otp';
+export {
+    GuardianEmailOtp,
+    getGuardianEmailOtpSubject,
+    type GuardianEmailOtpProps,
+} from './guardian-email-otp';
 
 export {
     GuardianRejectedCredential,
     getGuardianRejectedCredentialSubject,
+    type GuardianRejectedCredentialProps,
 } from './guardian-rejected-credential';
-export type { GuardianRejectedCredentialProps } from './guardian-rejected-credential';
 
-export { EmailVerification, getEmailVerificationSubject } from './email-verification';
-export type { EmailVerificationProps } from './email-verification';
+export {
+    EmailVerification,
+    getEmailVerificationSubject,
+    type EmailVerificationProps,
+} from './email-verification';
 
-export { CredentialUpdated, getCredentialUpdatedSubject } from './credential-updated';
-export type { CredentialUpdatedProps } from './credential-updated';
-export { AccountSignInChanged, getAccountSignInChangedSubject } from './account-sign-in-changed';
-export type { AccountSignInChangedProps } from './account-sign-in-changed';
+export {
+    CredentialUpdated,
+    getCredentialUpdatedSubject,
+    type CredentialUpdatedProps,
+} from './credential-updated';
 
-export { EscrowHoldStarted, getEscrowHoldStartedSubject } from './escrow-hold-started';
-export type { EscrowHoldStartedProps } from './escrow-hold-started';
+export {
+    AccountSignInChanged,
+    getAccountSignInChangedSubject,
+    type AccountSignInChangedProps,
+} from './account-sign-in-changed';
 
-export { EscrowHoldReminder, getEscrowHoldReminderSubject } from './escrow-hold-reminder';
-export type { EscrowHoldReminderProps } from './escrow-hold-reminder';
+export {
+    EscrowHoldStarted,
+    getEscrowHoldStartedSubject,
+    type EscrowHoldStartedProps,
+} from './escrow-hold-started';
 
-export { EscrowHoldReleased, getEscrowHoldReleasedSubject } from './escrow-hold-released';
-export type { EscrowHoldReleasedProps } from './escrow-hold-released';
+export {
+    EscrowHoldReminder,
+    getEscrowHoldReminderSubject,
+    type EscrowHoldReminderProps,
+} from './escrow-hold-reminder';
 
-export { EscrowHoldCancelled, getEscrowHoldCancelledSubject } from './escrow-hold-cancelled';
-export type { EscrowHoldCancelledProps, EscrowHoldCancelledReason } from './escrow-hold-cancelled';
+export {
+    EscrowHoldReleased,
+    getEscrowHoldReleasedSubject,
+    type EscrowHoldReleasedProps,
+} from './escrow-hold-released';
 
-export { EscrowPinLocked, getEscrowPinLockedSubject } from './escrow-pin-locked';
-export type { EscrowPinLockedProps } from './escrow-pin-locked';
+export {
+    EscrowHoldCancelled,
+    getEscrowHoldCancelledSubject,
+    type EscrowHoldCancelledProps,
+    type EscrowHoldCancelledReason,
+} from './escrow-hold-cancelled';
+
+export {
+    EscrowPinLocked,
+    getEscrowPinLockedSubject,
+    type EscrowPinLockedProps,
+} from './escrow-pin-locked';
+
+export {
+    EscrowPinSignIn,
+    getEscrowPinSignInSubject,
+    type EscrowPinSignInProps,
+} from './escrow-pin-sign-in';
+
+export {
+    AccountSecured,
+    getAccountSecuredSubject,
+    type AccountSecuredProps,
+} from './account-secured';
