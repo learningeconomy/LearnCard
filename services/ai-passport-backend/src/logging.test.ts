@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { configureProductionLogging, logSafeEvent } from './logging';
+import { configureProductionLogging, logSafeEvent, type SafeLogMetrics } from './logging';
 
 const originalLog = console.log;
 const originalInfo = console.info;
@@ -13,6 +13,45 @@ afterEach(() => {
 });
 
 describe('production logging', () => {
+    test('assessment diagnostics retain only allowed IDs, stages and verifier buckets', () => {
+        const output: unknown[][] = [];
+        console.info = mock((...data: unknown[]) => output.push(data));
+        const id = '18e35526-8a62-490a-9239-7a4ec2fd31f8';
+        logSafeEvent('info', 'ai_assessment_failed', {
+            diagnosticId: id,
+            attemptId: id,
+            assessmentStage: 'credential_verification',
+            failureCode: 'credential_verification_unavailable',
+            verificationSubreason: 'unrecognized_verifier_error',
+            verifierErrorKind: 'jsonld_context',
+            message: 'private summary',
+        } as unknown as SafeLogMetrics);
+        expect(output[0]).toEqual([
+            {
+                event: 'ai_assessment_failed',
+                diagnosticId: id,
+                attemptId: id,
+                assessmentStage: 'credential_verification',
+                failureCode: 'credential_verification_unavailable',
+                verificationSubreason: 'unrecognized_verifier_error',
+                verifierErrorKind: 'jsonld_context',
+            },
+        ]);
+        logSafeEvent('info', 'ai_assessment_failed', {
+            diagnosticId: 'private summary',
+            attemptId: 'private summary',
+            assessmentStage: 'private summary',
+            errorClass: 'private summary',
+            failureCode: 'private summary',
+            verificationSubreason: 'private summary',
+            verifierErrorKind: 'private summary',
+            providerStatus: 777,
+            providerFailureReason: 'private summary',
+            privacyCategory: 'private summary',
+        } as unknown as SafeLogMetrics);
+        expect(output[1]).toEqual([{ event: 'ai_assessment_failed' }]);
+        expect(JSON.stringify(output)).not.toContain('private summary');
+    });
     test('suppresses strings, serialized credentials, errors, nested objects and sensitive keys', () => {
         const output: unknown[][] = [];
         console.log = mock((...data: unknown[]) => output.push(data));
@@ -419,7 +458,10 @@ test('LearnCard cause fields keep only their enums and a bounded attempt count',
                 causeKind: 'other',
                 initAttempts: 2,
             },
-            { event: 'credential_preload_failed', failureCode: 'learncard_unavailable' },
+            {
+                event: 'credential_preload_failed',
+                failureCode: 'learncard_unavailable',
+            },
         ]);
     } finally {
         console.warn = original;

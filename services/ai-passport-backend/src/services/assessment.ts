@@ -1,3 +1,5 @@
+import { verifyAssessmentSummary } from './assessmentSummary';
+import { runAssessmentDiagnostics } from '../diagnostics/assessment';
 import type { VC } from '@learncard/types';
 import {
     AssessmentQuestionsSchema,
@@ -14,7 +16,6 @@ import {
 } from '../credentials/projection';
 
 import { assertCurrentAiConsent, getCurrentAiSubject } from '../ai/privacy';
-import { verifyCredentialForIngestion, fingerprintCredential } from '../credentials/verification';
 import { PLANNING_MODEL } from '../constants/env';
 
 export const DUMMY_SESSION_ASSESSMENT: AiAssessmentQuestionType[] = [
@@ -64,62 +65,77 @@ export const DUMMY_SESSION_ASSESSMENT: AiAssessmentQuestionType[] = [
     },
 ];
 
-export const generateAiAssessment = async (did: string, summaryVc: VC) => {
-    if (getCurrentAiSubject() !== did) throw new Error('Authenticated assessment owner required');
-    const learnCard = await getLearnCard();
-    const consent = await assertCurrentAiConsent('model-inference');
-    const verification = await verifyCredentialForIngestion({
-        credential: summaryVc,
-        credentialUri:
-            typeof summaryVc.id === 'string'
-                ? summaryVc.id
-                : `sha256:${fingerprintCredential(summaryVc)}`,
-        subjectDid: did,
-        consent,
-        verify: original => learnCard.invoke.verifyCredential(original),
-    });
-    const summaryProjection = projectCredential(summaryVc, 'Session Summary', verification);
-    // Safely extract title from summaryVc
-    let title = '';
+export const generateAiAssessment = async (
+    did: string,
+    summaryVc: VC,
+    attemptId?: unknown,
+    summaryCredentialUri?: string
+) =>
+    runAssessmentDiagnostics(async step => {
+        await step('owner_context', () => {
+            if (getCurrentAiSubject() !== did)
+                throw new Error('Authenticated assessment owner required');
+        });
+        const learnCard = await step('sdk_init', getLearnCard);
+        const consent = await step('consent', () => assertCurrentAiConsent('model-inference'));
+        const verified = await step('credential_verification', () =>
+            verifyAssessmentSummary({
+                did,
+                credential: summaryVc,
+                consent,
+                learnCard,
+                credentialUri: summaryCredentialUri,
+                attemptId,
+            })
+        );
+        const summaryProjection = await step('credential_projection', () =>
+            projectCredential(verified.credential, 'Session Summary', verified.verification)
+        );
+        const credentialsForModel = await step('topic_lookup', async () => {
+            // Safely extract title from summaryVc
+            let title = '';
 
-    if (summaryVc.summaryInfo?.title) {
-        title = summaryVc.summaryInfo.title;
-    } else if (summaryVc.credentialSubject) {
-        const subject = Array.isArray(summaryVc.credentialSubject)
-            ? summaryVc.credentialSubject[0]
-            : summaryVc.credentialSubject;
+            if (summaryVc.summaryInfo?.title) {
+                title = summaryVc.summaryInfo.title;
+            } else if (summaryVc.credentialSubject) {
+                const subject = Array.isArray(summaryVc.credentialSubject)
+                    ? summaryVc.credentialSubject[0]
+                    : summaryVc.credentialSubject;
 
-        if (subject && typeof subject === 'object' && 'achievement' in subject) {
-            const achievement = subject.achievement;
-            if (achievement && typeof achievement === 'object' && 'name' in achievement) {
-                title = String(achievement.name);
+                if (subject && typeof subject === 'object' && 'achievement' in subject) {
+                    const achievement = subject.achievement;
+                    if (achievement && typeof achievement === 'object' && 'name' in achievement) {
+                        title = String(achievement.name);
+                    }
+                }
             }
-        }
-    }
 
-    const credentials = await searchCredentialsByTopic(title, did);
-    const credentialsForModel = credentials.map(({ context, title, type }) => ({
-        context,
-        title,
-        type,
-    }));
+            const credentials = await searchCredentialsByTopic(title, did);
+            return credentials.map(({ context, title, type }) => ({
+                context,
+                title,
+                type,
+            }));
+        });
 
-    const assessment = await aiCall({
-        model: PLANNING_MODEL,
-        systemPrompt: `Create a structured assessment for a single 5-30 minute session.
+        const assessment = await step('generation', () =>
+            aiCall({
+                model: PLANNING_MODEL,
+                systemPrompt: `Create a structured assessment for a single 5-30 minute session.
     Here is an example: ${JSON.stringify(DUMMY_SESSION_ASSESSMENT)}
 
     DO NOT use the example directly.`,
-        message: `Generate an assessment based on the following session summary and the user’s existing credentials.
+                message: `Generate an assessment based on the following session summary and the user’s existing credentials.
 
 Session summary: ${serializeModelSafeCredentialProjection(summaryProjection)}
 
 User’s existing credentials: ${JSON.stringify(credentialsForModel)}`,
-        output: AssessmentQuestionsSchema,
-    });
+                output: AssessmentQuestionsSchema,
+            })
+        );
 
-    return assessment;
-};
+        return assessment;
+    }, attemptId);
 
 export type AssessmentQA = {
     id?: string;

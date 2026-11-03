@@ -1861,6 +1861,22 @@ export class ChatDB {
         );
     }
 
+    public async getOwnedThreadSummary(
+        did: string,
+        credentialUri: string
+    ): Promise<DBThreadSummaryCredential | null> {
+        await this.init();
+        const thread = await this.threads.findOne(
+            { did, 'summaries.credential_uri': credentialUri },
+            {
+                projection: {
+                    summaries: { $elemMatch: { credential_uri: credentialUri } },
+                },
+            }
+        );
+        return thread?.summaries?.find(summary => summary.credential_uri === credentialUri) ?? null;
+    }
+
     /**
      * True when boostUri is the boost of a summary issued to this owner. Clients address
      * the summary by its boost URI (the assessment's parent boost), while threads store the

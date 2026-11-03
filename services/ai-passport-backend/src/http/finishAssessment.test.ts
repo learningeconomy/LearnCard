@@ -136,6 +136,39 @@ describe('POST /finish-assessment ownership', () => {
         ).toMatchObject({ ok: false, status: 404 });
     });
 
+    test('passes summaryCredentialUri through so the route verifies the retained summary', async () => {
+        const did = `did:example:learner-${randomUUID()}`;
+        const { boostUri, contractCredentialUri, session } = await issueSummary(did);
+
+        expect(
+            await authorizeFinishAssessment(did, {
+                ...finishBody(session, boostUri),
+                summaryCredentialUri: contractCredentialUri,
+            })
+        ).toEqual({
+            ok: true,
+            request: {
+                session,
+                sessionUri: boostUri,
+                assessmentQA,
+                summaryCredentialUri: contractCredentialUri,
+            },
+        });
+    });
+
+    test('still rejects a session whose subject is not the caller when summaryCredentialUri is sent', async () => {
+        const owner = `did:example:learner-${randomUUID()}`;
+        const intruder = `did:example:learner-${randomUUID()}`;
+        const { boostUri, contractCredentialUri, session } = await issueSummary(owner);
+
+        expect(
+            await authorizeFinishAssessment(intruder, {
+                ...finishBody(session, boostUri),
+                summaryCredentialUri: contractCredentialUri,
+            })
+        ).toMatchObject({ ok: false, status: 404 });
+    });
+
     test('requires the session, boost URI, and answers', async () => {
         const did = `did:example:learner-${randomUUID()}`;
 

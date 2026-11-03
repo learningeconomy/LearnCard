@@ -57,6 +57,12 @@ const SAFE_EVENT_CODES = [
     'dependency_ready',
     'dependency_failed',
     'ai_operation_failed',
+    'ai_assessment_summary_reissued',
+    'ai_assessment_started',
+    'ai_assessment_stage_started',
+    'ai_assessment_stage_completed',
+    'ai_assessment_failed',
+    'ai_assessment_completed',
     'ai_insight_failed',
     'ai_insight_completed',
     'ai_insight_started',
@@ -142,6 +148,18 @@ const SAFE_FAILURE_CODES = [
     'CONSENT_DENIED',
     'OWNER_OPERATION_UNAVAILABLE',
 ] as const;
+
+export const ASSESSMENT_STAGES = [
+    'request',
+    'owner_context',
+    'sdk_init',
+    'consent',
+    'credential_verification',
+    'credential_projection',
+    'topic_lookup',
+    'generation',
+] as const;
+export type AssessmentStage = (typeof ASSESSMENT_STAGES)[number];
 
 export const AI_INSIGHT_STAGES = [
     'request',
@@ -236,6 +254,8 @@ export type AiInsightTimingTotals = Partial<
 
 export type SafeLogEventCode = (typeof SAFE_EVENT_CODES)[number];
 export type SafeLogMetrics = Partial<ProviderFailureDetails> & {
+    assessmentStage?: AssessmentStage;
+    assessmentLastCompletedStage?: AssessmentStage;
     stage?: AiInsightStage;
     lastCompletedStage?: AiInsightStage;
     elapsedMs?: number;
@@ -375,6 +395,32 @@ export const logSafeEvent = (
             event.model = metrics.model;
         if (metrics.ocrModel === 'tesseract-local') event.ocrModel = metrics.ocrModel;
     }
+    if (code.startsWith('ai_assessment_')) {
+        const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        for (const key of ['diagnosticId', 'attemptId'] as const) {
+            const value = metrics[key];
+            if (typeof value === 'string' && uuid.test(value)) event[key] = value;
+        }
+        for (const key of ['assessmentStage', 'assessmentLastCompletedStage'] as const) {
+            const value = metrics[key];
+            if (value && ASSESSMENT_STAGES.includes(value)) event[key] = value;
+        }
+        if (metrics.errorClass && RESOLUTION_ERROR_CLASSES.includes(metrics.errorClass))
+            event.errorClass = metrics.errorClass;
+        if (metrics.failureCode === 'credential_verification_unavailable') {
+            if (
+                metrics.verificationSubreason &&
+                VERIFICATION_SUBREASONS.includes(metrics.verificationSubreason)
+            )
+                event.verificationSubreason = metrics.verificationSubreason;
+            if (
+                event.verificationSubreason === 'unrecognized_verifier_error' &&
+                metrics.verifierErrorKind &&
+                VERIFIER_ERROR_KINDS.includes(metrics.verifierErrorKind)
+            )
+                event.verifierErrorKind = metrics.verifierErrorKind;
+        }
+    }
     if (code === 'ai_insight_response_constructed' && ![200, 204].includes(event.httpStatus ?? 0))
         delete event.httpStatus;
     const provider = metrics.provider;
@@ -491,7 +537,7 @@ export const logSafeEvent = (
             ].slice(0, SAFE_MONGO_LABELS.length);
     }
     if (
-        code === 'ai_insight_failed' &&
+        (code === 'ai_insight_failed' || code === 'ai_assessment_failed') &&
         metrics.privacyOperation &&
         PRIVACY_OPERATIONS.includes(metrics.privacyOperation)
     ) {
@@ -521,7 +567,10 @@ export const logSafeEvent = (
         INSIGHT_COMPACTION_REASONS.includes(metrics.compactionReason)
     )
         event.compactionReason = metrics.compactionReason;
-    if (code === 'ai_insight_failed' && event.stage === 'generation') {
+    if (
+        (code === 'ai_insight_failed' && event.stage === 'generation') ||
+        code === 'ai_assessment_failed'
+    ) {
         if (metrics.providerOperation && PROVIDER_OPERATIONS.includes(metrics.providerOperation))
             event.providerOperation = metrics.providerOperation;
         if (

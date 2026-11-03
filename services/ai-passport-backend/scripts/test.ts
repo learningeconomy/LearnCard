@@ -1,4 +1,7 @@
 const ALL_TEST_FILES = [
+    'src/diagnostics/assessment.test.ts',
+    'src/services/assessmentSummary.test.ts',
+    'src/services/assessment.test.ts',
     'scripts/deployment-config.test.ts',
     'src/admin/embedding-privacy.integration.test.ts',
     'src/ai/nova-http2-timeout.test.ts',

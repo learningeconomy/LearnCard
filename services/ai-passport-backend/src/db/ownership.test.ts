@@ -651,6 +651,13 @@ describe('persistent owner boundaries', () => {
         expect(await database.getThreadSummaryCredentials(owner, 'completed-legacy')).toEqual([
             summary,
         ]);
+        expect(await database.getOwnedThreadSummary(owner, summaryUri)).toEqual(summary);
+        expect(
+            await database.getOwnedThreadSummary('did:example:another-owner', summaryUri)
+        ).toBeNull();
+        expect(
+            await database.getOwnedThreadSummary(owner, 'lc:network:test/trpc:credential:missing')
+        ).toBeNull();
         expect((await database.getThreads(owner))[0]?.plans).toEqual([plan]);
         expect(await asOwner(() => database.getThreadPlans(owner, 'completed-legacy'))).toEqual([]);
         expect(await database.isThreadEnded('completed-legacy', owner)).toBe(true);

@@ -4,11 +4,25 @@ AI Passport moved out of `WeLibraryOS/AI-Passport` and into LearnCard as a file 
 
 ## Source
 
-- AI-Passport revision: `c2c1e5718042efa097e8e5f43c29150f1e07ccae` (`main`, which contains #113 `c2c1e57` and #103 `a1d10c5`)
+- AI-Passport revision: `4c69bf5521d39e060824cd7189f0549882f24dad` (`main`, which contains #117 `3ee1e5b` and #118 `4c69bf5`). The first import was pinned to `c2c1e5718042efa097e8e5f43c29150f1e07ccae` (#113 `c2c1e57`, #103 `a1d10c5`).
 - Tooling: `tools/migration_snapshot.py` from the AIP branch `codex/lc1934-private-snapshot`, run against the revision above
-- Manifest sha256: `2fabbf151c5428d76b57580484139fc93fdd08a9beee27fc2b6e76dcefc74217`
-- Inventory: 438 files exported, 46 excluded (28 outside the allowlist, 16 generated, 2 `REQUIRES_REWRITE`: the OAuth doc and the `MCP-OAuth.png` diagram, both omitted), 0 pattern findings. `publication_cleared` stays false.
-- Extra scans on the exported bytes: gitleaks matched 11 test fixtures and trufflehog matched 1 unverified example. None were real secrets.
+- Manifest sha256: `cea23b61fec8923b863e1c62c27cfc4c3f4583e4cd950da20c56ec9f0cdee64b`
+- Inventory: 444 files exported, 47 excluded (29 outside the allowlist, 16 generated, 2 `REQUIRES_REWRITE`: the OAuth doc and the `MCP-OAuth.png` diagram, both omitted), 0 pattern findings. `publication_cleared` stays false.
+- Extra scans on the exported bytes: on the first import, gitleaks matched 11 test fixtures and trufflehog matched 1 unverified example. None were real secrets. On the files changed between the two pins, gitleaks and trufflehog found nothing.
+
+### Syncing a newer AIP revision
+
+The branch carries monorepo fixes on top of the snapshot (Prettier formatting, `workspace:*` deps, Dockerfiles, Bedrock defaults, `QDRANT_HTTPS`, the finish-assessment ownership fix and others), so a newer export isn't copied over the tree. Instead:
+
+1. Export the old pin and the new pin with `migration_snapshot.py` into private directories.
+2. Format both exports with the repo's `.prettierrc.json`.
+3. Three-way merge each changed file (`git merge-file <monorepo file> <old export> <new export>`) and copy files that are new in the export.
+
+The `c2c1e57` → `4c69bf5` sync brought in:
+
+- **#117, assessment diagnostics.** `src/diagnostics/assessment.ts` and stage-level `ai_assessment_*` log events in `services/assessment.ts` and `logging.ts`, plus LearnCard-timeout classification. AIP's `docs/assessment-diagnostics.md` runbook sits outside the import allowlist and wasn't copied.
+- **#118, legacy assessment recovery.** `services/assessmentSummary.ts` verifies the summary VC and, when an older summary no longer verifies, re-issues it from the issuer's retained, owner-bound history. `credentials/sessionSummary.ts` holds the summary VC builder that used to live in `awarding.ts`. `db.getOwnedThreadSummary()` is new.
+- **`/finish-assessment` merge.** AIP's route accepts an optional `summaryCredentialUri` and proves ownership with `verifyAssessmentSummary()`. In the monorepo, `authorizeFinishAssessment()` passes that URI through and leaves the check to `verifyAssessmentSummary()`. Without it, the request still goes through the monorepo's `ownsSummaryBoost()` lookup.
 
 ## Layout
 

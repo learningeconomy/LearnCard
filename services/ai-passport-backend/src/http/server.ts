@@ -1,3 +1,7 @@
+import {
+    verifyAssessmentSummary,
+    AssessmentSummaryOwnershipError,
+} from '../services/assessmentSummary';
 import { handleAdminWeb } from '../admin/web';
 import { trustedOrigins } from '../auth/trusted-origin';
 import { handleAdminRoute } from '../admin/routes';
@@ -37,9 +41,9 @@ import {
 import { sendConversationSummary, generateAIInsightCredential } from '../services/awarding';
 import { streamingAiCall } from '../ai';
 import { runWithLocale } from '../ai/locale';
-import { runWithAiPrivacyContext } from '../ai/privacy';
+import { runWithAiPrivacyContext, assertCurrentAiConsent } from '../ai/privacy';
 import { isAiProviderError, toAiErrorPayload } from '../ai/errors';
-import type { AuthenticatedMessage, ChatMessage } from '@learncard/types';
+import type { AuthenticatedMessage, ChatMessage, VC } from '@learncard/types';
 import { generateAiAssessment, completeAssessment } from '../services/assessment';
 import { getLearnCard } from '../learncard';
 import { readOwnedBoostCredential } from '../learncard/external-artifacts';
@@ -1109,14 +1113,15 @@ export const startHttpServer = async () => {
           }
           case "/assessment": {
             if (req.method === "POST") {
-              const summaryCredential = (await req.json()).summaryCredential;
+              const { summaryCredential, attemptId, summaryCredentialUri } = await req.json();
 
               if (getCredentialSubjectDid(summaryCredential) !== did) {
                 return jsonResponse({ error: "Not found" }, 404);
               }
 
               return jsonResponse(
-                await generateAiAssessment(did, summaryCredential),
+                await generateAiAssessment(did, summaryCredential, attemptId,
+                  typeof summaryCredentialUri === "string" ? summaryCredentialUri : undefined),
               );
             }
 
@@ -1137,9 +1142,18 @@ export const startHttpServer = async () => {
                 );
               }
 
-              const { session, assessmentQA, sessionUri } = authorized.request;
+              const { session, assessmentQA, sessionUri, summaryCredentialUri } =
+                authorized.request;
 
               try {
+                if (summaryCredentialUri) {
+                  await verifyAssessmentSummary({
+                    did, credential: session as VC, credentialUri: summaryCredentialUri,
+                    expectedBoostUri: sessionUri,
+                    learnCard: await getLearnCard(),
+                    consent: await assertCurrentAiConsent("model-inference"),
+                  });
+                }
                 return jsonResponse(
                   await completeAssessment({
                     did,
@@ -1150,6 +1164,7 @@ export const startHttpServer = async () => {
                 );
               } catch (error) {
                 return (
+                  (error instanceof AssessmentSummaryOwnershipError ? jsonResponse({ error: "Not found" }, 404) : undefined) ??
                   aiErrorResponse(error, "finish_assessment", jsonResponse) ??
                   jsonResponse({ error: "Failed to complete assessment" }, 500)
                 );
