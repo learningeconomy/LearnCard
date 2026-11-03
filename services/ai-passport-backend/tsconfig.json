@@ -12,12 +12,11 @@
         "allowJs": true,
         // Keep ambient types to Bun/Node; the LearnCard root hoists unrelated globals.
         "types": ["bun"],
-        "baseUrl": ".",
         "paths": {
             "next": ["./types/next-stub.d.ts"]
         },
         // Bundler mode
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "esModuleInterop": true,
         "resolveJsonModule": true,
         "allowImportingTsExtensions": true,

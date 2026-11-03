@@ -14,6 +14,9 @@ const collections = {
     COMPARISON_CONTEXT: `${prefix}_comparison`,
 };
 const messageCollection = `${prefix}_messages`;
+// Unscoped calls exercise the legacy collections and withEmbeddingGeneration('nova1024v1')
+// the Nova ones, so start from the legacy generation; the monorepo default is Nova.
+process.env.EMBEDDINGS_PROVIDER = 'openai';
 const owner = 'did:example:vector-owner';
 const otherOwner = 'did:example:other-owner';
 let erased = false;

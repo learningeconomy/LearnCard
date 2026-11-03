@@ -5,7 +5,10 @@
     "compilerOptions": {
         "jsx": "react-jsx",
         "jsxImportSource": "react",
-        "baseUrl": ".",
+        // The LearnCard root pins ES2022 and Node/Vitest globals; keep Astro's ESNext
+        // target and the Bun globals the app's bun:test suites run under.
+        "target": "ESNext",
+        "types": ["bun"],
         "paths": {
             "@/*": ["./src/*"],
             "react": ["./node_modules/@types/react"],
