@@ -14,7 +14,6 @@ import { apiFieldsResolver, resolveStateStudentId } from '../src/helpers/classli
 import {
     ClassLinkEmailMissing,
     ClassLinkStateIdMissing,
-    ClassLinkTenantNotAllowed,
     ClassLinkTokenInvalid,
 } from '../src/helpers/classlink.errors';
 
@@ -187,11 +186,11 @@ describe('ClassLink token verification', () => {
         await expect(verify(token)).rejects.toBeInstanceOf(ClassLinkTokenInvalid);
     });
     it.each(['unknown-tenant', 'toString', '__proto__'])(
-        'rejects unlisted tenant %s',
+        'accepts a district without an override (%s); policy is applied by the route',
         async tenantId => {
             await expect(
                 verify(await sign({ classLink_tenant_id: tenantId }))
-            ).rejects.toBeInstanceOf(ClassLinkTenantNotAllowed);
+            ).resolves.toMatchObject({ classLink_tenant_id: tenantId });
         }
     );
     it('rejects empty expected nonce', async () => {
@@ -329,7 +328,6 @@ describe('discovery and code exchange', () => {
     });
     it('provides typed errors with tRPC codes and message keys', () => {
         for (const ErrorType of [
-            ClassLinkTenantNotAllowed,
             ClassLinkEmailMissing,
             ClassLinkStateIdMissing,
             ClassLinkTokenInvalid,

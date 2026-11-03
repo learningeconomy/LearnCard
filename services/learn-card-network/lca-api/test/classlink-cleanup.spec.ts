@@ -9,7 +9,10 @@ vi.mock('@routes', async () => {
     return { t, openRoute: t.procedure, didAndChallengeRoute: t.procedure };
 });
 vi.mock('../src/firebase', () => ({ default: { auth: vi.fn() } }));
-vi.mock('../src/helpers/classlink.config', () => ({ getClassLinkConfig: vi.fn(() => null) }));
+vi.mock('../src/helpers/classlink.config', async importOriginal => ({
+    ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),
+    getClassLinkConfig: vi.fn(() => null),
+}));
 
 import { classlinkRouter } from '../src/routes/classlink';
 import { getClassLinkIdentitiesCollection } from '../src/models/ClassLinkIdentity';

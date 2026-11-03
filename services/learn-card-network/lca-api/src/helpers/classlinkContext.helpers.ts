@@ -4,7 +4,7 @@ import {
     findClassLinkIdentityByFirebaseUid,
     type MongoClassLinkIdentityType,
 } from '../models/ClassLinkIdentity';
-import { getClassLinkConfig } from '@helpers/classlink.config';
+import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import type { ClassLinkTenantConfig } from 'types/classlink';
 
 export interface ClassLinkContext {
@@ -28,10 +28,7 @@ export const resolveClassLinkContext = async (did: string): Promise<ClassLinkCon
         const identity = await findClassLinkIdentityByFirebaseUid(provider.id);
         if (!identity) continue;
         const config = getClassLinkConfig();
-        const tenant =
-            config && Object.hasOwn(config.tenants, identity.tenantId)
-                ? config.tenants[identity.tenantId]
-                : undefined;
+        const tenant = config ? getClassLinkTenant(config, identity.tenantId) : undefined;
         return { userKey, firebaseUid: provider.id, identity, tenant };
     }
     throw new TRPCError({

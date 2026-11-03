@@ -15,6 +15,7 @@ export const apiFieldsResolver: StateStudentIdResolver = {
                 return null;
             }
         }
+        if (!tenantCfg.stateStudentIdField) return null;
         if (!fields || typeof fields !== 'object' || Array.isArray(fields)) return null;
         if (!Object.prototype.hasOwnProperty.call(fields, tenantCfg.stateStudentIdField))
             return null;

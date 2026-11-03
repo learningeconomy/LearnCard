@@ -1,5 +1,10 @@
 import { environment } from '@environment';
-import { ClassLinkTenantsValidator, type ClassLinkConfig } from 'types/classlink';
+import {
+    ClassLinkTenantsValidator,
+    DEFAULT_CLASSLINK_TENANT,
+    type ClassLinkConfig,
+    type ClassLinkTenantConfig,
+} from 'types/classlink';
 
 const splitCommaList = (value: string | undefined): string[] =>
     (value ?? '')
@@ -12,11 +17,12 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
     const clientSecret = environment.CLASSLINK_CLIENT_SECRET;
     const tenantsJson = environment.CLASSLINK_TENANTS;
 
-    if (!clientId || !clientSecret || !tenantsJson) return null;
+    if (!clientId || !clientSecret) return null;
 
-    let tenants: ClassLinkConfig['tenants'];
+    // CLASSLINK_TENANTS is optional: it only holds per-district overrides.
+    let tenants: ClassLinkConfig['tenants'] = {};
     try {
-        tenants = ClassLinkTenantsValidator.parse(JSON.parse(tenantsJson));
+        if (tenantsJson) tenants = ClassLinkTenantsValidator.parse(JSON.parse(tenantsJson));
     } catch {
         console.warn('ClassLink configuration disabled: CLASSLINK_TENANTS is invalid');
         return null;
@@ -31,6 +37,17 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
         maxAuthAgeSeconds: environment.CLASSLINK_MAX_AUTH_AGE_SECONDS,
     };
 };
+
+/**
+ * Every district that signs in through our ClassLink app is accepted (ClassLink signs the
+ * id_token for our client ID). Districts listed in CLASSLINK_TENANTS get their overrides;
+ * all others get DEFAULT_CLASSLINK_TENANT.
+ */
+export const getClassLinkTenant = (
+    config: Pick<ClassLinkConfig, 'tenants'>,
+    tenantId: string
+): ClassLinkTenantConfig =>
+    Object.hasOwn(config.tenants, tenantId) ? config.tenants[tenantId]! : DEFAULT_CLASSLINK_TENANT;
 
 export const getTranscriptIssuerConfig = (): { endpoint: string; audience: string } | null => {
     const endpoint = environment.TRANSCRIPT_ISSUER_ENDPOINT;

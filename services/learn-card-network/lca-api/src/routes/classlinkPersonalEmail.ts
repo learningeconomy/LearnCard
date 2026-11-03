@@ -29,10 +29,11 @@ const validateEmail = async (did: string, email: string) => {
             code: 'PRECONDITION_FAILED',
             message: 'School settings are unavailable. Please try again later.',
         });
+    const domain = email.split('@')[1];
+    const schoolDomain = context.identity.email?.split('@')[1]?.toLowerCase();
     if (
-        context.tenant.allowedEmailDomains.some(
-            domain => domain.toLowerCase() === email.split('@')[1]
-        )
+        domain === schoolDomain ||
+        context.tenant.allowedEmailDomains.some(allowed => allowed.toLowerCase() === domain)
     ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',

@@ -3,11 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { z } from 'zod';
 import cache from '@cache';
 import { getClassLinkConfig } from './classlink.config';
-import {
-    ClassLinkEmailMissing,
-    ClassLinkTenantNotAllowed,
-    ClassLinkTokenInvalid,
-} from './classlink.errors';
+import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from './classlink.errors';
 import type { ClassLinkClaims, ClassLinkConfig } from 'types/classlink';
 
 export type { ClassLinkClaims } from 'types/classlink';
@@ -135,12 +131,8 @@ export const verifyClassLinkIdToken = async (
         ) {
             throw new ClassLinkTokenInvalid();
         }
-        if (!Object.prototype.hasOwnProperty.call(config.tenants, claims.classLink_tenant_id)) {
-            throw new ClassLinkTenantNotAllowed();
-        }
         return claims;
     } catch (error) {
-        if (error instanceof ClassLinkTenantNotAllowed) throw error;
         // Validation and JOSE errors may carry raw claims. Do not log or retain them.
         throw new ClassLinkTokenInvalid();
     }

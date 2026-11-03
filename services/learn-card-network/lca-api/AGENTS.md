@@ -251,7 +251,7 @@ sequenceDiagram
     App->>App: consume single-use attempt for state
     App->>API: classlink.exchangeCode(code, codeVerifier, redirectUri, nonce)
     API->>CL: token request (client_secret_post, server side)
-    API->>API: verify id_token: issuer, RS256 via JWKS, aud, exp, iat skew, nonce, tenant allowlist
+    API->>API: verify id_token: issuer, RS256 via JWKS, aud, exp, iat skew, nonce
     API->>API: resolve state student ID from api_fields; link identity; find/create Firebase user
     API-->>App: Firebase custom token (in the tRPC response)
     App->>App: signInWithCustomToken
@@ -259,6 +259,12 @@ sequenceDiagram
 
 - The state student ID is read only on the server, from the verified id_token `api_fields`, using the tenant's `stateStudentIdField`. It is never accepted from a client. A missing ID does not block sign-in.
 - An email (`email`, falling back to `or_email`) is required; without one the exchange fails with a friendly `BAD_REQUEST`.
+
+### Districts
+
+- Any district that signs in through our ClassLink app is accepted: ClassLink signs the id_token for our client ID, so a valid token means the district installed the app. No per-district setup is needed for sign-in.
+- `CLASSLINK_TENANTS` only holds **overrides** keyed by ClassLink tenant ID (`getClassLinkTenant`). Districts without one get `DEFAULT_CLASSLINK_TENANT`: no state student ID, never joins an existing email account, and no transcript requests.
+- Add an override to enable transcripts (`state`, `stateStudentIdField`, `transcriptEnabled`) or email-account joining (`allowedEmailDomains`) for a district. An invalid `CLASSLINK_TENANTS` value disables ClassLink sign-in entirely (fail closed).
 
 ### Linking rules
 
@@ -283,12 +289,12 @@ sequenceDiagram
 
 ### Configuration
 
-All optional; without client ID, secret and tenants the routes return `PRECONDITION_FAILED`.
+All optional; without client ID and secret the routes return `PRECONDITION_FAILED`. `CLASSLINK_TENANTS` is optional (overrides only).
 
-| Key                                                                                                                                                                                                                           | Where                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` (comma list, exact match, include native `<bundleId>://auth/classlink/callback`), `CLASSLINK_MAX_AUTH_AGE_SECONDS`                                                       | stage config                                                                                                                            |
-| `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS` (JSON map: displayName, state, stateStudentIdField, allowedEmailDomains, transcriptEnabled), `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` | runtime secrets bundle (`PROVIDER_SECRETS`); never in stage files, which would override the bundle and publish district/partner details |
+| Key                                                                                                                                                                                                                                                              | Where                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` (comma list, exact match, include native `<bundleId>://auth/classlink/callback`), `CLASSLINK_MAX_AUTH_AGE_SECONDS`                                                                                          | stage config                                                                                                                            |
+| `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS` (optional JSON map of per-district overrides: displayName, state, stateStudentIdField, allowedEmailDomains, transcriptEnabled), `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` | runtime secrets bundle (`PROVIDER_SECRETS`); never in stage files, which would override the bundle and publish district/partner details |
 
 ### Operations
 

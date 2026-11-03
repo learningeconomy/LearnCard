@@ -1,14 +1,5 @@
 import { TRPCError } from '@trpc/server';
 
-export class ClassLinkTenantNotAllowed extends TRPCError {
-    readonly messageKey = 'classlink.tenantNotAllowed';
-
-    constructor() {
-        super({ code: 'FORBIDDEN', message: 'Your district does not support this sign-in yet.' });
-        this.name = 'ClassLinkTenantNotAllowed';
-    }
-}
-
 export class ClassLinkEmailMissing extends TRPCError {
     readonly messageKey = 'classlink.emailMissing';
 

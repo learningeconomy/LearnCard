@@ -19,7 +19,10 @@ vi.mock('../src/services/delivery', () => ({
     getDeliveryService: () => ({ send }),
     getFrom: () => 'login@example.com',
 }));
-vi.mock('../src/helpers/classlink.config', () => ({ getClassLinkConfig: vi.fn() }));
+vi.mock('../src/helpers/classlink.config', async importOriginal => ({
+    ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),
+    getClassLinkConfig: vi.fn(),
+}));
 vi.mock('@cache', async () => {
     const { default: Redis } = await import('ioredis-mock');
     const node = new Redis();
@@ -90,6 +93,16 @@ describe('ClassLink personal email', () => {
             caller().startPersonalEmail({ email: ' Student@EXAMPLE.EDU ' })
         ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         expect(await cache.get(key)).toBeNull();
+        expect(send).not.toHaveBeenCalled();
+    });
+    it('rejects the ClassLink email domain for a district without an override', async () => {
+        vi.mocked(getClassLinkConfig).mockReturnValue({
+            ...getClassLinkConfig()!,
+            tenants: {},
+        });
+        await expect(
+            caller().startPersonalEmail({ email: 'other@example.edu' })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         expect(send).not.toHaveBeenCalled();
     });
     it('rejects another subject without changing either record', async () => {

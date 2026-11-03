@@ -26,18 +26,14 @@ import { z } from 'zod';
 import { environment } from '@environment';
 import { didAndChallengeRoute, openRoute, t } from '@routes';
 import app from '../firebase';
-import { getClassLinkConfig } from '@helpers/classlink.config';
+import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import {
     exchangeClassLinkCode,
     getClassLinkDiscovery,
     getClassLinkEmail,
     verifyClassLinkIdToken,
 } from '@helpers/classlink.helpers';
-import {
-    ClassLinkEmailMissing,
-    ClassLinkTenantNotAllowed,
-    ClassLinkTokenInvalid,
-} from '@helpers/classlink.errors';
+import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
 import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 import {
@@ -141,9 +137,7 @@ export const classlinkRouter = t.router({
                     nonce: input.nonce,
                 });
                 const tenantId = claims.classLink_tenant_id;
-                if (!Object.prototype.hasOwnProperty.call(config.tenants, tenantId))
-                    throw new ClassLinkTenantNotAllowed();
-                const tenant = config.tenants[tenantId]!;
+                const tenant = getClassLinkTenant(config, tenantId);
                 const identityKey = `classlink:${tenantId}:${claims.classLink_sourcedId}`;
                 // Lookup before the verification guard so an unsafe existing-email join is CONFLICT.
                 const email = (claims.email?.trim() || claims.or_email?.trim())?.toLowerCase();
@@ -232,11 +226,7 @@ export const classlinkRouter = t.router({
                             "Your school account doesn't have an email address yet. Ask your school to add one, then try again.",
                     });
                 }
-                if (
-                    error instanceof ClassLinkTokenInvalid ||
-                    error instanceof ClassLinkTenantNotAllowed
-                )
-                    throw error;
+                if (error instanceof ClassLinkTokenInvalid) throw error;
                 if (
                     error instanceof TRPCError &&
                     ['CONFLICT', 'BAD_REQUEST', 'PRECONDITION_FAILED'].includes(error.code)

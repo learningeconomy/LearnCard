@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getClassLinkConfig, getTranscriptIssuerConfig } from '../src/helpers/classlink.config';
-import { ClassLinkTenantsValidator } from '../src/types/classlink';
+import {
+    getClassLinkConfig,
+    getClassLinkTenant,
+    getTranscriptIssuerConfig,
+} from '../src/helpers/classlink.config';
+import { ClassLinkTenantsValidator, DEFAULT_CLASSLINK_TENANT } from '../src/types/classlink';
 
 const { env } = vi.hoisted(() => ({
     env: {
@@ -66,6 +70,30 @@ describe('ClassLink configuration', () => {
                 'tenant-long': { ...validTenants['tenant-test'], state: 'XXX' },
             })
         ).toThrow();
+    });
+
+    it('works without CLASSLINK_TENANTS and treats every district with safe defaults', () => {
+        env.CLASSLINK_TENANTS = undefined;
+        const config = getClassLinkConfig();
+        expect(config).toMatchObject({ clientId: 'client-id', tenants: {} });
+        expect(getClassLinkTenant(config!, 'any-district')).toEqual(DEFAULT_CLASSLINK_TENANT);
+        expect(DEFAULT_CLASSLINK_TENANT).toMatchObject({
+            allowedEmailDomains: [],
+            transcriptEnabled: false,
+        });
+    });
+
+    it('applies overrides only for listed districts, ignoring prototype keys', () => {
+        const config = getClassLinkConfig()!;
+        expect(getClassLinkTenant(config, 'tenant-test')).toEqual(validTenants['tenant-test']);
+        for (const id of ['other', 'toString', '__proto__'])
+            expect(getClassLinkTenant(config, id)).toEqual(DEFAULT_CLASSLINK_TENANT);
+    });
+
+    it('disables ClassLink when CLASSLINK_TENANTS is present but invalid', () => {
+        env.CLASSLINK_TENANTS = '{not json';
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        expect(getClassLinkConfig()).toBeNull();
     });
 
     it('returns null when required ClassLink configuration is unset', () => {

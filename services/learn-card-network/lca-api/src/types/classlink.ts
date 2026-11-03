@@ -12,6 +12,18 @@ export const ClassLinkTenantConfigValidator = z.object({
 export const ClassLinkTenantsValidator = z.record(z.string(), ClassLinkTenantConfigValidator);
 
 export type ClassLinkTenantConfig = z.infer<typeof ClassLinkTenantConfigValidator>;
+
+/**
+ * Settings for any ClassLink district without an override in CLASSLINK_TENANTS.
+ * Sign-in works; joining an existing email account and transcript requests stay off.
+ */
+export const DEFAULT_CLASSLINK_TENANT: ClassLinkTenantConfig = Object.freeze({
+    displayName: '',
+    state: '',
+    stateStudentIdField: '',
+    allowedEmailDomains: [],
+    transcriptEnabled: false,
+});
 export type ClassLinkConfig = {
     clientId: string;
     clientSecret: string;

@@ -34,7 +34,10 @@ vi.mock('@routes', async () => {
     const t = initTRPC.create();
     return { t, openRoute: t.procedure, didAndChallengeRoute: t.procedure };
 });
-vi.mock('../src/helpers/classlink.config', () => ({ getClassLinkConfig: vi.fn() }));
+vi.mock('../src/helpers/classlink.config', async importOriginal => ({
+    ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),
+    getClassLinkConfig: vi.fn(),
+}));
 vi.mock('../src/helpers/classlink.helpers', async importOriginal => ({
     ...(await importOriginal<typeof import('../src/helpers/classlink.helpers')>()),
     getClassLinkDiscovery: vi.fn(async () => ({
@@ -245,6 +248,21 @@ describe('ClassLink sign-in broker', () => {
             expect(firebase.createUser).not.toHaveBeenCalled();
         }
     );
+    it('signs in a district without an override using safe defaults', async () => {
+        config.tenants = {};
+        expect(await caller().exchangeCode(exchange)).toEqual({ token: `custom-${uid}` });
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            firebaseUid: uid,
+            state: '',
+            stateStudentId: null,
+        });
+    });
+    it('never joins an existing email account for a district without an override', async () => {
+        config.tenants = {};
+        firebase.getUserByEmail.mockResolvedValue({ uid: 'existing-user', emailVerified: true });
+        await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toBeNull();
+    });
     it('allows a missing state ID, uses iat fallback, and does not mark staff as minors', async () => {
         delete claims.api_fields;
         delete claims.auth_time;

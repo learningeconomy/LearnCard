@@ -18,7 +18,8 @@ vi.mock('axios', () => ({ default: { post: vi.fn() } }));
 vi.mock('@helpers/learnCard.helpers', () => ({
     getLearnCard: async () => ({ id: { keypair: mocks.keypair } }),
 }));
-vi.mock('../src/helpers/classlink.config', () => ({
+vi.mock('../src/helpers/classlink.config', async importOriginal => ({
+    ...(await importOriginal<typeof import('../src/helpers/classlink.config')>()),
     getClassLinkConfig: vi.fn(),
     getTranscriptIssuerConfig: vi.fn(),
 }));
@@ -210,6 +211,17 @@ describe('transcript requests', () => {
             code: 'FORBIDDEN',
             message: 'Sign in with ClassLink to request your transcript.',
         });
+    });
+    it('reports not_enabled for a district without an override', async () => {
+        config.tenants = {};
+        expect(await caller().getStatus()).toMatchObject({
+            eligible: false,
+            reason: 'not_enabled',
+        });
+        await expect(caller().request({ consent: true })).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+        });
+        expect(axios.post).not.toHaveBeenCalled();
     });
     it.each(['reauth_required', 'no_state_id', 'not_enabled'] as const)(
         'reports and blocks %s',
