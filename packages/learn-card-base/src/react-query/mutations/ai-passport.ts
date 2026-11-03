@@ -112,6 +112,15 @@ export const queueAiInsightCredentialRefresh = async ({
     return aiPassportRefreshPromise;
 };
 
+const createAssessmentAttemptId = (): string | undefined => {
+    try {
+        return globalThis.crypto?.randomUUID?.();
+    } catch {
+        // Correlation metadata must not prevent assessment generation.
+        return undefined;
+    }
+};
+
 export const usePreloadAssessment = () => {
     const queryClient = useQueryClient();
 
@@ -125,7 +134,7 @@ export const usePreloadAssessment = () => {
             summaryCredential: VC;
             summaryCredentialUri?: string;
         }) => {
-            const attemptId = crypto.randomUUID();
+            const attemptId = createAssessmentAttemptId();
             const startedAt = performance.now();
             let stage = 'request';
             let httpStatus: number | undefined;

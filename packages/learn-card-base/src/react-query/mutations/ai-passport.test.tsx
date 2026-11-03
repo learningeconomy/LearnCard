@@ -2,7 +2,7 @@
 import React, { type ReactNode } from 'react';
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
 
 import { usePreloadAssessment, useFinishAssessmentMutation } from './ai-passport';
@@ -54,6 +54,35 @@ const payload = {
 
 describe('assessment request failures', () => {
     beforeEach(() => vi.clearAllMocks());
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each([
+        ['missing crypto', undefined],
+        ['missing randomUUID', {}],
+        [
+            'throwing randomUUID',
+            {
+                randomUUID: () => {
+                    throw new Error('Private random source error');
+                },
+            },
+        ],
+    ])('still requests and caches questions with %s', async (_name, cryptoValue) => {
+        vi.stubGlobal('crypto', cryptoValue);
+        const assessment = [{ id: 1, question: 'What did you learn?', type: 'text' }];
+        mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify(assessment)));
+        const { result, queryClient } = setup();
+        await result.current.mutateAsync(payload);
+        const request = JSON.parse(mocks.fetch.mock.calls[0][1].body);
+        expect(request).not.toHaveProperty('attemptId');
+        expect(request.summaryCredential).toEqual(payload.summaryCredential);
+        expect(queryClient.getQueryData(['assessment', payload.summaryCredential.boostId])).toEqual(
+            assessment
+        );
+        expect(JSON.stringify(mocks.logError.mock.calls)).not.toContain(
+            'Private random source error'
+        );
+    });
 
     it('preserves an explicit quota error for the UI and does not cache the failure', async () => {
         mocks.fetch.mockResolvedValueOnce(
