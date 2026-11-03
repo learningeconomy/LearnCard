@@ -2011,7 +2011,13 @@
             "confirmPin": "Confirma tu PIN",
             "confirmPinDesc": "Introduce tu PIN de nuevo para confirmarlo.",
             "trivial": "Elige un PIN más difícil de adivinar.",
-            "mismatch": "Los PIN no coinciden."
+            "mismatch": "Los PIN no coinciden.",
+            "samePin": "Elige un PIN diferente del que acabas de usar.",
+            "newPinRequired": {
+                "title": "Elige un nuevo PIN de recuperación",
+                "body": "Tu PIN de recuperación se introdujo incorrectamente antes, así que le quedan menos intentos. Elige un PIN diferente de 6 dígitos para recuperar todos tus intentos.",
+                "skipNote": "Si omites este paso, tu PIN actual seguirá funcionando con menos intentos. Puedes elegir uno nuevo más tarde en Recuperación de cuenta."
+            }
         },
         "confirmCode": {
             "mismatch": "Ese código no es correcto. Inténtalo de nuevo.",
@@ -2384,7 +2390,10 @@
             "secure": "Sí, proteger mi cuenta",
             "wrongAttemptsOne": "Tu PIN se introdujo incorrectamente una vez antes de este inicio de sesión. Si no fuiste tú, protege tu cuenta.",
             "wrongAttempts": "Tu PIN se introdujo incorrectamente {{count}} veces antes de este inicio de sesión. Si no fuiste tú, protege tu cuenta.",
-            "later": "También puedes hacerlo más tarde en Recuperación de cuenta."
+            "later": "También puedes hacerlo más tarde en Recuperación de cuenta.",
+            "newPin": "Elige un nuevo PIN para mantener tu cuenta protegida. Hasta que lo hagas, tu PIN actual seguirá funcionando con menos intentos.",
+            "choosePin": "No, elegir un nuevo PIN",
+            "notNow": "Ahora no"
         },
         "secureAccount": {
             "title": "Protege tu cuenta",
@@ -2411,13 +2420,15 @@
             "conflict": "Tu cuenta cambió mientras la protegíamos. Inténtalo de nuevo.",
             "failed": "No pudimos terminar de proteger tu cuenta. Inténtalo de nuevo.",
             "sessionExpired": "Tu sesión expiró. Vuelve a iniciar sesión para proteger tu cuenta.",
-            "opening": "Abriendo la seguridad de la cuenta..."
+            "opening": "Abriendo la seguridad de la cuenta...",
+            "pinDescNewPin": "Elige un nuevo PIN de 6 dígitos, diferente del actual."
         },
         "signOutOtherDevices": {
             "title": "¿Hay una sesión iniciada en un lugar que no reconoces?",
             "description": "Impide que otros dispositivos e inicios de sesión vuelvan a entrar y desactiva tus métodos de recuperación anteriores.",
             "action": "Cerrar sesión en todos los demás dispositivos"
-        }
+        },
+        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo."
     },
     "alerts": {
         "title": "Alertas",

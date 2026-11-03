@@ -1382,7 +1382,10 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         // target blob whose plaintext already carries either field, since
         // the enclave always fills them in from the source blob instead.
         recoveryEmail = '',
-        recoveryLanguage = ''
+        recoveryLanguage = '',
+        // Same-PIN refresh after a PIN sign-in (E): the server writes only while the
+        // current PIN still shows exactly these charges.
+        expectedPinCharges?: { attemptsRemaining: number; wrongAttempts: number }
     ): Promise<void> => {
         if (!config.escrow?.enabled) throw new Error('Escrow enrollment is disabled');
         if (!signDidAuthVp) throw new Error('DID proof signing is required for escrow enrollment');
@@ -1461,6 +1464,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 ...(signedIntent
                     ? { signedIntent, sourceEnvelope: authority?.envelope ?? null }
                     : {}),
+                ...(expectedPinCharges ? { expectedPinCharges } : {}),
             }),
         });
         if (signedIntent) {
@@ -1774,6 +1778,39 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         };
     };
 
+    /**
+     * True unless the server proves no wrong entry is recorded against the current PIN.
+     * A missing count (legacy record, older server, failed lookup) is treated as "wrong
+     * entries recorded", so the same PIN never gets a fresh budget on a guess.
+     */
+    const pinHasRecordedWrongAttempts = (escrowPin: unknown): boolean => {
+        const status = escrowPin as { state?: unknown; wrongAttempts?: unknown } | undefined;
+        if (status?.state === 'none') return false;
+        return typeof status?.wrongAttempts !== 'number' || status.wrongAttempts > 0;
+    };
+
+    /**
+     * The charges a same-PIN refresh may replace, or undefined when it must not run:
+     * zero wrong entries before AND after this release, and exactly one charge between
+     * the two reads (this release). Any other charge may be someone else's guess still
+     * in flight, so the PIN keeps its reduced budget. The server re-checks these
+     * charges in the write itself (`expectedPinCharges`).
+     */
+    const refreshablePinCharges = (
+        before: unknown,
+        after: unknown
+    ): { attemptsRemaining: number; wrongAttempts: number } | undefined => {
+        const pre = before as { state?: unknown; attemptsRemaining?: unknown } | undefined;
+        const post = after as { state?: unknown; attemptsRemaining?: unknown } | undefined;
+        if (pinHasRecordedWrongAttempts(before) || pinHasRecordedWrongAttempts(after))
+            return undefined;
+        if (pre?.state !== 'enabled' || post?.state !== 'enabled') return undefined;
+        if (typeof pre.attemptsRemaining !== 'number' || typeof post.attemptsRemaining !== 'number')
+            return undefined;
+        if (post.attemptsRemaining !== pre.attemptsRemaining - 1) return undefined;
+        return { attemptsRemaining: post.attemptsRemaining, wrongAttempts: 0 };
+    };
+
     /** New salt and verifier for a PIN just proven; undefined when it fails the PIN rules. */
     const freshPinMaterial = async (
         pin: string
@@ -1816,8 +1853,11 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
     /**
      * PIN sign-in with the login already bound to the account (the default "keep"
      * path). Nothing is re-split and no server state changes apart from re-setting the
-     * same PIN for a fresh attempt budget. `pin` is used in this call only: never
-     * stored in pending/retry state, logged or reported.
+     * same PIN for a fresh attempt budget. That re-set runs only when the server shows
+     * zero wrong entries against the current PIN at release time; otherwise the PIN
+     * keeps its reduced budget and `newPinRequired` asks the user for a different PIN,
+     * so a guesser gets at most one budget per PIN in total. `pin` is used in this
+     * call only: never stored in pending/retry state, logged or reported.
      *
      * Version race: if another device rotated after the release, the device is stored
      * at the released version as long as the server still holds it in history
@@ -1839,7 +1879,9 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             authShare: string;
             shareVersion: number;
         },
-        pin: string
+        pin: string,
+        /** PIN status read before this release; undefined when that read failed. */
+        pinBefore: unknown
     ): Promise<RecoveryResult> => {
         const storage = guardedStorage();
         const generation = storageGeneration;
@@ -1850,65 +1892,80 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             }
         };
 
-        const mode = await withShareUpdateLock(storage, storageId, () =>
-            withRotationLock(async (): Promise<'kept' | 'deferred-rotation'> => {
-                assertActive();
-                const current = await fetchAuthShareRaw(
-                    serverUrl,
-                    params.token,
-                    params.providerType,
-                    undefined,
-                    tenantId
-                );
-                assertActive();
-                if (
-                    !current ||
-                    current.primaryDid !== released.primaryDid ||
-                    typeof current.shareVersion !== 'number'
-                ) {
-                    throw new PinSignInStaleError();
-                }
-                let mode: 'kept' | 'deferred-rotation';
-                if (current.shareVersion === released.shareVersion) {
-                    if (authShareToString(current.authShare) !== released.authShare) {
+        const { mode, newPinRequired, refreshCharges } = await withShareUpdateLock(
+            storage,
+            storageId,
+            () =>
+                withRotationLock(async () => {
+                    assertActive();
+                    const current = await fetchAuthShareRaw(
+                        serverUrl,
+                        params.token,
+                        params.providerType,
+                        undefined,
+                        tenantId
+                    );
+                    assertActive();
+                    if (
+                        !current ||
+                        current.primaryDid !== released.primaryDid ||
+                        typeof current.shareVersion !== 'number'
+                    ) {
                         throw new PinSignInStaleError();
                     }
-                    mode = 'kept';
-                } else {
-                    const historical =
-                        current.shareVersion > released.shareVersion
-                            ? await fetchAuthShareRaw(
-                                  serverUrl,
-                                  params.token,
-                                  params.providerType,
-                                  released.shareVersion,
-                                  tenantId
-                              )
-                            : null;
-                    if (authShareToString(historical?.authShare) !== released.authShare) {
-                        throw new PinSignInStaleError();
+                    let mode: 'kept' | 'deferred-rotation';
+                    if (current.shareVersion === released.shareVersion) {
+                        if (authShareToString(current.authShare) !== released.authShare) {
+                            throw new PinSignInStaleError();
+                        }
+                        mode = 'kept';
+                    } else {
+                        const historical =
+                            current.shareVersion > released.shareVersion
+                                ? await fetchAuthShareRaw(
+                                      serverUrl,
+                                      params.token,
+                                      params.providerType,
+                                      released.shareVersion,
+                                      tenantId
+                                  )
+                                : null;
+                        if (authShareToString(historical?.authShare) !== released.authShare) {
+                            throw new PinSignInStaleError();
+                        }
+                        mode = 'deferred-rotation';
                     }
-                    mode = 'deferred-rotation';
-                }
-                assertActive();
-                await adoptReleasedShare(
-                    storage,
-                    storageId,
-                    released,
-                    released.shareVersion,
-                    current.shareVersion
-                );
-                pendingIdentityRecovery = undefined;
-                return mode;
-            })
+                    assertActive();
+                    await adoptReleasedShare(
+                        storage,
+                        storageId,
+                        released,
+                        released.shareVersion,
+                        current.shareVersion
+                    );
+                    pendingIdentityRecovery = undefined;
+                    // Both reads count: the one after this release (a success never resets the
+                    // count) and the one before it (a legacy record without a verified count
+                    // reports 0 once any release has been reserved, so only the earlier read
+                    // shows that its history is unknown).
+                    return {
+                        mode,
+                        newPinRequired:
+                            pinHasRecordedWrongAttempts(pinBefore) ||
+                            pinHasRecordedWrongAttempts(current.escrowPin),
+                        refreshCharges: refreshablePinCharges(pinBefore, current.escrowPin),
+                    };
+                })
         );
 
         // Same PIN, new salt and verifier, enrolled at the same version: a fresh
         // attempt budget without a rotation. Skipped after a race (the other device's
-        // rotation already re-enrolled escrow). A failure leaves the PIN at this
-        // version valid, so nothing is cleared and no repair is scheduled.
+        // rotation already re-enrolled escrow) and whenever wrong entries are recorded
+        // against this PIN (the user must pick a different PIN instead). A failure
+        // leaves the PIN at this version valid, so nothing is cleared and no repair is
+        // scheduled.
         let pinRefreshed = false;
-        if (mode === 'kept' && params.signDidAuthVp) {
+        if (mode === 'kept' && !newPinRequired && refreshCharges && params.signDidAuthVp) {
             const pinMaterial = await freshPinMaterial(pin);
             pinRefreshed =
                 pinMaterial !== undefined &&
@@ -1925,7 +1982,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     false,
                     storage.assertCurrent,
                     params.options?.recoveryEmail,
-                    params.options?.recoveryLanguage
+                    params.options?.recoveryLanguage,
+                    refreshCharges
                 ));
         }
         assertActive();
@@ -1934,7 +1992,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
             did: released.primaryDid,
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode, pinRefreshed },
+            pinSignIn: { mode, pinRefreshed, newPinRequired },
         };
     };
 
@@ -2021,12 +2079,25 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         if (activeStorageId !== storageId || storageGeneration !== generation) {
             throw new Error('This recovery request was cancelled.');
         }
+        // The budget is never refreshed here; this only tells the app whether the PIN
+        // has recorded wrong entries (unknown counts as yes) so it asks for a new one.
+        const status = await fetchAuthShareRaw(
+            serverUrl,
+            params.token,
+            params.providerType,
+            undefined,
+            tenantId
+        ).catch(() => null);
         return {
             privateKey: pending.privateKey,
             did: pending.primaryDid,
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode: 'relinked', pinRefreshed: false },
+            pinSignIn: {
+                mode: 'relinked',
+                pinRefreshed: false,
+                newPinRequired: pinHasRecordedWrongAttempts(status?.escrowPin),
+            },
         };
     };
 
@@ -3113,6 +3184,21 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 // recovery-email session instead (lost-login sign-in).
                 if (input.method === 'escrow-pin' && !token && !input.recoverySessionToken)
                     throw new Error('PIN recovery requires signing in first.');
+                // (E) The PIN status before this release, for the same-PIN refresh
+                // decision in completePinSignInKeep. A failed read counts as unknown.
+                const pinBefore =
+                    input.method === 'escrow-pin' && token
+                        ? await fetchAuthShareRaw(
+                              serverUrl,
+                              token,
+                              providerType,
+                              undefined,
+                              tenantId
+                          ).then(
+                              (current: { escrowPin?: unknown } | null) => current?.escrowPin,
+                              () => undefined
+                          )
+                        : undefined;
                 const start =
                     input.method === 'escrow-pin'
                         ? await this.startEscrowRecovery!({
@@ -3198,7 +3284,8 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                             authShare,
                             shareVersion: material.shareVersion,
                         },
-                        input.pin
+                        input.pin,
+                        pinBefore
                     );
                 }
                 pendingIdentityRecovery = {

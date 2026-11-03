@@ -157,6 +157,9 @@ describe('escrow strategy', () => {
     let calls: Array<{ path: string; init?: RequestInit }>;
     let pinSalt: string | undefined;
     let attemptsRemaining: number;
+    let enrollBodies: Array<Record<string, unknown>>;
+    /** Verified wrong entries against the current PIN; undefined models a legacy record. */
+    let wrongAttempts: number | undefined;
     let holdNumber: number;
     let releasePolicy: 'hold' | 'pin';
     let consumed: boolean;
@@ -192,6 +195,8 @@ describe('escrow strategy', () => {
         calls = [];
         pinSalt = undefined;
         attemptsRemaining = 10;
+        enrollBodies = [];
+        wrongAttempts = 0;
         holdNumber = 0;
         releasePolicy = 'hold';
         consumed = false;
@@ -238,6 +243,7 @@ describe('escrow strategy', () => {
                         enabled: !!pinSalt && attemptsRemaining > 0,
                         attemptsRemaining,
                         ...(pinSalt ? { salt: pinSalt } : {}),
+                        ...(pinSalt && wrongAttempts !== undefined ? { wrongAttempts } : {}),
                     },
                     ...(escrowStale ? { escrowStale } : {}),
                 });
@@ -278,9 +284,18 @@ describe('escrow strategy', () => {
             }
             if (path === '/keys/escrow') {
                 expect(new Headers(init?.headers).get('Authorization')).toMatch(/^Bearer vp-/);
+                // Same-PIN refresh: written only while the PIN still shows these charges.
+                if (
+                    body.expectedPinCharges &&
+                    (body.expectedPinCharges.attemptsRemaining !== attemptsRemaining ||
+                        body.expectedPinCharges.wrongAttempts !== wrongAttempts)
+                )
+                    return new Response(null, { status: 409 });
+                enrollBodies.push(body);
                 blob = await decryptEscrowBlob(body.envelope, enclaveKeys.privateKey);
                 pinSalt = body.pinSalt;
                 attemptsRemaining = 10;
+                wrongAttempts = 0;
                 escrowStale = undefined;
                 expect(blob.did).toBe(did);
                 expect(blob.shareVersion).toBe(version);
@@ -332,6 +347,7 @@ describe('escrow strategy', () => {
                 consumed = true;
                 if (releasePolicy === 'pin' && body.pinProof !== blob.pinVerifier) {
                     attemptsRemaining--;
+                    if (wrongAttempts !== undefined) wrongAttempts++;
                     burned.push(hold().holdId);
                     cancelled = true;
                     return new Response(
@@ -344,6 +360,8 @@ describe('escrow strategy', () => {
                         { status: attemptsRemaining <= 0 ? 429 : 403 }
                     );
                 }
+                // Like lca-api, every PIN release is charged, right or wrong.
+                if (releasePolicy === 'pin') attemptsRemaining--;
                 return json({
                     sealedShare: await sealEscrowRelease(
                         { ...blob, holdId: hold().holdId, ...overrides },
@@ -871,7 +889,7 @@ describe('escrow strategy', () => {
             did,
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode: 'kept', pinRefreshed: true },
+            pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
         });
         // Nothing rotated: same version, same server share, no rebind or auth-share write.
         expect(version).toBe(2);
@@ -908,6 +926,143 @@ describe('escrow strategy', () => {
         await expect(recoverPin()).resolves.toMatchObject({ pinSignIn: { mode: 'kept' } });
         expect(version).toBe(2);
     });
+
+    it('does not refresh the budget of a PIN with recorded wrong entries until a new PIN is set', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        await expect(recoverPin('246802')).rejects.toMatchObject({
+            name: 'EscrowPinMismatchError',
+        });
+        const saltBefore = pinSalt;
+        const verifier = blob!.pinVerifier;
+        calls = [];
+        // The owner signs in with the right PIN after a guess.
+        await expect(recoverPin()).resolves.toMatchObject({
+            escrowEnrolled: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        // Nothing re-set: same salt and verifier, the reduced budget stands.
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(pinSalt).toBe(saltBefore);
+        expect(blob?.pinVerifier).toBe(verifier);
+        // One wrong guess and one owner release, each charged.
+        expect(attemptsRemaining).toBe(8);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            escrowPin: { enabled: true, attemptsRemaining: 8, wrongAttempts: 1 },
+        });
+        // A second owner sign-in still gets no fresh budget for the same PIN.
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { pinRefreshed: false, newPinRequired: true },
+        });
+        expect(attemptsRemaining).toBe(7);
+
+        // Choosing a new PIN restores the full budget and a clean count.
+        await strategy.setEscrowPin!({ ...params, pin: '864209' });
+        expect(attemptsRemaining).toBe(10);
+        expect(await strategy.getEscrowEnrollmentState!(params)).toMatchObject({
+            escrowPin: { enabled: true, attemptsRemaining: 10, wrongAttempts: 0 },
+        });
+        await expect(recoverPin('864209')).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+        });
+    });
+
+    it('treats an unknown wrong-entry count as recorded and keeps the reduced budget', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        // A legacy PIN record without the verified counter.
+        wrongAttempts = undefined;
+        attemptsRemaining = 8;
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        // Only this release was charged; no fresh budget.
+        expect(attemptsRemaining).toBe(7);
+    });
+
+    it('keeps the reduced budget of a legacy PIN even when the count reads 0 after the release', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        // A legacy PIN record: no verified count before the release. lca-api's
+        // reservation then initialises the count to 0, so only the earlier read shows
+        // that the history is unknown.
+        wrongAttempts = undefined;
+        attemptsRemaining = 6;
+        const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            if (String(url).endsWith('/keys/escrow/complete')) wrongAttempts = 0;
+            return originalFetch(url, init);
+        });
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(attemptsRemaining).toBe(5);
+    });
+
+    it('does not refresh when another charge landed during the release (a guess still in flight)', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            // Someone else's reservation, not yet resolved as a wrong entry.
+            if (String(url).endsWith('/keys/escrow/complete')) attemptsRemaining--;
+            return originalFetch(url, init);
+        });
+        calls = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: false },
+        });
+        expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        expect(attemptsRemaining).toBe(8);
+    });
+
+    it('sends the expected charges with a same-PIN refresh and keeps the budget when they changed', async () => {
+        await strategy.setEscrowPin!({ ...params, pin: '135790' });
+        enrollBodies = [];
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: true },
+        });
+        expect(enrollBodies.at(-1)?.expectedPinCharges).toEqual({
+            attemptsRemaining: 9,
+            wrongAttempts: 0,
+        });
+
+        // A guess reserved after the client's check: the server refuses the write.
+        const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+        vi.mocked(fetch).mockImplementation(async (url, init) => {
+            const path = new URL(String(url)).pathname.replace('/api', '');
+            if (path === '/keys/escrow' && init?.method === 'POST') attemptsRemaining--;
+            return originalFetch(url, init);
+        });
+        const saltBefore = pinSalt;
+        await expect(recoverPin()).resolves.toMatchObject({
+            pinSignIn: { mode: 'kept', pinRefreshed: false },
+        });
+        expect(pinSalt).toBe(saltBefore);
+        expect(attemptsRemaining).toBe(8);
+    });
+
+    it.each([
+        [0, false],
+        [2, true],
+    ])(
+        'reports a needed new PIN after a lost-login sign-in (wrong entries: %s)',
+        async (recorded, expected) => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            wrongAttempts = recorded;
+            await strategy.executeRecovery({
+                token: '',
+                providerType,
+                input: { method: 'escrow-pin', pin: '135790', recoverySessionToken: 'otp' },
+                didFromPrivateKey: async () => did,
+            });
+            calls = [];
+            await expect(strategy.completeIdentityRecovery!(params)).resolves.toMatchObject({
+                pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: expected },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        }
+    );
 
     it('keeps a released PIN that no longer meets the PIN rules without re-setting it', async () => {
         await strategy.setEscrowPin!({ ...params, pin: '135790' });
@@ -1087,7 +1242,7 @@ describe('escrow strategy', () => {
             did,
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode: 'relinked', pinRefreshed: false },
+            pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: false },
         });
         expect(calls.some(call => call.path === '/keys/recovery-session/pin-sign-in')).toBe(true);
         expect(calls.some(call => call.path === '/keys/recovery-session/rebind')).toBe(false);
@@ -1282,7 +1437,8 @@ describe('escrow strategy', () => {
             did,
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode: 'kept', pinRefreshed: true },
+            // A wrong entry is recorded: no fresh budget for this PIN.
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
         });
         const starts = calls.filter(call => call.path === '/keys/escrow/recover');
         const completes = calls.filter(call => call.path === '/keys/escrow/complete');

@@ -281,8 +281,12 @@ sequenceDiagram
     alt Correct PIN (login already bound)
         Server-->>AC: recovery share released (server emails "new device signed in with your PIN")
         AC->>AC: reconstruct, check DID, store the released share as this device's share at version N
-        AC->>Server: re-enroll at N with the same PIN (new salt, fresh 10 attempts)
-        AC-->>UI: state: ready + pinSignIn (review sheet)
+        alt No wrong entry recorded against the PIN
+            AC->>Server: re-enroll at N with the same PIN (new salt, fresh 10 attempts)
+        else Wrong entries recorded (or count unknown)
+            AC-->>AC: no re-set; PIN keeps its reduced budget (newPinRequired)
+        end
+        AC-->>UI: state: ready + pinSignIn (review sheet; asks for a new PIN if required)
         opt User chooses "Secure my account"
             UI->>AC: secureAccount({ pin })
             AC->>Server: POST /keys/revoke-other-devices (re-split, wipe old versions, unlink other logins)
@@ -314,10 +318,18 @@ sequenceDiagram
 A successful PIN release **no longer re-splits the key or rebinds the account**:
 
 - **Login already bound** (`needs_recovery`): the strategy stores the released recovery share as
-  the device share at the released version N (same `shareVersion`), then re-sets the **same
-  PIN** at N (new salt and verifier, owner-signed `set` / Nitro `change`, fresh 10-attempt
-  budget). No auth-share write, no rebind: other devices, the recovery phrase, backup file,
-  passkey and email key all keep working. Result: `pinSignIn: { mode: 'kept' }`.
+  the device share at the released version N (same `shareVersion`). If, and only if, the
+  server's PIN status read **before and after** the release both show **zero** wrong entries
+  against the current PIN (`escrowPin.wrongAttempts === 0`) and exactly one charge between
+  them (this release), it then re-sets the **same PIN** at N (new salt and verifier,
+  owner-signed `set` / Nitro `change`, fresh 10-attempt budget). The re-set carries
+  `expectedPinCharges` (the post-release `attemptsRemaining` / `wrongAttempts`), and lca-api
+  writes it only while the PIN still shows exactly those charges, in the write's own filter,
+  so a guess reserved or resolved after the client's check is never wiped (CONFLICT; the PIN
+  keeps its reduced budget). No auth-share
+  write, no rebind: other devices, the recovery phrase, backup file, passkey and email key all
+  keep working. Result: `pinSignIn: { mode: 'kept' }`. See "New PIN after wrong entries"
+  below for the other case.
 - **Lost login** (`identity_recovery`, after the recovery-email code): `recover({ method:
 'escrow-pin', pin })` is now allowed in `choose_method`. The verified session proves the PIN
   start and is consumed by it, so every attempt needs a fresh code; a failed attempt returns to
@@ -334,11 +346,82 @@ A successful PIN release **no longer re-splits the key or rebinds the account**:
 - **PIN re-set fails** or the PIN fails today's PIN rules: the PIN at N stays valid and is not
   cleared (`pinRefreshed: false`); no clear-PIN repair is scheduled.
 
+#### New PIN after wrong entries
+
+A PIN that has seen wrong guesses never gets a fresh budget for the **same** PIN. When the
+status read before or after a successful release shows any wrong entry (`wrongAttempts > 0`),
+or cannot say (`wrongAttempts` missing: legacy record, older server, failed read), the strategy
+skips the
+same-PIN re-set and reports `pinSignIn: { pinRefreshed: false, newPinRequired: true }` (also for
+`relinked`, which never re-sets). The read before the release matters for legacy records:
+lca-api's reservation initialises a missing verified count to 0, so after any release such a
+record reads `wrongAttempts: 0` even though its history is unknown. Another charge between the
+two reads (for example someone else's guess still in flight) also skips the re-set, without
+asking for a new PIN. The coordinator then:
+
+- sets `ready.escrowPinChangeRequired: true` (derived on every state update from
+  `pinSignIn.newPinRequired`, or an enabled PIN with `wrongAttempts > 0` or a stored guard
+  tag, below);
+- keeps a tag of the PIN just used, never the PIN: HMAC-SHA-256 over the DID and the PIN,
+  keyed by a hash of the account's private key, in memory and in
+  `config.pinChangeGuardStorage` (default `localStorage`; `null` for memory only) under
+  `learncard:pin-change-guard:<did>`. Only someone who already holds the account key can test
+  PINs against it. `setEscrowPin(pin)` and `secureAccount({ pin })` reject that same PIN with
+  `SameEscrowPinError` before anything changes, in this session and after a restart on this
+  device. A different PIN goes through the usual owner-signed set, which starts a new PIN
+  generation with a full budget and a zero count; the tag and prompt are then cleared. The tag
+  is also dropped when the PIN is cleared, when the status shows an untouched new generation
+  (`attemptsRemaining === 10`), and by `forgetDevice()`;
+- `acknowledgePinSignIn()` / `dismissEscrowPinChange()` hide the prompt for this account for
+  this session only. The PIN keeps its reduced budget, and the prompt returns on the next app
+  start while `escrowPin.wrongAttempts > 0` (it also appears for an owner whose PIN collected
+  wrong guesses without any PIN sign-in).
+
+Bound: wrong guesses across any number of owner PIN sign-ins share one budget per PIN
+generation (10 attempts, `ESCROW_PIN_MAX_ATTEMPTS`, less the attempts already used); only the
+owner choosing a different PIN (or "Secure my account") starts a new one. Limits: the same-PIN
+check runs on the device that did the PIN sign-in (another of the owner's devices, or this one
+after its storage was cleared, still prompts while wrong entries are recorded but cannot
+compare the old PIN, because the server keeps only a derived verifier inside the sealed
+blob); a guess reserved before the pre-release read and still unresolved after the re-set
+could in principle go uncharged on the old generation (the enclave call that resolves it takes
+seconds; the window is that long); and every release (the owner's correct ones included) uses
+budget, so repeated PIN sign-ins without choosing a new PIN can lock the PIN and leave only the
+waiting period.
+
+Nitro: a `set` / `change` PIN action starts a new generation with `attempts_used: 0`
+(`services/escrow-enclave-app/src/policy/authority.rs`, ~L271-278), and `Replace` accepts the
+current `share_version` (`services/escrow-enclave-app/src/authority/intent.rs`, ~L292-293), so
+the same-PIN re-set at N gets a fresh budget. Checked by code reading, not a live enclave run.
+
+App (`apps/learn-card-app`): with `pinSignIn.newPinRequired` the post-sign-in review
+(`PinSignInReviewSheet`) replaces "No, everything's fine" with "No, choose a new PIN", keeps
+"Yes, secure my account" and the wrong-entry warning, and offers "Not now"
+(`acknowledgePinSignIn()`). On later starts `escrowPinChangeRequired` opens the same new-PIN
+prompt directly (`RecoveryPinSetupOverlay` reason `new-pin-required`; "Skip for now" calls
+`dismissEscrowPinChange()`). `SecureAccountFlow` asks for a different PIN in that state and
+returns to the PIN step on `SameEscrowPinError`.
+
+#### One recovery at a time
+
+Every recovery entry point (`recover()` for PIN, hold, phrase, passkey and backup;
+`prepareIdentityRecovery()`; `startEscrowRecovery()`; and the lost-login
+`sendIdentityRecoveryCode()` / `verifyIdentityRecoveryCode()`) runs under one synchronous
+in-flight guard. A second call while one is pending is rejected with `RecoveryInProgressError`
+(message "Recovery is already running") before it reads or writes any state, so it cannot
+consume the single-use recovery session, reset the identity state, or make the pending PIN
+completion see a state mismatch and cancel itself. `cancelIdentityRecovery()`, `logout()` and
+`forgetDevice()` stay available and move the recovery generation on: the abandoned step then
+discards its own result. After that, sending and verifying a new code work at once (they wait
+only for a step of the current generation), while a recovery method or hold start still waits
+until the abandoned step has settled and cleaned up the strategy's single pending identity. The UI must also disable method switching and submission while
+a recovery is pending; the guard is the backstop.
+
 The PIN is used only in memory for the call that proves it. It is never stored, logged, or kept
 for a retry.
 
 `ready.pinSignIn` (`PinSignInInfo`) drives the post-sign-in review: `{ mode, pinRefreshed,
-priorWrongAttempts? }`. `priorWrongAttempts` is the server's verified wrong-entry count
+newPinRequired, priorWrongAttempts? }`. `priorWrongAttempts` is the server's verified wrong-entry count
 (`escrowPin.wrongAttempts`) as first seen for that account in this coordinator session, so
 misses in this session never count; it is omitted when the server cannot say. A reload during
 recovery takes a new snapshot (which can over-report, never under-report). Clear it with

@@ -60,4 +60,63 @@ describe('PinSignInReviewSheet', () => {
         fireEvent.click(fine());
         expect(onFine).toHaveBeenCalledOnce();
     });
+
+    describe('when a new PIN is required', () => {
+        const choose = () => screen.getByRole('button', { name: 'No, choose a new PIN' });
+        const notNow = () => screen.getByRole('button', { name: 'Not now' });
+
+        it('asks for a new PIN instead of "everything is fine"', () => {
+            const onFine = vi.fn();
+            const onChooseNewPin = vi.fn();
+            render(
+                <PinSignInReviewSheet
+                    priorWrongAttempts={2}
+                    newPinRequired
+                    onFine={onFine}
+                    onChooseNewPin={onChooseNewPin}
+                    onSecure={vi.fn()}
+                />
+            );
+
+            expect(
+                screen.queryByRole('button', { name: "No, everything's fine" })
+            ).not.toBeInTheDocument();
+            expect(
+                screen.getByText(/Choose a new PIN to keep your account protected/)
+            ).toBeInTheDocument();
+            // The prior-attempt warning and the secure option stay.
+            expect(screen.getByRole('alert').textContent).toMatch(/incorrectly 2 times/);
+            expect(isPrimary(secure())).toBe(true);
+            expect(document.activeElement).toBe(choose());
+
+            fireEvent.click(choose());
+            expect(onChooseNewPin).toHaveBeenCalledOnce();
+            expect(onFine).not.toHaveBeenCalled();
+
+            fireEvent.click(notNow());
+            expect(onFine).toHaveBeenCalledOnce();
+        });
+
+        it('leads with the new PIN when the count is unknown', () => {
+            render(
+                <PinSignInReviewSheet
+                    newPinRequired
+                    onFine={vi.fn()}
+                    onChooseNewPin={vi.fn()}
+                    onSecure={vi.fn()}
+                />
+            );
+
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            expect(isPrimary(choose())).toBe(true);
+            expect(isPrimary(secure())).toBe(false);
+        });
+
+        it('falls back to the plain review without a new-PIN handler', () => {
+            render(<PinSignInReviewSheet newPinRequired onFine={vi.fn()} onSecure={vi.fn()} />);
+
+            expect(fine()).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: 'Not now' })).not.toBeInTheDocument();
+        });
+    });
 });

@@ -165,3 +165,19 @@ export const secureFlowOffersPin = ({
     pinEnabled: boolean | undefined;
     escrowEnrollment: string | undefined;
 }): boolean => afterPinSignIn || pinEnabled === true || escrowEnrollment === undefined;
+
+/**
+ * Whether the "choose a new PIN" prompt opens on its own. The coordinator sets
+ * `escrowPinChangeRequired` while wrong entries are recorded against the current PIN
+ * (unless dismissed this session); right after a PIN sign-in the review sheet asks
+ * first, so the prompt only opens directly on later renders and app starts.
+ */
+export const pinChangePromptOpens = ({
+    did,
+    changeRequired,
+    pinSignInPending,
+}: {
+    did: string | undefined;
+    changeRequired: boolean;
+    pinSignInPending: boolean;
+}): boolean => !!did && changeRequired && !pinSignInPending;

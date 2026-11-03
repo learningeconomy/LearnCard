@@ -50,6 +50,60 @@ describe('RecoveryPinSetupOverlay', () => {
         expect(screen.queryByText(/has been retired/)).not.toBeInTheDocument();
     });
 
+    it('asks for a different PIN when the current one has recorded wrong entries', () => {
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                reason="new-pin-required"
+            />
+        );
+
+        expect(screen.getByText('Choose a new recovery PIN')).toBeInTheDocument();
+        expect(screen.getByText(/so it has fewer tries left/)).toBeInTheDocument();
+        expect(
+            screen.getByText(/your current PIN keeps working with fewer tries left/)
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Skip for Now'));
+        expect(mockOnSkip).toHaveBeenCalledOnce();
+        expect(mockSetEscrowPin).not.toHaveBeenCalled();
+    });
+
+    it('rejects the PIN just used and asks again, without reporting success', async () => {
+        const same = new Error('Choose a different PIN from the one you just used.');
+        same.name = 'SameEscrowPinError';
+        mockSetEscrowPin.mockRejectedValueOnce(same).mockResolvedValueOnce(undefined);
+        render(
+            <RecoveryPinSetupOverlay
+                setPin={mockSetEscrowPin}
+                onComplete={mockOnComplete}
+                onSkip={mockOnSkip}
+                reason="new-pin-required"
+            />
+        );
+
+        const enter = (pin: string) =>
+            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                clipboardData: { getData: () => pin },
+            });
+        enter('135790');
+        enter('135790');
+
+        expect(
+            await screen.findByText('Choose a different PIN from the one you just used.')
+        ).toBeInTheDocument();
+        // Back on the first step: the PIN is entered from scratch.
+        expect(screen.getByText('Choose a new recovery PIN')).toBeInTheDocument();
+        expect(screen.queryByText('PIN set successfully')).not.toBeInTheDocument();
+
+        enter('246813');
+        enter('246813');
+        expect(await screen.findByText('PIN set successfully')).toBeInTheDocument();
+        expect(mockSetEscrowPin).toHaveBeenLastCalledWith('246813');
+    });
+
     it('uses first-time copy by default', () => {
         render(
             <RecoveryPinSetupOverlay

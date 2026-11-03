@@ -8,6 +8,7 @@ import {
     decidePinPromptAfterReady,
     settleEscrowRecoveryMarker,
     secureFlowOffersPin,
+    pinChangePromptOpens,
     type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 
@@ -356,6 +357,29 @@ describe('secureFlowOffersPin', () => {
                 pinEnabled: undefined,
                 escrowEnrollment: 'opted-out',
             })
+        ).toBe(false);
+    });
+});
+
+describe('pinChangePromptOpens', () => {
+    it('opens on start while wrong entries are recorded against the PIN', () => {
+        expect(
+            pinChangePromptOpens({ did: 'did:a', changeRequired: true, pinSignInPending: false })
+        ).toBe(true);
+    });
+
+    it('lets the post-sign-in review ask first', () => {
+        expect(
+            pinChangePromptOpens({ did: 'did:a', changeRequired: true, pinSignInPending: true })
+        ).toBe(false);
+    });
+
+    it('stays closed when no change is required (or it was dismissed) or nobody is signed in', () => {
+        expect(
+            pinChangePromptOpens({ did: 'did:a', changeRequired: false, pinSignInPending: false })
+        ).toBe(false);
+        expect(
+            pinChangePromptOpens({ did: undefined, changeRequired: true, pinSignInPending: false })
         ).toBe(false);
     });
 });

@@ -168,4 +168,39 @@ describe('SecureAccountFlow', () => {
         ).toBeInTheDocument();
         expect(screen.queryByText('private server details')).not.toBeInTheDocument();
     });
+
+    it('asks for a different PIN when the current one has recorded wrong entries', async () => {
+        const same = new Error('Choose a different PIN from the one you just used.');
+        same.name = 'SameEscrowPinError';
+        const onSecure = vi
+            .fn()
+            .mockRejectedValueOnce(same)
+            .mockResolvedValueOnce({ escrowEnrolled: true, pinKept: true });
+        renderFlow({ newPinRequired: true, onSecure });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Secure my account' }));
+        expect(
+            screen.getByText('Choose a new 6-digit PIN, different from your current one.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText(/To keep your current PIN/)).not.toBeInTheDocument();
+
+        pastePin('135790');
+        pastePin('135790');
+
+        // The same PIN is refused before anything changes; the flow stays on the PIN step.
+        expect(
+            await screen.findByText('Choose a different PIN from the one you just used.')
+        ).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Keep a recovery PIN' })).toBeInTheDocument();
+        expect(
+            screen.queryByText("We couldn't finish securing your account. Please try again.")
+        ).not.toBeInTheDocument();
+
+        pastePin('246813');
+        pastePin('246813');
+        expect(
+            await screen.findByRole('heading', { name: 'Your account is secured' })
+        ).toBeInTheDocument();
+        expect(onSecure).toHaveBeenLastCalledWith('246813');
+    });
 });

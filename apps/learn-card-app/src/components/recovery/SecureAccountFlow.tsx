@@ -22,6 +22,12 @@ export interface SecureAccountOutcome {
 interface SecureAccountFlowProps {
     /** The account has a recovery PIN today; the flow offers to keep or change it. */
     hasPin: boolean;
+    /**
+     * The current PIN has recorded wrong entries, so it is not offered for keeping: the
+     * user picks a different PIN (the coordinator rejects the one just used with
+     * SameEscrowPinError) or continues without one.
+     */
+    newPinRequired?: boolean;
     /** Passkeys can be set up here (web with WebAuthn); otherwise offer any method. */
     passkeyAvailable: boolean;
     /**
@@ -56,6 +62,7 @@ const describeSecureError = (cause: unknown): string => {
  */
 export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
     hasPin,
+    newPinRequired = false,
     passkeyAvailable,
     onSecure,
     onSetUpRecovery,
@@ -84,6 +91,12 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
             setOutcome(await onSecure(chosenPin));
             setStep('done');
         } catch (cause) {
+            // Nothing ran: ask for a different PIN instead of failing the whole flow.
+            if (cause instanceof Error && cause.name === 'SameEscrowPinError') {
+                setPinError(m['recovery.pin.samePin']());
+                setStep('pin');
+                return;
+            }
             setError(describeSecureError(cause));
             setStep('explain');
         } finally {
@@ -187,7 +200,9 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
                     <p className="text-sm text-grayscale-600 leading-relaxed">
                         {confirming
                             ? m['recovery.pin.confirmPinDesc']()
-                            : m['recovery.secureAccount.pinDesc']()}
+                            : newPinRequired
+                              ? m['recovery.secureAccount.pinDescNewPin']()
+                              : m['recovery.secureAccount.pinDesc']()}
                     </p>
                     <div className="flex justify-center py-2">
                         <RecoveryPinInput

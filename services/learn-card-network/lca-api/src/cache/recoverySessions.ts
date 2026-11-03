@@ -22,6 +22,13 @@ export interface RecoverySessionRecord {
     /** Account DID and share version the PIN release unlocked (server-side, never client input). */
     primaryDid?: string;
     shareVersion?: number;
+    /**
+     * The account's security epoch when the token (or the recovery session it came
+     * from) was minted. `/rebind` and `/pin-sign-in` only write while the account is
+     * still at this epoch, so a revoke or wiping rebind retires every older token.
+     * Read as 0 when absent (tokens minted before the field existed).
+     */
+    securityEpoch?: number;
 }
 
 export interface RecoveryOtpRecord {

@@ -25,6 +25,10 @@ export const describePinSignInError = (cause: unknown): PinSignInFailure => {
             blocked: false,
         };
     }
+    // Another recovery is still running; this attempt was rejected before it changed anything.
+    if (err.name === 'RecoveryInProgressError') {
+        return { message: m['recovery.inProgress'](), blocked: false };
+    }
     if (err.name === 'EscrowPinThrottledError') {
         return { message: m['recovery.pin.throttled'](), blocked: false };
     }

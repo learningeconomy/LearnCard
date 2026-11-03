@@ -49,6 +49,7 @@ import {
     upgradeContactMethodByAuthProvider,
     deleteUserKeyByAuthProvider,
     completeIdentityRebind,
+    getSecurityEpoch,
     linkAuthProviderKeepingShares,
     revokeOtherDeviceShares,
     findPendingEscrowHoldByAuthProvider,
@@ -260,6 +261,27 @@ export const requireRecoverySession = async (
     scope: 'recover' | 'rebind'
 ): Promise<AuthProviderMapping> => (await requireRecoverySessionRecord(token, scope)).authProvider;
 
+/** The security epoch a recovery token was minted at (0 for tokens minted before the field). */
+export const getRecoverySessionEpoch = (session: Pick<RecoverySessionRecord, 'securityEpoch'>) =>
+    session.securityEpoch ?? 0;
+
+export const STALE_RECOVERY_SESSION_MESSAGE =
+    'Your account security changed during recovery. Start again.';
+
+/**
+ * Reject a recovery token minted before the account's last revoke or wiping rebind.
+ * A read-side check for routes that only release material; the routes that write
+ * (`/rebind`, `/pin-sign-in`) also enforce the epoch inside the update filter.
+ */
+export const assertRecoverySessionEpoch = (
+    session: Pick<RecoverySessionRecord, 'securityEpoch'>,
+    userKey: MongoUserKeyType
+): void => {
+    if (getRecoverySessionEpoch(session) !== getSecurityEpoch(userKey)) {
+        throw new TRPCError({ code: 'CONFLICT', message: STALE_RECOVERY_SESSION_MESSAGE });
+    }
+};
+
 const notifyIdentityRebind = async (
     userKey: MongoUserKeyType,
     newContactMethod: ContactMethod,
@@ -291,6 +313,84 @@ const notifyIdentityRebind = async (
             );
         }
     });
+};
+
+/** Delivery budget for the "Secure my account" notice, so a slow provider never stalls the route. */
+export const ACCOUNT_SECURED_NOTICE_TIMEOUT_MS = 3_000;
+
+/**
+ * The account's established contact address and its verified recovery email,
+ * deduped case-insensitively. Read from the record as it was before the revoke: the
+ * revoke never changes either, and the owner's login may be the one just unlinked.
+ */
+const getAccountSecuredRecipients = (userKey: MongoUserKeyType): string[] => {
+    const candidates = [
+        userKey.contactMethod.type === 'email' ? userKey.contactMethod.value : undefined,
+        userKey.recoveryEmail && userKey.recoveryEmailVerifiedAt
+            ? userKey.recoveryEmail
+            : undefined,
+    ];
+    const recipients = new Set<string>();
+
+    for (const candidate of candidates) {
+        const normalized = candidate?.trim().toLowerCase();
+        if (normalized) recipients.add(normalized);
+    }
+
+    return [...recipients];
+};
+
+/**
+ * Tell the owner that "Secure my account" ran. If someone with the owner's login and
+ * PIN ran it first, the owner's own login was just unlinked, so this notice is their
+ * only signal (the PIN sign-in notice's secure link no longer helps them). Awaited
+ * within a bounded budget so it is not lost when the request ends; fail-open, never
+ * throws, and never logs addresses.
+ */
+const notifyAccountSecured = async (
+    userKey: MongoUserKeyType,
+    branding: Partial<TenantBranding> | undefined,
+    securedAt: Date
+): Promise<void> => {
+    const recipients = getAccountSecuredRecipients(userKey);
+    if (recipients.length === 0) return;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const send = Promise.allSettled(
+        recipients.map(to =>
+            getDeliveryService().send({
+                to,
+                templateAlias: 'account-secured',
+                templateModel: { securedAt: securedAt.toISOString() },
+                branding,
+                from: getFrom({ mailbox: 'recovery', branding }),
+            })
+        )
+    ).then(results => {
+        const failed = results.filter(result => result.status === 'rejected').length;
+        if (failed > 0) {
+            console.error('[revokeOtherDevices] Account-secured notice failed', {
+                failed,
+                total: results.length,
+            });
+        }
+    });
+
+    try {
+        await Promise.race([
+            send,
+            new Promise<void>(resolve => {
+                timer = setTimeout(() => {
+                    console.error('[revokeOtherDevices] Account-secured notice timed out');
+                    resolve();
+                }, ACCOUNT_SECURED_NOTICE_TIMEOUT_MS);
+            }),
+        ]);
+    } catch {
+        console.error('[revokeOtherDevices] Account-secured notice failed');
+    } finally {
+        clearTimeout(timer);
+    }
 };
 
 /** Cancel every pending escrow hold on the account (any linked login, either policy). */
@@ -440,6 +540,7 @@ export const keysRouter = t.router({
             const recoverySessionToken = await createRecoverySession({
                 scope: 'recover',
                 authProvider: verification.record.authProvider,
+                securityEpoch: getSecurityEpoch(userKey),
             });
 
             return {
@@ -476,10 +577,11 @@ export const keysRouter = t.router({
             })
         )
         .mutation(async ({ input }) => {
-            const authProvider = await requireRecoverySession(
+            const recoverSession = await requireRecoverySessionRecord(
                 input.recoverySessionToken,
                 'recover'
             );
+            const { authProvider } = recoverSession;
             if (input.type === 'escrow') {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -487,6 +589,7 @@ export const keysRouter = t.router({
                 });
             }
             const userKey = await requireUserKey(authProvider, 'Recovery account not found.');
+            assertRecoverySessionEpoch(recoverSession, userKey);
             const recoveryMethod = (userKey.recoveryMethods ?? []).find(method => {
                 if (method.type !== input.type || !isRecoveryMethodConfirmed(userKey, method)) {
                     return false;
@@ -516,6 +619,9 @@ export const keysRouter = t.router({
             const rebindSessionToken = await createRecoverySession({
                 scope: 'rebind',
                 authProvider,
+                // Inherit the recovery session's epoch, so a revoke at any point after
+                // the OTP still invalidates the whole chain at `/rebind`.
+                securityEpoch: getRecoverySessionEpoch(recoverSession),
             });
 
             return {
@@ -602,6 +708,10 @@ export const keysRouter = t.router({
                 ...(session.origin === 'pin-release'
                     ? { expectedShareVersion: session.shareVersion ?? -1 }
                     : {}),
+                // Every token origin (phrase, passkey, backup, waiting-period hold, PIN)
+                // is bound to the epoch it was minted at, enforced in the update filter:
+                // after a revoke or another wiping rebind, no older token can rebind.
+                expectedSecurityEpoch: getRecoverySessionEpoch(session),
             });
 
             if (!result) {
@@ -732,7 +842,10 @@ export const keysRouter = t.router({
             );
 
             if (alreadyLinked) {
-                if ((userKey.shareVersion ?? 1) !== session.shareVersion) {
+                if (
+                    (userKey.shareVersion ?? 1) !== session.shareVersion ||
+                    getSecurityEpoch(userKey) !== getRecoverySessionEpoch(session)
+                ) {
                     throw new TRPCError({
                         code: 'CONFLICT',
                         message: 'Your account changed while signing in. Try again.',
@@ -751,6 +864,7 @@ export const keysRouter = t.router({
                 newAuthProvider,
                 primaryDid: input.primaryDid,
                 shareVersion: session.shareVersion,
+                securityEpoch: getRecoverySessionEpoch(session),
             });
 
             if (!result) {
@@ -776,7 +890,10 @@ export const keysRouter = t.router({
      * go back to pending, escrow is cleared for the client to re-enroll, and every
      * login except the caller's is unlinked. One atomic CAS on `expectedShareVersion`;
      * a concurrent rotation gets CONFLICT. The private key is unchanged, so a device
-     * that already holds it is not evicted (SECURITY.md D19).
+     * that already holds it is not evicted (SECURITY.md D19). The security epoch
+     * advances, so every recovery token minted before the revoke is dead. After the
+     * commit the contact and verified recovery addresses get the `account-secured`
+     * notice (fail-open): the caller may not be the owner.
      */
     revokeOtherDevices: didAndChallengeRoute
         .meta({
@@ -848,6 +965,8 @@ export const keysRouter = t.router({
             await cancelPendingEscrowHolds(userKey, ctx.tenant).catch(() =>
                 console.error('[revokeOtherDevices] Pending escrow hold clean-up failed')
             );
+            // Fail-open after the commit: the owner may not be the one who ran this.
+            await notifyAccountSecured(userKey, ctx.tenant?.emailBranding, new Date());
 
             return {
                 success: true as const,

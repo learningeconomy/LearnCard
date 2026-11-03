@@ -10,8 +10,20 @@ interface PinSignInReviewSheetProps {
      * Undefined when the server could not say.
      */
     priorWrongAttempts?: number;
-    /** "No, everything's fine": the default answer. */
+    /**
+     * Wrong PIN entries are recorded against the current PIN (or the server could not
+     * say), so the same PIN was not re-set and has fewer tries left. The sheet then
+     * asks for a new PIN instead of "everything's fine".
+     */
+    newPinRequired?: boolean;
+    /**
+     * "No, everything's fine", or "Not now" when a new PIN is required: dismisses the
+     * sheet. A required new PIN is then asked for again on the next app start while
+     * wrong entries remain recorded.
+     */
     onFine: () => void;
+    /** "No, choose a new PIN": shown only when `newPinRequired`. */
+    onChooseNewPin?: () => void;
     /** "Yes, secure my account": opens the secure flow. */
     onSecure: () => void;
 }
@@ -19,14 +31,19 @@ interface PinSignInReviewSheetProps {
 /**
  * Shown once after a PIN sign-in, which kept the account as it was. Earlier wrong PIN
  * entries raise the warning and give "Secure my account" primary styling, but the
- * default (focused) answer is always "No, everything's fine".
+ * default (focused) answer is never the revoke: "No, everything's fine", or "No, choose
+ * a new PIN" when the PIN has recorded wrong entries (the same PIN never gets a fresh
+ * budget then; see RECOVERY.md "PIN sign-in").
  */
 export const PinSignInReviewSheet: React.FC<PinSignInReviewSheetProps> = ({
     priorWrongAttempts,
+    newPinRequired = false,
     onFine,
+    onChooseNewPin,
     onSecure,
 }) => {
     const warn = (priorWrongAttempts ?? 0) > 0;
+    const askNewPin = newPinRequired && !!onChooseNewPin;
     const primary =
         'w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500';
     const secondary =
@@ -64,13 +81,37 @@ export const PinSignInReviewSheet: React.FC<PinSignInReviewSheetProps> = ({
                     </div>
                 )}
 
+                {askNewPin && (
+                    <p className="text-sm text-grayscale-600 leading-relaxed">
+                        {m['recovery.pinSignInReview.newPin']()}
+                    </p>
+                )}
+
                 <div className="space-y-v3-3">
-                    <button autoFocus onClick={onFine} className={warn ? secondary : primary}>
-                        {m['recovery.pinSignInReview.fine']()}
-                    </button>
+                    {askNewPin ? (
+                        <button
+                            autoFocus
+                            onClick={onChooseNewPin}
+                            className={warn ? secondary : primary}
+                        >
+                            {m['recovery.pinSignInReview.choosePin']()}
+                        </button>
+                    ) : (
+                        <button autoFocus onClick={onFine} className={warn ? secondary : primary}>
+                            {m['recovery.pinSignInReview.fine']()}
+                        </button>
+                    )}
                     <button onClick={onSecure} className={warn ? primary : secondary}>
                         {m['recovery.pinSignInReview.secure']()}
                     </button>
+                    {askNewPin && (
+                        <button
+                            onClick={onFine}
+                            className="w-full py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
+                        >
+                            {m['recovery.pinSignInReview.notNow']()}
+                        </button>
+                    )}
                 </div>
 
                 <p className="text-xs text-grayscale-500 leading-relaxed">

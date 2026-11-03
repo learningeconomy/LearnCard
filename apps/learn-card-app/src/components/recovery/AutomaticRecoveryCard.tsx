@@ -6,7 +6,11 @@ import type { KeyDerivationStrategy } from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import { RecoveryPinInput } from './RecoveryPinInput';
 
+const isSameEscrowPinError = (cause: unknown): boolean =>
+    cause instanceof Error && cause.name === 'SameEscrowPinError';
+
 const pinErrorMessage = (cause: unknown): string => {
+    if (isSameEscrowPinError(cause)) return m['recovery.pin.samePin']();
     const message = cause instanceof Error ? cause.message : '';
     return [
         'PIN must contain 6–12 digits.',
@@ -112,7 +116,11 @@ export const AutomaticRecoveryCard: React.FC<AutomaticRecoveryProps> = ({
         } catch (e) {
             setError(pinErrorMessage(e));
             setPinConfirmInput('');
-            setPinMode('confirm');
+            // The PIN itself must change, so start over at the first entry.
+            if (isSameEscrowPinError(e)) {
+                setPinInput('');
+                setPinMode('set');
+            } else setPinMode('confirm');
         } finally {
             setLoading(null);
             busy.current = false;

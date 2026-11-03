@@ -642,6 +642,74 @@ describe('RecoveryFlowModal sign-in picker', () => {
         ).toBeTruthy();
     });
 
+    it('blocks every other method while a lost-login PIN sign-in is in flight', async () => {
+        let finishPin!: () => void;
+        withPin.onRecover = vi.fn(
+            () =>
+                new Promise<void>(resolve => {
+                    finishPin = resolve;
+                })
+        );
+        render(
+            <RecoveryFlowModal
+                {...base}
+                recoveryReason={undefined}
+                availableMethods={methods('passkey', 'phrase', 'backup', 'escrow')}
+                escrowRecovery={withPin}
+                identityPhase="choose_method"
+            />
+        );
+
+        pastePin();
+        await waitFor(() => expect(withPin.onRecover).toHaveBeenCalledOnce());
+
+        // The reviewer's sequence: submit the PIN, then switch to the phrase and submit.
+        const phrase = screen.getByRole('button', { name: /phrase/i });
+        expect(phrase).toHaveProperty('disabled', true);
+        for (const name of [/passkey/i, /backup/i, /^Can't|Get back into/i]) {
+            const button = screen.queryByRole('button', { name });
+            if (button) expect(button).toHaveProperty('disabled', true);
+        }
+        expect(screen.getByRole('button', { name: 'Cancel' })).toHaveProperty('disabled', true);
+        fireEvent.click(phrase);
+        expect(screen.queryByPlaceholderText(/word/i)).toBeNull();
+        expect(base.onRecoverWithPhrase).not.toHaveBeenCalled();
+
+        finishPin();
+        await waitFor(() =>
+            expect(screen.getByRole('button', { name: /phrase/i })).toHaveProperty(
+                'disabled',
+                false
+            )
+        );
+    });
+
+    it('explains a rejected second recovery without asking for a new code', async () => {
+        withPin.onRecover = vi.fn().mockRejectedValue(
+            Object.assign(new Error('Recovery is already running'), {
+                name: 'RecoveryInProgressError',
+            })
+        );
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('escrow')}
+                escrowRecovery={withPin}
+                identityPhase="choose_method"
+                recoveryReason={undefined}
+            />
+        );
+
+        pastePin();
+
+        expect(
+            await screen.findByText(
+                'Recovery is already running. Wait for it to finish, then try again.'
+            )
+        ).toBeTruthy();
+        expect(screen.queryByText(/each PIN try needs a new email code/)).toBeNull();
+    });
+
     it('says devices and methods still work after a lost-login PIN sign-in', () => {
         const { rerender } = render(
             <RecoveryFlowModal {...base} availableMethods={[]} identityPhase="success" />

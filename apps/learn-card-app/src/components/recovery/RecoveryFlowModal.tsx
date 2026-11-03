@@ -49,7 +49,12 @@ interface RecoveryFlowModalProps {
     onCancel: () => void;
 }
 
+/** Matched by name: the class can come from another bundle copy of learn-card-base. */
+const isRecoveryInProgress = (e: unknown): boolean =>
+    e instanceof Error && e.name === 'RecoveryInProgressError';
+
 const friendlyError = (e: unknown): string => {
+    if (isRecoveryInProgress(e)) return m['recovery.inProgress']();
     if (e instanceof Error) {
         if (e.message.includes('decrypt')) return m['recovery.incorrectPassword']();
         if (e.message.includes('network') || e.message.includes('fetch'))
@@ -162,6 +167,9 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
     const canShowScreen2 = !!escrowRecovery && hasEscrow;
     // Locked or unavailable PINs are not offered again in this flow; the message stays visible.
     const [pinBlockedMessage, setPinBlockedMessage] = useState<string | null>(null);
+    // A PIN sign-in is in flight. It shares one single-use session and one pending
+    // identity with every other method, so nothing else may start until it settles
+    // (the coordinator enforces the same rule with RecoveryInProgressError).
     const [pinBusy, setPinBusy] = useState(false);
     // A PIN sign-in keeps the account as it is, so it leads Screen 1. Screen 2 is the
     // 7-day hold only, the one path that still resets the account.
@@ -198,7 +206,8 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         } catch (cause) {
             // After the recovery-email code, a failed try sends the flow back to the email
             // step (each try needs a new code), so explain it there.
-            if (identityPhase) {
+            // A rejected second submission changed nothing, so no new code is needed.
+            if (identityPhase && !isRecoveryInProgress(cause)) {
                 const failure = describePinSignInError(cause);
                 setError(
                     failure.blocked
@@ -579,9 +588,11 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
             return (
                 <button
                     key={method.id}
-                    onClick={() => method.available && setActiveMethod(method.id)}
-                    disabled={!method.available}
-                    className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all ${
+                    onClick={() => method.available && !pinBusy && setActiveMethod(method.id)}
+                    disabled={!method.available || pinBusy}
+                    className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all disabled:cursor-not-allowed ${
+                        method.available && pinBusy ? 'opacity-40 ' : ''
+                    }${
                         method.available
                             ? isHero
                                 ? 'bg-emerald-50 hover:bg-emerald-100 text-grayscale-900 border border-emerald-100'
@@ -625,13 +636,16 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                         {pinBlockedAlert}
 
                         {escrowRecovery && (
-                            <EscrowRecoveryPanel
-                                key={escrowRecovery.scope}
-                                {...escrowRecovery}
-                                view="status"
-                                pinAvailable={false}
-                                available={hasEscrow}
-                            />
+                            // Hold actions wait too while a PIN sign-in is in flight.
+                            <fieldset disabled={pinBusy} className="m-0 min-w-0 border-0 p-0">
+                                <EscrowRecoveryPanel
+                                    key={escrowRecovery.scope}
+                                    {...escrowRecovery}
+                                    view="status"
+                                    pinAvailable={false}
+                                    available={hasEscrow}
+                                />
+                            </fieldset>
                         )}
 
                         {pinHero && (

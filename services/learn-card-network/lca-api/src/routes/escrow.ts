@@ -61,6 +61,7 @@ import {
     type EscrowHold,
     type MongoUserKeyType,
     type AuthProviderMapping,
+    getSecurityEpoch,
 } from '@models';
 import {
     AuthInputValidator,
@@ -69,7 +70,8 @@ import {
     verifyAndGetContactMethod,
     requireUserKey,
     assertDidOwner,
-    requireRecoverySession,
+    requireRecoverySessionRecord,
+    getRecoverySessionEpoch,
 } from './keys';
 import {
     getEscrowEnclave,
@@ -422,6 +424,44 @@ const removeEscrow = async (
     return { success: true, ...(receipt ? { receipt } : {}) };
 };
 
+/**
+ * Validate a same-PIN refresh's `expectedPinCharges` (E) against the current PIN and
+ * convert it to the stored counters for the write's compare-and-set. Rejected with
+ * CONFLICT when a wrong entry or another reservation has landed since the client's
+ * check, so the refresh never wipes a recorded or in-flight guess.
+ */
+const resolveExpectedPinCharges = (
+    input: {
+        pinSalt?: string | undefined;
+        clearPin?: boolean | undefined;
+        expectedPinCharges?: { attemptsRemaining: number; wrongAttempts: number } | undefined;
+    },
+    userKey: MongoUserKeyType
+): { failedAttempts: number; verifiedFailedAttempts: number } | undefined => {
+    const expected = input.expectedPinCharges;
+    if (!expected) return undefined;
+    if (!input.pinSalt || input.clearPin)
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid automatic recovery material.',
+        });
+    const pin = userKey.escrowPin;
+    const failedAttempts = ESCROW_PIN_MAX_ATTEMPTS - expected.attemptsRemaining;
+    if (
+        expected.wrongAttempts !== 0 ||
+        failedAttempts < 0 ||
+        !pin ||
+        pin.disabledAt ||
+        pin.failedAttempts !== failedAttempts ||
+        pin.verifiedFailedAttempts !== expected.wrongAttempts
+    )
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Recovery PIN attempts changed; please retry.',
+        });
+    return { failedAttempts, verifiedFailedAttempts: expected.wrongAttempts };
+};
+
 export const escrowRouter = t.router({
     getAttestation: openRoute
         .meta({ openapi: { method: 'GET', path: '/keys/escrow/attestation', tags: ['Keys'] } })
@@ -498,6 +538,19 @@ export const escrowRouter = t.router({
                 clearPin: z.boolean().optional(),
                 signedIntent: SignedEnrollmentIntentValidator.optional(),
                 sourceEnvelope: EscrowEnvelopeValidator.nullable().optional(),
+                /**
+                 * Same-PIN budget refresh after a PIN sign-in (E): the PIN status the
+                 * client saw right after its release. The new PIN is written only while
+                 * the current PIN still shows exactly these charges (no wrong entry and
+                 * no other reservation since), otherwise CONFLICT.
+                 */
+                expectedPinCharges: z
+                    .object({
+                        attemptsRemaining: z.number().int().nonnegative(),
+                        wrongAttempts: z.number().int().nonnegative(),
+                    })
+                    .strict()
+                    .optional(),
             }).strict()
         )
         .output(
@@ -523,6 +576,7 @@ export const escrowRouter = t.router({
                     message: 'Key material changed; please retry.',
                 });
             }
+            const expectedPinCharges = resolveExpectedPinCharges(input, userKey);
             if (isEscrowRemoteMode()) {
                 const enclave = getEscrowEnclave();
                 const signed = input.signedIntent;
@@ -609,7 +663,8 @@ export const escrowRouter = t.router({
                         enrollmentEpoch: result.enrollmentEpoch,
                         expectedBlob: oldBlob,
                         expectedPin: oldPin,
-                    }
+                    },
+                    expectedPinCharges
                 );
                 if (!stored)
                     throw new TRPCError({
@@ -718,7 +773,10 @@ export const escrowRouter = t.router({
                 authProvider,
                 blob,
                 input.shareVersion,
-                input.pinSalt ? { salt: input.pinSalt } : undefined
+                input.pinSalt ? { salt: input.pinSalt } : undefined,
+                undefined,
+                undefined,
+                expectedPinCharges
             );
             if (!stored)
                 throw new TRPCError({
@@ -784,13 +842,17 @@ export const escrowRouter = t.router({
                 });
             }
             let authProvider: AuthProviderMapping;
+            // Epoch of the recovery session, when started from one (lost-login recovery).
+            let recoverSessionEpoch: number | undefined;
             if (input.releasePolicy === 'pin') await limitPinCompletion(ctx.clientIp, 'start');
             if (input.recoverySessionToken !== undefined) {
                 try {
-                    authProvider = await requireRecoverySession(
+                    const session = await requireRecoverySessionRecord(
                         input.recoverySessionToken,
                         'recover'
                     );
+                    authProvider = session.authProvider;
+                    recoverSessionEpoch = getRecoverySessionEpoch(session);
                 } catch (error) {
                     if (!(error instanceof TRPCError) || error.code !== 'UNAUTHORIZED') throw error;
                     throw new TRPCError({ code: 'NOT_FOUND', message: unavailableMessage });
@@ -805,7 +867,10 @@ export const escrowRouter = t.router({
             if (
                 !userKey?.escrowBlob ||
                 userKey.escrowOptedOutAt ||
-                !hasConfirmedEscrow(userKey, userKey.escrowBlob.shareVersion)
+                !hasConfirmedEscrow(userKey, userKey.escrowBlob.shareVersion) ||
+                // A recovery session minted before a revoke or wiping rebind is stale.
+                (recoverSessionEpoch !== undefined &&
+                    recoverSessionEpoch !== getSecurityEpoch(userKey))
             ) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: unavailableMessage });
             }
@@ -1392,6 +1457,9 @@ export const escrowRouter = t.router({
             const rebindSessionToken = await createRecoverySession({
                 scope: 'rebind',
                 authProvider: hold.authProvider,
+                // Bound to the epoch read above for this release, for every policy: a
+                // revoke or wiping rebind after this point makes the token unusable.
+                securityEpoch: getSecurityEpoch(userKey),
                 // Only a PIN release may sign in without rotating (keys.completePinSignIn).
                 ...(hold.releasePolicy === 'pin'
                     ? {

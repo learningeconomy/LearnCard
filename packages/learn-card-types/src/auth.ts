@@ -278,8 +278,15 @@ export interface RecoveryResult {
      * stored at the released (historical) version and the next start-up advances it
      * with the usual non-wiping reconciliation. `pinRefreshed` is false when the
      * fresh-attempt-budget re-set did not run or failed; the PIN itself stays valid.
+     * `newPinRequired` is true when wrong PIN entries are recorded against the current
+     * PIN at release time (or the server could not say): the same PIN is then never
+     * re-set, so the user must choose a different PIN to restore the full budget.
      */
-    pinSignIn?: { mode: 'kept' | 'relinked' | 'deferred-rotation'; pinRefreshed: boolean };
+    pinSignIn?: {
+        mode: 'kept' | 'relinked' | 'deferred-rotation';
+        pinRefreshed: boolean;
+        newPinRequired: boolean;
+    };
 }
 
 /** Result of signing out every other device ("Secure my account"). */

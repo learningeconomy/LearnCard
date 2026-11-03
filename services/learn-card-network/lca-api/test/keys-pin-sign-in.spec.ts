@@ -8,9 +8,14 @@ import {
     splitPrivateKey,
     type EscrowEnvelope,
 } from '@learncard/sss-key-manager';
+import { Collection } from 'mongodb';
 import { client } from '@mongo';
 import { environment } from '@environment';
-import { createRecoverySession, consumeRecoverySession } from '@cache/recoverySessions';
+import {
+    createRecoverySession,
+    consumeRecoverySession,
+    getRecoveryOtpSendCacheKey,
+} from '@cache/recoverySessions';
 import { encryptAuthShare } from '@helpers/shareEncryption.helpers';
 import {
     createUserKeysIndexes,
@@ -46,6 +51,8 @@ let auth: { authToken: string; providerType: 'firebase' };
 const owner = () => getClient({ did, isChallengeValid: true });
 const newUidForRebind = () => `rebind-${randomUUID()}`;
 const record = () => findUserKeyByAuthProvider(authProvider.type, authProvider.id);
+/** The account by DID, for after a rebind replaced the owner's login. */
+const accountByDid = () => getUserKeysCollection().findOne({ primaryDid: did });
 const sealPin = (shareVersion: number): Promise<EscrowEnvelope> =>
     encryptEscrowBlob(
         { recoveryShare: shares.recoveryShare, did, shareVersion, pinVerifier: pinProof },
@@ -658,5 +665,488 @@ describe('PIN status and carry after a keep-mode PIN re-set', () => {
             shareVersion: 2,
             failedAttempts: 0,
         });
+    });
+});
+
+describe('same-PIN budget refresh with expected charges', () => {
+    const refresh = async (expectedPinCharges: {
+        attemptsRemaining: number;
+        wrongAttempts: number;
+    }) =>
+        owner().escrow.enroll({
+            ...auth,
+            envelope: await sealPin(1),
+            shareVersion: 1,
+            enclaveKeyId: keyId,
+            pinSalt: otherPinSalt,
+            expectedPinCharges,
+        });
+    const pinStatus = async () => (await owner().keys.getAuthShare(auth))?.escrowPin;
+
+    it('refreshes the budget when only the owner release was charged', async () => {
+        await enrollPin();
+        await completePin(await startPin());
+        expect(await pinStatus()).toMatchObject({ attemptsRemaining: 9, wrongAttempts: 0 });
+
+        await refresh({ attemptsRemaining: 9, wrongAttempts: 0 });
+
+        expect((await record())?.escrowPin).toMatchObject({
+            salt: otherPinSalt,
+            failedAttempts: 0,
+        });
+    });
+
+    it('refuses the refresh, changing nothing, when another reservation landed after the check', async () => {
+        await enrollPin();
+        await completePin(await startPin());
+        // Someone else's guess is reserved (charged) but not yet resolved.
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $inc: { 'escrowPin.failedAttempts': 1 } }
+        );
+        const before = await record();
+
+        await expect(refresh({ attemptsRemaining: 9, wrongAttempts: 0 })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+
+        expect(securityState(await record())).toEqual(securityState(before));
+    });
+
+    it('refuses the refresh when a wrong entry was recorded since the check', async () => {
+        await enrollPin();
+        await completePin(await startPin());
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        const before = await record();
+
+        await expect(refresh({ attemptsRemaining: 9, wrongAttempts: 0 })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        // Even with the current counts, a PIN with a recorded wrong entry is never refreshed.
+        await expect(refresh({ attemptsRemaining: 8, wrongAttempts: 1 })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+
+        expect(securityState(await record())).toEqual(securityState(before));
+    });
+
+    it('enforces the charges in the write itself (a reservation between read and write)', async () => {
+        await enrollPin();
+        await completePin(await startPin());
+        const before = await record();
+        // Land a reservation after the route's reads, just before its conditional write.
+        const realFindOneAndUpdate = Collection.prototype.findOneAndUpdate;
+        let raced = false;
+        vi.spyOn(Collection.prototype, 'findOneAndUpdate').mockImplementation(async function (
+            this: Collection,
+            ...args: unknown[]
+        ) {
+            if (!raced) {
+                raced = true;
+                await getUserKeysCollection().updateOne(
+                    { primaryDid: did },
+                    { $inc: { 'escrowPin.failedAttempts': 1 } }
+                );
+            }
+            return (realFindOneAndUpdate as (...a: unknown[]) => unknown).apply(this, args);
+        } as never);
+
+        await expect(refresh({ attemptsRemaining: 9, wrongAttempts: 0 })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+
+        expect(raced).toBe(true);
+        const after = await record();
+        expect(after?.escrowPin).toMatchObject({
+            salt: pinSalt,
+            failedAttempts: (before?.escrowPin?.failedAttempts ?? 0) + 1,
+        });
+        expect(after?.escrowBlob).toEqual(before?.escrowBlob);
+    });
+
+    it('rejects expected charges without a new PIN', async () => {
+        await enrollPin();
+        await expect(
+            owner().escrow.enroll({
+                ...auth,
+                envelope: await sealPin(1),
+                shareVersion: 1,
+                enclaveKeyId: keyId,
+                clearPin: true,
+                expectedPinCharges: { attemptsRemaining: 10, wrongAttempts: 0 },
+            })
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+});
+
+describe('security epoch: every recovery token dies at a revoke or wiping rebind', () => {
+    const newLogin = () => {
+        const uid = `fresh-${randomUUID()}`;
+        return { uid, authToken: makeMockToken(`${uid}@example.org`, uid) };
+    };
+    const revoke = (expectedShareVersion = 1) =>
+        owner().keys.revokeOtherDevices({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: 'owner-split', encryptedDek: '', iv: '' },
+            expectedShareVersion,
+        });
+    const rebind = (recoverySessionToken: string, authToken = newLogin().authToken) =>
+        owner().keys.completeRecoveryRebind({
+            recoverySessionToken,
+            newAuthToken: authToken,
+            providerType: 'firebase',
+            primaryDid: did,
+            authShare: { encryptedData: 'attacker-split', encryptedDek: '', iv: '' },
+        });
+    /** A confirmed phrase method and verified recovery email, so the real OTP flow works. */
+    const addPhraseRecovery = async (): Promise<string> => {
+        const recoveryEmail = `recover-${randomUUID()}@example.com`;
+        const now = new Date();
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            {
+                $set: { recoveryEmail, recoveryEmailVerifiedAt: now },
+                $push: {
+                    recoveryMethods: {
+                        type: 'phrase',
+                        createdAt: now,
+                        confirmationStatus: 'confirmed',
+                        confirmedAt: now,
+                        shareVersion: 1,
+                    },
+                },
+            }
+        );
+        return recoveryEmail;
+    };
+    /** The real lost-login OTP flow up to the `recover`-scope session token. */
+    const verifiedRecoverySession = async (recoveryEmail: string): Promise<string> => {
+        const send = vi.fn().mockResolvedValue(undefined);
+        vi.spyOn(delivery, 'getDeliveryService').mockReturnValue({ send });
+        // Skip the per-address resend cooldown between sessions in one test.
+        await (cache.redis ?? cache.node).del(getRecoveryOtpSendCacheKey(recoveryEmail));
+        await getClient().keys.startRecoverySession({ email: recoveryEmail });
+        const code = (send.mock.calls[0]?.[0] as { templateModel?: { verificationCode?: string } })
+            ?.templateModel?.verificationCode;
+        if (!code) throw new Error('Recovery OTP was not delivered in the test');
+        vi.restoreAllMocks();
+        return (await getClient().keys.verifyRecoverySession({ email: recoveryEmail, code }))
+            .recoverySessionToken;
+    };
+    const phraseRebindToken = async (recoveryEmail: string): Promise<string> =>
+        (
+            await getClient().keys.useRecoverySession({
+                recoverySessionToken: await verifiedRecoverySession(recoveryEmail),
+                type: 'phrase',
+            })
+        ).rebindSessionToken;
+
+    it('records the epoch on every minted token (recover, phrase, hold, PIN)', async () => {
+        const recoveryEmail = await addPhraseRecovery();
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $set: { securityEpoch: 4 } }
+        );
+
+        const recoverToken = await verifiedRecoverySession(recoveryEmail);
+        expect((await consumeRecoverySession(recoverToken, 'recover'))?.securityEpoch).toBe(4);
+        const phraseToken = await phraseRebindToken(recoveryEmail);
+        expect((await consumeRecoverySession(phraseToken, 'rebind'))?.securityEpoch).toBe(4);
+        await enrollPin();
+        const pinToken = (await completePin(await startPin())).rebindSessionToken;
+        expect((await consumeRecoverySession(pinToken, 'rebind'))?.securityEpoch).toBe(4);
+    });
+
+    it('rejects a pre-revoke phrase token at /rebind, even with a fresh unrelated login', async () => {
+        const recoveryEmail = await addPhraseRecovery();
+        // The attacker recovered the DID key with the phrase and holds the rebind token.
+        const token = await phraseRebindToken(recoveryEmail);
+        await revoke();
+        const before = await record();
+
+        await expect(rebind(token)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await record()).toEqual(before);
+        expect(before?.authProviders).toEqual([authProvider]);
+        expect(before?.securityEpoch).toBe(1);
+    });
+
+    it('rejects a pre-revoke passkey/backup-shaped token (any non-PIN origin)', async () => {
+        // `useRecoverySession` mints the same record for phrase, passkey and backup.
+        const token = await createRecoverySession({
+            scope: 'rebind',
+            authProvider,
+            securityEpoch: 0,
+        });
+        await revoke();
+        const before = await record();
+
+        await expect(rebind(token)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await record()).toEqual(before);
+    });
+
+    it('rejects a pre-revoke waiting-period hold token', async () => {
+        setDuration(1);
+        await enrollPin();
+        const started = await startHold();
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(started.releaseAfter));
+        const { rebindSessionToken } = await getClient().escrow.completeRecovery(resume(started));
+        vi.useRealTimers();
+        await revoke();
+        const before = await record();
+
+        await expect(rebind(rebindSessionToken)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await record()).toEqual(before);
+    });
+
+    it('rejects a pre-revoke recover-scope session at release and at escrow start', async () => {
+        const recoveryEmail = await addPhraseRecovery();
+        const forRelease = await verifiedRecoverySession(recoveryEmail);
+        const forEscrow = await verifiedRecoverySession(recoveryEmail);
+        await revoke();
+        // The owner re-enrolls on the new split, so only the epoch can stop the stale session.
+        await enrollPin(2);
+
+        await expect(
+            getClient().keys.useRecoverySession({
+                recoverySessionToken: forRelease,
+                type: 'phrase',
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(
+            getClient().escrow.startRecovery({
+                recoverySessionToken: forEscrow,
+                clientEphemeralPublicKey: recipient.publicKey,
+            })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+
+    it('a wiping rebind retires older tokens for logins it kept', async () => {
+        // Two logins; tokens for both minted at epoch 0.
+        const second: AuthProviderMapping = { type: 'firebase', id: `second-${randomUUID()}` };
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $push: { authProviders: second } }
+        );
+        const first = await createRecoverySession({
+            scope: 'rebind',
+            authProvider,
+            securityEpoch: 0,
+        });
+        const stale = await createRecoverySession({
+            scope: 'rebind',
+            authProvider: second,
+            securityEpoch: 0,
+        });
+
+        await expect(rebind(first)).resolves.toMatchObject({ success: true, shareVersion: 2 });
+        const before = await accountByDid();
+        expect(before?.securityEpoch).toBe(1);
+        expect(before?.authProviders).toContainEqual(second);
+
+        await expect(rebind(stale)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await accountByDid()).toEqual(before);
+    });
+
+    it('enforces the epoch in the write itself (revoke between read and write)', async () => {
+        const token = await createRecoverySession({
+            scope: 'rebind',
+            authProvider,
+            securityEpoch: 0,
+        });
+        // Land a wiping event after the route's reads, just before its conditional write.
+        const realFindOneAndUpdate = Collection.prototype.findOneAndUpdate;
+        let raced = false;
+        vi.spyOn(Collection.prototype, 'findOneAndUpdate').mockImplementation(async function (
+            this: Collection,
+            ...args: unknown[]
+        ) {
+            if (!raced) {
+                raced = true;
+                await getUserKeysCollection().updateOne(
+                    { primaryDid: did },
+                    { $inc: { securityEpoch: 1 } }
+                );
+            }
+            return (realFindOneAndUpdate as (...a: unknown[]) => unknown).apply(this, args);
+        } as never);
+
+        await expect(rebind(token)).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(raced).toBe(true);
+        expect((await record())?.authProviders).toEqual([authProvider]);
+        expect((await record())?.shareVersion).toBe(1);
+    });
+
+    it('ordinary rotations do not break an in-flight recovery', async () => {
+        const recoveryEmail = await addPhraseRecovery();
+        const token = await phraseRebindToken(recoveryEmail);
+        // Another of the owner's devices rotates (non-wiping): the token still works.
+        await owner().keys.storeAuthShare({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: 'rotated', encryptedDek: '', iv: '' },
+        });
+        expect((await record())?.securityEpoch).toBeUndefined();
+
+        await expect(rebind(token)).resolves.toMatchObject({ success: true, shareVersion: 3 });
+        expect((await accountByDid())?.securityEpoch).toBe(1);
+    });
+
+    it('legacy accounts and tokens without the field still work', async () => {
+        expect((await record())?.securityEpoch).toBeUndefined();
+        const token = await createRecoverySession({ scope: 'rebind', authProvider });
+
+        await expect(rebind(token)).resolves.toMatchObject({ success: true, shareVersion: 2 });
+    });
+
+    it('a PIN sign-in minted after a revoke works at the new epoch', async () => {
+        await revoke();
+        await enrollPin(2);
+        const token = (await completePin(await startPin())).rebindSessionToken;
+        const login = newLogin();
+
+        await expect(
+            owner().keys.completePinSignIn({
+                recoverySessionToken: token,
+                newAuthToken: login.authToken,
+                providerType: 'firebase',
+                primaryDid: did,
+            })
+        ).resolves.toEqual({ success: true, shareVersion: 2, linked: true });
+    });
+
+    it('a stale PIN token cannot re-link even when the share version matches', async () => {
+        await enrollPin();
+        const token = (await completePin(await startPin())).rebindSessionToken;
+        // Simulate a wiping event that left the version where it was.
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $inc: { securityEpoch: 1 } }
+        );
+
+        await expect(
+            owner().keys.completePinSignIn({
+                recoverySessionToken: token,
+                newAuthToken: newLogin().authToken,
+                providerType: 'firebase',
+                primaryDid: did,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        await expect(
+            owner().keys.completePinSignIn({
+                recoverySessionToken: (await completePin(await startPin())).rebindSessionToken,
+                newAuthToken: auth.authToken,
+                providerType: 'firebase',
+                primaryDid: did,
+            })
+        ).resolves.toMatchObject({ linked: false });
+        expect((await record())?.authProviders).toEqual([authProvider]);
+    });
+});
+
+describe('revokeOtherDevices notice (account-secured)', () => {
+    const captureSends = () => {
+        const send = vi.fn().mockResolvedValue(undefined);
+        vi.spyOn(delivery, 'getDeliveryService').mockReturnValue({ send });
+        return () =>
+            send.mock.calls
+                .map(
+                    call => call[0] as { to: string; templateAlias: string; templateModel: object }
+                )
+                .filter(call => call.templateAlias === 'account-secured');
+    };
+    const revoke = () =>
+        owner().keys.revokeOtherDevices({
+            ...auth,
+            primaryDid: did,
+            authShare: { encryptedData: 'owner-split', encryptedDek: '', iv: '' },
+            expectedShareVersion: 1,
+        });
+
+    it('emails the contact and the verified recovery address, deduped', async () => {
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            {
+                $set: {
+                    recoveryEmail: 'owner-recovery@example.com',
+                    recoveryEmailVerifiedAt: new Date(),
+                },
+            }
+        );
+        const sends = captureSends();
+
+        await revoke();
+
+        expect(
+            sends()
+                .map(call => call.to)
+                .sort()
+        ).toEqual([email, 'owner-recovery@example.com'].sort());
+        expect(sends()[0]?.templateModel).toEqual({ securedAt: expect.any(String) });
+    });
+
+    it('sends one notice when the recovery email repeats the contact address', async () => {
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $set: { recoveryEmail: email.toUpperCase(), recoveryEmailVerifiedAt: new Date() } }
+        );
+        const sends = captureSends();
+
+        await revoke();
+
+        expect(sends().map(call => call.to)).toEqual([email]);
+    });
+
+    it('skips an unverified recovery email', async () => {
+        await getUserKeysCollection().updateOne(
+            { primaryDid: did },
+            { $set: { recoveryEmail: 'unverified@example.com' } }
+        );
+        const sends = captureSends();
+
+        await revoke();
+
+        expect(sends().map(call => call.to)).toEqual([email]);
+    });
+
+    it('notifies the owner when someone else ran it from a PIN-signed-in login', async () => {
+        await enrollPin();
+        const token = (await completePin(await startPin())).rebindSessionToken;
+        const uid = `attacker-${randomUUID()}`;
+        const attacker = {
+            authToken: makeMockToken(`${uid}@example.org`, uid),
+            providerType: 'firebase' as const,
+        };
+        await owner().keys.completePinSignIn({
+            recoverySessionToken: token,
+            newAuthToken: attacker.authToken,
+            providerType: 'firebase',
+            primaryDid: did,
+        });
+        const sends = captureSends();
+
+        await owner().keys.revokeOtherDevices({
+            ...attacker,
+            primaryDid: did,
+            authShare: { encryptedData: 'attacker-split', encryptedDek: '', iv: '' },
+            expectedShareVersion: 1,
+        });
+
+        // The owner's login is gone, but the owner's address still gets the notice.
+        expect(await record()).toBeNull();
+        expect(sends().map(call => call.to)).toEqual([email]);
+    });
+
+    it('never fails the committed revoke when the notice cannot be sent', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.spyOn(delivery, 'getDeliveryService').mockReturnValue({
+            send: vi.fn().mockRejectedValue(new Error('postmark down')),
+        });
+
+        await expect(revoke()).resolves.toMatchObject({ success: true, shareVersion: 2 });
+        expect((await record())?.shareVersion).toBe(2);
     });
 });

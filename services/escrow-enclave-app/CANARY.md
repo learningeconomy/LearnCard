@@ -98,7 +98,9 @@ On a PIN-enrolled canary account (two accounts, alternating):
 2. Run the authenticated PIN recovery with the correct PIN. Since PIN sign-in
    keeps the account (SECURITY.md D19, pending approval), this no longer goes
    through `completeIdentityRecovery`: the SDK stores the released share at the
-   current version and re-sets the same PIN without rotating. Each run also
+   current version and re-sets the same PIN without rotating (only while no
+   wrong attempt is recorded against that PIN; otherwise the budget is not
+   refreshed and the canary PIN eventually locks until a new PIN is set). Each run also
    sends the "New device signed in with your PIN" email to the canary
    account's verified addresses.
 3. Check the recovered private key derives the account's known DID.

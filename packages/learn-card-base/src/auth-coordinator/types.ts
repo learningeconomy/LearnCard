@@ -77,6 +77,13 @@ export interface PinSignInInfo {
     /** False when the fresh-attempt-budget re-set did not run; the PIN stays valid. */
     pinRefreshed: boolean;
     /**
+     * Wrong PIN entries are recorded against the current PIN (or the server could not
+     * say), so the same PIN was not re-set: the app asks for a different PIN
+     * (`setEscrowPin`, which rejects the PIN just used with `SameEscrowPinError`).
+     * Until then the PIN keeps its reduced budget.
+     */
+    newPinRequired: boolean;
+    /**
      * Wrong PIN entries recorded before this sign-in session started (misses in this
      * session never count). Omitted when the server could not say.
      */
@@ -162,6 +169,15 @@ export type UnifiedAuthState =
           escrowPinResetRequired?: true;
           /** Present once after a PIN sign-in; see PinSignInInfo. */
           pinSignIn?: PinSignInInfo;
+          /**
+           * Ask the user for a new, different PIN: wrong entries are recorded against
+           * the current PIN (`escrowPin.wrongAttempts > 0`), or a PIN sign-in just
+           * reported `newPinRequired`. Derived by the coordinator on every update;
+           * `dismissEscrowPinChange()` hides it for this session only, so it returns on
+           * the next app start while wrong entries remain recorded. Cleared once a
+           * new PIN is set or the account is secured.
+           */
+          escrowPinChangeRequired?: true;
           authUser?: AuthUser;
           did: string;
           privateKey: string;
@@ -169,6 +185,13 @@ export type UnifiedAuthState =
           sssActivationState?: SssActivationState | null;
       }
     | { status: 'error'; error: string; canRetry: boolean; previousState?: UnifiedAuthState };
+
+/** The `Storage` subset used by the "choose a new PIN" guard (`localStorage` fits). */
+export interface PinChangeGuardStorage {
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+    removeItem(key: string): void;
+}
 
 /**
  * Auth Coordinator Config
@@ -204,6 +227,15 @@ export interface AuthCoordinatorConfig {
      * stores, databases, and redirecting.
      */
     onLogout?: () => Promise<void>;
+
+    /**
+     * Optional: where the "choose a new PIN" guard keeps its tag across app starts, so
+     * the PIN used for a PIN sign-in that had recorded wrong entries is still refused
+     * after a restart (see RECOVERY.md). The tag is an HMAC keyed from the account's
+     * private key, so it cannot be checked without that key. Defaults to
+     * `localStorage` when available; `null` keeps it in memory for this session only.
+     */
+    pinChangeGuardStorage?: PinChangeGuardStorage | null;
 
     /**
      * Optional: wipe any pending escrow recovery request from the storage the

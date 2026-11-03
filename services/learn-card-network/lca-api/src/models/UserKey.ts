@@ -191,6 +191,12 @@ const MongoUserKeyBaseValidator = z.object({
     sssActivationState: z.enum(['provisional', 'active']).optional(),
     provisionalCreatedAt: z.date().optional(),
 
+    // Security epoch: incremented by every wiping rotation (identity rebind and
+    // "Secure my account"). Every recovery-session token records it at mint, and the
+    // rebind/re-link writes only land while it still matches, so a revoke or rebind
+    // invalidates every older token. Absent on legacy records; read as 0.
+    securityEpoch: z.number().int().nonnegative().optional(),
+
     createdAt: z.date(),
     updatedAt: z.date(),
 });
@@ -759,6 +765,18 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
     authProviders: { $elemMatch: authProvider },
 });
 
+/** The account's security epoch; a legacy record without the field is at epoch 0. */
+export const getSecurityEpoch = (userKey: Pick<MongoUserKeyType, 'securityEpoch'>): number =>
+    userKey.securityEpoch ?? 0;
+
+/**
+ * Match only while the account is still at `epoch`. Epoch 0 also matches a legacy
+ * record without the field (`$not: {$gt: 0}` matches 0 and a missing field). A
+ * field-level condition, so it composes with any other filter, including `$or`.
+ */
+const getSecurityEpochFilter = (epoch: number): Filter<MongoUserKeyType> =>
+    epoch === 0 ? { securityEpoch: { $not: { $gt: 0 } } } : { securityEpoch: epoch };
+
 /** Persist verified escrow and its confirmed descriptor atomically. */
 export const setEscrowBlobByAuthProvider = async (
     authProvider: AuthProviderMapping,
@@ -770,7 +788,13 @@ export const setEscrowBlobByAuthProvider = async (
         enrollmentEpoch: number;
         expectedBlob?: EscrowBlob;
         expectedPin?: MongoUserKeyType['escrowPin'];
-    }
+    },
+    /**
+     * Same-PIN budget refresh after a PIN sign-in (E): write only while the current PIN
+     * still shows exactly these charges, so a guess reserved or resolved after the
+     * client's check is never wiped by the fresh PIN generation.
+     */
+    expectedPinCharges?: { failedAttempts: number; verifiedFailedAttempts: number }
 ): Promise<MongoUserKeyType | null> => {
     const now = new Date();
     const parsed = EscrowBlobValidator.omit({ enrollmentEpoch: true, blobHash: true }).safeParse(
@@ -796,6 +820,13 @@ export const setEscrowBlobByAuthProvider = async (
             shareVersion: expectedShareVersion,
             escrowOptedOutAt: { $exists: false },
             ...(carryFrom ? { escrowBlob: carryFrom.blob, escrowPin: carryFrom.pin } : {}),
+            ...(expectedPinCharges
+                ? {
+                      'escrowPin.failedAttempts': expectedPinCharges.failedAttempts,
+                      'escrowPin.verifiedFailedAttempts': expectedPinCharges.verifiedFailedAttempts,
+                      'escrowPin.disabledAt': { $exists: false },
+                  }
+                : {}),
             ...(authority
                 ? {
                       escrowBlob: authority.expectedBlob ?? { $exists: false },
@@ -1477,6 +1508,12 @@ export interface CompleteIdentityRebindInput {
      * by a PIN release, so a stale token cannot undo a later "Secure my account".
      */
     expectedShareVersion?: number;
+    /**
+     * The security epoch the recovery token was minted at. Required: the write only
+     * lands while the account is still at this epoch, so any token minted before a
+     * revoke or another wiping rebind is rejected atomically.
+     */
+    expectedSecurityEpoch: number;
 }
 
 /**
@@ -1495,6 +1532,7 @@ const buildSecurityRotationUpdate = (
     recoveryMethods: RecoveryMethod[];
     $set: Record<string, unknown>;
     $unset: Record<string, ''>;
+    $inc: { securityEpoch: 1 };
 } => {
     const shareVersion = (existing.shareVersion ?? 1) + 1;
     const recoveryMethods = (existing.recoveryMethods ?? []).map(method => ({
@@ -1521,6 +1559,8 @@ const buildSecurityRotationUpdate = (
             updatedAt: now,
         },
         $unset: { provisionalCreatedAt: '', escrowBlob: '', escrowPin: '' },
+        // Every wiping rotation retires every recovery token minted before it.
+        $inc: { securityEpoch: 1 },
     };
 };
 
@@ -1548,6 +1588,7 @@ export const completeIdentityRebind = async (
     ) {
         return null;
     }
+    if (getSecurityEpoch(existing) !== input.expectedSecurityEpoch) return null;
 
     const providerConflict = await collection.findOne({
         ...getAuthProviderFilter(input.newAuthProvider),
@@ -1573,6 +1614,7 @@ export const completeIdentityRebind = async (
             ...getAuthProviderFilter(input.oldAuthProvider),
             primaryDid: input.primaryDid,
             shareVersion: existing.shareVersion ?? 1,
+            ...getSecurityEpochFilter(input.expectedSecurityEpoch),
         },
         {
             $set: {
@@ -1581,6 +1623,7 @@ export const completeIdentityRebind = async (
                 contactMethod: input.newContactMethod,
             },
             $unset: rotation.$unset,
+            $inc: rotation.$inc,
         },
         { returnDocument: 'after' }
     );
@@ -1599,6 +1642,8 @@ export interface LinkAuthProviderKeepingSharesInput {
     primaryDid: string;
     /** The share version the PIN release unlocked; the link only lands at that version. */
     shareVersion: number;
+    /** The security epoch the PIN-release token was minted at; enforced in the write. */
+    securityEpoch: number;
 }
 
 /**
@@ -1618,6 +1663,7 @@ export const linkAuthProviderKeepingShares = async (
     });
 
     if (!existing) return null;
+    if (getSecurityEpoch(existing) !== input.securityEpoch) return null;
 
     const providerConflict = await collection.findOne({
         ...getAuthProviderFilter(input.newAuthProvider),
@@ -1631,6 +1677,7 @@ export const linkAuthProviderKeepingShares = async (
             ...getAuthProviderFilter(input.oldAuthProvider),
             primaryDid: input.primaryDid,
             shareVersion: input.shareVersion,
+            ...getSecurityEpochFilter(input.securityEpoch),
         },
         {
             $addToSet: { authProviders: input.newAuthProvider },
@@ -1683,6 +1730,7 @@ export const revokeOtherDeviceShares = async (
         {
             $set: { ...rotation.$set, authProviders: [input.authProvider] },
             $unset: rotation.$unset,
+            $inc: rotation.$inc,
         },
         { returnDocument: 'after' }
     );

@@ -143,6 +143,38 @@ describe('RecoverySetupModal prompt integration', () => {
         expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
     });
 
+    it('Change PIN explains a refused same PIN and starts over at the first entry', async () => {
+        const same = new Error('Choose a different PIN from the one you just used.');
+        same.name = 'SameEscrowPinError';
+        const onSetEscrowPin = vi.fn().mockRejectedValueOnce(same).mockResolvedValue(undefined);
+        renderModal('email', vi.fn(), {
+            onGetEscrowEnrollmentState: vi
+                .fn()
+                .mockResolvedValue({ state: 'enrolled', escrowPin: { state: 'enabled' } }),
+            onDisableEscrowRecovery: vi.fn(),
+            onEnableEscrowRecovery: vi.fn(),
+            onSetEscrowPin,
+        });
+        fireEvent.click(await screen.findByRole('button', { name: 'Change' }));
+        const enterPin = (pin: string) =>
+            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
+                clipboardData: { getData: () => pin },
+            });
+        enterPin('135790');
+        enterPin('135790');
+
+        expect(
+            await screen.findByText('Choose a different PIN from the one you just used.')
+        ).toBeInTheDocument();
+        expect(screen.queryByText('Something went wrong. Please try again.')).toBeNull();
+        expect(screen.getByText('Enter a 6-digit PIN')).toBeInTheDocument();
+        expect(onSetEscrowPin).toHaveBeenCalledWith('135790');
+
+        enterPin('246802');
+        enterPin('246802');
+        await waitFor(() => expect(onSetEscrowPin).toHaveBeenLastCalledWith('246802'));
+    });
+
     it('shows Change and Remove buttons when PIN is set', async () => {
         const onClearEscrowPin = vi.fn().mockResolvedValue(undefined);
         renderModal('email', vi.fn(), {

@@ -2011,7 +2011,13 @@
             "confirmPin": "Confirmez votre PIN",
             "confirmPinDesc": "Saisissez à nouveau votre PIN pour le confirmer.",
             "trivial": "Choisissez un PIN plus difficile à deviner.",
-            "mismatch": "Les PIN ne correspondent pas."
+            "mismatch": "Les PIN ne correspondent pas.",
+            "samePin": "Choisissez un PIN différent de celui que vous venez d'utiliser.",
+            "newPinRequired": {
+                "title": "Choisissez un nouveau PIN de récupération",
+                "body": "Votre PIN de récupération a été saisi incorrectement auparavant : il lui reste donc moins d'essais. Choisissez un PIN différent à 6 chiffres pour retrouver tous vos essais.",
+                "skipNote": "Si vous passez cette étape, votre PIN actuel continue de fonctionner avec moins d'essais. Vous pourrez en choisir un nouveau plus tard dans Récupération du compte."
+            }
         },
         "confirmCode": {
             "mismatch": "Ce code est incorrect. Réessayez.",
@@ -2384,7 +2390,10 @@
             "secure": "Oui, sécuriser mon compte",
             "wrongAttemptsOne": "Votre PIN a été saisi incorrectement une fois avant cette connexion. Si ce n'était pas vous, sécurisez votre compte.",
             "wrongAttempts": "Votre PIN a été saisi incorrectement {{count}} fois avant cette connexion. Si ce n'était pas vous, sécurisez votre compte.",
-            "later": "Vous pouvez aussi le faire plus tard dans Récupération du compte."
+            "later": "Vous pouvez aussi le faire plus tard dans Récupération du compte.",
+            "newPin": "Choisissez un nouveau PIN pour garder votre compte protégé. En attendant, votre PIN actuel continue de fonctionner avec moins d'essais.",
+            "choosePin": "Non, choisir un nouveau PIN",
+            "notNow": "Pas maintenant"
         },
         "secureAccount": {
             "title": "Sécurisez votre compte",
@@ -2411,13 +2420,15 @@
             "conflict": "Votre compte a changé pendant sa sécurisation. Veuillez réessayer.",
             "failed": "Nous n'avons pas pu terminer la sécurisation de votre compte. Veuillez réessayer.",
             "sessionExpired": "Votre session a expiré. Reconnectez-vous pour sécuriser votre compte.",
-            "opening": "Ouverture de la sécurité du compte..."
+            "opening": "Ouverture de la sécurité du compte...",
+            "pinDescNewPin": "Choisissez un nouveau PIN à 6 chiffres, différent de votre PIN actuel."
         },
         "signOutOtherDevices": {
             "title": "Une connexion que vous ne reconnaissez pas ?",
             "description": "Empêchez les autres appareils et identifiants de se reconnecter, et désactivez vos anciennes méthodes de récupération.",
             "action": "Se déconnecter de tous les autres appareils"
-        }
+        },
+        "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez."
     },
     "alerts": {
         "title": "Alertes",

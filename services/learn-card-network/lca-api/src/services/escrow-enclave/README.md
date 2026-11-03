@@ -18,7 +18,9 @@ available. Successful PIN recovery does not replenish the lifetime budget by its
 authenticated enrollment of a PIN starts a fresh counter. A PIN sign-in (keep mode,
 pending security approval; see `services/escrow-enclave-app/SECURITY.md` D19) re-enrolls
 the same PIN at the same share version straight after the release, which starts a fresh
-counter without a rotation. Otherwise, setting or changing a PIN requires client share
+counter without a rotation, but only when the PIN status records no wrong attempt for the
+current PIN; otherwise the client keeps the reduced budget and asks the user for a different
+PIN. Otherwise, setting or changing a PIN requires client share
 rotation. Inbox compromise plus a correct PIN guess can recover the
 account (at most 10/1,000,000 for a uniformly random six-digit PIN).
 

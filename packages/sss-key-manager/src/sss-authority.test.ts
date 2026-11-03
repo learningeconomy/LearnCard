@@ -152,6 +152,8 @@ const setup = async (legacyEnrolled = false) => {
         attemptsUsed: 0,
     };
     let version = 1;
+    // lca-api's charged PIN budget: like the server, every PIN release is charged.
+    let releaseCharges = 0;
     const recoveryShares = await splitPrivateKey(owner.seedHex);
     let authShare = recoveryShares.authShare;
     let pendingHold: EscrowHoldRecordLike | undefined;
@@ -201,6 +203,8 @@ const setup = async (legacyEnrolled = false) => {
         oldServer?: boolean;
         /** A compromised lca-api forging post-rebind status for a healthy account. */
         forgedRebindStatus?: boolean;
+        /** lca-api's verified wrong-entry count for the current PIN, when reported. */
+        wrongPinAttempts?: number;
     } = {};
     const signHold = async (record: EscrowHoldRecordLike): Promise<EscrowHoldRecordLike> => {
         const h = record.hold;
@@ -269,7 +273,19 @@ const setup = async (legacyEnrolled = false) => {
                         : { priorEscrowEnrollment: !enrolled && !!faults.missingPinMetadata }),
                     ...(faults.missingPinMetadata
                         ? { escrowPin: { state: 'none', enabled: false, attemptsRemaining: 0 } }
-                        : {}),
+                        : faults.wrongPinAttempts !== undefined
+                          ? {
+                                escrowPin: {
+                                    state: 'enabled',
+                                    enabled: true,
+                                    attemptsRemaining: Math.max(
+                                        0,
+                                        10 - state.attemptsUsed - releaseCharges
+                                    ),
+                                    wrongAttempts: faults.wrongPinAttempts,
+                                },
+                            }
+                          : {}),
                 });
             }
             if (path === '/keys/escrow/attestation') return response({ attestation: {} });
@@ -340,6 +356,7 @@ const setup = async (legacyEnrolled = false) => {
                     pinGeneration: state.pinGeneration + Number(pinChange),
                     attemptsUsed: pinChange ? 0 : state.attemptsUsed,
                 };
+                if (pinChange) releaseCharges = 0;
                 enrolled = !!output;
                 const receipt = await sign('commit', {
                     commit: {
@@ -504,6 +521,7 @@ const setup = async (legacyEnrolled = false) => {
             }
             if (path === '/keys/escrow/complete') {
                 if (!pendingHold) throw new Error('No test hold');
+                if (body.pinProof !== undefined) releaseCharges++;
                 return response({
                     sealedShare: await sealEscrowRelease(
                         {
@@ -634,6 +652,8 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             options: { ...f.params.options, pin: '135790' },
         });
         f.spend();
+        // Charged attempts (e.g. earlier successful releases), but no verified wrong entry.
+        f.faults.wrongPinAttempts = 0;
         const generation = f.state().pinGeneration;
         const shareVersion = f.intents.at(-1)!.intent.shareVersion;
         const writes = f.calls.filter(call => call === 'PUT:/keys/auth-share').length;
@@ -648,7 +668,7 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
         expect(recovered).toMatchObject({
             escrowEnrolled: true,
             escrowRecovery: true,
-            pinSignIn: { mode: 'kept', pinRefreshed: true },
+            pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
         });
         // Keep mode: no rebind, no re-split; the re-set targets the released version.
         expect(f.calls).not.toContain('POST:/keys/recovery-session/rebind');
@@ -679,6 +699,36 @@ describe('Nitro recovery initiating-client bindings and measurement rollover', (
             changed: false,
         });
         expect(f.intents).toHaveLength(intents);
+    });
+    it('signs no PIN change after a PIN sign-in when wrong entries are recorded', async () => {
+        const f = await setup();
+        await f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+        f.spend();
+        f.faults.wrongPinAttempts = 2;
+        const before = { ...f.state() };
+        const intents = f.intents.length;
+        await expect(
+            f.strategy.executeRecovery({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+                didFromPrivateKey: async () => owner.intent.did,
+                signDidAuthVp: f.params.signDidAuthVp,
+                options: f.params.options,
+            })
+        ).resolves.toMatchObject({
+            escrowEnrolled: true,
+            pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+        });
+        // No owner-signed change: same PIN generation, the used attempts stand.
+        expect(f.intents).toHaveLength(intents);
+        expect(f.state()).toMatchObject({
+            pinGeneration: before.pinGeneration,
+            attemptsUsed: before.attemptsUsed,
+        });
     });
     it('still clears the PIN after a hold recovery', async () => {
         const f = await setup();

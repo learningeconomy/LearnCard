@@ -45,6 +45,7 @@ export type {
     EscrowHoldCancelledData,
     EscrowPinLockedData,
     EscrowPinSignInData,
+    AccountSecuredData,
 } from './render';
 export type { EscrowHoldCancelledReason } from './templates/escrow-hold-cancelled';
 

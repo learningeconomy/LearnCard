@@ -2330,7 +2330,13 @@
                 "title": "Set a new recovery PIN",
                 "body": "Your old recovery PIN can no longer be used since your account was recovered. Set a new 6-digit PIN to restore automatic recovery."
             },
-            "useInstead": "Use my recovery PIN instead"
+            "useInstead": "Use my recovery PIN instead",
+            "samePin": "Choose a different PIN from the one you just used.",
+            "newPinRequired": {
+                "title": "Choose a new recovery PIN",
+                "body": "Your recovery PIN was entered incorrectly before, so it has fewer tries left. Choose a different 6-digit PIN to get all your tries back.",
+                "skipNote": "If you skip this, your current PIN keeps working with fewer tries left. You can choose a new one later in Account Recovery."
+            }
         },
         "confirmCode": {
             "mismatch": "That code isn't right. Try again.",
@@ -2423,7 +2429,10 @@
             "secure": "Yes, secure my account",
             "wrongAttemptsOne": "Your PIN was entered incorrectly once before this sign-in. If that wasn't you, secure your account.",
             "wrongAttempts": "Your PIN was entered incorrectly {{count}} times before this sign-in. If that wasn't you, secure your account.",
-            "later": "You can also do this later in Account Recovery."
+            "later": "You can also do this later in Account Recovery.",
+            "newPin": "Choose a new PIN to keep your account protected. Until you do, your current PIN keeps working with fewer tries left.",
+            "choosePin": "No, choose a new PIN",
+            "notNow": "Not now"
         },
         "secureAccount": {
             "title": "Secure your account",
@@ -2450,13 +2459,15 @@
             "conflict": "Your account changed while we were securing it. Please try again.",
             "failed": "We couldn't finish securing your account. Please try again.",
             "sessionExpired": "Your session expired. Sign in again to secure your account.",
-            "opening": "Opening account security..."
+            "opening": "Opening account security...",
+            "pinDescNewPin": "Choose a new 6-digit PIN, different from your current one."
         },
         "signOutOtherDevices": {
             "title": "Signed in somewhere you don't recognize?",
             "description": "Stop other devices and logins from signing in again, and turn off your old recovery methods.",
             "action": "Sign out of all other devices"
-        }
+        },
+        "inProgress": "Recovery is already running. Wait for it to finish, then try again."
     },
     "alerts": {
         "accepted": "Accepted",

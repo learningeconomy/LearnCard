@@ -124,6 +124,7 @@ import {
     decidePinPromptAfterReady,
     settleEscrowRecoveryMarker,
     secureFlowOffersPin,
+    pinChangePromptOpens,
     type EscrowRecoveryKind,
 } from './authCoordinator.helpers';
 import { getTenantHeaders, getResolvedTenantConfig } from '../config/bootstrapTenantConfig';
@@ -532,6 +533,9 @@ const AuthSessionManager: React.FC<{
     // Opened from the post-PIN-sign-in review: the account certainly has a PIN, even
     // before the async escrow refresh publishes `ready.escrowPin`.
     const [secureAfterPinSignIn, setSecureAfterPinSignIn] = useState(false);
+    // Opened from a review that asked for a new PIN: the review's answer clears
+    // `ready.escrowPinChangeRequired` for this session, so remember it for the flow.
+    const [secureNeedsNewPin, setSecureNeedsNewPin] = useState(false);
     // null = session check pending; mirrors the recovery-setup check below.
     const [secureSessionValid, setSecureSessionValid] = useState<boolean | null>(null);
 
@@ -540,7 +544,10 @@ const AuthSessionManager: React.FC<{
     }, []);
 
     useEffect(() => {
-        if (!secureAccountOpen) setSecureAfterPinSignIn(false);
+        if (!secureAccountOpen) {
+            setSecureAfterPinSignIn(false);
+            setSecureNeedsNewPin(false);
+        }
     }, [secureAccountOpen]);
 
     const completeRecoverySetup = useCallback((method: RecoverySetupType) => {
@@ -632,6 +639,33 @@ const AuthSessionManager: React.FC<{
         coordinator.state.status === 'ready' && coordinator.state.escrowPinResetRequired === true;
     const readyPinSignIn =
         coordinator.state.status === 'ready' ? coordinator.state.pinSignIn : undefined;
+    const readyPinChangeRequired =
+        coordinator.state.status === 'ready' && coordinator.state.escrowPinChangeRequired === true;
+    // "Choose a new PIN": the current PIN has recorded wrong entries, so only a different
+    // PIN gets a fresh attempt budget. Latched so the prompt can show its own success
+    // step after the coordinator clears `escrowPinChangeRequired`.
+    const [pinChangeOpen, setPinChangeOpen] = useState(false);
+    // Signing out or switching accounts closes it (declared first so a new account's
+    // own requirement below can reopen it in the same pass).
+    useEffect(() => {
+        setPinChangeOpen(false);
+    }, [readyDid]);
+    useEffect(() => {
+        // The post-sign-in review asks first; on later starts the prompt opens directly.
+        if (
+            pinChangePromptOpens({
+                did: readyDid,
+                changeRequired: readyPinChangeRequired,
+                pinSignInPending: !!readyPinSignIn,
+            })
+        ) {
+            setPinChangeOpen(true);
+        }
+    }, [readyDid, readyPinChangeRequired, readyPinSignIn]);
+    useEffect(() => {
+        // "Secure my account" asks for its own PIN, and securing resolves the prompt.
+        if (secureAccountOpen) setPinChangeOpen(false);
+    }, [secureAccountOpen]);
     // Once per DID per app start: a dismissal must not re-prompt on every refresh.
     const pinResetPromptedRef = useRef<string | null>(null);
 
@@ -1781,10 +1815,21 @@ const AuthSessionManager: React.FC<{
                 !secureAccountOpen && (
                     <PinSignInReviewSheet
                         priorWrongAttempts={coordinator.state.pinSignIn.priorWrongAttempts}
+                        newPinRequired={coordinator.state.pinSignIn.newPinRequired}
+                        // "Not now" keeps the PIN with its reduced budget; the coordinator
+                        // asks again on the next start while wrong entries remain recorded.
                         onFine={coordinator.acknowledgePinSignIn}
+                        onChooseNewPin={() => {
+                            coordinator.acknowledgePinSignIn();
+                            setPinChangeOpen(true);
+                        }}
                         onSecure={() => {
+                            const needsNewPin =
+                                coordinator.state.status === 'ready' &&
+                                coordinator.state.pinSignIn?.newPinRequired === true;
                             coordinator.acknowledgePinSignIn();
                             setSecureAfterPinSignIn(true);
+                            setSecureNeedsNewPin(needsNewPin);
                             openSecureAccount();
                         }}
                     />
@@ -1821,6 +1866,9 @@ const AuthSessionManager: React.FC<{
                             pinEnabled: coordinator.state.escrowPin?.enabled,
                             escrowEnrollment: coordinator.state.escrowEnrollment,
                         })}
+                        newPinRequired={
+                            secureNeedsNewPin || coordinator.state.escrowPinChangeRequired === true
+                        }
                         passkeyAvailable={!Capacitor.isNativePlatform() && isWebAuthnSupported()}
                         onSecure={async pin => {
                             if (!coordinator.authSessionValid && !(await refreshAuthSession())) {
@@ -1845,6 +1893,24 @@ const AuthSessionManager: React.FC<{
                         onClose={() => setSecureAccountOpen(false)}
                     />
                 ))}
+
+            {/* ── Choose a new PIN (wrong entries recorded against the current PIN) ── */}
+            {pinChangeOpen &&
+                !recoveryPinSetupReason &&
+                coordinator.state.status === 'ready' &&
+                !coordinator.state.pinSignIn &&
+                !secureAccountOpen && (
+                    <RecoveryPinSetupOverlay
+                        setPin={setEscrowPin}
+                        reason="new-pin-required"
+                        onComplete={() => setPinChangeOpen(false)}
+                        onSkip={() => {
+                            // Keeps the reduced budget; asked again on the next start.
+                            coordinator.dismissEscrowPinChange();
+                            setPinChangeOpen(false);
+                        }}
+                    />
+                )}
 
             {recoveryPinSetupReason &&
                 coordinator.state.status === 'ready' &&

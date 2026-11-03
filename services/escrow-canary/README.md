@@ -25,7 +25,11 @@ not implied by passing offline tests.
   The SDK creates/verifies a fresh PIN hold, releases and reconstructs the key,
   then keeps the account: it stores the released share at the current version
   and re-sets the same PIN, with no rebind or rotation (PIN sign-in, pending
-  security approval; see `services/escrow-enclave-app/SECURITY.md` D19). Each
+  security approval; see `services/escrow-enclave-app/SECURITY.md` D19). The
+  same-PIN re-set (fresh budget) only runs while no wrong attempt is recorded
+  against the PIN; if one ever is, each run uses up one more attempt and the
+  canary PIN locks after its remaining budget, so set a new PIN for that
+  canary account. Each
   run triggers the server's PIN sign-in email to the canary account.
   Independently derive the recovered DID. Save device state **before** calling
   `setEscrowPin`, and save again afterward because setting a PIN also rotates shares.

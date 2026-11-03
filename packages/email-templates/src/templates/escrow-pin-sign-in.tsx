@@ -17,7 +17,13 @@ import { Layout } from '../components/Layout';
 import { EmailButton } from '../components/EmailButton';
 import { LinkFallback } from '../components/LinkFallback';
 import type { NotificationLocale } from '../i18n';
-import { resolveCatalogLocale, interpolate, SHARED } from '../i18n';
+import {
+    resolveCatalogLocale,
+    interpolate,
+    SHARED,
+    formatNoticeTimestamp,
+    localeProp,
+} from '../i18n';
 
 export interface EscrowPinSignInProps {
     branding: TenantBranding;
@@ -101,30 +107,6 @@ const AR: Strings = {
 
 const STRINGS: Record<NotificationLocale, Strings> = { en: EN, es: ES, fr: FR, ar: AR };
 
-/**
- * lca-api passes an ISO timestamp; show it as a readable date in the recipient's
- * language. The recipient's time zone is unknown, so the time is shown in UTC and
- * labelled as such. Anything that is not an ISO timestamp (previews) is shown as is.
- */
-const formatSignedInAt = (signedInAt: string, locale: NotificationLocale): string => {
-    if (!/^\d{4}-\d{2}-\d{2}T/.test(signedInAt)) return signedInAt;
-
-    const date = new Date(signedInAt);
-    if (Number.isNaN(date.getTime())) return signedInAt;
-
-    try {
-        return new Intl.DateTimeFormat(locale, {
-            dateStyle: 'long',
-            timeStyle: 'short',
-            timeZone: 'UTC',
-        })
-            .format(date)
-            .concat(' UTC');
-    } catch {
-        return signedInAt;
-    }
-};
-
 export const EscrowPinSignIn: React.FC<EscrowPinSignInProps> = ({
     branding,
     signedInAt,
@@ -135,10 +117,12 @@ export const EscrowPinSignIn: React.FC<EscrowPinSignInProps> = ({
     const s = STRINGS[catalogLocale];
 
     return (
-        <Layout branding={branding} locale={locale} preview={s.preview}>
+        <Layout branding={branding} preview={s.preview} {...localeProp(locale)}>
             <Text style={heading}>{s.heading}</Text>
 
-            <Text style={paragraph}>{s.body(formatSignedInAt(signedInAt, catalogLocale))}</Text>
+            <Text style={paragraph}>
+                {s.body(formatNoticeTimestamp(signedInAt, catalogLocale))}
+            </Text>
 
             <Text style={warning}>{s.warning}</Text>
 
@@ -151,12 +135,12 @@ export const EscrowPinSignIn: React.FC<EscrowPinSignInProps> = ({
             <Text style={signOff}>
                 {s.sincerely}
                 <br />
-                {interpolate(SHARED[resolveCatalogLocale(locale)].teamSignature, {
+                {interpolate(SHARED[catalogLocale].teamSignature, {
                     brandName: branding.brandName,
                 })}
             </Text>
 
-            <LinkFallback href={secureUrl} locale={locale} />
+            <LinkFallback href={secureUrl} {...localeProp(locale)} />
         </Layout>
     );
 };
