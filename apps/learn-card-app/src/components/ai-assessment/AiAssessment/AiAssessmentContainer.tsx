@@ -13,7 +13,6 @@ import AiAssessmentLayout from './helpers/AiAssessmentLayout';
 import AiSessionLoader from '../../new-ai-session/AiSessionLoader';
 import AssessmentAnswerInput from './helpers/AssessmentAnswerInput';
 import StartAssessmentButton from './helpers/StartAssessmentButton';
-import ViewAssessmentBadgeButton from './helpers/ViewAssessmentBadgeButton';
 import FinishedAiSessionAssessmentPreview from '../FinishedAiSessionAssessmentPreview';
 import AssessmentMultipleChoiceAnswers from './helpers/AssessmentMultipleChoiceAnswers';
 import UnfinishedAiSessionAssessmentPreviewSimple from '../UnFinishedAiSessionAssessmentPreviewSimple';
@@ -100,6 +99,8 @@ export const AiAssessmentContainer: React.FC<{
     const [preloadError, setPreloadError] = useState<Error | null>(null);
     const preloadInFlight = useRef(false);
     const [allPrefilled, setAllPrefilled] = useState(false);
+    const [assessmentCompleted, setAssessmentCompleted] = useState(false);
+    const finishInFlight = useRef(false);
 
     const { refetch: refetchEnrichedSession } = useGetEnrichedSession(
         query.get('topicBoostUri') as string
@@ -146,10 +147,7 @@ export const AiAssessmentContainer: React.FC<{
             enriched?.data?.summaryVc?.completed || Boolean(enriched?.data?.assessmentVc);
 
         if (alreadyCompleted) {
-            await fetchNewContractCredentials();
-            await refetchEnrichedSession();
-            closeModal();
-            aiLoadingStore.set.isFinishingAssessment(false);
+            setAssessmentCompleted(true);
             return true;
         }
 
@@ -157,31 +155,35 @@ export const AiAssessmentContainer: React.FC<{
     };
 
     const handleFinishAssessment = async (answers = assessmentQA) => {
-        const learnCard = await initWallet();
+        if (finishInFlight.current) return;
+        finishInFlight.current = true;
         aiLoadingStore.set.isFinishingAssessment(true);
 
         try {
+            const learnCard = await initWallet();
             const _isAlreadyCompleted = await isAlreadyCompleted();
             if (_isAlreadyCompleted) return;
 
-            await finishAssessment(
-                {
-                    did: learnCard.id.did(),
-                    assessmentQA: answers,
-                    session: session.vc?.boostCredential ?? session.vc,
-                    sessionUri: session.boost.uri,
-                    summaryCredentialUri: session.record?.uri,
-                },
-                {
-                    onSettled: () => {
-                        aiLoadingStore.set.isFinishingAssessment(false);
-                    },
-                }
-            );
+            await finishAssessment({
+                did: learnCard.id.did(),
+                assessmentQA: answers,
+                session: session.vc?.boostCredential ?? session.vc,
+                sessionUri: session.boost.uri,
+                summaryCredentialUri: session.record?.uri,
+            });
+            setAssessmentCompleted(true);
+            // The backend has saved the assessment. Refresh the surrounding lists
+            // without making a delayed index sync look like a failed submission.
+            void Promise.all([
+                fetchNewContractCredentials(),
+                refetchSummaryInfo(),
+                refetchEnrichedSession(),
+                queryClient.invalidateQueries({ queryKey: ['useGetEnrichedTopicsList'] }),
+            ]).catch(() => log.error('Could not refresh the completed assessment'));
         } catch (error) {
             log.error('[Assessment] Finish failed:', error);
-            aiLoadingStore.set.isFinishingAssessment(false);
         } finally {
+            finishInFlight.current = false;
             aiLoadingStore.set.isFinishingAssessment(false);
         }
     };
@@ -284,17 +286,16 @@ export const AiAssessmentContainer: React.FC<{
         }, timeout || 0);
     };
 
-    const handleViewBadge = () => {
-        newModal(
+    if (assessmentCompleted) {
+        return (
             <FinishedAiSessionAssessmentPreview
                 topicRecord={topicRecord}
                 topicVc={topicVc}
                 session={session}
-            />,
-            {},
-            { desktop: ModalTypes.Right, mobile: ModalTypes.Right }
+                isCompleted
+            />
         );
-    };
+    }
 
     let assessmentEl = null;
     const preloadErrorCopy =
@@ -317,7 +318,13 @@ export const AiAssessmentContainer: React.FC<{
         assessmentEl = (
             <AiAssessmentLayout>
                 {session.vc && <AiAssessmentIntro session={session.vc} />}
-                {isPreLoadingAssessment ? (
+                {isFinishingAssessment && isDesktop ? (
+                    <AiSessionLoader
+                        topicRecord={session?.record || topicRecord}
+                        overrideText={finishedAssessmentText}
+                        isInline
+                    />
+                ) : isPreLoadingAssessment ? (
                     <div ref={qaItemsRef}>
                         <AiSessionLoader
                             topicRecord={session?.record || topicRecord}
