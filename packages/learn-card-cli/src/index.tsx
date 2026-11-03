@@ -29,7 +29,7 @@ import {
     createExportLearnCardBundleHelper,
     createRestoreLearnCardFromBundleHelper,
 } from './replHelpers';
-import { buildProgram, configureJsonUsageErrors } from './program';
+import { buildProgram, configureJsonUsageErrors, hoistGlobalFlags } from './program';
 
 dns.setDefaultResultOrder('ipv4first');
 
@@ -480,6 +480,7 @@ const runRepl = async (_seed: string = generateRandomSeed()) => {
 };
 
 const program = buildProgram({ runRepl });
+process.argv = hoistGlobalFlags(process.argv);
 configureJsonUsageErrors(program, process.argv);
 
 // Bare `learncard` with a TTY opens the console, as it always has; anything else is a command.

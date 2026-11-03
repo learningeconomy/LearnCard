@@ -17,7 +17,7 @@ vi.mock('@learncard/init', () => ({ initLearnCard: mocks.initLearnCard }));
 import { AGENT_SKILL_MD } from './generated/snippets';
 import { CliError } from './errors';
 import { out } from './out';
-import { applyGlobalOptions, buildProgram, leafCommands } from './program';
+import { applyGlobalOptions, buildProgram, hoistGlobalFlags, leafCommands } from './program';
 import type { RunCommand } from './doctor';
 import {
     SKILL_TARGETS,
@@ -454,7 +454,9 @@ const shellWords = (line: string): string[] => {
 };
 
 /** Problems with one `npx @learncard/cli <words>` invocation, checked against commander. */
-const checkInvocation = (program: Command, words: string[]): string[] => {
+const checkInvocation = (program: Command, rawWords: string[]): string[] => {
+    // The CLI moves leading --json/-y/--network after the command; check what it parses.
+    const words = hoistGlobalFlags(['node', 'learncard', ...rawWords]).slice(2);
     let command = program;
     let index = 0;
     while (index < words.length && command.commands.length) {

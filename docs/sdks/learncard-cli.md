@@ -64,7 +64,7 @@ Every command except `repl` accepts these three flags. Where one has no effect f
 
 ### Which commands create an identity
 
-A command that needs an identity and finds no `.env` seed either creates one or stops with a `NO_IDENTITY` error. Only these commands create one: `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, and `consent-contract`. A command that creates a new identity says so on stderr, and with `--json` adds `identityCreated: { profileId, did, network }` to its result. The error envelope carries it too if the command fails after creating the identity (without `did` if it failed before connecting). `promote` copies this folder's seed and profile ID into its target folder (`targetDir` in its JSON result) and creates the profile on the target network; it does not report `identityCreated`.
+A command that needs an identity and finds no `.env` seed either creates one or stops with a `NO_IDENTITY` error. Only these commands create one: `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, and `consent-contract`. A command that creates a new identity says so on stderr, and with `--json` adds `identityCreated: { profileId, did, keyDid, network }` to its result: `did` is the new profile's DID (the same value as the result's `did`) and `keyDid` is the seed's `did:key`. The error envelope carries it too if the command fails after creating the identity (without `did` if no profile was created, and without `keyDid` if it failed before connecting). `promote` copies this folder's seed and profile ID into its target folder (`targetDir` in its JSON result) and creates the profile on the target network; it does not report `identityCreated`.
 
 Every other command — `whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`, `token --revoke`, `open`, `verify`, `clr validate`, `commands`, `capabilities`, `call`, `api`, `skill install` — never creates an identity or writes to `.env`. `api` does not need an identity at all (only a token), and `skill install` writes only the agent skill files. Arguments and flags (recipient, `--expires`, `--limit`, `--status`, `--event`, scopes) are checked before the CLI touches `.env` or the network, so a typo fails without side effects.
 
@@ -72,7 +72,7 @@ Run commands that create an identity with `--network staging` first; a new produ
 
 ### JSON output
 
-With `--json`, every command prints one line of JSON on stdout and exits. `--json` never prompts, even at a terminal without `-y`: a missing required value fails with `code: "USAGE"`.
+With `--json`, every command prints one line of JSON on stdout and exits; human-readable progress goes to stderr, and results are not repeated there. `--json` never prompts, even at a terminal without `-y`: a missing required value fails with `code: "USAGE"`. `--json`, `-y` and `--network <name>` may also come before the command (`npx @learncard/cli --json --network staging whoami`).
 
 Success: `{ "ok": true, "command": "<name>", ...result }`, exit 0. Commands that check something report the outcome in their own fields and exit 1 when the check fails:
 
@@ -92,12 +92,12 @@ Failure (exit 1):
 }
 ```
 
-| Field    | Meaning                                                                                                                                                                                                                                                                         |
-| :------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `error`  | First line of the error message.                                                                                                                                                                                                                                                |
-| `code`   | `USAGE` (unknown command or option, missing or invalid argument or flag value), `NO_IDENTITY` (no seed in this folder), `ERROR` (anything else), or a command-specific code such as `WRITE_REQUIRES_FLAG` or `HTTP_404`. `commands --json` lists every code under `errorCodes`. |
-| `hint`   | Optional. What to run next.                                                                                                                                                                                                                                                     |
-| `detail` | Present when the full message is longer than `error`.                                                                                                                                                                                                                           |
+| Field    | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error`  | First line of the error message.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `code`   | `USAGE` (unknown command or option, missing or invalid argument or flag value), `NO_IDENTITY` (no seed in this folder), `NETWORK_MISMATCH` (`--network` differs from the network this folder is set up for), `NOT_FOUND` (an ID such as a `status` activity ID does not exist), `ERROR` (anything else), or a command-specific code such as `WRITE_REQUIRES_FLAG` or `HTTP_404`. `commands --json` lists every code under `errorCodes`. |
+| `hint`   | Optional. What to run next.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `detail` | Present when the full message is longer than `error`.                                                                                                                                                                                                                                                                                                                                                                                   |
 
 Usage errors exit with commander's non-zero code; with `--json` anywhere in the arguments they use the same envelope, with `command` set to `null` when the command itself is unknown. Exit codes are otherwise 0 (success) or 1 (failure).
 
@@ -138,6 +138,7 @@ Each capability has `id`, `title`, `summary`, `cli` (commands), `call` (SDK meth
 
 ```bash
 npx @learncard/cli call --list --json
+npx @learncard/cli call createBoost --describe --json
 npx @learncard/cli call getProfile --network staging --json
 npx @learncard/cli call createBoost --args @boost.json --dry-run --network staging --json
 npx @learncard/cli call createBoost --args @boost.json --write --network staging -y --json
@@ -145,7 +146,8 @@ npx @learncard/cli call createBoost --args @boost.json --write --network staging
 
 Calls `learnCard.invoke.<method>` as the folder's identity, or as a managed profile with `--as <profileId>`. The folder must already have an identity (`NO_IDENTITY` otherwise), and `call` never writes to `.env`.
 
-- `--args` takes JSON: an array is spread as positional arguments, any other value is passed as the single argument. `@file` reads a file, `-` reads stdin.
+- `--describe` prints a method's TypeScript signature (from the plugin types), its parameters, `effect`, the flags a real call needs (`needs`) and an example invocation, without connecting or needing an identity.
+- `--args` takes JSON: an array is spread as positional arguments, any other value is passed as the single argument. A bare value that is not JSON, such as an `lc:` URI or a profile ID, is passed as one string (`--args lc:network:…`); quote numbers or `true` as JSON strings (`'"42"'`) to pass them as text. `@file` reads a file, `-` reads stdin.
 - Methods named like reads (`get…`, `list…`, `count…`, `resolve…`, `verify…`, and similar) run as-is. Everything else needs `--write`, or fails with `WRITE_REQUIRES_FLAG`; `-y` does not imply `--write`. A few read-named methods that change state on the network (such as `resolveShareLink`) also need `--write`.
 - Methods that return secrets also need `--show-secret` (`SECRET_REQUIRES_FLAG`). Secrets here are private keys, API tokens, signed presentations or ID tokens that can authenticate as this identity (such as `issuePresentation`, `signPresentation` and `presentCredentials`), and values that can redeem an authorization code (`beginCredentialOfferAuthCode` returns the PKCE verifier). Without `--show-secret` the seed is never printed. With it, a method such as `getSubjectKeypair` returns the private key, which is equivalent to the seed (the seed itself is still redacted wherever it appears verbatim, as hex or base64).
 - On-chain methods (`transferTokens`, marked `(on-chain)` in `--list`) need `--chain <name>`, an ethers network name such as `sepolia` (`mainnet`, `homestead` and `ethereum` all mean mainnet). Without it they fail with `CHAIN_REQUIRED` before connecting. The Ethereum plugin defaults to mainnet whatever `--network` is, so mainnet is used only when you name it. After connecting, `call` checks the chain the wallet reports and fails with `CHAIN_MISMATCH` (nothing submitted) if it differs or cannot be read. `--chain` has no environment variable. On other methods it sets and checks the chain the same way.
@@ -171,7 +173,7 @@ Calls the LearnCard Network REST API at `<network>/api` (for example `https://ne
 - `--dry-run` shows the exact URL, the normalized `routePath` the `--write` check used, `effect` and `allowed`. The token and any seed in the body are masked.
 - `--query key=value` (repeatable), `--data <json|@file|->`, `--timeout <seconds>` (default 30).
 - `--spec` prints the network's OpenAPI spec and reference URLs; `--spec --fetch` downloads the spec and lists its operations (with `--dry-run` it only reports the URL it would fetch).
-- A non-2xx response fails with `code: "HTTP_<status>"` and the (truncated) response body in `detail`. Other codes: `NETWORK_ERROR`, `TIMEOUT`, `NETWORK_MISMATCH` (the folder's token is for a different network).
+- A non-2xx response fails with `code: "HTTP_<status>"` and the (truncated) response body in `detail`. Other codes: `NETWORK_ERROR`, `TIMEOUT`, `NETWORK_MISMATCH` (the folder or its token is for a different network).
 
 Result: `{ ok: true, command: "api", status, method, path, data }`.
 

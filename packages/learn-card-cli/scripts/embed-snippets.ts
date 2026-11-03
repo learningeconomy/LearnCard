@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { methodSignaturesModule, readMethodSignatures } from './method-signatures';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const snippets = {
@@ -25,8 +26,24 @@ export const embedSnippets = async (signal?: AbortSignal): Promise<void> => {
                 `export const ${name} = ${JSON.stringify(await readFile(resolve(root, 'docs/snippets', file), { encoding: 'utf8', signal }))};\n`
         )
     );
-    const output = resolve(root, 'packages/learn-card-cli/src/generated/snippets.ts');
-    const content = '// Generated from docs/snippets. Do not edit.\n' + lines.join('');
+    await writeGenerated(
+        resolve(root, 'packages/learn-card-cli/src/generated/snippets.ts'),
+        '// Generated from docs/snippets. Do not edit.\n' + lines.join(''),
+        signal
+    );
+    await writeGenerated(
+        resolve(root, 'packages/learn-card-cli/src/generated/method-signatures.ts'),
+        methodSignaturesModule(await readMethodSignatures(root)),
+        signal
+    );
+};
+
+/** Write a generated module only when it changed, atomically (temp file + rename). */
+const writeGenerated = async (
+    output: string,
+    content: string,
+    signal?: AbortSignal
+): Promise<void> => {
     try {
         if ((await readFile(output, 'utf8')) === content) return;
     } catch (error) {

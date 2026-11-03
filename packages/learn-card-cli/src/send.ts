@@ -229,6 +229,19 @@ export const resolveRecipient = async (
     return candidate;
 };
 
+/** What to tell the sender after an inbox send; honest about `--suppress-delivery`. */
+export const inboxSentMessage = (
+    recipient: string,
+    kind: string,
+    claimUrl: string | undefined,
+    suppressDelivery: boolean
+): string => {
+    const channel = kind === 'phone' ? 'text' : 'email';
+    return suppressDelivery
+        ? `Sent. No claim ${channel} was sent (--suppress-delivery); share this link with ${recipient} yourself:\n${claimUrl}`
+        : `Sent. ${recipient} will get a claim ${channel}. You can also share this link directly:\n${claimUrl}`;
+};
+
 export const runSend = async (
     recipient: string | undefined,
     options: SendOptions
@@ -342,7 +355,12 @@ export const runSend = async (
     out.log('');
     if (result.inbox?.status === 'PENDING') {
         out.log(
-            `Sent. ${resolvedRecipient} will get a claim ${recipientKind === 'phone' ? 'text' : 'email'}. You can also share this link directly:\n${result.inbox.claimUrl}`
+            inboxSentMessage(
+                resolvedRecipient,
+                recipientKind,
+                result.inbox.claimUrl,
+                !!options.suppressDelivery
+            )
         );
     } else if (recipientKind === 'email' || recipientKind === 'phone') {
         out.log(

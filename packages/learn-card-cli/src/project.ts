@@ -10,7 +10,7 @@ import {
 import { getLCAPlugin, initLCALearnCard, type LCALearnCard } from '@learncard/lca-api-plugin';
 import { generateRandomSeed } from './random';
 import { out } from './out';
-import { NoIdentityError, UsageError } from './errors';
+import { CliError, NoIdentityError, UsageError } from './errors';
 
 export const KEYS = {
     SECURE_SEED: 'SECURE_SEED', // Private issuer seed; never regenerate or print.
@@ -373,10 +373,30 @@ export const assertProjectNetwork = (project: Project, network: string): void =>
         'INTEGRATION_ID',
     ].some(key => project.env[key]);
     if (previous !== network && hasResources) {
-        throw new Error(
-            'This project has resources on another network. Use a separate folder for staging or another network.'
+        throw new CliError(
+            `This folder is set up for ${networkLabel(previous)}, not ${networkLabel(network)}. Its signing authority, tokens and templates exist only there.`,
+            {
+                code: 'NETWORK_MISMATCH',
+                hint: `Drop --network to use ${networkLabel(previous)}, use a separate folder for ${networkLabel(network)} (e.g. \`npx @learncard/cli init --network ${networkLabel(network)}\` in a new folder), or copy an org spec there with \`npx @learncard/cli promote\`.`,
+            }
         );
     }
+};
+
+/** Hosted signing service (lca-api) for production; staging has its own default. */
+export const PRODUCTION_LCA_API = 'https://api.learncard.app/trpc';
+
+/**
+ * The hosted signing service a command will actually use: an explicit LCA_API_URL (or the
+ * staging default), else the production service when the network is production. Undefined
+ * for local or custom networks without LCA_API_URL. Returns a tRPC URL.
+ */
+export const signingServiceUrl = (services: {
+    network: string;
+    lcaAPI?: string;
+}): string | undefined => {
+    if (services.lcaAPI) return services.lcaAPI.replace(/\/api\/?$/, '/trpc');
+    return services.network === PRODUCTION_NETWORK ? PRODUCTION_LCA_API : undefined;
 };
 
 /**
@@ -496,13 +516,30 @@ export async function connect(
     return learnCard;
 }
 
-/** `ensureIdentity` cannot derive the DID without a wallet; fill it in on first connect. */
-const noteCreatedIdentityDid = (did: string): void => {
-    const created = out.result?.identityCreated as
-        { profileId: string; network: string; did?: string } | undefined;
-    if (!created || created.did) return;
+type CreatedIdentity = { profileId: string; network: string; did?: string; keyDid?: string };
+
+/**
+ * `ensureIdentity` cannot derive the seed's key DID without a wallet; fill it in on first
+ * connect as `keyDid`. `did` is reserved for the profile's DID (the same value as the
+ * command result's `did`), recorded once the profile exists.
+ */
+const noteCreatedIdentityDid = (keyDid: string): void => {
+    const created = out.result?.identityCreated as CreatedIdentity | undefined;
+    if (!created || created.keyDid) return;
+    out.set({ identityCreated: { ...created, keyDid } });
+};
+
+/** Record the profile DID on `identityCreated` when this run created the identity. */
+export const noteCreatedProfileDid = (did: string | undefined): void => {
+    const created = out.result?.identityCreated as CreatedIdentity | undefined;
+    if (!created || !did || created.did) return;
     out.set({
-        identityCreated: { profileId: created.profileId, did, network: created.network },
+        identityCreated: {
+            profileId: created.profileId,
+            did,
+            ...(created.keyDid ? { keyDid: created.keyDid } : {}),
+            network: created.network,
+        },
     });
 };
 
@@ -551,11 +588,10 @@ export const connectAsDidWebSigner = async (
         ...(services.cloud && { cloud: { url: services.cloud } }),
         ...(options.didkit && { didkit: options.didkit }),
     });
-    const lcaAPI = services.lcaAPI?.replace(/\/api\/?$/, '/trpc');
     return learnCard.addPlugin(
         await getLCAPlugin(
             learnCard as unknown as Parameters<typeof getLCAPlugin>[0],
-            lcaAPI ?? 'https://api.learncard.app/trpc'
+            signingServiceUrl(services) ?? PRODUCTION_LCA_API
         )
     ) as unknown as LCALearnCard;
 };
@@ -595,16 +631,18 @@ export const ensureProfile = async (
 ): Promise<void> => {
     const existing = await learnCard.invoke.getProfile();
     if (existing) {
+        noteCreatedProfileDid('did' in existing ? existing.did : undefined);
         out.log(`Signed in as "${existing.displayName}" (${existing.profileId})`);
         if (project && project.env.DISPLAY_NAME !== existing.displayName)
             await saveProject(project, { DISPLAY_NAME: existing.displayName });
         return;
     }
-    await learnCard.invoke.createProfile({
+    const did = await learnCard.invoke.createProfile({
         profileId: identity.profileId,
         displayName: identity.displayName,
         bio: '',
         shortBio: '',
     });
+    noteCreatedProfileDid(typeof did === 'string' ? did : undefined);
     out.log(`Created profile "${identity.displayName}" (${identity.profileId})`);
 };

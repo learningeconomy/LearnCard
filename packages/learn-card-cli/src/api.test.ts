@@ -224,6 +224,19 @@ describe('token sourcing', () => {
         expect(printed()).not.toContain(TOKEN);
     });
 
+    it('does not repeat the response on stderr in --json mode', async () => {
+        await writeEnv(`API_TOKEN=${TOKEN}\n`);
+        out.json = true;
+        await runApi(
+            'GET',
+            '/profile',
+            {},
+            makeDeps(async () => jsonResponse({ marker: 'RESPONSE-MARKER' }))
+        );
+        expect(JSON.stringify(out.result)).toContain('RESPONSE-MARKER');
+        expect(printed()).not.toContain('RESPONSE-MARKER');
+    });
+
     it('refuses a folder token for another network', async () => {
         await writeEnv(`API_TOKEN=${TOKEN}\nNETWORK_URL=staging\n`);
         const deps = offline();

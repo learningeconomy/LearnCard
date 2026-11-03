@@ -13,6 +13,7 @@ import {
 } from './project';
 import { seedRedactions, toJsonSafe, type JsonValue } from './serialize';
 import { defaultJsonInputIo, readJsonInput, type JsonInputIo } from './json-input';
+import { METHOD_SIGNATURES } from './generated/method-signatures';
 import {
     CHAIN_METHODS,
     ETHEREUM_DEFAULT_CHAIN,
@@ -34,6 +35,8 @@ export interface CallOptions extends ProjectOptions {
     dryRun?: boolean;
     /** List invoke methods instead of calling one. */
     list?: boolean;
+    /** Describe one method (signature, effect, required flags) without connecting. */
+    describe?: boolean;
     /** Allow methods whose result is a secret (keys, API tokens, DID-Auth VPs). */
     showSecret?: boolean;
     /**
@@ -126,6 +129,17 @@ export const parseCallArgs = async (
     io: JsonInputIo = defaultJsonInputIo
 ): Promise<unknown[]> => {
     if (args === undefined) return [];
+    // A bare inline value that is not JSON (e.g. an lc: URI or a profile ID) is one string
+    // argument, so agents need not JSON-quote it. Values that look like JSON ([, {, ")
+    // must still parse; @file and - always read JSON.
+    const inline = args !== '-' && !args.startsWith('@');
+    if (inline && !/^\s*[[{"]/.test(args)) {
+        try {
+            JSON.parse(args);
+        } catch {
+            return [args];
+        }
+    }
     const parsed = await readJsonInput(args, '--args', io);
     return Array.isArray(parsed) ? parsed : [parsed];
 };
@@ -221,7 +235,7 @@ export const runCallList = async (options: CallOptions): Promise<void> => {
             `${entry.name.padEnd(width)}  ${entry.effect}${entry.secret ? ' (secret)' : ''}${entry.chain ? ' (on-chain)' : ''}`
         );
     out.log(
-        '\nread methods run as-is; write methods need --write; secret methods need --show-secret; on-chain methods need --chain.'
+        '\nread methods run as-is; write methods need --write; secret methods need --show-secret; on-chain methods need --chain.\nSignature and parameters for one: npx @learncard/cli call <method> --describe'
     );
     out.set({ source, ...(options.dryRun ? { dryRun: true } : {}), methods });
 };
@@ -244,6 +258,95 @@ export const assertLikelyKnownMethod = (method: string): void => {
     });
 };
 
+/** Top-level parameters of a generated signature like `name: (a: A, b?: B) => R`. */
+export const signatureParameters = (signature: string): { name: string; optional: boolean }[] => {
+    const open = signature.indexOf('(');
+    if (open < 0) return [];
+    const params: string[] = [];
+    let depth = 0;
+    let current = '';
+    for (let i = open + 1; i < signature.length; i++) {
+        const char = signature[i]!;
+        if ('([{<'.includes(char)) depth++;
+        else if (')]}>'.includes(char) && !(char === '>' && signature[i - 1] === '=')) {
+            if (depth === 0) break;
+            depth--;
+        } else if (char === ',' && depth === 0) {
+            params.push(current);
+            current = '';
+            continue;
+        }
+        current += char;
+    }
+    if (current.trim()) params.push(current);
+    return params.map(param => {
+        const match = /^\s*(?:\.\.\.)?([A-Za-z0-9_]+)(\?)?\s*:/.exec(param);
+        return { name: match?.[1] ?? param.trim(), optional: !!match?.[2] };
+    });
+};
+
+/**
+ * `learncard call <method> --describe`: the method's TypeScript signature (from the plugin
+ * types, generated at build time), its read/write/secret/on-chain classification, the flags
+ * a real call needs, and an example invocation. Never loads a wallet or touches `.env`.
+ */
+export const runCallDescribe = async (method: string | undefined): Promise<void> => {
+    if (!method)
+        throw new UsageError(
+            '`call --describe` needs a method, e.g. `call getProfile --describe`.'
+        );
+    const name = normalizeMethodName(method);
+    const described = METHOD_SIGNATURES[name];
+    if (!described && !STATIC_INVOKE_METHODS.includes(name)) {
+        const suggestions = suggestMethods(name, STATIC_INVOKE_METHODS);
+        throw new CliError(`Unknown method "${name}".`, {
+            code: 'UNKNOWN_METHOD',
+            hint: `${suggestions.length ? `Did you mean ${suggestions.join(', ')}? ` : ''}List all with \`npx @learncard/cli call --list\`.`,
+        });
+    }
+    const { effect, secret } = classifyMethod(name);
+    const onChain = CHAIN_METHODS.has(name);
+    const needs = [
+        ...(effect === 'write' ? ['--write'] : []),
+        ...(secret ? ['--show-secret'] : []),
+        ...(onChain ? ['--chain <name>'] : []),
+    ];
+    const params = described ? signatureParameters(described.signature) : undefined;
+    const required = params?.filter(param => !param.optional).length ?? 1;
+    const argsExample =
+        required === 0
+            ? ''
+            : required === 1
+              ? " --args '<value>'"
+              : ` --args '[${params!
+                    .filter(param => !param.optional)
+                    .map(param => `<${param.name}>`)
+                    .join(', ')}]'`;
+    const example = `npx @learncard/cli call ${name}${argsExample}${needs.length ? ' ' + needs.join(' ') : ''} --json`;
+
+    // In --json mode the description is the stdout result; keep stderr quiet.
+    if (!out.json) {
+        out.log(`${name}  [${effect}${secret ? ', secret' : ''}${onChain ? ', on-chain' : ''}]`);
+        if (described) {
+            out.log(`  ${described.signature}`);
+            if (described.doc) out.log(`  ${described.doc}`);
+            out.log(`  from @learncard/${described.plugin}-plugin types`);
+        } else out.log('  (no signature in the generated catalog)');
+        if (needs.length) out.log(`  needs: ${needs.join(' ')}`);
+        out.log(`  example: ${example}`);
+    }
+    out.set({
+        method: name,
+        effect,
+        secret,
+        onChain,
+        ...(described ?? {}),
+        ...(params ? { parameters: params } : {}),
+        needs,
+        example,
+    });
+};
+
 /**
  * `learncard call <method>`: invoke `learnCard.invoke[method](...args)` as this folder's
  * identity (or a managed profile with `--as`) and print the JSON-safe result.
@@ -255,6 +358,7 @@ export const runCall = async (
     io: JsonInputIo = defaultJsonInputIo
 ): Promise<void> => {
     if (options.list) return runCallList(options);
+    if (options.describe) return runCallDescribe(method);
     if (!method)
         throw new UsageError(
             'A method name is required, e.g. `npx @learncard/cli call getProfile`.',
@@ -364,7 +468,8 @@ export const runCall = async (
     }
 
     const safe: JsonValue = toJsonSafe(result, { redact: seedRedactions(seed) });
-    out.log(JSON.stringify(safe, null, 2));
+    // In --json mode the result is already on stdout; don't repeat it on stderr.
+    if (!out.json) out.log(JSON.stringify(safe, null, 2));
     out.set({
         method: name,
         effect,
@@ -383,7 +488,7 @@ export const registerCallCommand = (program: Command, run: RunCommand): void => 
         )
         .option(
             '--args <json|@file|->',
-            'arguments as JSON: an array is spread as positional arguments, any other value is the single argument'
+            'arguments as JSON: an array is spread as positional arguments, any other value is the single argument; a bare non-JSON value (e.g. an lc: URI) is one string'
         )
         .addOption(
             new Option('--as <profileId>', 'call as a profile you manage (from `org apply`)').env(
@@ -398,6 +503,10 @@ export const registerCallCommand = (program: Command, run: RunCommand): void => 
         )
         .option('--dry-run', 'print the method, arguments and classification without connecting')
         .option('--list', 'list invoke methods with their read/write classification')
+        .option(
+            '--describe',
+            "show the method's signature, effect and required flags without connecting"
+        )
         .option('--network <url>', 'production|staging|local or a tRPC URL (default: production)')
         .option('--json', 'print a single JSON result on stdout')
         .action((method: string | undefined, options: CallOptions) =>

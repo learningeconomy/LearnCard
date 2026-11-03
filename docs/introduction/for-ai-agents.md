@@ -83,7 +83,7 @@ A few commands report a checked outcome rather than just "it ran": `verify` adds
 
 **Read-only — safe to run any time:** `whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `verify`, `clr validate` (without `--dry-run-sign`), `token --list`, `org apply --dry-run`, `promote --dry-run`. These never create an identity and never write `.env`. Those that need an identity (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `token --list`, `promote --dry-run`) fail with `NO_IDENTITY` in a folder without one. `verify` and `clr validate` don't need an identity. `org apply --dry-run` in a folder without one previews the plan with a throwaway seed (it still contacts the network) and writes nothing. `open` also fails with `NO_IDENTITY` without one and writes nothing, but it hands the folder's seed to the LearnCard app (see [Secrets](#secrets)).
 
-**Create an identity if the folder has none:** `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, `consent-contract`. When one of these creates a new identity, its JSON result includes `identityCreated: { profileId, did, network }`, even when the command fails afterwards (the error envelope carries it too, without `did` if the command failed before connecting; check for it before retrying). On production that is a new public profile. `promote` (without `--dry-run`) also writes a new folder: it copies this folder's seed and profile ID into `.learncard/<network>/` and creates the profile on the target network. It does not report `identityCreated`; its JSON result names the folder in `targetDir`.
+**Create an identity if the folder has none:** `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, `consent-contract`. When one of these creates a new identity, its JSON result includes `identityCreated: { profileId, did, keyDid, network }` (`did` is the new profile's DID, `keyDid` the seed's `did:key`), even when the command fails afterwards (the error envelope carries it too, without `did` if no profile was created; check for it before retrying). On production that is a new public profile. `promote` (without `--dry-run`) also writes a new folder: it copies this folder's seed and profile ID into `.learncard/<network>/` and creates the profile on the target network. It does not report `identityCreated`; its JSON result names the folder in `targetDir`.
 
 **Hard or impossible to undo — confirm with a person first:**
 
@@ -113,7 +113,8 @@ A few commands report a checked outcome rather than just "it ran": `verify` adds
 The CLI's own commands cover the quickstart journey: sending, tracking, signing, tokens, webhooks, ConsentFlow contracts, organizations, verification and revocation. For anything else (templates with custom content, claim links, skills, connections and more), first check `npx @learncard/cli capabilities --json`, then use one of the two escape hatches:
 
 ```bash
-# Any SDK method, as the folder's identity
+# Any SDK method, as the folder's identity (--describe shows its signature first)
+npx @learncard/cli call createBoost --describe --json
 npx @learncard/cli call getProfile --network staging --json
 npx @learncard/cli call createBoost --args @boost.json --dry-run --network staging --json
 

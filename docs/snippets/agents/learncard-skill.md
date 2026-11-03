@@ -89,6 +89,7 @@ npx @learncard/cli revoke <credentialUri> --network staging -y --json   # irreve
 
 ```bash
 npx @learncard/cli call --list --json
+npx @learncard/cli call createBoost --describe --json
 npx @learncard/cli call getProfile --network staging --json
 npx @learncard/cli call countBoosts --network staging --json
 npx @learncard/cli call getPaginatedBoosts --args '[{"limit":10}]' --network staging --json
@@ -96,7 +97,8 @@ npx @learncard/cli call createBoost --args @args.json --dry-run --network stagin
 npx @learncard/cli call createBoost --args @args.json --write --network staging -y --json
 ```
 
-- `--args` takes JSON: an array is the positional arguments, any other value is a single argument; `@file` reads a file and `-` reads stdin.
+- Run `call <method> --describe` first: it prints the signature, parameters, the flags a real call needs and an example, offline.
+- `--args` takes JSON: an array is the positional arguments, any other value is a single argument; a bare non-JSON value such as an `lc:` URI is one string (`--args lc:network:…`); `@file` reads a file and `-` reads stdin.
 - Methods whose names start with `get`, `list`, `count`, `resolve`, `verify`, `search` and similar are reads. Everything else is a write and needs `--write`; `-y` does not imply it. Run `--dry-run` first and confirm writes with the user.
 - On-chain methods (`transferTokens`, marked `(on-chain)` in `--list`) also need `--chain <name>`. The Ethereum plugin defaults to mainnet (real funds) whatever `--network` says. Use a testnet such as `--chain sepolia` unless the user explicitly wants mainnet; the CLI refuses if the wallet reports a different chain.
 - `--as <profileId>` acts as a managed profile (see `whoami`). `call` never creates an identity.
@@ -121,25 +123,27 @@ npx @learncard/cli api POST /boost/paginated --data @body.json --write --network
 - Success: `{"ok":true,"command":"<name>",...}`, exit 0.
 - Failure: `{"ok":false,"command":"<name>","error":"...","code":"...","hint":"...","detail":"..."}`, exit 1. `hint` and `detail` are optional.
 - `verify` adds `verified`; `doctor` and `clr validate` set `ok` to whether their checks passed.
-- If a result or error envelope contains `identityCreated`, the folder now has a new identity (and a new public profile on that network). Tell the user.
+- If a result or error envelope contains `identityCreated` (`{ profileId, did, keyDid, network }`), the folder now has a new identity (and a new public profile on that network). Tell the user.
+- `--json`, `-y` and `--network` may come before or after the command.
 
-| `code`                     | Meaning                                                      | What to do                                                                                        |
-| :------------------------- | :----------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
-| `USAGE`                    | Bad command, flag or argument. Nothing was done.             | Fix it using `commands <name> --json` or `--help`.                                                |
-| `NO_IDENTITY`              | The folder has no identity and the command won't make one.   | Check you're in the right folder; then, with the user's agreement, `init --network staging`.      |
-| `WRITE_REQUIRES_FLAG`      | `call`/`api` would change state.                             | Confirm with the user, then re-run with `--write` (try `--dry-run` first).                        |
-| `UNKNOWN_METHOD`           | `call` method does not exist.                                | Use the suggestions in `hint`, or `call --list --json`.                                           |
-| `NO_API_TOKEN`             | `api` has no bearer token.                                   | Ask the user to set `LEARNCARD_API_KEY`, or create one with `token` (staging first).              |
-| `SECRET_REQUIRES_FLAG`     | `call` method returns a secret (key, token, signed VP).      | Don't. Only re-run with `--show-secret` if the user explicitly asks.                              |
-| `CALL_FAILED`              | The SDK method threw.                                        | Read `detail`; check `--args` against the method's parameters.                                    |
-| `CHAIN_REQUIRED`           | `call` on an on-chain method without `--chain`.              | Ask the user which chain. Any mainnet moves real funds.                                           |
-| `CHAIN_MISMATCH`           | The wallet's chain differs from `--chain`. Nothing was sent. | Don't switch `--chain` to match; ask the user.                                                    |
-| `NETWORK_ERROR`, `TIMEOUT` | `api` could not reach the network in time.                   | Check `--network`; retry reads; for writes check state before retrying.                           |
-| `NETWORK_MISMATCH`         | The folder's `API_TOKEN` is for another network.             | Use the folder for that network, or set `LEARNCARD_API_KEY`.                                      |
-| `HTTP_<status>`            | The REST API returned a non-2xx status.                      | Read `detail` (response body). 401/403: token or scope; 404: path or ID; 429: wait, then retry.   |
-| `EXISTS`                   | `skill install` found a different file at the target.        | Show the user the diff; re-run with `--force` only if they agree.                                 |
-| `UNSAFE_PATH`              | `skill install` met a symlink on the target path.            | Nothing was written. Ask the user; `--force` does not override it.                                |
-| `ERROR`                    | Anything else (network, permission, server).                 | Read `error`, `hint`, `detail`. Don't retry a `send` blindly: check `status --json` for it first. |
+| `code`                     | Meaning                                                                       | What to do                                                                                        |
+| :------------------------- | :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------ |
+| `USAGE`                    | Bad command, flag or argument. Nothing was done.                              | Fix it using `commands <name> --json` or `--help`.                                                |
+| `NO_IDENTITY`              | The folder has no identity and the command won't make one.                    | Check you're in the right folder; then, with the user's agreement, `init --network staging`.      |
+| `WRITE_REQUIRES_FLAG`      | `call`/`api` would change state.                                              | Confirm with the user, then re-run with `--write` (try `--dry-run` first).                        |
+| `UNKNOWN_METHOD`           | `call` method does not exist.                                                 | Use the suggestions in `hint`, or `call --list --json`.                                           |
+| `NOT_FOUND`                | An ID you passed (e.g. a `status` activity ID) doesn't exist on this network. | List IDs first (`status --json`); check `--network`.                                              |
+| `NO_API_TOKEN`             | `api` has no bearer token.                                                    | Ask the user to set `LEARNCARD_API_KEY`, or create one with `token` (staging first).              |
+| `SECRET_REQUIRES_FLAG`     | `call` method returns a secret (key, token, signed VP).                       | Don't. Only re-run with `--show-secret` if the user explicitly asks.                              |
+| `CALL_FAILED`              | The SDK method threw.                                                         | Read `detail`; check `--args` against the method's parameters.                                    |
+| `CHAIN_REQUIRED`           | `call` on an on-chain method without `--chain`.                               | Ask the user which chain. Any mainnet moves real funds.                                           |
+| `CHAIN_MISMATCH`           | The wallet's chain differs from `--chain`. Nothing was sent.                  | Don't switch `--chain` to match; ask the user.                                                    |
+| `NETWORK_ERROR`, `TIMEOUT` | `api` could not reach the network in time.                                    | Check `--network`; retry reads; for writes check state before retrying.                           |
+| `NETWORK_MISMATCH`         | The folder (or its `API_TOKEN`) is set up for another network.                | Drop `--network`, or use a folder per network (`promote` copies an org spec).                     |
+| `HTTP_<status>`            | The REST API returned a non-2xx status.                                       | Read `detail` (response body). 401/403: token or scope; 404: path or ID; 429: wait, then retry.   |
+| `EXISTS`                   | `skill install` found a different file at the target.                         | Show the user the diff; re-run with `--force` only if they agree.                                 |
+| `UNSAFE_PATH`              | `skill install` met a symlink on the target path.                             | Nothing was written. Ask the user; `--force` does not override it.                                |
+| `ERROR`                    | Anything else (network, permission, server).                                  | Read `error`, `hint`, `detail`. Don't retry a `send` blindly: check `status --json` for it first. |
 
 ## Confirm with the user first
 

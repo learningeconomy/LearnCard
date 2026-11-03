@@ -315,13 +315,13 @@ export const COMMAND_METADATA: Readonly<Record<string, CommandMetadata>> = {
         effect: 'varies',
         createsIdentity: false,
         network: true,
-        output: 'method, effect (read|write), as?, chain?, result; --list: source, methods[] (secret?, chain?); --dry-run: dryRun, method, args, effect, secret?, chain? {effective, requested, pluginDefault, required}, as, network, identity, known, allowed (no connection)',
+        output: 'method, effect (read|write), as?, chain?, result; --describe: method, effect, secret, onChain, plugin, signature, doc?, parameters[] {name, optional}, needs[], example (no connection); --list: source, methods[] (secret?, chain?); --dry-run: dryRun, method, args, effect, secret?, chain? {effective, requested, pluginDefault, required}, as, network, identity, known, allowed (no connection)',
         examples: [
-            `${CLI} call getProfile --args '["example-academy"]' --json`,
-            `${CLI} call --list --json`,
+            `${CLI} call getProfile --args example-academy --json`,
+            `${CLI} call createBoost --describe --json`,
             `${CLI} call createBoost --args @boost.json --write --dry-run --json`,
         ],
-        notes: 'Methods that are not read-only (get/list/verify/...) require --write; -y does not imply it. Methods that return secrets (keys, API tokens, signed login presentations, PKCE verifiers) need --show-secret. On-chain methods (transferTokens) need --chain <name>: the Ethereum plugin defaults to mainnet (real funds) regardless of --network, and the wallet chain is checked before submitting. Never creates an identity; read calls do not register DIDs with LearnCloud.',
+        notes: 'Run `call <method> --describe` for the TypeScript signature, parameters and required flags (offline). --args takes JSON (an array is spread as positional arguments); a bare value that is not JSON (an lc: URI, a profile ID) is passed as one string. Methods that are not read-only (get/list/verify/...) require --write; -y does not imply it. Methods that return secrets (keys, API tokens, signed login presentations, PKCE verifiers) need --show-secret. On-chain methods (transferTokens) need --chain <name>: the Ethereum plugin defaults to mainnet (real funds) regardless of --network, and the wallet chain is checked before submitting. Never creates an identity; read calls do not register DIDs with LearnCloud.',
     },
     api: {
         effect: 'varies',
@@ -408,6 +408,11 @@ export const ERROR_CODES: CommandManifest['errorCodes'] = [
         meaning: 'Unclassified failure (network, auth, remote rejection). See detail.',
     },
     {
+        code: 'NOT_FOUND',
+        meaning:
+            'The ID you passed (e.g. a `status` activity ID) does not exist on this network. List IDs first.',
+    },
+    {
         code: 'UNKNOWN_COMMAND',
         meaning: '`commands <name>` named no command. See hint for close matches.',
     },
@@ -450,7 +455,7 @@ export const ERROR_CODES: CommandManifest['errorCodes'] = [
     {
         code: 'NETWORK_MISMATCH',
         meaning:
-            "`api` was asked for a different network than the folder's API_TOKEN belongs to. Use a folder per network or LEARNCARD_API_KEY.",
+            'The folder (or its API_TOKEN for `api`) belongs to a different network than --network asked for. Drop --network, use a folder per network, or set LEARNCARD_API_KEY for `api`.',
     },
     {
         code: 'BAD_SPEC',

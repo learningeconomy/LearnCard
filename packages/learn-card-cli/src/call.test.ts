@@ -23,6 +23,7 @@ import { CliError, errorEnvelope } from './errors';
 import { out } from './out';
 import { STAGING_NETWORK } from './project';
 import {
+    signatureParameters,
     assertCallAllowed,
     effectiveChainOf,
     normalizeChain,
@@ -43,6 +44,8 @@ import {
 import { CIRCULAR, REDACTED, TRUNCATED, toJsonSafe } from './serialize';
 import type { JsonInputIo } from './json-input';
 import type { RunCommand } from './doctor';
+import { METHOD_SIGNATURES } from './generated/method-signatures';
+import { PLUGIN_METHOD_BLOCKS, parseMethodBlock } from '../scripts/method-signatures';
 
 const SEED = 'a'.repeat(64);
 let cwd: string;
@@ -159,31 +162,7 @@ describe('classifyMethod', () => {
 
 describe('method catalog matches the plugin type definitions', () => {
     const repoRoot = path.resolve(__dirname, '../../..');
-    const blocks: [string, string][] = [
-        [
-            'packages/plugins/learn-card-network/src/types.ts',
-            'export type LearnCardNetworkPluginMethods = {',
-        ],
-        ['packages/plugins/vc/src/types.ts', 'export type VCPluginMethods = {'],
-        ['packages/plugins/didkit/src/types.ts', 'export type DidkitPluginMethods = {'],
-        [
-            'packages/plugins/didkey/src/types.ts',
-            'export type DidKeyPluginMethods<DidMethod extends string> = {',
-        ],
-        ['packages/plugins/encryption/src/types.ts', 'export type EncryptionPluginMethods = {'],
-        ['packages/plugins/learn-cloud/src/types.ts', 'export type LearnCloudPluginMethods = {'],
-        ['packages/plugins/vc-templates/src/types.ts', 'export type VCTemplatePluginMethods = {'],
-        ['packages/plugins/vpqr/src/types.ts', 'export type VpqrPluginMethods = {'],
-        ['packages/plugins/ethereum/src/types.ts', 'export type EthereumPluginMethods = {'],
-        ['packages/plugins/learn-card/src/types.ts', 'export type LearnCardPluginMethods = {'],
-        ['packages/plugins/openid4vc/src/types.ts', 'export type OpenID4VCPluginMethods = {'],
-        ['packages/plugins/chapi/src/types.ts', 'export type CHAPIPluginMethods = {'],
-        [
-            'packages/plugins/sd-jwt-vc/src/types.ts',
-            'export type SdJwtVcPluginMethods = VerifyExtension & {',
-        ],
-        ['packages/plugins/crypto/src/types.ts', 'export type CryptoPluginMethods = {'],
-    ];
+    const blocks = PLUGIN_METHOD_BLOCKS;
 
     const declaredMethods = async (): Promise<Set<string>> => {
         const names = new Set<string>();
@@ -227,6 +206,16 @@ describe('args parsing', () => {
         expect(await parseCallArgs('null', noIo)).toEqual([null]);
         // A single array argument must itself be wrapped.
         expect(await parseCallArgs('[["x", "y"]]', noIo)).toEqual([['x', 'y']]);
+    });
+
+    it('takes a bare non-JSON value as one string argument', async () => {
+        const uri = 'lc:network:network.learncard.com/trpc:credential:abc';
+        expect(await parseCallArgs(uri, noIo)).toEqual([uri]);
+        expect(await parseCallArgs('some-profile-id', noIo)).toEqual(['some-profile-id']);
+        // JSON still wins when the value parses: numbers, booleans and quoted strings.
+        expect(await parseCallArgs('42', noIo)).toEqual([42]);
+        expect(await parseCallArgs('true', noIo)).toEqual([true]);
+        expect(await parseCallArgs('"42"', noIo)).toEqual(['42']);
     });
 
     it('reads @file and - (stdin)', async () => {
@@ -478,6 +467,24 @@ describe('calling', () => {
             jwk: { d: REDACTED },
         });
         expect(() => JSON.stringify(out.result)).not.toThrow();
+    });
+
+    it('does not repeat the result on stderr in --json mode', async () => {
+        mocks.initLearnCard.mockResolvedValue(
+            fakeWallet({ getThing: async () => ({ marker: 'RESULT-MARKER' }) })
+        );
+        out.json = true;
+        await runCall('getThing', {}, noIo);
+        expect(out.result.result).toEqual({ marker: 'RESULT-MARKER' });
+        const stderr = vi.mocked(console.error).mock.calls.flat().map(String).join('\n');
+        expect(stderr).not.toContain('RESULT-MARKER');
+        out.json = false;
+        await runCall('getThing', {}, noIo);
+        const human = [...vi.mocked(console.log).mock.calls, ...vi.mocked(console.error).mock.calls]
+            .flat()
+            .map(String)
+            .join('\n');
+        expect(human).toContain('RESULT-MARKER');
     });
 
     it('prints null for an undefined result', async () => {
@@ -847,5 +854,84 @@ describe('registerCallCommand --chain', () => {
         });
         program.parse(['node', 'learncard', 'call', 'transferTokens', '--chain', 'sepolia']);
         expect(seen?.chain).toBe('sepolia');
+    });
+});
+
+describe('call --describe', () => {
+    it('every catalogued method has a generated signature', () => {
+        const missing = STATIC_INVOKE_METHODS.filter(name => !METHOD_SIGNATURES[name]);
+        expect(missing).toEqual([]);
+    });
+
+    it('parses a plugin block: multi-line members, JSDoc, first declaration wins', () => {
+        const source = [
+            'export type Methods = {',
+            '    /** Read one thing. */',
+            '    getThing: (id: string) => Promise<Thing>;',
+            '    // a line comment',
+            '    makeThing: (',
+            '        input: { name: string; tags?: string[] },',
+            '        options?: Options',
+            '    ) => Promise<string>;',
+            '    getThing: () => never;',
+            '};',
+        ].join('\n');
+        const parsed = parseMethodBlock(source, 'export type Methods = {', 'demo');
+        expect(parsed.get('getThing')).toEqual({
+            plugin: 'demo',
+            signature: 'getThing: (id: string) => Promise<Thing>',
+            doc: 'Read one thing.',
+        });
+        expect(parsed.get('makeThing')?.signature).toBe(
+            'makeThing: (input: {name: string; tags?: string[]}, options?: Options) => Promise<string>'
+        );
+    });
+
+    it('splits top-level parameters, ignoring nested commas and arrow returns', () => {
+        expect(signatureParameters('f: () => Promise<void>')).toEqual([]);
+        expect(
+            signatureParameters('f: (a: Map<string, number>, b?: (x: X) => Y, ...rest: Z[]) => R')
+        ).toEqual([
+            { name: 'a', optional: false },
+            { name: 'b', optional: true },
+            { name: 'rest', optional: false },
+        ]);
+    });
+
+    it('describes a write method with its required flags and an example, without connecting', async () => {
+        await runCall('acceptCredential', { describe: true }, noIo);
+        expect(mocks.initLearnCard).not.toHaveBeenCalled();
+        expect(out.result).toMatchObject({
+            method: 'acceptCredential',
+            effect: 'write',
+            plugin: 'learn-card-network',
+            needs: ['--write'],
+            example: "npx @learncard/cli call acceptCredential --args '<value>' --write --json",
+        });
+        expect(String(out.result.signature)).toMatch(/^acceptCredential: \(uri: string/);
+        expect(await fs.readdir(cwd)).toEqual([]);
+    });
+
+    it('omits --args when every parameter is optional and flags secrets and chains', async () => {
+        await runCall('getProfile', { describe: true }, noIo);
+        expect(out.result.example).toBe('npx @learncard/cli call getProfile --json');
+        await runCall('getKey', { describe: true }, noIo);
+        expect(out.result.needs).toEqual(['--show-secret']);
+        await runCall('transferTokens', { describe: true }, noIo);
+        expect(out.result.needs).toEqual(['--write', '--chain <name>']);
+    });
+
+    it('keeps stderr quiet in --json mode', async () => {
+        out.json = true;
+        await runCall('getProfile', { describe: true }, noIo);
+        expect(vi.mocked(console.error)).not.toHaveBeenCalled();
+        out.json = false;
+    });
+
+    it('rejects a missing or unknown method', async () => {
+        expect(await failCode(runCall(undefined, { describe: true }, noIo))).toBe('USAGE');
+        expect(await failCode(runCall('getProfil', { describe: true }, noIo))).toBe(
+            'UNKNOWN_METHOD'
+        );
     });
 });

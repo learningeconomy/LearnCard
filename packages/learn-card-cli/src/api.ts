@@ -532,7 +532,8 @@ export const runApi = async (
             project.env.SECURE_SEED,
         ],
     });
-    out.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+    // In --json mode the response is already on stdout; don't repeat it on stderr.
+    if (!out.json) out.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
     out.set({ status: response.status, method: httpMethod, path: apiPath, data });
 };
 

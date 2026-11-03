@@ -130,6 +130,39 @@ const defaultIo: UsageErrorIo = {
  * — `{ok:false, command, code:'USAGE', error}` — and exit with commander's (non-zero)
  * code. Help and version output are unchanged. Human mode is untouched.
  */
+/**
+ * Agents often put global flags first (`learncard --json whoami`). Move leading
+ * `--json`, `-y`/`--yes` and `--network <value>` (or `--network=<value>`) after the command
+ * words so they reach the subcommand; every leaf command accepts them. `argv` is the full
+ * process.argv (node, script, ...args). Anything else is left in place.
+ */
+export const hoistGlobalFlags = (argv: string[]): string[] => {
+    const [node, script, ...args] = argv;
+    const moved: string[] = [];
+    let index = 0;
+    while (index < args.length) {
+        const arg = args[index]!;
+        if (arg === '--json' || arg === '-y' || arg === '--yes' || arg.startsWith('--network=')) {
+            moved.push(arg);
+            index++;
+        } else if (arg === '--network' && index + 1 < args.length) {
+            moved.push(arg, args[index + 1]!);
+            index += 2;
+        } else break;
+    }
+    if (!moved.length || index >= args.length) return argv;
+    return [node!, script!, ...args.slice(index), ...moved];
+};
+
+/** Turn commander's "(Did you mean x?)" into a hint, and point at the manifest. */
+const usageHint = (message: string, prefix: string): string => {
+    const suggestion = /\(Did you mean ([^?]+)\?\)/.exec(message)?.[1];
+    const list = prefix
+        ? `\`npx @learncard/cli commands ${prefix.trim()} --json\``
+        : '`npx @learncard/cli commands --json`';
+    return suggestion ? `Did you mean ${suggestion}? See ${list}.` : `See ${list}.`;
+};
+
 export const configureJsonUsageErrors = (
     program: Command,
     argv: string[],
@@ -167,6 +200,7 @@ export const configureJsonUsageErrors = (
                     )
                   : new CliError(error.message.replace(/^error:\s*/, '').trim(), {
                         code: 'USAGE',
+                        hint: usageHint(error.message, prefix),
                     });
             // Same envelope as runCommand: `error` is the first line, `detail` the full message.
             io.write(JSON.stringify(errorEnvelope(name, usageError)) + '\n');
@@ -521,7 +555,9 @@ export const buildProgram = ({ runRepl, run = runCommand }: BuildProgramOptions)
                 'For agents and scripts: `npx @learncard/cli commands --json` lists every command, its effect, options and examples; `capabilities --json` maps tasks to commands, SDK methods and REST routes.\n' +
                 'Environment:\n' +
                 '  LC_YES=1  Same as passing -y to every command.\n' +
-                '  LCA_API_URL, NETWORK_URL  Override service URLs for self-hosted networks.\n'
+                '  LEARNCARD_AS=<profileId>  Default for --as (send, inbox list, call).\n' +
+                '  LEARNCARD_API_KEY  Bearer token for `api` (else API_TOKEN in .env).\n' +
+                '  NETWORK_URL, CLOUD_URL, LCA_API_URL  Override service URLs for self-hosted networks.\n'
         );
 
     program.version(packageJson.version);
