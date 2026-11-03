@@ -93,6 +93,15 @@ const setup = async (
     mock.on('utilities.getDid', () => 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzjiN7Uh4AHoqH');
     mock.on('profile.getProfile', () => profile(TEST_USER_PROFILE_ID, 'Learner'));
     mock.on('profile.createProfile', () => profile(TEST_USER_PROFILE_ID, 'Learner').did);
+    // Privacy & Data batches this read with the pending invitations query.
+    mock.on(
+        'campaigns.getAnnouncementPreferences',
+        () =>
+            ({
+                announcementEmailOptOut: false,
+                announcementPushOptOut: false,
+            }) satisfies BrainOutputs['campaigns']['getAnnouncementPreferences']
+    );
     let status: 'pending' | 'denied' | 'cancelled' | 'accepted' = options.connected
         ? 'accepted'
         : 'pending';

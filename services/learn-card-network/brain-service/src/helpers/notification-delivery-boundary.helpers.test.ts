@@ -31,6 +31,14 @@ vi.mock('@accesslayer/inbox-credential/relationships/create', () => ({
     createWebhookSentRelationship: vi.fn(),
 }));
 vi.mock('@cache', () => ({ default: {} }));
+// These suites exercise notification delivery without email transport or a database.
+vi.mock('@helpers/campaign-email.helpers', () => ({ sendCampaignEmail: vi.fn() }));
+vi.mock('@accesslayer/campaign/preferences', () => ({
+    getAnnouncementPreferences: async () => ({
+        announcementEmailOptOut: false,
+        announcementPushOptOut: false,
+    }),
+}));
 vi.mock('@accesslayer/campaign/read', () => ({ getCampaign: mocks.getCampaign }));
 vi.mock('@accesslayer/campaign/test', () => ({ queueCampaignInAppTest: vi.fn() }));
 vi.mock('@accesslayer/campaign/delivery', () => ({
