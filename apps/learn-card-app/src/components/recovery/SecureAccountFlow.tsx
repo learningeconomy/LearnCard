@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
+import { focusOnMount } from './focusOnMount';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import * as m from '../../paraglide/messages.js';
@@ -174,7 +175,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
                     </p>
                     <div className="space-y-v3-3">
                         <button
-                            autoFocus
+                            ref={focusOnMount}
                             onClick={() =>
                                 onSetUpRecovery(passkeyAvailable ? 'passkey' : undefined)
                             }
@@ -308,7 +309,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
                     </button>
                     {/* Cancel takes initial focus so the destructive revoke is never the
                         default action (one Enter from the settings row must not run it). */}
-                    <button autoFocus onClick={onClose} className={secondary}>
+                    <button ref={focusOnMount} onClick={onClose} className={secondary}>
                         {m['common.cancel']()}
                     </button>
                 </div>

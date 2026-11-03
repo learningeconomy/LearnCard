@@ -2,6 +2,7 @@ import React, { useId } from 'react';
 import { IonIcon } from '@ionic/react';
 import { checkmarkCircleOutline, warningOutline } from 'ionicons/icons';
 import { Overlay } from 'learn-card-base';
+import { focusOnMount } from './focusOnMount';
 import * as m from '../../paraglide/messages.js';
 
 interface PinSignInReviewSheetProps {
@@ -81,7 +82,7 @@ export const PinSignInReviewSheet: React.FC<PinSignInReviewSheetProps> = ({
                         {m['recovery.pinSignInReview.body']()}
                     </p>
                     <div className="space-y-v3-2">
-                        <button autoFocus onClick={onFine} className={primary}>
+                        <button ref={focusOnMount} onClick={onFine} className={primary}>
                             {m['common.done']()}
                         </button>
                         {secureLink}
@@ -120,11 +121,11 @@ export const PinSignInReviewSheet: React.FC<PinSignInReviewSheetProps> = ({
                 </p>
                 <div className="space-y-v3-2">
                     {onChooseNewPin ? (
-                        <button autoFocus onClick={onChooseNewPin} className={primary}>
+                        <button ref={focusOnMount} onClick={onChooseNewPin} className={primary}>
                             {m['recovery.pinSignInReview.choosePin']()}
                         </button>
                     ) : (
-                        <button autoFocus onClick={onFine} className={primary}>
+                        <button ref={focusOnMount} onClick={onFine} className={primary}>
                             {m['common.done']()}
                         </button>
                     )}
