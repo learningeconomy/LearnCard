@@ -612,6 +612,17 @@ describe('usage errors with --json', () => {
     });
 });
 
+describe('help footer', () => {
+    it('points people at the skill and the agents page', () => {
+        const { program } = testProgram();
+        let help = '';
+        program.configureOutput({ writeOut: text => (help += text) });
+        program.outputHelp();
+        expect(help).toContain('npx @learncard/cli skill install');
+        expect(help).toContain('https://docs.learncard.com/start-here/for-ai-agents');
+    });
+});
+
 describe('global flags before the command', () => {
     const argv = (...args: string[]): string[] => ['node', 'learncard', ...args];
 

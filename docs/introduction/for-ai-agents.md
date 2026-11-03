@@ -6,6 +6,19 @@ description: How an AI coding agent, script, or CI job should read the LearnCard
 
 This page is for AI coding agents (and the people who set them up) that read LearnCard documentation and run the [LearnCard CLI](../sdks/learncard-cli.md) on a developer's behalf. The same rules apply to shell scripts and CI jobs.
 
+{% hint style="success" %}
+**Setting up an agent? Two steps.**
+
+1. In your project folder, run `npx @learncard/cli skill install`. It gives Claude Code, Cursor or Codex the LearnCard skill ([details](../how-to-guides/use-learncard-with-coding-agents.md)).
+2. Tell your agent:
+
+```
+Read https://docs.learncard.com/start-here/for-ai-agents.md, then use the LearnCard CLI
+(npx @learncard/cli) on staging to <your task>. Ask me before anything irreversible or on production.
+```
+
+{% endhint %}
+
 {% hint style="info" %}
 Looking to connect **your own** LearnCard wallet to Claude or ChatGPT as a learner? That is a different product: see [Use LearnCard with Claude or ChatGPT](../how-to-guides/connect-systems/connect-ai-agent.md). This page is about building and issuing with LearnCard.
 {% endhint %}
@@ -19,7 +32,7 @@ npx @learncard/cli skill install                  # .claude/, .cursor/ or .agent
 npx @learncard/cli skill install --target all     # all three
 ```
 
-It only writes files, never touches the network, and won't overwrite a changed copy without `--force`. See [Use LearnCard with Coding Agents](../how-to-guides/use-learncard-with-coding-agents.md).
+It only writes files, never touches the network, and won't overwrite a changed copy without `--force`. See [Install the LearnCard Skill](../how-to-guides/use-learncard-with-coding-agents.md).
 
 ## Machine-readable sources
 

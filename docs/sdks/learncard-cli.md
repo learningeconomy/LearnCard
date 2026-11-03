@@ -194,7 +194,7 @@ Writes the LearnCard skill, an operational guide for coding agents, into a proje
 | `agents`   | `.agents/skills/learncard/SKILL.md` |
 | `all`      | All three                           |
 
-Without `--target` it installs for every agent directory it finds in `--dir` (default: the current folder), else for Claude Code. It won't overwrite a different existing file without `--force` (`EXISTS`); an identical file is left unchanged. It never follows symlinks. If any path component under `--dir` (such as `.claude` or the skill file itself) is a symlink or not a directory, it fails with `UNSAFE_PATH` and writes nothing, even with `--force`. New files are created exclusively, and `--force` replaces a file by writing a temp file in the same folder and renaming it. `--print` writes the skill to stdout instead. It never touches the network or the folder's identity. See [Use LearnCard with Coding Agents](../how-to-guides/use-learncard-with-coding-agents.md).
+Without `--target` it installs for every agent directory it finds in `--dir` (default: the current folder), else for Claude Code. It won't overwrite a different existing file without `--force` (`EXISTS`); an identical file is left unchanged. It never follows symlinks. If any path component under `--dir` (such as `.claude` or the skill file itself) is a symlink or not a directory, it fails with `UNSAFE_PATH` and writes nothing, even with `--force`. New files are created exclusively, and `--force` replaces a file by writing a temp file in the same folder and renaming it. `--print` writes the skill to stdout instead. It never touches the network or the folder's identity. See [Install the LearnCard Skill](../how-to-guides/use-learncard-with-coding-agents.md).
 
 ### Org spec
 

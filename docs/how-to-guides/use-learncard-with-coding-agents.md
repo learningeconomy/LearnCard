@@ -2,7 +2,7 @@
 description: 'Install the LearnCard skill so Claude Code, Cursor, Codex and other coding agents can set up an issuer, send credentials and call the LearnCard API safely on staging.'
 ---
 
-# Use LearnCard with Coding Agents
+# Install the LearnCard Skill
 
 Coding agents such as Claude Code, Cursor and Codex can drive the [LearnCard CLI](../sdks/learncard-cli.md) for you: create a staging issuer, send and track credentials, create API tokens, and reach SDK methods and REST routes the CLI has no command for. The **LearnCard skill** is a short operating guide that tells the agent how to do this safely. Install it into your project once, and the agent loads it whenever a task involves LearnCard.
 
