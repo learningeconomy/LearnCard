@@ -3,7 +3,7 @@
  * Cursor rule conversion, and a guard that every `npx @learncard/cli ...` line in the skill
  * is a real command with real flags. Nothing here touches a network or an identity.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -548,37 +548,52 @@ describe('every CLI line in the skill is a real command', () => {
     });
 });
 
-describe('CLI lines in the agent docs are real commands', () => {
+describe('CLI lines in the docs are real commands', () => {
     const program = buildProgram({ runRepl: () => {} });
     const REPO = path.resolve(__dirname, '../../..');
+    const markdownUnder = (dir: string): string[] =>
+        readdirSync(path.join(REPO, dir), { recursive: true, encoding: 'utf8' })
+            .filter(file => file.endsWith('.md'))
+            .map(file => path.join(dir, file));
+    // Every docs page plus the READMEs and AGENTS.md: any page that shows a CLI command.
     const pages = [
-        'docs/introduction/for-ai-agents.md',
-        'docs/how-to-guides/use-learncard-with-coding-agents.md',
+        ...markdownUnder('docs'),
         'packages/learn-card-cli/README.md',
-        'docs/sdks/learncard-cli.md',
+        'README.md',
+        'AGENTS.md',
     ];
+    const COMMAND_NAMES = new Set(program.commands.map(command => command.name()));
     const cases = pages.flatMap(page =>
         [
             // Only code: a line start (code blocks, optionally after `VAR=value`), inline code or a
-            // `$ ` prompt. Prose such
-            // as an image caption ("npx @learncard/cli to boot up") is not an invocation.
+            // `$ ` prompt. Prose such as an image caption ("npx @learncard/cli to boot up") is not
+            // an invocation. A bare `learncard <command>` (global install) counts too.
             ...readFileSync(path.join(REPO, page), 'utf8').matchAll(
-                /(?:^|`|\$ |^[A-Z_]+=\S+ )\s*npx @learncard\/cli([^`\n|]*)/gm
+                /(?:^|`|\$ |^[A-Z_]+=\S+ )\s*(npx @learncard\/cli|learncard)\b([^`\n|]*)/gm
             ),
         ]
-            .map(match => match[1]!.trim())
+            .map(match => ({ bare: match[1] === 'learncard', line: match[2]!.trim() }))
             // Prose (`npx @learncard/cli`).` and placeholders such as `<command> --help`
             // mention the CLI rather than invoke a command.
-            .filter(line => /^[a-z-]/.test(line))
-            .map(line => [page, line] as const)
+            .filter(({ line }) => /^[a-z-]/.test(line))
+            .filter(({ bare, line }) => !bare || COMMAND_NAMES.has(shellWords(line)[0]!))
+            .map(({ line }) => [page, line] as const)
     );
 
-    it('finds invocations in every page', () => {
-        for (const page of pages)
+    it('scans the whole docs tree', () => {
+        expect(pages.length).toBeGreaterThan(50);
+        for (const page of [
+            'docs/introduction/for-ai-agents.md',
+            'docs/how-to-guides/use-learncard-with-coding-agents.md',
+            'docs/sdks/learncard-cli.md',
+            'docs/quick-start/your-first-integration.md',
+            'packages/learn-card-cli/README.md',
+        ])
             expect(
                 cases.some(([p]) => p === page),
                 page
             ).toBe(true);
+        expect(cases.length).toBeGreaterThan(150);
     });
 
     it.each(cases)('%s: npx @learncard/cli %s', (_page, line) => {
