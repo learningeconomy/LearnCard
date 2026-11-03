@@ -13,6 +13,7 @@
     },
     "features": {
         "analytics": false,
+        "classlinkSso": true,
         "escrowRolloutPercent": 100,
         "contractRequests": true,
         "useSeededSkillFrameworks": true,
