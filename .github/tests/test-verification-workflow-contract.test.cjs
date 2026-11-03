@@ -130,7 +130,7 @@ for (const key of Object.keys(proofSuccess))
             1
         );
 assert.equal(workflow.jobs.runtime.strategy['fail-fast'], false);
-assert.deepEqual(workflow.jobs.runtime.strategy.matrix.shard, ['1', '2']);
+assert.deepEqual(workflow.jobs.runtime.strategy.matrix.shard, ['1', '2', '3']);
 assert.match(
     source.find(step => step.name === 'Check sanitized timing summaries').run,
     /verification-shards\.test\.mjs/
@@ -187,6 +187,7 @@ assert.equal(
     "${{ matrix.shard == '1' && steps.navigation.outcome || steps.campaigns.outcome }}"
 );
 assert.equal(summary.env.VERIFICATION_OUTCOME, '${{ steps.catalog.outcome }}');
+assert.ok(summary.run.includes(`if [[ "$SHARD_ID" == '3' ]]; then unset SCRIPT_OUTCOME; fi`));
 
 assert.equal(summary.env.TEARDOWN_OUTCOME, '${{ steps.teardown.outcome }}');
 const artifacts = steps.filter(step => step.uses === 'actions/upload-artifact@v4');
@@ -226,12 +227,57 @@ assert.deepEqual(
     [
         ['1', ['navigation']],
         ['2', ['campaigns']],
+        ['3', []],
     ]
 );
 
 // Execute the actual dependency-free fallback, including preserving legitimate partial proof.
 const fs = require('node:fs');
 const os = require('node:os');
+// Execute the real summary step: shard 3 has no script requirement, but startup/catalog still fail closed.
+const summaryTemporary = fs.mkdtempSync(path.join(os.tmpdir(), 'verification-summary-'));
+try {
+    fs.mkdirSync(path.join(summaryTemporary, 'stack/runs/catalog'), { recursive: true });
+    fs.writeFileSync(
+        path.join(summaryTemporary, 'stack/runs/catalog/report.json'),
+        JSON.stringify({
+            status: 'passed',
+            results: [],
+        })
+    );
+    for (const [shard, failed] of [
+        ['3', null],
+        ['3', 'STARTUP_OUTCOME'],
+        ['3', 'VERIFICATION_OUTCOME'],
+        ['1', 'SCRIPT_OUTCOME'],
+        ['2', 'SCRIPT_OUTCOME'],
+    ]) {
+        const environment = {
+            ...process.env,
+            SHARD_ID: shard,
+            STACK_DIR: path.join(summaryTemporary, 'stack'),
+            SUMMARY_DIR: path.join(summaryTemporary, 'summary'),
+            GITHUB_STEP_SUMMARY: path.join(summaryTemporary, 'step.md'),
+            STARTUP_OUTCOME: 'success',
+            SCRIPT_OUTCOME: 'skipped',
+            VERIFICATION_OUTCOME: 'success',
+            TEARDOWN_OUTCOME: 'success',
+            ...(failed ? { [failed]: 'failure' } : {}),
+        };
+        assert.equal(
+            spawnSync('bash', ['-e', '-c', summary.run], { cwd: root, env: environment }).status,
+            0
+        );
+        const report = JSON.parse(
+            fs.readFileSync(path.join(environment.SUMMARY_DIR, 'summary.json'), 'utf8')
+        );
+        assert.equal(report.run, failed ? 'failure' : 'success');
+        assert.equal(report.commandOutcomes.script, shard === '3' ? 'unknown' : 'failure');
+        assert.equal(report.reports[0].status, 'passed');
+    }
+} finally {
+    fs.rmSync(summaryTemporary, { recursive: true, force: true });
+}
 const fallback = gate.steps.find(
     step => step.name === 'Preserve current failure proof if aggregation cannot run'
 );

@@ -43,10 +43,11 @@ export const readPlan = async (root = repositoryRoot) => {
     const plan = await json(join(root, 'scripts/verification-shards.json'));
     keys(plan, ['version', 'shards']);
     assert.equal(plan.version, 1);
-    assert.equal(plan.shards.length, 2);
+    // Bound worker count and keep IDs canonical for workflow/artifact matching.
+    assert(Array.isArray(plan.shards) && [2, 3].includes(plan.shards.length));
     sameEntries(
         plan.shards.map(shard => shard.id),
-        ['1', '2'],
+        plan.shards.map((_, index) => String(index + 1)),
         'Shard IDs'
     );
     for (const shard of plan.shards) {
@@ -373,9 +374,10 @@ export const mergeShards = async ({
     const candidates = new Map(plan.shards.map(shard => [shard.id, []]));
     let invalid = false;
     for (const name of await readdir(input)) {
-        const match = /^lc-verification-shard-(\d+)-(\d+)-(1|2)$/.exec(name);
+        const match = /^lc-verification-shard-(\d+)-(\d+)-([1-9]\d*)$/.exec(name);
         if (
             !match ||
+            !candidates.has(match[3]) ||
             match[1] !== context.runId ||
             Number(match[2]) > context.attempt ||
             Number(match[2]) < 1

@@ -8,7 +8,8 @@ import { readPlan, stageShard, mergeShards } from './verification-shards.mjs';
 const context = { runId: '42', attempt: 1, checkoutSha: 'a'.repeat(40), headSha: 'b'.repeat(40) };
 const deps = { source: 'success', bundle: 'success', runtime: 'success' };
 const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-const fixture = async action => {
+const fixture = async (action, count = 2) => {
+    const features = ['alpha', 'beta', 'gamma'].slice(0, count);
     const root = await mkdtemp(join(tmpdir(), 'lcv-shards-'));
     try {
         const journeys = join(root, 'apps/learn-card-app/scripts/verification/journeys');
@@ -20,9 +21,10 @@ const fixture = async action => {
             import { alpha } from './journeys/alpha';
             import { beta } from './journeys/beta';
             import type { FeatureDefinition } from './types';
-            export const verificationFeatures = [alpha, beta];`
+            ${count === 3 ? "import { gamma } from './journeys/gamma';" : ''}
+            export const verificationFeatures = [${features.join(', ')}];`
         );
-        for (const id of ['alpha', 'beta'])
+        for (const id of features)
             await writeFile(
                 join(journeys, `${id}.ts`),
                 `export const ${id} = {id:'${id}',entries:['${id}-one']};`
@@ -34,12 +36,13 @@ const fixture = async action => {
                 shards: [
                     { id: '1', features: ['alpha'], scripts: ['navigation'] },
                     { id: '2', features: ['beta'], scripts: ['campaigns'] },
+                    ...(count === 3 ? [{ id: '3', features: ['gamma'], scripts: [] }] : []),
                 ],
             })
         );
         await mkdir(join(root, 'input'));
         const stage = async (id, mutate = () => {}, attempt = 1, imageBytes = png) => {
-            const feature = id === '1' ? 'alpha' : 'beta';
+            const feature = features[Number(id) - 1];
             const stack = join(root, `stack-${id}-${attempt}`),
                 run = join(stack, 'runs/run');
             await mkdir(join(run, feature), { recursive: true });
@@ -56,7 +59,7 @@ const fixture = async action => {
                     },
                 ],
                 notRun: [],
-                notSelected: [feature === 'alpha' ? 'beta' : 'alpha'],
+                notSelected: features.filter(id => id !== feature),
             };
             mutate(report);
             await writeFile(join(run, 'report.json'), JSON.stringify(report));
@@ -98,6 +101,66 @@ const edit = async (path, change) => {
     change(data);
     await writeFile(path, JSON.stringify(data));
 };
+
+for (const mutation of ['empty', 'too-many', 'duplicate-id', 'noncanonical-id', 'missing-id'])
+    test(`rejects unsupported shard topology: ${mutation}`, async () =>
+        fixture(async ({ root }) => {
+            await edit(join(root, 'scripts/verification-shards.json'), plan => {
+                if (mutation === 'empty') plan.shards = [];
+                if (mutation === 'too-many') plan.shards.push(plan.shards[0], plan.shards[1]);
+                if (mutation === 'duplicate-id') plan.shards[1].id = '1';
+                if (mutation === 'noncanonical-id') plan.shards[1].id = '02';
+                if (mutation === 'missing-id') plan.shards[1].id = '3';
+            });
+            await assert.rejects(readPlan(root));
+        }));
+
+for (const scenario of [
+    'complete',
+    'missing-third',
+    'invalid-third',
+    'rerun-third',
+    'newer-invalid-third',
+    'unknown-shard',
+])
+    test(`three-worker aggregate: ${scenario}`, async () =>
+        fixture(async ({ root, stage, merge }) => {
+            await stage('1');
+            await stage('2');
+            let third;
+            if (scenario !== 'missing-third') third = await stage('3');
+            if (scenario === 'invalid-third')
+                await edit(join(third.out, 'envelope.json'), e => (e.headSha = 'c'.repeat(40)));
+            if (['rerun-third', 'newer-invalid-third'].includes(scenario)) {
+                const newer = await stage('3', () => {}, 2);
+                if (scenario === 'newer-invalid-third')
+                    await edit(
+                        join(newer.out, 'envelope.json'),
+                        e => (e.planHash = 'c'.repeat(64))
+                    );
+            }
+            if (scenario === 'unknown-shard')
+                await mkdir(join(root, 'input/lc-verification-shard-42-1-4'));
+            const rerun = ['rerun-third', 'newer-invalid-third'].includes(scenario);
+            const result = await merge(deps, { ...context, attempt: rerun ? 2 : 1 });
+            assert.equal(result.valid, ['complete', 'rerun-third'].includes(scenario));
+            assert.equal(result.summary.shards.length, 3);
+            assert.equal(result.hasMedia, true);
+            if (result.valid) {
+                assert.equal(result.summary.reports[0].features.length, 3);
+                assert.deepEqual(
+                    result.summary.shards.map(s => s.attempt),
+                    [1, 1, rerun ? 2 : 1]
+                );
+                assert.deepEqual(result.summary.shards[2].commands, {
+                    startup: 'success',
+                    catalog: 'success',
+                    teardown: 'success',
+                    navigation: 'skipped',
+                    campaigns: 'skipped',
+                });
+            }
+        }, 3));
 
 test('real plan partitions every executable feature and each extra script exactly once', async () => {
     const { catalog, plan } = await readPlan();

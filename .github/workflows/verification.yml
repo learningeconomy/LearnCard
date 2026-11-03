@@ -171,7 +171,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                shard: ['1', '2']
+                shard: ['1', '2', '3']
         if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
         # PR code runs only on an ephemeral GitHub-hosted runner.
         runs-on: ubuntu-24.04
@@ -311,7 +311,10 @@ jobs:
                   SCRIPT_OUTCOME: ${{ matrix.shard == '1' && steps.navigation.outcome || steps.campaigns.outcome }}
                   VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
-              run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
+              run: |
+                  # Shard 3 has no extra script; omit the optional outcome rather than report a skipped requirement.
+                  if [[ "$SHARD_ID" == '3' ]]; then unset SCRIPT_OUTCOME; fi
+                  node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
 
             - name: Retain sanitized summary only
               if: ${{ always() }}
