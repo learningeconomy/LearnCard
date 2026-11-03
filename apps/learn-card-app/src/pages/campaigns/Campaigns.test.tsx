@@ -229,6 +229,26 @@ describe('campaign composer', () => {
         await act(async () => send.resolve(true));
         expect(await screen.findByText(/Test notification sent/)).toBeVisible();
     });
+    it('explains a suppressed notification self-test without claiming delivery', async () => {
+        const api = apiMock();
+        api.campaignsGet.mockResolvedValue({
+            ...campaign(),
+            channels: ['notify'],
+            message: undefined,
+        });
+        api.campaignsSendTestToMe.mockRejectedValueOnce({
+            data: { code: 'PRECONDITION_FAILED' },
+            message: 'Notification tests are disabled by your announcement preferences',
+        });
+        mount(api);
+        fireEvent.click(await screen.findByRole('button', { name: 'Send Test to Me' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm test send' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+            'No test was sent. Enable inbox and push announcements in Privacy & Data'
+        );
+        expect(screen.queryByText(/Test notification sent/)).not.toBeInTheDocument();
+        expect(api.campaignsSendTestToMe).toHaveBeenCalledTimes(1);
+    });
     it('uses the existing admin endpoint for a draft in-app-only test', async () => {
         const api = apiMock();
         api.campaignsGet.mockResolvedValue({

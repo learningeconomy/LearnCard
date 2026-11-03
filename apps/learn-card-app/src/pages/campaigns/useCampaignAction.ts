@@ -22,19 +22,29 @@ export const useCampaignAction = () => {
         try {
             await action();
         } catch (error) {
-            const conflict =
+            const code =
                 typeof error === 'object' &&
                 error !== null &&
                 'data' in error &&
                 typeof error.data === 'object' &&
                 error.data !== null &&
-                'code' in error.data &&
-                error.data.code === 'CONFLICT';
+                'code' in error.data
+                    ? error.data.code
+                    : undefined;
+            const notificationTestDisabled =
+                code === 'PRECONDITION_FAILED' &&
+                typeof error === 'object' &&
+                error !== null &&
+                'message' in error &&
+                error.message ===
+                    'Notification tests are disabled by your announcement preferences';
             if (mounted.current)
                 setError(
-                    conflict
+                    code === 'CONFLICT'
                         ? 'Campaign changed since you loaded it. Copy any unsaved edits, then reload the latest version before trying again.'
-                        : 'Something went wrong. Check your connection and try again. The last request may have completed; refresh before retrying.'
+                        : notificationTestDisabled
+                          ? 'No test was sent. Enable inbox and push announcements in Privacy & Data, or deselect Inbox / push notification and try again.'
+                          : 'Something went wrong. Check your connection and try again. The last request may have completed; refresh before retrying.'
                 );
         } finally {
             lock.current = false;
