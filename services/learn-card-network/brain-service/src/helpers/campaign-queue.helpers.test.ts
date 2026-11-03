@@ -286,7 +286,7 @@ describe('email channel dispatch', () => {
             expect(mocks.email).toHaveBeenLastCalledWith(expect.anything(), '0499', false, {
                 prepared: true,
             });
-            expect(JSON.parse(mocks.sqs.mock.calls[0][0].input.MessageBody).afterProfileId).toBe(
+            expect(JSON.parse(mocks.sqs.mock.calls[0]![0].input.MessageBody).afterProfileId).toBe(
                 '0499'
             );
             expect(log).toHaveBeenCalledWith(
