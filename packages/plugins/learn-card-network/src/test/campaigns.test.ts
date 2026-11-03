@@ -36,7 +36,7 @@ const mockClient = () => ({
         addAudience: mutation(),
         pageAudience: query(),
         getStats: query(),
-        getMyCampaigns: query(),
+        getMyCampaigns: { query: vi.fn<() => Promise<unknown>>().mockResolvedValue([]) },
         recordEvent: mutation(),
         enroll: mutation(),
     },
@@ -45,6 +45,33 @@ const mockClient = () => ({
 beforeEach(() => vi.clearAllMocks());
 
 describe('campaign network plugin methods', () => {
+    it('validates campaign messages before returning them to the renderer', async () => {
+        const client = mockClient();
+        vi.mocked(getClient).mockResolvedValue(client as never);
+        const { methods } = await getLearnCardNetworkPlugin(wallet, 'https://network.example/trpc');
+        const item = {
+            campaign: {
+                id: 'pilot-clr',
+                message: { id: 'pilot-clr', title: 'Welcome', presentation: 'modal' },
+                selfEnroll: false,
+            },
+            state: { shownCount: 0 },
+        };
+        client.campaigns.getMyCampaigns.query.mockResolvedValue([item]);
+        await expect(methods.getMyCampaigns(wallet)).resolves.toMatchObject([item]);
+
+        for (const message of [
+            null,
+            { ...item.campaign.message, presentation: 'unsupported' },
+            { ...item.campaign.message, actions: [{ type: 'navigate', path: 'javascript:alert(1)' }] },
+        ]) {
+            client.campaigns.getMyCampaigns.query.mockResolvedValue([
+                { ...item, campaign: { ...item.campaign, message } },
+            ]);
+            await expect(methods.getMyCampaigns(wallet)).rejects.toThrow();
+        }
+    });
+
     it('forwards every campaign operation to the correct typed procedure', async () => {
         const client = mockClient();
         vi.mocked(getClient).mockResolvedValue(client as never);

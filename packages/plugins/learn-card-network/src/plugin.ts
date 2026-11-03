@@ -2,6 +2,7 @@ import { waitForInboxCredentialBatch } from './inbox-batch';
 import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
+    MyCampaignValidator,
     LCNProfile,
     LCNVisibleProfile,
     UnsignedVCValidator,
@@ -3387,7 +3388,9 @@ export async function getLearnCardNetworkPlugin(
             },
             getMyCampaigns: async _learnCard => {
                 await ensureUser();
-                return client.campaigns.getMyCampaigns.query();
+                return MyCampaignValidator.array().parse(
+                    await client.campaigns.getMyCampaigns.query()
+                );
             },
             recordCampaignEvent: async (_learnCard, campaignId, event) => {
                 await ensureUser();
