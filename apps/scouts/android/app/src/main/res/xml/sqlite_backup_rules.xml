@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Device-only SQLite secrets and their databases must never be restored independently. -->
+<full-backup-content>
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="sqlite_encrypted_shared_prefs.xml" />
+</full-backup-content>

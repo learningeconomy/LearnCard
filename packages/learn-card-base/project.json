@@ -5,7 +5,12 @@
     "tags": [],
     "implicitDependencies": ["lca-api-plugin"],
     "namedInputs": {
-        "source": ["{projectRoot}/src/**/*"]
+        "source": [
+            "{projectRoot}/src/**/*",
+            "{projectRoot}/native/sqlite/**/*.swift",
+            "{projectRoot}/native/sqlite/**/*.java",
+            "{workspaceRoot}/patches/@capacitor-community%2Fsqlite@8.1.1.patch"
+        ]
     },
     "targets": {
         "test": {

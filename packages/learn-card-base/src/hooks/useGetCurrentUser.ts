@@ -39,7 +39,7 @@ export const useCurrentUser = () => {
 
     useEffect(() => {
         if (!currentUser) {
-            loadUser();
+            void loadUser().catch(() => log.warn('Account storage could not be loaded'));
         } else if (!currentUser?.privateKey) {
             // Try to hydrate from secure web storage before clearing
             (async () => {
@@ -52,7 +52,9 @@ export const useCurrentUser = () => {
                         currentUserStore.set.currentUser({ ...currentUser, privateKey: pk });
                         return;
                     }
-                } catch {}
+                } catch {
+                    if (Capacitor.isNativePlatform()) return;
+                }
 
                 // Don't null-out the store while the coordinator is still initializing —
                 // it will bridge the private key to the store when ready.

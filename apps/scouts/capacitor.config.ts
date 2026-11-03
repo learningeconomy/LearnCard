@@ -5,9 +5,13 @@ const config: CapacitorConfig = {
     appId: 'org.scoutpass.app',
     appName: 'ScoutPass',
     webDir: 'build',
-    bundledWebRuntime: false,
     ...nativeBrowserCompatibility({ android: { adjustMarginsForEdgeToEdge: 'force' } }),
     plugins: {
+        CapacitorSQLite: {
+            iosIsEncryption: true,
+            androidIsEncryption: true,
+            iosKeychainPrefix: 'learncard.sqlite.v1',
+        },
         SplashScreen: {
             launchShowDuration: 6000,
             launchAutoHide: true,
@@ -35,7 +39,7 @@ const config: CapacitorConfig = {
         CapacitorUpdater: {
             appId: 'org.scoutpass.app',
             autoUpdate: true,
-            defaultChannel: '1.0.8', // LC-2006: Tailwind 4 requires an iOS 16.4+ native build.
+            defaultChannel: '1.0.9', // Native SQLite encryption requires a new binary; keep older OTA channels unchanged.
         },
     },
 };

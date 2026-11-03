@@ -88,6 +88,20 @@ describe('native account key persistence', () => {
         expect(await getPlatformPrivateKey()).toBe('first-key');
         expect(opened).toBe(false);
     });
+    it('rejects missing storage and failed writes without reporting an in-memory key as saved', async () => {
+        mocks.db = null;
+        await expect(setPlatformPrivateKey('synthetic-key')).rejects.toThrow('Account storage');
+        expect(mocks.fallback).not.toHaveBeenCalled();
+        mocks.db = {
+            open: async () => undefined,
+            close: async () => undefined,
+            run: async () => {
+                throw new Error('Synthetic disk full');
+            },
+        };
+        await expect(setPlatformPrivateKey('synthetic-key')).rejects.toThrow('Synthetic disk full');
+        expect(mocks.fallback).not.toHaveBeenCalled();
+    });
     it('keeps the browser storage backend independent of native SQLite', async () => {
         mocks.platform = 'web';
         mocks.db = null;

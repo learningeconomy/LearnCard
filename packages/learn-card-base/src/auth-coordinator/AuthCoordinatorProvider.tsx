@@ -19,6 +19,7 @@ import { AuthCoordinator, createAuthCoordinator } from './AuthCoordinator';
 import { createRecoverySetupRunner, type RecoverySetupRunner } from './recoverySetup';
 import { getAuthConfig } from '../config/authConfig';
 import { isEscrowRolloutEnabledFor } from '../config/escrowRollout';
+import { requireNativeStorage } from '../SQL/requireNativeStorage';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('auth-coordinator-provider');
@@ -399,6 +400,7 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
         const coordinator = createAuthCoordinator({
             authProvider: effectiveAuthProvider,
             keyDerivation,
+            ensureStorageReady: requireNativeStorage,
             onStateChange: handleStateChange,
             didFromPrivateKey,
             signDidAuthVp,

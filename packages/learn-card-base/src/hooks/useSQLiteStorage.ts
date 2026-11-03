@@ -2,7 +2,10 @@ import {
     withSQLiteDatabase,
     ensureSQLiteSchema,
     forgetSQLiteSchema,
+    retainSQLiteConnection,
+    releaseSQLiteConnection,
 } from 'learn-card-base/SQL/connection';
+import { prepareNativeEncryption } from 'learn-card-base/SQL/nativeEncryption';
 import React, { useEffect, useState } from 'react';
 import { SQLiteHook, useSQLite } from 'learn-card-base/react-sqlite-hook';
 import { SQLiteDBConnection } from '@capacitor-community/sqlite';
@@ -12,7 +15,8 @@ import { Capacitor } from '@capacitor/core';
 import { CurrentUser } from 'learn-card-base';
 
 import { sqliteStore } from '../stores/sqliteStore';
-import { markSQLiteReady } from 'learn-card-base/SQL/sqliteReady';
+import { markSQLiteReady, markSQLiteFailed } from 'learn-card-base/SQL/sqliteReady';
+import { requireNativeStorage } from '../SQL/requireNativeStorage';
 import { clearUserData } from '../SQL/clearUserData';
 // import { MIGRATIONS, performSqliteMigrations } from 'learn-card-base/SQL/migrations';
 
@@ -151,22 +155,36 @@ export const ensureWriteAheadLogging = async (db: SQLiteDBConnection) => {
 type NativeDatabase = { db: SQLiteDBConnection; sqlite: SQLiteHook };
 let nativeInitialization: Promise<NativeDatabase> | undefined;
 const initializeNativeDatabase = async (sqlite: SQLiteHook): Promise<NativeDatabase> => {
+    const encrypted = (await prepareNativeEncryption()) === 'encrypted';
     const consistent = (await sqlite.checkConnectionsConsistency()).result;
     const connected = (await sqlite.isConnection('learncardDB', false)).result;
     const db =
         consistent && connected
             ? await sqlite.retrieveConnection('learncardDB', false)
-            : await sqlite.createConnection('learncardDB', false, 'no-encryption', 1, false);
-    await withSQLiteDatabase(db, async () => {
-        await ensureUserTableExists(db);
-        await ensureCredentialsTableExists(db);
-        await ensureIndexTableExists(db);
-        await ensureCredentialCacheTableExists(db);
-        await ensureIndexCacheTableExists(db);
-        await ensureIndexPageCacheTableExists(db);
-        await ensureIndexCountCacheTableExists(db);
-        await ensureReactQueryTableExists(db);
-    });
+            : await sqlite.createConnection(
+                  'learncardDB',
+                  encrypted,
+                  encrypted ? 'secret' : 'no-encryption',
+                  1,
+                  false
+              );
+    retainSQLiteConnection(db);
+    try {
+        await withSQLiteDatabase(db, async () => {
+            await ensureUserTableExists(db);
+            await ensureCredentialsTableExists(db);
+            await ensureIndexTableExists(db);
+            await ensureCredentialCacheTableExists(db);
+            await ensureIndexCacheTableExists(db);
+            await ensureIndexPageCacheTableExists(db);
+            await ensureIndexCountCacheTableExists(db);
+            await ensureReactQueryTableExists(db);
+        });
+    } catch (error) {
+        await releaseSQLiteConnection(db).catch(() => undefined);
+        await sqlite.closeConnection('learncardDB', false).catch(() => undefined);
+        throw error;
+    }
     return { db, sqlite };
 };
 /** Native connection initialization is shared by remounts and account consumers. */
@@ -184,14 +202,12 @@ export const sqliteInit = () => {
             .then(({ db, sqlite }) => {
                 sqliteStore.set.db(db);
                 sqliteStore.set.sqlite(sqlite);
+                markSQLiteReady();
                 if (!stopped) setExistConnection(true);
             })
             .catch(error => {
+                markSQLiteFailed();
                 log.error('Failed to initialize SQLite database:', error);
-            })
-            .finally(() => {
-                // Failure still releases boot waiters; never store a false DB handle.
-                markSQLiteReady();
             });
         return () => {
             stopped = true;
@@ -204,10 +220,16 @@ export const sqliteInit = () => {
 
 export const useSQLiteStorage = () => {
     const db = sqliteStore.use.db();
+    const getDatabase = async (): Promise<SQLiteDBConnection | null> => {
+        await requireNativeStorage();
+        // A caller may have started before initialization published the handle.
+        return Capacitor.getPlatform() === 'web' ? db : sqliteStore.get.db();
+    };
 
     const setCurrentUser = async (currentUser: Partial<CurrentUser> | null) => {
         try {
             if (!currentUser) return;
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -256,6 +278,7 @@ export const useSQLiteStorage = () => {
             }
         } catch (e) {
             log.warn('😵 useSQLiteStorage::setCurrentUser', e);
+            if (Capacitor.getPlatform() !== 'web') throw e;
         }
         //     }
         // }
@@ -263,6 +286,7 @@ export const useSQLiteStorage = () => {
 
     const getCurrentUser = async (): Promise<CurrentUser | null> => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -276,6 +300,7 @@ export const useSQLiteStorage = () => {
             return null;
         } catch (e) {
             log.warn('😵 useSQLiteStorage::getCurrentUser', e);
+            if (Capacitor.getPlatform() !== 'web') throw e;
 
             return null;
         }
@@ -288,6 +313,7 @@ export const useSQLiteStorage = () => {
         payload: { name: string; profileImage: string }
     ) => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -317,6 +343,7 @@ export const useSQLiteStorage = () => {
 
     const setProviderAuthToken = async (authProviderName: string | null, token: string | null) => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -341,6 +368,7 @@ export const useSQLiteStorage = () => {
             }
         } catch (e) {
             log.warn('😵 useSQLiteStorage::setProviderAuthToken::error', e);
+            if (Capacitor.getPlatform() !== 'web') throw e;
         }
     };
 
@@ -348,6 +376,7 @@ export const useSQLiteStorage = () => {
         authProviderName: string
     ): Promise<{ authProviderName: string; token: string } | undefined> => {
         try {
+            const db = await getDatabase();
             if (db) {
                 return await withSQLiteDatabase(db, async () => {
                     await ensureUserTableExists(db);
@@ -361,6 +390,7 @@ export const useSQLiteStorage = () => {
             }
         } catch (error) {
             log.warn('😵 useSQLiteStorage::getProviderAuthToken::error', error);
+            if (Capacitor.getPlatform() !== 'web') throw error;
         }
         return undefined;
     };
