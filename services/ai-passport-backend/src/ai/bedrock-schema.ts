@@ -352,8 +352,25 @@ export function compileProjectedSchema(schema: z.ZodType): Record<string, unknow
         if (error instanceof BedrockSchemaError) throw error;
         fail('#', 'Zod input domain cannot be represented as JSON Schema');
     }
+    expandTypeArrays(compiled);
     validateBedrockJsonSchema(compiled);
     return compiled;
+}
+
+/**
+ * zod 4.6 compacts `anyOf` of bare type branches into `type: [...]`. Expand it back so the
+ * provider schema keeps the shape it was reviewed with (e.g. nullable as `anyOf` + `null`).
+ */
+function expandTypeArrays(value: unknown): void {
+    if (Array.isArray(value)) {
+        for (const item of value) expandTypeArrays(item);
+        return;
+    }
+    if (!record(value)) return;
+    for (const child of Object.values(value)) expandTypeArrays(child);
+    if (!Array.isArray(value.type) || 'anyOf' in value) return;
+    value.anyOf = value.type.map(type => ({ type }));
+    delete value.type;
 }
 
 /** Return the original schema's parsed value, including async transformations. */
