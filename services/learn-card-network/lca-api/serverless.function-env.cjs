@@ -10,6 +10,12 @@ const PROVIDER_SECRETS = [
     'POSTMARK_SERVER_TOKEN',
     'SCOUTS_SSO_CLIENT_SECRET',
     'CLASSLINK_CLIENT_SECRET',
+    // Kept in the runtime bundle (not the public stage files) so district and partner
+    // details stay out of the repository.
+    'CLASSLINK_CLIENT_ID',
+    'CLASSLINK_TENANTS',
+    'TRANSCRIPT_ISSUER_ENDPOINT',
+    'TRANSCRIPT_ISSUER_AUDIENCE',
     'SENTRY_DSN',
     'LEARN_CLOUD_URL',
 ];

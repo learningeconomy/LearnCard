@@ -413,7 +413,7 @@ using its GitHub secret fallbacks, so services and stages can migrate independen
 | Brain      | `learn-cloud-network-api-staging` / `learn-cloud-network-api-production` | `brain-service/dev/runtime-secrets` / `brain-service/production/runtime-secrets`             |
 | LearnCloud | `learn-cloud-storage-api-staging` / `learn-cloud-storage-api-production` | `learn-cloud-service/dev/runtime-secrets` / `learn-cloud-service/production/runtime-secrets` |
 
-lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, `CLASSLINK_CLIENT_SECRET`, and escrow secrets when used. The non-secret stage-config keys (`CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS`, `CLASSLINK_MAX_AUTH_AGE_SECONDS`, `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE`) belong in `config/config.<stage>.json`.
+lca-api's bundle holds `GOOGLE_APPLICATION_CREDENTIAL`, `OPENAI_API_KEY`, `SEED`, and escrow secrets when used. It also holds the ClassLink and transcript-issuer settings `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS`, `TRANSCRIPT_ISSUER_ENDPOINT` and `TRANSCRIPT_ISSUER_AUDIENCE`: the client ID is not secret, but the tenant map and issuer endpoint name specific districts and partners, so they stay out of the public stage files. Do not put these keys in `config/config.<stage>.json` (a stage-file value would override the bundle). Only the generic keys `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` and `CLASSLINK_MAX_AUTH_AGE_SECONDS` belong in `config/config.<stage>.json`.
 
 Brain's bundle holds `SEED`, `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`,
 `POSTMARK_API_KEY`, `MESSAGEBIRD_AUTH_TOKEN`, `SENTRY_DSN`, `POSTHOG_API_KEY`,
