@@ -13,6 +13,7 @@ import {
 import { getLogger } from '../../logging/logger';
 import { addActiveLocaleToUrl } from '../../i18n';
 import { aiPassportFetch } from '../../helpers/aiPassportAuth';
+import { AiServiceError, getAiServiceError } from '../../helpers/aiErrors';
 import { extractFileCredentials } from '../../helpers/fileExtraction';
 import type { FileExtractionAttempt } from '../../types/file-extraction';
 const log = getLogger('ai-passport');
@@ -116,26 +117,54 @@ export const usePreloadAssessment = () => {
 
     return useMutation({
         mutationFn: async ({ did, summaryCredential }: { did: string; summaryCredential: any }) => {
-            const res = await aiPassportFetch(
-                addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment`),
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ summaryCredential }),
-                },
-                did
-            );
+            const attemptId = crypto.randomUUID();
+            const startedAt = performance.now();
+            let stage = 'request';
+            let httpStatus: number | undefined;
+            log.info('ai.assessment.preload.started', { attemptId });
 
-            if (!res.ok) throw new Error('Failed to preload assessment');
-            const assessment = await res.json();
+            try {
+                const res = await aiPassportFetch(
+                    addActiveLocaleToUrl(`${networkStore.get.aiServiceUrl()}/assessment`),
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ summaryCredential }),
+                    },
+                    did
+                );
+                stage = 'http_response';
+                httpStatus = res.status;
 
-            return { assessment, boostId: summaryCredential?.boostId };
+                if (!res.ok) {
+                    throw (
+                        (await getAiServiceError(res)) ??
+                        new Error(`Failed to preload assessment (HTTP ${res.status})`)
+                    );
+                }
+                stage = 'response_parse';
+                const assessment = await res.json();
+                log.info('ai.assessment.preload.received', {
+                    attemptId,
+                    httpStatus,
+                    durationMs: Math.round(performance.now() - startedAt),
+                    questionCount: Array.isArray(assessment) ? assessment.length : 0,
+                });
+
+                return { assessment, boostId: summaryCredential?.boostId };
+            } catch (error) {
+                log.error('ai.assessment.preload.failed', {
+                    attemptId,
+                    stage,
+                    httpStatus,
+                    durationMs: Math.round(performance.now() - startedAt),
+                    code: error instanceof AiServiceError ? error.payload.code : 'request_failed',
+                });
+                throw error;
+            }
         },
         onSuccess: ({ assessment, boostId }) => {
             queryClient.setQueryData(['assessment', boostId], assessment);
-        },
-        onError: error => {
-            log.error('Failed to preload assessment:', error);
         },
     });
 };

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { IonIcon } from '@ionic/react';
+import { alertCircleOutline } from 'ionicons/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { getLogger } from 'learn-card-base';
 const log = getLogger('ai-assessment-container');
@@ -42,6 +44,26 @@ import { AiSession } from 'learn-card-base';
 import { useWallet } from 'learn-card-base/hooks/useWallet';
 import { aiLoadingStore } from 'learn-card-base/stores/aiLoadingStore';
 import GenericNetworkError from '../../generic/GenericNetworkError';
+import { AiServiceError } from 'learn-card-base/helpers/aiErrors';
+import { getAiErrorCopy } from '../../../helpers/aiError.helpers';
+import * as m from '../../../paraglide/messages.js';
+
+const hasAssessmentQuestions = (value: unknown): value is AiAssessmentQuestion[] =>
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+        question =>
+            question &&
+            typeof question.question === 'string' &&
+            question.question.trim() &&
+            (question.type === AiAssesmentQuestionTypeEnum.text ||
+                (question.type === AiAssesmentQuestionTypeEnum.multipleChoice &&
+                    Array.isArray(question.choices) &&
+                    question.choices.length >= 2 &&
+                    question.choices.every(
+                        (choice: unknown) => typeof choice === 'string' && choice.trim()
+                    )))
+    );
 
 export enum AiAssessmentStepEnum {
     assessmentIntro = 'assessmentIntro',
@@ -68,6 +90,8 @@ export const AiAssessmentContainer: React.FC<{
         (assessment || []).map(q => ({ ...q, answer: '' }))
     );
     const [isPreLoadingAssessment, setIsPreLoadingAssessment] = useState(false);
+    const [preloadError, setPreloadError] = useState<Error | null>(null);
+    const preloadInFlight = useRef(false);
     const [allPrefilled, setAllPrefilled] = useState(false);
 
     const { refetch: refetchEnrichedSession } = useGetEnrichedSession(
@@ -169,12 +193,16 @@ export const AiAssessmentContainer: React.FC<{
     };
 
     const preLoadAssessment = async () => {
+        if (preloadInFlight.current) return;
+        preloadInFlight.current = true;
         try {
             setIsPreLoadingAssessment(true);
+            setPreloadError(null);
             aiLoadingStore.set.isFinishingAssessment(false);
 
             const learnCard = await initWallet();
-            const summaryCredential = session?.vc?.boostCredential;
+            const summaryCredential = session?.vc?.boostCredential ?? session?.vc;
+            if (!summaryCredential) throw new Error('Session summary is unavailable');
             const boostId = summaryCredential?.boostId;
 
             const cached = queryClient.getQueryData<AiAssessmentQuestion[]>([
@@ -182,7 +210,7 @@ export const AiAssessmentContainer: React.FC<{
                 boostId,
             ]);
 
-            if (cached) {
+            if (hasAssessmentQuestions(cached)) {
                 setAssessmentQA(cached);
 
                 const allAnswered = cached.every(q => q.answer?.trim());
@@ -202,15 +230,26 @@ export const AiAssessmentContainer: React.FC<{
                     summaryCredential,
                 });
 
-                if (assessment) setAssessmentQA(assessment);
-                setAllPrefilled(false);
+                if (!hasAssessmentQuestions(assessment)) {
+                    throw new Error('Assessment response contains no usable questions');
+                }
+                setAssessmentQA(assessment);
+                const firstUnansweredIndex = assessment.findIndex(q => !q.answer?.trim());
+                setCurrentQuestionIndex(
+                    firstUnansweredIndex === -1 ? assessment.length - 1 : firstUnansweredIndex
+                );
+                setAllPrefilled(firstUnansweredIndex === -1);
             }
-
-            setIsPreLoadingAssessment(false);
         } catch (error) {
             log.error('Error preloading assessment:', error);
-            setIsPreLoadingAssessment(false);
+            setPreloadError(
+                error instanceof Error ? error : new Error('Assessment could not be loaded')
+            );
+            setAssessmentQA([]);
             setAllPrefilled(false);
+        } finally {
+            preloadInFlight.current = false;
+            setIsPreLoadingAssessment(false);
         }
     };
 
@@ -249,6 +288,10 @@ export const AiAssessmentContainer: React.FC<{
     };
 
     let assessmentEl = null;
+    const preloadErrorCopy =
+        preloadError instanceof AiServiceError
+            ? getAiErrorCopy(preloadError.payload.code).body
+            : m['error.generic']();
 
     if (activeStep === AiAssessmentStepEnum.assessmentIntro) {
         assessmentEl = (
@@ -264,7 +307,7 @@ export const AiAssessmentContainer: React.FC<{
     } else if (activeStep === AiAssessmentStepEnum.assessmentQA) {
         assessmentEl = (
             <AiAssessmentLayout>
-                <AiAssessmentIntro session={session.vc} />
+                {session.vc && <AiAssessmentIntro session={session.vc} />}
                 {isPreLoadingAssessment ? (
                     <div ref={qaItemsRef}>
                         <AiSessionLoader
@@ -272,6 +315,28 @@ export const AiAssessmentContainer: React.FC<{
                             overrideText={preLoadingAssessmentText}
                             isInline
                         />
+                    </div>
+                ) : preloadError ? (
+                    <div className="w-full mt-6 font-poppins">
+                        <div
+                            role="alert"
+                            className="mb-5 p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5"
+                        >
+                            <IonIcon
+                                icon={alertCircleOutline}
+                                className="text-red-400 text-lg mt-0.5 shrink-0"
+                                aria-hidden="true"
+                            />
+                            <span className="text-sm text-red-700 leading-relaxed">
+                                {preloadErrorCopy}
+                            </span>
+                        </div>
+                        <button
+                            onClick={preLoadAssessment}
+                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                        >
+                            {m['common.tryAgain']()}
+                        </button>
                     </div>
                 ) : (
                     <div ref={qaItemsRef}>
