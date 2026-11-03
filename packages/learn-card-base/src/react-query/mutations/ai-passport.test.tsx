@@ -41,7 +41,14 @@ const payload = {
         issuanceDate: '2026-01-01T00:00:00Z',
         credentialSubject: { id: 'did:example:learner' },
         boostId: 'urn:boost:summary',
-    } as VC,
+        proof: {
+            type: 'Ed25519Signature2020',
+            created: '2026-01-01T00:00:00Z',
+            proofPurpose: 'assertionMethod',
+            verificationMethod: 'did:example:issuer#key-1',
+            proofValue: 'synthetic-test-proof',
+        },
+    } satisfies VC,
     summaryCredentialUri: 'urn:credential:summary',
 };
 
