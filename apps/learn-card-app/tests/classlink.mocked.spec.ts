@@ -28,7 +28,12 @@ test.describe('ClassLink callback handling @mocked', () => {
 });
 
 test.describe('ClassLink sign-in hand-off @mocked', () => {
-    test.fixme('hands the exchanged code off to Firebase custom-token sign-in — the classlink.getAuthorizeUrl mutation never resolved under the shared trpc batch mock (likely batched with a procedure the mock/HAR does not cover), so the redirect never happened; needs a dedicated page.route handler or HAR re-record to isolate it, not diagnosed further in this pass', async ({
+    // fixme reason: the sign-in helpers call lca-api through a throwaway account
+    // (initWallet('aaa')), and no mocked-tier test exercises that path yet: its lca-api
+    // plugin boot batches utilities.getEncryptionKey with the ClassLink call and then
+    // fails in DIDKit ("Key mismatch") against the recorded network. Hand-off is covered
+    // by startClassLinkLogin unit tests and the lca-api router/curl checks instead.
+    test.fixme('hands the exchanged code off to Firebase custom-token sign-in', async ({
         page,
     }) => {
         const mock = await installNetwork(page);
@@ -103,10 +108,8 @@ test.describe('ClassLink sign-in hand-off @mocked', () => {
 });
 
 test.describe('ClassLink signed-in states @mocked', () => {
-    // fixme reason: the mocked tier's HAR-replayed signed-in boot has no
-    // ClassLink-linked identity, and the transcripts.*/classlink.personalEmail.*
-    // tRPC response shapes were not confirmed against the real lca-api router
-    // type in this pass, so asserting all five card states + the email prompt
-    // would mean guessing an unverified mock contract.
-    test.fixme('transcript opt-in card (eligible/requested/none_yet/reauth_required/error) and personal email prompt Skip behavior', async () => {});
+    // The mocked tier has no signed-in boot for a ClassLink account, so the transcript
+    // card and personal-email prompt states are covered by lca-api router tests, not here.
+    test.fixme('transcript card states and personal email prompt (needs a ClassLink signed-in mocked boot)', async () =>
+        undefined);
 });
