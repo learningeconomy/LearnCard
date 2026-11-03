@@ -220,6 +220,14 @@ describe('campaign email', () => {
         expect(mocks.send).toHaveBeenCalledOnce();
         expect(mocks.acknowledge).not.toHaveBeenCalled();
     });
+    it('does not claim a retained reservation or expose provider details for a failed self-test', async () => {
+        mocks.send.mockRejectedValue(new Error('provider detail with private recipient and token'));
+        await expect(sendCampaignEmail(campaign, 'adult', true)).rejects.toThrow(
+            /^Campaign test email delivery failed$/
+        );
+        expect(mocks.send).toHaveBeenCalledOnce();
+        expect(mocks.acknowledge).not.toHaveBeenCalled();
+    });
     it.each(['', 'outbound', 'OUTBOUND'])(
         'rejects unsafe stream %s before claiming',
         async stream => {
