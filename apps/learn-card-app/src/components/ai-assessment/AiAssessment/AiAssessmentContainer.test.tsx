@@ -11,13 +11,14 @@ const mocks = vi.hoisted(() => ({
     preload: vi.fn(),
     finish: vi.fn(),
     logError: vi.fn(),
+    closeModal: vi.fn(),
 }));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 
 vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: mocks.logError }),
     ModalTypes: {},
-    useModal: () => ({ newModal: vi.fn(), closeModal: vi.fn() }),
+    useModal: () => ({ newModal: vi.fn(), closeModal: mocks.closeModal }),
     useDeviceTypeByWidth: () => ({ isDesktop: true, isMobile: false }),
     usePreloadAssessment: () => ({ mutateAsync: mocks.preload }),
     useFinishAssessmentMutation: () => ({ mutateAsync: mocks.finish }),
@@ -38,6 +39,7 @@ vi.mock('learn-card-base/stores/aiLoadingStore', () => ({
 vi.mock('../../../paraglide/messages.js', () => ({
     'error.generic': () => 'Something went wrong. Please try again.',
     'common.tryAgain': () => 'Try Again',
+    'common.close': () => 'Close',
 }));
 vi.mock('../../../helpers/aiError.helpers', () => ({
     getAiErrorCopy: () => ({ body: 'LearnCard AI has reached its current usage limit.' }),
@@ -191,5 +193,14 @@ describe('AI final assessment loading', () => {
         );
         await showAssessment();
         expect(await screen.findByRole('alert')).toHaveTextContent('usage limit');
+    });
+
+    it('lets the learner close a failed assessment without completing it', async () => {
+        mocks.preload.mockRejectedValueOnce(new Error('Failed to preload assessment'));
+        await showAssessment();
+        await screen.findByRole('alert');
+        fireEvent.click(screen.getByRole('button', { name: 'Close', exact: true }));
+        expect(mocks.closeModal).toHaveBeenCalledTimes(1);
+        expect(mocks.finish).not.toHaveBeenCalled();
     });
 });

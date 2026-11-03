@@ -331,12 +331,20 @@ export const AiAssessmentContainer: React.FC<{
                                 {preloadErrorCopy}
                             </span>
                         </div>
-                        <button
-                            onClick={preLoadAssessment}
-                            className="w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
-                        >
-                            {m['common.tryAgain']()}
-                        </button>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeModal}
+                                className="flex-1 py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors"
+                            >
+                                {m['common.close']()}
+                            </button>
+                            <button
+                                onClick={preLoadAssessment}
+                                className="flex-1 py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity"
+                            >
+                                {m['common.tryAgain']()}
+                            </button>
+                        </div>
                     </div>
                 ) : (
                     <div ref={qaItemsRef}>
