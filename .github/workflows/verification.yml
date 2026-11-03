@@ -14,6 +14,8 @@ on:
             - '.github/workflows/verification.yml'
             - '.github/actions/setup/**'
             - 'scripts/check-verification-map.ts'
+            - 'scripts/verification-catalog.mjs'
+            - 'scripts/verification-shards*'
             - 'scripts/verify-web-sqlite-build.mjs'
             - 'scripts/verify-web-sqlite-build.test.mjs'
             - 'scripts/summarize-verification*.mjs'
@@ -120,7 +122,8 @@ jobs:
 
             - name: Check sanitized timing summaries
               run: |
-                  node --test scripts/summarize-verification.test.mjs
+                  node --test scripts/summarize-verification.test.mjs scripts/verification-shards.test.mjs
+                  node scripts/verification-shards.mjs check
                   python3 -B -m unittest discover -s scripts -p test_profile_verification_traces.py
 
     production-bundle:
@@ -164,13 +167,19 @@ jobs:
                   node scripts/verify-web-sqlite-build.mjs --output "$PRIVATE_LOG_DIR/sqlite-web-build" > "$PRIVATE_LOG_DIR/sqlite-web-build.log" 2>&1
 
     runtime:
-        name: Owned-stack runtime
+        name: Catalog shard ${{ matrix.shard }}
+        strategy:
+            fail-fast: false
+            matrix:
+                shard: ['1', '2', '3']
         if: ${{ github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft }}
         # PR code runs only on an ephemeral GitHub-hosted runner.
         runs-on: ubuntu-24.04
         timeout-minutes: 60
         env:
             LC_VERIFY_TRUST_LOCAL_DOCKER: '1' # Trust this ephemeral VM's default daemon.
+            SHARD_ID: ${{ matrix.shard }}
+            PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         steps:
             - name: Initialize private evidence paths
               run: |
@@ -240,12 +249,16 @@ jobs:
             - name: Check local prerequisites
               run: bun run --cwd apps/learn-card-app lc verify doctor --preflight > "$PRIVATE_LOG_DIR/preflight.log" 2>&1
 
+            - name: Validate shard assignment
+              run: |
+                  node scripts/verification-shards.mjs features "$SHARD_ID" > "$PRIVATE_LOG_DIR/features.txt"
+
             - name: Start owned stack and bootstrap sessions
               id: stack
               env:
                   USE_DOCKER_CACHE: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
               run: |
-                  # Message navigation, the catalog, and campaign authorization share this owned stack.
+                  # This shard alone owns its stack; journeys remain serial within it.
                   verify_args=(up --json --dir "$STACK_DIR")
                   if [[ "$USE_DOCKER_CACHE" == 'true' ]]; then
                     verify_args+=(--docker-builder lc-verification)
@@ -255,48 +268,23 @@ jobs:
 
             - name: Verify message navigation on the owned stack
               id: navigation
+              if: ${{ matrix.shard == '1' }}
               run: |
                   bun run --cwd apps/learn-card-app lc verify script "$GITHUB_WORKSPACE/packages/learn-card-base/src/in-app-messages/examples/verify-navigation.mjs" --dir "$STACK_DIR" --video > "$PRIVATE_LOG_DIR/message-navigation.log" 2>&1
 
-            - name: Run serial catalog on the owned stack
+            - name: Run assigned serial catalog on the owned stack
               id: catalog
               run: |
-                  bun run --cwd apps/learn-card-app lc verify run all --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
+                  mapfile -t features < "$PRIVATE_LOG_DIR/features.txt"
+                  bun run --cwd apps/learn-card-app lc verify run "${features[@]}" --json --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/catalog.jsonl" 2> "$PRIVATE_LOG_DIR/catalog.log"
 
             - name: Verify campaign SDK authorization boundaries
               id: campaigns
+              if: ${{ matrix.shard == '2' }}
               run: |
                   bun run --cwd apps/learn-card-app lc verify script \
                     services/learn-card-network/brain-service/test/verification/campaigns.ts --dir "$STACK_DIR" \
                     > "$PRIVATE_LOG_DIR/campaigns.log" 2>&1
-
-            # Public proof handoff: selected media and sanitized rendering data only.
-            - name: Stage proof media
-              if: ${{ always() }}
-              continue-on-error: true
-              run: |
-                  if [[ -d "$STACK_DIR/runs" ]]; then
-                    RUN_DIR=$(node --input-type=module -e '
-                      import { readdirSync } from "node:fs";
-                      import { join } from "node:path";
-                      const root = join(process.env.STACK_DIR, "runs");
-                      const newest = readdirSync(root, { withFileTypes: true })
-                        .filter(entry => entry.isDirectory()).map(entry => entry.name).sort().at(-1);
-                      if (newest) console.log(join(root, newest));
-                    ')
-                    if [[ -n "$RUN_DIR" ]]; then
-                      bun scripts/proof.ts stage --from-run "$RUN_DIR" --out "$RUNNER_TEMP/lc-proof-media" --images-only
-                    fi
-                  fi
-
-            - name: Retain proof media
-              if: ${{ always() }}
-              uses: actions/upload-artifact@v4
-              with:
-                  name: lc-proof-media-${{ github.run_id }}
-                  path: ${{ runner.temp }}/lc-proof-media
-                  retention-days: 14
-                  if-no-files-found: ignore
 
             - name: Always tear down owned resources
               id: teardown
@@ -320,16 +308,19 @@ jobs:
               if: ${{ always() }}
               env:
                   STARTUP_OUTCOME: ${{ steps.stack.outcome }}
-                  SCRIPT_OUTCOME: ${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}
+                  SCRIPT_OUTCOME: ${{ matrix.shard == '1' && steps.navigation.outcome || steps.campaigns.outcome }}
                   VERIFICATION_OUTCOME: ${{ steps.catalog.outcome }}
                   TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
-              run: node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
+              run: |
+                  # Shard 3 has no extra script; omit the optional outcome rather than report a skipped requirement.
+                  if [[ "$SHARD_ID" == '3' ]]; then unset SCRIPT_OUTCOME; fi
+                  node scripts/summarize-verification.mjs "$STACK_DIR" "$SUMMARY_DIR"
 
             - name: Retain sanitized summary only
               if: ${{ always() }}
               uses: actions/upload-artifact@v4
               with:
-                  name: lc-verification-summary-${{ github.run_id }}
+                  name: lc-verification-summary-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
                   path: |
                       ${{ env.SUMMARY_DIR }}/summary.json
                       ${{ env.SUMMARY_DIR }}/summary.md
@@ -338,21 +329,121 @@ jobs:
                   if-no-files-found: error
                   retention-days: 14
 
-    # Keep the existing check name; every enabled branch must succeed.
+            - name: Validate raw coverage and stage shard proof
+              if: ${{ always() }}
+              env:
+                  STARTUP_OUTCOME: ${{ steps.stack.outcome }}
+                  NAVIGATION_OUTCOME: ${{ steps.navigation.outcome }}
+                  CATALOG_OUTCOME: ${{ steps.catalog.outcome }}
+                  CAMPAIGNS_OUTCOME: ${{ steps.campaigns.outcome }}
+                  TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
+              run: node scripts/verification-shards.mjs stage "$STACK_DIR" "$RUNNER_TEMP/lc-shard" "$SHARD_ID"
+
+            - name: Retain validated shard bundle
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-verification-shard-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+                  path: ${{ runner.temp }}/lc-shard
+                  if-no-files-found: error
+                  retention-days: 14
+
+    # Stable required check: combines only sanitized evidence after every shard has finished.
     verification:
         needs: [source-checks, production-bundle, runtime]
         if: ${{ always() && (github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft) }}
         runs-on: ubuntu-24.04
-        timeout-minutes: 5
+        timeout-minutes: 10
+        env:
+            PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+            SOURCE_RESULT: ${{ needs.source-checks.result }}
+            BUNDLE_RESULT: ${{ needs.production-bundle.result }}
+            RUNTIME_RESULT: ${{ needs.runtime.result }}
         steps:
-            - name: Require all verification jobs
-              env:
-                  SOURCE_RESULT: ${{ needs.source-checks.result }}
-                  BUNDLE_RESULT: ${{ needs.production-bundle.result }}
-                  RUNTIME_RESULT: ${{ needs.runtime.result }}
+            - name: Checkout tested revision
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+
+            - name: Setup Node
+              uses: actions/setup-node@v6
+              with:
+                  node-version-file: .nvmrc
+
+            - name: Setup Bun and dependencies
+              uses: ./.github/actions/setup
+              with:
+                  save-cache: 'false'
+
+            - name: Initialize aggregate evidence paths
+              if: ${{ always() }}
+              run: mkdir -p "$RUNNER_TEMP/lc-shard-input"
+
+            - name: Download sanitized shard bundles
+              if: ${{ always() }}
+              continue-on-error: true
+              uses: actions/download-artifact@v4
+              with:
+                  pattern: lc-verification-shard-${{ github.run_id }}-*
+                  path: ${{ runner.temp }}/lc-shard-input
+
+            - name: Merge exact catalog coverage and selected screenshots
+              id: merge
+              if: ${{ always() }}
+              continue-on-error: true
               run: |
-                  echo "Verification results: source=$SOURCE_RESULT bundle=$BUNDLE_RESULT runtime=$RUNTIME_RESULT"
-                  if [[ "$SOURCE_RESULT" != 'success' || "$BUNDLE_RESULT" != 'success' || "$RUNTIME_RESULT" != 'success' ]]; then
-                    echo 'Every verification job must succeed; failed, cancelled or skipped jobs cannot pass.' >&2
-                    exit 1
+                  umask 077
+                  node scripts/verification-shards.mjs merge "$RUNNER_TEMP/lc-shard-input" "$RUNNER_TEMP/lc-shard-merged"
+
+            # A setup/parser failure must not leave an earlier attempt's green artifact in place.
+            - name: Preserve current failure proof if aggregation cannot run
+              if: ${{ always() }}
+              run: |
+                  mkdir -p "$RUNNER_TEMP/lc-shard-merged/media"
+                  if [[ ! -f "$RUNNER_TEMP/lc-shard-merged/media/report.json" ]]; then
+                    printf '%s\n' '{"status":"failed","script":false,"results":[],"notRun":[],"notSelected":[]}' > "$RUNNER_TEMP/lc-shard-merged/media/report.json"
                   fi
+                  if [[ ! -f "$RUNNER_TEMP/lc-shard-merged/summary.json" ]]; then
+                    printf '%s\n' '{"schemaVersion":1,"run":"failure","coverageValid":false,"reports":[],"shards":[]}' > "$RUNNER_TEMP/lc-shard-merged/summary.json"
+                    printf '%s\n' 'Verification aggregation failed before a complete report was available.' > "$RUNNER_TEMP/lc-shard-merged/summary.md"
+                  fi
+                  cat "$RUNNER_TEMP/lc-shard-merged/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Retain combined proof media
+              id: media
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-proof-media-${{ github.run_id }}
+                  overwrite: true
+                  path: ${{ runner.temp }}/lc-shard-merged/media
+                  retention-days: 14
+                  if-no-files-found: error
+
+            - name: Retain combined sanitized summary
+              id: summary
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: lc-verification-summary-${{ github.run_id }}
+                  overwrite: true
+                  path: |
+                      ${{ runner.temp }}/lc-shard-merged/summary.json
+                      ${{ runner.temp }}/lc-shard-merged/summary.md
+                  retention-days: 14
+                  if-no-files-found: error
+
+            - name: Require all verification jobs and complete proof
+              if: ${{ always() }}
+              env:
+                  MERGE_RESULT: ${{ steps.merge.outcome }}
+                  MEDIA_RESULT: ${{ steps.media.outcome }}
+                  SUMMARY_RESULT: ${{ steps.summary.outcome }}
+              run: |
+                  echo "Verification: source=$SOURCE_RESULT bundle=$BUNDLE_RESULT runtime=$RUNTIME_RESULT coverage=$MERGE_RESULT media=$MEDIA_RESULT summary=$SUMMARY_RESULT"
+                  for result in "$SOURCE_RESULT" "$BUNDLE_RESULT" "$RUNTIME_RESULT" "$MERGE_RESULT" "$MEDIA_RESULT" "$SUMMARY_RESULT"; do
+                    if [[ "$result" != 'success' ]]; then
+                      echo 'Every check, shard, coverage merge and proof handoff must succeed.' >&2
+                      exit 1
+                    fi
+                  done

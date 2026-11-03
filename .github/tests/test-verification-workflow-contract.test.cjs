@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+const { readFileSync } = require('node:fs');
 
 const root = path.resolve(__dirname, '../..');
 const workflowPath = path.join(root, '.github/workflows/verification.yml');
@@ -90,27 +91,68 @@ assert.equal(
     "${{ always() && (github.event_name == 'workflow_dispatch' || !github.event.pull_request.draft) }}"
 );
 assert.equal(gate['continue-on-error'], undefined);
-const evaluate = gate.steps[0];
-assert.deepEqual(evaluate.env, {
+const evaluate = gate.steps.find(
+    step => step.name === 'Require all verification jobs and complete proof'
+);
+assert.equal(evaluate.if, '${{ always() }}');
+assert.equal(evaluate.env.MERGE_RESULT, '${{ steps.merge.outcome }}');
+assert.deepEqual(gate.env, {
+    PR_HEAD_SHA: '${{ github.event.pull_request.head.sha || github.sha }}',
     SOURCE_RESULT: '${{ needs.source-checks.result }}',
     BUNDLE_RESULT: '${{ needs.production-bundle.result }}',
     RUNTIME_RESULT: '${{ needs.runtime.result }}',
 });
-for (const a of ['success', 'failure', 'cancelled', 'skipped']) {
-    for (const b of ['success', 'failure', 'cancelled', 'skipped']) {
-        for (const c of ['success', 'failure', 'cancelled', 'skipped']) {
-            const result = spawnSync('bash', ['-e', '-c', evaluate.run], {
-                encoding: 'utf8',
-                env: { ...process.env, SOURCE_RESULT: a, BUNDLE_RESULT: b, RUNTIME_RESULT: c },
-            });
+const resultValues = ['success', 'failure', 'cancelled', 'skipped'];
+const proofSuccess = {
+    MERGE_RESULT: 'success',
+    MEDIA_RESULT: 'success',
+    SUMMARY_RESULT: 'success',
+};
+const runGate = env =>
+    spawnSync('bash', ['-e', '-c', evaluate.run], {
+        encoding: 'utf8',
+        env: { ...process.env, ...proofSuccess, ...env },
+    }).status;
+for (const a of resultValues)
+    for (const b of resultValues)
+        for (const c of resultValues)
             assert.equal(
-                result.status,
-                a === 'success' && b === 'success' && c === 'success' ? 0 : 1,
-                `aggregate must fail closed: ${a}/${b}/${c}`
+                runGate({ SOURCE_RESULT: a, BUNDLE_RESULT: b, RUNTIME_RESULT: c }),
+                a === 'success' && b === 'success' && c === 'success' ? 0 : 1
             );
-        }
-    }
-}
+for (const key of Object.keys(proofSuccess))
+    for (const value of resultValues.slice(1))
+        assert.equal(
+            runGate({
+                SOURCE_RESULT: 'success',
+                BUNDLE_RESULT: 'success',
+                RUNTIME_RESULT: 'success',
+                [key]: value,
+            }),
+            1
+        );
+assert.equal(workflow.jobs.runtime.strategy['fail-fast'], false);
+assert.deepEqual(workflow.jobs.runtime.strategy.matrix.shard, ['1', '2', '3']);
+assert.deepEqual(
+    workflow.jobs.runtime.strategy.matrix.shard,
+    JSON.parse(
+        readFileSync(path.join(root, 'scripts/verification-shards.json'), 'utf8')
+    ).shards.map(shard => shard.id),
+    'Workflow matrix and partition plan must describe the same workers'
+);
+assert.match(
+    source.find(step => step.name === 'Check sanitized timing summaries').run,
+    /verification-shards\.test\.mjs/
+);
+assert.ok(
+    (workflow.on ?? workflow.true).pull_request.paths.includes('scripts/verification-shards*')
+);
+const merge = gate.steps.find(step => step.id === 'merge');
+assert.equal(merge.if, '${{ always() }}');
+assert.equal(merge['continue-on-error'], true);
+assert.match(merge.run, /verification-shards.mjs merge/);
+assert.ok(gate.steps.some(step => step.uses?.startsWith('actions/download-artifact@')));
+assert.deepEqual(workflow.permissions, { contents: 'read' });
 const stackIndex = steps.findIndex(step => step.id === 'stack');
 const navigationIndex = steps.findIndex(step => step.id === 'navigation');
 const catalogIndex = steps.findIndex(step => step.id === 'catalog');
@@ -131,13 +173,15 @@ const stack = steps[stackIndex];
 assert.match(stack.run, /verify_args=\(up --json --dir "\$STACK_DIR"\)/);
 
 const navigation = steps[navigationIndex];
+assert.equal(navigation.if, "${{ matrix.shard == '1' }}");
 assert.match(navigation.run, /lc verify script .*verify-navigation\.mjs.*--dir "\$STACK_DIR"/);
 
 const catalog = steps[catalogIndex];
-assert.match(catalog.run, /lc verify run all --json --dir "\$STACK_DIR"/);
+assert.match(catalog.run, /lc verify run "\$\{features\[@\]\}" --json --dir "\$STACK_DIR"/);
 
 const campaigns = steps[campaignsIndex];
 assert.equal(campaigns.id, 'campaigns');
+assert.equal(campaigns.if, "${{ matrix.shard == '2' }}");
 assert.match(campaigns.run, /lc verify script/);
 assert.match(campaigns.run, /--dir "\$STACK_DIR"/);
 
@@ -149,9 +193,10 @@ const summary = steps[summaryIndex];
 assert.equal(summary.env.STARTUP_OUTCOME, '${{ steps.stack.outcome }}');
 assert.equal(
     summary.env.SCRIPT_OUTCOME,
-    "${{ steps.navigation.outcome == 'success' && steps.campaigns.outcome || steps.navigation.outcome }}"
+    "${{ matrix.shard == '1' && steps.navigation.outcome || steps.campaigns.outcome }}"
 );
 assert.equal(summary.env.VERIFICATION_OUTCOME, '${{ steps.catalog.outcome }}');
+assert.ok(summary.run.includes(`if [[ "$SHARD_ID" == '3' ]]; then unset SCRIPT_OUTCOME; fi`));
 
 assert.equal(summary.env.TEARDOWN_OUTCOME, '${{ steps.teardown.outcome }}');
 const artifacts = steps.filter(step => step.uses === 'actions/upload-artifact@v4');
@@ -159,7 +204,7 @@ assert.equal(artifacts.length, 2, 'retain only the existing media and sanitized 
 assert.ok(artifacts.every(step => step.if === '${{ always() }}'));
 assert.ok(source.every(step => !step.uses?.startsWith('actions/upload-artifact@')));
 assert.ok(bundle.every(step => !step.uses?.startsWith('actions/upload-artifact@')));
-console.log('verification lifecycle, independent jobs and all 64 aggregate outcomes passed');
+console.log('verification lifecycle, isolated shards and fail-closed aggregate outcomes passed');
 
 const profileIndex = steps.findIndex(step => step.name === 'Profile retained browser calls');
 assert.ok(profileIndex > teardownIndex && profileIndex < summaryIndex);
@@ -176,3 +221,90 @@ assert.match(upload.with.path, /browser-profile\.json/);
 assert.match(upload.with.path, /browser-profile\.md/);
 assert.doesNotMatch(upload.with.path, /trace|session|\*\*/);
 console.log('verification lifecycle and sanitized browser profiling contract passed');
+
+for (const name of ['Retain combined proof media', 'Retain combined sanitized summary'])
+    assert.equal(gate.steps.find(step => step.name === name).with.overwrite, true);
+
+assert.equal(
+    gate.steps.find(step => step.name === 'Retain combined proof media').if,
+    '${{ always() }}'
+);
+
+const shardPlan = require('../../scripts/verification-shards.json');
+assert.deepEqual(
+    shardPlan.shards.map(shard => [shard.id, shard.scripts]),
+    [
+        ['1', ['navigation']],
+        ['2', ['campaigns']],
+        ['3', []],
+    ]
+);
+
+// Execute the actual dependency-free fallback, including preserving legitimate partial proof.
+const fs = require('node:fs');
+const os = require('node:os');
+// Execute the real summary step: shard 3 has no script requirement, but startup/catalog still fail closed.
+const summaryTemporary = fs.mkdtempSync(path.join(os.tmpdir(), 'verification-summary-'));
+try {
+    fs.mkdirSync(path.join(summaryTemporary, 'stack/runs/catalog'), { recursive: true });
+    fs.writeFileSync(
+        path.join(summaryTemporary, 'stack/runs/catalog/report.json'),
+        JSON.stringify({
+            status: 'passed',
+            results: [],
+        })
+    );
+    for (const [shard, failed] of [
+        ['3', null],
+        ['3', 'STARTUP_OUTCOME'],
+        ['3', 'VERIFICATION_OUTCOME'],
+        ['1', 'SCRIPT_OUTCOME'],
+        ['2', 'SCRIPT_OUTCOME'],
+    ]) {
+        const environment = {
+            ...process.env,
+            SHARD_ID: shard,
+            STACK_DIR: path.join(summaryTemporary, 'stack'),
+            SUMMARY_DIR: path.join(summaryTemporary, 'summary'),
+            GITHUB_STEP_SUMMARY: path.join(summaryTemporary, 'step.md'),
+            STARTUP_OUTCOME: 'success',
+            SCRIPT_OUTCOME: 'skipped',
+            VERIFICATION_OUTCOME: 'success',
+            TEARDOWN_OUTCOME: 'success',
+            ...(failed ? { [failed]: 'failure' } : {}),
+        };
+        assert.equal(
+            spawnSync('bash', ['-e', '-c', summary.run], { cwd: root, env: environment }).status,
+            0
+        );
+        const report = JSON.parse(
+            fs.readFileSync(path.join(environment.SUMMARY_DIR, 'summary.json'), 'utf8')
+        );
+        assert.equal(report.run, failed ? 'failure' : 'success');
+        assert.equal(report.commandOutcomes.script, shard === '3' ? 'unknown' : 'failure');
+        assert.equal(report.reports[0].status, 'passed');
+    }
+} finally {
+    fs.rmSync(summaryTemporary, { recursive: true, force: true });
+}
+const fallback = gate.steps.find(
+    step => step.name === 'Preserve current failure proof if aggregation cannot run'
+);
+assert.equal(fallback.if, '${{ always() }}');
+const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'verification-fallback-'));
+try {
+    const environment = {
+        ...process.env,
+        RUNNER_TEMP: temporary,
+        GITHUB_STEP_SUMMARY: path.join(temporary, 'step.md'),
+    };
+    assert.equal(spawnSync('bash', ['-e', '-c', fallback.run], { env: environment }).status, 0);
+    const reportPath = path.join(temporary, 'lc-shard-merged/media/report.json');
+    assert.equal(JSON.parse(fs.readFileSync(reportPath, 'utf8')).status, 'failed');
+    const partial = '{"status":"failed","results":[{"feature":"partial"}]}';
+    fs.writeFileSync(reportPath, partial);
+    assert.equal(spawnSync('bash', ['-e', '-c', fallback.run], { env: environment }).status, 0);
+    assert.equal(fs.readFileSync(reportPath, 'utf8'), partial);
+} finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
+}
