@@ -1315,11 +1315,8 @@ export const startHttpServer = async () => {
               } catch (error) {
                 logSafeEvent("error", "request_failed");
                 return jsonResponse(
-                  {
-                    error: "Failed to perform search",
-                    message:
-                      error instanceof Error ? error.message : String(error),
-                  },
+                  // Details stay server-side; raw error text can carry internal state.
+                  { error: "Failed to perform search" },
                   500,
                 );
               }

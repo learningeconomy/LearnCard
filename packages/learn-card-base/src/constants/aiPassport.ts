@@ -9,7 +9,13 @@ export const LEARNCARD_AI_PASSPORT_CONTRACT_URI =
 export const LEARNCARD_AI_PASSPORT_STAGING_CONTRACT_URI =
     'lc:network:staging.network.learncard.com/trpc:contract:9eade6a7-7181-4509-b805-d26e30a8f7f1';
 
-const normalizeNetworkUrl = (url?: string | null): string => (url ?? '').replace(/\/+$/, '');
+// Trim trailing slashes with a linear scan; an anchored `/\/+$/` backtracks polynomially on long runs of '/'.
+const normalizeNetworkUrl = (url?: string | null): string => {
+    const value = url ?? '';
+    let end = value.length;
+    while (end > 0 && value[end - 1] === '/') end -= 1;
+    return value.slice(0, end);
+};
 
 const isStagingNetworkUrl = (networkUrl?: string | null): boolean =>
     normalizeNetworkUrl(networkUrl) === LEARNCARD_NETWORK_STAGING_URL;
