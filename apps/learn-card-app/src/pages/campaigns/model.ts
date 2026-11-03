@@ -101,7 +101,10 @@ export const validateForm = (form: CampaignForm, status: CampaignStatus = 'draft
                   subject: form.emailSubject,
                   title: form.emailTitle,
                   body: form.emailBody,
-                  ctaLabel: form.emailCtaLabel,
+                  ctaLabel:
+                      !hasEmailDestination(form) && !form.emailCtaLabel.trim()
+                          ? 'Open campaign'
+                          : form.emailCtaLabel,
                   heroImageUrl: form.emailHeroImageUrl.trim() || undefined,
               }
             : undefined,
@@ -139,6 +142,12 @@ export const previewMessage = (form: CampaignForm) => {
     } catch {
         return undefined;
     }
+};
+
+/** Only show a campaign-opening button when the campaign supplies enabled in-app content. */
+export const hasEmailDestination = (form: CampaignForm): boolean => {
+    const preview = previewMessage(form);
+    return form.inApp && !!preview?.success && preview.data.enabled;
 };
 
 /** DID-only CSV: named column or one column, RFC CSV quoting, stable deduplication. */

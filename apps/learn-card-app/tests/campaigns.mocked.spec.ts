@@ -526,6 +526,17 @@ test.describe('campaign composer @mocked', () => {
             expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
         }
         await page.screenshot({ path: 'test-results/campaign-email-mobile.png', fullPage: true });
+        await page.getByRole('checkbox', { name: 'In-app message', exact: true }).uncheck();
+        await expect(page.getByLabel('Email button text', { exact: true })).toHaveCount(0);
+        await expect(
+            page.getByText('This email has no button because there is no enabled in-app message.')
+        ).toBeVisible();
+        await page.screenshot({
+            path: 'test-results/campaign-email-no-button-mobile.png',
+            fullPage: true,
+        });
+        await page.getByRole('checkbox', { name: 'In-app message', exact: true }).check();
+        await expect(page.getByLabel('Email button text', { exact: true })).toHaveValue('Explore');
         await page.getByLabel('Audience source', { exact: true }).selectOption('emails');
         await page.getByLabel('Search network members').fill('Synthetic');
         await page

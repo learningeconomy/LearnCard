@@ -1,4 +1,5 @@
 import React from 'react';
+import { hasEmailDestination } from './model';
 import type { CampaignForm } from './types';
 import { Field, inputClass } from './ui';
 
@@ -44,17 +45,27 @@ export const CampaignEmailEditor: React.FC<{
                 onChange={e => onChange('emailBody', e.target.value)}
             />
         </Field>
-        <Field label="Email button text" htmlFor="campaign-email-cta">
-            <input
-                id="campaign-email-cta"
-                className={inputClass}
-                placeholder="Open campaign"
-                maxLength={100}
-                value={form.emailCtaLabel}
-                onChange={e => onChange('emailCtaLabel', e.target.value)}
-            />
-        </Field>
-        <p className="text-xs text-grayscale-600">The button opens this campaign in the app.</p>
+        {hasEmailDestination(form) ? (
+            <>
+                <Field label="Email button text" htmlFor="campaign-email-cta">
+                    <input
+                        id="campaign-email-cta"
+                        className={inputClass}
+                        placeholder="Open campaign"
+                        maxLength={100}
+                        value={form.emailCtaLabel}
+                        onChange={e => onChange('emailCtaLabel', e.target.value)}
+                    />
+                </Field>
+                <p className="text-xs text-grayscale-600">
+                    The button opens this campaign in the app.
+                </p>
+            </>
+        ) : (
+            <p className="text-xs text-grayscale-600">
+                This email has no button because there is no enabled in-app message.
+            </p>
+        )}
         <Field label="Email image URL (optional)" htmlFor="campaign-email-image">
             <input
                 id="campaign-email-image"

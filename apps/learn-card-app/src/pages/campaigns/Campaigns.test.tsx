@@ -317,14 +317,17 @@ describe('campaign composer', () => {
             target: { value: 'Email pilot' },
         });
         fireEvent.click(screen.getByRole('checkbox', { name: 'Email' }));
+        fireEvent.change(screen.getByLabelText('Email button text'), {
+            target: { value: 'Explore' },
+        });
         fireEvent.click(screen.getByRole('checkbox', { name: 'In-app message' }));
+        expect(screen.queryByLabelText('Email button text')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Preview message' })).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Save Draft' })).toBeDisabled();
         for (const [label, value] of [
             ['Email subject', 'Local test'],
             ['Email heading', 'Welcome'],
             ['Email body', 'Sent from the composer.'],
-            ['Email button text', 'Explore'],
             ['Email image URL (optional)', 'https://example.org/hero.png'],
         ])
             fireEvent.change(screen.getByLabelText(label), { target: { value } });
@@ -343,6 +346,7 @@ describe('campaign composer', () => {
         api.campaignsGet.mockResolvedValue(saved);
         mount(api, `/admin/campaigns/${saved.id}`);
         expect(await screen.findByLabelText('Email subject')).toHaveValue('Local test');
+        expect(screen.queryByLabelText('Email button text')).not.toBeInTheDocument();
         expect(screen.getByLabelText('Email body')).toHaveValue('Sent from the composer.');
         fireEvent.click(screen.getByRole('button', { name: 'Send Test to Me' }));
         expect(screen.getByRole('group', { name: 'Confirm campaign action' })).toHaveTextContent(

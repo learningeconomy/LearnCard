@@ -77,7 +77,7 @@ describe('campaign authoring contracts', () => {
             emailBody: 'Find out more in the app.',
             messageJson: '{',
         };
-        const result = validateForm(form);
+        const result = validateForm({ ...form, emailCtaLabel: '' });
         expect(result.errors).toEqual([]);
         expect(result.data).toMatchObject({
             channels: ['email'],
@@ -102,6 +102,23 @@ describe('campaign authoring contracts', () => {
         expect(
             validateForm({ ...valid(), emailSubject: 'x'.repeat(201) }).data?.email
         ).toBeUndefined();
+    });
+    it('allows a cleared hidden label for disabled in-app content but requires it for enabled content', () => {
+        const form = {
+            ...valid(),
+            email: true,
+            emailSubject: 'News',
+            emailTitle: 'News',
+            emailBody: 'Programs',
+            emailCtaLabel: '',
+        };
+        expect(validateForm(form).data).toBeUndefined();
+        expect(
+            validateForm({
+                ...form,
+                messageJson: JSON.stringify({ ...JSON.parse(form.messageJson), enabled: false }),
+            }).data?.email?.ctaLabel
+        ).toBe('Open campaign');
     });
     it('round trips all email content and omits a cleared optional image', () => {
         const input = validateForm({
