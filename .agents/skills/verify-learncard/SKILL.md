@@ -23,6 +23,7 @@ Use focused unit/mock tests in the edit loop. When you need real-stack feedback,
 | SDK, a plugin, `@learncard/types`, or a brain/cloud/LCA route | `run sdk` (plus `sdk-to-app` if users see the result), then a `script` that calls your new method                                          |
 | `packages/learn-card-cli`                                     | `run cli`, then `learncard -- <your subcommand>`                                                                                           |
 | ConsentFlow (contracts, consent UI, data sharing)             | `run consent-flow`                                                                                                                         |
+| AI session app pickers or the AI apps catalog                 | `run ai-sessions` (starting a session is not covered: no AI service)                                                                       |
 | `docs/` code or snippets                                      | `run docs` (it also runs `scripts/check-docs-snippets.mjs`)                                                                                |
 | Partner Connect SDK or `examples/app-store-apps`              | `run app-store`                                                                                                                            |
 | `apps/ai-passport` or `services/ai-passport-backend`          | Not served by this stack. Run the AI Passport gates instead (see the feature map's "Not covered yet").                                     |
