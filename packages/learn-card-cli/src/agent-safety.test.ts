@@ -27,6 +27,7 @@ import {
     assertProjectNetwork,
     connect,
     ensureIdentity,
+    ensureProfile,
     createPrompts,
     loadProject,
     resolveNetworkAlias,
@@ -50,7 +51,13 @@ import { runConsentContract } from './consent-contract';
 import { runWebhook } from './webhook';
 import { runSetupSigning } from './setup-signing';
 import { runInit } from './init';
-import { buildProgram, configureJsonUsageErrors, leafCommands, runCommand } from './program';
+import {
+    buildProgram,
+    configureJsonUsageErrors,
+    hoistGlobalFlags,
+    leafCommands,
+    runCommand,
+} from './program';
 
 let cwd: string;
 
@@ -116,7 +123,15 @@ describe('network aliases', () => {
             existing: '',
         };
         expect(() => assertProjectNetwork(project, STAGING_NETWORK)).not.toThrow();
-        expect(() => assertProjectNetwork(project, PRODUCTION_NETWORK)).toThrow('another network');
+        expect(() => assertProjectNetwork(project, PRODUCTION_NETWORK)).toThrow(
+            'set up for staging, not production'
+        );
+        try {
+            assertProjectNetwork(project, PRODUCTION_NETWORK);
+        } catch (error) {
+            expect((error as CliError).code).toBe('NETWORK_MISMATCH');
+            expect((error as CliError).hint).toContain('separate folder');
+        }
     });
 
     it('promote shares the alias map, so prod and production are the same network', () => {
@@ -289,7 +304,7 @@ describe('validation happens before any I/O', () => {
 });
 
 describe('identity creation is announced', () => {
-    it('reports identityCreated {profileId, did, network} and a stderr line', async () => {
+    it('reports identityCreated {profileId, keyDid, network} and a stderr line', async () => {
         const project = await loadProject(cwd);
         const identity = await ensureIdentity(project, { yes: true, network: 'local' });
         expect(identity.created).toBe(true);
@@ -300,7 +315,29 @@ describe('identity creation is announced', () => {
         await connect(project, { network: 'local' });
         expect(out.result.identityCreated).toEqual({
             profileId: identity.profileId,
-            did: 'did:key:z6Mk',
+            keyDid: 'did:key:z6Mk',
+            network: LOCAL_NETWORK,
+        });
+    });
+
+    it('records the profile DID as identityCreated.did once the profile is created', async () => {
+        const project = await loadProject(cwd);
+        const identity = await ensureIdentity(project, { yes: true, network: 'local' });
+        mocks.initLearnCard.mockResolvedValue({ id: { did: () => 'did:key:z6Mk' } });
+        await connect(project, { network: 'local' });
+        await ensureProfile(
+            {
+                invoke: {
+                    getProfile: async () => undefined,
+                    createProfile: async () => 'did:web:localhost%3A4000:users:acme',
+                },
+            },
+            { profileId: identity.profileId, displayName: 'Acme' }
+        );
+        expect(out.result.identityCreated).toEqual({
+            profileId: identity.profileId,
+            did: 'did:web:localhost%3A4000:users:acme',
+            keyDid: 'did:key:z6Mk',
             network: LOCAL_NETWORK,
         });
     });
@@ -436,6 +473,25 @@ describe('missing or invalid inputs are USAGE errors', () => {
     );
 });
 
+describe('status <activityId>', () => {
+    it('reports an unknown activity as NOT_FOUND with a hint', async () => {
+        await fs.writeFile(
+            path.join(cwd, '.env'),
+            `SECURE_SEED=${'ab'.repeat(32)}\nPROFILE_ID=acme\nNETWORK_URL=staging\n`
+        );
+        mocks.initLearnCard.mockResolvedValue({
+            id: { did: () => 'did:key:z' },
+            invoke: { getActivityChain: async () => [] },
+        });
+        const error = (await runStatus('nope', {}).then(
+            () => undefined,
+            (caught: unknown) => caught
+        )) as CliError;
+        expect(error.code).toBe('NOT_FOUND');
+        expect(error.hint).toContain('status --json');
+    });
+});
+
 describe('verify --json', () => {
     const credential = { type: ['VerifiableCredential'], issuer: 'did:key:z' };
 
@@ -530,7 +586,6 @@ describe('usage errors with --json', () => {
         [['inbox', '--json'], 'inbox', /subcommand is required/],
         [['--json'], null, /subcommand is required/],
         [['inbox', 'list', '--status', '--json', '--limit'], 'inbox list', /argument missing/],
-        [['--json', 'whoami'], null, /--json must come after the command/],
         [['inbox', '--json', 'list'], 'inbox', /--json must come after the command/],
     ])('%j prints one USAGE envelope and exits non-zero', (argv, command, message) => {
         const { stdout, code } = parseUsage(argv);
@@ -546,6 +601,7 @@ describe('usage errors with --json', () => {
         const envelope = JSON.parse(stdout);
         expect(envelope.error).toBe("unknown command 'sned'");
         expect(envelope.detail).toMatch(/unknown command 'sned'\n\(Did you mean send\?\)/);
+        expect(envelope.hint).toBe('Did you mean send? See `npx @learncard/cli commands --json`.');
     });
 
     it('leaves help output alone and exits 0', () => {
@@ -553,6 +609,55 @@ describe('usage errors with --json', () => {
         const { stdout, code } = parseUsage(['send', '--help', '--json']);
         expect(code).toBe(0);
         expect(stdout).toBe('');
+    });
+});
+
+describe('help footer', () => {
+    it('points people at the skill and the agents page', () => {
+        const { program } = testProgram();
+        let help = '';
+        program.configureOutput({ writeOut: text => (help += text) });
+        program.outputHelp();
+        expect(help).toContain('npx @learncard/cli skill install');
+        expect(help).toContain('https://docs.learncard.com/start-here/for-ai-agents');
+    });
+});
+
+describe('global flags before the command', () => {
+    const argv = (...args: string[]): string[] => ['node', 'learncard', ...args];
+
+    it('moves leading --json, -y and --network after the command words', () => {
+        expect(hoistGlobalFlags(argv('--json', 'whoami'))).toEqual(argv('whoami', '--json'));
+        expect(
+            hoistGlobalFlags(argv('--network', 'staging', '-y', 'org', 'apply', 'o.yaml'))
+        ).toEqual(argv('org', 'apply', 'o.yaml', '--network', 'staging', '-y'));
+        expect(hoistGlobalFlags(argv('--network=staging', '--yes', 'status'))).toEqual(
+            argv('status', '--network=staging', '--yes')
+        );
+    });
+
+    it('leaves everything else alone', () => {
+        for (const args of [
+            ['whoami', '--json'],
+            ['--json'],
+            ['--version'],
+            ['--help', '--json'],
+            ['--network'],
+        ])
+            expect(hoistGlobalFlags(argv(...args))).toEqual(argv(...args));
+    });
+
+    it('`--json whoami` then reaches whoami with --json', async () => {
+        const { program, seen } = testProgram();
+        await program.parseAsync(
+            hoistGlobalFlags(argv('--json', '--network', 'staging', 'whoami'))
+        );
+        expect(seen).toEqual([
+            {
+                command: 'whoami',
+                options: expect.objectContaining({ json: true, network: 'staging' }),
+            },
+        ]);
     });
 });
 

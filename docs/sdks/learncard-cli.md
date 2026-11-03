@@ -37,6 +37,11 @@ Every command reads its identity from the `.env` in the current folder — **one
 | `refresh history <refreshId>`                  | Versions published for a [managed credential](../how-to-guides/issue-and-refresh-a-managed-credential.md).                                                                                                                                                                                                                                                                                                        |
 | `clr validate <file>`                          | Zod-validates a CLR 2.0 credential and lints it as `--profile provisional` or `official`. `--dry-run-sign` signs and verifies without delivering (`--allow-production` to do that on production).                                                                                                                                                                                                                 |
 | `demo refresh`                                 | Guided demonstration of [credential refresh](../how-to-guides/issue-and-refresh-a-managed-credential.md) with throwaway demo accounts. Defaults to a local network (`http://localhost:4000/trpc`); `--inbox`, `--ui`, `--email`. Does not use the folder's `.env`. Requires 3.6.0 or later.                                                                                                                       |
+| `commands [name...]`                           | Lists every command with its effect (`read`, `write`, `local`, `varies`), whether it can create an identity, arguments, options, output fields and examples. Generated from the CLI itself. See [Commands for agents and scripts](#commands-for-agents-and-scripts).                                                                                                                                              |
+| `capabilities [id]`                            | Maps what LearnCard can do to the CLI command, SDK method (for `call`), REST route (for `api`) and docs page for each.                                                                                                                                                                                                                                                                                            |
+| `call [method]`                                | Calls any `learnCard.invoke.<method>` SDK method as this folder's identity. `--args <json\|@file\|->`, `--as <profileId>`, `--list`, `--dry-run`, `--chain <name>`. Methods that can change data need `--write`; on-chain methods also need `--chain`.                                                                                                                                                            |
+| `api [method] [path]`                          | Calls the LearnCard Network REST API with your API token. `--data`, `--query key=value`, `--timeout <seconds>`, `--spec`. Methods other than `GET`/`HEAD` need `--write`.                                                                                                                                                                                                                                         |
+| `skill install`                                | Writes the LearnCard skill for coding agents into a project (`--target claude\|cursor\|agents\|all`, `--dir`, `--force`, `--print`). Local only.                                                                                                                                                                                                                                                                  |
 | `repl [seed]`                                  | The [interactive REPL](#interactive-repl).                                                                                                                                                                                                                                                                                                                                                                        |
 
 Run `npx @learncard/cli <command> --help` for every option.
@@ -59,15 +64,15 @@ Every command except `repl` accepts these three flags. Where one has no effect f
 
 ### Which commands create an identity
 
-A command that needs an identity and finds no `.env` seed either creates one or stops with a `NO_IDENTITY` error. Only these commands create one: `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, and `consent-contract`. A command that creates a new identity says so on stderr, and with `--json` adds `identityCreated: { profileId, did, network }` to its result. The error envelope carries it too if the command fails after creating the identity (without `did` if it failed before connecting). `promote` copies this folder's seed and profile ID into its target folder (`targetDir` in its JSON result) and creates the profile on the target network; it does not report `identityCreated`.
+A command that needs an identity and finds no `.env` seed either creates one or stops with a `NO_IDENTITY` error. Only these commands create one: `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, and `consent-contract`. A command that creates a new identity says so on stderr, and with `--json` adds `identityCreated: { profileId, did, keyDid, network }` to its result: `did` is the new profile's DID (the same value as the result's `did`) and `keyDid` is the seed's `did:key`. The error envelope carries it too if the command fails after creating the identity (without `did` if no profile was created, and without `keyDid` if it failed before connecting). `promote` copies this folder's seed and profile ID into its target folder (`targetDir` in its JSON result) and creates the profile on the target network; it does not report `identityCreated`.
 
-Every other command — `whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`, `token --revoke`, `open`, `verify`, `clr validate` — never creates an identity or writes to `.env`. Arguments and flags (recipient, `--expires`, `--limit`, `--status`, `--event`, scopes) are checked before the CLI touches `.env` or the network, so a typo fails without side effects.
+Every other command — `whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`, `token --revoke`, `open`, `verify`, `clr validate`, `commands`, `capabilities`, `call`, `api`, `skill install` — never creates an identity or writes to `.env`. `api` does not need an identity at all (only a token), and `skill install` writes only the agent skill files. Arguments and flags (recipient, `--expires`, `--limit`, `--status`, `--event`, scopes) are checked before the CLI touches `.env` or the network, so a typo fails without side effects.
 
 Run commands that create an identity with `--network staging` first; a new production profile is public, and its profile ID is globally unique.
 
 ### JSON output
 
-With `--json`, every command prints one line of JSON on stdout and exits. `--json` never prompts, even at a terminal without `-y`: a missing required value fails with `code: "USAGE"`.
+With `--json`, every command prints one line of JSON on stdout and exits; human-readable progress goes to stderr, and results are not repeated there. `--json` never prompts, even at a terminal without `-y`: a missing required value fails with `code: "USAGE"`. `--json`, `-y` and `--network <name>` may also come before the command (`npx @learncard/cli --json --network staging whoami`).
 
 Success: `{ "ok": true, "command": "<name>", ...result }`, exit 0. Commands that check something report the outcome in their own fields and exit 1 when the check fails:
 
@@ -87,12 +92,12 @@ Failure (exit 1):
 }
 ```
 
-| Field    | Meaning                                                                                                                                             |
-| :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `error`  | First line of the error message.                                                                                                                    |
-| `code`   | `USAGE` (unknown command or option, missing or invalid argument or flag value), `NO_IDENTITY` (no seed in this folder), or `ERROR` (anything else). |
-| `hint`   | Optional. What to run next.                                                                                                                         |
-| `detail` | Present when the full message is longer than `error`.                                                                                               |
+| Field    | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `error`  | First line of the error message.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `code`   | `USAGE` (unknown command or option, missing or invalid argument or flag value), `NO_IDENTITY` (no seed in this folder), `NETWORK_MISMATCH` (`--network` differs from the network this folder is set up for), `NOT_FOUND` (an ID such as a `status` activity ID does not exist), `ERROR` (anything else), or a command-specific code such as `WRITE_REQUIRES_FLAG` or `HTTP_404`. `commands --json` lists every code under `errorCodes`. |
+| `hint`   | Optional. What to run next.                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `detail` | Present when the full message is longer than `error`.                                                                                                                                                                                                                                                                                                                                                                                   |
 
 Usage errors exit with commander's non-zero code; with `--json` anywhere in the arguments they use the same envelope, with `command` set to `null` when the command itself is unknown. Exit codes are otherwise 0 (success) or 1 (failure).
 
@@ -105,6 +110,91 @@ The CLI keeps secrets out of stdout by default:
 - `open` copies the seed to the clipboard only when stdout is a terminal. Without a TTY it skips the clipboard and the 60-second clipboard-clear wait.
 
 `webhook` without a TTY stops after `--timeout` seconds (default 60) in human mode as well as with `--json`.
+
+### Commands for agents and scripts
+
+These commands help a coding agent or script find its way around without reading the docs first. None of them ever creates an identity.
+
+#### `commands`
+
+```bash
+npx @learncard/cli commands                 # table: name, effect, description
+npx @learncard/cli commands --json          # full manifest
+npx @learncard/cli commands "inbox list" --json
+```
+
+`--json` returns `{ ok, command: "commands", version, commands, globalOptions, envVars, errorCodes, docs }`. Each entry in `commands` has `name` (the full path, such as `inbox list`), `description`, `arguments`, `options`, `effect`, `createsIdentity`, `network`, `output` (the key fields of its `--json` result) and `examples`. `effect` is `read` (reads remote state, such as the network or DID documents), `write` (changes network state), `local` (no remote state) or `varies` (`call` and `api`: depends on the method). `network` is `true` when the command may open any connection, to LearnCard or elsewhere; `false` means it never connects. `effect`, `createsIdentity` and `network` are upper bounds over a command's flags. For example, `clr validate` is offline without `--dry-run-sign`, but is listed as `read` with `network: true` because that flag connects and authenticates. The manifest is built from the CLI's own command tree, so it matches the installed version. The same examples appear at the end of each command's `--help`.
+
+#### `capabilities`
+
+```bash
+npx @learncard/cli capabilities --json
+npx @learncard/cli capabilities consentflow
+```
+
+Each capability has `id`, `title`, `summary`, `cli` (commands), `call` (SDK method names for `call`), `api` (REST tag and paths, or `null`), `docs`, and optionally `snippet` (a tested example in the docs repository) and `notes`.
+
+#### `call`
+
+```bash
+npx @learncard/cli call --list --json
+npx @learncard/cli call createBoost --describe --json
+npx @learncard/cli call getProfile --network staging --json
+npx @learncard/cli call createBoost --args @boost.json --dry-run --network staging --json
+npx @learncard/cli call createBoost --args @boost.json --write --network staging -y --json
+```
+
+Calls `learnCard.invoke.<method>` as the folder's identity, or as a managed profile with `--as <profileId>`. The folder must already have an identity (`NO_IDENTITY` otherwise), and `call` never writes to `.env`.
+
+- `--describe` prints a method's TypeScript signature (from the plugin types), its parameters, `effect`, the flags a real call needs (`needs`) and an example invocation, without connecting or needing an identity.
+- `--args` takes JSON: an array is spread as positional arguments, any other value is passed as the single argument. A bare value that is not JSON, such as an `lc:` URI or a profile ID, is passed as one string (`--args lc:network:…`); quote numbers or `true` as JSON strings (`'"42"'`) to pass them as text. `@file` reads a file, `-` reads stdin.
+- Methods named like reads (`get…`, `list…`, `count…`, `resolve…`, `verify…`, and similar) run as-is. Everything else needs `--write`, or fails with `WRITE_REQUIRES_FLAG`; `-y` does not imply `--write`. A few read-named methods that change state on the network (such as `resolveShareLink`) also need `--write`.
+- Methods that return secrets also need `--show-secret` (`SECRET_REQUIRES_FLAG`). Secrets here are private keys, API tokens, signed presentations or ID tokens that can authenticate as this identity (such as `issuePresentation`, `signPresentation` and `presentCredentials`), and values that can redeem an authorization code (`beginCredentialOfferAuthCode` returns the PKCE verifier). Without `--show-secret` the seed is never printed. With it, a method such as `getSubjectKeypair` returns the private key, which is equivalent to the seed (the seed itself is still redacted wherever it appears verbatim, as hex or base64).
+- On-chain methods (`transferTokens`, marked `(on-chain)` in `--list`) need `--chain <name>`, an ethers network name such as `sepolia` (`mainnet`, `homestead` and `ethereum` all mean mainnet). Without it they fail with `CHAIN_REQUIRED` before connecting. The Ethereum plugin defaults to mainnet whatever `--network` is, so mainnet is used only when you name it. After connecting, `call` checks the chain the wallet reports and fails with `CHAIN_MISMATCH` (nothing submitted) if it differs or cannot be read. `--chain` has no environment variable. On other methods it sets and checks the chain the same way.
+- `--dry-run` prints the method, arguments, `effect` and whether the call would be allowed, without connecting. For on-chain methods, or with `--chain`, it adds `chain: { effective, requested, pluginDefault, required }`.
+- `--list` lists the wallet's methods with their read/write classification; in a folder with no identity, or with `--dry-run`, it shows a built-in list without connecting.
+- Read methods (with or without `--as`) connect without registering DIDs with LearnCloud. Write methods keep the SDK default, so they may register the profile's `did:web` on first use.
+- An unknown method fails with `UNKNOWN_METHOD` and close suggestions; an error thrown by the method fails with `CALL_FAILED`.
+
+Result: `{ ok: true, command: "call", method, effect, result }`, plus `chain` when `--chain` was given. `result` is made JSON-safe: `BigInt` becomes a string, bytes become base64, `Map`/`Set` become arrays, dates become ISO strings, and functions are dropped.
+
+#### `api`
+
+```bash
+npx @learncard/cli api --spec --json
+npx @learncard/cli api GET /profile --network staging --json
+npx @learncard/cli api POST /boost/paginated --data '{"limit":10}' --write --network staging --json
+```
+
+Calls the LearnCard Network REST API at `<network>/api` (for example `https://network.learncard.com/api`). The bearer token comes from `LEARNCARD_API_KEY`, else `API_TOKEN` in the folder's `.env` (written by [`token`](#commands)); with neither, it fails with `NO_API_TOKEN`. The token is never printed, including with `--dry-run`.
+
+- `GET` and `HEAD` run as-is. Any other method needs `--write` (`WRITE_REQUIRES_FLAG`), even for routes that only read. So do the GET routes that change state: `/challenges` (registers login challenges) and `/inbox/guardian-approval/{token}` (approves a guardian request). This holds however the path is spelled: case, trailing or duplicate slashes, backslashes and percent-encoding are normalized the way the server routes them.
+- `path` must start with `/`; full URLs are refused so the token only goes to the selected network. A `#` is refused (`USAGE`) because fragments are never sent.
+- `--dry-run` shows the exact URL, the normalized `routePath` the `--write` check used, `effect` and `allowed`. The token and any seed in the body are masked.
+- `--query key=value` (repeatable), `--data <json|@file|->`, `--timeout <seconds>` (default 30).
+- `--spec` prints the network's OpenAPI spec and reference URLs; `--spec --fetch` downloads the spec and lists its operations (with `--dry-run` it only reports the URL it would fetch).
+- A non-2xx response fails with `code: "HTTP_<status>"` and the (truncated) response body in `detail`. Other codes: `NETWORK_ERROR`, `TIMEOUT`, `NETWORK_MISMATCH` (the folder or its token is for a different network).
+
+Result: `{ ok: true, command: "api", status, method, path, data }`.
+
+#### `skill install`
+
+```bash
+npx @learncard/cli skill install
+npx @learncard/cli skill install --target cursor --dir ./my-app
+npx @learncard/cli skill install --print
+```
+
+Writes the LearnCard skill, an operational guide for coding agents, into a project:
+
+| `--target` | File                                |
+| :--------- | :---------------------------------- |
+| `claude`   | `.claude/skills/learncard/SKILL.md` |
+| `cursor`   | `.cursor/rules/learncard.mdc`       |
+| `agents`   | `.agents/skills/learncard/SKILL.md` |
+| `all`      | All three                           |
+
+Without `--target` it installs for every agent directory it finds in `--dir` (default: the current folder), else for Claude Code. It won't overwrite a different existing file without `--force` (`EXISTS`); an identical file is left unchanged. It never follows symlinks. If any path component under `--dir` (such as `.claude` or the skill file itself) is a symlink or not a directory, it fails with `UNSAFE_PATH` and writes nothing, even with `--force`. New files are created exclusively, and `--force` replaces a file by writing a temp file in the same folder and renaming it. `--print` writes the skill to stdout instead. It never touches the network or the folder's identity. See [Install the LearnCard Skill](../how-to-guides/use-learncard-with-coding-agents.md).
 
 ### Org spec
 

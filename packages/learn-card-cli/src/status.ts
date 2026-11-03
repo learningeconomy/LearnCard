@@ -1,6 +1,6 @@
 import { connect, loadProject, requireIdentity, type ProjectOptions } from './project';
 import { out } from './out';
-import { UsageError } from './errors';
+import { CliError, UsageError } from './errors';
 
 type ActivityEvent = {
     activityId: string;
@@ -77,7 +77,11 @@ export const runStatus = async (activityId: string | undefined, options: StatusO
 
     if (activityId) {
         const chain = (await learnCard.invoke.getActivityChain({ activityId })) as ActivityEvent[];
-        if (!chain.length) throw new Error(`No activity found for ${activityId}.`);
+        if (!chain.length)
+            throw new CliError(`No activity found for ${activityId}.`, {
+                code: 'NOT_FOUND',
+                hint: 'List recent sends and their IDs with `npx @learncard/cli status --json`. Activity IDs are per network, so check --network too.',
+            });
         const summary = summarize(chain);
         out.log(`${summary.state}  ${summary.template ?? ''} → ${summary.recipient}`);
         for (const e of [...chain].sort(LATEST_FIRST)) out.log(`  ${formatEvent(e)}`);

@@ -19,6 +19,8 @@
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
+**Using an AI coding agent (Claude Code, Cursor, Codex)?** Run `npx @learncard/cli skill install` in your project, then point the agent at [Use LearnCard from an AI Agent](https://docs.learncard.com/start-here/for-ai-agents).
+
 ## Installation
 
 Use [Bun](https://bun.sh/) to install LearnCard.

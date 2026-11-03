@@ -6,22 +6,48 @@ description: How an AI coding agent, script, or CI job should read the LearnCard
 
 This page is for AI coding agents (and the people who set them up) that read LearnCard documentation and run the [LearnCard CLI](../sdks/learncard-cli.md) on a developer's behalf. The same rules apply to shell scripts and CI jobs.
 
+{% hint style="success" %}
+**Setting up an agent? Two steps.**
+
+1. In your project folder, run `npx @learncard/cli skill install`. It gives Claude Code, Cursor or Codex the LearnCard skill ([details](../how-to-guides/use-learncard-with-coding-agents.md)).
+2. Tell your agent:
+
+```
+Read https://docs.learncard.com/start-here/for-ai-agents.md, then use the LearnCard CLI
+(npx @learncard/cli) on staging to <your task>. Ask me before anything irreversible or on production.
+```
+
+{% endhint %}
+
 {% hint style="info" %}
 Looking to connect **your own** LearnCard wallet to Claude or ChatGPT as a learner? That is a different product: see [Use LearnCard with Claude or ChatGPT](../how-to-guides/connect-systems/connect-ai-agent.md). This page is about building and issuing with LearnCard.
 {% endhint %}
+
+## Give your agent the LearnCard skill
+
+If you use Claude Code, Cursor, Codex or a similar coding agent, install the LearnCard skill into your project first. It packs the rules and recipes on this page into a file the agent loads by itself:
+
+```bash
+npx @learncard/cli skill install                  # .claude/, .cursor/ or .agents/, whichever the project has
+npx @learncard/cli skill install --target all     # all three
+```
+
+It only writes files, never touches the network, and won't overwrite a changed copy without `--force`. See [Install the LearnCard Skill](../how-to-guides/use-learncard-with-coding-agents.md).
 
 ## Machine-readable sources
 
 Prefer these over scraping rendered HTML:
 
-| Source                      | URL                                                                                                  | Use it for                                         |
-| :-------------------------- | :--------------------------------------------------------------------------------------------------- | :------------------------------------------------- |
-| Docs index                  | [`https://docs.learncard.com/llms.txt`](https://docs.learncard.com/llms.txt)                         | A list of every docs page with its URL.            |
-| Full docs                   | [`https://docs.learncard.com/llms-full.txt`](https://docs.learncard.com/llms-full.txt)               | All pages in one text file.                        |
-| Any single page as Markdown | Append `.md` to the page URL, e.g. `https://docs.learncard.com/start-here/your-first-integration.md` | One page without navigation chrome.                |
-| Network REST API (OpenAPI)  | [`https://network.learncard.com/docs/openapi.json`](https://network.learncard.com/docs/openapi.json) | Every REST route, its parameters, and its summary. |
-| Network REST API (browser)  | [`https://network.learncard.com/docs`](https://network.learncard.com/docs)                           | The same spec rendered for people.                 |
-| CLI help                    | `npx @learncard/cli --help`, `npx @learncard/cli <command> --help`                                   | Every command and option of the installed version. |
+| Source                      | URL                                                                                                  | Use it for                                                                                                                                                                       |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docs index                  | [`https://docs.learncard.com/llms.txt`](https://docs.learncard.com/llms.txt)                         | A list of every docs page with its URL.                                                                                                                                          |
+| Full docs                   | [`https://docs.learncard.com/llms-full.txt`](https://docs.learncard.com/llms-full.txt)               | All pages in one text file.                                                                                                                                                      |
+| Any single page as Markdown | Append `.md` to the page URL, e.g. `https://docs.learncard.com/start-here/your-first-integration.md` | One page without navigation chrome.                                                                                                                                              |
+| Network REST API (OpenAPI)  | [`https://network.learncard.com/docs/openapi.json`](https://network.learncard.com/docs/openapi.json) | Every REST route, its parameters, and its summary.                                                                                                                               |
+| Network REST API (browser)  | [`https://network.learncard.com/docs`](https://network.learncard.com/docs)                           | The same spec rendered for people.                                                                                                                                               |
+| CLI help                    | `npx @learncard/cli --help`, `npx @learncard/cli <command> --help`                                   | Every command and option of the installed version.                                                                                                                               |
+| CLI command manifest        | `npx @learncard/cli commands --json`                                                                 | Every command with its effect (`read`/`write`/`local`/`varies`), whether it creates an identity or connects (`network`), options, output fields, examples, and every error code. |
+| Capability map              | `npx @learncard/cli capabilities --json`                                                             | What LearnCard can do, and the CLI command, SDK method (`call`), REST route (`api`) and docs page for each.                                                                      |
 
 ## Rules for agents
 
@@ -54,11 +80,15 @@ With `--json`, each command prints exactly one line of JSON on stdout. Human-rea
 - **Success:** `{"ok":true,"command":"send",...}` and exit code 0.
 - **Failure:** `{"ok":false,"command":"send","error":"...","code":"...","hint":"...","detail":"..."}` and exit code 1. `hint` and `detail` appear only when there is something to say.
 
-| `code`        | Means                                                                                        | What to do                                                                             |
-| :------------ | :------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
-| `USAGE`       | Unknown command or option, or a missing or invalid argument or flag value. Nothing was done. | Fix the command; check `--help`.                                                       |
-| `NO_IDENTITY` | The folder has no LearnCard identity, and this command does not create one.                  | Run `init --network staging` in this folder (after confirming it is the right folder). |
-| `ERROR`       | Anything else, such as a network or permission failure.                                      | Read `error`, `hint` and `detail`; don't retry a `send` blindly (see below).           |
+| `code`                | Means                                                                                        | What to do                                                                             |
+| :-------------------- | :------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
+| `USAGE`               | Unknown command or option, or a missing or invalid argument or flag value. Nothing was done. | Fix the command; check `--help`.                                                       |
+| `NO_IDENTITY`         | The folder has no LearnCard identity, and this command does not create one.                  | Run `init --network staging` in this folder (after confirming it is the right folder). |
+| `ERROR`               | Anything else, such as a network or permission failure.                                      | Read `error`, `hint` and `detail`; don't retry a `send` blindly (see below).           |
+| `WRITE_REQUIRES_FLAG` | `call` or `api` would change state, and `--write` was not passed.                            | Confirm with a person, then re-run with `--write` (try `--dry-run` first).             |
+| `HTTP_<status>`       | `api` got a non-2xx response; `detail` holds the response body.                              | 401/403: token or scope; 404: path or ID; 429: wait, then retry.                       |
+
+`commands --json` lists every other code (such as `NO_API_TOKEN`, `UNKNOWN_METHOD`, `CHAIN_REQUIRED` or `UNSAFE_PATH`) under `errorCodes`.
 
 A few commands report a checked outcome rather than just "it ran": `verify` adds `verified: true|false`, and `doctor` and `clr validate` set `ok` to whether their checks passed. All three exit 1 when the check fails. The full reference is on the [CLI page](../sdks/learncard-cli.md#json-output).
 
@@ -66,18 +96,20 @@ A few commands report a checked outcome rather than just "it ran": `verify` adds
 
 **Read-only — safe to run any time:** `whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `verify`, `clr validate` (without `--dry-run-sign`), `token --list`, `org apply --dry-run`, `promote --dry-run`. These never create an identity and never write `.env`. Those that need an identity (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `token --list`, `promote --dry-run`) fail with `NO_IDENTITY` in a folder without one. `verify` and `clr validate` don't need an identity. `org apply --dry-run` in a folder without one previews the plan with a throwaway seed (it still contacts the network) and writes nothing. `open` also fails with `NO_IDENTITY` without one and writes nothing, but it hands the folder's seed to the LearnCard app (see [Secrets](#secrets)).
 
-**Create an identity if the folder has none:** `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, `consent-contract`. When one of these creates a new identity, its JSON result includes `identityCreated: { profileId, did, network }`, even when the command fails afterwards (the error envelope carries it too, without `did` if the command failed before connecting; check for it before retrying). On production that is a new public profile. `promote` (without `--dry-run`) also writes a new folder: it copies this folder's seed and profile ID into `.learncard/<network>/` and creates the profile on the target network. It does not report `identityCreated`; its JSON result names the folder in `targetDir`.
+**Create an identity if the folder has none:** `init`, `send`, `org apply`, `token` (when creating a token), `setup-signing`, `embed`, `webhook`, `consent-contract`. When one of these creates a new identity, its JSON result includes `identityCreated: { profileId, did, keyDid, network }` (`did` is the new profile's DID, `keyDid` the seed's `did:key`), even when the command fails afterwards (the error envelope carries it too, without `did` if no profile was created; check for it before retrying). On production that is a new public profile. `promote` (without `--dry-run`) also writes a new folder: it copies this folder's seed and profile ID into `.learncard/<network>/` and creates the profile on the target network. It does not report `identityCreated`; its JSON result names the folder in `targetDir`.
 
 **Hard or impossible to undo — confirm with a person first:**
 
-| Command           | Effect                                                                                                                                        |
-| :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| `send`, `webhook` | Issue a real credential and email or text the recipient (`send --suppress-delivery` skips the message). A sent message can't be recalled.     |
-| `revoke`          | Permanently revokes a credential. `revoke --suspend` suspends it instead.                                                                     |
-| `token`           | Creates a live bearer token. Revoke it with `token --revoke <grantId>` when it is no longer needed.                                           |
-| `setup-signing`   | Registers a signing authority on the network and makes it your primary signer. `embed` and `send` (when signing from a template) do this too. |
-| `org apply`       | Creates or updates profiles, managed profiles, signing authorities and API tokens. Run `--dry-run` first and show the plan.                   |
-| `init`            | Claims a public profile ID on the network.                                                                                                    |
+| Command                                                     | Effect                                                                                                                                        |
+| :---------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
+| `send`, `webhook`                                           | Issue a real credential and email or text the recipient (`send --suppress-delivery` skips the message). A sent message can't be recalled.     |
+| `revoke`                                                    | Permanently revokes a credential. `revoke --suspend` suspends it instead.                                                                     |
+| `token`                                                     | Creates a live bearer token. Revoke it with `token --revoke <grantId>` when it is no longer needed.                                           |
+| `setup-signing`                                             | Registers a signing authority on the network and makes it your primary signer. `embed` and `send` (when signing from a template) do this too. |
+| `org apply`                                                 | Creates or updates profiles, managed profiles, signing authorities and API tokens. Run `--dry-run` first and show the plan.                   |
+| `init`                                                      | Claims a public profile ID on the network.                                                                                                    |
+| `call --write`, `api` with a method other than `GET`/`HEAD` | Whatever the SDK method or REST route does. Both refuse without `--write`; `-y` does not imply it.                                            |
+| `call transferTokens`                                       | Submits an Ethereum transaction, which can't be reversed. It also needs `--chain`; mainnet (real funds) is used only when named.              |
 
 **If a `send` fails ambiguously** (timeout, network error), check whether it went through before retrying: `npx @learncard/cli status --json` lists recent sends. See [When a send fails ambiguously](../how-to-guides/go-to-production.md#when-a-send-fails-ambiguously).
 
@@ -91,4 +123,19 @@ A few commands report a checked outcome rather than just "it ran": `verify` adds
 
 ## Beyond the CLI
 
-The CLI covers the quickstart journey: sending, tracking, signing, tokens, webhooks, ConsentFlow contracts, organizations, verification and revocation. For anything else (templates with custom content, claim links, skills, connections and more), write code against the [LearnCard Wallet SDK](../sdks/learncard-core/README.md) or call the [Network REST API](../sdks/learncard-network/README.md) with an API token from `token`. Reuse the folder's `.env` values (`SECURE_SEED`, `NETWORK_URL`, `API_TOKEN`) so the code acts as the same identity on the same network.
+The CLI's own commands cover the quickstart journey: sending, tracking, signing, tokens, webhooks, ConsentFlow contracts, organizations, verification and revocation. For anything else (templates with custom content, claim links, skills, connections and more), first check `npx @learncard/cli capabilities --json`, then use one of the two escape hatches:
+
+```bash
+# Any SDK method, as the folder's identity (--describe shows its signature first)
+npx @learncard/cli call createBoost --describe --json
+npx @learncard/cli call getProfile --network staging --json
+npx @learncard/cli call createBoost --args @boost.json --dry-run --network staging --json
+
+# Any Network REST route, with the API token from `token` (or LEARNCARD_API_KEY)
+npx @learncard/cli api GET /profile --network staging --json
+npx @learncard/cli api --spec --json
+```
+
+Both run reads as-is and refuse anything that can change data unless you pass `--write`; for `api` that includes the few `GET` routes that change state, such as `GET /challenges`. On-chain methods such as `transferTokens` also need `--chain` (for example `--chain sepolia`), because the Ethereum plugin otherwise defaults to mainnet. Neither creates an identity. Without `--show-secret`, neither prints the seed or an API token; `call --show-secret` can print private keys (equivalent to the seed) and API tokens, so pass it only when the user asks. Details: [`call`](../sdks/learncard-cli.md#call) and [`api`](../sdks/learncard-cli.md#api).
+
+When you need real application code, write it against the [LearnCard Wallet SDK](../sdks/learncard-core/README.md) or the [Network REST API](../sdks/learncard-network/README.md). Reuse the folder's `.env` values (`SECURE_SEED`, `NETWORK_URL`, `API_TOKEN`) so the code acts as the same identity on the same network.

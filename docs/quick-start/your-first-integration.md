@@ -10,6 +10,10 @@ Send a badge to an email address. The recipient gets a claim link and does not n
 You can issue credentials without code from the [LearnCard app](https://learncard.app). The options below send them programmatically.
 {% endhint %}
 
+{% hint style="info" %}
+**Using an AI coding agent?** Run `npx @learncard/cli skill install`, then send it to [Use LearnCard from an AI Agent](../introduction/for-ai-agents.md). It covers the staging-first, non-interactive version of this quickstart.
+{% endhint %}
+
 Choose one option.
 
 {% tabs %}

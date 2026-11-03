@@ -79,7 +79,15 @@ describe('project context', () => {
         };
         expect(() =>
             assertProjectNetwork(project, 'https://staging.network.learncard.com/trpc')
-        ).toThrow('separate folder');
+        ).toThrow('set up for production, not staging');
+        expect(() =>
+            assertProjectNetwork(project, 'https://staging.network.learncard.com/trpc')
+        ).toThrow(
+            expect.objectContaining({
+                code: 'NETWORK_MISMATCH',
+                hint: expect.stringContaining('separate folder'),
+            })
+        );
         expect(() =>
             assertProjectNetwork(project, 'https://network.learncard.com/trpc')
         ).not.toThrow();
