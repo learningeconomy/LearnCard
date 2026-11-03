@@ -115,6 +115,36 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(feature["operations"], [])
         self.assertEqual(feature["diagnostics"]["limitedArchives"], 1)
 
+    def test_call_limit_is_shared_by_all_trace_files_in_an_archive(self):
+        path = self.folder / "multiple-trace.zip"
+        with zipfile.ZipFile(path, "w") as archive:
+            for index in range(2):
+                events = [dict(type="context-options", version=8)] + event_pair()
+                archive.writestr(f"{index}.trace", "\n".join(json.dumps(e) for e in events))
+        with patch.object(profiler, "MAX_CALLS", 2):
+            feature = self.feature()
+        self.assertEqual(feature["operations"][0]["calls"], 2)
+        with patch.object(profiler, "MAX_CALLS", 1):
+            feature = self.feature()
+        self.assertEqual(feature["operations"], [])
+        self.assertEqual(feature["diagnostics"]["limitedArchives"], 1)
+
+    def test_only_bounded_playwright_compression_methods_are_supported(self):
+        path = self.folder / "compression-trace.zip"
+        events = [dict(type="context-options", version=8)] + event_pair()
+        for compression in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED,
+                            zipfile.ZIP_BZIP2, zipfile.ZIP_LZMA):
+            with self.subTest(compression=compression):
+                with zipfile.ZipFile(path, "w", compression=compression) as archive:
+                    archive.writestr("trace.trace", "\n".join(json.dumps(e) for e in events))
+                feature = self.feature()
+                if compression in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+                    self.assertEqual(feature["operations"][0]["calls"], 1)
+                    self.assertEqual(feature["diagnostics"]["unsupportedArchives"], 0)
+                else:
+                    self.assertEqual(feature["operations"], [])
+                    self.assertEqual(feature["diagnostics"]["unsupportedArchives"], 1)
+
     def test_malformed_rows_and_oversized_lines_do_not_copy_raw_bytes(self):
         path = self.folder / "malformed-trace.zip"
         records = (json.dumps(dict(type="context-options", version=8)) + "\n"
