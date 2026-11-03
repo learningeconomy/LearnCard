@@ -410,14 +410,15 @@ describe('getOrCreateSharedUriForWallet', () => {
             const pages = categoryPages[query.category] ?? [];
             return pages[options.cursor === 'a-next' ? 1 : 0];
         });
+        const uploadEncrypted = vi.fn(
+            async (credential: { id: string }) => `shared:${credential.id}`
+        );
         const wallet = {
             id: { did: () => 'did:web:test-user' },
             read: { get: vi.fn(async (uri: string) => ({ id: uri })) },
             store: {
                 LearnCloud: {
-                    uploadEncrypted: vi.fn(
-                        async (credential: { id: string }) => `shared:${credential.id}`
-                    ),
+                    uploadEncrypted,
                 },
             },
             index: { LearnCloud: { getPage, update: vi.fn().mockResolvedValue(undefined) } },
@@ -451,9 +452,11 @@ describe('getOrCreateSharedUriForWallet', () => {
             'Achievement',
             'Course',
         ]);
-        expect(
-            wallet.store.LearnCloud.uploadEncrypted.mock.calls.map(([credential]) => credential.id)
-        ).toEqual(['cred:a1', 'cred:a2', 'cred:c1']);
+        expect(uploadEncrypted.mock.calls.map(([credential]) => credential.id)).toEqual([
+            'cred:a1',
+            'cred:a2',
+            'cred:c1',
+        ]);
         expect(result.terms.read.credentials.categories.Achievement.shared).toEqual([
             'shared:cred:a1',
             'shared:cred:a2',
