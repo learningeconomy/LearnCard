@@ -121,6 +121,18 @@ const createAssessmentAttemptId = (): string | undefined => {
     }
 };
 
+const logAssessmentEvent = (
+    level: 'info' | 'error',
+    event: string,
+    metrics: Record<string, unknown>
+): void => {
+    try {
+        log[level](event, metrics);
+    } catch {
+        // Diagnostic transports must not change the request's result or error.
+    }
+};
+
 export const usePreloadAssessment = () => {
     const queryClient = useQueryClient();
 
@@ -138,7 +150,7 @@ export const usePreloadAssessment = () => {
             const startedAt = performance.now();
             let stage = 'request';
             let httpStatus: number | undefined;
-            log.info('ai.assessment.preload.started', { attemptId });
+            logAssessmentEvent('info', 'ai.assessment.preload.started', { attemptId });
 
             try {
                 const res = await aiPassportFetch(
@@ -165,7 +177,7 @@ export const usePreloadAssessment = () => {
                 }
                 stage = 'response_parse';
                 const assessment = await res.json();
-                log.info('ai.assessment.preload.received', {
+                logAssessmentEvent('info', 'ai.assessment.preload.received', {
                     attemptId,
                     httpStatus,
                     durationMs: Math.round(performance.now() - startedAt),
@@ -174,7 +186,7 @@ export const usePreloadAssessment = () => {
 
                 return { assessment, boostId: summaryCredential?.boostId };
             } catch (error) {
-                log.error('ai.assessment.preload.failed', {
+                logAssessmentEvent('error', 'ai.assessment.preload.failed', {
                     attemptId,
                     stage,
                     httpStatus,

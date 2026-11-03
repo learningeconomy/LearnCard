@@ -56,6 +56,28 @@ describe('assessment request failures', () => {
     beforeEach(() => vi.clearAllMocks());
     afterEach(() => vi.unstubAllGlobals());
 
+    it('still requests questions when the diagnostic transport throws', async () => {
+        mocks.logInfo.mockImplementationOnce(() => {
+            throw new Error('Diagnostic unavailable');
+        });
+        const assessment = [{ id: 1, question: 'What did you learn?', type: 'text' }];
+        mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify(assessment)));
+        const { result } = setup();
+        await expect(result.current.mutateAsync(payload)).resolves.toMatchObject({ assessment });
+        expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('preserves an HTTP failure when its diagnostic transport throws', async () => {
+        mocks.logError.mockImplementationOnce(() => {
+            throw new Error('Diagnostic unavailable');
+        });
+        mocks.fetch.mockResolvedValueOnce(new Response('Private server details', { status: 404 }));
+        const { result } = setup();
+        await expect(result.current.mutateAsync(payload)).rejects.toThrow(
+            'Failed to preload assessment (HTTP 404)'
+        );
+    });
+
     it.each([
         ['missing crypto', undefined],
         ['missing randomUUID', {}],
