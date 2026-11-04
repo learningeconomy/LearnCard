@@ -53,11 +53,6 @@ on:
                 required: false
                 default: false
                 type: boolean
-            deploy-ai-passport-app:
-                description: 'Deploy AI Passport App (Netlify; staging or production only)'
-                required: false
-                default: false
-                type: boolean
             publish-npm:
                 description: 'Publish Registry Packages'
                 required: false
@@ -105,13 +100,10 @@ jobs:
             lca_app_changed: ${{ steps.check_versions.outputs.lca_app_changed }}
             native_plugin_changed: ${{ steps.check_versions.outputs.native_plugin_changed }}
             aip_backend_changed: ${{ steps.check_versions.outputs.aip_backend_changed }}
-            aip_app_changed: ${{ steps.check_versions.outputs.aip_app_changed }}
             # AI Passport legs are computed separately (aip-env) so they can't disturb the
             # LearnCard/ScoutPass matrices above.
             aip_backend_deployment_matrix: ${{ steps.aip-env.outputs.aip_backend_deployment_matrix }}
             aip_backend_matrix_has_legs: ${{ steps.aip-env.outputs.aip_backend_matrix_has_legs }}
-            aip_app_deployment_matrix: ${{ steps.aip-env.outputs.aip_app_deployment_matrix }}
-            aip_app_matrix_has_legs: ${{ steps.aip-env.outputs.aip_app_matrix_has_legs }}
             # Dynamic environment names
             # target_frontend_env is only consumed by publish-native-apps (fastlane);
             # Netlify/CapGo deploys fan out over frontend_deployment_matrix instead.
@@ -299,7 +291,7 @@ jobs:
                     set_frontend_matrix "${FE_LEGS[@]}"
                   fi
 
-            # AI Passport deploys (Fly backend, Netlify app). Automatic legs stay off until
+            # AI Passport backend deploys (Fly). Automatic legs stay off until
             # the repo var AIP_DEPLOY_ENABLED is 'true', so merging this workflow doesn't race
             # the AI-Passport repo's own deploy-fly.yml. Flip the var when that repo is frozen.
             # Manual dispatch ignores the var so ops can prove staging first.
@@ -309,10 +301,8 @@ jobs:
                   EVENT_NAME: ${{ github.event_name }}
                   TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
                   DEPLOY_BACKEND: ${{ inputs.deploy-ai-passport-backend }}
-                  DEPLOY_APP: ${{ inputs.deploy-ai-passport-app }}
                   IS_RELEASE: ${{ steps.check_release.outputs.is_release }}
                   BACKEND_CHANGED: ${{ steps.check_versions.outputs.aip_backend_changed }}
-                  APP_CHANGED: ${{ steps.check_versions.outputs.aip_app_changed }}
                   AFFECTED: ${{ steps.affected.outputs.affected }}
                   AIP_DEPLOY_ENABLED: ${{ vars.AIP_DEPLOY_ENABLED }}
               run: |
@@ -321,8 +311,6 @@ jobs:
                   BE_STAGING='{"name":"AI Passport API Staging","environment":"ai-passport-api-staging","stage":"staging","fly_app":""}'
                   BE_PRODUCTION='{"name":"AI Passport API Production","environment":"ai-passport-api-production","stage":"production","fly_app":"ai-passport"}'
                   BE_LCA_PRODUCTION='{"name":"LCA Backend Production","environment":"ai-passport-lca-backend-production","stage":"production","fly_app":"lca-backend"}'
-                  APP_STAGING='{"name":"AI Passport App Staging","environment":"ai-passport-app-staging","stage":"staging"}'
-                  APP_PRODUCTION='{"name":"AI Passport App Production","environment":"ai-passport-app-production","stage":"production"}'
 
                   set_matrix() {
                     local key="$1" legs
@@ -336,33 +324,26 @@ jobs:
                     fi
                   }
 
-                  # Exact match: 'ai-passport' is a prefix of 'ai-passport-backend'.
+                  # Exact match so a project whose name prefixes another can't false-match.
                   is_affected() {
                     tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
                   }
 
                   BE_LEGS=()
-                  APP_LEGS=()
                   if [[ "$EVENT_NAME" == 'workflow_dispatch' ]]; then
                     case "$TARGET_ENVIRONMENT" in
                       staging)
                         if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
                           BE_LEGS+=("$BE_STAGING")
                         fi
-                        if [[ "$DEPLOY_APP" == 'true' ]]; then
-                          APP_LEGS+=("$APP_STAGING")
-                        fi
                         ;;
                       production)
                         if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
                           BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
                         fi
-                        if [[ "$DEPLOY_APP" == 'true' ]]; then
-                          APP_LEGS+=("$APP_PRODUCTION")
-                        fi
                         ;;
                       *)
-                        if [[ "$DEPLOY_BACKEND" == 'true' || "$DEPLOY_APP" == 'true' ]]; then
+                        if [[ "$DEPLOY_BACKEND" == 'true' ]]; then
                           echo "::warning::AI Passport deploys only target staging or production; ignoring for $TARGET_ENVIRONMENT."
                         fi
                         ;;
@@ -373,20 +354,13 @@ jobs:
                     if [[ "$BACKEND_CHANGED" == 'true' ]]; then
                       BE_LEGS+=("$BE_PRODUCTION" "$BE_LCA_PRODUCTION")
                     fi
-                    if [[ "$APP_CHANGED" == 'true' ]]; then
-                      APP_LEGS+=("$APP_PRODUCTION")
-                    fi
                   else
                     if is_affected ai-passport-backend; then
                       BE_LEGS+=("$BE_STAGING")
                     fi
-                    if is_affected ai-passport; then
-                      APP_LEGS+=("$APP_STAGING")
-                    fi
                   fi
 
                   set_matrix aip_backend "${BE_LEGS[@]}"
-                  set_matrix aip_app "${APP_LEGS[@]}"
 
     # ============================================================================
     # BUILD NATIVE PLUGIN (for Lambda deploys - Linux x64)
@@ -2094,11 +2068,11 @@ jobs:
                   fi
 
     # ============================================================================
-    # AI PASSPORT DEPLOYMENTS (Fly backend + Netlify app)
+    # AI PASSPORT BACKEND DEPLOYMENTS (Fly)
     # Triggers (automatic legs need the repo var AIP_DEPLOY_ENABLED='true'):
-    #   - Push: staging when Nx marks ai-passport-backend / ai-passport affected
+    #   - Push: staging when Nx marks ai-passport-backend affected
     #   - Release: production when that project's package.json version changed
-    #   - Manual: deploy-ai-passport-backend / deploy-ai-passport-app, staging or production
+    #   - Manual: deploy-ai-passport-backend, staging or production
     # GitHub Environments, FLY_API_TOKEN and the staging overrides: ENVIRONMENTS.md.
     # ============================================================================
     deploy-ai-passport-backend:
@@ -2287,117 +2261,3 @@ jobs:
                   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
                   FLY_APP: ${{ steps.fly-target.outputs.app }}
               run: flyctl logs --app "$FLY_APP" --no-tail | tail -n 200 || true
-
-    deploy-ai-passport-app:
-        name: Deploy AI Passport App (${{ matrix.name }})
-        timeout-minutes: 20
-        needs: [determine-affected, test-affected, deploy-ai-passport-backend]
-        if: |
-            always() &&
-            !cancelled() &&
-            needs.determine-affected.result == 'success' &&
-            needs.determine-affected.outputs.aip_app_matrix_has_legs == 'true' &&
-            (
-              needs.determine-affected.outputs.is_manual == 'true' ||
-              needs.determine-affected.outputs.is_release == 'true' ||
-              needs.test-affected.result == 'success'
-            ) &&
-            !contains(needs.deploy-ai-passport-backend.result, 'failure')
-        permissions:
-            contents: read
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix: ${{ fromJSON(needs.determine-affected.outputs.aip_app_deployment_matrix) }}
-        environment: ${{ matrix.environment }}
-        concurrency:
-            group: deploy-ai-passport-app-${{ matrix.environment }}
-            cancel-in-progress: false
-        steps:
-            - name: Checkout Repo
-              uses: actions/checkout@v7
-
-            # PUBLIC_* values are baked into the build. Unset, they fall back to localhost and the
-            # production contract (apps/ai-passport/src/constants/env.ts), so require them here.
-            - name: Validate Netlify target and build env
-              env:
-                  ENVIRONMENT: ${{ matrix.environment }}
-                  STAGE: ${{ matrix.stage }}
-                  NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
-                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-                  PUBLIC_BACKEND_URL: ${{ vars.PUBLIC_BACKEND_URL }}
-                  PUBLIC_DOMAIN: ${{ vars.PUBLIC_DOMAIN }}
-                  PUBLIC_LCA_URL: ${{ vars.PUBLIC_LCA_URL }}
-                  PUBLIC_CONTRACT_URI: ${{ vars.PUBLIC_CONTRACT_URI }}
-              run: |
-                  failed=0
-                  fail() { echo "::error::$1"; failed=1; }
-
-                  REQUIRED=(NETLIFY_SITE_ID NETLIFY_AUTH_TOKEN PUBLIC_BACKEND_URL PUBLIC_DOMAIN)
-                  if [[ "$STAGE" == 'staging' ]]; then
-                    REQUIRED+=(PUBLIC_LCA_URL PUBLIC_CONTRACT_URI)
-                  fi
-                  for name in "${REQUIRED[@]}"; do
-                    if [[ -z "${!name}" ]]; then
-                      fail "$name is missing in environment '$ENVIRONMENT'."
-                    fi
-                  done
-
-                  if [[ "$STAGE" == 'staging' && "$PUBLIC_CONTRACT_URI" == 'lc:network:network.learncard.com/trpc:contract:fd6649c7-52c9-4d02-b5ab-fade649d5a0b' ]]; then
-                    fail "PUBLIC_CONTRACT_URI is the production consent contract."
-                  fi
-
-                  exit "$failed"
-
-            # Astro 7 needs Node >= 22.12.
-            - uses: actions/setup-node@v6
-              with:
-                  node-version-file: .nvmrc
-                  package-manager-cache: false
-
-            - name: Use Composite Setup Action
-              uses: ./.github/actions/setup
-
-            # --skip-nx-cache: the Netlify adapter writes the SSR function to .netlify/v1, which
-            # isn't an Nx build output, so a cache hit would restore dist/ without it.
-            - name: Build App
-              run: bunx nx build ai-passport --skip-nx-cache
-              env:
-                  PUBLIC_BACKEND_URL: ${{ vars.PUBLIC_BACKEND_URL }}
-                  PUBLIC_DOMAIN: ${{ vars.PUBLIC_DOMAIN }}
-                  PUBLIC_LCA_URL: ${{ vars.PUBLIC_LCA_URL }}
-                  PUBLIC_CONTRACT_URI: ${{ vars.PUBLIC_CONTRACT_URI }}
-
-            # Same staging-dir approach as deploy-frontend: deploy outside the repo so the CLI's
-            # monorepo workspace detection can't misplace the function bundle. The site's UI base
-            # directory must be apps/ai-passport. Astro's adapter puts the SSR function and its
-            # routing config in .netlify/v1 (Netlify Frameworks API), which --no-build uploads.
-            - name: Deploy to Netlify
-              working-directory: apps/ai-passport
-              run: |
-                  if [[ ! -f .netlify/v1/functions/ssr/ssr.mjs ]]; then
-                    echo "::error::Astro didn't emit the SSR function (.netlify/v1/functions/ssr/ssr.mjs); the deploy would serve no on-demand pages."
-                    exit 1
-                  fi
-
-                  STAGE_ROOT="$RUNNER_TEMP/netlify-deploy-ai-passport"
-                  STAGE_DIR="$STAGE_ROOT/apps/ai-passport"
-                  rm -rf "$STAGE_ROOT"
-                  mkdir -p "$STAGE_DIR"
-                  cp netlify.toml "$STAGE_DIR/"
-                  cp -R dist "$STAGE_DIR/dist"
-                  mkdir -p "$STAGE_DIR/.netlify"
-                  cp -R .netlify/v1 "$STAGE_DIR/.netlify/v1"
-                  git -C "$STAGE_ROOT" init --quiet
-
-                  cd "$STAGE_DIR"
-                  bunx netlify-cli@26 deploy \
-                    --debug \
-                    --prod \
-                    --no-build \
-                    --dir "$STAGE_DIR/dist" \
-                    --site "$NETLIFY_SITE_ID" \
-                    --message "CI deploy ${{ github.sha }}"
-              env:
-                  NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-                  NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
