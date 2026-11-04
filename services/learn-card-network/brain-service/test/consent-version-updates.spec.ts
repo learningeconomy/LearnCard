@@ -4,7 +4,7 @@ import { neogma } from '@instance';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { getConsentFlowContractVersionRecord } from '@accesslayer/consentflowcontract/versions';
 import { getContractTermsByUri } from '@accesslayer/consentflowcontract/relationships/read';
-import { getUser } from './helpers/getClient';
+import { getClient, getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
 import { testUnsignedBoost } from './helpers/send';
 import type { ConsentFlowContractChanges } from '@learncard/types';
@@ -550,6 +550,62 @@ describe('safe live contract patches', () => {
                     expect.objectContaining({ key: 'Alpha', required: false }),
                     expect.objectContaining({ key: 'Beta', required: false }),
                 ]),
+            },
+        });
+    });
+    it('requires review and queues a holder notification when a required scope reason changes', async () => {
+        const { owner, learner } = await setup();
+        const contract = structuredClone(normalContract);
+        contract.read.credentials.categories.Transcript = {
+            required: true,
+            reason: 'Verify enrollment',
+        };
+        const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Required transcript',
+            contract,
+        });
+        const terms = structuredClone(normalFullTerms);
+        terms.read.credentials.categories.Transcript = {
+            sharing: true,
+            shareAll: true,
+            shared: [],
+        };
+        const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
+            terms,
+        });
+        const reason = 'Personalize recommendations';
+        const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: {
+                        credentials: { categories: { Transcript: { required: true, reason } } },
+                    },
+                },
+            },
+            reason: 'The reason for requesting this information has changed.',
+        });
+        expect(result).toMatchObject({ version: 2, kind: 'requires_consent', affectedUsers: 1 });
+        const holder = (await getContractTermsByUri(termsUri))!;
+        expect(holder.terms).toMatchObject({ status: 'needs_reconsent', consentedVersion: 1 });
+        expect(holder.cumulativeUpdate?.diff.changed).toContainEqual(
+            expect.objectContaining({ key: 'Transcript', reason })
+        );
+        const learnerProfile = (await learner.clients.fullAuth.profile.getProfile())!;
+        const notifications = (await getClient().test.notificationQueue()).filter(
+            notification =>
+                notification.type === 'CONSENT_FLOW_CONTRACT_UPDATED' &&
+                notification.data?.contractUri === uri &&
+                notification.data?.toVersion === result.version
+        );
+        expect(notifications).toHaveLength(1);
+        expect(notifications[0]).toMatchObject({
+            to: { profileId: learnerProfile.profileId },
+            message: { body: 'The reason for requesting this information has changed.' },
+            data: {
+                kind: 'requires_consent',
+                diff: { changed: [expect.objectContaining({ key: 'Transcript', reason })] },
             },
         });
     });

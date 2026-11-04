@@ -291,51 +291,61 @@ const LoadedContractUpdateEditor: React.FC<{
                     )}
                 </button>
             ) : (
-                <div className="flex flex-wrap gap-3">
-                    <button
-                        type="button"
-                        onClick={() => void submit('preview')}
-                        disabled={
-                            !valid ||
-                            Boolean(busy) ||
-                            imageUploading ||
-                            baseline.status === 'retired'
-                        }
-                        className="inline-flex items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                        {busy === 'preview' ? (
-                            <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                            <Eye size={16} />
+                <div className="space-y-3">
+                    {hasChanges &&
+                        draft.kind === 'requires_consent' &&
+                        publishedVersion === undefined &&
+                        baseline.status !== 'retired' && (
+                            <p className="text-sm leading-relaxed text-grayscale-600">
+                                {mDynamic('consentUpdate.editor.consumerNotification')}
+                            </p>
                         )}
-                        {mDynamic(
-                            busy === 'preview'
-                                ? 'consentUpdate.editor.previewing'
-                                : 'consentUpdate.editor.preview'
-                        )}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => void submit('publish')}
-                        disabled={
-                            !valid ||
-                            Boolean(busy) ||
-                            imageUploading ||
-                            baseline.status === 'retired'
-                        }
-                        className="inline-flex items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                        {busy === 'publish' ? (
-                            <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                            <Upload size={16} />
-                        )}
-                        {mDynamic(
-                            busy === 'publish'
-                                ? 'consentUpdate.editor.publishing'
-                                : 'consentUpdate.editor.publish'
-                        )}
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            onClick={() => void submit('preview')}
+                            disabled={
+                                !valid ||
+                                Boolean(busy) ||
+                                imageUploading ||
+                                baseline.status === 'retired'
+                            }
+                            className="inline-flex items-center justify-center gap-2 rounded-[20px] border border-grayscale-300 px-4 py-3 text-sm font-medium text-grayscale-700 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            {busy === 'preview' ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Eye size={16} />
+                            )}
+                            {mDynamic(
+                                busy === 'preview'
+                                    ? 'consentUpdate.editor.previewing'
+                                    : 'consentUpdate.editor.preview'
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void submit('publish')}
+                            disabled={
+                                !valid ||
+                                Boolean(busy) ||
+                                imageUploading ||
+                                baseline.status === 'retired'
+                            }
+                            className="inline-flex items-center justify-center gap-2 rounded-[20px] bg-grayscale-900 px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            {busy === 'publish' ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <Upload size={16} />
+                            )}
+                            {mDynamic(
+                                busy === 'publish'
+                                    ? 'consentUpdate.editor.publishing'
+                                    : 'consentUpdate.editor.publish'
+                            )}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

@@ -56,6 +56,7 @@
             "published": "Actualización publicada · versión {{version}}",
             "preview": "Previsualizar actualización",
             "previewing": "Preparando vista previa…",
+            "consumerNotification": "Se notificará a todas las personas conectadas a este contrato y se les pedirá que revisen los cambios.",
             "publish": "Publicar actualización",
             "publishing": "Publicando actualización…",
             "reload": "Recargar solicitud actual",

@@ -162,7 +162,8 @@ export const classifyContractChange = (
     }
     for (const scope of diff.changed) {
         const previous = before.get(scopeKey(scope));
-        if (scope.required && !previous?.required) requiresConsent = true;
+        if (scope.reason !== previous?.reason || (scope.required && !previous?.required))
+            requiresConsent = true;
     }
     const oldBoosts = set(prev.autoboosts);
     if ([...set(next.autoboosts)].some(boost => !oldBoosts.has(boost))) requiresConsent = true;

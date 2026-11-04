@@ -6,6 +6,7 @@
 "@learncard/lca-api-service": minor
 "learn-card-app": minor
 "learn-card-base": minor
+"@learncard/cli": patch
 ---
 
 feat: [LC-2194] Support versioned ConsentFlow updates and user review.
@@ -48,7 +49,7 @@ Breaking SDK/API changes: use `updateContract` instead of the removed `addAutoBo
 
 Reject stale editor drafts with their original expected version, treat equivalent updates as no-ops, require future reconsent deadlines, and restrict legacy AutoBoost publications to contract owners. Paginate tied consent-data timestamps with stable opaque cursors and preserve all unreviewed optional additions across later updates.
 
-Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Keep per-item explanation-only and redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
+Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Require notification and approval when an existing item's reason changes; keep redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
 
 Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
 
@@ -61,3 +62,5 @@ Keep saves from already handled reviews in ordinary sharing-update history, and 
 Use opaque timestamp-and-ID cursors for holder consent lists, between-profile data, transaction history, and holder exports as well as owner data pages. Preserve legacy timestamp fallbacks and reject malformed or pre-upgrade date-only cursors with `BAD_REQUEST`; restart pagination without a cursor after upgrading.
 
 Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
+
+Explain approval notifications above Publish Update without changing checked-by-default Opt-out selections. Synchronize the CLI method catalog with the versioned contract SDK, removing obsolete AutoBoost commands and exposing update, history, status, and acceptance methods.

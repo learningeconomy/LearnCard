@@ -56,6 +56,7 @@
             "published": "Mise à jour publiée · version {{version}}",
             "preview": "Aperçu de la mise à jour",
             "previewing": "Préparation de l’aperçu…",
+            "consumerNotification": "Toutes les personnes connectées à ce contrat seront informées et invitées à examiner les modifications.",
             "publish": "Publier la mise à jour",
             "publishing": "Publication de la mise à jour…",
             "reload": "Recharger la demande actuelle",

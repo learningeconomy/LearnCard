@@ -148,41 +148,43 @@ describe('classifyContractChange', () => {
     it.each(cases)('%s', (_name, prev, next, expected) => {
         expect(classifyContractChange(prev, next)).toBe(expected);
     });
-
     it.each([
         ['read', 'credential', true],
-        ['write', 'credential', true],
-        ['read', 'personal', true],
-        ['write', 'personal', true],
         ['read', 'credential', false],
-        ['write', 'credential', false],
+        ['read', 'personal', true],
         ['read', 'personal', false],
+        ['write', 'credential', true],
+        ['write', 'credential', false],
+        ['write', 'personal', true],
         ['write', 'personal', false],
-    ] as const)('keeps a %s %s reason-only change quiet (required=%s)', (area, type, required) => {
-        const previous = structuredClone(empty);
-        const current = structuredClone(empty);
-        const oldConfig = { required, reason: 'Verify enrollment' };
-        const newConfig = { required, reason: 'Explain enrollment verification' };
-        if (type === 'credential') {
-            previous[area].credentials.categories.Transcript = oldConfig;
-            current[area].credentials.categories.Transcript = newConfig;
-        } else {
-            previous[area].personal.email = oldConfig;
-            current[area].personal.email = newConfig;
+    ] as const)(
+        'requires approval for %s %s reason changes (required=%s)',
+        (area, type, required) => {
+            for (const [oldReason, newReason] of [
+                [undefined, 'Verify enrollment'],
+                ['Verify enrollment', 'Personalize recommendations'],
+                ['Verify enrollment', undefined],
+            ]) {
+                const previous = structuredClone(empty);
+                const current = structuredClone(empty);
+                const oldConfig = { required, reason: oldReason };
+                const newConfig = { required, reason: newReason };
+                if (type === 'credential') {
+                    previous[area].credentials.categories.Transcript = oldConfig;
+                    current[area].credentials.categories.Transcript = newConfig;
+                } else {
+                    previous[area].personal.name = oldConfig;
+                    current[area].personal.name = newConfig;
+                }
+                expect(
+                    classifyContractChange(
+                        snapshot({ contract: previous }),
+                        snapshot({ contract: current })
+                    )
+                ).toBe('requires_consent');
+            }
         }
-        expect(
-            classifyContractChange(
-                snapshot({ contract: previous }),
-                snapshot({ contract: current })
-            )
-        ).toBe('relaxed');
-        expect(
-            classifyContractChange(
-                snapshot({ contract: previous }),
-                snapshot({ contract: previous })
-            )
-        ).toBe('relaxed');
-    });
+    );
 });
 
 describe('diffContractChange', () => {
