@@ -13,7 +13,7 @@
         },
         {
             "id": "3",
-            "features": ["sharing", "contacts", "sdk-to-app"],
+            "features": ["sharing", "contacts", "sdk-to-app", "ai-sessions"],
             "scripts": []
         }
     ]

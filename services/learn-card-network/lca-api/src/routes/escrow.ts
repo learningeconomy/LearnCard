@@ -555,6 +555,11 @@ const removeEscrow = async (
  * convert it to the stored counters for the write's compare-and-set. Rejected with
  * CONFLICT when a wrong entry or another reservation has landed since the client's
  * check, so the refresh never wipes a recorded or in-flight guess.
+ *
+ * `wrongAttempts` may be non-zero (own-typos rule, approved 2026-11-03): the client
+ * sends it only when every recorded wrong entry is one it submitted itself in the same
+ * sign-in flow. lca-api cannot tell whose entries they are; it only guarantees that
+ * nothing changed since the client's check, so a foreign entry still blocks the write.
  */
 const resolveExpectedPinCharges = (
     input: {
@@ -574,8 +579,8 @@ const resolveExpectedPinCharges = (
     const pin = userKey.escrowPin;
     const failedAttempts = ESCROW_PIN_MAX_ATTEMPTS - expected.attemptsRemaining;
     if (
-        expected.wrongAttempts !== 0 ||
         failedAttempts < 0 ||
+        expected.wrongAttempts > failedAttempts ||
         !pin ||
         pin.disabledAt ||
         pin.failedAttempts !== failedAttempts ||
@@ -1606,6 +1611,12 @@ export const escrowRouter = t.router({
                     userKey,
                     tenant: ctx.tenant,
                 });
+                // The record changed under this compare (re-enrolled, rotated or disabled
+                // elsewhere), so no wrong entry was recorded for it. Never answer
+                // "Incorrect PIN." here: clients count those as their own recorded entries
+                // (own-typos rule), and an unrecorded one would later excuse a real guess.
+                if (!failed)
+                    throw new TRPCError({ code: 'CONFLICT', message: escrowChangedMessage });
                 if (locked) {
                     await lockPin(hold, userKey, ctx.tenant);
                     throw new TRPCError({

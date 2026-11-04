@@ -1557,14 +1557,15 @@
             "whoAreYou": "Who are you? (Optional)",
             "explore": "Explore {{brand}}",
             "pin": {
-                "title": "Add a recovery PIN",
-                "body": "If you ever lose this device, a 6-digit PIN gets you back in within seconds.",
+                "title": "Create your PIN",
+                "body": "You'll use it to sign in on new devices.",
                 "confirmTitle": "Confirm your PIN",
                 "confirmBody": "Enter the same 6 digits again.",
                 "saving": "Saving your PIN…",
                 "success": "You're protected",
                 "skip": "Skip for now",
                 "startOver": "Start over",
+                "saveFailedSkip": "Couldn't save your PIN. Try again, or skip for now and set it up later.",
                 "hint": "You can change or remove it anytime in Settings."
             }
         }
@@ -2439,9 +2440,14 @@
         },
         "notFinished": "Not finished",
         "pinHero": {
-            "title": "Sign in with your recovery PIN",
-            "description": "Enter the 6-digit PIN you set up. Your other devices stay signed in.",
-            "otherWays": "Other ways to sign in"
+            "title": "Confirm it's you",
+            "description": "Enter your 6-digit PIN to finish signing in.",
+            "otherWays": "Other ways to confirm",
+            "device": "Approve from another device",
+            "deviceDesc": "Scan a code with a device you're signed in on",
+            "showMore": "Show {{count}} more",
+            "showLess": "Show less",
+            "trouble": "Trouble signing in?"
         },
         "pinSignIn": {
             "verifying": "Checking your PIN...",
@@ -2451,15 +2457,15 @@
             "newCodeNeeded": "For your security, each PIN try needs a new email code. Send a new code to try again."
         },
         "pinSignInReview": {
-            "title": "You're in!",
-            "question": "Did you lose a device, or think someone else knows your PIN?",
-            "fine": "No, everything's fine",
-            "secure": "Yes, secure my account",
-            "wrongAttemptsOne": "Your PIN was entered incorrectly once before this sign-in. If that wasn't you, secure your account.",
-            "wrongAttempts": "Your PIN was entered incorrectly {{count}} times before this sign-in. If that wasn't you, secure your account.",
-            "later": "You can also do this later in Account Recovery.",
-            "newPin": "Choose a new PIN to keep your account protected. Until you do, your current PIN keeps working with fewer tries left.",
-            "choosePin": "No, choose a new PIN",
+            "title": "You're signed in",
+            "body": "Your other devices stay signed in too.",
+            "secureLink": "Lost a device? Secure your account",
+            "warnTitle": "Someone may have tried your PIN",
+            "warnBodyOne": "It was entered incorrectly 1 time before you signed in. Choose a new PIN to stay protected.",
+            "warnBodyTwo": "It was entered incorrectly 2 times before you signed in. Choose a new PIN to stay protected.",
+            "warnBody": "It was entered incorrectly {{count}} times before you signed in. Choose a new PIN to stay protected.",
+            "warnBodyUnknown": "Your PIN may have been entered incorrectly before you signed in. Choose a new PIN to stay protected.",
+            "choosePin": "Choose a new PIN",
             "notNow": "Not now"
         },
         "secureAccount": {
@@ -2491,9 +2497,10 @@
             "pinDescNewPin": "Choose a new 6-digit PIN, different from your current one."
         },
         "signOutOtherDevices": {
-            "title": "Signed in somewhere you don't recognize?",
-            "description": "Stop other devices and logins from signing in again, and turn off your old recovery methods.",
-            "action": "Sign out of all other devices"
+            "section": "Security",
+            "label": "Sign out of other devices",
+            "caption": "Lost a device or see something unfamiliar?",
+            "attention": "Your PIN was entered incorrectly."
         },
         "inProgress": "Recovery is already running. Wait for it to finish, then try again."
     },

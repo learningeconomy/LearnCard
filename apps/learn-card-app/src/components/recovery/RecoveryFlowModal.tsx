@@ -578,11 +578,18 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
         };
 
         const renderMethodButton = (method: (typeof methods)[0], isHero: boolean) => {
+            // Under the PIN hero the user has already signed in, so another device
+            // confirms it's them rather than signing them in.
+            const pinHeroDevice = pinHero && method.id === 'device';
             const copy = isHero
                 ? getHeroCopy(method.id)
                 : {
-                      label: method.label,
-                      desc: method.available ? method.desc : m['recovery.notSetUp'](),
+                      label: pinHeroDevice ? m['recovery.pinHero.device']() : method.label,
+                      desc: !method.available
+                          ? m['recovery.notSetUp']()
+                          : pinHeroDevice
+                            ? m['recovery.pinHero.deviceDesc']()
+                            : method.desc,
                   };
 
             return (
@@ -681,11 +688,17 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                                                 showMore ? 'rotate-180' : ''
                                             }`}
                                         />
-                                        {showMore
-                                            ? m['recovery.hideNotSetUp']()
-                                            : m['recovery.showNotSetUp']({
-                                                  count: String(unavailableMethodsList.length),
-                                              })}
+                                        {pinHero
+                                            ? showMore
+                                                ? m['recovery.pinHero.showLess']()
+                                                : m['recovery.pinHero.showMore']({
+                                                      count: String(unavailableMethodsList.length),
+                                                  })
+                                            : showMore
+                                              ? m['recovery.hideNotSetUp']()
+                                              : m['recovery.showNotSetUp']({
+                                                    count: String(unavailableMethodsList.length),
+                                                })}
                                     </button>
 
                                     {showMore && (
@@ -702,12 +715,24 @@ export const RecoveryFlowModal: React.FC<RecoveryFlowModalProps> = ({
                             )}
                         </div>
 
-                        {canShowScreen2 && (
+                        {canShowScreen2 && pinHero && (
+                            // One quiet way to the 7-day path: the PIN screen is a
+                            // "confirm it's you" step, not a list of fallbacks.
+                            <div className="mt-6 text-center">
+                                <button
+                                    onClick={() => setScreen(2)}
+                                    disabled={pinBusy}
+                                    className="py-2 px-2 min-h-[44px] text-sm text-grayscale-600 underline-offset-2 hover:underline hover:text-grayscale-900 transition-colors rounded-lg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    {m['recovery.pinHero.trouble']()}
+                                </button>
+                            </div>
+                        )}
+
+                        {canShowScreen2 && !pinHero && (
                             <div className="mt-6 pt-5 border-t border-grayscale-200 text-center">
                                 <p className="text-xs text-grayscale-500 mb-3">
-                                    {!pinHero &&
-                                    availableCount === 1 &&
-                                    availableMethodsList[0].id === 'device'
+                                    {availableCount === 1 && availableMethodsList[0].id === 'device'
                                         ? m['recovery.cantUseAnotherDevice']()
                                         : m['recovery.cantUseAny']()}
                                 </p>

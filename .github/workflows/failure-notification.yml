@@ -9,6 +9,7 @@ on:
         # failures propagate to their caller. Never subscribe to this notifier.
         # test-failure-notification.test.cjs catches additions and renames.
         workflows:
+            - AI Passport
             - Auth Integration (Keycloak)
             - CapGo PR Preview
             - CapGo SSS Pilot

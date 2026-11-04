@@ -1,0 +1,294 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AI Passport regional privacy guardrail and runtime-only permissions. Deploy in us-east-1.
+Parameters:
+    RuntimeRoleName:
+        Type: String
+        Description: Existing backend role name; this template does not create workload credentials.
+    PolicyRevision:
+        Type: String
+        Default: privacy-3
+        Description: Change on every policy edit to create a new immutable guardrail version.
+Resources:
+    PrivacyGuardrail:
+        Type: AWS::Bedrock::Guardrail
+        Properties:
+            Name: !Sub '${AWS::StackName}-privacy'
+            Description: Identity and sensitive identifiers; ADDRESS filtering may also mask city-only locations.
+            BlockedInputMessaging: Managed privacy input blocked
+            BlockedOutputsMessaging: Managed privacy output blocked
+            # No CrossRegionConfig: ApplyGuardrail stays in us-east-1.
+            SensitiveInformationPolicyConfig:
+                PiiEntitiesConfig:
+                    # Apply, input, and output actions are explicit; do not rely on defaults.
+                    - {
+                          Type: ADDRESS,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: NAME,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: EMAIL,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: PHONE,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: USERNAME,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: PASSWORD,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: DRIVER_ID,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: LICENSE_PLATE,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: VEHICLE_IDENTIFICATION_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: CREDIT_DEBIT_CARD_CVV,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: CREDIT_DEBIT_CARD_EXPIRY,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: CREDIT_DEBIT_CARD_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: PIN,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: INTERNATIONAL_BANK_ACCOUNT_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: SWIFT_CODE,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: IP_ADDRESS,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: MAC_ADDRESS,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: AWS_ACCESS_KEY,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: AWS_SECRET_KEY,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: US_BANK_ACCOUNT_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: US_BANK_ROUTING_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: US_INDIVIDUAL_TAX_IDENTIFICATION_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: US_PASSPORT_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: US_SOCIAL_SECURITY_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: CA_HEALTH_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: CA_SOCIAL_INSURANCE_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: UK_NATIONAL_HEALTH_SERVICE_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: UK_NATIONAL_INSURANCE_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+                    - {
+                          Type: UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER,
+                          Action: ANONYMIZE,
+                          InputAction: ANONYMIZE,
+                          OutputAction: ANONYMIZE,
+                          InputEnabled: true,
+                          OutputEnabled: true,
+                      }
+    PrivacyGuardrailVersion:
+        Type: AWS::Bedrock::GuardrailVersion
+        Properties:
+            GuardrailIdentifier: !GetAtt PrivacyGuardrail.GuardrailId
+            Description: !Ref PolicyRevision
+    PrivacyRuntimePolicy:
+        Type: AWS::IAM::Policy
+        Properties:
+            PolicyName: !Sub '${AWS::StackName}-apply-privacy'
+            Roles: [!Ref RuntimeRoleName]
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    - Sid: UseOnlyReviewedGuardrail
+                      Effect: Allow
+                      Action: ['bedrock:ApplyGuardrail', 'bedrock:GetGuardrail']
+                      Resource: !GetAtt PrivacyGuardrail.GuardrailArn
+                      Condition:
+                          StringEquals:
+                              aws:RequestedRegion: us-east-1
+                    - Sid: VerifyInvocationLoggingDisabled
+                      Effect: Allow
+                      Action: bedrock:GetModelInvocationLoggingConfiguration
+                      Resource: '*'
+                      Condition:
+                          StringEquals:
+                              aws:RequestedRegion: us-east-1
+                    # This does not disable existing logging. Runtime additionally refuses
+                    # payload egress if any account invocation logging config exists.
+                    - Sid: NeverEnableRawInvocationLogs
+                      Effect: Deny
+                      Action: bedrock:PutModelInvocationLoggingConfiguration
+                      Resource: '*'
+Outputs:
+    GuardrailId:
+        Value: !GetAtt PrivacyGuardrail.GuardrailId
+        Description: BEDROCK_GUARDRAIL_ID
+    GuardrailVersion:
+        Value: !GetAtt PrivacyGuardrailVersion.Version
+        Description: BEDROCK_GUARDRAIL_VERSION (numeric pinned version; never DRAFT)

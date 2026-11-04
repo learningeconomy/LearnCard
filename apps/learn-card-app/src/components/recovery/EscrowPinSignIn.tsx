@@ -88,10 +88,7 @@ export const EscrowPinSignIn: React.FC<EscrowPinSignInProps> = ({
     };
 
     return (
-        <section
-            className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 space-y-v3-3"
-            aria-label={m['recovery.pin.title']()}
-        >
+        <section className="py-2 space-y-v3-3" aria-label={m['recovery.pin.title']()}>
             <div className="flex justify-center py-1">
                 <RecoveryPinInput
                     value={pin}

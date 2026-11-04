@@ -1042,6 +1042,244 @@ describe('escrow strategy', () => {
         expect(attemptsRemaining).toBe(8);
     });
 
+    describe('own-typos rule (wrong entries made in this sign-in flow)', () => {
+        const recoverInFlow = (
+            pin: string,
+            pinAttempts: { priorWrongAttempts?: number; ownWrongAttempts: number; pinSalt?: string }
+        ) =>
+            strategy.executeRecovery({
+                ...params,
+                input: { method: 'escrow-pin', pin, pinAttempts },
+                didFromPrivateKey: async key => (key === privateKey ? did : ''),
+            });
+
+        it("refreshes the budget after the user's own typo, sending their wrong entry as expected", async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            const saltBefore = pinSalt;
+            enrollBodies = [];
+            // Flow starts with a clean PIN; the user mistypes once, then gets it right.
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+            });
+            expect(enrollBodies.at(-1)?.expectedPinCharges).toEqual({
+                attemptsRemaining: 8,
+                wrongAttempts: 1,
+            });
+            expect(pinSalt).not.toBe(saltBefore);
+            expect(attemptsRemaining).toBe(10);
+            expect(wrongAttempts).toBe(0);
+        });
+
+        it('keeps the reduced budget when wrong entries were recorded before the flow started', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            // Someone else's guess, before this sign-in.
+            await expect(recoverPin('246802')).rejects.toMatchObject({
+                name: 'EscrowPinMismatchError',
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 1, ownWrongAttempts: 0 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+            expect(attemptsRemaining).toBe(8);
+        });
+
+        it('does not excuse a foreign wrong entry that landed during the flow', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            // A guess from somewhere else between the user's typo and their right PIN.
+            await expect(recoverPin('975310')).rejects.toMatchObject({
+                name: 'EscrowPinMismatchError',
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('does not excuse a foreign wrong entry that lands during the release', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const response = await originalFetch(url, init);
+                // A foreign wrong entry resolved right after this release.
+                if (String(url).endsWith('/keys/escrow/complete') && response.ok) {
+                    attemptsRemaining--;
+                    wrongAttempts = (wrongAttempts ?? 0) + 1;
+                }
+                return response;
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('lets the server refuse the refresh when a foreign wrong entry lands after the checks', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname.replace('/api', '');
+                if (path === '/keys/escrow' && init?.method === 'POST') {
+                    attemptsRemaining--;
+                    wrongAttempts = (wrongAttempts ?? 0) + 1;
+                }
+                return originalFetch(url, init);
+            });
+            const saltBefore = pinSalt;
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                // The refused refresh re-checks the status: the foreign entry shows, so
+                // the user gets the warning sheet, not "You're signed in".
+                pinSignIn: {
+                    mode: 'kept',
+                    pinRefreshed: false,
+                    newPinRequired: true,
+                    pinRefreshFailed: true,
+                },
+            });
+            expect(pinSalt).toBe(saltBefore);
+            expect(wrongAttempts).toBe(2);
+        });
+
+        it('warns on a 409-refused refresh when the status cannot be re-read', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            await expect(
+                recoverInFlow('246802', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+            let refused = false;
+            vi.mocked(fetch).mockImplementation(async (url, init) => {
+                const path = new URL(String(url)).pathname.replace('/api', '');
+                if (path === '/keys/escrow' && init?.method === 'POST') {
+                    refused = true;
+                    return new Response(JSON.stringify({ message: 'changed' }), { status: 409 });
+                }
+                if (refused && path === '/keys/auth-share') throw new TypeError('offline');
+                return originalFetch(url, init);
+            });
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 1 })
+            ).resolves.toMatchObject({
+                pinSignIn: { pinRefreshed: false, newPinRequired: true, pinRefreshFailed: true },
+            });
+        });
+
+        it('ignores flow counts taken against another PIN generation (new salt)', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            // The flow's own typo was against an earlier PIN; this record's one wrong
+            // entry is someone else's guess against the current PIN.
+            await expect(recoverPin('246802')).rejects.toMatchObject({
+                name: 'EscrowPinMismatchError',
+            });
+            calls = [];
+            await expect(
+                recoverInFlow('135790', {
+                    priorWrongAttempts: 0,
+                    ownWrongAttempts: 1,
+                    pinSalt: 'an-earlier-generation-salt',
+                })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+            expect(wrongAttempts).toBe(1);
+        });
+
+        it('still refreshes after an own typo when the flow saw the same PIN generation', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            const flowSalt = pinSalt;
+            await expect(
+                recoverInFlow('246802', {
+                    priorWrongAttempts: 0,
+                    ownWrongAttempts: 0,
+                    pinSalt: flowSalt,
+                })
+            ).rejects.toMatchObject({ name: 'EscrowPinMismatchError' });
+            await expect(
+                recoverInFlow('135790', {
+                    priorWrongAttempts: 0,
+                    ownWrongAttempts: 1,
+                    pinSalt: flowSalt,
+                })
+            ).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: true, newPinRequired: false },
+            });
+        });
+
+        it.each([
+            ['an unknown prior count', { ownWrongAttempts: 0 }],
+            ['an invalid own count', { priorWrongAttempts: 0, ownWrongAttempts: -1 }],
+        ])('treats %s as wrong entries recorded', async (_label, pinAttempts) => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            calls = [];
+            await expect(recoverInFlow('135790', pinAttempts)).resolves.toMatchObject({
+                pinSignIn: { mode: 'kept', pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it('keeps a legacy record (no verified count) blocked even with a clean prior count', async () => {
+            await strategy.setEscrowPin!({ ...params, pin: '135790' });
+            wrongAttempts = undefined;
+            calls = [];
+            await expect(
+                recoverInFlow('135790', { priorWrongAttempts: 0, ownWrongAttempts: 0 })
+            ).resolves.toMatchObject({
+                pinSignIn: { pinRefreshed: false, newPinRequired: true },
+            });
+            expect(calls.some(call => call.path === '/keys/escrow')).toBe(false);
+        });
+
+        it.each([
+            [1, 0, false],
+            [2, 0, true],
+            [1, 1, true],
+        ])(
+            'excuses only own typos after a lost-login sign-in (recorded %s, prior %s)',
+            async (recorded, prior, expected) => {
+                await strategy.setEscrowPin!({ ...params, pin: '135790' });
+                wrongAttempts = recorded;
+                await strategy.executeRecovery({
+                    token: '',
+                    providerType,
+                    input: {
+                        method: 'escrow-pin',
+                        pin: '135790',
+                        recoverySessionToken: 'otp',
+                        pinAttempts: { priorWrongAttempts: prior, ownWrongAttempts: 1 },
+                    },
+                    didFromPrivateKey: async () => did,
+                });
+                await expect(strategy.completeIdentityRecovery!(params)).resolves.toMatchObject({
+                    pinSignIn: { mode: 'relinked', pinRefreshed: false, newPinRequired: expected },
+                });
+            }
+        );
+    });
+
     it.each([
         [0, false],
         [2, true],

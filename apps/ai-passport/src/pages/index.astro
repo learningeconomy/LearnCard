@@ -1,0 +1,30 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/Layout.astro";
+---
+
+<BaseLayout>
+  <div
+    id="loading-container"
+    class="flex items-center justify-center h-screen bg-gray-950"
+  >
+    <div class="text-center">
+      <div
+        class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"
+      >
+      </div>
+      <p class="text-white text-lg">Loading...</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { refreshAuth } from "../stores/authStore";
+
+  async function checkAuth() {
+    window.location.href = (await refreshAuth()) ? "/topics" : "/login";
+  }
+
+  void checkAuth();
+</script>

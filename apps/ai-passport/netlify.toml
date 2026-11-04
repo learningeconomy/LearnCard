@@ -1,0 +1,31 @@
+#############################################
+##  Configuration for Netlify deployments  ##
+#############################################
+
+# The site's UI base directory must be apps/ai-passport (same as learn-card-app and scouts).
+# Do NOT add `base` here: the CLI doubles it with the workspace packagePath.
+
+[build.environment]
+BUN_VERSION = "1.4.2"
+# Astro 7 needs Node >= 22.12; matches the repo .nvmrc.
+NODE_VERSION = "24.12.0"
+SKIP_DIDKIT_NAPI = "1"
+MONGOMS_DISABLE_POSTINSTALL = "1"
+
+# Global context default. Nx builds @learncard/types first (^build). The @astrojs/netlify
+# adapter writes static assets to dist/ and the SSR function to .netlify/v1, which Netlify
+# picks up through the Frameworks API, so no functions directory or redirects are needed here.
+[build]
+command = "bunx nx build ai-passport --skip-nx-cache"
+publish = "dist/"
+
+# Deploy previews are still built by Netlify's git integration (AI-Passport's old root
+# netlify.toml only configured this context). PUBLIC_* values come from the site's UI env.
+[context.deploy-preview]
+environment = { NETLIFY_BUILD_TYPE = "deploy-preview" }
+
+# Staging and production are deployed from CI via `netlify deploy --prod --no-build`, keyed
+# off the ai-passport-app-staging / ai-passport-app-production GitHub Environments'
+# NETLIFY_SITE_ID (see .github/workflows/deploy.yml and ENVIRONMENTS.md). Build-time env
+# (PUBLIC_BACKEND_URL, PUBLIC_DOMAIN, PUBLIC_LCA_URL, PUBLIC_CONTRACT_URI) is supplied by the
+# CI "Build App" step, so no branch build contexts are needed here.

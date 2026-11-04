@@ -1,5 +1,15 @@
 # @learncard/escrow-canary
 
+## 0.3.1
+
+### Patch Changes
+
+- [#1926](https://github.com/learningeconomy/LearnCard/pull/1926) [`367460fc1a2c9ad4ca858c9a2bac39c7f6d0064e`](https://github.com/learningeconomy/LearnCard/commit/367460fc1a2c9ad4ca858c9a2bac39c7f6d0064e) Thanks [@Custard7](https://github.com/Custard7)! - Provisioning no longer mistakes `DescribeSecret` lag for a takeover. `VersionIdsToStages` is eventually consistent, so right after a label move it can still show `PROVISIONING` absent, on the run's previous version, or where it was before the run started. The precheck, the fence, the failed-claim re-read and the check after a failed detach now re-read with a bounded backoff (4 s total) until they see the expected version. If the reads never settle, another run's version stops with `provisioning_label_moved` (exit 3), and a label still absent or on the run's own version stops with the retryable `secret: provisioning_label_lag` (exit 1).
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/sss-key-manager@0.2.7
+    - @learncard/init@2.5.9
+
 ## 0.3.0
 
 ### Minor Changes

@@ -724,8 +724,40 @@ describe('same-PIN budget refresh with expected charges', () => {
         await expect(refresh({ attemptsRemaining: 9, wrongAttempts: 0 })).rejects.toMatchObject({
             code: 'CONFLICT',
         });
-        // Even with the current counts, a PIN with a recorded wrong entry is never refreshed.
-        await expect(refresh({ attemptsRemaining: 8, wrongAttempts: 1 })).rejects.toMatchObject({
+
+        expect(securityState(await record())).toEqual(securityState(before));
+    });
+
+    it("refreshes when the expected charges include the owner's own wrong entry (own-typos rule)", async () => {
+        await enrollPin();
+        // The owner mistypes once in this sign-in, then releases with the right PIN.
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await completePin(await startPin());
+        expect(await pinStatus()).toMatchObject({ attemptsRemaining: 8, wrongAttempts: 1 });
+
+        await refresh({ attemptsRemaining: 8, wrongAttempts: 1 });
+
+        expect((await record())?.escrowPin).toMatchObject({
+            salt: otherPinSalt,
+            failedAttempts: 0,
+        });
+    });
+
+    it('refuses a refresh whose wrong entries do not match the record, or exceed the charges', async () => {
+        await enrollPin();
+        await expect(completePin(await startPin(), wrongProof)).rejects.toMatchObject({
+            code: 'FORBIDDEN',
+        });
+        await completePin(await startPin());
+        const before = await record();
+
+        // A foreign wrong entry the client did not count.
+        await expect(refresh({ attemptsRemaining: 8, wrongAttempts: 0 })).rejects.toMatchObject({
+            code: 'CONFLICT',
+        });
+        await expect(refresh({ attemptsRemaining: 8, wrongAttempts: 3 })).rejects.toMatchObject({
             code: 'CONFLICT',
         });
 

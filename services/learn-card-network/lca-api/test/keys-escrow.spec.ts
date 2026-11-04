@@ -1971,6 +1971,24 @@ describe('escrow PIN release', () => {
         expect((await record())?.escrowPin?.failedAttempts).toBe(2);
     });
 
+    it('never reports "Incorrect PIN." for a mismatch whose wrong entry was not recorded', async () => {
+        // The record changed under the compare (re-enrolled/rotated elsewhere): clients
+        // count every "Incorrect PIN." as their own recorded entry (own-typos rule).
+        await enrollPin();
+        const hold = await startPin();
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.spyOn(models, 'recordEscrowPinFailure').mockResolvedValueOnce(null);
+        await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: 'Automatic recovery changed; please refresh.',
+        });
+        expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'pin-mismatch',
+        });
+        expect((await record())?.escrowPin?.verifiedFailedAttempts ?? 0).toBe(0);
+    });
+
     it('locks after ten mismatches and still permits delayed recovery', async () => {
         await enrollPin();
         let lockingHoldId = '';
