@@ -9,7 +9,11 @@ import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
-import { ACT_AS_HEADER, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import {
+    ACT_AS_HEADER,
+    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
+    CONTRACT_APPROVAL_REQUIRED,
+} from '@learncard/types';
 import { ContactMethodType } from '@learncard/types';
 import { MAX_SHARE_LINK_REQUEST_BYTES, utf8ByteLength } from '@learncard/types';
 
@@ -80,6 +84,18 @@ export const t = initTRPC
             input: RegExpTransformer,
             output: { serialize: o => o, deserialize: o => o },
         },
+        errorFormatter: ({ shape, error }) => ({
+            ...shape,
+            data: {
+                ...shape.data,
+                reason:
+                    error.cause &&
+                    'code' in error.cause &&
+                    error.cause.code === CONTRACT_APPROVAL_REQUIRED
+                        ? CONTRACT_APPROVAL_REQUIRED
+                        : undefined,
+            },
+        }),
     });
 
 export const createContext = async (

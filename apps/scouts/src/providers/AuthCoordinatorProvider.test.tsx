@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
     keyDerivationFactories: {} as Record<string, () => unknown>,
     resolvedTenant: null as null | { tenantId: string; email?: Record<string, string> },
     createSSSStrategy: vi.fn(),
-    getEscrowStrategyConfig: vi.fn(),
+    getTenantEscrowStrategyConfig: vi.fn(),
 }));
 
 // Only the coordinator input/SDK seams are mocked. The exported Scouts provider
@@ -44,7 +44,7 @@ vi.mock('learn-card-base', async () => {
         useSignInAdapter: () => ({ getCurrentUser: () => null }),
         getAuthConfig: () => mocks.config,
         getSSSConfig: () => ({ serverUrl: 'https://example.test' }),
-        getEscrowStrategyConfig: mocks.getEscrowStrategyConfig,
+        getTenantEscrowStrategyConfig: mocks.getTenantEscrowStrategyConfig,
         getLogger: () => mocks.log,
         registerKeyDerivationFactory: (name: string, factory: () => unknown) => {
             mocks.keyDerivationFactories[name] = factory;
@@ -341,13 +341,17 @@ describe('ScoutPass SSS key-derivation factory', () => {
         expect(config.emailBranding).toBeUndefined();
     });
 
-    it('keeps escrow driven solely by getEscrowStrategyConfig (off stays off)', () => {
+    it('keeps escrow driven solely by getTenantEscrowStrategyConfig (off stays off)', () => {
         mocks.resolvedTenant = { tenantId: 'scoutpass' };
-        mocks.getEscrowStrategyConfig.mockReturnValue(undefined);
+        mocks.getTenantEscrowStrategyConfig.mockReturnValue(undefined);
 
         const config = createStrategy();
 
-        expect(mocks.getEscrowStrategyConfig).toHaveBeenCalledOnce();
+        expect(mocks.getTenantEscrowStrategyConfig).toHaveBeenCalledOnce();
+        expect(mocks.getTenantEscrowStrategyConfig).toHaveBeenCalledWith(
+            expect.anything(),
+            mocks.resolvedTenant
+        );
         expect(config.escrow).toBeUndefined();
     });
 });

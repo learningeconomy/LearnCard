@@ -43,6 +43,12 @@ export const isEscrowRemoteMode = (): boolean => config.ESCROW_ENCLAVE_MODE === 
 // ('remote' mode always attests as 'nitro' — see remoteEnclave.ts).
 export const activeEscrowClientMode = (): 'software' | 'nitro' =>
     isEscrowRemoteMode() ? 'nitro' : 'software';
+/**
+ * The tenant label the (single-tenant) remote enclave signs and requires: server config,
+ * never the request's X-Tenant-Id. App-tenant concerns (hold `tenantId`, email branding,
+ * links) keep using `ctx.tenant`.
+ */
+export const getEscrowAuthorityTenant = (): string => config.ESCROW_AUTHORITY_TENANT;
 export const getEscrowHoldDurationMs = (): number => config.ESCROW_HOLD_DURATION_MS;
 export const getEscrowHoldRestartMinAgeMs = (): number => config.ESCROW_HOLD_RESTART_MIN_AGE_MS;
 export const getEscrowEnclave = (): EscrowEnclave => {

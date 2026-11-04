@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name           | Type                                                                                                                                                                   | Description | Notes      |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **share_all**  | **bool**                                                                                                                                                               |             | [optional] |
-| **sharing**    | **bool**                                                                                                                                                               |             | [optional] |
-| **categories** | [**Dict[str, ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue]**](ContractsGetConsentedContractsRequestQueryReadCredentialsCategoriesValue.md) |             | [optional] |
+| Name           | Type                                                                                                                                                           | Description | Notes      |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **share_all**  | **bool**                                                                                                                                                       |             | [optional] |
+| **sharing**    | **bool**                                                                                                                                                       |             | [optional] |
+| **categories** | [**Dict[str, ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue]**](ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue.md) |             | [optional] |
 
 ## Example
 

@@ -211,6 +211,41 @@ Restart cancels the old hold as superseded and returns new resume secrets with a
 The pending hold must be at least 24 hours old (configurable with `ESCROW_HOLD_RESTART_MIN_AGE_MS`).
 Earlier attempts throw `EscrowHoldRestartThrottledError`, with `retryAfter` when available; ordinary starts still reuse the existing hold.
 
+## Escrow authority tenant (apps sharing an enclave)
+
+The escrow enclave is single-tenant: it signs every authority record with its measured
+authority label and requires the same label in every signed enrollment intent. An app that
+uses another tenant's enclave sets `auth.sss.escrowAuthorityTenant` to that label; VetPass
+will set `"learncard"` when the SSS switch turns its escrow on (escrow is off for
+VetPass at every stage until then). The strategy uses this value for the intent tenant, the signed
+authority-state, hold-record and code-delivery checks, and the persisted
+`EscrowRecoveryExpectations.tenant`. Everything else (`X-Tenant-Id`, lca-api emails and
+links, `EscrowHold.tenantId`, rollout bucketing) uses the app tenant. Unset, it defaults to
+the app's `tenantId`, so LearnCard and ScoutPass are unchanged.
+
+- A wrong value fails closed with `EscrowAuthorityTenantMismatchError` (an
+  `EscrowEvidenceError` naming both labels) before any share rotation or recovery step.
+- Holds started before a change of this value no longer match their persisted
+  expectations and must be restarted.
+- One sign-in is one account in both apps: enrollment, PIN and opt-out are shared.
+- Emails sent by the enclave carry the enclave's brand. `RecoveryFlowModal`'s
+  `escrowRecovery.emailSender` (from `getEscrowEmailSender`, comparing the app's
+  `branding.name` with the enclave brand) shows "We'll email you a code from LearnCard, the
+  service that secures your VetPass account." on the start and confirm-code steps, and
+  "Some emails about this request come from LearnCard, ..." while the hold runs (lca-api
+  still sends the cancelled and PIN-locked notices under the app brand).
+- With `auth.sss.escrowSealEmailBrand` on (D21, only after the brand-aware enclave image is
+  on every host), the strategy seals the app's `branding.name` into the blob
+  (`escrow.emailBrand`) and the enclave brands its emails with it. The note then reads
+  "Your code may come from VetPass or from LearnCard, ..." (`emailSender.mixed`): the
+  client cannot see which brand the stored blob carries, and older or LearnCard-enrolled
+  blobs keep "LearnCard". LearnCard, whose fallback brand is its own, lists the co-tenant
+  apps in `auth.sss.escrowSharedEmailBrands` and shows "If you also use VetPass with this
+  account, your code may come from VetPass instead of LearnCard." (`emailSender.shared`),
+  because a shared DID last enrolled from VetPass carries "VetPass" ("last writer wins").
+
+See `services/escrow-enclave-app/SECURITY.md` (D20).
+
 ## Recovery PIN
 
 An **optional** fast path layered on top of escrow recovery. Escrow already seals a recovery

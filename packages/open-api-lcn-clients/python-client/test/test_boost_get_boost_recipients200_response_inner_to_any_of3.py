@@ -47,6 +47,7 @@ class TestBoostGetBoostRecipients200ResponseInnerToAnyOf3(unittest.TestCase):
                 email = '',
                 image = '',
                 hero_image = '',
+                linked_in_organization_id = '4',
                 website_link = '',
                 is_service_profile = True,
                 type = '',

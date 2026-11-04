@@ -54,7 +54,12 @@ import {
     derivePinProof,
     ESCROW_PIN_MAX_ATTEMPTS,
 } from './escrow-pin';
-import { encryptEscrowBlob, generateEscrowKeyPair, openEscrowRelease } from './escrow-crypto';
+import {
+    canonicalEscrowEmailBrand,
+    encryptEscrowBlob,
+    generateEscrowKeyPair,
+    openEscrowRelease,
+} from './escrow-crypto';
 import { verifyEnclaveAttestation } from './escrow-attestation';
 import {
     createEscrowEnrollmentIntent,
@@ -69,7 +74,7 @@ import {
 } from './escrow-authority';
 import { getEscrowBlobIdentity } from './escrow-enrollment-intent';
 import type { VerifiedEnclaveIdentity, EscrowAuthorityState } from './escrow-authority.types';
-import { EscrowEvidenceError } from './escrow-authority.types';
+import { ESCROW_AUTHORITY_TENANT_PATTERN, EscrowEvidenceError } from './escrow-authority.types';
 import type { EscrowEnvelope } from './escrow-crypto';
 import type { EmailRelayBranding } from './email-relay-crypto';
 
@@ -134,7 +139,36 @@ export interface SSSStorageFunctions {
 
 export interface SSSStrategyConfig {
     /** Enable automatic enrollment under an explicit enclave trust policy. */
-    escrow?: { enabled: boolean; attestation: EscrowAttestationPolicy };
+    escrow?: {
+        enabled: boolean;
+        attestation: EscrowAttestationPolicy;
+        /**
+         * The escrow authority's tenant label: the enclave's measured
+         * `ESCROW_AUTHORITY_TENANT`, which it signs into every authority record and
+         * requires in every signed enrollment intent. Used for everything the
+         * enclave verifies (intent tenant, authority state, hold, code-delivery and
+         * persisted recovery expectations). Everything else (X-Tenant-Id, email
+         * branding, same-tenant guards) keeps using {@link SSSStrategyConfig.tenantId}.
+         *
+         * Defaults to `tenantId` (then `'learncard'`). Set it explicitly when this app
+         * shares another tenant's single-tenant enclave, e.g. VetPass on LearnCard's
+         * (`'learncard'`). Must match `/^[A-Za-z0-9_-]{1,128}$/`.
+         */
+        authorityTenant?: string;
+        /**
+         * Display name sealed into the escrow blob for enclave-sent emails
+         * (D21, `recoveryBrand`), e.g. `'VetPass'`. Sealed only when the
+         * recovery email and language are (nitro enroll/replace), never on a
+         * carry. Unset: the enclave brands emails from its measured tenant label.
+         *
+         * Set only after every live enclave host runs the brand-aware image: an
+         * older image drops the field whenever it re-encrypts the blob.
+         * Must pass {@link canonicalEscrowEmailBrand} (ASCII letters, digits,
+         * space, `-`, `'`, `&`; 1-32 characters); `createSSSStrategy` throws
+         * otherwise.
+         */
+        emailBrand?: string;
+    };
 
     /** Report enrollment failures without logging recovery material. */
     onEscrowError?: (err: unknown) => void;
@@ -1037,6 +1071,23 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         emailBranding,
         tenantId,
     } = config;
+    // Enclave-verified tenant (see SSSStrategyConfig.escrow.authorityTenant); never
+    // sent as X-Tenant-Id. Defaults keep LearnCard/Scouts behaviour unchanged.
+    const authorityTenant = config.escrow?.authorityTenant ?? tenantId ?? 'learncard';
+    if (config.escrow && !ESCROW_AUTHORITY_TENANT_PATTERN.test(authorityTenant))
+        throw new Error(
+            'Invalid escrow authority tenant: expected 1-128 letters, digits, "_" or "-".'
+        );
+    // D21: strict on write (the enclave and parsers are lenient on read), and
+    // canonicalized once here so every enrollment path seals the same value.
+    const emailBrand =
+        config.escrow?.emailBrand === undefined
+            ? undefined
+            : canonicalEscrowEmailBrand(config.escrow.emailBrand);
+    if (config.escrow?.emailBrand !== undefined && emailBrand === undefined)
+        throw new Error(
+            'Invalid escrow email brand: expected 1-32 ASCII letters, digits, spaces, "-", "\'" or "&", starting with a letter.'
+        );
     const storage = config.storage || defaultStorage;
     let storageGeneration = 0;
     const localWrites = new Set<Promise<void>>();
@@ -1289,7 +1340,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         if (
             !expected ||
             expected.holdId !== holdId ||
-            expected.tenant !== (tenantId ?? 'learncard') ||
+            expected.tenant !== authorityTenant ||
             !expected.did ||
             !expected.clientEphemeralPublicKey ||
             !expected.blobHash ||
@@ -1357,7 +1408,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
         const result = await verifyEscrowAuthorityState(
             response,
             nonce,
-            tenantId ?? 'learncard',
+            authorityTenant,
             did,
             identity
         );
@@ -1427,8 +1478,15 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 did: primaryDid,
                 shareVersion,
                 ...(pinMaterial ? { pinVerifier: pinMaterial.pinVerifier } : {}),
+                // D21: the brand is sealed exactly when the contact is, so a
+                // carry (whose target the enclave refuses if it claims one)
+                // never sends it; the enclave inherits the source's brand.
                 ...(authority && recoveryEmail && bindsRecoveryContact
-                    ? { recoveryEmail, recoveryLanguage }
+                    ? {
+                          recoveryEmail,
+                          recoveryLanguage,
+                          ...(emailBrand ? { recoveryBrand: emailBrand } : {}),
+                      }
                     : {}),
             },
             publicKey,
@@ -3154,7 +3212,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                 const verified = await verifyEscrowHoldRecord(
                     result.holdRecord,
                     {
-                        tenant: tenantId ?? 'learncard',
+                        tenant: authorityTenant,
                         did: expectedDid,
                         holdId: result.holdId,
                         clientEphemeralPublicKey: pair.publicKey,
@@ -3163,7 +3221,7 @@ export function createSSSStrategy(config: SSSStrategyConfig): SSSKeyDerivationSt
                     identity
                 );
                 expectations = {
-                    tenant: tenantId ?? 'learncard',
+                    tenant: authorityTenant,
                     did: expectedDid,
                     holdId: result.holdId,
                     clientEphemeralPublicKey: pair.publicKey,

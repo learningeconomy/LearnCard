@@ -59,9 +59,8 @@ class CredentialRefreshAllocateCredentialRefreshRequestHolder(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -71,9 +70,8 @@ class CredentialRefreshAllocateCredentialRefreshRequestHolder(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.profile_id is None and "profile_id" in self.model_fields_set:
+        # Do not turn an explicitly invalid strict input into a valid omission.
+        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
             _dict['profileId'] = None
 
         return _dict

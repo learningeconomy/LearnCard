@@ -7,13 +7,14 @@ import BrokenLink from '../components/svgs/BrokenLink';
 import {
     BoostCategoryOptionsEnum,
     CredentialCategoryEnum,
-    CurrentUser,
     LaunchPadAppListItem,
     boostCategoryMetadata,
     categoryMetadata,
     contractCategoryNameToCategoryMetadata,
     getBaseUrl,
 } from 'learn-card-base';
+import type { CurrentUser } from 'learn-card-base/stores/currentUserStore';
+import { getPersonalEntry } from './consentPersonalFields';
 import { BespokeLearnCard } from 'learn-card-base/types/learn-card';
 import { walletPageData } from '../pages/wallet/constants';
 import { getAiAppBackgroundStylesForApp } from '../components/ai-passport-apps/aiPassport-apps.helpers';
@@ -72,25 +73,6 @@ export const isVerifiableDataContractCategory = (category: string) =>
 export const isAiContractCategory = (category: string) =>
     AI_CONTRACT_CATEGORIES.includes(category as CredentialCategoryEnum) ||
     AI_CONTRACT_CREDENTIAL_TYPE_OVERRIDES.includes(category);
-
-export const contractAnonImageSrc = 'https://cdn.filestackcontent.com/52hRlXLIQVBi4fYpB1xw';
-
-export const getPersonalEntry = (key: string, user?: CurrentUser | null, anonymize = true) => {
-    if (key.toLowerCase() === 'name') return anonymize ? 'Anonymous' : (user?.name ?? '');
-    if (key.toLowerCase() === 'email') {
-        return anonymize ? 'anonymous@hidden.com' : (user?.email ?? '');
-    }
-    if (key.toLowerCase() === 'image') {
-        return anonymize ? contractAnonImageSrc : (user?.profileImage ?? '');
-    }
-
-    return '';
-};
-
-export const isSupportedPersonalField = (field: string) => {
-    const lowerField = field.toLowerCase();
-    return ['name', 'email', 'image'].includes(lowerField);
-};
 
 export const getMinimumTermsForContract = (
     contract: ConsentFlowContract,
