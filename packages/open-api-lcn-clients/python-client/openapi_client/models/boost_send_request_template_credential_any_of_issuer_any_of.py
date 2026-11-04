@@ -20,10 +20,10 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_image import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType
 from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_address import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_image import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inner import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -33,16 +33,16 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
     BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf
     """ # noqa: E501
     id: Optional[StrictStr] = None
-    type: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType] = None
+    type: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType] = None
     name: Optional[StrictStr] = None
     url: Optional[StrictStr] = None
     phone: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     endorsement: Optional[List[Any]] = None
-    image: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage] = None
+    image: Optional[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage] = None
     email: Optional[Annotated[str, Field(strict=True)]] = None
     address: Optional[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress] = None
-    other_identifier: Optional[List[BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner]] = Field(default=None, alias="otherIdentifier")
+    other_identifier: Optional[List[BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner]] = Field(default=None, alias="otherIdentifier")
     official: Optional[StrictStr] = None
     parent_org: Optional[Any] = Field(default=None, alias="parentOrg")
     family_name: Optional[StrictStr] = Field(default=None, alias="familyName")
@@ -62,8 +62,8 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -93,9 +93,8 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -127,10 +126,89 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if parent_org (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_org is None and "parent_org" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
+            _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.url is None and "url" in self.model_fields_set and "url" not in excluded_fields:
+            _dict['url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.phone is None and "phone" in self.model_fields_set and "phone" not in excluded_fields:
+            _dict['phone'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
+            _dict['description'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.endorsement is None and "endorsement" in self.model_fields_set and "endorsement" not in excluded_fields:
+            _dict['endorsement'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
+            _dict['email'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.address is None and "address" in self.model_fields_set and "address" not in excluded_fields:
+            _dict['address'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.other_identifier is None and "other_identifier" in self.model_fields_set and "other_identifier" not in excluded_fields:
+            _dict['otherIdentifier'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.official is None and "official" in self.model_fields_set and "official" not in excluded_fields:
+            _dict['official'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.parent_org is None and "parent_org" in self.model_fields_set and "parent_org" not in excluded_fields:
             _dict['parentOrg'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.family_name is None and "family_name" in self.model_fields_set and "family_name" not in excluded_fields:
+            _dict['familyName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.given_name is None and "given_name" in self.model_fields_set and "given_name" not in excluded_fields:
+            _dict['givenName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.additional_name is None and "additional_name" in self.model_fields_set and "additional_name" not in excluded_fields:
+            _dict['additionalName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.patronymic_name is None and "patronymic_name" in self.model_fields_set and "patronymic_name" not in excluded_fields:
+            _dict['patronymicName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.honorific_prefix is None and "honorific_prefix" in self.model_fields_set and "honorific_prefix" not in excluded_fields:
+            _dict['honorificPrefix'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.honorific_suffix is None and "honorific_suffix" in self.model_fields_set and "honorific_suffix" not in excluded_fields:
+            _dict['honorificSuffix'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.family_name_prefix is None and "family_name_prefix" in self.model_fields_set and "family_name_prefix" not in excluded_fields:
+            _dict['familyNamePrefix'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.date_of_birth is None and "date_of_birth" in self.model_fields_set and "date_of_birth" not in excluded_fields:
+            _dict['dateOfBirth'] = None
 
         return _dict
 
@@ -145,16 +223,16 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
 
         _values = {
             "id": obj.get("id"),
-            "type": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "name": obj.get("name"),
             "url": obj.get("url"),
             "phone": obj.get("phone"),
             "description": obj.get("description"),
             "endorsement": obj.get("endorsement"),
-            "image": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfImage.from_dict(obj["image"]) if obj.get("image") is not None else None,
+            "image": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImage.from_dict(obj["image"]) if obj.get("image") is not None else None,
             "email": obj.get("email"),
             "address": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfAddress.from_dict(obj["address"]) if obj.get("address") is not None else None,
-            "otherIdentifier": [BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInner.from_dict(_item) for _item in obj["otherIdentifier"]] if obj.get("otherIdentifier") is not None else None,
+            "otherIdentifier": [BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner.from_dict(_item) for _item in obj["otherIdentifier"]] if obj.get("otherIdentifier") is not None else None,
             "official": obj.get("official"),
             "parentOrg": obj.get("parentOrg"),
             "familyName": obj.get("familyName"),

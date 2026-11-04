@@ -28,7 +28,6 @@ class PublicShareLinksAcknowledgeView200Response(BaseModel):
     PublicShareLinksAcknowledgeView200Response
     """ # noqa: E501
     ok: StrictBool
-    additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["ok"]
 
     @field_validator('ok')
@@ -65,13 +64,10 @@ class PublicShareLinksAcknowledgeView200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
-        * Fields in `self.additional_properties` are added to the output dict.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
-            "additional_properties",
         ])
 
         _dict = self.model_dump(
@@ -79,10 +75,9 @@ class PublicShareLinksAcknowledgeView200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # puts key-value pairs in additional_properties in the top level
-        if self.additional_properties is not None:
-            for _key, _value in self.additional_properties.items():
-                _dict[_key] = _value
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.ok is None and "ok" in self.model_fields_set and "ok" not in excluded_fields:
+            _dict['ok'] = None
 
         return _dict
 
@@ -100,11 +95,6 @@ class PublicShareLinksAcknowledgeView200Response(BaseModel):
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})
-        # store additional fields in additional_properties
-        for _key in obj.keys():
-            if _key not in cls.__properties:
-                _obj.additional_properties[_key] = obj.get(_key)
-
         return _obj
 
 

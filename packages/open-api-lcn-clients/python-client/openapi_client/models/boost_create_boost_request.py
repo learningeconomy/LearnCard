@@ -20,8 +20,8 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_create_boost_request_claim_permissions import BoostCreateBoostRequestClaimPermissions
-from openapi_client.models.boost_create_boost_request_credential import BoostCreateBoostRequestCredential
+from openapi_client.models.boost_send_request_template_claim_permissions import BoostSendRequestTemplateClaimPermissions
+from openapi_client.models.boost_send_request_template_credential import BoostSendRequestTemplateCredential
 from openapi_client.models.boost_send_request_template_skills_inner import BoostSendRequestTemplateSkillsInner
 from typing import Optional, Set
 from typing_extensions import Self
@@ -39,9 +39,9 @@ class BoostCreateBoostRequest(BaseModel):
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
     allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
-    credential: BoostCreateBoostRequestCredential
-    claim_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="claimPermissions")
-    default_permissions: Optional[BoostCreateBoostRequestClaimPermissions] = Field(default=None, alias="defaultPermissions")
+    credential: BoostSendRequestTemplateCredential
+    claim_permissions: Optional[BoostSendRequestTemplateClaimPermissions] = Field(default=None, alias="claimPermissions")
+    default_permissions: Optional[BoostSendRequestTemplateClaimPermissions] = Field(default=None, alias="defaultPermissions")
     skills: Optional[Annotated[List[BoostSendRequestTemplateSkillsInner], Field(min_length=1)]] = None
     __properties: ClassVar[List[str]] = ["name", "type", "category", "created", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential", "claimPermissions", "defaultPermissions", "skills"]
 
@@ -82,9 +82,8 @@ class BoostCreateBoostRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -109,35 +108,53 @@ class BoostCreateBoostRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
             _dict['name'] = None
 
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
             _dict['type'] = None
 
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
             _dict['category'] = None
 
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
             _dict['created'] = None
 
-        # set to None if auto_connect_recipients (nullable) is None
-        # and model_fields_set contains the field
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set and "auto_connect_recipients" not in excluded_fields:
             _dict['autoConnectRecipients'] = None
 
-        # set to None if allow_anyone_to_create_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.meta is None and "meta" in self.model_fields_set and "meta" not in excluded_fields:
+            _dict['meta'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set and "allow_anyone_to_create_children" not in excluded_fields:
             _dict['allowAnyoneToCreateChildren'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
+            _dict['credential'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_permissions is None and "claim_permissions" in self.model_fields_set and "claim_permissions" not in excluded_fields:
+            _dict['claimPermissions'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.default_permissions is None and "default_permissions" in self.model_fields_set and "default_permissions" not in excluded_fields:
+            _dict['defaultPermissions'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.skills is None and "skills" in self.model_fields_set and "skills" not in excluded_fields:
+            _dict['skills'] = None
 
         return _dict
 
@@ -159,9 +176,9 @@ class BoostCreateBoostRequest(BaseModel):
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
             "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
-            "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
-            "claimPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
-            "defaultPermissions": BoostCreateBoostRequestClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None,
+            "credential": BoostSendRequestTemplateCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "claimPermissions": BoostSendRequestTemplateClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
+            "defaultPermissions": BoostSendRequestTemplateClaimPermissions.from_dict(obj["defaultPermissions"]) if obj.get("defaultPermissions") is not None else None,
             "skills": [BoostSendRequestTemplateSkillsInner.from_dict(_item) for _item in obj["skills"]] if obj.get("skills") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

@@ -35,6 +35,7 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf(BaseModel):
     short_bio: StrictStr = Field(description="Short bio for the profile.", alias="shortBio")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Numeric LinkedIn organization ID.", alias="linkedInOrganizationId")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     is_service_profile: Optional[StrictBool] = Field(default=False, description="Whether the profile is a service profile or not.", alias="isServiceProfile")
     display: Optional[BoostGetBoostRecipients200ResponseInnerToAnyOf1Display] = None
@@ -45,7 +46,17 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf(BaseModel):
     did: StrictStr = Field(description="Decentralized Identifier for the profile. (auto-assigned)")
     email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     connected_at: Optional[datetime] = Field(default=None, description="When the viewer and this profile became connected.", alias="connectedAt")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "image", "heroImage", "type", "isServiceProfile", "display", "bio", "websiteLink", "role", "highlightedCredentials", "did", "email", "connectedAt"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "image", "heroImage", "linkedInOrganizationId", "type", "isServiceProfile", "display", "bio", "websiteLink", "role", "highlightedCredentials", "did", "email", "connectedAt"]
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d+$", value):
+            raise ValueError(r"must validate the regular expression /^\d+$/")
+        return value
 
     @field_validator('connected_at', mode="before")
     def connected_at_validate_regular_expression(cls, value):
@@ -53,8 +64,8 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     model_config = ConfigDict(
@@ -84,9 +95,8 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -99,6 +109,70 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
+            _dict['profileId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
+            _dict['displayName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
+            _dict['shortBio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.hero_image is None and "hero_image" in self.model_fields_set and "hero_image" not in excluded_fields:
+            _dict['heroImage'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.linked_in_organization_id is None and "linked_in_organization_id" in self.model_fields_set and "linked_in_organization_id" not in excluded_fields:
+            _dict['linkedInOrganizationId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_service_profile is None and "is_service_profile" in self.model_fields_set and "is_service_profile" not in excluded_fields:
+            _dict['isServiceProfile'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display is None and "display" in self.model_fields_set and "display" not in excluded_fields:
+            _dict['display'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
+            _dict['bio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.website_link is None and "website_link" in self.model_fields_set and "website_link" not in excluded_fields:
+            _dict['websiteLink'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.role is None and "role" in self.model_fields_set and "role" not in excluded_fields:
+            _dict['role'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.highlighted_credentials is None and "highlighted_credentials" in self.model_fields_set and "highlighted_credentials" not in excluded_fields:
+            _dict['highlightedCredentials'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.did is None and "did" in self.model_fields_set and "did" not in excluded_fields:
+            _dict['did'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
+            _dict['email'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.connected_at is None and "connected_at" in self.model_fields_set and "connected_at" not in excluded_fields:
+            _dict['connectedAt'] = None
+
         return _dict
 
     @classmethod
@@ -116,6 +190,7 @@ class BoostGetPaginatedBoostRecipients200ResponseRecordsInnerToAnyOf(BaseModel):
             "shortBio": obj.get("shortBio") if obj.get("shortBio") is not None else '',
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "type": obj.get("type"),
             "isServiceProfile": obj.get("isServiceProfile") if obj.get("isServiceProfile") is not None else False,
             "display": BoostGetBoostRecipients200ResponseInnerToAnyOf1Display.from_dict(obj["display"]) if obj.get("display") is not None else None,

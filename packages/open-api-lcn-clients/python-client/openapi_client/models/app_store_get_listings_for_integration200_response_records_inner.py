@@ -20,6 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_pending_update import AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate
 from openapi_client.models.app_store_get_listings_for_integration200_response_records_inner_submitter import AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter
 from typing import Optional, Set
 from typing_extensions import Self
@@ -53,7 +54,8 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
     highlights: Optional[List[StrictStr]] = None
     screenshots: Optional[List[StrictStr]] = None
     submitter: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter] = None
-    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "submitted_at", "contact_email", "highlights", "screenshots", "submitter"]
+    pending_update: Optional[AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate] = None
+    __properties: ClassVar[List[str]] = ["listing_id", "slug", "display_name", "tagline", "full_description", "icon_url", "app_listing_status", "launch_type", "launch_config_json", "category", "promo_video_url", "promotion_level", "ios_app_store_id", "android_app_store_id", "privacy_policy_url", "terms_url", "hero_background_color", "min_age", "age_rating", "submitted_at", "contact_email", "highlights", "screenshots", "submitter", "pending_update"]
 
     @field_validator('app_listing_status')
     def app_listing_status_validate_enum(cls, value):
@@ -95,8 +97,8 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -126,9 +128,8 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -141,6 +142,109 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of submitter
         if self.submitter:
             _dict['submitter'] = self.submitter.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of pending_update
+        if self.pending_update:
+            _dict['pending_update'] = self.pending_update.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.listing_id is None and "listing_id" in self.model_fields_set and "listing_id" not in excluded_fields:
+            _dict['listing_id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.slug is None and "slug" in self.model_fields_set and "slug" not in excluded_fields:
+            _dict['slug'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
+            _dict['display_name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.tagline is None and "tagline" in self.model_fields_set and "tagline" not in excluded_fields:
+            _dict['tagline'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.full_description is None and "full_description" in self.model_fields_set and "full_description" not in excluded_fields:
+            _dict['full_description'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.icon_url is None and "icon_url" in self.model_fields_set and "icon_url" not in excluded_fields:
+            _dict['icon_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.app_listing_status is None and "app_listing_status" in self.model_fields_set and "app_listing_status" not in excluded_fields:
+            _dict['app_listing_status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.launch_type is None and "launch_type" in self.model_fields_set and "launch_type" not in excluded_fields:
+            _dict['launch_type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.launch_config_json is None and "launch_config_json" in self.model_fields_set and "launch_config_json" not in excluded_fields:
+            _dict['launch_config_json'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
+            _dict['category'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.promo_video_url is None and "promo_video_url" in self.model_fields_set and "promo_video_url" not in excluded_fields:
+            _dict['promo_video_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.promotion_level is None and "promotion_level" in self.model_fields_set and "promotion_level" not in excluded_fields:
+            _dict['promotion_level'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.ios_app_store_id is None and "ios_app_store_id" in self.model_fields_set and "ios_app_store_id" not in excluded_fields:
+            _dict['ios_app_store_id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.android_app_store_id is None and "android_app_store_id" in self.model_fields_set and "android_app_store_id" not in excluded_fields:
+            _dict['android_app_store_id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.privacy_policy_url is None and "privacy_policy_url" in self.model_fields_set and "privacy_policy_url" not in excluded_fields:
+            _dict['privacy_policy_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms_url is None and "terms_url" in self.model_fields_set and "terms_url" not in excluded_fields:
+            _dict['terms_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.hero_background_color is None and "hero_background_color" in self.model_fields_set and "hero_background_color" not in excluded_fields:
+            _dict['hero_background_color'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.min_age is None and "min_age" in self.model_fields_set and "min_age" not in excluded_fields:
+            _dict['min_age'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.age_rating is None and "age_rating" in self.model_fields_set and "age_rating" not in excluded_fields:
+            _dict['age_rating'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.submitted_at is None and "submitted_at" in self.model_fields_set and "submitted_at" not in excluded_fields:
+            _dict['submitted_at'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contact_email is None and "contact_email" in self.model_fields_set and "contact_email" not in excluded_fields:
+            _dict['contact_email'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.highlights is None and "highlights" in self.model_fields_set and "highlights" not in excluded_fields:
+            _dict['highlights'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.screenshots is None and "screenshots" in self.model_fields_set and "screenshots" not in excluded_fields:
+            _dict['screenshots'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.submitter is None and "submitter" in self.model_fields_set and "submitter" not in excluded_fields:
+            _dict['submitter'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.pending_update is None and "pending_update" in self.model_fields_set and "pending_update" not in excluded_fields:
+            _dict['pending_update'] = None
+
         return _dict
 
     @classmethod
@@ -176,7 +280,8 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInner(BaseModel):
             "contact_email": obj.get("contact_email"),
             "highlights": obj.get("highlights"),
             "screenshots": obj.get("screenshots"),
-            "submitter": AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.from_dict(obj["submitter"]) if obj.get("submitter") is not None else None
+            "submitter": AppStoreGetListingsForIntegration200ResponseRecordsInnerSubmitter.from_dict(obj["submitter"]) if obj.get("submitter") is not None else None,
+            "pending_update": AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate.from_dict(obj["pending_update"]) if obj.get("pending_update") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

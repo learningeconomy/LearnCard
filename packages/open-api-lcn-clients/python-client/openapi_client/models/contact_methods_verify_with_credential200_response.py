@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contact_methods_verify_with_credential200_response_contact_method import ContactMethodsVerifyWithCredential200ResponseContactMethod
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,7 +28,7 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
     """
     ContactMethodsVerifyWithCredential200Response
     """ # noqa: E501
-    message: Optional[StrictStr]
+    message: StrictStr
     contact_method: ContactMethodsVerifyWithCredential200ResponseContactMethod = Field(alias="contactMethod")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "contactMethod"]
@@ -60,9 +60,8 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,10 +81,13 @@ class ContactMethodsVerifyWithCredential200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if message (nullable) is None
-        # and model_fields_set contains the field
-        if self.message is None and "message" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
             _dict['message'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contact_method is None and "contact_method" in self.model_fields_set and "contact_method" not in excluded_fields:
+            _dict['contactMethod'] = None
 
         return _dict
 

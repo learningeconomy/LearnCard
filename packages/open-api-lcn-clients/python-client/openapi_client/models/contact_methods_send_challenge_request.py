@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.contact_methods_send_challenge_request_configuration import ContactMethodsSendChallengeRequestConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,7 +28,7 @@ class ContactMethodsSendChallengeRequest(BaseModel):
     """
     ContactMethodsSendChallengeRequest
     """ # noqa: E501
-    value: Optional[StrictStr]
+    value: StrictStr
     type: StrictStr
     configuration: ContactMethodsSendChallengeRequestConfiguration
     __properties: ClassVar[List[str]] = ["value", "type", "configuration"]
@@ -67,9 +67,8 @@ class ContactMethodsSendChallengeRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,10 +81,17 @@ class ContactMethodsSendChallengeRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
-        # set to None if value (nullable) is None
-        # and model_fields_set contains the field
-        if self.value is None and "value" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.value is None and "value" in self.model_fields_set and "value" not in excluded_fields:
             _dict['value'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.configuration is None and "configuration" in self.model_fields_set and "configuration" not in excluded_fields:
+            _dict['configuration'] = None
 
         return _dict
 

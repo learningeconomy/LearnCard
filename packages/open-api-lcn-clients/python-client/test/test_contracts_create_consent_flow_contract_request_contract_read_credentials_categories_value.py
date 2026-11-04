@@ -36,7 +36,8 @@ class TestContractsCreateConsentFlowContractRequestContractReadCredentialsCatego
         if include_optional:
             return ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue(
                 required = True,
-                default_enabled = True
+                default_enabled = True,
+                reason = ''
             )
         else:
             return ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue(

@@ -28,9 +28,9 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
     """ # noqa: E501
-    alg: Optional[StrictStr]
-    iv: Optional[StrictStr]
-    tag: Optional[StrictStr]
+    alg: StrictStr
+    iv: StrictStr
+    tag: StrictStr
     epk: Optional[BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeaderEpk] = None
     kid: Optional[StrictStr] = None
     apv: Optional[StrictStr] = None
@@ -64,9 +64,8 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,34 +78,32 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of epk
         if self.epk:
             _dict['epk'] = self.epk.to_dict()
-        # set to None if alg (nullable) is None
-        # and model_fields_set contains the field
-        if self.alg is None and "alg" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.alg is None and "alg" in self.model_fields_set and "alg" not in excluded_fields:
             _dict['alg'] = None
 
-        # set to None if iv (nullable) is None
-        # and model_fields_set contains the field
-        if self.iv is None and "iv" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.iv is None and "iv" in self.model_fields_set and "iv" not in excluded_fields:
             _dict['iv'] = None
 
-        # set to None if tag (nullable) is None
-        # and model_fields_set contains the field
-        if self.tag is None and "tag" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.tag is None and "tag" in self.model_fields_set and "tag" not in excluded_fields:
             _dict['tag'] = None
 
-        # set to None if kid (nullable) is None
-        # and model_fields_set contains the field
-        if self.kid is None and "kid" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.epk is None and "epk" in self.model_fields_set and "epk" not in excluded_fields:
+            _dict['epk'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.kid is None and "kid" in self.model_fields_set and "kid" not in excluded_fields:
             _dict['kid'] = None
 
-        # set to None if apv (nullable) is None
-        # and model_fields_set contains the field
-        if self.apv is None and "apv" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.apv is None and "apv" in self.model_fields_set and "apv" not in excluded_fields:
             _dict['apv'] = None
 
-        # set to None if apu (nullable) is None
-        # and model_fields_set contains the field
-        if self.apu is None and "apu" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.apu is None and "apu" in self.model_fields_set and "apu" not in excluded_fields:
             _dict['apu'] = None
 
         return _dict

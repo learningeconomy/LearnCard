@@ -27,8 +27,8 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
     """
     BoostAlignBoostSkillsRequestSkillsInner
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
-    id: Optional[StrictStr]
+    framework_id: StrictStr = Field(alias="frameworkId")
+    id: StrictStr
     proficiency_level: Optional[Union[StrictFloat, StrictInt]] = Field(default=None, alias="proficiencyLevel")
     __properties: ClassVar[List[str]] = ["frameworkId", "id", "proficiencyLevel"]
 
@@ -59,9 +59,8 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -71,19 +70,16 @@ class BoostAlignBoostSkillsRequestSkillsInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.framework_id is None and "framework_id" in self.model_fields_set and "framework_id" not in excluded_fields:
             _dict['frameworkId'] = None
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if proficiency_level (nullable) is None
-        # and model_fields_set contains the field
-        if self.proficiency_level is None and "proficiency_level" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.proficiency_level is None and "proficiency_level" in self.model_fields_set and "proficiency_level" not in excluded_fields:
             _dict['proficiencyLevel'] = None
 
         return _dict

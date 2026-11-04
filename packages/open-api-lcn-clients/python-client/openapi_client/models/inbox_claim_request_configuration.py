@@ -28,7 +28,7 @@ class InboxClaimRequestConfiguration(BaseModel):
     """
     InboxClaimRequestConfiguration
     """ # noqa: E501
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
+    publishable_key: StrictStr = Field(alias="publishableKey")
     expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records.", alias="expiresInDays")
     signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthorityName")
     listing_id: Optional[StrictStr] = Field(default=None, alias="listingId")
@@ -62,9 +62,8 @@ class InboxClaimRequestConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,24 +73,24 @@ class InboxClaimRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if publishable_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.publishable_key is None and "publishable_key" in self.model_fields_set and "publishable_key" not in excluded_fields:
             _dict['publishableKey'] = None
 
-        # set to None if signing_authority_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
+            _dict['expiresInDays'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set and "signing_authority_name" not in excluded_fields:
             _dict['signingAuthorityName'] = None
 
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.listing_id is None and "listing_id" in self.model_fields_set and "listing_id" not in excluded_fields:
             _dict['listingId'] = None
 
-        # set to None if listing_slug (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_slug is None and "listing_slug" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.listing_slug is None and "listing_slug" in self.model_fields_set and "listing_slug" not in excluded_fields:
             _dict['listingSlug'] = None
 
         return _dict

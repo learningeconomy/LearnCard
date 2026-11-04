@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,9 +27,9 @@ class ContractsSendAiInsightsContractRequestRequest(BaseModel):
     """
     ContractsSendAiInsightsContractRequestRequest
     """ # noqa: E501
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    target_profile_id: Optional[StrictStr] = Field(alias="targetProfileId")
-    share_link: Optional[StrictStr] = Field(alias="shareLink")
+    contract_uri: StrictStr = Field(alias="contractUri")
+    target_profile_id: StrictStr = Field(alias="targetProfileId")
+    share_link: StrictStr = Field(alias="shareLink")
     __properties: ClassVar[List[str]] = ["contractUri", "targetProfileId", "shareLink"]
 
     model_config = ConfigDict(
@@ -59,9 +59,8 @@ class ContractsSendAiInsightsContractRequestRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -71,19 +70,16 @@ class ContractsSendAiInsightsContractRequestRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
             _dict['contractUri'] = None
 
-        # set to None if target_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set and "target_profile_id" not in excluded_fields:
             _dict['targetProfileId'] = None
 
-        # set to None if share_link (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_link is None and "share_link" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.share_link is None and "share_link" in self.model_fields_set and "share_link" not in excluded_fields:
             _dict['shareLink'] = None
 
         return _dict

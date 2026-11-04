@@ -74,8 +74,11 @@ missing required fields, allocation omission/string/null, aware and naive date
 filters, exact prepared query strings, regex skill-search schemas, and the
 unified-send managed receipt schema. Offline document tests preserve distinct
 owner/public share routes, authorization requirements, passcode and receipt
-boundaries, and bounded owner-list pagination. The capture
-is checked against actual Zod validators without calling handlers. PR CI runs
+boundaries, and bounded owner-list pagination. Consent-list transport coverage
+parses all five lifecycle statuses (`live`, `consumed`, `withdrawn`,
+`needs_reconsent`, and `suspended`), accepted versions, and the holder's
+last-reviewed version through the generated public API. The capture is checked
+against actual Zod validators without calling handlers. PR CI runs
 the same checks with network-disabled source-import containers.
 
 Repository shell contracts also run:

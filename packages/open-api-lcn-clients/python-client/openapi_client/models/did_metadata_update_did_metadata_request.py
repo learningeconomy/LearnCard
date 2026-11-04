@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List
-from openapi_client.models.did_metadata_update_did_metadata_request_updates import DidMetadataUpdateDidMetadataRequestUpdates
+from openapi_client.models.did_metadata_add_did_metadata_request import DidMetadataAddDidMetadataRequest
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class DidMetadataUpdateDidMetadataRequest(BaseModel):
     """
     DidMetadataUpdateDidMetadataRequest
     """ # noqa: E501
-    updates: DidMetadataUpdateDidMetadataRequestUpdates
+    updates: DidMetadataAddDidMetadataRequest
     __properties: ClassVar[List[str]] = ["updates"]
 
     model_config = ConfigDict(
@@ -58,9 +58,8 @@ class DidMetadataUpdateDidMetadataRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,6 +72,10 @@ class DidMetadataUpdateDidMetadataRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of updates
         if self.updates:
             _dict['updates'] = self.updates.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updates is None and "updates" in self.model_fields_set and "updates" not in excluded_fields:
+            _dict['updates'] = None
+
         return _dict
 
     @classmethod
@@ -85,7 +88,7 @@ class DidMetadataUpdateDidMetadataRequest(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "updates": DidMetadataUpdateDidMetadataRequestUpdates.from_dict(obj["updates"]) if obj.get("updates") is not None else None
+            "updates": DidMetadataAddDidMetadataRequest.from_dict(obj["updates"]) if obj.get("updates") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

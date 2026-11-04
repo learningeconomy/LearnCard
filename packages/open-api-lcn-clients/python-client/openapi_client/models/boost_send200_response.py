@@ -30,8 +30,8 @@ class BoostSend200Response(BaseModel):
     BoostSend200Response
     """ # noqa: E501
     type: StrictStr
-    credential_uri: Optional[StrictStr] = Field(alias="credentialUri")
-    uri: Optional[StrictStr]
+    credential_uri: StrictStr = Field(alias="credentialUri")
+    uri: StrictStr
     activity_id: StrictStr = Field(description="Links to the activity lifecycle for this issuance", alias="activityId")
     inbox: Optional[BoostSend200ResponseInbox] = None
     refresh: Optional[BoostSend200ResponseRefresh] = None
@@ -72,9 +72,8 @@ class BoostSend200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -97,15 +96,29 @@ class BoostSend200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_uri is None and "credential_uri" in self.model_fields_set and "credential_uri" not in excluded_fields:
             _dict['credentialUri'] = None
 
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.activity_id is None and "activity_id" in self.model_fields_set and "activity_id" not in excluded_fields:
+            _dict['activityId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.inbox is None and "inbox" in self.model_fields_set and "inbox" not in excluded_fields:
+            _dict['inbox'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
+            _dict['refresh'] = None
 
         return _dict
 

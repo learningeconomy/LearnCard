@@ -29,12 +29,12 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
     """
     AuthGrantsGetAuthGrants200ResponseInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    name: Optional[StrictStr]
+    id: StrictStr
+    name: StrictStr
     description: Optional[StrictStr] = None
     challenge: Annotated[str, Field(min_length=10, strict=True, max_length=100)]
     status: StrictStr
-    scope: Optional[StrictStr]
+    scope: StrictStr
     act_as: Optional[StrictStr] = Field(default=None, alias="actAs")
     created_at: Optional[datetime] = Field(alias="createdAt")
     expires_at: Optional[datetime] = Field(default=None, alias="expiresAt")
@@ -61,8 +61,8 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     @field_validator('expires_at', mode="before")
@@ -71,8 +71,8 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     model_config = ConfigDict(
@@ -102,9 +102,8 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -121,39 +120,40 @@ class AuthGrantsGetAuthGrants200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
             _dict['name'] = None
 
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
             _dict['description'] = None
 
-        # set to None if scope (nullable) is None
-        # and model_fields_set contains the field
-        if self.scope is None and "scope" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.challenge is None and "challenge" in self.model_fields_set and "challenge" not in excluded_fields:
+            _dict['challenge'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.scope is None and "scope" in self.model_fields_set and "scope" not in excluded_fields:
             _dict['scope'] = None
 
-        # set to None if act_as (nullable) is None
-        # and model_fields_set contains the field
-        if self.act_as is None and "act_as" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.act_as is None and "act_as" in self.model_fields_set and "act_as" not in excluded_fields:
             _dict['actAs'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
 
         return _dict

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,8 +27,8 @@ class BoostAttachFrameworkToBoostRequest(BaseModel):
     """
     BoostAttachFrameworkToBoostRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    boost_uri: StrictStr = Field(alias="boostUri")
+    framework_id: StrictStr = Field(alias="frameworkId")
     __properties: ClassVar[List[str]] = ["boostUri", "frameworkId"]
 
     model_config = ConfigDict(
@@ -58,9 +58,8 @@ class BoostAttachFrameworkToBoostRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,14 +69,12 @@ class BoostAttachFrameworkToBoostRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
 
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.framework_id is None and "framework_id" in self.model_fields_set and "framework_id" not in excluded_fields:
             _dict['frameworkId'] = None
 
         return _dict

@@ -57,9 +57,8 @@ class ContactMethodsSendChallenge200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,6 +68,10 @@ class ContactMethodsSendChallenge200Response(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
+            _dict['message'] = None
+
         return _dict
 
     @classmethod

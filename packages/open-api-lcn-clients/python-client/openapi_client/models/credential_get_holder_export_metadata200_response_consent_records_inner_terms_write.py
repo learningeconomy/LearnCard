@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_terms_write_credentials import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite(
     CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite
     """ # noqa: E501
     credentials: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWriteCredentials
-    personal: Dict[str, Optional[StrictBool]]
+    personal: Dict[str, StrictBool]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["credentials", "personal"]
 
@@ -60,9 +60,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite(
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -81,6 +80,14 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsWrite(
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credentials is None and "credentials" in self.model_fields_set and "credentials" not in excluded_fields:
+            _dict['credentials'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.personal is None and "personal" in self.model_fields_set and "personal" not in excluded_fields:
+            _dict['personal'] = None
 
         return _dict
 

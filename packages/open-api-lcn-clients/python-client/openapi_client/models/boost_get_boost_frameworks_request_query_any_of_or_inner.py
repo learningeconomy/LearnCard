@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,11 +28,11 @@ class BoostGetBoostFrameworksRequestQueryAnyOfOrInner(BaseModel):
     """
     BoostGetBoostFrameworksRequestQueryAnyOfOrInner
     """ # noqa: E501
-    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    description: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    source_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="sourceURI")
-    status: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    description: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    source_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="sourceURI")
+    status: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
     __properties: ClassVar[List[str]] = ["id", "name", "description", "sourceURI", "status"]
 
     model_config = ConfigDict(
@@ -62,9 +62,8 @@ class BoostGetBoostFrameworksRequestQueryAnyOfOrInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -89,6 +88,26 @@ class BoostGetBoostFrameworksRequestQueryAnyOfOrInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of status
         if self.status:
             _dict['status'] = self.status.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
+            _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
+            _dict['description'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.source_uri is None and "source_uri" in self.model_fields_set and "source_uri" not in excluded_fields:
+            _dict['sourceURI'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
         return _dict
 
     @classmethod
@@ -101,11 +120,11 @@ class BoostGetBoostFrameworksRequestQueryAnyOfOrInner(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None,
-            "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["name"]) if obj.get("name") is not None else None,
-            "description": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["description"]) if obj.get("description") is not None else None,
-            "sourceURI": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["sourceURI"]) if obj.get("sourceURI") is not None else None,
-            "status": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["status"]) if obj.get("status") is not None else None
+            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["id"]) if obj.get("id") is not None else None,
+            "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["name"]) if obj.get("name") is not None else None,
+            "description": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["description"]) if obj.get("description") is not None else None,
+            "sourceURI": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["sourceURI"]) if obj.get("sourceURI") is not None else None,
+            "status": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["status"]) if obj.get("status") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

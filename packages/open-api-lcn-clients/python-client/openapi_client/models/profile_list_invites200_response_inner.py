@@ -27,7 +27,7 @@ class ProfileListInvites200ResponseInner(BaseModel):
     """
     ProfileListInvites200ResponseInner
     """ # noqa: E501
-    challenge: Optional[StrictStr]
+    challenge: StrictStr
     expires_in: Optional[Union[StrictFloat, StrictInt]] = Field(alias="expiresIn")
     uses_remaining: Optional[Union[StrictFloat, StrictInt]] = Field(alias="usesRemaining")
     max_uses: Optional[Union[StrictFloat, StrictInt]] = Field(alias="maxUses")
@@ -61,9 +61,8 @@ class ProfileListInvites200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -80,24 +79,20 @@ class ProfileListInvites200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.challenge is None and "challenge" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.challenge is None and "challenge" in self.model_fields_set and "challenge" not in excluded_fields:
             _dict['challenge'] = None
 
-        # set to None if expires_in (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_in is None and "expires_in" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_in is None and "expires_in" in self.model_fields_set and "expires_in" not in excluded_fields:
             _dict['expiresIn'] = None
 
-        # set to None if uses_remaining (nullable) is None
-        # and model_fields_set contains the field
-        if self.uses_remaining is None and "uses_remaining" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uses_remaining is None and "uses_remaining" in self.model_fields_set and "uses_remaining" not in excluded_fields:
             _dict['usesRemaining'] = None
 
-        # set to None if max_uses (nullable) is None
-        # and model_fields_set contains the field
-        if self.max_uses is None and "max_uses" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.max_uses is None and "max_uses" in self.model_fields_set and "max_uses" not in excluded_fields:
             _dict['maxUses'] = None
 
         return _dict

@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
+from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class SkillFrameworksGetBoostsThatUseFrameworkRequest(BaseModel):
     """ # noqa: E501
     limit: Optional[Annotated[int, Field(le=100, strict=True, ge=1)]] = 50
     cursor: Optional[StrictStr] = None
-    query: Optional[BoostCountBoostsRequestQuery] = None
+    query: Optional[BoostGetBoostsRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "query"]
 
     model_config = ConfigDict(
@@ -61,9 +61,8 @@ class SkillFrameworksGetBoostsThatUseFrameworkRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,10 +75,17 @@ class SkillFrameworksGetBoostsThatUseFrameworkRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
+            _dict['limit'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.query is None and "query" in self.model_fields_set and "query" not in excluded_fields:
+            _dict['query'] = None
 
         return _dict
 
@@ -95,7 +101,7 @@ class SkillFrameworksGetBoostsThatUseFrameworkRequest(BaseModel):
         _values = {
             "limit": obj.get("limit") if obj.get("limit") is not None else 50,
             "cursor": obj.get("cursor"),
-            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
+            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

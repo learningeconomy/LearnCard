@@ -27,9 +27,9 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
     """
     DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJwk
     """ # noqa: E501
-    kty: Optional[StrictStr]
-    crv: Optional[StrictStr]
-    x: Optional[StrictStr]
+    kty: StrictStr
+    crv: StrictStr
+    x: StrictStr
     y: Optional[StrictStr] = None
     n: Optional[StrictStr] = None
     d: Optional[StrictStr] = None
@@ -63,9 +63,8 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,34 +81,28 @@ class DidMetadataGetDidMetadata200ResponseVerificationMethodInnerAnyOfPublicKeyJ
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if kty (nullable) is None
-        # and model_fields_set contains the field
-        if self.kty is None and "kty" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.kty is None and "kty" in self.model_fields_set and "kty" not in excluded_fields:
             _dict['kty'] = None
 
-        # set to None if crv (nullable) is None
-        # and model_fields_set contains the field
-        if self.crv is None and "crv" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.crv is None and "crv" in self.model_fields_set and "crv" not in excluded_fields:
             _dict['crv'] = None
 
-        # set to None if x (nullable) is None
-        # and model_fields_set contains the field
-        if self.x is None and "x" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.x is None and "x" in self.model_fields_set and "x" not in excluded_fields:
             _dict['x'] = None
 
-        # set to None if y (nullable) is None
-        # and model_fields_set contains the field
-        if self.y is None and "y" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.y is None and "y" in self.model_fields_set and "y" not in excluded_fields:
             _dict['y'] = None
 
-        # set to None if n (nullable) is None
-        # and model_fields_set contains the field
-        if self.n is None and "n" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.n is None and "n" in self.model_fields_set and "n" not in excluded_fields:
             _dict['n'] = None
 
-        # set to None if d (nullable) is None
-        # and model_fields_set contains the field
-        if self.d is None and "d" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.d is None and "d" in self.model_fields_set and "d" not in excluded_fields:
             _dict['d'] = None
 
         return _dict

@@ -2,14 +2,14 @@
 
 ## Properties
 
-| Name                      | Type                                                                | Description | Notes                      |
-| ------------------------- | ------------------------------------------------------------------- | ----------- | -------------------------- |
-| **limit**                 | **float**                                                           |             | [optional] [default to 25] |
-| **cursor**                | **str**                                                             |             | [optional]                 |
-| **sort**                  | **str**                                                             |             | [optional]                 |
-| **uri**                   | **str**                                                             |             |
-| **query**                 | [**BoostCountBoostsRequestQuery**](BoostCountBoostsRequestQuery.md) |             | [optional]                 |
-| **number_of_generations** | **float**                                                           |             | [optional]                 |
+| Name                      | Type                                                            | Description | Notes                      |
+| ------------------------- | --------------------------------------------------------------- | ----------- | -------------------------- |
+| **limit**                 | **float**                                                       |             | [optional] [default to 25] |
+| **cursor**                | **str**                                                         |             | [optional]                 |
+| **sort**                  | **str**                                                         |             | [optional]                 |
+| **uri**                   | **str**                                                         |             |
+| **query**                 | [**BoostGetBoostsRequestQuery**](BoostGetBoostsRequestQuery.md) |             | [optional]                 |
+| **number_of_generations** | **float**                                                       |             | [optional]                 |
 
 ## Example
 

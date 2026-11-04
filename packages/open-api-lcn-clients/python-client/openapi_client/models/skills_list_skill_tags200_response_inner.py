@@ -28,7 +28,7 @@ class SkillsListSkillTags200ResponseInner(BaseModel):
     """
     SkillsListSkillTags200ResponseInner
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     name: Annotated[str, Field(min_length=1, strict=True)]
     slug: Annotated[str, Field(min_length=1, strict=True)]
     created_at: Optional[StrictStr] = Field(default=None, alias="createdAt")
@@ -63,9 +63,8 @@ class SkillsListSkillTags200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,19 +81,24 @@ class SkillsListSkillTags200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.slug is None and "slug" in self.model_fields_set and "slug" not in excluded_fields:
+            _dict['slug'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
             _dict['updatedAt'] = None
 
         return _dict

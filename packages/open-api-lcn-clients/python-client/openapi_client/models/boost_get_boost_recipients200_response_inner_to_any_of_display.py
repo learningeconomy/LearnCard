@@ -68,9 +68,8 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,59 +86,48 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOfDisplay(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.background_color is None and "background_color" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.background_color is None and "background_color" in self.model_fields_set and "background_color" not in excluded_fields:
             _dict['backgroundColor'] = None
 
-        # set to None if background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.background_image is None and "background_image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.background_image is None and "background_image" in self.model_fields_set and "background_image" not in excluded_fields:
             _dict['backgroundImage'] = None
 
-        # set to None if fade_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.fade_background_image is None and "fade_background_image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.fade_background_image is None and "fade_background_image" in self.model_fields_set and "fade_background_image" not in excluded_fields:
             _dict['fadeBackgroundImage'] = None
 
-        # set to None if repeat_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.repeat_background_image is None and "repeat_background_image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.repeat_background_image is None and "repeat_background_image" in self.model_fields_set and "repeat_background_image" not in excluded_fields:
             _dict['repeatBackgroundImage'] = None
 
-        # set to None if font_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.font_color is None and "font_color" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.font_color is None and "font_color" in self.model_fields_set and "font_color" not in excluded_fields:
             _dict['fontColor'] = None
 
-        # set to None if accent_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.accent_color is None and "accent_color" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.accent_color is None and "accent_color" in self.model_fields_set and "accent_color" not in excluded_fields:
             _dict['accentColor'] = None
 
-        # set to None if accent_font_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.accent_font_color is None and "accent_font_color" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.accent_font_color is None and "accent_font_color" in self.model_fields_set and "accent_font_color" not in excluded_fields:
             _dict['accentFontColor'] = None
 
-        # set to None if id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.id_background_image is None and "id_background_image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id_background_image is None and "id_background_image" in self.model_fields_set and "id_background_image" not in excluded_fields:
             _dict['idBackgroundImage'] = None
 
-        # set to None if fade_id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.fade_id_background_image is None and "fade_id_background_image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.fade_id_background_image is None and "fade_id_background_image" in self.model_fields_set and "fade_id_background_image" not in excluded_fields:
             _dict['fadeIdBackgroundImage'] = None
 
-        # set to None if id_background_color (nullable) is None
-        # and model_fields_set contains the field
-        if self.id_background_color is None and "id_background_color" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id_background_color is None and "id_background_color" in self.model_fields_set and "id_background_color" not in excluded_fields:
             _dict['idBackgroundColor'] = None
 
-        # set to None if repeat_id_background_image (nullable) is None
-        # and model_fields_set contains the field
-        if self.repeat_id_background_image is None and "repeat_id_background_image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.repeat_id_background_image is None and "repeat_id_background_image" in self.model_fields_set and "repeat_id_background_image" not in excluded_fields:
             _dict['repeatIdBackgroundImage'] = None
 
         return _dict

@@ -29,10 +29,10 @@ class FederationReceiveRequest(BaseModel):
     """
     FederationReceiveRequest
     """ # noqa: E501
-    recipient_did: Optional[StrictStr] = Field(alias="recipientDid")
+    recipient_did: StrictStr = Field(alias="recipientDid")
     credential: ContractsWriteCredentialToContractRequestCredential
-    issuer_did: Optional[StrictStr] = Field(alias="issuerDid")
-    issuer_display_name: Optional[StrictStr] = Field(alias="issuerDisplayName")
+    issuer_did: StrictStr = Field(alias="issuerDid")
+    issuer_display_name: StrictStr = Field(alias="issuerDisplayName")
     configuration: Optional[FederationReceiveRequestConfiguration] = None
     __properties: ClassVar[List[str]] = ["recipientDid", "credential", "issuerDid", "issuerDisplayName", "configuration"]
 
@@ -63,9 +63,8 @@ class FederationReceiveRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -81,20 +80,25 @@ class FederationReceiveRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient_did is None and "recipient_did" in self.model_fields_set and "recipient_did" not in excluded_fields:
             _dict['recipientDid'] = None
 
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
+            _dict['credential'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_did is None and "issuer_did" in self.model_fields_set and "issuer_did" not in excluded_fields:
             _dict['issuerDid'] = None
 
-        # set to None if issuer_display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_display_name is None and "issuer_display_name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_display_name is None and "issuer_display_name" in self.model_fields_set and "issuer_display_name" not in excluded_fields:
             _dict['issuerDisplayName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.configuration is None and "configuration" in self.model_fields_set and "configuration" not in excluded_fields:
+            _dict['configuration'] = None
 
         return _dict
 

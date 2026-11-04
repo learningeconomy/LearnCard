@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of1_or_inner import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id_any_of import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
     """
     BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1
     """ # noqa: E501
-    var_or: List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner] = Field(alias="$or")
+    var_or: List[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf] = Field(alias="$or")
     __properties: ClassVar[List[str]] = ["$or"]
 
     model_config = ConfigDict(
@@ -58,9 +58,8 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,6 +75,10 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
             for _item_var_or in self.var_or:
                 _items.append(_item_var_or.to_dict() if _item_var_or is not None else None)
             _dict['$or'] = _items
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.var_or is None and "var_or" in self.model_fields_set and "var_or" not in excluded_fields:
+            _dict['$or'] = None
+
         return _dict
 
     @classmethod
@@ -88,7 +91,7 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
             return cls.model_validate(obj)
 
         _values = {
-            "$or": [BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1OrInner.from_dict(_item) for _item in obj["$or"]] if obj.get("$or") is not None else None
+            "$or": [BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf.from_dict(_item) for _item in obj["$or"]] if obj.get("$or") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

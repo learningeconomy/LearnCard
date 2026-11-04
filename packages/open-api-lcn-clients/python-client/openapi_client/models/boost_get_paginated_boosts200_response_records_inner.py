@@ -28,7 +28,7 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     """
     BoostGetPaginatedBoosts200ResponseRecordsInner
     """ # noqa: E501
-    uri: Optional[StrictStr]
+    uri: StrictStr
     name: Optional[StrictStr] = None
     type: Optional[StrictStr] = None
     category: Optional[StrictStr] = None
@@ -79,9 +79,8 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -104,39 +103,48 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
 
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
             _dict['name'] = None
 
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
             _dict['type'] = None
 
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
             _dict['category'] = None
 
-        # set to None if created (nullable) is None
-        # and model_fields_set contains the field
-        if self.created is None and "created" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
             _dict['created'] = None
 
-        # set to None if auto_connect_recipients (nullable) is None
-        # and model_fields_set contains the field
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set and "auto_connect_recipients" not in excluded_fields:
             _dict['autoConnectRecipients'] = None
 
-        # set to None if allow_anyone_to_create_children (nullable) is None
-        # and model_fields_set contains the field
-        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.meta is None and "meta" in self.model_fields_set and "meta" not in excluded_fields:
+            _dict['meta'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_permissions is None and "claim_permissions" in self.model_fields_set and "claim_permissions" not in excluded_fields:
+            _dict['claimPermissions'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.default_permissions is None and "default_permissions" in self.model_fields_set and "default_permissions" not in excluded_fields:
+            _dict['defaultPermissions'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set and "allow_anyone_to_create_children" not in excluded_fields:
             _dict['allowAnyoneToCreateChildren'] = None
 
         return _dict

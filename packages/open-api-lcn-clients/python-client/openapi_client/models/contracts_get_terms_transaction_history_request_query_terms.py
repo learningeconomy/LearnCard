@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.contracts_get_consented_contracts_request_query_read import ContractsGetConsentedContractsRequestQueryRead
 from openapi_client.models.contracts_get_consented_contracts_request_query_write import ContractsGetConsentedContractsRequestQueryWrite
-from openapi_client.models.contracts_get_terms_transaction_history_request_query_terms_read import ContractsGetTermsTransactionHistoryRequestQueryTermsRead
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +29,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
     """
     ContractsGetTermsTransactionHistoryRequestQueryTerms
     """ # noqa: E501
-    read: Optional[ContractsGetTermsTransactionHistoryRequestQueryTermsRead] = None
+    read: Optional[ContractsGetConsentedContractsRequestQueryRead] = None
     write: Optional[ContractsGetConsentedContractsRequestQueryWrite] = None
     __properties: ClassVar[List[str]] = ["read", "write"]
 
@@ -60,9 +60,8 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,6 +77,14 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of write
         if self.write:
             _dict['write'] = self.write.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.read is None and "read" in self.model_fields_set and "read" not in excluded_fields:
+            _dict['read'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.write is None and "write" in self.model_fields_set and "write" not in excluded_fields:
+            _dict['write'] = None
+
         return _dict
 
     @classmethod
@@ -90,7 +97,7 @@ class ContractsGetTermsTransactionHistoryRequestQueryTerms(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "read": ContractsGetTermsTransactionHistoryRequestQueryTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
+            "read": ContractsGetConsentedContractsRequestQueryRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": ContractsGetConsentedContractsRequestQueryWrite.from_dict(obj["write"]) if obj.get("write") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

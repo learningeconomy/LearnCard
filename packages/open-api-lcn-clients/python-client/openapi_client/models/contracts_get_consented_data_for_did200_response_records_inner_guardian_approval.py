@@ -37,8 +37,8 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval(Bas
     @field_validator('approved_at', mode="before")
     def approved_at_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     model_config = ConfigDict(
@@ -68,9 +68,8 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval(Bas
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -80,6 +79,22 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval(Bas
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_profile_id is None and "guardian_profile_id" in self.model_fields_set and "guardian_profile_id" not in excluded_fields:
+            _dict['guardianProfileId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_did is None and "guardian_did" in self.model_fields_set and "guardian_did" not in excluded_fields:
+            _dict['guardianDid'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.approved_at is None and "approved_at" in self.model_fields_set and "approved_at" not in excluded_fields:
+            _dict['approvedAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set and "contract_updated_at" not in excluded_fields:
+            _dict['contractUpdatedAt'] = None
+
         return _dict
 
     @classmethod

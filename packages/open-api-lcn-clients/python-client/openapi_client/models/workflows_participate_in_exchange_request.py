@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_store_request_item_any_of_any_of_any_of import StorageStoreRequestItemAnyOfAnyOfAnyOf
+from openapi_client.models.presentation_send_presentation_request_presentation_any_of import PresentationSendPresentationRequestPresentationAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,7 +28,7 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
     """
     WorkflowsParticipateInExchangeRequest
     """ # noqa: E501
-    verifiable_presentation: Optional[StorageStoreRequestItemAnyOfAnyOfAnyOf] = Field(default=None, alias="verifiablePresentation")
+    verifiable_presentation: Optional[PresentationSendPresentationRequestPresentationAnyOf] = Field(default=None, alias="verifiablePresentation")
     __properties: ClassVar[List[str]] = ["verifiablePresentation"]
 
     model_config = ConfigDict(
@@ -58,9 +58,8 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,6 +72,10 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of verifiable_presentation
         if self.verifiable_presentation:
             _dict['verifiablePresentation'] = self.verifiable_presentation.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.verifiable_presentation is None and "verifiable_presentation" in self.model_fields_set and "verifiable_presentation" not in excluded_fields:
+            _dict['verifiablePresentation'] = None
+
         return _dict
 
     @classmethod
@@ -85,7 +88,7 @@ class WorkflowsParticipateInExchangeRequest(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "verifiablePresentation": StorageStoreRequestItemAnyOfAnyOfAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None
+            "verifiablePresentation": PresentationSendPresentationRequestPresentationAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

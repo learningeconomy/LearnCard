@@ -63,9 +63,8 @@ class SkillFrameworksReplaceSkills200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -81,6 +80,26 @@ class SkillFrameworksReplaceSkills200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
+            _dict['created'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updated is None and "updated" in self.model_fields_set and "updated" not in excluded_fields:
+            _dict['updated'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.deleted is None and "deleted" in self.model_fields_set and "deleted" not in excluded_fields:
+            _dict['deleted'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.unchanged is None and "unchanged" in self.model_fields_set and "unchanged" not in excluded_fields:
+            _dict['unchanged'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.total is None and "total" in self.model_fields_set and "total" not in excluded_fields:
+            _dict['total'] = None
 
         return _dict
 

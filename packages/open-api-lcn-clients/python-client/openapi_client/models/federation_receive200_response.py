@@ -27,9 +27,9 @@ class FederationReceive200Response(BaseModel):
     """
     FederationReceive200Response
     """ # noqa: E501
-    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
+    issuance_id: StrictStr = Field(alias="issuanceId")
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
-    status: Optional[StrictStr]
+    status: StrictStr
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["issuanceId", "claimUrl", "status"]
 
@@ -60,9 +60,8 @@ class FederationReceive200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -79,19 +78,16 @@ class FederationReceive200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if issuance_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuance_id is None and "issuance_id" in self.model_fields_set and "issuance_id" not in excluded_fields:
             _dict['issuanceId'] = None
 
-        # set to None if claim_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_url is None and "claim_url" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_url is None and "claim_url" in self.model_fields_set and "claim_url" not in excluded_fields:
             _dict['claimUrl'] = None
 
-        # set to None if status (nullable) is None
-        # and model_fields_set contains the field
-        if self.status is None and "status" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
             _dict['status'] = None
 
         return _dict

@@ -51,3 +51,5 @@ Reject stale editor drafts with their original expected version, treat equivalen
 Track each holder's last explicit review, backfill that baseline from transaction history, and timestamp legacy snapshots at the revision actually captured. Keep per-item explanation-only and redirect-only changes quiet. Retain ambiguous initial AutoBoost claims and reject mismatched concurrent initial credential deliveries.
 
 Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
+
+Regenerate the Python API client from the current router graph, including all consent lifecycle states, versioned updates, and review metadata. Preserve explicit null inputs during regeneration rather than silently converting them to omitted fields.

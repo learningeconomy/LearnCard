@@ -31,7 +31,7 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf(BaseModel):
     InboxGetBatch200ResponseItemsInnerResultOneOf
     """ # noqa: E501
     refresh: Optional[InboxIssue200ResponseRefresh] = None
-    issuance_id: Optional[StrictStr] = Field(alias="issuanceId")
+    issuance_id: StrictStr = Field(alias="issuanceId")
     status: StrictStr
     recipient: InboxGetBatch200ResponseItemsInnerResultOneOfRecipient
     claim_url: Optional[StrictStr] = Field(default=None, alias="claimUrl")
@@ -95,9 +95,8 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -120,24 +119,48 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if issuance_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuance_id is None and "issuance_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
+            _dict['refresh'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuance_id is None and "issuance_id" in self.model_fields_set and "issuance_id" not in excluded_fields:
             _dict['issuanceId'] = None
 
-        # set to None if recipient_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_did is None and "recipient_did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient is None and "recipient" in self.model_fields_set and "recipient" not in excluded_fields:
+            _dict['recipient'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_url is None and "claim_url" in self.model_fields_set and "claim_url" not in excluded_fields:
+            _dict['claimUrl'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient_did is None and "recipient_did" in self.model_fields_set and "recipient_did" not in excluded_fields:
             _dict['recipientDid'] = None
 
-        # set to None if deduplicated (nullable) is None
-        # and model_fields_set contains the field
-        if self.deduplicated is None and "deduplicated" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.success is None and "success" in self.model_fields_set and "success" not in excluded_fields:
+            _dict['success'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.index is None and "index" in self.model_fields_set and "index" not in excluded_fields:
+            _dict['index'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.deduplicated is None and "deduplicated" in self.model_fields_set and "deduplicated" not in excluded_fields:
             _dict['deduplicated'] = None
 
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_status is None and "guardian_status" in self.model_fields_set and "guardian_status" not in excluded_fields:
+            _dict['guardianStatus'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set and "idempotency_key" not in excluded_fields:
             _dict['idempotencyKey'] = None
 
         return _dict

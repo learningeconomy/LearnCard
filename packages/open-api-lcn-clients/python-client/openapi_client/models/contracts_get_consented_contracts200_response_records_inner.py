@@ -19,8 +19,11 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from openapi_client.models.boost_get_boost_recipients200_response_inner_to_any_of3 import BoostGetBoostRecipients200ResponseInnerToAnyOf3
 from openapi_client.models.contracts_get_consent_flow_contract200_response import ContractsGetConsentFlowContract200Response
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_cumulative_update import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_referral import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral
 from openapi_client.models.storage_resolve200_response_any_of1 import StorageResolve200ResponseAnyOf1
 from typing import Optional, Set
 from typing_extensions import Self
@@ -33,18 +36,24 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
     terms: StorageResolve200ResponseAnyOf1
+    referral: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral] = None
     contract: ContractsGetConsentFlowContract200Response
-    uri: Optional[StrictStr]
+    uri: StrictStr
     consenter: BoostGetBoostRecipients200ResponseInnerToAnyOf3
     status: StrictStr
+    consented_version: Annotated[int, Field(le=9007199254740991, strict=True, gt=0)] = Field(alias="consentedVersion")
+    last_reviewed_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, gt=0)]] = Field(default=None, alias="lastReviewedVersion")
+    reconsent_deadline: Optional[StrictStr] = Field(default=None, alias="reconsentDeadline")
+    new_options_until: Optional[StrictStr] = Field(default=None, alias="newOptionsUntil")
+    cumulative_update: Optional[CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate] = Field(default=None, alias="cumulativeUpdate")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "contract", "uri", "consenter", "status"]
+    __properties: ClassVar[List[str]] = ["expiresAt", "oneTime", "terms", "referral", "contract", "uri", "consenter", "status", "consentedVersion", "lastReviewedVersion", "reconsentDeadline", "newOptionsUntil", "cumulativeUpdate"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['live', 'stale', 'withdrawn']):
-            raise ValueError("must be one of enum values ('live', 'stale', 'withdrawn')")
+        if value not in set(['live', 'consumed', 'withdrawn', 'needs_reconsent', 'suspended']):
+            raise ValueError("must be one of enum values ('live', 'consumed', 'withdrawn', 'needs_reconsent', 'suspended')")
         return value
 
     model_config = ConfigDict(
@@ -74,9 +83,8 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,31 +99,74 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of referral
+        if self.referral:
+            _dict['referral'] = self.referral.to_dict()
         # override the default output from pydantic by calling `to_dict()` of contract
         if self.contract:
             _dict['contract'] = self.contract.to_dict()
         # override the default output from pydantic by calling `to_dict()` of consenter
         if self.consenter:
             _dict['consenter'] = self.consenter.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of cumulative_update
+        if self.cumulative_update:
+            _dict['cumulativeUpdate'] = self.cumulative_update.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
 
-        # set to None if one_time (nullable) is None
-        # and model_fields_set contains the field
-        if self.one_time is None and "one_time" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.one_time is None and "one_time" in self.model_fields_set and "one_time" not in excluded_fields:
             _dict['oneTime'] = None
 
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
+            _dict['terms'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.referral is None and "referral" in self.model_fields_set and "referral" not in excluded_fields:
+            _dict['referral'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract is None and "contract" in self.model_fields_set and "contract" not in excluded_fields:
+            _dict['contract'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.consenter is None and "consenter" in self.model_fields_set and "consenter" not in excluded_fields:
+            _dict['consenter'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.consented_version is None and "consented_version" in self.model_fields_set and "consented_version" not in excluded_fields:
+            _dict['consentedVersion'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.last_reviewed_version is None and "last_reviewed_version" in self.model_fields_set and "last_reviewed_version" not in excluded_fields:
+            _dict['lastReviewedVersion'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.reconsent_deadline is None and "reconsent_deadline" in self.model_fields_set and "reconsent_deadline" not in excluded_fields:
+            _dict['reconsentDeadline'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.new_options_until is None and "new_options_until" in self.model_fields_set and "new_options_until" not in excluded_fields:
+            _dict['newOptionsUntil'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cumulative_update is None and "cumulative_update" in self.model_fields_set and "cumulative_update" not in excluded_fields:
+            _dict['cumulativeUpdate'] = None
 
         return _dict
 
@@ -132,10 +183,16 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
             "expiresAt": obj.get("expiresAt"),
             "oneTime": obj.get("oneTime"),
             "terms": StorageResolve200ResponseAnyOf1.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "referral": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerReferral.from_dict(obj["referral"]) if obj.get("referral") is not None else None,
             "contract": ContractsGetConsentFlowContract200Response.from_dict(obj["contract"]) if obj.get("contract") is not None else None,
             "uri": obj.get("uri"),
             "consenter": BoostGetBoostRecipients200ResponseInnerToAnyOf3.from_dict(obj["consenter"]) if obj.get("consenter") is not None else None,
-            "status": obj.get("status")
+            "status": obj.get("status"),
+            "consentedVersion": obj.get("consentedVersion"),
+            "lastReviewedVersion": obj.get("lastReviewedVersion"),
+            "reconsentDeadline": obj.get("reconsentDeadline"),
+            "newOptionsUntil": obj.get("newOptionsUntil"),
+            "cumulativeUpdate": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeUpdate.from_dict(obj["cumulativeUpdate"]) if obj.get("cumulativeUpdate") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

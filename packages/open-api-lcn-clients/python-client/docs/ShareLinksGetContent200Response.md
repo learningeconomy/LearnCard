@@ -6,7 +6,7 @@
 | ------------------- | ------------------------------------------------------------------------- | ----------- | ----- |
 | **id**              | **str**                                                                   |             |
 | **content_version** | **int**                                                                   |             |
-| **envelope**        | [**ShareLinksUpdateRequestEnvelope**](ShareLinksUpdateRequestEnvelope.md) |             |
+| **envelope**        | [**ShareLinksCreateRequestEnvelope**](ShareLinksCreateRequestEnvelope.md) |             |
 
 ## Example
 

@@ -59,9 +59,8 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -78,14 +77,12 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if required (nullable) is None
-        # and model_fields_set contains the field
-        if self.required is None and "required" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.required is None and "required" in self.model_fields_set and "required" not in excluded_fields:
             _dict['required'] = None
 
-        # set to None if reason (nullable) is None
-        # and model_fields_set contains the field
-        if self.reason is None and "reason" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
             _dict['reason'] = None
 
         return _dict

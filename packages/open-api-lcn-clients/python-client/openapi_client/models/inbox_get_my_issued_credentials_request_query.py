@@ -72,9 +72,8 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -84,29 +83,28 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.current_status is None and "current_status" in self.model_fields_set and "current_status" not in excluded_fields:
+            _dict['currentStatus'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if is_signed (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_signed is None and "is_signed" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_signed is None and "is_signed" in self.model_fields_set and "is_signed" not in excluded_fields:
             _dict['isSigned'] = None
 
-        # set to None if is_accepted (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_accepted is None and "is_accepted" in self.model_fields_set and "is_accepted" not in excluded_fields:
             _dict['isAccepted'] = None
 
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_did is None and "issuer_did" in self.model_fields_set and "issuer_did" not in excluded_fields:
             _dict['issuerDid'] = None
 
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
 
         return _dict

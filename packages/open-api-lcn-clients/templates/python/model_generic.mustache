@@ -315,9 +315,8 @@ https://github.com/OpenAPITools/openapi-generator/blob/c84b949df1a9ec04ba75989cb
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         {{#vendorExtensions.x-py-readonly}}
         * OpenAPI `readOnly` fields are excluded.
         {{/vendorExtensions.x-py-readonly}}
@@ -446,13 +445,10 @@ https://github.com/OpenAPITools/openapi-generator/blob/c84b949df1a9ec04ba75989cb
         {{/vendorExtensions.x-python-forbid-extra}}
         {{/isAdditionalPropertiesTrue}}
         {{#allVars}}
-        {{#isNullable}}
-        # set to None if {{{name}}} (nullable) is None
-        # and model_fields_set contains the field
-        if self.{{name}} is None and "{{{name}}}" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.{{name}} is None and "{{{name}}}" in self.model_fields_set and "{{{name}}}" not in excluded_fields:
             _dict[{{#lambda.pythonSingleQuotedStringLiteral}}{{{baseName}}}{{/lambda.pythonSingleQuotedStringLiteral}}] = None
 
-        {{/isNullable}}
         {{/allVars}}
         return _dict
 

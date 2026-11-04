@@ -63,9 +63,8 @@ class CredentialGetHolderExportMetadata200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,10 +90,21 @@ class CredentialGetHolderExportMetadata200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if truncated (nullable) is None
-        # and model_fields_set contains the field
-        if self.truncated is None and "truncated" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.consent_records is None and "consent_records" in self.model_fields_set and "consent_records" not in excluded_fields:
+            _dict['consentRecords'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.truncated is None and "truncated" in self.model_fields_set and "truncated" not in excluded_fields:
             _dict['truncated'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.warnings is None and "warnings" in self.model_fields_set and "warnings" not in excluded_fields:
+            _dict['warnings'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.limits is None and "limits" in self.model_fields_set and "limits" not in excluded_fields:
+            _dict['limits'] = None
 
         return _dict
 

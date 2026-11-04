@@ -18,8 +18,8 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_add_auto_boosts_to_contract_request_autoboosts_inner import ContractsAddAutoBoostsToContractRequestAutoboostsInner
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.contracts_create_consent_flow_contract_request_autoboosts_inner import ContractsCreateConsentFlowContractRequestAutoboostsInner
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,8 +28,8 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
     """
     ContractsAddAutoBoostsToContractRequest
     """ # noqa: E501
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    autoboosts: List[ContractsAddAutoBoostsToContractRequestAutoboostsInner]
+    contract_uri: StrictStr = Field(alias="contractUri")
+    autoboosts: List[ContractsCreateConsentFlowContractRequestAutoboostsInner]
     __properties: ClassVar[List[str]] = ["contractUri", "autoboosts"]
 
     model_config = ConfigDict(
@@ -59,9 +59,8 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -77,10 +76,13 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
             for _item_autoboosts in self.autoboosts:
                 _items.append(_item_autoboosts.to_dict() if _item_autoboosts is not None else None)
             _dict['autoboosts'] = _items
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
             _dict['contractUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.autoboosts is None and "autoboosts" in self.model_fields_set and "autoboosts" not in excluded_fields:
+            _dict['autoboosts'] = None
 
         return _dict
 
@@ -95,7 +97,7 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
 
         _values = {
             "contractUri": obj.get("contractUri"),
-            "autoboosts": [ContractsAddAutoBoostsToContractRequestAutoboostsInner.from_dict(_item) for _item in obj["autoboosts"]] if obj.get("autoboosts") is not None else None
+            "autoboosts": [ContractsCreateConsentFlowContractRequestAutoboostsInner.from_dict(_item) for _item in obj["autoboosts"]] if obj.get("autoboosts") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -59,9 +59,8 @@ class CredentialGetHolderExportMetadata200ResponseLimits(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -78,14 +77,12 @@ class CredentialGetHolderExportMetadata200ResponseLimits(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if max_consent_records (nullable) is None
-        # and model_fields_set contains the field
-        if self.max_consent_records is None and "max_consent_records" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.max_consent_records is None and "max_consent_records" in self.model_fields_set and "max_consent_records" not in excluded_fields:
             _dict['maxConsentRecords'] = None
 
-        # set to None if max_transactions_per_consent_record (nullable) is None
-        # and model_fields_set contains the field
-        if self.max_transactions_per_consent_record is None and "max_transactions_per_consent_record" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.max_transactions_per_consent_record is None and "max_transactions_per_consent_record" in self.model_fields_set and "max_transactions_per_consent_record" not in excluded_fields:
             _dict['maxTransactionsPerConsentRecord'] = None
 
         return _dict

@@ -42,8 +42,8 @@ class BoostSendRequestOptions(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -73,9 +73,8 @@ class BoostSendRequestOptions(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -88,6 +87,26 @@ class BoostSendRequestOptions(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of branding
         if self.branding:
             _dict['branding'] = self.branding.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
+            _dict['webhookUrl'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.suppress_delivery is None and "suppress_delivery" in self.model_fields_set and "suppress_delivery" not in excluded_fields:
+            _dict['suppressDelivery'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.branding is None and "branding" in self.model_fields_set and "branding" not in excluded_fields:
+            _dict['branding'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
+            _dict['guardianEmail'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
+            _dict['expiresInDays'] = None
+
         return _dict
 
     @classmethod

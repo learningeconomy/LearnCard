@@ -69,9 +69,8 @@ class CredentialRefreshPublishCredentialRefresh200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,6 +86,22 @@ class CredentialRefreshPublishCredentialRefresh200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
+            _dict['refreshId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
+            _dict['version'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.published_at is None and "published_at" in self.model_fields_set and "published_at" not in excluded_fields:
+            _dict['publishedAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.notification is None and "notification" in self.model_fields_set and "notification" not in excluded_fields:
+            _dict['notification'] = None
 
         return _dict
 

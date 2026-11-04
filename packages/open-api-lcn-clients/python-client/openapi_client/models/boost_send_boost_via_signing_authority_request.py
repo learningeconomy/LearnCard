@@ -29,7 +29,7 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
     """
     BoostSendBoostViaSigningAuthorityRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     signing_authority: BoostSendBoostViaSigningAuthorityRequestSigningAuthority = Field(alias="signingAuthority")
     template_data: Optional[Dict[str, Any]] = Field(default=None, alias="templateData")
     options: Optional[BoostSendBoostRequestOptions] = None
@@ -62,9 +62,8 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -80,10 +79,21 @@ class BoostSendBoostViaSigningAuthorityRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
+            _dict['signingAuthority'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template_data is None and "template_data" in self.model_fields_set and "template_data" not in excluded_fields:
+            _dict['templateData'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.options is None and "options" in self.model_fields_set and "options" not in excluded_fields:
+            _dict['options'] = None
 
         return _dict
 

@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictFloat, StrictInt, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional, Union
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,7 +30,8 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = None
     cursor: Optional[StrictStr] = None
     status: Optional[StrictStr] = None
-    __properties: ClassVar[List[str]] = ["limit", "cursor", "status"]
+    pending_updates_only: Optional[StrictBool] = Field(default=None, alias="pendingUpdatesOnly")
+    __properties: ClassVar[List[str]] = ["limit", "cursor", "status", "pendingUpdatesOnly"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -69,9 +70,8 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -81,15 +81,21 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if limit (nullable) is None
-        # and model_fields_set contains the field
-        if self.limit is None and "limit" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
             _dict['limit'] = None
 
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.pending_updates_only is None and "pending_updates_only" in self.model_fields_set and "pending_updates_only" not in excluded_fields:
+            _dict['pendingUpdatesOnly'] = None
 
         return _dict
 
@@ -105,7 +111,8 @@ class AppStoreAdminGetAllListingsRequest(BaseModel):
         _values = {
             "limit": obj.get("limit"),
             "cursor": obj.get("cursor"),
-            "status": obj.get("status")
+            "status": obj.get("status"),
+            "pendingUpdatesOnly": obj.get("pendingUpdatesOnly")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

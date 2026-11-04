@@ -31,9 +31,12 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
     """ # noqa: E501
     read: StorageResolve200ResponseAnyOfAnyOf1Read
     write: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite
-    uri: Optional[StrictStr]
+    uri: StrictStr
+    name: Optional[StrictStr] = None
+    image: Optional[StrictStr] = None
+    description: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["read", "write", "uri"]
+    __properties: ClassVar[List[str]] = ["read", "write", "uri", "name", "image", "description"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -62,9 +65,8 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,10 +89,29 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.read is None and "read" in self.model_fields_set and "read" not in excluded_fields:
+            _dict['read'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.write is None and "write" in self.model_fields_set and "write" not in excluded_fields:
+            _dict['write'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
+            _dict['description'] = None
 
         return _dict
 
@@ -106,7 +127,10 @@ class ContractsGetAllContractRequestsForProfile200ResponseInnerContract(BaseMode
         _values = {
             "read": StorageResolve200ResponseAnyOfAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractContractWrite.from_dict(obj["write"]) if obj.get("write") is not None else None,
-            "uri": obj.get("uri")
+            "uri": obj.get("uri"),
+            "name": obj.get("name"),
+            "image": obj.get("image"),
+            "description": obj.get("description")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -28,10 +28,10 @@ class IntegrationsGetIntegration200Response(BaseModel):
     """
     IntegrationsGetIntegration200Response
     """ # noqa: E501
-    id: Optional[StrictStr]
-    name: Optional[StrictStr]
+    id: StrictStr
+    name: StrictStr
     description: Optional[StrictStr] = None
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
+    publishable_key: StrictStr = Field(alias="publishableKey")
     whitelisted_domains: List[IntegrationsAddIntegrationRequestWhitelistedDomainsInner] = Field(alias="whitelistedDomains")
     status: StrictStr
     guide_type: Optional[StrictStr] = Field(default=None, alias="guideType")
@@ -75,9 +75,8 @@ class IntegrationsGetIntegration200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -100,39 +99,44 @@ class IntegrationsGetIntegration200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
             _dict['name'] = None
 
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
             _dict['description'] = None
 
-        # set to None if publishable_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.publishable_key is None and "publishable_key" in self.model_fields_set and "publishable_key" not in excluded_fields:
             _dict['publishableKey'] = None
 
-        # set to None if guide_type (nullable) is None
-        # and model_fields_set contains the field
-        if self.guide_type is None and "guide_type" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.whitelisted_domains is None and "whitelisted_domains" in self.model_fields_set and "whitelisted_domains" not in excluded_fields:
+            _dict['whitelistedDomains'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guide_type is None and "guide_type" in self.model_fields_set and "guide_type" not in excluded_fields:
             _dict['guideType'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guide_state is None and "guide_state" in self.model_fields_set and "guide_state" not in excluded_fields:
+            _dict['guideState'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
             _dict['updatedAt'] = None
 
         return _dict

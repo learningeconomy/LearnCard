@@ -28,14 +28,17 @@ class ShareLinksRetryRequest(BaseModel):
     """
     ShareLinksRetryRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
-    operation_id: UUID = Field(alias="operationId")
+    id: StrictStr
+    operation_id: Optional[UUID] = Field(alias="operationId")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "operationId"]
 
     @field_validator('operation_id', mode="before")
     def operation_id_validate_regular_expression(cls, value):
         """Validates the regular expression"""
+        if value is None:
+            return value
+
         if isinstance(value, str) and not re.match(r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", value):
             raise ValueError(r"must validate the regular expression /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/")
         return value
@@ -67,9 +70,8 @@ class ShareLinksRetryRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,10 +88,13 @@ class ShareLinksRetryRequest(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.operation_id is None and "operation_id" in self.model_fields_set and "operation_id" not in excluded_fields:
+            _dict['operationId'] = None
 
         return _dict
 

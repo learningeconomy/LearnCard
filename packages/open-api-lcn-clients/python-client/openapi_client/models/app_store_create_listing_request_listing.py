@@ -30,10 +30,10 @@ class AppStoreCreateListingRequestListing(BaseModel):
     """ # noqa: E501
     display_name: Annotated[str, Field(min_length=1, strict=True, max_length=100)]
     tagline: Annotated[str, Field(min_length=1, strict=True, max_length=200)]
-    full_description: Optional[StrictStr]
+    full_description: StrictStr
     icon_url: StrictStr
     launch_type: StrictStr
-    launch_config_json: Optional[StrictStr]
+    launch_config_json: StrictStr
     category: Optional[Annotated[str, Field(strict=True, max_length=50)]] = None
     promo_video_url: Optional[StrictStr] = None
     ios_app_store_id: Optional[Annotated[str, Field(strict=True, max_length=20)]] = None
@@ -81,8 +81,8 @@ class AppStoreCreateListingRequestListing(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -112,9 +112,8 @@ class AppStoreCreateListingRequestListing(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -124,20 +123,77 @@ class AppStoreCreateListingRequestListing(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if full_description (nullable) is None
-        # and model_fields_set contains the field
-        if self.full_description is None and "full_description" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
+            _dict['display_name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.tagline is None and "tagline" in self.model_fields_set and "tagline" not in excluded_fields:
+            _dict['tagline'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.full_description is None and "full_description" in self.model_fields_set and "full_description" not in excluded_fields:
             _dict['full_description'] = None
 
-        # set to None if launch_config_json (nullable) is None
-        # and model_fields_set contains the field
-        if self.launch_config_json is None and "launch_config_json" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.icon_url is None and "icon_url" in self.model_fields_set and "icon_url" not in excluded_fields:
+            _dict['icon_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.launch_type is None and "launch_type" in self.model_fields_set and "launch_type" not in excluded_fields:
+            _dict['launch_type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.launch_config_json is None and "launch_config_json" in self.model_fields_set and "launch_config_json" not in excluded_fields:
             _dict['launch_config_json'] = None
 
-        # set to None if min_age (nullable) is None
-        # and model_fields_set contains the field
-        if self.min_age is None and "min_age" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
+            _dict['category'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.promo_video_url is None and "promo_video_url" in self.model_fields_set and "promo_video_url" not in excluded_fields:
+            _dict['promo_video_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.ios_app_store_id is None and "ios_app_store_id" in self.model_fields_set and "ios_app_store_id" not in excluded_fields:
+            _dict['ios_app_store_id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.android_app_store_id is None and "android_app_store_id" in self.model_fields_set and "android_app_store_id" not in excluded_fields:
+            _dict['android_app_store_id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.privacy_policy_url is None and "privacy_policy_url" in self.model_fields_set and "privacy_policy_url" not in excluded_fields:
+            _dict['privacy_policy_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms_url is None and "terms_url" in self.model_fields_set and "terms_url" not in excluded_fields:
+            _dict['terms_url'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.highlights is None and "highlights" in self.model_fields_set and "highlights" not in excluded_fields:
+            _dict['highlights'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.screenshots is None and "screenshots" in self.model_fields_set and "screenshots" not in excluded_fields:
+            _dict['screenshots'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.hero_background_color is None and "hero_background_color" in self.model_fields_set and "hero_background_color" not in excluded_fields:
+            _dict['hero_background_color'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.min_age is None and "min_age" in self.model_fields_set and "min_age" not in excluded_fields:
             _dict['min_age'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.age_rating is None and "age_rating" in self.model_fields_set and "age_rating" not in excluded_fields:
+            _dict['age_rating'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contact_email is None and "contact_email" in self.model_fields_set and "contact_email" not in excluded_fields:
+            _dict['contact_email'] = None
 
         return _dict
 

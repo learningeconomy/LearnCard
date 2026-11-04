@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.profile_create_service_profile_request_display import ProfileCreateServiceProfileRequestDisplay
+from openapi_client.models.profile_create_profile_request_display import ProfileCreateProfileRequestDisplay
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -40,17 +40,18 @@ class ProfileCreateServiceProfileRequest(BaseModel):
     email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
+    linked_in_organization_id: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Numeric LinkedIn organization ID.", alias="linkedInOrganizationId")
     website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")
     type: Optional[StrictStr] = Field(default=None, description="Profile type: e.g. \"person\", \"organization\", \"service\".")
     notifications_webhook: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="URL to send notifications to.", alias="notificationsWebhook")
-    display: Optional[ProfileCreateServiceProfileRequestDisplay] = None
+    display: Optional[ProfileCreateProfileRequestDisplay] = None
     highlighted_credentials: Optional[Annotated[List[StrictStr], Field(max_length=5)]] = Field(default=None, description="Up to 5 unique boost URIs to highlight on the profile.", alias="highlightedCredentials")
     role: Optional[StrictStr] = Field(default='', description="Role of the profile: e.g. \"teacher\", \"student\".")
     dob: Optional[StrictStr] = Field(default='', description="Date of birth of the profile: e.g. \"1990-01-01\".")
     country: Optional[StrictStr] = Field(default=None, description="Country for the profile.")
     locale: Optional[StrictStr] = Field(default=None, description="BCP-47 language tag (e.g. 'es', 'fr', 'ar') — the user's preferred language for server-sent notifications and emails.")
     approved: Optional[StrictBool] = Field(default=None, description="Approval status for the profile.")
-    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved"]
+    __properties: ClassVar[List[str]] = ["profileId", "displayName", "shortBio", "bio", "isPrivate", "profileVisibility", "showEmail", "allowConnectionRequests", "email", "image", "heroImage", "linkedInOrganizationId", "websiteLink", "type", "notificationsWebhook", "display", "highlightedCredentials", "role", "dob", "country", "locale", "approved"]
 
     @field_validator('profile_visibility')
     def profile_visibility_validate_enum(cls, value):
@@ -70,6 +71,16 @@ class ProfileCreateServiceProfileRequest(BaseModel):
 
         if value not in set(['anyone', 'invite_only']):
             raise ValueError("must be one of enum values ('anyone', 'invite_only')")
+        return value
+
+    @field_validator('linked_in_organization_id', mode="before")
+    def linked_in_organization_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^\d+$", value):
+            raise ValueError(r"must validate the regular expression /^\d+$/")
         return value
 
     @field_validator('notifications_webhook', mode="before")
@@ -109,9 +120,8 @@ class ProfileCreateServiceProfileRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -124,6 +134,94 @@ class ProfileCreateServiceProfileRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
+            _dict['profileId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
+            _dict['displayName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
+            _dict['shortBio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
+            _dict['bio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_private is None and "is_private" in self.model_fields_set and "is_private" not in excluded_fields:
+            _dict['isPrivate'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.profile_visibility is None and "profile_visibility" in self.model_fields_set and "profile_visibility" not in excluded_fields:
+            _dict['profileVisibility'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.show_email is None and "show_email" in self.model_fields_set and "show_email" not in excluded_fields:
+            _dict['showEmail'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.allow_connection_requests is None and "allow_connection_requests" in self.model_fields_set and "allow_connection_requests" not in excluded_fields:
+            _dict['allowConnectionRequests'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
+            _dict['email'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.hero_image is None and "hero_image" in self.model_fields_set and "hero_image" not in excluded_fields:
+            _dict['heroImage'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.linked_in_organization_id is None and "linked_in_organization_id" in self.model_fields_set and "linked_in_organization_id" not in excluded_fields:
+            _dict['linkedInOrganizationId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.website_link is None and "website_link" in self.model_fields_set and "website_link" not in excluded_fields:
+            _dict['websiteLink'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.notifications_webhook is None and "notifications_webhook" in self.model_fields_set and "notifications_webhook" not in excluded_fields:
+            _dict['notificationsWebhook'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display is None and "display" in self.model_fields_set and "display" not in excluded_fields:
+            _dict['display'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.highlighted_credentials is None and "highlighted_credentials" in self.model_fields_set and "highlighted_credentials" not in excluded_fields:
+            _dict['highlightedCredentials'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.role is None and "role" in self.model_fields_set and "role" not in excluded_fields:
+            _dict['role'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.dob is None and "dob" in self.model_fields_set and "dob" not in excluded_fields:
+            _dict['dob'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.country is None and "country" in self.model_fields_set and "country" not in excluded_fields:
+            _dict['country'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.locale is None and "locale" in self.model_fields_set and "locale" not in excluded_fields:
+            _dict['locale'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.approved is None and "approved" in self.model_fields_set and "approved" not in excluded_fields:
+            _dict['approved'] = None
+
         return _dict
 
     @classmethod
@@ -147,10 +245,11 @@ class ProfileCreateServiceProfileRequest(BaseModel):
             "email": obj.get("email"),
             "image": obj.get("image"),
             "heroImage": obj.get("heroImage"),
+            "linkedInOrganizationId": obj.get("linkedInOrganizationId"),
             "websiteLink": obj.get("websiteLink"),
             "type": obj.get("type"),
             "notificationsWebhook": obj.get("notificationsWebhook"),
-            "display": ProfileCreateServiceProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
+            "display": ProfileCreateProfileRequestDisplay.from_dict(obj["display"]) if obj.get("display") is not None else None,
             "highlightedCredentials": obj.get("highlightedCredentials"),
             "role": obj.get("role") if obj.get("role") is not None else '',
             "dob": obj.get("dob") if obj.get("dob") is not None else '',

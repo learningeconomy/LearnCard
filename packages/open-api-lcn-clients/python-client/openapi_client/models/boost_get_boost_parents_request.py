@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request_number_of_generations import BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations
+from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,8 +32,8 @@ class BoostGetBoostParentsRequest(BaseModel):
     limit: Optional[Union[StrictFloat, StrictInt]] = 25
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
-    uri: Optional[StrictStr]
-    query: Optional[BoostCountBoostsRequestQuery] = None
+    uri: StrictStr
+    query: Optional[BoostGetBoostsRequestQuery] = None
     number_of_generations: Optional[BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations] = Field(default=None, alias="numberOfGenerations")
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "uri", "query", "numberOfGenerations"]
 
@@ -64,9 +64,8 @@ class BoostGetBoostParentsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,20 +81,29 @@ class BoostGetBoostParentsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of number_of_generations
         if self.number_of_generations:
             _dict['numberOfGenerations'] = self.number_of_generations.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
+            _dict['limit'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
 
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.sort is None and "sort" in self.model_fields_set and "sort" not in excluded_fields:
             _dict['sort'] = None
 
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.query is None and "query" in self.model_fields_set and "query" not in excluded_fields:
+            _dict['query'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.number_of_generations is None and "number_of_generations" in self.model_fields_set and "number_of_generations" not in excluded_fields:
+            _dict['numberOfGenerations'] = None
 
         return _dict
 
@@ -113,7 +121,7 @@ class BoostGetBoostParentsRequest(BaseModel):
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "uri": obj.get("uri"),
-            "query": BoostCountBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
+            "query": BoostGetBoostsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None,
             "numberOfGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["numberOfGenerations"]) if obj.get("numberOfGenerations") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

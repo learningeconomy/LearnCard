@@ -74,9 +74,8 @@ class IntegrationsGetIntegrations200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -92,6 +91,46 @@ class IntegrationsGetIntegrations200ResponseRecordsInner(BaseModel):
             for _item_whitelisted_domains in self.whitelisted_domains:
                 _items.append(_item_whitelisted_domains.to_dict() if _item_whitelisted_domains is not None else None)
             _dict['whitelistedDomains'] = _items
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
+            _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
+            _dict['description'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.publishable_key is None and "publishable_key" in self.model_fields_set and "publishable_key" not in excluded_fields:
+            _dict['publishableKey'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.whitelisted_domains is None and "whitelisted_domains" in self.model_fields_set and "whitelisted_domains" not in excluded_fields:
+            _dict['whitelistedDomains'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guide_type is None and "guide_type" in self.model_fields_set and "guide_type" not in excluded_fields:
+            _dict['guideType'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guide_state is None and "guide_state" in self.model_fields_set and "guide_state" not in excluded_fields:
+            _dict['guideState'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
+            _dict['createdAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
+            _dict['updatedAt'] = None
+
         return _dict
 
     @classmethod

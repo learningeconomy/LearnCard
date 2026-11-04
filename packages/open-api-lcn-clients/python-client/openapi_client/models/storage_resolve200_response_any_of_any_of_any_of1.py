@@ -28,10 +28,10 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOfAnyOf1
     """ # noqa: E501
-    protected: Optional[StrictStr]
-    iv: Optional[StrictStr]
-    ciphertext: Optional[StrictStr]
-    tag: Optional[StrictStr]
+    protected: StrictStr
+    iv: StrictStr
+    ciphertext: StrictStr
+    tag: StrictStr
     aad: Optional[StrictStr] = None
     recipients: Optional[List[StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner]] = None
     additional_properties: Dict[str, Any] = {}
@@ -64,9 +64,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -89,30 +88,29 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if protected (nullable) is None
-        # and model_fields_set contains the field
-        if self.protected is None and "protected" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.protected is None and "protected" in self.model_fields_set and "protected" not in excluded_fields:
             _dict['protected'] = None
 
-        # set to None if iv (nullable) is None
-        # and model_fields_set contains the field
-        if self.iv is None and "iv" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.iv is None and "iv" in self.model_fields_set and "iv" not in excluded_fields:
             _dict['iv'] = None
 
-        # set to None if ciphertext (nullable) is None
-        # and model_fields_set contains the field
-        if self.ciphertext is None and "ciphertext" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.ciphertext is None and "ciphertext" in self.model_fields_set and "ciphertext" not in excluded_fields:
             _dict['ciphertext'] = None
 
-        # set to None if tag (nullable) is None
-        # and model_fields_set contains the field
-        if self.tag is None and "tag" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.tag is None and "tag" in self.model_fields_set and "tag" not in excluded_fields:
             _dict['tag'] = None
 
-        # set to None if aad (nullable) is None
-        # and model_fields_set contains the field
-        if self.aad is None and "aad" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.aad is None and "aad" in self.model_fields_set and "aad" not in excluded_fields:
             _dict['aad'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipients is None and "recipients" in self.model_fields_set and "recipients" not in excluded_fields:
+            _dict['recipients'] = None
 
         return _dict
 

@@ -29,7 +29,7 @@ class ShareLinksRevokeRequest(BaseModel):
     """
     ShareLinksRevokeRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     expected_version: Optional[Annotated[int, Field(le=2147483647, strict=True, ge=1)]] = Field(default=None, alias="expectedVersion")
     client_request_id: Optional[UUID] = Field(default=None, alias="clientRequestId")
     additional_properties: Dict[str, Any] = {}
@@ -72,9 +72,8 @@ class ShareLinksRevokeRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,10 +90,17 @@ class ShareLinksRevokeRequest(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expected_version is None and "expected_version" in self.model_fields_set and "expected_version" not in excluded_fields:
+            _dict['expectedVersion'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.client_request_id is None and "client_request_id" in self.model_fields_set and "client_request_id" not in excluded_fields:
+            _dict['clientRequestId'] = None
 
         return _dict
 

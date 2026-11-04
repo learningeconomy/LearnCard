@@ -74,9 +74,8 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -99,10 +98,33 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf1(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.success is None and "success" in self.model_fields_set and "success" not in excluded_fields:
+            _dict['success'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.index is None and "index" in self.model_fields_set and "index" not in excluded_fields:
+            _dict['index'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set and "idempotency_key" not in excluded_fields:
             _dict['idempotencyKey'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient is None and "recipient" in self.model_fields_set and "recipient" not in excluded_fields:
+            _dict['recipient'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.error is None and "error" in self.model_fields_set and "error" not in excluded_fields:
+            _dict['error'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuance_id is None and "issuance_id" in self.model_fields_set and "issuance_id" not in excluded_fields:
+            _dict['issuanceId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_url is None and "claim_url" in self.model_fields_set and "claim_url" not in excluded_fields:
+            _dict['claimUrl'] = None
 
         return _dict
 

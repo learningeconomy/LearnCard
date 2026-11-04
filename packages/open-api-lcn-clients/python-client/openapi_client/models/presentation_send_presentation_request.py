@@ -59,9 +59,8 @@ class PresentationSendPresentationRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,6 +73,14 @@ class PresentationSendPresentationRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of presentation
         if self.presentation:
             _dict['presentation'] = self.presentation.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.presentation is None and "presentation" in self.model_fields_set and "presentation" not in excluded_fields:
+            _dict['presentation'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.metadata is None and "metadata" in self.model_fields_set and "metadata" not in excluded_fields:
+            _dict['metadata'] = None
+
         return _dict
 
     @classmethod

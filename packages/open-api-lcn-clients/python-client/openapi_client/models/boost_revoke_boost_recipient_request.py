@@ -27,8 +27,8 @@ class BoostRevokeBoostRecipientRequest(BaseModel):
     """
     BoostRevokeBoostRecipientRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
-    recipient_profile_id: Optional[StrictStr] = Field(alias="recipientProfileId")
+    boost_uri: StrictStr = Field(alias="boostUri")
+    recipient_profile_id: StrictStr = Field(alias="recipientProfileId")
     credential_uri: Optional[StrictStr] = Field(default=None, alias="credentialUri")
     __properties: ClassVar[List[str]] = ["boostUri", "recipientProfileId", "credentialUri"]
 
@@ -59,9 +59,8 @@ class BoostRevokeBoostRecipientRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -71,19 +70,16 @@ class BoostRevokeBoostRecipientRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
 
-        # set to None if recipient_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient_profile_id is None and "recipient_profile_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient_profile_id is None and "recipient_profile_id" in self.model_fields_set and "recipient_profile_id" not in excluded_fields:
             _dict['recipientProfileId'] = None
 
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_uri is None and "credential_uri" in self.model_fields_set and "credential_uri" not in excluded_fields:
             _dict['credentialUri'] = None
 
         return _dict

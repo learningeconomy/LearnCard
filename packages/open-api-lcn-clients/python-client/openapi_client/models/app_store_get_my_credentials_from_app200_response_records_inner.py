@@ -27,9 +27,9 @@ class AppStoreGetMyCredentialsFromApp200ResponseRecordsInner(BaseModel):
     """
     AppStoreGetMyCredentialsFromApp200ResponseRecordsInner
     """ # noqa: E501
-    credential_id: Optional[StrictStr] = Field(alias="credentialId")
-    credential_uri: Optional[StrictStr] = Field(alias="credentialUri")
-    var_date: Optional[StrictStr] = Field(alias="date")
+    credential_id: StrictStr = Field(alias="credentialId")
+    credential_uri: StrictStr = Field(alias="credentialUri")
+    var_date: StrictStr = Field(alias="date")
     status: StrictStr
     boost_name: Optional[StrictStr] = Field(default=None, alias="boostName")
     boost_category: Optional[StrictStr] = Field(default=None, alias="boostCategory")
@@ -71,9 +71,8 @@ class AppStoreGetMyCredentialsFromApp200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -90,34 +89,32 @@ class AppStoreGetMyCredentialsFromApp200ResponseRecordsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if credential_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_id is None and "credential_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_id is None and "credential_id" in self.model_fields_set and "credential_id" not in excluded_fields:
             _dict['credentialId'] = None
 
-        # set to None if credential_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_uri is None and "credential_uri" in self.model_fields_set and "credential_uri" not in excluded_fields:
             _dict['credentialUri'] = None
 
-        # set to None if var_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_date is None and "var_date" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.var_date is None and "var_date" in self.model_fields_set and "var_date" not in excluded_fields:
             _dict['date'] = None
 
-        # set to None if boost_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_name is None and "boost_name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_name is None and "boost_name" in self.model_fields_set and "boost_name" not in excluded_fields:
             _dict['boostName'] = None
 
-        # set to None if boost_category (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_category is None and "boost_category" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_category is None and "boost_category" in self.model_fields_set and "boost_category" not in excluded_fields:
             _dict['boostCategory'] = None
 
-        # set to None if activity_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.activity_id is None and "activity_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.activity_id is None and "activity_id" in self.model_fields_set and "activity_id" not in excluded_fields:
             _dict['activityId'] = None
 
         return _dict

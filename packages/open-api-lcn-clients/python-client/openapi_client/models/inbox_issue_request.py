@@ -66,9 +66,8 @@ class InboxIssueRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -87,6 +86,30 @@ class InboxIssueRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient is None and "recipient" in self.model_fields_set and "recipient" not in excluded_fields:
+            _dict['recipient'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
+            _dict['credential'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template_uri is None and "template_uri" in self.model_fields_set and "template_uri" not in excluded_fields:
+            _dict['templateUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
+            _dict['refresh'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set and "idempotency_key" not in excluded_fields:
+            _dict['idempotencyKey'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.configuration is None and "configuration" in self.model_fields_set and "configuration" not in excluded_fields:
+            _dict['configuration'] = None
+
         return _dict
 
     @classmethod

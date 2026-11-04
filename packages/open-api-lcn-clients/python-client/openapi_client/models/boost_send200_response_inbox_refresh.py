@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.boost_send200_response_inbox_refresh_refresh_service import BoostSend200ResponseInboxRefreshRefreshService
-from openapi_client.models.boost_send_boost_request_credential_any_of_credential_status import BoostSendBoostRequestCredentialAnyOfCredentialStatus
+from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service import BoostSendBoostRequestCredentialAnyOfRefreshService
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -34,7 +34,7 @@ class BoostSend200ResponseInboxRefresh(BaseModel):
     refresh_service: BoostSend200ResponseInboxRefreshRefreshService = Field(alias="refreshService")
     credential_id: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="credentialId")
     issuer_did: Annotated[str, Field(min_length=1, strict=True)] = Field(alias="issuerDid")
-    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfCredentialStatus] = Field(default=None, alias="credentialStatus")
+    credential_status: Optional[BoostSendBoostRequestCredentialAnyOfRefreshService] = Field(default=None, alias="credentialStatus")
     holder_did: Optional[Annotated[str, Field(min_length=1, strict=True)]] = Field(default=None, alias="holderDid")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["refreshId", "refreshService", "credentialId", "issuerDid", "credentialStatus", "holderDid"]
@@ -66,9 +66,8 @@ class BoostSend200ResponseInboxRefresh(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,6 +90,30 @@ class BoostSend200ResponseInboxRefresh(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
+            _dict['refreshId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh_service is None and "refresh_service" in self.model_fields_set and "refresh_service" not in excluded_fields:
+            _dict['refreshService'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_id is None and "credential_id" in self.model_fields_set and "credential_id" not in excluded_fields:
+            _dict['credentialId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_did is None and "issuer_did" in self.model_fields_set and "issuer_did" not in excluded_fields:
+            _dict['issuerDid'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_status is None and "credential_status" in self.model_fields_set and "credential_status" not in excluded_fields:
+            _dict['credentialStatus'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.holder_did is None and "holder_did" in self.model_fields_set and "holder_did" not in excluded_fields:
+            _dict['holderDid'] = None
+
         return _dict
 
     @classmethod
@@ -107,7 +130,7 @@ class BoostSend200ResponseInboxRefresh(BaseModel):
             "refreshService": BoostSend200ResponseInboxRefreshRefreshService.from_dict(obj["refreshService"]) if obj.get("refreshService") is not None else None,
             "credentialId": obj.get("credentialId"),
             "issuerDid": obj.get("issuerDid"),
-            "credentialStatus": BoostSendBoostRequestCredentialAnyOfCredentialStatus.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
+            "credentialStatus": BoostSendBoostRequestCredentialAnyOfRefreshService.from_dict(obj["credentialStatus"]) if obj.get("credentialStatus") is not None else None,
             "holderDid": obj.get("holderDid")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

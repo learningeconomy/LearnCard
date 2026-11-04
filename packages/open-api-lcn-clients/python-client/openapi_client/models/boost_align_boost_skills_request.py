@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
 from openapi_client.models.boost_align_boost_skills_request_skills_inner import BoostAlignBoostSkillsRequestSkillsInner
 from typing import Optional, Set
@@ -29,7 +29,7 @@ class BoostAlignBoostSkillsRequest(BaseModel):
     """
     BoostAlignBoostSkillsRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     skills: Annotated[List[BoostAlignBoostSkillsRequestSkillsInner], Field(min_length=1)]
     __properties: ClassVar[List[str]] = ["boostUri", "skills"]
 
@@ -60,9 +60,8 @@ class BoostAlignBoostSkillsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,10 +77,13 @@ class BoostAlignBoostSkillsRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.skills is None and "skills" in self.model_fields_set and "skills" not in excluded_fields:
+            _dict['skills'] = None
 
         return _dict
 

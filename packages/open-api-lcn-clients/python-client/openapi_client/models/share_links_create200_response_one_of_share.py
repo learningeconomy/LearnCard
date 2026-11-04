@@ -21,6 +21,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from uuid import UUID
 from openapi_client.models.share_links_create200_response_one_of_share_minor_policy import ShareLinksCreate200ResponseOneOfShareMinorPolicy
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,13 +31,15 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
     """
     ShareLinksCreate200ResponseOneOfShare
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     title: Annotated[str, Field(min_length=1, strict=True, max_length=120)]
     note: Optional[Annotated[str, Field(strict=True, max_length=500)]] = None
     selected_count: Annotated[int, Field(le=50, strict=True, ge=1)] = Field(alias="selectedCount")
     version: Annotated[int, Field(le=2147483647, strict=True, ge=1)]
     content_version: Annotated[int, Field(le=2147483647, strict=True, ge=1)] = Field(alias="contentVersion")
     status: StrictStr
+    attachment_id: Optional[UUID] = Field(default=None, alias="attachmentId")
+    attachment_chunk_count: Optional[Annotated[int, Field(le=16, strict=True, ge=1)]] = Field(default=None, alias="attachmentChunkCount")
     content_state: StrictStr = Field(alias="contentState")
     created_at: Optional[datetime] = Field(alias="createdAt")
     updated_at: Optional[datetime] = Field(alias="updatedAt")
@@ -44,18 +47,28 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
     stopped_at: Optional[datetime] = Field(alias="stoppedAt")
     last_viewed_at: Optional[datetime] = Field(alias="lastViewedAt")
     view_count: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="viewCount")
-    passcode_protected: Optional[StrictBool] = Field(alias="passcodeProtected")
-    notify_on_view: Optional[StrictBool] = Field(alias="notifyOnView")
+    passcode_protected: StrictBool = Field(alias="passcodeProtected")
+    notify_on_view: StrictBool = Field(alias="notifyOnView")
     minor_policy: ShareLinksCreate200ResponseOneOfShareMinorPolicy = Field(alias="minorPolicy")
     content_url: Optional[StrictStr] = Field(default=None, alias="contentUrl")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["id", "title", "note", "selectedCount", "version", "contentVersion", "status", "contentState", "createdAt", "updatedAt", "expiresAt", "stoppedAt", "lastViewedAt", "viewCount", "passcodeProtected", "notifyOnView", "minorPolicy", "contentUrl"]
+    __properties: ClassVar[List[str]] = ["id", "title", "note", "selectedCount", "version", "contentVersion", "status", "attachmentId", "attachmentChunkCount", "contentState", "createdAt", "updatedAt", "expiresAt", "stoppedAt", "lastViewedAt", "viewCount", "passcodeProtected", "notifyOnView", "minorPolicy", "contentUrl"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
         if value not in set(['pending', 'active', 'stopped']):
             raise ValueError("must be one of enum values ('pending', 'active', 'stopped')")
+        return value
+
+    @field_validator('attachment_id', mode="before")
+    def attachment_id_validate_regular_expression(cls, value):
+        """Validates the regular expression"""
+        if value is None:
+            return value
+
+        if isinstance(value, str) and not re.match(r"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$", value):
+            raise ValueError(r"must validate the regular expression /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/")
         return value
 
     @field_validator('content_state')
@@ -71,8 +84,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     @field_validator('updated_at', mode="before")
@@ -81,8 +94,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     @field_validator('expires_at', mode="before")
@@ -91,8 +104,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     @field_validator('stopped_at', mode="before")
@@ -101,8 +114,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     @field_validator('last_viewed_at', mode="before")
@@ -111,8 +124,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$", value):
-            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/")
+        if isinstance(value, str) and not re.match(r"^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$", value):
+            raise ValueError(r"must validate the regular expression /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z))$/")
         return value
 
     model_config = ConfigDict(
@@ -142,9 +155,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -164,54 +176,84 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if note (nullable) is None
-        # and model_fields_set contains the field
-        if self.note is None and "note" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.title is None and "title" in self.model_fields_set and "title" not in excluded_fields:
+            _dict['title'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.note is None and "note" in self.model_fields_set and "note" not in excluded_fields:
             _dict['note'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.selected_count is None and "selected_count" in self.model_fields_set and "selected_count" not in excluded_fields:
+            _dict['selectedCount'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
+            _dict['version'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.content_version is None and "content_version" in self.model_fields_set and "content_version" not in excluded_fields:
+            _dict['contentVersion'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.attachment_id is None and "attachment_id" in self.model_fields_set and "attachment_id" not in excluded_fields:
+            _dict['attachmentId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.attachment_chunk_count is None and "attachment_chunk_count" in self.model_fields_set and "attachment_chunk_count" not in excluded_fields:
+            _dict['attachmentChunkCount'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.content_state is None and "content_state" in self.model_fields_set and "content_state" not in excluded_fields:
+            _dict['contentState'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
             _dict['updatedAt'] = None
 
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
 
-        # set to None if stopped_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.stopped_at is None and "stopped_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.stopped_at is None and "stopped_at" in self.model_fields_set and "stopped_at" not in excluded_fields:
             _dict['stoppedAt'] = None
 
-        # set to None if last_viewed_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.last_viewed_at is None and "last_viewed_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.last_viewed_at is None and "last_viewed_at" in self.model_fields_set and "last_viewed_at" not in excluded_fields:
             _dict['lastViewedAt'] = None
 
-        # set to None if passcode_protected (nullable) is None
-        # and model_fields_set contains the field
-        if self.passcode_protected is None and "passcode_protected" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.view_count is None and "view_count" in self.model_fields_set and "view_count" not in excluded_fields:
+            _dict['viewCount'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.passcode_protected is None and "passcode_protected" in self.model_fields_set and "passcode_protected" not in excluded_fields:
             _dict['passcodeProtected'] = None
 
-        # set to None if notify_on_view (nullable) is None
-        # and model_fields_set contains the field
-        if self.notify_on_view is None and "notify_on_view" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.notify_on_view is None and "notify_on_view" in self.model_fields_set and "notify_on_view" not in excluded_fields:
             _dict['notifyOnView'] = None
 
-        # set to None if content_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.content_url is None and "content_url" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.minor_policy is None and "minor_policy" in self.model_fields_set and "minor_policy" not in excluded_fields:
+            _dict['minorPolicy'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.content_url is None and "content_url" in self.model_fields_set and "content_url" not in excluded_fields:
             _dict['contentUrl'] = None
 
         return _dict
@@ -233,6 +275,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
             "version": obj.get("version"),
             "contentVersion": obj.get("contentVersion"),
             "status": obj.get("status"),
+            "attachmentId": obj.get("attachmentId"),
+            "attachmentChunkCount": obj.get("attachmentChunkCount"),
             "contentState": obj.get("contentState"),
             "createdAt": obj.get("createdAt"),
             "updatedAt": obj.get("updatedAt"),

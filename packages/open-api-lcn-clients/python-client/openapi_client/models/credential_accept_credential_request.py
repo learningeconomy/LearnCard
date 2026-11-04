@@ -28,7 +28,7 @@ class CredentialAcceptCredentialRequest(BaseModel):
     """
     CredentialAcceptCredentialRequest
     """ # noqa: E501
-    uri: Optional[StrictStr]
+    uri: StrictStr
     options: Optional[CredentialAcceptCredentialRequestOptions] = None
     __properties: ClassVar[List[str]] = ["uri", "options"]
 
@@ -59,9 +59,8 @@ class CredentialAcceptCredentialRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,10 +73,13 @@ class CredentialAcceptCredentialRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.options is None and "options" in self.model_fields_set and "options" not in excluded_fields:
+            _dict['options'] = None
 
         return _dict
 

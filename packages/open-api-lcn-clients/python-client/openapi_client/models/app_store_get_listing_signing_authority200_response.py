@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -27,10 +27,10 @@ class AppStoreGetListingSigningAuthority200Response(BaseModel):
     """
     AppStoreGetListingSigningAuthority200Response
     """ # noqa: E501
-    endpoint: Optional[StrictStr]
-    name: Optional[StrictStr]
-    did: Optional[StrictStr]
-    is_primary: Optional[StrictBool] = Field(alias="isPrimary")
+    endpoint: StrictStr
+    name: StrictStr
+    did: StrictStr
+    is_primary: StrictBool = Field(alias="isPrimary")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["endpoint", "name", "did", "isPrimary"]
 
@@ -61,9 +61,8 @@ class AppStoreGetListingSigningAuthority200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -80,24 +79,20 @@ class AppStoreGetListingSigningAuthority200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if endpoint (nullable) is None
-        # and model_fields_set contains the field
-        if self.endpoint is None and "endpoint" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.endpoint is None and "endpoint" in self.model_fields_set and "endpoint" not in excluded_fields:
             _dict['endpoint'] = None
 
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
             _dict['name'] = None
 
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.did is None and "did" in self.model_fields_set and "did" not in excluded_fields:
             _dict['did'] = None
 
-        # set to None if is_primary (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_primary is None and "is_primary" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_primary is None and "is_primary" in self.model_fields_set and "is_primary" not in excluded_fields:
             _dict['isPrimary'] = None
 
         return _dict

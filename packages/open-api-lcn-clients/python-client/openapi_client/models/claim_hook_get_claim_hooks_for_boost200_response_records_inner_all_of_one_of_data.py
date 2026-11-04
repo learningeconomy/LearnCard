@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of_data_permissions import ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfDataPermissions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,8 +28,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData(BaseMo
     """
     ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData
     """ # noqa: E501
-    claim_uri: Optional[StrictStr] = Field(alias="claimUri")
-    target_uri: Optional[StrictStr] = Field(alias="targetUri")
+    claim_uri: StrictStr = Field(alias="claimUri")
+    target_uri: StrictStr = Field(alias="targetUri")
     permissions: ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfDataPermissions
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri", "permissions"]
@@ -61,9 +61,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -83,15 +82,17 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfData(BaseMo
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if claim_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.claim_uri is None and "claim_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_uri is None and "claim_uri" in self.model_fields_set and "claim_uri" not in excluded_fields:
             _dict['claimUri'] = None
 
-        # set to None if target_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_uri is None and "target_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.target_uri is None and "target_uri" in self.model_fields_set and "target_uri" not in excluded_fields:
             _dict['targetUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.permissions is None and "permissions" in self.model_fields_set and "permissions" not in excluded_fields:
+            _dict['permissions'] = None
 
         return _dict
 

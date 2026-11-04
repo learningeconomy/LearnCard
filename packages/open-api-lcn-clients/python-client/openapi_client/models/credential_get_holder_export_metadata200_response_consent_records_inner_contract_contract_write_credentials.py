@@ -58,9 +58,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractCon
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,6 +75,10 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractCon
             for _key_categories in self.categories:
                 _field_dict[_key_categories] = self.categories[_key_categories].to_dict() if self.categories[_key_categories] is not None else None
             _dict['categories'] = _field_dict
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.categories is None and "categories" in self.model_fields_set and "categories" not in excluded_fields:
+            _dict['categories'] = None
+
         return _dict
 
     @classmethod

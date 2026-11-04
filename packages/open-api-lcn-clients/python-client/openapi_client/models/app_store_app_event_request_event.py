@@ -13,66 +13,66 @@
 
 
 from __future__ import annotations
+from inspect import getfullargspec
 import json
 import pprint
+import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
-from typing import Any, List, Optional
-from openapi_client.models.app_store_app_event_request_event_one_of import AppStoreAppEventRequestEventOneOf
-from openapi_client.models.app_store_app_event_request_event_one_of1 import AppStoreAppEventRequestEventOneOf1
-from openapi_client.models.app_store_app_event_request_event_one_of2 import AppStoreAppEventRequestEventOneOf2
-from openapi_client.models.app_store_app_event_request_event_one_of3 import AppStoreAppEventRequestEventOneOf3
-from openapi_client.models.app_store_app_event_request_event_one_of4 import AppStoreAppEventRequestEventOneOf4
-from openapi_client.models.app_store_app_event_request_event_one_of5 import AppStoreAppEventRequestEventOneOf5
-from openapi_client.models.app_store_app_event_request_event_one_of6 import AppStoreAppEventRequestEventOneOf6
-from openapi_client.models.app_store_app_event_request_event_one_of7 import AppStoreAppEventRequestEventOneOf7
-from openapi_client.models.app_store_app_event_request_event_one_of8 import AppStoreAppEventRequestEventOneOf8
-from openapi_client.models.app_store_app_event_request_event_one_of9 import AppStoreAppEventRequestEventOneOf9
-from pydantic import StrictStr, Field, model_validator
-from typing import Union, List, Set, Optional, Dict
+from typing import Optional
+from openapi_client.models.app_store_app_event_request_event_any_of import AppStoreAppEventRequestEventAnyOf
+from openapi_client.models.app_store_app_event_request_event_any_of1 import AppStoreAppEventRequestEventAnyOf1
+from openapi_client.models.app_store_app_event_request_event_any_of10 import AppStoreAppEventRequestEventAnyOf10
+from openapi_client.models.app_store_app_event_request_event_any_of2 import AppStoreAppEventRequestEventAnyOf2
+from openapi_client.models.app_store_app_event_request_event_any_of3 import AppStoreAppEventRequestEventAnyOf3
+from openapi_client.models.app_store_app_event_request_event_any_of4 import AppStoreAppEventRequestEventAnyOf4
+from openapi_client.models.app_store_app_event_request_event_any_of5 import AppStoreAppEventRequestEventAnyOf5
+from openapi_client.models.app_store_app_event_request_event_any_of6 import AppStoreAppEventRequestEventAnyOf6
+from openapi_client.models.app_store_app_event_request_event_any_of7 import AppStoreAppEventRequestEventAnyOf7
+from openapi_client.models.app_store_app_event_request_event_any_of8 import AppStoreAppEventRequestEventAnyOf8
+from openapi_client.models.app_store_app_event_request_event_any_of9 import AppStoreAppEventRequestEventAnyOf9
+from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
+from pydantic import Field
 
-APPSTOREAPPEVENTREQUESTEVENT_ONE_OF_SCHEMAS = ["AppStoreAppEventRequestEventOneOf", "AppStoreAppEventRequestEventOneOf1", "AppStoreAppEventRequestEventOneOf2", "AppStoreAppEventRequestEventOneOf3", "AppStoreAppEventRequestEventOneOf4", "AppStoreAppEventRequestEventOneOf5", "AppStoreAppEventRequestEventOneOf6", "AppStoreAppEventRequestEventOneOf7", "AppStoreAppEventRequestEventOneOf8", "AppStoreAppEventRequestEventOneOf9"]
+APPSTOREAPPEVENTREQUESTEVENT_ANY_OF_SCHEMAS = ["AppStoreAppEventRequestEventAnyOf", "AppStoreAppEventRequestEventAnyOf1", "AppStoreAppEventRequestEventAnyOf10", "AppStoreAppEventRequestEventAnyOf2", "AppStoreAppEventRequestEventAnyOf3", "AppStoreAppEventRequestEventAnyOf4", "AppStoreAppEventRequestEventAnyOf5", "AppStoreAppEventRequestEventAnyOf6", "AppStoreAppEventRequestEventAnyOf7", "AppStoreAppEventRequestEventAnyOf8", "AppStoreAppEventRequestEventAnyOf9"]
 
 class AppStoreAppEventRequestEvent(BaseModel):
     """
     AppStoreAppEventRequestEvent
     """
-    # data type: AppStoreAppEventRequestEventOneOf
-    oneof_schema_1_validator: Optional[AppStoreAppEventRequestEventOneOf] = None
-    # data type: AppStoreAppEventRequestEventOneOf1
-    oneof_schema_2_validator: Optional[AppStoreAppEventRequestEventOneOf1] = None
-    # data type: AppStoreAppEventRequestEventOneOf2
-    oneof_schema_3_validator: Optional[AppStoreAppEventRequestEventOneOf2] = None
-    # data type: AppStoreAppEventRequestEventOneOf3
-    oneof_schema_4_validator: Optional[AppStoreAppEventRequestEventOneOf3] = None
-    # data type: AppStoreAppEventRequestEventOneOf4
-    oneof_schema_5_validator: Optional[AppStoreAppEventRequestEventOneOf4] = None
-    # data type: AppStoreAppEventRequestEventOneOf5
-    oneof_schema_6_validator: Optional[AppStoreAppEventRequestEventOneOf5] = None
-    # data type: AppStoreAppEventRequestEventOneOf6
-    oneof_schema_7_validator: Optional[AppStoreAppEventRequestEventOneOf6] = None
-    # data type: AppStoreAppEventRequestEventOneOf7
-    oneof_schema_8_validator: Optional[AppStoreAppEventRequestEventOneOf7] = None
-    # data type: AppStoreAppEventRequestEventOneOf8
-    oneof_schema_9_validator: Optional[AppStoreAppEventRequestEventOneOf8] = None
-    # data type: AppStoreAppEventRequestEventOneOf9
-    oneof_schema_10_validator: Optional[AppStoreAppEventRequestEventOneOf9] = None
-    actual_instance: Optional[Union[AppStoreAppEventRequestEventOneOf, AppStoreAppEventRequestEventOneOf1, AppStoreAppEventRequestEventOneOf2, AppStoreAppEventRequestEventOneOf3, AppStoreAppEventRequestEventOneOf4, AppStoreAppEventRequestEventOneOf5, AppStoreAppEventRequestEventOneOf6, AppStoreAppEventRequestEventOneOf7, AppStoreAppEventRequestEventOneOf8, AppStoreAppEventRequestEventOneOf9]] = None
-    one_of_schemas: Set[str] = { "AppStoreAppEventRequestEventOneOf", "AppStoreAppEventRequestEventOneOf1", "AppStoreAppEventRequestEventOneOf2", "AppStoreAppEventRequestEventOneOf3", "AppStoreAppEventRequestEventOneOf4", "AppStoreAppEventRequestEventOneOf5", "AppStoreAppEventRequestEventOneOf6", "AppStoreAppEventRequestEventOneOf7", "AppStoreAppEventRequestEventOneOf8", "AppStoreAppEventRequestEventOneOf9" }
 
-    model_config = ConfigDict(
-        validate_assignment=True,
-        protected_namespaces=(),
-    )
+    # data type: AppStoreAppEventRequestEventAnyOf
+    anyof_schema_1_validator: Optional[AppStoreAppEventRequestEventAnyOf] = None
+    # data type: AppStoreAppEventRequestEventAnyOf1
+    anyof_schema_2_validator: Optional[AppStoreAppEventRequestEventAnyOf1] = None
+    # data type: AppStoreAppEventRequestEventAnyOf2
+    anyof_schema_3_validator: Optional[AppStoreAppEventRequestEventAnyOf2] = None
+    # data type: AppStoreAppEventRequestEventAnyOf3
+    anyof_schema_4_validator: Optional[AppStoreAppEventRequestEventAnyOf3] = None
+    # data type: AppStoreAppEventRequestEventAnyOf4
+    anyof_schema_5_validator: Optional[AppStoreAppEventRequestEventAnyOf4] = None
+    # data type: AppStoreAppEventRequestEventAnyOf5
+    anyof_schema_6_validator: Optional[AppStoreAppEventRequestEventAnyOf5] = None
+    # data type: AppStoreAppEventRequestEventAnyOf6
+    anyof_schema_7_validator: Optional[AppStoreAppEventRequestEventAnyOf6] = None
+    # data type: AppStoreAppEventRequestEventAnyOf7
+    anyof_schema_8_validator: Optional[AppStoreAppEventRequestEventAnyOf7] = None
+    # data type: AppStoreAppEventRequestEventAnyOf8
+    anyof_schema_9_validator: Optional[AppStoreAppEventRequestEventAnyOf8] = None
+    # data type: AppStoreAppEventRequestEventAnyOf9
+    anyof_schema_10_validator: Optional[AppStoreAppEventRequestEventAnyOf9] = None
+    # data type: AppStoreAppEventRequestEventAnyOf10
+    anyof_schema_11_validator: Optional[AppStoreAppEventRequestEventAnyOf10] = None
+    if TYPE_CHECKING:
+        actual_instance: Optional[Union[AppStoreAppEventRequestEventAnyOf, AppStoreAppEventRequestEventAnyOf1, AppStoreAppEventRequestEventAnyOf10, AppStoreAppEventRequestEventAnyOf2, AppStoreAppEventRequestEventAnyOf3, AppStoreAppEventRequestEventAnyOf4, AppStoreAppEventRequestEventAnyOf5, AppStoreAppEventRequestEventAnyOf6, AppStoreAppEventRequestEventAnyOf7, AppStoreAppEventRequestEventAnyOf8, AppStoreAppEventRequestEventAnyOf9]] = None
+    else:
+        actual_instance: Any = None
+    any_of_schemas: Set[str] = { "AppStoreAppEventRequestEventAnyOf", "AppStoreAppEventRequestEventAnyOf1", "AppStoreAppEventRequestEventAnyOf10", "AppStoreAppEventRequestEventAnyOf2", "AppStoreAppEventRequestEventAnyOf3", "AppStoreAppEventRequestEventAnyOf4", "AppStoreAppEventRequestEventAnyOf5", "AppStoreAppEventRequestEventAnyOf6", "AppStoreAppEventRequestEventAnyOf7", "AppStoreAppEventRequestEventAnyOf8", "AppStoreAppEventRequestEventAnyOf9" }
 
-    @model_validator(mode="before")
-    @classmethod
-    def parse_raw_oneof(cls, value):
-        """Accept the wire shape as well as explicit actual_instance construction."""
-        if isinstance(value, dict) and "actual_instance" not in value:
-            return {"actual_instance": cls.from_dict(value).actual_instance}
-        return value
-
+    model_config = {
+        "validate_assignment": True,
+        "protected_namespaces": (),
+    }
 
     def __init__(self, *args, **kwargs) -> None:
         if args:
@@ -85,71 +85,83 @@ class AppStoreAppEventRequestEvent(BaseModel):
             super().__init__(**kwargs)
 
     @field_validator('actual_instance')
-    def actual_instance_must_validate_oneof(cls, v):
+    def actual_instance_must_validate_anyof(cls, v):
         instance = AppStoreAppEventRequestEvent.model_construct()
         error_messages = []
-        match = 0
-        # validate data type: AppStoreAppEventRequestEventOneOf
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf`")
+        # validate data type: AppStoreAppEventRequestEventAnyOf
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf1
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf1):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf1`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf1
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf1`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf2
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf2):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf2`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf2
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf2):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf2`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf3
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf3):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf3`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf3
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf3):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf3`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf4
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf4):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf4`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf4
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf4):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf4`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf5
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf5):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf5`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf5
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf5):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf5`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf6
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf6):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf6`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf6
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf6):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf6`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf7
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf7):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf7`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf7
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf7):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf7`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf8
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf8):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf8`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf8
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf8):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf8`")
         else:
-            match += 1
-        # validate data type: AppStoreAppEventRequestEventOneOf9
-        if not isinstance(v, AppStoreAppEventRequestEventOneOf9):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventOneOf9`")
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf9
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf9):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf9`")
         else:
-            match += 1
-        if match > 1:
-            # more than 1 match
-            raise ValueError("Multiple matches found when setting `actual_instance` in AppStoreAppEventRequestEvent with oneOf schemas: AppStoreAppEventRequestEventOneOf, AppStoreAppEventRequestEventOneOf1, AppStoreAppEventRequestEventOneOf2, AppStoreAppEventRequestEventOneOf3, AppStoreAppEventRequestEventOneOf4, AppStoreAppEventRequestEventOneOf5, AppStoreAppEventRequestEventOneOf6, AppStoreAppEventRequestEventOneOf7, AppStoreAppEventRequestEventOneOf8, AppStoreAppEventRequestEventOneOf9. Details: " + ", ".join(error_messages))
-        elif match == 0:
+            return v
+
+        # validate data type: AppStoreAppEventRequestEventAnyOf10
+        if not isinstance(v, AppStoreAppEventRequestEventAnyOf10):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `AppStoreAppEventRequestEventAnyOf10`")
+        else:
+            return v
+
+        if error_messages:
             # no match
-            raise ValueError("No match found when setting `actual_instance` in AppStoreAppEventRequestEvent with oneOf schemas: AppStoreAppEventRequestEventOneOf, AppStoreAppEventRequestEventOneOf1, AppStoreAppEventRequestEventOneOf2, AppStoreAppEventRequestEventOneOf3, AppStoreAppEventRequestEventOneOf4, AppStoreAppEventRequestEventOneOf5, AppStoreAppEventRequestEventOneOf6, AppStoreAppEventRequestEventOneOf7, AppStoreAppEventRequestEventOneOf8, AppStoreAppEventRequestEventOneOf9. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in AppStoreAppEventRequestEvent with anyOf schemas: AppStoreAppEventRequestEventAnyOf, AppStoreAppEventRequestEventAnyOf1, AppStoreAppEventRequestEventAnyOf10, AppStoreAppEventRequestEventAnyOf2, AppStoreAppEventRequestEventAnyOf3, AppStoreAppEventRequestEventAnyOf4, AppStoreAppEventRequestEventAnyOf5, AppStoreAppEventRequestEventAnyOf6, AppStoreAppEventRequestEventAnyOf7, AppStoreAppEventRequestEventAnyOf8, AppStoreAppEventRequestEventAnyOf9. Details: " + ", ".join(error_messages))
         else:
             return v
 
     @classmethod
-    def from_dict(cls, obj: Union[str, Dict[str, Any]]) -> Self:
+    def from_dict(cls, obj: Dict[str, Any]) -> Self:
         return cls.from_json(json.dumps(obj))
 
     @classmethod
@@ -157,75 +169,76 @@ class AppStoreAppEventRequestEvent(BaseModel):
         """Returns the object represented by the json string"""
         instance = cls.model_construct()
         error_messages = []
-        match = 0
+        # anyof_schema_1_validator: Optional[AppStoreAppEventRequestEventAnyOf] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_2_validator: Optional[AppStoreAppEventRequestEventAnyOf1] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf1.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_3_validator: Optional[AppStoreAppEventRequestEventAnyOf2] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf2.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_4_validator: Optional[AppStoreAppEventRequestEventAnyOf3] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf3.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_5_validator: Optional[AppStoreAppEventRequestEventAnyOf4] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf4.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_6_validator: Optional[AppStoreAppEventRequestEventAnyOf5] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf5.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_7_validator: Optional[AppStoreAppEventRequestEventAnyOf6] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf6.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_8_validator: Optional[AppStoreAppEventRequestEventAnyOf7] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf7.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_9_validator: Optional[AppStoreAppEventRequestEventAnyOf8] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf8.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_10_validator: Optional[AppStoreAppEventRequestEventAnyOf9] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf9.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_11_validator: Optional[AppStoreAppEventRequestEventAnyOf10] = None
+        try:
+            instance.actual_instance = AppStoreAppEventRequestEventAnyOf10.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
 
-        # deserialize data into AppStoreAppEventRequestEventOneOf
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf1
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf1.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf2
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf2.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf3
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf3.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf4
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf4.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf5
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf5.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf6
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf6.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf7
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf7.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf8
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf8.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-        # deserialize data into AppStoreAppEventRequestEventOneOf9
-        try:
-            instance.actual_instance = AppStoreAppEventRequestEventOneOf9.from_json(json_str)
-            match += 1
-        except (ValidationError, ValueError) as e:
-            error_messages.append(str(e))
-
-        if match > 1:
-            # more than 1 match
-            raise ValueError("Multiple matches found when deserializing the JSON string into AppStoreAppEventRequestEvent with oneOf schemas: AppStoreAppEventRequestEventOneOf, AppStoreAppEventRequestEventOneOf1, AppStoreAppEventRequestEventOneOf2, AppStoreAppEventRequestEventOneOf3, AppStoreAppEventRequestEventOneOf4, AppStoreAppEventRequestEventOneOf5, AppStoreAppEventRequestEventOneOf6, AppStoreAppEventRequestEventOneOf7, AppStoreAppEventRequestEventOneOf8, AppStoreAppEventRequestEventOneOf9. Details: " + ", ".join(error_messages))
-        elif match == 0:
+        if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into AppStoreAppEventRequestEvent with oneOf schemas: AppStoreAppEventRequestEventOneOf, AppStoreAppEventRequestEventOneOf1, AppStoreAppEventRequestEventOneOf2, AppStoreAppEventRequestEventOneOf3, AppStoreAppEventRequestEventOneOf4, AppStoreAppEventRequestEventOneOf5, AppStoreAppEventRequestEventOneOf6, AppStoreAppEventRequestEventOneOf7, AppStoreAppEventRequestEventOneOf8, AppStoreAppEventRequestEventOneOf9. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into AppStoreAppEventRequestEvent with anyOf schemas: AppStoreAppEventRequestEventAnyOf, AppStoreAppEventRequestEventAnyOf1, AppStoreAppEventRequestEventAnyOf10, AppStoreAppEventRequestEventAnyOf2, AppStoreAppEventRequestEventAnyOf3, AppStoreAppEventRequestEventAnyOf4, AppStoreAppEventRequestEventAnyOf5, AppStoreAppEventRequestEventAnyOf6, AppStoreAppEventRequestEventAnyOf7, AppStoreAppEventRequestEventAnyOf8, AppStoreAppEventRequestEventAnyOf9. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -239,7 +252,7 @@ class AppStoreAppEventRequestEvent(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], AppStoreAppEventRequestEventOneOf, AppStoreAppEventRequestEventOneOf1, AppStoreAppEventRequestEventOneOf2, AppStoreAppEventRequestEventOneOf3, AppStoreAppEventRequestEventOneOf4, AppStoreAppEventRequestEventOneOf5, AppStoreAppEventRequestEventOneOf6, AppStoreAppEventRequestEventOneOf7, AppStoreAppEventRequestEventOneOf8, AppStoreAppEventRequestEventOneOf9]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], AppStoreAppEventRequestEventAnyOf, AppStoreAppEventRequestEventAnyOf1, AppStoreAppEventRequestEventAnyOf10, AppStoreAppEventRequestEventAnyOf2, AppStoreAppEventRequestEventAnyOf3, AppStoreAppEventRequestEventAnyOf4, AppStoreAppEventRequestEventAnyOf5, AppStoreAppEventRequestEventAnyOf6, AppStoreAppEventRequestEventAnyOf7, AppStoreAppEventRequestEventAnyOf8, AppStoreAppEventRequestEventAnyOf9]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None
@@ -247,7 +260,6 @@ class AppStoreAppEventRequestEvent(BaseModel):
         if hasattr(self.actual_instance, "to_dict") and callable(self.actual_instance.to_dict):
             return self.actual_instance.to_dict()
         else:
-            # primitive type
             return self.actual_instance
 
     def to_str(self) -> str:

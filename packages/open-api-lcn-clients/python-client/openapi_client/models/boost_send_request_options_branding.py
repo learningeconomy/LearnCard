@@ -60,9 +60,8 @@ class BoostSendRequestOptionsBranding(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -72,6 +71,22 @@ class BoostSendRequestOptionsBranding(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_name is None and "issuer_name" in self.model_fields_set and "issuer_name" not in excluded_fields:
+            _dict['issuerName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_logo_url is None and "issuer_logo_url" in self.model_fields_set and "issuer_logo_url" not in excluded_fields:
+            _dict['issuerLogoUrl'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_name is None and "credential_name" in self.model_fields_set and "credential_name" not in excluded_fields:
+            _dict['credentialName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient_name is None and "recipient_name" in self.model_fields_set and "recipient_name" not in excluded_fields:
+            _dict['recipientName'] = None
+
         return _dict
 
     @classmethod

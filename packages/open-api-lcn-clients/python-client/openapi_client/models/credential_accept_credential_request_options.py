@@ -58,9 +58,8 @@ class CredentialAcceptCredentialRequestOptions(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,6 +69,14 @@ class CredentialAcceptCredentialRequestOptions(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.skip_notification is None and "skip_notification" in self.model_fields_set and "skip_notification" not in excluded_fields:
+            _dict['skipNotification'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.metadata is None and "metadata" in self.model_fields_set and "metadata" not in excluded_fields:
+            _dict['metadata'] = None
+
         return _dict
 
     @classmethod

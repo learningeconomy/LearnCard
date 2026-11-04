@@ -74,9 +74,8 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -93,19 +92,28 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if effective_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.effective_at is None and "effective_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
+            _dict['version'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.published_at is None and "published_at" in self.model_fields_set and "published_at" not in excluded_fields:
+            _dict['publishedAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.effective_at is None and "effective_at" in self.model_fields_set and "effective_at" not in excluded_fields:
             _dict['effectiveAt'] = None
 
-        # set to None if etag (nullable) is None
-        # and model_fields_set contains the field
-        if self.etag is None and "etag" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.etag is None and "etag" in self.model_fields_set and "etag" not in excluded_fields:
             _dict['etag'] = None
 
-        # set to None if update_summary (nullable) is None
-        # and model_fields_set contains the field
-        if self.update_summary is None and "update_summary" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_mode is None and "signing_mode" in self.model_fields_set and "signing_mode" not in excluded_fields:
+            _dict['signingMode'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.update_summary is None and "update_summary" in self.model_fields_set and "update_summary" not in excluded_fields:
             _dict['updateSummary'] = None
 
         return _dict

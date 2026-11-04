@@ -20,8 +20,8 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.inbox_issue_batch_request_configuration import InboxIssueBatchRequestConfiguration
 from openapi_client.models.inbox_issue_batch_request_items_inner import InboxIssueBatchRequestItemsInner
+from openapi_client.models.inbox_issue_batch_request_items_inner_configuration import InboxIssueBatchRequestItemsInnerConfiguration
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +32,7 @@ class InboxIssueBatchRequest(BaseModel):
     """ # noqa: E501
     request_id: Optional[Annotated[str, Field(min_length=1, strict=True, max_length=256)]] = Field(default=None, alias="requestId")
     items: Annotated[List[InboxIssueBatchRequestItemsInner], Field(min_length=1, max_length=100)]
-    configuration: Optional[InboxIssueBatchRequestConfiguration] = None
+    configuration: Optional[InboxIssueBatchRequestItemsInnerConfiguration] = None
     __properties: ClassVar[List[str]] = ["requestId", "items", "configuration"]
 
     model_config = ConfigDict(
@@ -62,9 +62,8 @@ class InboxIssueBatchRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -83,6 +82,18 @@ class InboxIssueBatchRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.request_id is None and "request_id" in self.model_fields_set and "request_id" not in excluded_fields:
+            _dict['requestId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.items is None and "items" in self.model_fields_set and "items" not in excluded_fields:
+            _dict['items'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.configuration is None and "configuration" in self.model_fields_set and "configuration" not in excluded_fields:
+            _dict['configuration'] = None
+
         return _dict
 
     @classmethod
@@ -97,7 +108,7 @@ class InboxIssueBatchRequest(BaseModel):
         _values = {
             "requestId": obj.get("requestId"),
             "items": [InboxIssueBatchRequestItemsInner.from_dict(_item) for _item in obj["items"]] if obj.get("items") is not None else None,
-            "configuration": InboxIssueBatchRequestConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
+            "configuration": InboxIssueBatchRequestItemsInnerConfiguration.from_dict(obj["configuration"]) if obj.get("configuration") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

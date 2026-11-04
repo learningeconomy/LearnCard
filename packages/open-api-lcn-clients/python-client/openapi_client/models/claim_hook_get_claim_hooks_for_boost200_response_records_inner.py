@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost200_response_records_inner_all_of_one_of2_data import ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,9 +28,9 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
     """
     ClaimHookGetClaimHooksForBoost200ResponseRecordsInner
     """ # noqa: E501
-    id: Optional[StrictStr]
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
-    updated_at: Optional[StrictStr] = Field(alias="updatedAt")
+    id: StrictStr
+    created_at: StrictStr = Field(alias="createdAt")
+    updated_at: StrictStr = Field(alias="updatedAt")
     type: StrictStr
     data: ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOf2Data
     __properties: ClassVar[List[str]] = ["id", "createdAt", "updatedAt", "type", "data"]
@@ -69,9 +69,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -84,20 +83,25 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of data
         if self.data:
             _dict['data'] = self.data.to_dict()
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.updated_at is None and "updated_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
             _dict['updatedAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.data is None and "data" in self.model_fields_set and "data" not in excluded_fields:
+            _dict['data'] = None
 
         return _dict
 

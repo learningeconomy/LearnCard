@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,11 +28,11 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
     """
     BoostGetChildrenProfileManagersRequestQuery
     """ # noqa: E501
-    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    display_name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="displayName")
-    short_bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="shortBio")
-    bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    email: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
+    id: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    display_name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="displayName")
+    short_bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="shortBio")
+    bio: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    email: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
     __properties: ClassVar[List[str]] = ["id", "displayName", "shortBio", "bio", "email"]
 
     model_config = ConfigDict(
@@ -62,9 +62,8 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -89,6 +88,26 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of email
         if self.email:
             _dict['email'] = self.email.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
+            _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
+            _dict['displayName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
+            _dict['shortBio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
+            _dict['bio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
+            _dict['email'] = None
+
         return _dict
 
     @classmethod
@@ -101,11 +120,11 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["id"]) if obj.get("id") is not None else None,
-            "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
-            "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
-            "bio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["bio"]) if obj.get("bio") is not None else None,
-            "email": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["email"]) if obj.get("email") is not None else None
+            "id": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["id"]) if obj.get("id") is not None else None,
+            "displayName": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["displayName"]) if obj.get("displayName") is not None else None,
+            "shortBio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["shortBio"]) if obj.get("shortBio") is not None else None,
+            "bio": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["bio"]) if obj.get("bio") is not None else None,
+            "email": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["email"]) if obj.get("email") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

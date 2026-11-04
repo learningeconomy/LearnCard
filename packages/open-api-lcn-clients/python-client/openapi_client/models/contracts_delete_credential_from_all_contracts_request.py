@@ -58,9 +58,8 @@ class ContractsDeleteCredentialFromAllContractsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,6 +69,10 @@ class ContractsDeleteCredentialFromAllContractsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.deleted_uris is None and "deleted_uris" in self.model_fields_set and "deleted_uris" not in excluded_fields:
+            _dict['deletedUris'] = None
+
         return _dict
 
     @classmethod

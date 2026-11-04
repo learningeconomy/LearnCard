@@ -78,9 +78,8 @@ class BoostSendRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -99,15 +98,49 @@ class BoostSendRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient is None and "recipient" in self.model_fields_set and "recipient" not in excluded_fields:
+            _dict['recipient'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
             _dict['contractUri'] = None
 
-        # set to None if template_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.template_uri is None and "template_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template_uri is None and "template_uri" in self.model_fields_set and "template_uri" not in excluded_fields:
             _dict['templateUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template is None and "template" in self.model_fields_set and "template" not in excluded_fields:
+            _dict['template'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signed_credential is None and "signed_credential" in self.model_fields_set and "signed_credential" not in excluded_fields:
+            _dict['signedCredential'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.options is None and "options" in self.model_fields_set and "options" not in excluded_fields:
+            _dict['options'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template_data is None and "template_data" in self.model_fields_set and "template_data" not in excluded_fields:
+            _dict['templateData'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.integration_id is None and "integration_id" in self.model_fields_set and "integration_id" not in excluded_fields:
+            _dict['integrationId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
+            _dict['refresh'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set and "idempotency_key" not in excluded_fields:
+            _dict['idempotencyKey'] = None
 
         return _dict
 

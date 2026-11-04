@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
 from typing import Optional, Set
@@ -30,7 +30,7 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
     BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner
     """ # noqa: E501
     type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
-    identifier: Optional[StrictStr]
+    identifier: StrictStr
     identifier_type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType = Field(alias="identifierType")
     __properties: ClassVar[List[str]] = ["type", "identifier", "identifierType"]
 
@@ -61,9 +61,8 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,10 +78,17 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInner(BaseMo
         # override the default output from pydantic by calling `to_dict()` of identifier_type
         if self.identifier_type:
             _dict['identifierType'] = self.identifier_type.to_dict()
-        # set to None if identifier (nullable) is None
-        # and model_fields_set contains the field
-        if self.identifier is None and "identifier" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.identifier is None and "identifier" in self.model_fields_set and "identifier" not in excluded_fields:
             _dict['identifier'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.identifier_type is None and "identifier_type" in self.model_fields_set and "identifier_type" not in excluded_fields:
+            _dict['identifierType'] = None
 
         return _dict
 

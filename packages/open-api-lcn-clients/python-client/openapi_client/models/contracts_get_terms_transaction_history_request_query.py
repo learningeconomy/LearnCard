@@ -21,7 +21,6 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.contracts_get_terms_transaction_history_request_query_action import ContractsGetTermsTransactionHistoryRequestQueryAction
 from openapi_client.models.contracts_get_terms_transaction_history_request_query_date import ContractsGetTermsTransactionHistoryRequestQueryDate
-from openapi_client.models.contracts_get_terms_transaction_history_request_query_expires_at import ContractsGetTermsTransactionHistoryRequestQueryExpiresAt
 from openapi_client.models.contracts_get_terms_transaction_history_request_query_terms import ContractsGetTermsTransactionHistoryRequestQueryTerms
 from typing import Optional, Set
 from typing_extensions import Self
@@ -34,7 +33,7 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
     terms: Optional[ContractsGetTermsTransactionHistoryRequestQueryTerms] = None
     action: Optional[ContractsGetTermsTransactionHistoryRequestQueryAction] = None
     var_date: Optional[ContractsGetTermsTransactionHistoryRequestQueryDate] = Field(default=None, alias="date")
-    expires_at: Optional[ContractsGetTermsTransactionHistoryRequestQueryExpiresAt] = Field(default=None, alias="expiresAt")
+    expires_at: Optional[ContractsGetTermsTransactionHistoryRequestQueryDate] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
     __properties: ClassVar[List[str]] = ["terms", "action", "date", "expiresAt", "oneTime"]
 
@@ -65,9 +64,8 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -89,9 +87,24 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of expires_at
         if self.expires_at:
             _dict['expiresAt'] = self.expires_at.to_dict()
-        # set to None if one_time (nullable) is None
-        # and model_fields_set contains the field
-        if self.one_time is None and "one_time" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
+            _dict['terms'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.action is None and "action" in self.model_fields_set and "action" not in excluded_fields:
+            _dict['action'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.var_date is None and "var_date" in self.model_fields_set and "var_date" not in excluded_fields:
+            _dict['date'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
+            _dict['expiresAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.one_time is None and "one_time" in self.model_fields_set and "one_time" not in excluded_fields:
             _dict['oneTime'] = None
 
         return _dict
@@ -109,7 +122,7 @@ class ContractsGetTermsTransactionHistoryRequestQuery(BaseModel):
             "terms": ContractsGetTermsTransactionHistoryRequestQueryTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "action": ContractsGetTermsTransactionHistoryRequestQueryAction.from_dict(obj["action"]) if obj.get("action") is not None else None,
             "date": ContractsGetTermsTransactionHistoryRequestQueryDate.from_dict(obj["date"]) if obj.get("date") is not None else None,
-            "expiresAt": ContractsGetTermsTransactionHistoryRequestQueryExpiresAt.from_dict(obj["expiresAt"]) if obj.get("expiresAt") is not None else None,
+            "expiresAt": ContractsGetTermsTransactionHistoryRequestQueryDate.from_dict(obj["expiresAt"]) if obj.get("expiresAt") is not None else None,
             "oneTime": obj.get("oneTime")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

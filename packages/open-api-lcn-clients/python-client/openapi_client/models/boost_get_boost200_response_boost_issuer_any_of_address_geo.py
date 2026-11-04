@@ -61,9 +61,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -83,14 +82,16 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddressGeo(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if latitude (nullable) is None
-        # and model_fields_set contains the field
-        if self.latitude is None and "latitude" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.latitude is None and "latitude" in self.model_fields_set and "latitude" not in excluded_fields:
             _dict['latitude'] = None
 
-        # set to None if longitude (nullable) is None
-        # and model_fields_set contains the field
-        if self.longitude is None and "longitude" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.longitude is None and "longitude" in self.model_fields_set and "longitude" not in excluded_fields:
             _dict['longitude'] = None
 
         return _dict

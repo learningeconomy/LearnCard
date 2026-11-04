@@ -27,8 +27,8 @@ class AppStoreGetListing200ResponseSubmitter(BaseModel):
     """
     AppStoreGetListing200ResponseSubmitter
     """ # noqa: E501
-    profile_id: Optional[StrictStr] = Field(alias="profileId")
-    display_name: Optional[StrictStr] = Field(alias="displayName")
+    profile_id: StrictStr = Field(alias="profileId")
+    display_name: StrictStr = Field(alias="displayName")
     email: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["profileId", "displayName", "email"]
@@ -60,9 +60,8 @@ class AppStoreGetListing200ResponseSubmitter(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -79,19 +78,16 @@ class AppStoreGetListing200ResponseSubmitter(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.profile_id is None and "profile_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
             _dict['profileId'] = None
 
-        # set to None if display_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.display_name is None and "display_name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
             _dict['displayName'] = None
 
-        # set to None if email (nullable) is None
-        # and model_fields_set contains the field
-        if self.email is None and "email" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
             _dict['email'] = None
 
         return _dict

@@ -60,9 +60,8 @@ class ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue(BaseM
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -72,19 +71,20 @@ class ContractsConsentToContractRequestTermsReadCredentialsCategoriesValue(BaseM
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if sharing (nullable) is None
-        # and model_fields_set contains the field
-        if self.sharing is None and "sharing" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.sharing is None and "sharing" in self.model_fields_set and "sharing" not in excluded_fields:
             _dict['sharing'] = None
 
-        # set to None if share_all (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_all is None and "share_all" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.shared is None and "shared" in self.model_fields_set and "shared" not in excluded_fields:
+            _dict['shared'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.share_all is None and "share_all" in self.model_fields_set and "share_all" not in excluded_fields:
             _dict['shareAll'] = None
 
-        # set to None if share_until (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_until is None and "share_until" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.share_until is None and "share_until" in self.model_fields_set and "share_until" not in excluded_fields:
             _dict['shareUntil'] = None
 
         return _dict

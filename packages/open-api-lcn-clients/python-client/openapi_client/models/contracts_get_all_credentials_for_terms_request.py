@@ -60,9 +60,8 @@ class ContractsGetAllCredentialsForTermsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -72,15 +71,21 @@ class ContractsGetAllCredentialsForTermsRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
+            _dict['limit'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
 
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.sort is None and "sort" in self.model_fields_set and "sort" not in excluded_fields:
             _dict['sort'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.include_received is None and "include_received" in self.model_fields_set and "include_received" not in excluded_fields:
+            _dict['includeReceived'] = None
 
         return _dict
 

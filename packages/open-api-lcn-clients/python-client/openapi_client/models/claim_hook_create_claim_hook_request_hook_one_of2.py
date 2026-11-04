@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List
-from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of2_data import ClaimHookCreateClaimHookRequestHookOneOf2Data
+from openapi_client.models.claim_hook_create_claim_hook_request_hook_one_of1_data import ClaimHookCreateClaimHookRequestHookOneOf1Data
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,7 +29,7 @@ class ClaimHookCreateClaimHookRequestHookOneOf2(BaseModel):
     ClaimHookCreateClaimHookRequestHookOneOf2
     """ # noqa: E501
     type: StrictStr
-    data: ClaimHookCreateClaimHookRequestHookOneOf2Data
+    data: ClaimHookCreateClaimHookRequestHookOneOf1Data
     __properties: ClassVar[List[str]] = ["type", "data"]
 
     @field_validator('type')
@@ -66,9 +66,8 @@ class ClaimHookCreateClaimHookRequestHookOneOf2(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -81,6 +80,14 @@ class ClaimHookCreateClaimHookRequestHookOneOf2(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of data
         if self.data:
             _dict['data'] = self.data.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.data is None and "data" in self.model_fields_set and "data" not in excluded_fields:
+            _dict['data'] = None
+
         return _dict
 
     @classmethod
@@ -94,7 +101,7 @@ class ClaimHookCreateClaimHookRequestHookOneOf2(BaseModel):
 
         _values = {
             "type": obj.get("type"),
-            "data": ClaimHookCreateClaimHookRequestHookOneOf2Data.from_dict(obj["data"]) if obj.get("data") is not None else None
+            "data": ClaimHookCreateClaimHookRequestHookOneOf1Data.from_dict(obj["data"]) if obj.get("data") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

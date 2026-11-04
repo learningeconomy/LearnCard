@@ -64,9 +64,8 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -95,9 +94,20 @@ class WorkflowsParticipateInExchange200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.verifiable_presentation is None and "verifiable_presentation" in self.model_fields_set and "verifiable_presentation" not in excluded_fields:
+            _dict['verifiablePresentation'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.inbox_deliveries is None and "inbox_deliveries" in self.model_fields_set and "inbox_deliveries" not in excluded_fields:
+            _dict['inboxDeliveries'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.verifiable_presentation_request is None and "verifiable_presentation_request" in self.model_fields_set and "verifiable_presentation_request" not in excluded_fields:
+            _dict['verifiablePresentationRequest'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.redirect_url is None and "redirect_url" in self.model_fields_set and "redirect_url" not in excluded_fields:
             _dict['redirectUrl'] = None
 
         return _dict

@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from typing import Any, ClassVar, Dict, List, Optional
 from openapi_client.models.boost_get_boosts_request_query_any_of_or_inner_status import BoostGetBoostsRequestQueryAnyOfOrInnerStatus
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,11 +29,11 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
     """
     BoostGetBoostsRequestQueryAnyOfOrInner
     """ # noqa: E501
-    uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    type: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    category: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = None
-    meta: Optional[Dict[str, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement]] = None
+    uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    name: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    type: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    category: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = None
+    meta: Optional[Dict[str, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId]] = None
     status: Optional[BoostGetBoostsRequestQueryAnyOfOrInnerStatus] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "meta", "status", "autoConnectRecipients"]
@@ -65,9 +65,8 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -98,9 +97,32 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of status
         if self.status:
             _dict['status'] = self.status.to_dict()
-        # set to None if auto_connect_recipients (nullable) is None
-        # and model_fields_set contains the field
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
+            _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
+            _dict['category'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.meta is None and "meta" in self.model_fields_set and "meta" not in excluded_fields:
+            _dict['meta'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set and "auto_connect_recipients" not in excluded_fields:
             _dict['autoConnectRecipients'] = None
 
         return _dict
@@ -115,12 +137,12 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "uri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["uri"]) if obj.get("uri") is not None else None,
-            "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["name"]) if obj.get("name") is not None else None,
-            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["type"]) if obj.get("type") is not None else None,
-            "category": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["category"]) if obj.get("category") is not None else None,
+            "uri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["uri"]) if obj.get("uri") is not None else None,
+            "name": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["name"]) if obj.get("name") is not None else None,
+            "type": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["type"]) if obj.get("type") is not None else None,
+            "category": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["category"]) if obj.get("category") is not None else None,
             "meta": dict(
-                (_k, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(_v))
+                (_k, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(_v))
                 for _k, _v in obj["meta"].items()
             )
             if obj.get("meta") is not None

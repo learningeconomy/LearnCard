@@ -65,9 +65,8 @@ class ProfileGetAvailableProfiles200ResponseRecordsInnerManager(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -77,6 +76,42 @@ class ProfileGetAvailableProfiles200ResponseRecordsInnerManager(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
+            _dict['id'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
+            _dict['created'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
+            _dict['displayName'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
+            _dict['shortBio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
+            _dict['bio'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
+            _dict['email'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
+            _dict['image'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.hero_image is None and "hero_image" in self.model_fields_set and "hero_image" not in excluded_fields:
+            _dict['heroImage'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.did is None and "did" in self.model_fields_set and "did" not in excluded_fields:
+            _dict['did'] = None
+
         return _dict
 
     @classmethod

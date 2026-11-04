@@ -32,14 +32,14 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
     """ # noqa: E501
     credentials: List[ContractsGetConsentedDataForDid200ResponseRecordsInnerCredentialsInner]
     personal: Dict[str, StrictStr]
-    var_date: Optional[StrictStr] = Field(alias="date")
+    var_date: StrictStr = Field(alias="date")
     created_at: Optional[StrictStr] = Field(default=None, alias="createdAt")
-    contract_updated_at: Optional[StrictStr] = Field(alias="contractUpdatedAt")
+    contract_updated_at: StrictStr = Field(alias="contractUpdatedAt")
     contract_expires_at: Optional[StrictStr] = Field(default=None, alias="contractExpiresAt")
     reason_for_accessing: Optional[StrictStr] = Field(default=None, alias="reasonForAccessing")
     guardian: ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardian
-    contract_uri: Optional[StrictStr] = Field(alias="contractUri")
-    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
+    contract_uri: StrictStr = Field(alias="contractUri")
+    terms_uri: StrictStr = Field(alias="termsUri")
     status: StrictStr
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     terms: StorageResolve200ResponseAnyOf1
@@ -49,8 +49,8 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
     @field_validator('status')
     def status_validate_enum(cls, value):
         """Validates the enum"""
-        if value not in set(['live', 'stale', 'withdrawn']):
-            raise ValueError("must be one of enum values ('live', 'stale', 'withdrawn')")
+        if value not in set(['live', 'consumed', 'withdrawn', 'needs_reconsent', 'suspended']):
+            raise ValueError("must be one of enum values ('live', 'consumed', 'withdrawn', 'needs_reconsent', 'suspended')")
         return value
 
     model_config = ConfigDict(
@@ -80,9 +80,8 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -111,45 +110,57 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if var_date (nullable) is None
-        # and model_fields_set contains the field
-        if self.var_date is None and "var_date" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credentials is None and "credentials" in self.model_fields_set and "credentials" not in excluded_fields:
+            _dict['credentials'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.personal is None and "personal" in self.model_fields_set and "personal" not in excluded_fields:
+            _dict['personal'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.var_date is None and "var_date" in self.model_fields_set and "var_date" not in excluded_fields:
             _dict['date'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if contract_updated_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set and "contract_updated_at" not in excluded_fields:
             _dict['contractUpdatedAt'] = None
 
-        # set to None if contract_expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_expires_at is None and "contract_expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_expires_at is None and "contract_expires_at" in self.model_fields_set and "contract_expires_at" not in excluded_fields:
             _dict['contractExpiresAt'] = None
 
-        # set to None if reason_for_accessing (nullable) is None
-        # and model_fields_set contains the field
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set and "reason_for_accessing" not in excluded_fields:
             _dict['reasonForAccessing'] = None
 
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian is None and "guardian" in self.model_fields_set and "guardian" not in excluded_fields:
+            _dict['guardian'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
             _dict['contractUri'] = None
 
-        # set to None if terms_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms_uri is None and "terms_uri" in self.model_fields_set and "terms_uri" not in excluded_fields:
             _dict['termsUri'] = None
 
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
+            _dict['terms'] = None
 
         return _dict
 

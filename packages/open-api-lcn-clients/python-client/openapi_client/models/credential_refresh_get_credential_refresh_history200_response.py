@@ -29,7 +29,7 @@ class CredentialRefreshGetCredentialRefreshHistory200Response(BaseModel):
     CredentialRefreshGetCredentialRefreshHistory200Response
     """ # noqa: E501
     records: List[CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner]
-    has_more: Optional[StrictBool] = Field(alias="hasMore")
+    has_more: StrictBool = Field(alias="hasMore")
     cursor: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["records", "hasMore", "cursor"]
@@ -61,9 +61,8 @@ class CredentialRefreshGetCredentialRefreshHistory200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,14 +85,16 @@ class CredentialRefreshGetCredentialRefreshHistory200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if has_more (nullable) is None
-        # and model_fields_set contains the field
-        if self.has_more is None and "has_more" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.records is None and "records" in self.model_fields_set and "records" not in excluded_fields:
+            _dict['records'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.has_more is None and "has_more" in self.model_fields_set and "has_more" not in excluded_fields:
             _dict['hasMore'] = None
 
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
 
         return _dict

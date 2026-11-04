@@ -27,8 +27,8 @@ class ContractsForwardContractRequestToProfileRequest(BaseModel):
     """
     ContractsForwardContractRequestToProfileRequest
     """ # noqa: E501
-    parent_profile_id: Optional[StrictStr] = Field(alias="parentProfileId")
-    target_profile_id: Optional[StrictStr] = Field(alias="targetProfileId")
+    parent_profile_id: StrictStr = Field(alias="parentProfileId")
+    target_profile_id: StrictStr = Field(alias="targetProfileId")
     contract_uri: Optional[StrictStr] = Field(default=None, alias="contractUri")
     __properties: ClassVar[List[str]] = ["parentProfileId", "targetProfileId", "contractUri"]
 
@@ -59,9 +59,8 @@ class ContractsForwardContractRequestToProfileRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -71,19 +70,16 @@ class ContractsForwardContractRequestToProfileRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if parent_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_profile_id is None and "parent_profile_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.parent_profile_id is None and "parent_profile_id" in self.model_fields_set and "parent_profile_id" not in excluded_fields:
             _dict['parentProfileId'] = None
 
-        # set to None if target_profile_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set and "target_profile_id" not in excluded_fields:
             _dict['targetProfileId'] = None
 
-        # set to None if contract_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
             _dict['contractUri'] = None
 
         return _dict

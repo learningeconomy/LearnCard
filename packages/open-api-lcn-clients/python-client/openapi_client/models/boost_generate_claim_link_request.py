@@ -29,7 +29,7 @@ class BoostGenerateClaimLinkRequest(BaseModel):
     """
     BoostGenerateClaimLinkRequest
     """ # noqa: E501
-    boost_uri: Optional[StrictStr] = Field(alias="boostUri")
+    boost_uri: StrictStr = Field(alias="boostUri")
     challenge: Optional[StrictStr] = None
     claim_link_sa: BoostGenerateClaimLinkRequestClaimLinkSA = Field(alias="claimLinkSA")
     options: Optional[BoostGenerateClaimLinkRequestOptions] = None
@@ -62,9 +62,8 @@ class BoostGenerateClaimLinkRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -80,15 +79,21 @@ class BoostGenerateClaimLinkRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of options
         if self.options:
             _dict['options'] = self.options.to_dict()
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
 
-        # set to None if challenge (nullable) is None
-        # and model_fields_set contains the field
-        if self.challenge is None and "challenge" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.challenge is None and "challenge" in self.model_fields_set and "challenge" not in excluded_fields:
             _dict['challenge'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_link_sa is None and "claim_link_sa" in self.model_fields_set and "claim_link_sa" not in excluded_fields:
+            _dict['claimLinkSA'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.options is None and "options" in self.model_fields_set and "options" not in excluded_fields:
+            _dict['options'] = None
 
         return _dict
 

@@ -17,7 +17,7 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractCon
     """ # noqa: E501
     required: StrictBool
     default_enabled: Optional[StrictBool] = Field(default=None, alias="defaultEnabled")
-    __properties: ClassVar[List[str]] = ["required", "defaultEnabled"]
+    reason: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["required", "defaultEnabled", "reason"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -58,9 +59,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractCon
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,6 +70,18 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractCon
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.required is None and "required" in self.model_fields_set and "required" not in excluded_fields:
+            _dict['required'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.default_enabled is None and "default_enabled" in self.model_fields_set and "default_enabled" not in excluded_fields:
+            _dict['defaultEnabled'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
+            _dict['reason'] = None
+
         return _dict
 
     @classmethod
@@ -83,7 +95,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerContractCon
 
         _values = {
             "required": obj.get("required"),
-            "defaultEnabled": obj.get("defaultEnabled")
+            "defaultEnabled": obj.get("defaultEnabled"),
+            "reason": obj.get("reason")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

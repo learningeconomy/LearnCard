@@ -61,9 +61,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCr
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,15 +85,17 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCr
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if share_all (nullable) is None
-        # and model_fields_set contains the field
-        if self.share_all is None and "share_all" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.share_all is None and "share_all" in self.model_fields_set and "share_all" not in excluded_fields:
             _dict['shareAll'] = None
 
-        # set to None if sharing (nullable) is None
-        # and model_fields_set contains the field
-        if self.sharing is None and "sharing" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.sharing is None and "sharing" in self.model_fields_set and "sharing" not in excluded_fields:
             _dict['sharing'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.categories is None and "categories" in self.model_fields_set and "categories" not in excluded_fields:
+            _dict['categories'] = None
 
         return _dict
 

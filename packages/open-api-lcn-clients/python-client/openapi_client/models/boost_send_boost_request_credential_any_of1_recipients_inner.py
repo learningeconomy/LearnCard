@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.boost_send_boost_request_credential_any_of1_recipients_inner_header import BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInner(BaseModel):
     BoostSendBoostRequestCredentialAnyOf1RecipientsInner
     """ # noqa: E501
     header: BoostSendBoostRequestCredentialAnyOf1RecipientsInnerHeader
-    encrypted_key: Optional[StrictStr]
+    encrypted_key: StrictStr
     __properties: ClassVar[List[str]] = ["header", "encrypted_key"]
 
     model_config = ConfigDict(
@@ -59,9 +59,8 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,9 +73,12 @@ class BoostSendBoostRequestCredentialAnyOf1RecipientsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of header
         if self.header:
             _dict['header'] = self.header.to_dict()
-        # set to None if encrypted_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.encrypted_key is None and "encrypted_key" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.header is None and "header" in self.model_fields_set and "header" not in excluded_fields:
+            _dict['header'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.encrypted_key is None and "encrypted_key" in self.model_fields_set and "encrypted_key" not in excluded_fields:
             _dict['encrypted_key'] = None
 
         return _dict

@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_statement import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement
+from openapi_client.models.boost_search_skills_available_for_boost_request_query_any_of_or_inner_id import BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data_permissions import ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,8 +29,8 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
     """
     ClaimHookGetClaimHooksForBoostRequestQueryData
     """ # noqa: E501
-    claim_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="claimUri")
-    target_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement] = Field(default=None, alias="targetUri")
+    claim_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="claimUri")
+    target_uri: Optional[BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId] = Field(default=None, alias="targetUri")
     permissions: Optional[ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions] = None
     __properties: ClassVar[List[str]] = ["claimUri", "targetUri", "permissions"]
 
@@ -61,9 +61,8 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,6 +81,18 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of permissions
         if self.permissions:
             _dict['permissions'] = self.permissions.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.claim_uri is None and "claim_uri" in self.model_fields_set and "claim_uri" not in excluded_fields:
+            _dict['claimUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.target_uri is None and "target_uri" in self.model_fields_set and "target_uri" not in excluded_fields:
+            _dict['targetUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.permissions is None and "permissions" in self.model_fields_set and "permissions" not in excluded_fields:
+            _dict['permissions'] = None
+
         return _dict
 
     @classmethod
@@ -94,8 +105,8 @@ class ClaimHookGetClaimHooksForBoostRequestQueryData(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "claimUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["claimUri"]) if obj.get("claimUri") is not None else None,
-            "targetUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.from_dict(obj["targetUri"]) if obj.get("targetUri") is not None else None,
+            "claimUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["claimUri"]) if obj.get("claimUri") is not None else None,
+            "targetUri": BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.from_dict(obj["targetUri"]) if obj.get("targetUri") is not None else None,
             "permissions": ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions.from_dict(obj["permissions"]) if obj.get("permissions") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

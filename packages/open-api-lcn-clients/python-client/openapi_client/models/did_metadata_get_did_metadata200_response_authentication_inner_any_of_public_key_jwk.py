@@ -62,9 +62,8 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOfPublicKeyJwk(B
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,6 +73,30 @@ class DidMetadataGetDidMetadata200ResponseAuthenticationInnerAnyOfPublicKeyJwk(B
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.kty is None and "kty" in self.model_fields_set and "kty" not in excluded_fields:
+            _dict['kty'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.crv is None and "crv" in self.model_fields_set and "crv" not in excluded_fields:
+            _dict['crv'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.x is None and "x" in self.model_fields_set and "x" not in excluded_fields:
+            _dict['x'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.y is None and "y" in self.model_fields_set and "y" not in excluded_fields:
+            _dict['y'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.n is None and "n" in self.model_fields_set and "n" not in excluded_fields:
+            _dict['n'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.d is None and "d" in self.model_fields_set and "d" not in excluded_fields:
+            _dict['d'] = None
+
         return _dict
 
     @classmethod

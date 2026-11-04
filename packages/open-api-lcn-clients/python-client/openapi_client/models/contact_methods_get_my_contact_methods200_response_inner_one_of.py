@@ -30,11 +30,11 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf(BaseModel):
     """ # noqa: E501
     type: StrictStr
     value: Annotated[str, Field(strict=True)]
-    id: Optional[StrictStr]
-    is_verified: Optional[StrictBool] = Field(alias="isVerified")
+    id: StrictStr
+    is_verified: StrictBool = Field(alias="isVerified")
     verified_at: Optional[StrictStr] = Field(default=None, alias="verifiedAt")
-    is_primary: Optional[StrictBool] = Field(alias="isPrimary")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    is_primary: StrictBool = Field(alias="isPrimary")
+    created_at: StrictStr = Field(alias="createdAt")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["type", "value", "id", "isVerified", "verifiedAt", "isPrimary", "createdAt"]
 
@@ -48,8 +48,8 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf(BaseModel):
     @field_validator('value', mode="before")
     def value_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -79,9 +79,8 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -98,29 +97,32 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.value is None and "value" in self.model_fields_set and "value" not in excluded_fields:
+            _dict['value'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if is_verified (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_verified is None and "is_verified" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_verified is None and "is_verified" in self.model_fields_set and "is_verified" not in excluded_fields:
             _dict['isVerified'] = None
 
-        # set to None if verified_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.verified_at is None and "verified_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.verified_at is None and "verified_at" in self.model_fields_set and "verified_at" not in excluded_fields:
             _dict['verifiedAt'] = None
 
-        # set to None if is_primary (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_primary is None and "is_primary" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_primary is None and "is_primary" in self.model_fields_set and "is_primary" not in excluded_fields:
             _dict['isPrimary'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
         return _dict

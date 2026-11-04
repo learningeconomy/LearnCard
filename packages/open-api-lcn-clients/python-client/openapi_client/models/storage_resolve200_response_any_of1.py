@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.storage_resolve200_response_any_of1_read import StorageResolve200ResponseAnyOf1Read
+from openapi_client.models.credential_get_holder_export_metadata200_response_consent_records_inner_transactions_inner_terms_read import CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
 from openapi_client.models.storage_resolve200_response_any_of1_write import StorageResolve200ResponseAnyOf1Write
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
     """
     StorageResolve200ResponseAnyOf1
     """ # noqa: E501
-    read: StorageResolve200ResponseAnyOf1Read
+    read: CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead
     write: StorageResolve200ResponseAnyOf1Write
     denied_writers: Optional[List[StrictStr]] = Field(default=None, alias="deniedWriters")
     additional_properties: Dict[str, Any] = {}
@@ -62,9 +62,8 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,6 +86,18 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.read is None and "read" in self.model_fields_set and "read" not in excluded_fields:
+            _dict['read'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.write is None and "write" in self.model_fields_set and "write" not in excluded_fields:
+            _dict['write'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.denied_writers is None and "denied_writers" in self.model_fields_set and "denied_writers" not in excluded_fields:
+            _dict['deniedWriters'] = None
+
         return _dict
 
     @classmethod
@@ -99,7 +110,7 @@ class StorageResolve200ResponseAnyOf1(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "read": StorageResolve200ResponseAnyOf1Read.from_dict(obj["read"]) if obj.get("read") is not None else None,
+            "read": CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.from_dict(obj["read"]) if obj.get("read") is not None else None,
             "write": StorageResolve200ResponseAnyOf1Write.from_dict(obj["write"]) if obj.get("write") is not None else None,
             "deniedWriters": obj.get("deniedWriters")
         }

@@ -20,7 +20,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
-from openapi_client.models.boost_create_boost_request_credential_any_of import BoostCreateBoostRequestCredentialAnyOf
+from openapi_client.models.boost_send_request_template_credential_any_of1 import BoostSendRequestTemplateCredentialAnyOf1
 from openapi_client.models.credential_refresh_publish_credential_refresh_request_one_of1_signing_authority import CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
@@ -35,7 +35,7 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
     update_summary: Optional[StrictStr] = Field(default=None, alias="updateSummary")
     idempotency_key: Optional[StrictStr] = Field(default=None, alias="idempotencyKey")
     mode: StrictStr
-    credential: BoostCreateBoostRequestCredentialAnyOf
+    credential: BoostSendRequestTemplateCredentialAnyOf1
     signing_authority: CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority = Field(alias="signingAuthority")
     __properties: ClassVar[List[str]] = ["refreshId", "notifyHolder", "updateSummary", "idempotencyKey", "mode", "credential", "signingAuthority"]
 
@@ -74,9 +74,8 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -92,20 +91,33 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signing_authority
         if self.signing_authority:
             _dict['signingAuthority'] = self.signing_authority.to_dict()
-        # set to None if notify_holder (nullable) is None
-        # and model_fields_set contains the field
-        if self.notify_holder is None and "notify_holder" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
+            _dict['refreshId'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.notify_holder is None and "notify_holder" in self.model_fields_set and "notify_holder" not in excluded_fields:
             _dict['notifyHolder'] = None
 
-        # set to None if update_summary (nullable) is None
-        # and model_fields_set contains the field
-        if self.update_summary is None and "update_summary" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.update_summary is None and "update_summary" in self.model_fields_set and "update_summary" not in excluded_fields:
             _dict['updateSummary'] = None
 
-        # set to None if idempotency_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set and "idempotency_key" not in excluded_fields:
             _dict['idempotencyKey'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.mode is None and "mode" in self.model_fields_set and "mode" not in excluded_fields:
+            _dict['mode'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
+            _dict['credential'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
+            _dict['signingAuthority'] = None
 
         return _dict
 
@@ -128,7 +140,7 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf1(BaseModel):
             "updateSummary": obj.get("updateSummary"),
             "idempotencyKey": obj.get("idempotencyKey"),
             "mode": obj.get("mode"),
-            "credential": BoostCreateBoostRequestCredentialAnyOf.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
+            "credential": BoostSendRequestTemplateCredentialAnyOf1.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "signingAuthority": CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.

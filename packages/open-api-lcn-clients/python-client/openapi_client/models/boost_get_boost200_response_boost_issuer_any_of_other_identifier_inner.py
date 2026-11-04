@@ -18,9 +18,9 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_address_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
-from openapi_client.models.boost_send_request_template_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type import BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
+from openapi_client.models.boost_send_boost_request_credential_any_of_issuer_any_of_other_identifier_inner_identifier_type import BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,8 +30,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner(BaseModel):
     BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner
     """ # noqa: E501
     type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType
-    identifier: Optional[StrictStr]
-    identifier_type: BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType = Field(alias="identifierType")
+    identifier: StrictStr
+    identifier_type: BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType = Field(alias="identifierType")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["type", "identifier", "identifierType"]
 
@@ -62,9 +62,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,10 +86,17 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if identifier (nullable) is None
-        # and model_fields_set contains the field
-        if self.identifier is None and "identifier" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.identifier is None and "identifier" in self.model_fields_set and "identifier" not in excluded_fields:
             _dict['identifier'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.identifier_type is None and "identifier_type" in self.model_fields_set and "identifier_type" not in excluded_fields:
+            _dict['identifierType'] = None
 
         return _dict
 
@@ -106,7 +112,7 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner(BaseModel):
         _values = {
             "type": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfAddressType.from_dict(obj["type"]) if obj.get("type") is not None else None,
             "identifier": obj.get("identifier"),
-            "identifierType": BoostSendRequestTemplateCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.from_dict(obj["identifierType"]) if obj.get("identifierType") is not None else None
+            "identifierType": BoostSendBoostRequestCredentialAnyOfIssuerAnyOfOtherIdentifierInnerIdentifierType.from_dict(obj["identifierType"]) if obj.get("identifierType") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

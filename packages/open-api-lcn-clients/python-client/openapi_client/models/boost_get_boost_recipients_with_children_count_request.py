@@ -19,9 +19,9 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.boost_count_boosts_request_query import BoostCountBoostsRequestQuery
 from openapi_client.models.boost_get_boost_recipients_with_children_count_request_number_of_generations import BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations
-from openapi_client.models.boost_get_connected_boost_recipients_request_query import BoostGetConnectedBoostRecipientsRequestQuery
+from openapi_client.models.boost_get_boosts_request_query import BoostGetBoostsRequestQuery
+from openapi_client.models.boost_get_paginated_boost_recipients_request_query import BoostGetPaginatedBoostRecipientsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,11 +30,11 @@ class BoostGetBoostRecipientsWithChildrenCountRequest(BaseModel):
     """
     BoostGetBoostRecipientsWithChildrenCountRequest
     """ # noqa: E501
-    uri: Optional[StrictStr]
+    uri: StrictStr
     include_unaccepted_boosts: Optional[StrictBool] = Field(default=True, alias="includeUnacceptedBoosts")
     number_of_generations: Optional[BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations] = Field(default=None, alias="numberOfGenerations")
-    boost_query: Optional[BoostCountBoostsRequestQuery] = Field(default=None, alias="boostQuery")
-    profile_query: Optional[BoostGetConnectedBoostRecipientsRequestQuery] = Field(default=None, alias="profileQuery")
+    boost_query: Optional[BoostGetBoostsRequestQuery] = Field(default=None, alias="boostQuery")
+    profile_query: Optional[BoostGetPaginatedBoostRecipientsRequestQuery] = Field(default=None, alias="profileQuery")
     __properties: ClassVar[List[str]] = ["uri", "includeUnacceptedBoosts", "numberOfGenerations", "boostQuery", "profileQuery"]
 
     model_config = ConfigDict(
@@ -64,9 +64,8 @@ class BoostGetBoostRecipientsWithChildrenCountRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -85,10 +84,25 @@ class BoostGetBoostRecipientsWithChildrenCountRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of profile_query
         if self.profile_query:
             _dict['profileQuery'] = self.profile_query.to_dict()
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.include_unaccepted_boosts is None and "include_unaccepted_boosts" in self.model_fields_set and "include_unaccepted_boosts" not in excluded_fields:
+            _dict['includeUnacceptedBoosts'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.number_of_generations is None and "number_of_generations" in self.model_fields_set and "number_of_generations" not in excluded_fields:
+            _dict['numberOfGenerations'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_query is None and "boost_query" in self.model_fields_set and "boost_query" not in excluded_fields:
+            _dict['boostQuery'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.profile_query is None and "profile_query" in self.model_fields_set and "profile_query" not in excluded_fields:
+            _dict['profileQuery'] = None
 
         return _dict
 
@@ -105,8 +119,8 @@ class BoostGetBoostRecipientsWithChildrenCountRequest(BaseModel):
             "uri": obj.get("uri"),
             "includeUnacceptedBoosts": obj.get("includeUnacceptedBoosts") if obj.get("includeUnacceptedBoosts") is not None else True,
             "numberOfGenerations": BoostGetBoostRecipientsWithChildrenCountRequestNumberOfGenerations.from_dict(obj["numberOfGenerations"]) if obj.get("numberOfGenerations") is not None else None,
-            "boostQuery": BoostCountBoostsRequestQuery.from_dict(obj["boostQuery"]) if obj.get("boostQuery") is not None else None,
-            "profileQuery": BoostGetConnectedBoostRecipientsRequestQuery.from_dict(obj["profileQuery"]) if obj.get("profileQuery") is not None else None
+            "boostQuery": BoostGetBoostsRequestQuery.from_dict(obj["boostQuery"]) if obj.get("boostQuery") is not None else None,
+            "profileQuery": BoostGetPaginatedBoostRecipientsRequestQuery.from_dict(obj["profileQuery"]) if obj.get("profileQuery") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

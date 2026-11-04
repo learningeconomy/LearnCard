@@ -59,9 +59,8 @@ class SkillsGetSkillPath200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -83,6 +82,10 @@ class SkillsGetSkillPath200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.path is None and "path" in self.model_fields_set and "path" not in excluded_fields:
+            _dict['path'] = None
 
         return _dict
 

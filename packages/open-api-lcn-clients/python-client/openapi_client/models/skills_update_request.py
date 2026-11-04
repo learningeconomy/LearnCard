@@ -27,7 +27,7 @@ class SkillsUpdateRequest(BaseModel):
     """
     SkillsUpdateRequest
     """ # noqa: E501
-    framework_id: Optional[StrictStr] = Field(alias="frameworkId")
+    framework_id: StrictStr = Field(alias="frameworkId")
     statement: Optional[StrictStr] = None
     description: Optional[StrictStr] = None
     code: Optional[StrictStr] = None
@@ -73,9 +73,8 @@ class SkillsUpdateRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -85,35 +84,33 @@ class SkillsUpdateRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if framework_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.framework_id is None and "framework_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.framework_id is None and "framework_id" in self.model_fields_set and "framework_id" not in excluded_fields:
             _dict['frameworkId'] = None
 
-        # set to None if statement (nullable) is None
-        # and model_fields_set contains the field
-        if self.statement is None and "statement" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.statement is None and "statement" in self.model_fields_set and "statement" not in excluded_fields:
             _dict['statement'] = None
 
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
             _dict['description'] = None
 
-        # set to None if code (nullable) is None
-        # and model_fields_set contains the field
-        if self.code is None and "code" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.code is None and "code" in self.model_fields_set and "code" not in excluded_fields:
             _dict['code'] = None
 
-        # set to None if icon (nullable) is None
-        # and model_fields_set contains the field
-        if self.icon is None and "icon" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.icon is None and "icon" in self.model_fields_set and "icon" not in excluded_fields:
             _dict['icon'] = None
 
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
             _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
 
         return _dict
 

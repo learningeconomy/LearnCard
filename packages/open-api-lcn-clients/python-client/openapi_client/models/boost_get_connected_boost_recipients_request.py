@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictFloat, StrictInt, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional, Union
-from openapi_client.models.boost_get_connected_boost_recipients_request_query import BoostGetConnectedBoostRecipientsRequestQuery
+from openapi_client.models.boost_get_paginated_boost_recipients_request_query import BoostGetPaginatedBoostRecipientsRequestQuery
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +32,7 @@ class BoostGetConnectedBoostRecipientsRequest(BaseModel):
     cursor: Optional[StrictStr] = None
     sort: Optional[StrictStr] = None
     include_unaccepted_boosts: Optional[StrictBool] = Field(default=True, alias="includeUnacceptedBoosts")
-    query: Optional[BoostGetConnectedBoostRecipientsRequestQuery] = None
+    query: Optional[BoostGetPaginatedBoostRecipientsRequestQuery] = None
     __properties: ClassVar[List[str]] = ["limit", "cursor", "sort", "includeUnacceptedBoosts", "query"]
 
     model_config = ConfigDict(
@@ -62,9 +62,8 @@ class BoostGetConnectedBoostRecipientsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -77,15 +76,25 @@ class BoostGetConnectedBoostRecipientsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # set to None if cursor (nullable) is None
-        # and model_fields_set contains the field
-        if self.cursor is None and "cursor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
+            _dict['limit'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
 
-        # set to None if sort (nullable) is None
-        # and model_fields_set contains the field
-        if self.sort is None and "sort" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.sort is None and "sort" in self.model_fields_set and "sort" not in excluded_fields:
             _dict['sort'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.include_unaccepted_boosts is None and "include_unaccepted_boosts" in self.model_fields_set and "include_unaccepted_boosts" not in excluded_fields:
+            _dict['includeUnacceptedBoosts'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.query is None and "query" in self.model_fields_set and "query" not in excluded_fields:
+            _dict['query'] = None
 
         return _dict
 
@@ -103,7 +112,7 @@ class BoostGetConnectedBoostRecipientsRequest(BaseModel):
             "cursor": obj.get("cursor"),
             "sort": obj.get("sort"),
             "includeUnacceptedBoosts": obj.get("includeUnacceptedBoosts") if obj.get("includeUnacceptedBoosts") is not None else True,
-            "query": BoostGetConnectedBoostRecipientsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
+            "query": BoostGetPaginatedBoostRecipientsRequestQuery.from_dict(obj["query"]) if obj.get("query") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

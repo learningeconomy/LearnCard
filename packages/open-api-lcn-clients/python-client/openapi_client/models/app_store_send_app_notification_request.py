@@ -27,7 +27,7 @@ class AppStoreSendAppNotificationRequest(BaseModel):
     """
     AppStoreSendAppNotificationRequest
     """ # noqa: E501
-    recipient: Optional[StrictStr]
+    recipient: StrictStr
     title: Optional[StrictStr] = None
     body: Optional[StrictStr] = None
     action_path: Optional[StrictStr] = Field(default=None, alias="actionPath")
@@ -72,9 +72,8 @@ class AppStoreSendAppNotificationRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -84,30 +83,29 @@ class AppStoreSendAppNotificationRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if recipient (nullable) is None
-        # and model_fields_set contains the field
-        if self.recipient is None and "recipient" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.recipient is None and "recipient" in self.model_fields_set and "recipient" not in excluded_fields:
             _dict['recipient'] = None
 
-        # set to None if title (nullable) is None
-        # and model_fields_set contains the field
-        if self.title is None and "title" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.title is None and "title" in self.model_fields_set and "title" not in excluded_fields:
             _dict['title'] = None
 
-        # set to None if body (nullable) is None
-        # and model_fields_set contains the field
-        if self.body is None and "body" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.body is None and "body" in self.model_fields_set and "body" not in excluded_fields:
             _dict['body'] = None
 
-        # set to None if action_path (nullable) is None
-        # and model_fields_set contains the field
-        if self.action_path is None and "action_path" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.action_path is None and "action_path" in self.model_fields_set and "action_path" not in excluded_fields:
             _dict['actionPath'] = None
 
-        # set to None if category (nullable) is None
-        # and model_fields_set contains the field
-        if self.category is None and "category" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
             _dict['category'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.priority is None and "priority" in self.model_fields_set and "priority" not in excluded_fields:
+            _dict['priority'] = None
 
         return _dict
 

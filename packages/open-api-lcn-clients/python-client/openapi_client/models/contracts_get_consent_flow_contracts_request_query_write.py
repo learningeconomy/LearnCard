@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_personal_value import ContractsGetConsentFlowContractsRequestQueryReadPersonalValue
-from openapi_client.models.contracts_get_consent_flow_contracts_request_query_write_credentials import ContractsGetConsentFlowContractsRequestQueryWriteCredentials
+from openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials import ContractsGetConsentFlowContractsRequestQueryReadCredentials
+from openapi_client.models.contracts_get_consent_flow_contracts_request_query_read_credentials_categories_value import ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,8 +29,8 @@ class ContractsGetConsentFlowContractsRequestQueryWrite(BaseModel):
     """
     ContractsGetConsentFlowContractsRequestQueryWrite
     """ # noqa: E501
-    credentials: Optional[ContractsGetConsentFlowContractsRequestQueryWriteCredentials] = None
-    personal: Optional[Dict[str, ContractsGetConsentFlowContractsRequestQueryReadPersonalValue]] = None
+    credentials: Optional[ContractsGetConsentFlowContractsRequestQueryReadCredentials] = None
+    personal: Optional[Dict[str, ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["credentials", "personal"]
 
     model_config = ConfigDict(
@@ -60,9 +60,8 @@ class ContractsGetConsentFlowContractsRequestQueryWrite(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -81,6 +80,14 @@ class ContractsGetConsentFlowContractsRequestQueryWrite(BaseModel):
             for _key_personal in self.personal:
                 _field_dict[_key_personal] = self.personal[_key_personal].to_dict() if self.personal[_key_personal] is not None else None
             _dict['personal'] = _field_dict
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credentials is None and "credentials" in self.model_fields_set and "credentials" not in excluded_fields:
+            _dict['credentials'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.personal is None and "personal" in self.model_fields_set and "personal" not in excluded_fields:
+            _dict['personal'] = None
+
         return _dict
 
     @classmethod
@@ -93,9 +100,9 @@ class ContractsGetConsentFlowContractsRequestQueryWrite(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "credentials": ContractsGetConsentFlowContractsRequestQueryWriteCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
+            "credentials": ContractsGetConsentFlowContractsRequestQueryReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": dict(
-                (_k, ContractsGetConsentFlowContractsRequestQueryReadPersonalValue.from_dict(_v))
+                (_k, ContractsGetConsentFlowContractsRequestQueryReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["personal"].items()
             )
             if obj.get("personal") is not None

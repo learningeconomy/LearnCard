@@ -18,9 +18,9 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
-from openapi_client.models.share_links_update_request_envelope import ShareLinksUpdateRequestEnvelope
+from openapi_client.models.share_links_create_request_envelope import ShareLinksCreateRequestEnvelope
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,10 +29,10 @@ class PublicShareLinksContent200Response(BaseModel):
     """
     PublicShareLinksContent200Response
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     content_version: Annotated[int, Field(le=2147483647, strict=True, ge=1)] = Field(alias="contentVersion")
-    envelope: ShareLinksUpdateRequestEnvelope
-    content_url: Optional[StrictStr] = Field(alias="contentUrl")
+    envelope: ShareLinksCreateRequestEnvelope
+    content_url: StrictStr = Field(alias="contentUrl")
     receipt: Annotated[str, Field(min_length=22, strict=True, max_length=128)]
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["id", "contentVersion", "envelope", "contentUrl", "receipt"]
@@ -71,9 +71,8 @@ class PublicShareLinksContent200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -93,15 +92,25 @@ class PublicShareLinksContent200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if content_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.content_url is None and "content_url" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.content_version is None and "content_version" in self.model_fields_set and "content_version" not in excluded_fields:
+            _dict['contentVersion'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.envelope is None and "envelope" in self.model_fields_set and "envelope" not in excluded_fields:
+            _dict['envelope'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.content_url is None and "content_url" in self.model_fields_set and "content_url" not in excluded_fields:
             _dict['contentUrl'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.receipt is None and "receipt" in self.model_fields_set and "receipt" not in excluded_fields:
+            _dict['receipt'] = None
 
         return _dict
 
@@ -117,7 +126,7 @@ class PublicShareLinksContent200Response(BaseModel):
         _values = {
             "id": obj.get("id"),
             "contentVersion": obj.get("contentVersion"),
-            "envelope": ShareLinksUpdateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
+            "envelope": ShareLinksCreateRequestEnvelope.from_dict(obj["envelope"]) if obj.get("envelope") is not None else None,
             "contentUrl": obj.get("contentUrl"),
             "receipt": obj.get("receipt")
         }

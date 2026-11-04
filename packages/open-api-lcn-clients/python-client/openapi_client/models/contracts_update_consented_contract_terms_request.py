@@ -19,7 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_update_consented_contract_terms_request_terms import ContractsUpdateConsentedContractTermsRequestTerms
+from typing_extensions import Annotated
+from openapi_client.models.contracts_consent_to_contract_request_terms import ContractsConsentToContractRequestTerms
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -28,11 +29,13 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
     """
     ContractsUpdateConsentedContractTermsRequest
     """ # noqa: E501
-    uri: Optional[StrictStr]
-    terms: ContractsUpdateConsentedContractTermsRequestTerms
+    uri: StrictStr
+    terms: ContractsConsentToContractRequestTerms
+    accept_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, gt=0)]] = Field(default=None, alias="acceptVersion")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    __properties: ClassVar[List[str]] = ["uri", "terms", "expiresAt", "oneTime"]
+    audience_version: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=0)]] = Field(default=None, alias="audienceVersion")
+    __properties: ClassVar[List[str]] = ["uri", "terms", "acceptVersion", "expiresAt", "oneTime", "audienceVersion"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -61,9 +64,8 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,20 +78,29 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
-        # set to None if uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.uri is None and "uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
             _dict['uri'] = None
 
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
+            _dict['terms'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.accept_version is None and "accept_version" in self.model_fields_set and "accept_version" not in excluded_fields:
+            _dict['acceptVersion'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
 
-        # set to None if one_time (nullable) is None
-        # and model_fields_set contains the field
-        if self.one_time is None and "one_time" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.one_time is None and "one_time" in self.model_fields_set and "one_time" not in excluded_fields:
             _dict['oneTime'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.audience_version is None and "audience_version" in self.model_fields_set and "audience_version" not in excluded_fields:
+            _dict['audienceVersion'] = None
 
         return _dict
 
@@ -104,9 +115,11 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
 
         _values = {
             "uri": obj.get("uri"),
-            "terms": ContractsUpdateConsentedContractTermsRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "terms": ContractsConsentToContractRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
+            "acceptVersion": obj.get("acceptVersion"),
             "expiresAt": obj.get("expiresAt"),
-            "oneTime": obj.get("oneTime")
+            "oneTime": obj.get("oneTime"),
+            "audienceVersion": obj.get("audienceVersion")
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

@@ -44,8 +44,8 @@ class InboxIssueRequestConfiguration(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -75,9 +75,8 @@ class InboxIssueRequestConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -93,6 +92,30 @@ class InboxIssueRequestConfiguration(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of delivery
         if self.delivery:
             _dict['delivery'] = self.delivery.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
+            _dict['guardianEmail'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
+            _dict['signingAuthority'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
+            _dict['webhookUrl'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
+            _dict['expiresInDays'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template_data is None and "template_data" in self.model_fields_set and "template_data" not in excluded_fields:
+            _dict['templateData'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.delivery is None and "delivery" in self.model_fields_set and "delivery" not in excluded_fields:
+            _dict['delivery'] = None
+
         return _dict
 
     @classmethod

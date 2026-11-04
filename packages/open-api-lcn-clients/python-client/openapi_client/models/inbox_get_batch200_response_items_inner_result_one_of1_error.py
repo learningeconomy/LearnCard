@@ -27,8 +27,8 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf1Error(BaseModel):
     """
     InboxGetBatch200ResponseItemsInnerResultOneOf1Error
     """ # noqa: E501
-    code: Optional[StrictStr]
-    message: Optional[StrictStr]
+    code: StrictStr
+    message: StrictStr
     reason: Optional[StrictStr] = None
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["code", "message", "reason"]
@@ -70,9 +70,8 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf1Error(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -89,15 +88,17 @@ class InboxGetBatch200ResponseItemsInnerResultOneOf1Error(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if code (nullable) is None
-        # and model_fields_set contains the field
-        if self.code is None and "code" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.code is None and "code" in self.model_fields_set and "code" not in excluded_fields:
             _dict['code'] = None
 
-        # set to None if message (nullable) is None
-        # and model_fields_set contains the field
-        if self.message is None and "message" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
             _dict['message'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
+            _dict['reason'] = None
 
         return _dict
 

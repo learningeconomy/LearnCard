@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from openapi_client.models.inbox_get_batch200_response_items_inner import InboxGetBatch200ResponseItemsInner
 from openapi_client.models.inbox_get_batch200_response_summary import InboxGetBatch200ResponseSummary
 from typing import Optional, Set
@@ -29,8 +29,8 @@ class InboxGetBatch200Response(BaseModel):
     """
     InboxGetBatch200Response
     """ # noqa: E501
-    batch_id: Optional[StrictStr] = Field(alias="batchId")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    batch_id: StrictStr = Field(alias="batchId")
+    created_at: StrictStr = Field(alias="createdAt")
     done: StrictBool = Field(description="True when no queued or processing items remain, including unconfirmed outcomes.")
     status: StrictStr
     items: List[InboxGetBatch200ResponseItemsInner]
@@ -72,9 +72,8 @@ class InboxGetBatch200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -100,15 +99,29 @@ class InboxGetBatch200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if batch_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.batch_id is None and "batch_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.batch_id is None and "batch_id" in self.model_fields_set and "batch_id" not in excluded_fields:
             _dict['batchId'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.done is None and "done" in self.model_fields_set and "done" not in excluded_fields:
+            _dict['done'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.items is None and "items" in self.model_fields_set and "items" not in excluded_fields:
+            _dict['items'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.summary is None and "summary" in self.model_fields_set and "summary" not in excluded_fields:
+            _dict['summary'] = None
 
         return _dict
 

@@ -29,7 +29,7 @@ class BoostCreateChildBoostRequest(BaseModel):
     """
     BoostCreateChildBoostRequest
     """ # noqa: E501
-    parent_uri: Optional[StrictStr] = Field(alias="parentUri")
+    parent_uri: StrictStr = Field(alias="parentUri")
     boost: BoostCreateChildBoostRequestBoost
     skills: Optional[List[BoostSendRequestTemplateSkillsInner]] = None
     __properties: ClassVar[List[str]] = ["parentUri", "boost", "skills"]
@@ -61,9 +61,8 @@ class BoostCreateChildBoostRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,10 +81,17 @@ class BoostCreateChildBoostRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # set to None if parent_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.parent_uri is None and "parent_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.parent_uri is None and "parent_uri" in self.model_fields_set and "parent_uri" not in excluded_fields:
             _dict['parentUri'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost is None and "boost" in self.model_fields_set and "boost" not in excluded_fields:
+            _dict['boost'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.skills is None and "skills" in self.model_fields_set and "skills" not in excluded_fields:
+            _dict['skills'] = None
 
         return _dict
 

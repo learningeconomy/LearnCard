@@ -27,7 +27,7 @@ class ContractsConsentToContract200Response(BaseModel):
     """
     ContractsConsentToContract200Response
     """ # noqa: E501
-    terms_uri: Optional[StrictStr] = Field(alias="termsUri")
+    terms_uri: StrictStr = Field(alias="termsUri")
     redirect_url: Optional[StrictStr] = Field(default=None, alias="redirectUrl")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["termsUri", "redirectUrl"]
@@ -59,9 +59,8 @@ class ContractsConsentToContract200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -78,14 +77,12 @@ class ContractsConsentToContract200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if terms_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.terms_uri is None and "terms_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.terms_uri is None and "terms_uri" in self.model_fields_set and "terms_uri" not in excluded_fields:
             _dict['termsUri'] = None
 
-        # set to None if redirect_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.redirect_url is None and "redirect_url" in self.model_fields_set and "redirect_url" not in excluded_fields:
             _dict['redirectUrl'] = None
 
         return _dict

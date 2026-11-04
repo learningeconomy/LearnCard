@@ -37,8 +37,8 @@ class InboxSendGuardianApprovalEmailRequest(BaseModel):
     @field_validator('guardian_email', mode="before")
     def guardian_email_validate_regular_expression(cls, value):
         """Validates the regular expression"""
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -68,9 +68,8 @@ class InboxSendGuardianApprovalEmailRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -83,6 +82,18 @@ class InboxSendGuardianApprovalEmailRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of template
         if self.template:
             _dict['template'] = self.template.to_dict()
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
+            _dict['guardianEmail'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.ttl_hours is None and "ttl_hours" in self.model_fields_set and "ttl_hours" not in excluded_fields:
+            _dict['ttlHours'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template is None and "template" in self.model_fields_set and "template" not in excluded_fields:
+            _dict['template'] = None
+
         return _dict
 
     @classmethod

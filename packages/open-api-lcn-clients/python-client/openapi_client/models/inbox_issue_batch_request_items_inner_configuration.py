@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.inbox_issue_batch_request_items_inner_configuration_delivery import InboxIssueBatchRequestItemsInnerConfigurationDelivery
-from openapi_client.models.inbox_issue_batch_request_items_inner_configuration_signing_authority import InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority
+from openapi_client.models.inbox_issue_request_configuration_signing_authority import InboxIssueRequestConfigurationSigningAuthority
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
     InboxIssueBatchRequestItemsInnerConfiguration
     """ # noqa: E501
     guardian_email: Optional[Annotated[str, Field(strict=True)]] = Field(default=None, description="Require approval from this guardian before the recipient can claim. Must differ from the recipient email.", alias="guardianEmail")
-    signing_authority: Optional[InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
+    signing_authority: Optional[InboxIssueRequestConfigurationSigningAuthority] = Field(default=None, alias="signingAuthority")
     webhook_url: Optional[StrictStr] = Field(default=None, description="The webhook URL to receive credential issuance events.", alias="webhookUrl")
     expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="How many days the encrypted inbox payload remains claimable. This does not change the credential validity period.", alias="expiresInDays")
     template_data: Optional[Dict[str, Any]] = Field(default=None, description="Template data to render into the boost credential template using Mustache syntax. Only used when boostUri is provided.", alias="templateData")
@@ -45,8 +45,8 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     model_config = ConfigDict(
@@ -76,9 +76,8 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -94,10 +93,33 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of delivery
         if self.delivery:
             _dict['delivery'] = self.delivery.to_dict()
-        # set to None if guardian_email (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_email is None and "guardian_email" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
             _dict['guardianEmail'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
+            _dict['signingAuthority'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
+            _dict['webhookUrl'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
+            _dict['expiresInDays'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.template_data is None and "template_data" in self.model_fields_set and "template_data" not in excluded_fields:
+            _dict['templateData'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.delivery is None and "delivery" in self.model_fields_set and "delivery" not in excluded_fields:
+            _dict['delivery'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
+            _dict['refresh'] = None
 
         return _dict
 
@@ -112,7 +134,7 @@ class InboxIssueBatchRequestItemsInnerConfiguration(BaseModel):
 
         _values = {
             "guardianEmail": obj.get("guardianEmail"),
-            "signingAuthority": InboxIssueBatchRequestItemsInnerConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
+            "signingAuthority": InboxIssueRequestConfigurationSigningAuthority.from_dict(obj["signingAuthority"]) if obj.get("signingAuthority") is not None else None,
             "webhookUrl": obj.get("webhookUrl"),
             "expiresInDays": obj.get("expiresInDays"),
             "templateData": obj.get("templateData"),

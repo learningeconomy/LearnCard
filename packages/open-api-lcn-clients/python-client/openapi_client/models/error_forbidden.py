@@ -61,9 +61,8 @@ class ErrorFORBIDDEN(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -85,6 +84,18 @@ class ErrorFORBIDDEN(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
+            _dict['message'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.code is None and "code" in self.model_fields_set and "code" not in excluded_fields:
+            _dict['code'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issues is None and "issues" in self.model_fields_set and "issues" not in excluded_fields:
+            _dict['issues'] = None
 
         return _dict
 

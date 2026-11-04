@@ -65,9 +65,8 @@ class BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -84,34 +83,32 @@ class BoostSendBoostRequestCredentialAnyOfEvidenceAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if name (nullable) is None
-        # and model_fields_set contains the field
-        if self.name is None and "name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
+            _dict['type'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
             _dict['name'] = None
 
-        # set to None if narrative (nullable) is None
-        # and model_fields_set contains the field
-        if self.narrative is None and "narrative" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.narrative is None and "narrative" in self.model_fields_set and "narrative" not in excluded_fields:
             _dict['narrative'] = None
 
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
             _dict['description'] = None
 
-        # set to None if genre (nullable) is None
-        # and model_fields_set contains the field
-        if self.genre is None and "genre" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.genre is None and "genre" in self.model_fields_set and "genre" not in excluded_fields:
             _dict['genre'] = None
 
-        # set to None if audience (nullable) is None
-        # and model_fields_set contains the field
-        if self.audience is None and "audience" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.audience is None and "audience" in self.model_fields_set and "audience" not in excluded_fields:
             _dict['audience'] = None
 
         return _dict

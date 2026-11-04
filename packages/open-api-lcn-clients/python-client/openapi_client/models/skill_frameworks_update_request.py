@@ -73,9 +73,8 @@ class SkillFrameworksUpdateRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -85,20 +84,29 @@ class SkillFrameworksUpdateRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if description (nullable) is None
-        # and model_fields_set contains the field
-        if self.description is None and "description" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
+            _dict['name'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
             _dict['description'] = None
 
-        # set to None if image (nullable) is None
-        # and model_fields_set contains the field
-        if self.image is None and "image" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
             _dict['image'] = None
 
-        # set to None if is_public (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_public is None and "is_public" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.source_uri is None and "source_uri" in self.model_fields_set and "source_uri" not in excluded_fields:
+            _dict['sourceURI'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_public is None and "is_public" in self.model_fields_set and "is_public" not in excluded_fields:
             _dict['isPublic'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
+            _dict['status'] = None
 
         return _dict
 

@@ -32,17 +32,17 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
     """ # noqa: E501
     refresh: Optional[InboxIssue200ResponseRefresh] = None
     refresh_id: Optional[StrictStr] = Field(default=None, alias="refreshId")
-    id: Optional[StrictStr]
-    is_signed: Optional[StrictBool] = Field(alias="isSigned")
+    id: StrictStr
+    is_signed: StrictBool = Field(alias="isSigned")
     current_status: StrictStr = Field(alias="currentStatus")
     is_accepted: Optional[StrictBool] = Field(default=None, alias="isAccepted")
-    expires_at: Optional[StrictStr] = Field(alias="expiresAt")
-    created_at: Optional[StrictStr] = Field(alias="createdAt")
+    expires_at: StrictStr = Field(alias="expiresAt")
+    created_at: StrictStr = Field(alias="createdAt")
     finalized_at: Optional[StrictStr] = Field(default=None, alias="finalizedAt")
     expired_at: Optional[StrictStr] = Field(default=None, alias="expiredAt")
     credential_name: Optional[StrictStr] = Field(default=None, alias="credentialName")
     achievement_type: Optional[StrictStr] = Field(default=None, alias="achievementType")
-    issuer_did: Optional[StrictStr] = Field(alias="issuerDid")
+    issuer_did: StrictStr = Field(alias="issuerDid")
     webhook_url: Optional[StrictStr] = Field(default=None, alias="webhookUrl")
     boost_uri: Optional[StrictStr] = Field(default=None, alias="boostUri")
     activity_id: Optional[StrictStr] = Field(default=None, alias="activityId")
@@ -68,8 +68,8 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         if value is None:
             return value
 
-        if isinstance(value, str) and not re.match(r"^(?!\.)(?!.*\.\.)([A-Za-z0-9_\'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
-            raise ValueError(r"must validate the regular expression /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
+        if isinstance(value, str) and not re.match(r"^(?:[A-Za-z0-9_\'+\-]+\.)*[A-Za-z0-9_\'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$", value):
+            raise ValueError(r"must validate the regular expression /^(?:[A-Za-z0-9_'+\-]+\.)*[A-Za-z0-9_'+\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/")
         return value
 
     @field_validator('guardian_status')
@@ -109,9 +109,8 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -134,89 +133,92 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if refresh_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.refresh_id is None and "refresh_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
+            _dict['refresh'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
             _dict['refreshId'] = None
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
             _dict['id'] = None
 
-        # set to None if is_signed (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_signed is None and "is_signed" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_signed is None and "is_signed" in self.model_fields_set and "is_signed" not in excluded_fields:
             _dict['isSigned'] = None
 
-        # set to None if is_accepted (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.current_status is None and "current_status" in self.model_fields_set and "current_status" not in excluded_fields:
+            _dict['currentStatus'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_accepted is None and "is_accepted" in self.model_fields_set and "is_accepted" not in excluded_fields:
             _dict['isAccepted'] = None
 
-        # set to None if expires_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expires_at is None and "expires_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
 
-        # set to None if created_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.created_at is None and "created_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # set to None if finalized_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.finalized_at is None and "finalized_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.finalized_at is None and "finalized_at" in self.model_fields_set and "finalized_at" not in excluded_fields:
             _dict['finalizedAt'] = None
 
-        # set to None if expired_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.expired_at is None and "expired_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.expired_at is None and "expired_at" in self.model_fields_set and "expired_at" not in excluded_fields:
             _dict['expiredAt'] = None
 
-        # set to None if credential_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.credential_name is None and "credential_name" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.credential_name is None and "credential_name" in self.model_fields_set and "credential_name" not in excluded_fields:
             _dict['credentialName'] = None
 
-        # set to None if achievement_type (nullable) is None
-        # and model_fields_set contains the field
-        if self.achievement_type is None and "achievement_type" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.achievement_type is None and "achievement_type" in self.model_fields_set and "achievement_type" not in excluded_fields:
             _dict['achievementType'] = None
 
-        # set to None if issuer_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.issuer_did is None and "issuer_did" in self.model_fields_set and "issuer_did" not in excluded_fields:
             _dict['issuerDid'] = None
 
-        # set to None if webhook_url (nullable) is None
-        # and model_fields_set contains the field
-        if self.webhook_url is None and "webhook_url" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
             _dict['webhookUrl'] = None
 
-        # set to None if boost_uri (nullable) is None
-        # and model_fields_set contains the field
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
             _dict['boostUri'] = None
 
-        # set to None if activity_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.activity_id is None and "activity_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.activity_id is None and "activity_id" in self.model_fields_set and "activity_id" not in excluded_fields:
             _dict['activityId'] = None
 
-        # set to None if integration_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.integration_id is None and "integration_id" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.integration_id is None and "integration_id" in self.model_fields_set and "integration_id" not in excluded_fields:
             _dict['integrationId'] = None
 
-        # set to None if guardian_approved_at (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_approved_at is None and "guardian_approved_at" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
+            _dict['signingAuthority'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
+            _dict['guardianEmail'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_status is None and "guardian_status" in self.model_fields_set and "guardian_status" not in excluded_fields:
+            _dict['guardianStatus'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_approved_at is None and "guardian_approved_at" in self.model_fields_set and "guardian_approved_at" not in excluded_fields:
             _dict['guardianApprovedAt'] = None
 
-        # set to None if guardian_approved_by_did (nullable) is None
-        # and model_fields_set contains the field
-        if self.guardian_approved_by_did is None and "guardian_approved_by_did" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.guardian_approved_by_did is None and "guardian_approved_by_did" in self.model_fields_set and "guardian_approved_by_did" not in excluded_fields:
             _dict['guardianApprovedByDid'] = None
 
         return _dict

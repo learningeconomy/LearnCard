@@ -67,9 +67,8 @@ class ShareLinksList200ResponseRecordsInnerMinorPolicy(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Explicit `None` values are preserved for supplied fields, including
+          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,10 +78,21 @@ class ShareLinksList200ResponseRecordsInnerMinorPolicy(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if is_minor (nullable) is None
-        # and model_fields_set contains the field
-        if self.is_minor is None and "is_minor" in self.model_fields_set:
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.is_minor is None and "is_minor" in self.model_fields_set and "is_minor" not in excluded_fields:
             _dict['isMinor'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.policy_resolved is None and "policy_resolved" in self.model_fields_set and "policy_resolved" not in excluded_fields:
+            _dict['policyResolved'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.default_expiry_days is None and "default_expiry_days" in self.model_fields_set and "default_expiry_days" not in excluded_fields:
+            _dict['defaultExpiryDays'] = None
+
+        # Preserve explicit null rather than silently turning it into omission.
+        if self.view_counting_enabled is None and "view_counting_enabled" in self.model_fields_set and "view_counting_enabled" not in excluded_fields:
+            _dict['viewCountingEnabled'] = None
 
         return _dict
 

@@ -19,13 +19,13 @@ import pprint
 import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import Optional
-from openapi_client.models.boost_create_boost_request_credential_any_of import BoostCreateBoostRequestCredentialAnyOf
+from openapi_client.models.boost_send_request_template_credential_any_of1 import BoostSendRequestTemplateCredentialAnyOf1
 from openapi_client.models.inbox_issue_request_credential_any_of import InboxIssueRequestCredentialAnyOf
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-INBOXCLAIMREQUESTCREDENTIALANYOF_ANY_OF_SCHEMAS = ["BoostCreateBoostRequestCredentialAnyOf", "InboxIssueRequestCredentialAnyOf"]
+INBOXCLAIMREQUESTCREDENTIALANYOF_ANY_OF_SCHEMAS = ["BoostSendRequestTemplateCredentialAnyOf1", "InboxIssueRequestCredentialAnyOf"]
 
 class InboxClaimRequestCredentialAnyOf(BaseModel):
     """
@@ -34,13 +34,13 @@ class InboxClaimRequestCredentialAnyOf(BaseModel):
 
     # data type: InboxIssueRequestCredentialAnyOf
     anyof_schema_1_validator: Optional[InboxIssueRequestCredentialAnyOf] = None
-    # data type: BoostCreateBoostRequestCredentialAnyOf
-    anyof_schema_2_validator: Optional[BoostCreateBoostRequestCredentialAnyOf] = None
+    # data type: BoostSendRequestTemplateCredentialAnyOf1
+    anyof_schema_2_validator: Optional[BoostSendRequestTemplateCredentialAnyOf1] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[BoostCreateBoostRequestCredentialAnyOf, InboxIssueRequestCredentialAnyOf]] = None
+        actual_instance: Optional[Union[BoostSendRequestTemplateCredentialAnyOf1, InboxIssueRequestCredentialAnyOf]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "BoostCreateBoostRequestCredentialAnyOf", "InboxIssueRequestCredentialAnyOf" }
+    any_of_schemas: Set[str] = { "BoostSendRequestTemplateCredentialAnyOf1", "InboxIssueRequestCredentialAnyOf" }
 
     model_config = {
         "validate_assignment": True,
@@ -67,15 +67,15 @@ class InboxClaimRequestCredentialAnyOf(BaseModel):
         else:
             return v
 
-        # validate data type: BoostCreateBoostRequestCredentialAnyOf
-        if not isinstance(v, BoostCreateBoostRequestCredentialAnyOf):
-            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostCreateBoostRequestCredentialAnyOf`")
+        # validate data type: BoostSendRequestTemplateCredentialAnyOf1
+        if not isinstance(v, BoostSendRequestTemplateCredentialAnyOf1):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `BoostSendRequestTemplateCredentialAnyOf1`")
         else:
             return v
 
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in InboxClaimRequestCredentialAnyOf with anyOf schemas: BoostCreateBoostRequestCredentialAnyOf, InboxIssueRequestCredentialAnyOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in InboxClaimRequestCredentialAnyOf with anyOf schemas: BoostSendRequestTemplateCredentialAnyOf1, InboxIssueRequestCredentialAnyOf. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -94,16 +94,16 @@ class InboxClaimRequestCredentialAnyOf(BaseModel):
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
-        # anyof_schema_2_validator: Optional[BoostCreateBoostRequestCredentialAnyOf] = None
+        # anyof_schema_2_validator: Optional[BoostSendRequestTemplateCredentialAnyOf1] = None
         try:
-            instance.actual_instance = BoostCreateBoostRequestCredentialAnyOf.from_json(json_str)
+            instance.actual_instance = BoostSendRequestTemplateCredentialAnyOf1.from_json(json_str)
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into InboxClaimRequestCredentialAnyOf with anyOf schemas: BoostCreateBoostRequestCredentialAnyOf, InboxIssueRequestCredentialAnyOf. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into InboxClaimRequestCredentialAnyOf with anyOf schemas: BoostSendRequestTemplateCredentialAnyOf1, InboxIssueRequestCredentialAnyOf. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -117,7 +117,7 @@ class InboxClaimRequestCredentialAnyOf(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostCreateBoostRequestCredentialAnyOf, InboxIssueRequestCredentialAnyOf]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSendRequestTemplateCredentialAnyOf1, InboxIssueRequestCredentialAnyOf]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None
