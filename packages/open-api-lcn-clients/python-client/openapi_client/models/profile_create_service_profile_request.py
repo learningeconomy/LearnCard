@@ -120,8 +120,8 @@ class ProfileCreateServiceProfileRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -134,94 +134,6 @@ class ProfileCreateServiceProfileRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of display
         if self.display:
             _dict['display'] = self.display.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
-            _dict['profileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
-            _dict['displayName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
-            _dict['shortBio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
-            _dict['bio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_private is None and "is_private" in self.model_fields_set and "is_private" not in excluded_fields:
-            _dict['isPrivate'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile_visibility is None and "profile_visibility" in self.model_fields_set and "profile_visibility" not in excluded_fields:
-            _dict['profileVisibility'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.show_email is None and "show_email" in self.model_fields_set and "show_email" not in excluded_fields:
-            _dict['showEmail'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.allow_connection_requests is None and "allow_connection_requests" in self.model_fields_set and "allow_connection_requests" not in excluded_fields:
-            _dict['allowConnectionRequests'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
-            _dict['email'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
-            _dict['image'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.hero_image is None and "hero_image" in self.model_fields_set and "hero_image" not in excluded_fields:
-            _dict['heroImage'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.linked_in_organization_id is None and "linked_in_organization_id" in self.model_fields_set and "linked_in_organization_id" not in excluded_fields:
-            _dict['linkedInOrganizationId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.website_link is None and "website_link" in self.model_fields_set and "website_link" not in excluded_fields:
-            _dict['websiteLink'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.notifications_webhook is None and "notifications_webhook" in self.model_fields_set and "notifications_webhook" not in excluded_fields:
-            _dict['notificationsWebhook'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display is None and "display" in self.model_fields_set and "display" not in excluded_fields:
-            _dict['display'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.highlighted_credentials is None and "highlighted_credentials" in self.model_fields_set and "highlighted_credentials" not in excluded_fields:
-            _dict['highlightedCredentials'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.role is None and "role" in self.model_fields_set and "role" not in excluded_fields:
-            _dict['role'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.dob is None and "dob" in self.model_fields_set and "dob" not in excluded_fields:
-            _dict['dob'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.country is None and "country" in self.model_fields_set and "country" not in excluded_fields:
-            _dict['country'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.locale is None and "locale" in self.model_fields_set and "locale" not in excluded_fields:
-            _dict['locale'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.approved is None and "approved" in self.model_fields_set and "approved" not in excluded_fields:
-            _dict['approved'] = None
-
         return _dict
 
     @classmethod

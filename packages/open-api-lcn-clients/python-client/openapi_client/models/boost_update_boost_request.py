@@ -61,8 +61,8 @@ class BoostUpdateBoostRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -81,18 +81,6 @@ class BoostUpdateBoostRequest(BaseModel):
             for _item_skills in self.skills:
                 _items.append(_item_skills.to_dict() if _item_skills is not None else None)
             _dict['skills'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.updates is None and "updates" in self.model_fields_set and "updates" not in excluded_fields:
-            _dict['updates'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.skills is None and "skills" in self.model_fields_set and "skills" not in excluded_fields:
-            _dict['skills'] = None
-
         return _dict
 
     @classmethod

@@ -60,8 +60,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -80,14 +80,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.header is None and "header" in self.model_fields_set and "header" not in excluded_fields:
-            _dict['header'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.encrypted_key is None and "encrypted_key" in self.model_fields_set and "encrypted_key" not in excluded_fields:
-            _dict['encrypted_key'] = None
 
         return _dict
 

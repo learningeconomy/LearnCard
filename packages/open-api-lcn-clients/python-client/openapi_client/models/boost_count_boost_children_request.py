@@ -61,8 +61,8 @@ class BoostCountBoostChildrenRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,18 +78,6 @@ class BoostCountBoostChildrenRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of number_of_generations
         if self.number_of_generations:
             _dict['numberOfGenerations'] = self.number_of_generations.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.query is None and "query" in self.model_fields_set and "query" not in excluded_fields:
-            _dict['query'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.number_of_generations is None and "number_of_generations" in self.model_fields_set and "number_of_generations" not in excluded_fields:
-            _dict['numberOfGenerations'] = None
-
         return _dict
 
     @classmethod

@@ -68,8 +68,8 @@ class InboxSendGuardianApprovalEmailRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -82,18 +82,6 @@ class InboxSendGuardianApprovalEmailRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of template
         if self.template:
             _dict['template'] = self.template.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
-            _dict['guardianEmail'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.ttl_hours is None and "ttl_hours" in self.model_fields_set and "ttl_hours" not in excluded_fields:
-            _dict['ttlHours'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.template is None and "template" in self.model_fields_set and "template" not in excluded_fields:
-            _dict['template'] = None
-
         return _dict
 
     @classmethod

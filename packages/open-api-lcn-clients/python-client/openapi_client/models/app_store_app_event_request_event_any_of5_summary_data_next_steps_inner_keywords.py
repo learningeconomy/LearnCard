@@ -61,8 +61,8 @@ class AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInnerKeywords(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -72,23 +72,23 @@ class AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInnerKeywords(BaseMo
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.occupations is None and "occupations" in self.model_fields_set and "occupations" not in excluded_fields:
             _dict['occupations'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.careers is None and "careers" in self.model_fields_set and "careers" not in excluded_fields:
             _dict['careers'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.jobs is None and "jobs" in self.model_fields_set and "jobs" not in excluded_fields:
             _dict['jobs'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.skills is None and "skills" in self.model_fields_set and "skills" not in excluded_fields:
             _dict['skills'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.field_of_study is None and "field_of_study" in self.model_fields_set and "field_of_study" not in excluded_fields:
             _dict['fieldOfStudy'] = None
 

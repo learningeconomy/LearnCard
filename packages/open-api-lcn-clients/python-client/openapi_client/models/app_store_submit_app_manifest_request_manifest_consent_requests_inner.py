@@ -61,8 +61,8 @@ class AppStoreSubmitAppManifestRequestManifestConsentRequestsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -81,18 +81,6 @@ class AppStoreSubmitAppManifestRequestManifestConsentRequestsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.scopes is None and "scopes" in self.model_fields_set and "scopes" not in excluded_fields:
-            _dict['scopes'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
-            _dict['reason'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.last_used_at is None and "last_used_at" in self.model_fields_set and "last_used_at" not in excluded_fields:
-            _dict['lastUsedAt'] = None
 
         return _dict
 

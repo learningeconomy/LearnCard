@@ -60,8 +60,8 @@ class AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOfWalletS
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -77,18 +77,6 @@ class AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOfWalletS
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.framework_id is None and "framework_id" in self.model_fields_set and "framework_id" not in excluded_fields:
-            _dict['frameworkId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.proficiency_level is None and "proficiency_level" in self.model_fields_set and "proficiency_level" not in excluded_fields:
-            _dict['proficiencyLevel'] = None
 
         return _dict
 

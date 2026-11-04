@@ -75,8 +75,8 @@ class ContractsUpdateConsentFlowContractRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -89,29 +89,9 @@ class ContractsUpdateConsentFlowContractRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of changes
         if self.changes:
             _dict['changes'] = self.changes.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.changes is None and "changes" in self.model_fields_set and "changes" not in excluded_fields:
-            _dict['changes'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
-            _dict['reason'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.reconsent_deadline is None and "reconsent_deadline" in self.model_fields_set and "reconsent_deadline" not in excluded_fields:
             _dict['reconsentDeadline'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.dry_run is None and "dry_run" in self.model_fields_set and "dry_run" not in excluded_fields:
-            _dict['dryRun'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expected_version is None and "expected_version" in self.model_fields_set and "expected_version" not in excluded_fields:
-            _dict['expectedVersion'] = None
 
         return _dict
 

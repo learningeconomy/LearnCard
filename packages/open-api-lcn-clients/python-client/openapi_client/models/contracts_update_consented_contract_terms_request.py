@@ -64,8 +64,8 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,30 +78,6 @@ class ContractsUpdateConsentedContractTermsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of terms
         if self.terms:
             _dict['terms'] = self.terms.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
-            _dict['terms'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.accept_version is None and "accept_version" in self.model_fields_set and "accept_version" not in excluded_fields:
-            _dict['acceptVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
-            _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.one_time is None and "one_time" in self.model_fields_set and "one_time" not in excluded_fields:
-            _dict['oneTime'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.audience_version is None and "audience_version" in self.model_fields_set and "audience_version" not in excluded_fields:
-            _dict['audienceVersion'] = None
-
         return _dict
 
     @classmethod

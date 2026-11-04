@@ -93,8 +93,8 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -131,90 +131,6 @@ class ContractsGetConsentFlowContract200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract is None and "contract" in self.model_fields_set and "contract" not in excluded_fields:
-            _dict['contract'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.owner is None and "owner" in self.model_fields_set and "owner" not in excluded_fields:
-            _dict['owner'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.subtitle is None and "subtitle" in self.model_fields_set and "subtitle" not in excluded_fields:
-            _dict['subtitle'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set and "reason_for_accessing" not in excluded_fields:
-            _dict['reasonForAccessing'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
-            _dict['image'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.needs_guardian_consent is None and "needs_guardian_consent" in self.model_fields_set and "needs_guardian_consent" not in excluded_fields:
-            _dict['needsGuardianConsent'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set and "redirect_url" not in excluded_fields:
-            _dict['redirectUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.front_door_boost_uri is None and "front_door_boost_uri" in self.model_fields_set and "front_door_boost_uri" not in excluded_fields:
-            _dict['frontDoorBoostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
-            _dict['createdAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
-            _dict['updatedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
-            _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.auto_boosts is None and "auto_boosts" in self.model_fields_set and "auto_boosts" not in excluded_fields:
-            _dict['autoBoosts'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.writers is None and "writers" in self.model_fields_set and "writers" not in excluded_fields:
-            _dict['writers'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.recipients is None and "recipients" in self.model_fields_set and "recipients" not in excluded_fields:
-            _dict['recipients'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.audience_version is None and "audience_version" in self.model_fields_set and "audience_version" not in excluded_fields:
-            _dict['audienceVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
-            _dict['version'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.latest_update is None and "latest_update" in self.model_fields_set and "latest_update" not in excluded_fields:
-            _dict['latestUpdate'] = None
 
         return _dict
 

@@ -62,8 +62,8 @@ class BoostGetBoostSiblingsRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,26 +76,6 @@ class BoostGetBoostSiblingsRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of query
         if self.query:
             _dict['query'] = self.query.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
-            _dict['limit'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
-            _dict['cursor'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.sort is None and "sort" in self.model_fields_set and "sort" not in excluded_fields:
-            _dict['sort'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.query is None and "query" in self.model_fields_set and "query" not in excluded_fields:
-            _dict['query'] = None
-
         return _dict
 
     @classmethod

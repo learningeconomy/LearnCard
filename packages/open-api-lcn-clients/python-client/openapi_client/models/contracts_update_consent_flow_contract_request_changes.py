@@ -71,8 +71,8 @@ class ContractsUpdateConsentFlowContractRequestChanges(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -91,57 +91,9 @@ class ContractsUpdateConsentFlowContractRequestChanges(BaseModel):
             for _item_autoboosts in self.autoboosts:
                 _items.append(_item_autoboosts.to_dict() if _item_autoboosts is not None else None)
             _dict['autoboosts'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract is None and "contract" in self.model_fields_set and "contract" not in excluded_fields:
-            _dict['contract'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.subtitle is None and "subtitle" in self.model_fields_set and "subtitle" not in excluded_fields:
-            _dict['subtitle'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set and "reason_for_accessing" not in excluded_fields:
-            _dict['reasonForAccessing'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
-            _dict['image'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.needs_guardian_consent is None and "needs_guardian_consent" in self.model_fields_set and "needs_guardian_consent" not in excluded_fields:
-            _dict['needsGuardianConsent'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.redirect_url is None and "redirect_url" in self.model_fields_set and "redirect_url" not in excluded_fields:
-            _dict['redirectUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.front_door_boost_uri is None and "front_door_boost_uri" in self.model_fields_set and "front_door_boost_uri" not in excluded_fields:
-            _dict['frontDoorBoostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.autoboosts is None and "autoboosts" in self.model_fields_set and "autoboosts" not in excluded_fields:
-            _dict['autoboosts'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.writers is None and "writers" in self.model_fields_set and "writers" not in excluded_fields:
-            _dict['writers'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.recipients is None and "recipients" in self.model_fields_set and "recipients" not in excluded_fields:
-            _dict['recipients'] = None
 
         return _dict
 

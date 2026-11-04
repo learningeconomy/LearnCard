@@ -83,8 +83,8 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -115,58 +115,6 @@ class ContractsGetConsentedContracts200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
-            _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.one_time is None and "one_time" in self.model_fields_set and "one_time" not in excluded_fields:
-            _dict['oneTime'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
-            _dict['terms'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.referral is None and "referral" in self.model_fields_set and "referral" not in excluded_fields:
-            _dict['referral'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract is None and "contract" in self.model_fields_set and "contract" not in excluded_fields:
-            _dict['contract'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.consenter is None and "consenter" in self.model_fields_set and "consenter" not in excluded_fields:
-            _dict['consenter'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.consented_version is None and "consented_version" in self.model_fields_set and "consented_version" not in excluded_fields:
-            _dict['consentedVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.last_reviewed_version is None and "last_reviewed_version" in self.model_fields_set and "last_reviewed_version" not in excluded_fields:
-            _dict['lastReviewedVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reconsent_deadline is None and "reconsent_deadline" in self.model_fields_set and "reconsent_deadline" not in excluded_fields:
-            _dict['reconsentDeadline'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.new_options_until is None and "new_options_until" in self.model_fields_set and "new_options_until" not in excluded_fields:
-            _dict['newOptionsUntil'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.cumulative_update is None and "cumulative_update" in self.model_fields_set and "cumulative_update" not in excluded_fields:
-            _dict['cumulativeUpdate'] = None
 
         return _dict
 

@@ -62,8 +62,8 @@ class InboxClaimRequestConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,26 +73,6 @@ class InboxClaimRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set and "publishable_key" not in excluded_fields:
-            _dict['publishableKey'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
-            _dict['expiresInDays'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set and "signing_authority_name" not in excluded_fields:
-            _dict['signingAuthorityName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.listing_id is None and "listing_id" in self.model_fields_set and "listing_id" not in excluded_fields:
-            _dict['listingId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.listing_slug is None and "listing_slug" in self.model_fields_set and "listing_slug" not in excluded_fields:
-            _dict['listingSlug'] = None
-
         return _dict
 
     @classmethod

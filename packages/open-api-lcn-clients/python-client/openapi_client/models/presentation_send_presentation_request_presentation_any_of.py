@@ -67,8 +67,8 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -99,30 +99,6 @@ class PresentationSendPresentationRequestPresentationAnyOf(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.context is None and "context" in self.model_fields_set and "context" not in excluded_fields:
-            _dict['@context'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.verifiable_credential is None and "verifiable_credential" in self.model_fields_set and "verifiable_credential" not in excluded_fields:
-            _dict['verifiableCredential'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.holder is None and "holder" in self.model_fields_set and "holder" not in excluded_fields:
-            _dict['holder'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.proof is None and "proof" in self.model_fields_set and "proof" not in excluded_fields:
-            _dict['proof'] = None
 
         return _dict
 

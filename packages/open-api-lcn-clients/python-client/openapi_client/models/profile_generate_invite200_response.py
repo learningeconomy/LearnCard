@@ -60,8 +60,8 @@ class ProfileGenerateInvite200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -78,15 +78,7 @@ class ProfileGenerateInvite200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
-            _dict['profileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.challenge is None and "challenge" in self.model_fields_set and "challenge" not in excluded_fields:
-            _dict['challenge'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.expires_in is None and "expires_in" in self.model_fields_set and "expires_in" not in excluded_fields:
             _dict['expiresIn'] = None
 

@@ -72,8 +72,8 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -83,30 +83,6 @@ class InboxGetMyIssuedCredentialsRequestQuery(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.current_status is None and "current_status" in self.model_fields_set and "current_status" not in excluded_fields:
-            _dict['currentStatus'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_signed is None and "is_signed" in self.model_fields_set and "is_signed" not in excluded_fields:
-            _dict['isSigned'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set and "is_accepted" not in excluded_fields:
-            _dict['isAccepted'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set and "issuer_did" not in excluded_fields:
-            _dict['issuerDid'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
         return _dict
 
     @classmethod

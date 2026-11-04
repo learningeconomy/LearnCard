@@ -72,8 +72,8 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -86,30 +86,6 @@ class CredentialRefreshPublishCredentialRefreshRequestOneOf(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signed_credential
         if self.signed_credential:
             _dict['signedCredential'] = self.signed_credential.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
-            _dict['refreshId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.notify_holder is None and "notify_holder" in self.model_fields_set and "notify_holder" not in excluded_fields:
-            _dict['notifyHolder'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.update_summary is None and "update_summary" in self.model_fields_set and "update_summary" not in excluded_fields:
-            _dict['updateSummary'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.idempotency_key is None and "idempotency_key" in self.model_fields_set and "idempotency_key" not in excluded_fields:
-            _dict['idempotencyKey'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.mode is None and "mode" in self.model_fields_set and "mode" not in excluded_fields:
-            _dict['mode'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signed_credential is None and "signed_credential" in self.model_fields_set and "signed_credential" not in excluded_fields:
-            _dict['signedCredential'] = None
-
         return _dict
 
     @classmethod

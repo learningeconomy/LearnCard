@@ -62,8 +62,8 @@ class BoostGetBoostAlignments200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -79,26 +79,6 @@ class BoostGetBoostAlignments200ResponseInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.target_code is None and "target_code" in self.model_fields_set and "target_code" not in excluded_fields:
-            _dict['targetCode'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.target_name is None and "target_name" in self.model_fields_set and "target_name" not in excluded_fields:
-            _dict['targetName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.target_description is None and "target_description" in self.model_fields_set and "target_description" not in excluded_fields:
-            _dict['targetDescription'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.target_url is None and "target_url" in self.model_fields_set and "target_url" not in excluded_fields:
-            _dict['targetUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.target_framework is None and "target_framework" in self.model_fields_set and "target_framework" not in excluded_fields:
-            _dict['targetFramework'] = None
 
         return _dict
 

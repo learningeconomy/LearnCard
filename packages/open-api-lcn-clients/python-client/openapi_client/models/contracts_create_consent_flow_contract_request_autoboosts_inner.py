@@ -59,8 +59,8 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,14 +73,6 @@ class ContractsCreateConsentFlowContractRequestAutoboostsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of signing_authority
         if self.signing_authority:
             _dict['signingAuthority'] = self.signing_authority.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
-            _dict['signingAuthority'] = None
-
         return _dict
 
     @classmethod

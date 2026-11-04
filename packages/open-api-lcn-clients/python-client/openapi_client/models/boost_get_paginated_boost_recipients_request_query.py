@@ -65,8 +65,8 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -97,38 +97,6 @@ class BoostGetPaginatedBoostRecipientsRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of type
         if self.type:
             _dict['type'] = self.type.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
-            _dict['profileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
-            _dict['displayName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
-            _dict['shortBio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
-            _dict['bio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
-            _dict['email'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.website_link is None and "website_link" in self.model_fields_set and "website_link" not in excluded_fields:
-            _dict['websiteLink'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_service_profile is None and "is_service_profile" in self.model_fields_set and "is_service_profile" not in excluded_fields:
-            _dict['isServiceProfile'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
         return _dict
 
     @classmethod

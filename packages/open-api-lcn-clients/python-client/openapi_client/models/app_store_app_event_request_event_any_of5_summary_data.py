@@ -65,8 +65,8 @@ class AppStoreAppEventRequestEventAnyOf5SummaryData(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -94,30 +94,6 @@ class AppStoreAppEventRequestEventAnyOf5SummaryData(BaseModel):
             for _item_reflections in self.reflections:
                 _items.append(_item_reflections.to_dict() if _item_reflections is not None else None)
             _dict['reflections'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.title is None and "title" in self.model_fields_set and "title" not in excluded_fields:
-            _dict['title'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.summary is None and "summary" in self.model_fields_set and "summary" not in excluded_fields:
-            _dict['summary'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.learned is None and "learned" in self.model_fields_set and "learned" not in excluded_fields:
-            _dict['learned'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.skills is None and "skills" in self.model_fields_set and "skills" not in excluded_fields:
-            _dict['skills'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.next_steps is None and "next_steps" in self.model_fields_set and "next_steps" not in excluded_fields:
-            _dict['nextSteps'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reflections is None and "reflections" in self.model_fields_set and "reflections" not in excluded_fields:
-            _dict['reflections'] = None
-
         return _dict
 
     @classmethod

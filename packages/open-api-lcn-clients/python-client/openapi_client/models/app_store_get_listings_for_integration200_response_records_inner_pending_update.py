@@ -69,8 +69,8 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate(Base
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -83,22 +83,6 @@ class AppStoreGetListingsForIntegration200ResponseRecordsInnerPendingUpdate(Base
         # override the default output from pydantic by calling `to_dict()` of changes
         if self.changes:
             _dict['changes'] = self.changes.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.submitted_at is None and "submitted_at" in self.model_fields_set and "submitted_at" not in excluded_fields:
-            _dict['submitted_at'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.changes is None and "changes" in self.model_fields_set and "changes" not in excluded_fields:
-            _dict['changes'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.manifest_version is None and "manifest_version" in self.model_fields_set and "manifest_version" not in excluded_fields:
-            _dict['manifest_version'] = None
-
         return _dict
 
     @classmethod

@@ -59,8 +59,8 @@ class ContractsCreateConsentFlowContractRequestContractReadPersonalValue(BaseMod
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,18 +70,6 @@ class ContractsCreateConsentFlowContractRequestContractReadPersonalValue(BaseMod
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.required is None and "required" in self.model_fields_set and "required" not in excluded_fields:
-            _dict['required'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.default_enabled is None and "default_enabled" in self.model_fields_set and "default_enabled" not in excluded_fields:
-            _dict['defaultEnabled'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
-            _dict['reason'] = None
-
         return _dict
 
     @classmethod

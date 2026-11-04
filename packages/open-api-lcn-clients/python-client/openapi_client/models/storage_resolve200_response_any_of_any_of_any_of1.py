@@ -64,8 +64,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,30 +87,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.protected is None and "protected" in self.model_fields_set and "protected" not in excluded_fields:
-            _dict['protected'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.iv is None and "iv" in self.model_fields_set and "iv" not in excluded_fields:
-            _dict['iv'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.ciphertext is None and "ciphertext" in self.model_fields_set and "ciphertext" not in excluded_fields:
-            _dict['ciphertext'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.tag is None and "tag" in self.model_fields_set and "tag" not in excluded_fields:
-            _dict['tag'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.aad is None and "aad" in self.model_fields_set and "aad" not in excluded_fields:
-            _dict['aad'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.recipients is None and "recipients" in self.model_fields_set and "recipients" not in excluded_fields:
-            _dict['recipients'] = None
 
         return _dict
 

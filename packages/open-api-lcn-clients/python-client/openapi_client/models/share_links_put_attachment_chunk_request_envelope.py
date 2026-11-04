@@ -75,8 +75,8 @@ class ShareLinksPutAttachmentChunkRequestEnvelope(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -92,22 +92,6 @@ class ShareLinksPutAttachmentChunkRequestEnvelope(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.v is None and "v" in self.model_fields_set and "v" not in excluded_fields:
-            _dict['v'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.alg is None and "alg" in self.model_fields_set and "alg" not in excluded_fields:
-            _dict['alg'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.iv is None and "iv" in self.model_fields_set and "iv" not in excluded_fields:
-            _dict['iv'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.ct is None and "ct" in self.model_fields_set and "ct" not in excluded_fields:
-            _dict['ct'] = None
 
         return _dict
 

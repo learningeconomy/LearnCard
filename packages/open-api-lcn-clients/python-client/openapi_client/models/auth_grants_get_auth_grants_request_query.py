@@ -71,8 +71,8 @@ class AuthGrantsGetAuthGrantsRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -91,22 +91,6 @@ class AuthGrantsGetAuthGrantsRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of description
         if self.description:
             _dict['description'] = self.description.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
         return _dict
 
     @classmethod

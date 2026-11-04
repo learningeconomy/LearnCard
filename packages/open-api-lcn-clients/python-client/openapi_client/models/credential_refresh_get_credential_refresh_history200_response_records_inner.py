@@ -74,8 +74,8 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,30 +91,6 @@ class CredentialRefreshGetCredentialRefreshHistory200ResponseRecordsInner(BaseMo
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
-            _dict['version'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.published_at is None and "published_at" in self.model_fields_set and "published_at" not in excluded_fields:
-            _dict['publishedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.effective_at is None and "effective_at" in self.model_fields_set and "effective_at" not in excluded_fields:
-            _dict['effectiveAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.etag is None and "etag" in self.model_fields_set and "etag" not in excluded_fields:
-            _dict['etag'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signing_mode is None and "signing_mode" in self.model_fields_set and "signing_mode" not in excluded_fields:
-            _dict['signingMode'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.update_summary is None and "update_summary" in self.model_fields_set and "update_summary" not in excluded_fields:
-            _dict['updateSummary'] = None
 
         return _dict
 

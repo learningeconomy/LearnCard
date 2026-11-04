@@ -60,8 +60,8 @@ class SkillsGetFrameworkSkillTree200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -77,17 +77,9 @@ class SkillsGetFrameworkSkillTree200Response(BaseModel):
             for _item_records in self.records:
                 _items.append(_item_records.to_dict() if _item_records is not None else None)
             _dict['records'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.has_more is None and "has_more" in self.model_fields_set and "has_more" not in excluded_fields:
-            _dict['hasMore'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
             _dict['cursor'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.records is None and "records" in self.model_fields_set and "records" not in excluded_fields:
-            _dict['records'] = None
 
         return _dict
 

@@ -71,8 +71,8 @@ class UtilitiesDeepHealthCheck200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -89,31 +89,7 @@ class UtilitiesDeepHealthCheck200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.healthy is None and "healthy" in self.model_fields_set and "healthy" not in excluded_fields:
-            _dict['healthy'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
-            _dict['version'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.didkit_engine is None and "didkit_engine" in self.model_fields_set and "didkit_engine" not in excluded_fields:
-            _dict['didkitEngine'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.did is None and "did" in self.model_fields_set and "did" not in excluded_fields:
-            _dict['did'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.vp_verified is None and "vp_verified" in self.model_fields_set and "vp_verified" not in excluded_fields:
-            _dict['vpVerified'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.verification_errors is None and "verification_errors" in self.model_fields_set and "verification_errors" not in excluded_fields:
-            _dict['verificationErrors'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.ms is None and "ms" in self.model_fields_set and "ms" not in excluded_fields:
             _dict['ms'] = None
 

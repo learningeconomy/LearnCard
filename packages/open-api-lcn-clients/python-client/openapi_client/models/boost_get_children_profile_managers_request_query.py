@@ -62,8 +62,8 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -88,26 +88,6 @@ class BoostGetChildrenProfileManagersRequestQuery(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of email
         if self.email:
             _dict['email'] = self.email.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
-            _dict['displayName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
-            _dict['shortBio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.bio is None and "bio" in self.model_fields_set and "bio" not in excluded_fields:
-            _dict['bio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
-            _dict['email'] = None
-
         return _dict
 
     @classmethod

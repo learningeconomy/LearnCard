@@ -60,8 +60,8 @@ class SkillsCreateRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,15 +74,7 @@ class SkillsCreateRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of skill
         if self.skill:
             _dict['skill'] = self.skill.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.framework_id is None and "framework_id" in self.model_fields_set and "framework_id" not in excluded_fields:
-            _dict['frameworkId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.skill is None and "skill" in self.model_fields_set and "skill" not in excluded_fields:
-            _dict['skill'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.parent_id is None and "parent_id" in self.model_fields_set and "parent_id" not in excluded_fields:
             _dict['parentId'] = None
 

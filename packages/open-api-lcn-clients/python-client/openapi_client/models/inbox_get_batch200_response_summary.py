@@ -64,8 +64,8 @@ class InboxGetBatch200ResponseSummary(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -82,31 +82,31 @@ class InboxGetBatch200ResponseSummary(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.total is None and "total" in self.model_fields_set and "total" not in excluded_fields:
             _dict['total'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.succeeded is None and "succeeded" in self.model_fields_set and "succeeded" not in excluded_fields:
             _dict['succeeded'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.failed is None and "failed" in self.model_fields_set and "failed" not in excluded_fields:
             _dict['failed'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.deduplicated is None and "deduplicated" in self.model_fields_set and "deduplicated" not in excluded_fields:
             _dict['deduplicated'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.completed is None and "completed" in self.model_fields_set and "completed" not in excluded_fields:
             _dict['completed'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.pending is None and "pending" in self.model_fields_set and "pending" not in excluded_fields:
             _dict['pending'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.unconfirmed is None and "unconfirmed" in self.model_fields_set and "unconfirmed" not in excluded_fields:
             _dict['unconfirmed'] = None
 

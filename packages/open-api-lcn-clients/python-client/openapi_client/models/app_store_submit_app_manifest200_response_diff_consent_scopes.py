@@ -59,8 +59,8 @@ class AppStoreSubmitAppManifest200ResponseDiffConsentScopes(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,18 +70,6 @@ class AppStoreSubmitAppManifest200ResponseDiffConsentScopes(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.added is None and "added" in self.model_fields_set and "added" not in excluded_fields:
-            _dict['added'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.removed is None and "removed" in self.model_fields_set and "removed" not in excluded_fields:
-            _dict['removed'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.changed is None and "changed" in self.model_fields_set and "changed" not in excluded_fields:
-            _dict['changed'] = None
-
         return _dict
 
     @classmethod

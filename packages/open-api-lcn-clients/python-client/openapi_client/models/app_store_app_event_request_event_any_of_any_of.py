@@ -67,8 +67,8 @@ class AppStoreAppEventRequestEventAnyOfAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,22 +78,6 @@ class AppStoreAppEventRequestEventAnyOfAnyOf(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.template_alias is None and "template_alias" in self.model_fields_set and "template_alias" not in excluded_fields:
-            _dict['templateAlias'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.template_data is None and "template_data" in self.model_fields_set and "template_data" not in excluded_fields:
-            _dict['templateData'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.prevent_duplicate_claim is None and "prevent_duplicate_claim" in self.model_fields_set and "prevent_duplicate_claim" not in excluded_fields:
-            _dict['preventDuplicateClaim'] = None
-
         return _dict
 
     @classmethod

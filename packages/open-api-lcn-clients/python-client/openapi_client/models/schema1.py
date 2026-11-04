@@ -76,8 +76,8 @@ class Schema1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -93,55 +93,7 @@ class Schema1(BaseModel):
             for _item_children in self.children:
                 _items.append(_item_children.to_dict() if _item_children is not None else None)
             _dict['children'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.statement is None and "statement" in self.model_fields_set and "statement" not in excluded_fields:
-            _dict['statement'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.code is None and "code" in self.model_fields_set and "code" not in excluded_fields:
-            _dict['code'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.icon is None and "icon" in self.model_fields_set and "icon" not in excluded_fields:
-            _dict['icon'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.framework_id is None and "framework_id" in self.model_fields_set and "framework_id" not in excluded_fields:
-            _dict['frameworkId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
-            _dict['createdAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
-            _dict['updatedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.children is None and "children" in self.model_fields_set and "children" not in excluded_fields:
-            _dict['children'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.has_children is None and "has_children" in self.model_fields_set and "has_children" not in excluded_fields:
-            _dict['hasChildren'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.children_cursor is None and "children_cursor" in self.model_fields_set and "children_cursor" not in excluded_fields:
             _dict['childrenCursor'] = None
 

@@ -75,8 +75,8 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -152,58 +152,6 @@ class DidMetadataGetMyDidMetadata200ResponseInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.context is None and "context" in self.model_fields_set and "context" not in excluded_fields:
-            _dict['@context'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.also_known_as is None and "also_known_as" in self.model_fields_set and "also_known_as" not in excluded_fields:
-            _dict['alsoKnownAs'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.controller is None and "controller" in self.model_fields_set and "controller" not in excluded_fields:
-            _dict['controller'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.verification_method is None and "verification_method" in self.model_fields_set and "verification_method" not in excluded_fields:
-            _dict['verificationMethod'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.authentication is None and "authentication" in self.model_fields_set and "authentication" not in excluded_fields:
-            _dict['authentication'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.assertion_method is None and "assertion_method" in self.model_fields_set and "assertion_method" not in excluded_fields:
-            _dict['assertionMethod'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.key_agreement is None and "key_agreement" in self.model_fields_set and "key_agreement" not in excluded_fields:
-            _dict['keyAgreement'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.capability_invocation is None and "capability_invocation" in self.model_fields_set and "capability_invocation" not in excluded_fields:
-            _dict['capabilityInvocation'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.capability_delegation is None and "capability_delegation" in self.model_fields_set and "capability_delegation" not in excluded_fields:
-            _dict['capabilityDelegation'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.public_key is None and "public_key" in self.model_fields_set and "public_key" not in excluded_fields:
-            _dict['publicKey'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.service is None and "service" in self.model_fields_set and "service" not in excluded_fields:
-            _dict['service'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.proof is None and "proof" in self.model_fields_set and "proof" not in excluded_fields:
-            _dict['proof'] = None
 
         return _dict
 

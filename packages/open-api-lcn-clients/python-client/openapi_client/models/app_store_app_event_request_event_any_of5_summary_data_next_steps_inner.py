@@ -60,8 +60,8 @@ class AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,18 +74,6 @@ class AppStoreAppEventRequestEventAnyOf5SummaryDataNextStepsInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of keywords
         if self.keywords:
             _dict['keywords'] = self.keywords.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.title is None and "title" in self.model_fields_set and "title" not in excluded_fields:
-            _dict['title'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.keywords is None and "keywords" in self.model_fields_set and "keywords" not in excluded_fields:
-            _dict['keywords'] = None
-
         return _dict
 
     @classmethod

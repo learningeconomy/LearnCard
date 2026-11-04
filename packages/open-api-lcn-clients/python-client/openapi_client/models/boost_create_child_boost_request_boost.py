@@ -79,8 +79,8 @@ class BoostCreateChildBoostRequestBoost(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -99,50 +99,6 @@ class BoostCreateChildBoostRequestBoost(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of default_permissions
         if self.default_permissions:
             _dict['defaultPermissions'] = self.default_permissions.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
-            _dict['category'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
-            _dict['created'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set and "auto_connect_recipients" not in excluded_fields:
-            _dict['autoConnectRecipients'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.meta is None and "meta" in self.model_fields_set and "meta" not in excluded_fields:
-            _dict['meta'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.allow_anyone_to_create_children is None and "allow_anyone_to_create_children" in self.model_fields_set and "allow_anyone_to_create_children" not in excluded_fields:
-            _dict['allowAnyoneToCreateChildren'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
-            _dict['credential'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.claim_permissions is None and "claim_permissions" in self.model_fields_set and "claim_permissions" not in excluded_fields:
-            _dict['claimPermissions'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.default_permissions is None and "default_permissions" in self.model_fields_set and "default_permissions" not in excluded_fields:
-            _dict['defaultPermissions'] = None
-
         return _dict
 
     @classmethod

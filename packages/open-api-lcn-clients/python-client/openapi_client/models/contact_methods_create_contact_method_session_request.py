@@ -59,8 +59,8 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,14 +73,6 @@ class ContactMethodsCreateContactMethodSessionRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of contact_method
         if self.contact_method:
             _dict['contactMethod'] = self.contact_method.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contact_method is None and "contact_method" in self.model_fields_set and "contact_method" not in excluded_fields:
-            _dict['contactMethod'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.otp_challenge is None and "otp_challenge" in self.model_fields_set and "otp_challenge" not in excluded_fields:
-            _dict['otpChallenge'] = None
-
         return _dict
 
     @classmethod

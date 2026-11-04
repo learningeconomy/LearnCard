@@ -109,8 +109,8 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -132,94 +132,6 @@ class InboxClaim200ResponseInboxCredential(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.refresh is None and "refresh" in self.model_fields_set and "refresh" not in excluded_fields:
-            _dict['refresh'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
-            _dict['refreshId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_signed is None and "is_signed" in self.model_fields_set and "is_signed" not in excluded_fields:
-            _dict['isSigned'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.current_status is None and "current_status" in self.model_fields_set and "current_status" not in excluded_fields:
-            _dict['currentStatus'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_accepted is None and "is_accepted" in self.model_fields_set and "is_accepted" not in excluded_fields:
-            _dict['isAccepted'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
-            _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
-            _dict['createdAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.finalized_at is None and "finalized_at" in self.model_fields_set and "finalized_at" not in excluded_fields:
-            _dict['finalizedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expired_at is None and "expired_at" in self.model_fields_set and "expired_at" not in excluded_fields:
-            _dict['expiredAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential_name is None and "credential_name" in self.model_fields_set and "credential_name" not in excluded_fields:
-            _dict['credentialName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.achievement_type is None and "achievement_type" in self.model_fields_set and "achievement_type" not in excluded_fields:
-            _dict['achievementType'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.issuer_did is None and "issuer_did" in self.model_fields_set and "issuer_did" not in excluded_fields:
-            _dict['issuerDid'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
-            _dict['webhookUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.activity_id is None and "activity_id" in self.model_fields_set and "activity_id" not in excluded_fields:
-            _dict['activityId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.integration_id is None and "integration_id" in self.model_fields_set and "integration_id" not in excluded_fields:
-            _dict['integrationId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
-            _dict['signingAuthority'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
-            _dict['guardianEmail'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_status is None and "guardian_status" in self.model_fields_set and "guardian_status" not in excluded_fields:
-            _dict['guardianStatus'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_approved_at is None and "guardian_approved_at" in self.model_fields_set and "guardian_approved_at" not in excluded_fields:
-            _dict['guardianApprovedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_approved_by_did is None and "guardian_approved_by_did" in self.model_fields_set and "guardian_approved_by_did" not in excluded_fields:
-            _dict['guardianApprovedByDid'] = None
 
         return _dict
 

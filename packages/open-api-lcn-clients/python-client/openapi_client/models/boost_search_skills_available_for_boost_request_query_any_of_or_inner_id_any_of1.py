@@ -58,8 +58,8 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -75,10 +75,6 @@ class BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerIdAnyOf1(BaseMod
             for _item_var_or in self.var_or:
                 _items.append(_item_var_or.to_dict() if _item_var_or is not None else None)
             _dict['$or'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.var_or is None and "var_or" in self.model_fields_set and "var_or" not in excluded_fields:
-            _dict['$or'] = None
-
         return _dict
 
     @classmethod

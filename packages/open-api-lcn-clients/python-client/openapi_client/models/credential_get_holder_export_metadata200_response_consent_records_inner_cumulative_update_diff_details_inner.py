@@ -67,8 +67,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeU
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -84,18 +84,6 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeU
         # override the default output from pydantic by calling `to_dict()` of after
         if self.after:
             _dict['after'] = self.after.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.var_field is None and "var_field" in self.model_fields_set and "var_field" not in excluded_fields:
-            _dict['field'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.before is None and "before" in self.model_fields_set and "before" not in excluded_fields:
-            _dict['before'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.after is None and "after" in self.model_fields_set and "after" not in excluded_fields:
-            _dict['after'] = None
-
         return _dict
 
     @classmethod

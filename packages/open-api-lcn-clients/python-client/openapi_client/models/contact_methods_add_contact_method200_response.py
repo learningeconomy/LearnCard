@@ -60,8 +60,8 @@ class ContactMethodsAddContactMethod200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -77,18 +77,6 @@ class ContactMethodsAddContactMethod200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
-            _dict['message'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contact_method_id is None and "contact_method_id" in self.model_fields_set and "contact_method_id" not in excluded_fields:
-            _dict['contactMethodId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.verification_required is None and "verification_required" in self.model_fields_set and "verification_required" not in excluded_fields:
-            _dict['verificationRequired'] = None
 
         return _dict
 

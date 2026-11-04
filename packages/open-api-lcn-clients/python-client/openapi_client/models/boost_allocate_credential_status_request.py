@@ -70,8 +70,8 @@ class BoostAllocateCredentialStatusRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -81,14 +81,6 @@ class BoostAllocateCredentialStatusRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status_purposes is None and "status_purposes" in self.model_fields_set and "status_purposes" not in excluded_fields:
-            _dict['statusPurposes'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.list_size is None and "list_size" in self.model_fields_set and "list_size" not in excluded_fields:
-            _dict['listSize'] = None
-
         return _dict
 
     @classmethod

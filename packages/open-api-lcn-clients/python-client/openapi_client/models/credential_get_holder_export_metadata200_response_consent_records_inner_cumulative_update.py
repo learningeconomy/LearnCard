@@ -75,8 +75,8 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeU
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -98,38 +98,6 @@ class CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerCumulativeU
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.from_version is None and "from_version" in self.model_fields_set and "from_version" not in excluded_fields:
-            _dict['fromVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.to_version is None and "to_version" in self.model_fields_set and "to_version" not in excluded_fields:
-            _dict['toVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.kind is None and "kind" in self.model_fields_set and "kind" not in excluded_fields:
-            _dict['kind'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason is None and "reason" in self.model_fields_set and "reason" not in excluded_fields:
-            _dict['reason'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.diff is None and "diff" in self.model_fields_set and "diff" not in excluded_fields:
-            _dict['diff'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reconsent_deadline is None and "reconsent_deadline" in self.model_fields_set and "reconsent_deadline" not in excluded_fields:
-            _dict['reconsentDeadline'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
-            _dict['createdAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.preview is None and "preview" in self.model_fields_set and "preview" not in excluded_fields:
-            _dict['preview'] = None
 
         return _dict
 

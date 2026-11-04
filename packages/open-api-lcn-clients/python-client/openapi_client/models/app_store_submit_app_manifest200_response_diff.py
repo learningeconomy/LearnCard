@@ -66,8 +66,8 @@ class AppStoreSubmitAppManifest200ResponseDiff(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -98,30 +98,6 @@ class AppStoreSubmitAppManifest200ResponseDiff(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.permissions is None and "permissions" in self.model_fields_set and "permissions" not in excluded_fields:
-            _dict['permissions'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.templates is None and "templates" in self.model_fields_set and "templates" not in excluded_fields:
-            _dict['templates'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.consent_scopes is None and "consent_scopes" in self.model_fields_set and "consent_scopes" not in excluded_fields:
-            _dict['consentScopes'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.feature_paths is None and "feature_paths" in self.model_fields_set and "feature_paths" not in excluded_fields:
-            _dict['featurePaths'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.counter_keys is None and "counter_keys" in self.model_fields_set and "counter_keys" not in excluded_fields:
-            _dict['counterKeys'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.requires_review is None and "requires_review" in self.model_fields_set and "requires_review" not in excluded_fields:
-            _dict['requiresReview'] = None
 
         return _dict
 

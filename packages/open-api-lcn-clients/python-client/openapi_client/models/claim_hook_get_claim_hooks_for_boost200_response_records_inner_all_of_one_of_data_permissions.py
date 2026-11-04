@@ -70,8 +70,8 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfDataPermiss
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -87,58 +87,6 @@ class ClaimHookGetClaimHooksForBoost200ResponseRecordsInnerAllOfOneOfDataPermiss
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.role is None and "role" in self.model_fields_set and "role" not in excluded_fields:
-            _dict['role'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_view is None and "can_view" in self.model_fields_set and "can_view" not in excluded_fields:
-            _dict['canView'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_edit is None and "can_edit" in self.model_fields_set and "can_edit" not in excluded_fields:
-            _dict['canEdit'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_issue is None and "can_issue" in self.model_fields_set and "can_issue" not in excluded_fields:
-            _dict['canIssue'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_revoke is None and "can_revoke" in self.model_fields_set and "can_revoke" not in excluded_fields:
-            _dict['canRevoke'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_manage_permissions is None and "can_manage_permissions" in self.model_fields_set and "can_manage_permissions" not in excluded_fields:
-            _dict['canManagePermissions'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_issue_children is None and "can_issue_children" in self.model_fields_set and "can_issue_children" not in excluded_fields:
-            _dict['canIssueChildren'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_create_children is None and "can_create_children" in self.model_fields_set and "can_create_children" not in excluded_fields:
-            _dict['canCreateChildren'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_edit_children is None and "can_edit_children" in self.model_fields_set and "can_edit_children" not in excluded_fields:
-            _dict['canEditChildren'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_revoke_children is None and "can_revoke_children" in self.model_fields_set and "can_revoke_children" not in excluded_fields:
-            _dict['canRevokeChildren'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_manage_children_permissions is None and "can_manage_children_permissions" in self.model_fields_set and "can_manage_children_permissions" not in excluded_fields:
-            _dict['canManageChildrenPermissions'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_manage_children_profiles is None and "can_manage_children_profiles" in self.model_fields_set and "can_manage_children_profiles" not in excluded_fields:
-            _dict['canManageChildrenProfiles'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.can_view_analytics is None and "can_view_analytics" in self.model_fields_set and "can_view_analytics" not in excluded_fields:
-            _dict['canViewAnalytics'] = None
 
         return _dict
 

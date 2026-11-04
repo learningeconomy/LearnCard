@@ -61,8 +61,8 @@ class ProfileListInvites200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -79,19 +79,15 @@ class ProfileListInvites200ResponseInner(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.challenge is None and "challenge" in self.model_fields_set and "challenge" not in excluded_fields:
-            _dict['challenge'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.expires_in is None and "expires_in" in self.model_fields_set and "expires_in" not in excluded_fields:
             _dict['expiresIn'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.uses_remaining is None and "uses_remaining" in self.model_fields_set and "uses_remaining" not in excluded_fields:
             _dict['usesRemaining'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.max_uses is None and "max_uses" in self.model_fields_set and "max_uses" not in excluded_fields:
             _dict['maxUses'] = None
 

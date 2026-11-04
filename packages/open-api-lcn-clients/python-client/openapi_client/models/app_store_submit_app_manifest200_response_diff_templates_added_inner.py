@@ -60,8 +60,8 @@ class AppStoreSubmitAppManifest200ResponseDiffTemplatesAddedInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -77,14 +77,6 @@ class AppStoreSubmitAppManifest200ResponseDiffTemplatesAddedInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.alias is None and "alias" in self.model_fields_set and "alias" not in excluded_fields:
-            _dict['alias'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
-            _dict['version'] = None
 
         return _dict
 

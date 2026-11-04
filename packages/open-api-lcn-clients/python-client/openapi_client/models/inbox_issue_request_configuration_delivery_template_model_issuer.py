@@ -58,8 +58,8 @@ class InboxIssueRequestConfigurationDeliveryTemplateModelIssuer(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,14 +69,6 @@ class InboxIssueRequestConfigurationDeliveryTemplateModelIssuer(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.logo_url is None and "logo_url" in self.model_fields_set and "logo_url" not in excluded_fields:
-            _dict['logoUrl'] = None
-
         return _dict
 
     @classmethod

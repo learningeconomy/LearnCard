@@ -22,9 +22,16 @@ const { AllocateCredentialRefreshInputValidator, PublishCredentialRefreshInputVa
     await import('@learncard/types');
 const { activityRouter } = await import('../src/routes/activity');
 const { contractsRouter } = await import('../src/routes/contracts');
+const { boostsRouter } = await import('../src/routes/boosts');
 const consentListInput = contractsRouter._def.procedures.getConsentedContracts._def.inputs.at(
     -1
 ) as ZodType;
+const bodyInputs: Record<string, ZodType> = {
+    '/consent-flow-contract/update':
+        contractsRouter._def.procedures.updateConsentFlowContract._def.inputs.at(-1) as ZodType,
+    '/boost/skills/search':
+        boostsRouter._def.procedures.searchSkillsAvailableForBoost._def.inputs.at(-1) as ZodType,
+};
 
 const activityInputs: Record<string, ZodType> = {
     '/activity/credentials': activityRouter._def.procedures.getMyActivities._def.inputs.at(
@@ -44,6 +51,8 @@ for (const record of records) {
         valid = AllocateCredentialRefreshInputValidator.safeParse(record.body).success;
     } else if (url.pathname === '/consent-flow-contracts/consent') {
         valid = consentListInput.safeParse(record.body ?? undefined).success;
+    } else if (bodyInputs[url.pathname]) {
+        valid = bodyInputs[url.pathname]!.safeParse(record.body).success;
     } else {
         const validator = activityInputs[url.pathname];
         assert(validator, `No source validator for captured path ${url.pathname}`);
@@ -73,6 +82,6 @@ for (const validator of Object.values(activityInputs)) {
     }
 }
 console.log(
-    `Verified ${records.length} captured publication/allocation/activity/consent cases and Z-only boundaries against actual source validators`
+    `Verified ${records.length} captured publication/allocation/activity/consent/update/skill-search cases and Z-only boundaries against actual source validators`
 );
 process.exit(0);

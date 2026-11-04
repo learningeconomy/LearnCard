@@ -62,8 +62,8 @@ class AppStoreGetMyCredentialsFromApp200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,19 +86,7 @@ class AppStoreGetMyCredentialsFromApp200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.has_more is None and "has_more" in self.model_fields_set and "has_more" not in excluded_fields:
-            _dict['hasMore'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
-            _dict['cursor'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.records is None and "records" in self.model_fields_set and "records" not in excluded_fields:
-            _dict['records'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.total_count is None and "total_count" in self.model_fields_set and "total_count" not in excluded_fields:
             _dict['totalCount'] = None
 

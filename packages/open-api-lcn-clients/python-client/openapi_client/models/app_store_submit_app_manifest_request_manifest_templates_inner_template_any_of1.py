@@ -88,8 +88,8 @@ class AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1(BaseM
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -133,65 +133,9 @@ class AppStoreSubmitAppManifestRequestManifestTemplatesInnerTemplateAnyOf1(BaseM
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.raw_credential is None and "raw_credential" in self.model_fields_set and "raw_credential" not in excluded_fields:
             _dict['rawCredential'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
-            _dict['image'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.issuer_name is None and "issuer_name" in self.model_fields_set and "issuer_name" not in excluded_fields:
-            _dict['issuerName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.achievement_type is None and "achievement_type" in self.model_fields_set and "achievement_type" not in excluded_fields:
-            _dict['achievementType'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
-            _dict['category'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.criteria is None and "criteria" in self.model_fields_set and "criteria" not in excluded_fields:
-            _dict['criteria'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.alignments is None and "alignments" in self.model_fields_set and "alignments" not in excluded_fields:
-            _dict['alignments'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.tags is None and "tags" in self.model_fields_set and "tags" not in excluded_fields:
-            _dict['tags'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.activity is None and "activity" in self.model_fields_set and "activity" not in excluded_fields:
-            _dict['activity'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credits is None and "credits" in self.model_fields_set and "credits" not in excluded_fields:
-            _dict['credits'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.valid_until is None and "valid_until" in self.model_fields_set and "valid_until" not in excluded_fields:
-            _dict['validUntil'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.evidence is None and "evidence" in self.model_fields_set and "evidence" not in excluded_fields:
-            _dict['evidence'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.wallet_skills is None and "wallet_skills" in self.model_fields_set and "wallet_skills" not in excluded_fields:
-            _dict['walletSkills'] = None
 
         return _dict
 

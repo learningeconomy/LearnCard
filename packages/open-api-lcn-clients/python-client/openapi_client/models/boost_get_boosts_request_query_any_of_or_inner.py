@@ -65,8 +65,8 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -97,34 +97,6 @@ class BoostGetBoostsRequestQueryAnyOfOrInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of status
         if self.status:
             _dict['status'] = self.status.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uri is None and "uri" in self.model_fields_set and "uri" not in excluded_fields:
-            _dict['uri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
-            _dict['category'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.meta is None and "meta" in self.model_fields_set and "meta" not in excluded_fields:
-            _dict['meta'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.auto_connect_recipients is None and "auto_connect_recipients" in self.model_fields_set and "auto_connect_recipients" not in excluded_fields:
-            _dict['autoConnectRecipients'] = None
-
         return _dict
 
     @classmethod

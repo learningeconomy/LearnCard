@@ -78,8 +78,8 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf2(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -98,42 +98,6 @@ class BoostGetBoostRecipients200ResponseInnerToAnyOf2(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile_id is None and "profile_id" in self.model_fields_set and "profile_id" not in excluded_fields:
-            _dict['profileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
-            _dict['displayName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.short_bio is None and "short_bio" in self.model_fields_set and "short_bio" not in excluded_fields:
-            _dict['shortBio'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
-            _dict['image'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.hero_image is None and "hero_image" in self.model_fields_set and "hero_image" not in excluded_fields:
-            _dict['heroImage'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.linked_in_organization_id is None and "linked_in_organization_id" in self.model_fields_set and "linked_in_organization_id" not in excluded_fields:
-            _dict['linkedInOrganizationId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_service_profile is None and "is_service_profile" in self.model_fields_set and "is_service_profile" not in excluded_fields:
-            _dict['isServiceProfile'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display is None and "display" in self.model_fields_set and "display" not in excluded_fields:
-            _dict['display'] = None
 
         return _dict
 

@@ -59,8 +59,8 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -70,18 +70,6 @@ class ContractsSendAiInsightShareRequestRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.child_profile_id is None and "child_profile_id" in self.model_fields_set and "child_profile_id" not in excluded_fields:
-            _dict['childProfileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.target_profile_id is None and "target_profile_id" in self.model_fields_set and "target_profile_id" not in excluded_fields:
-            _dict['targetProfileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.share_link is None and "share_link" in self.model_fields_set and "share_link" not in excluded_fields:
-            _dict['shareLink'] = None
-
         return _dict
 
     @classmethod

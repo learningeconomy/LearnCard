@@ -59,8 +59,8 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,14 +76,6 @@ class ContractsAddAutoBoostsToContractRequest(BaseModel):
             for _item_autoboosts in self.autoboosts:
                 _items.append(_item_autoboosts.to_dict() if _item_autoboosts is not None else None)
             _dict['autoboosts'] = _items
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
-            _dict['contractUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.autoboosts is None and "autoboosts" in self.model_fields_set and "autoboosts" not in excluded_fields:
-            _dict['autoboosts'] = None
-
         return _dict
 
     @classmethod

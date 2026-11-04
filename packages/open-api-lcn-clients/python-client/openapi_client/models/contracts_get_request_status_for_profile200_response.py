@@ -87,8 +87,8 @@ class ContractsGetRequestStatusForProfile200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -108,35 +108,15 @@ class ContractsGetRequestStatusForProfile200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.request_id is None and "request_id" in self.model_fields_set and "request_id" not in excluded_fields:
-            _dict['requestId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.requested_by is None and "requested_by" in self.model_fields_set and "requested_by" not in excluded_fields:
-            _dict['requestedBy'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.external_reference_id is None and "external_reference_id" in self.model_fields_set and "external_reference_id" not in excluded_fields:
-            _dict['externalReferenceId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.requested_at is None and "requested_at" in self.model_fields_set and "requested_at" not in excluded_fields:
-            _dict['requestedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.message is None and "message" in self.model_fields_set and "message" not in excluded_fields:
             _dict['message'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile is None and "profile" in self.model_fields_set and "profile" not in excluded_fields:
-            _dict['profile'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
             _dict['status'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.read_status is None and "read_status" in self.model_fields_set and "read_status" not in excluded_fields:
             _dict['readStatus'] = None
 

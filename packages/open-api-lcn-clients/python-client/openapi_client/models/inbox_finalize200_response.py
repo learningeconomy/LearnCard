@@ -65,8 +65,8 @@ class InboxFinalize200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -95,29 +95,21 @@ class InboxFinalize200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.processed is None and "processed" in self.model_fields_set and "processed" not in excluded_fields:
             _dict['processed'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.claimed is None and "claimed" in self.model_fields_set and "claimed" not in excluded_fields:
             _dict['claimed'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.errors is None and "errors" in self.model_fields_set and "errors" not in excluded_fields:
             _dict['errors'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.guardian_pending is None and "guardian_pending" in self.model_fields_set and "guardian_pending" not in excluded_fields:
             _dict['guardianPending'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.verifiable_credentials is None and "verifiable_credentials" in self.model_fields_set and "verifiable_credentials" not in excluded_fields:
-            _dict['verifiableCredentials'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.deliveries is None and "deliveries" in self.model_fields_set and "deliveries" not in excluded_fields:
-            _dict['deliveries'] = None
 
         return _dict
 

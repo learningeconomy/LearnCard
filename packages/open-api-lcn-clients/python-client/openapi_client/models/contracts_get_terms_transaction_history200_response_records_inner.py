@@ -91,8 +91,8 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -117,58 +117,6 @@ class ContractsGetTermsTransactionHistory200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
-            _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.one_time is None and "one_time" in self.model_fields_set and "one_time" not in excluded_fields:
-            _dict['oneTime'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
-            _dict['terms'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_approval is None and "guardian_approval" in self.model_fields_set and "guardian_approval" not in excluded_fields:
-            _dict['guardianApproval'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.referral is None and "referral" in self.model_fields_set and "referral" not in excluded_fields:
-            _dict['referral'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.action is None and "action" in self.model_fields_set and "action" not in excluded_fields:
-            _dict['action'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.kind is None and "kind" in self.model_fields_set and "kind" not in excluded_fields:
-            _dict['kind'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.var_date is None and "var_date" in self.model_fields_set and "var_date" not in excluded_fields:
-            _dict['date'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.uris is None and "uris" in self.model_fields_set and "uris" not in excluded_fields:
-            _dict['uris'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.consented_version is None and "consented_version" in self.model_fields_set and "consented_version" not in excluded_fields:
-            _dict['consentedVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reconsent_deadline is None and "reconsent_deadline" in self.model_fields_set and "reconsent_deadline" not in excluded_fields:
-            _dict['reconsentDeadline'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.new_options_until is None and "new_options_until" in self.model_fields_set and "new_options_until" not in excluded_fields:
-            _dict['newOptionsUntil'] = None
 
         return _dict
 

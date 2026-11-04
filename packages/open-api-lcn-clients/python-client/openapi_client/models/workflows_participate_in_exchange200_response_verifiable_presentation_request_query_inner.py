@@ -60,8 +60,8 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -83,14 +83,6 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential_query is None and "credential_query" in self.model_fields_set and "credential_query" not in excluded_fields:
-            _dict['credentialQuery'] = None
 
         return _dict
 

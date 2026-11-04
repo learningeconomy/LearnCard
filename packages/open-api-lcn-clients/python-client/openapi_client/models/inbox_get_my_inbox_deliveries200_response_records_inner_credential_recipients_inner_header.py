@@ -64,8 +64,8 @@ class InboxGetMyInboxDeliveries200ResponseRecordsInnerCredentialRecipientsInnerH
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,34 +78,6 @@ class InboxGetMyInboxDeliveries200ResponseRecordsInnerCredentialRecipientsInnerH
         # override the default output from pydantic by calling `to_dict()` of epk
         if self.epk:
             _dict['epk'] = self.epk.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.alg is None and "alg" in self.model_fields_set and "alg" not in excluded_fields:
-            _dict['alg'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.iv is None and "iv" in self.model_fields_set and "iv" not in excluded_fields:
-            _dict['iv'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.tag is None and "tag" in self.model_fields_set and "tag" not in excluded_fields:
-            _dict['tag'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.epk is None and "epk" in self.model_fields_set and "epk" not in excluded_fields:
-            _dict['epk'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.kid is None and "kid" in self.model_fields_set and "kid" not in excluded_fields:
-            _dict['kid'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.apv is None and "apv" in self.model_fields_set and "apv" not in excluded_fields:
-            _dict['apv'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.apu is None and "apu" in self.model_fields_set and "apu" not in excluded_fields:
-            _dict['apu'] = None
-
         return _dict
 
     @classmethod

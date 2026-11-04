@@ -67,8 +67,8 @@ class ActivityGetActivityStats200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -85,43 +85,43 @@ class ActivityGetActivityStats200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.total_events is None and "total_events" in self.model_fields_set and "total_events" not in excluded_fields:
             _dict['totalEvents'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.total is None and "total" in self.model_fields_set and "total" not in excluded_fields:
             _dict['total'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.created is None and "created" in self.model_fields_set and "created" not in excluded_fields:
             _dict['created'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.delivered is None and "delivered" in self.model_fields_set and "delivered" not in excluded_fields:
             _dict['delivered'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.claimed is None and "claimed" in self.model_fields_set and "claimed" not in excluded_fields:
             _dict['claimed'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.expired is None and "expired" in self.model_fields_set and "expired" not in excluded_fields:
             _dict['expired'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.failed is None and "failed" in self.model_fields_set and "failed" not in excluded_fields:
             _dict['failed'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.revoked is None and "revoked" in self.model_fields_set and "revoked" not in excluded_fields:
             _dict['revoked'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.suspended is None and "suspended" in self.model_fields_set and "suspended" not in excluded_fields:
             _dict['suspended'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.claim_rate is None and "claim_rate" in self.model_fields_set and "claim_rate" not in excluded_fields:
             _dict['claimRate'] = None
 

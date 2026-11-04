@@ -71,8 +71,8 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf1(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -88,34 +88,6 @@ class ContactMethodsGetMyContactMethods200ResponseInnerOneOf1(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.value is None and "value" in self.model_fields_set and "value" not in excluded_fields:
-            _dict['value'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_verified is None and "is_verified" in self.model_fields_set and "is_verified" not in excluded_fields:
-            _dict['isVerified'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.verified_at is None and "verified_at" in self.model_fields_set and "verified_at" not in excluded_fields:
-            _dict['verifiedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.is_primary is None and "is_primary" in self.model_fields_set and "is_primary" not in excluded_fields:
-            _dict['isPrimary'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
-            _dict['createdAt'] = None
 
         return _dict
 

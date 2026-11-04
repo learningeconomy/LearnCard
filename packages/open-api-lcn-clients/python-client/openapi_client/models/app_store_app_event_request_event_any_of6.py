@@ -79,8 +79,8 @@ class AppStoreAppEventRequestEventAnyOf6(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -90,30 +90,6 @@ class AppStoreAppEventRequestEventAnyOf6(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.title is None and "title" in self.model_fields_set and "title" not in excluded_fields:
-            _dict['title'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.body is None and "body" in self.model_fields_set and "body" not in excluded_fields:
-            _dict['body'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.action_path is None and "action_path" in self.model_fields_set and "action_path" not in excluded_fields:
-            _dict['actionPath'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
-            _dict['category'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.priority is None and "priority" in self.model_fields_set and "priority" not in excluded_fields:
-            _dict['priority'] = None
-
         return _dict
 
     @classmethod

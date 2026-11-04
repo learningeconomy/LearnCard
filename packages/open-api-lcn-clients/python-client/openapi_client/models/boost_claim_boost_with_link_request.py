@@ -58,8 +58,8 @@ class BoostClaimBoostWithLinkRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -69,14 +69,6 @@ class BoostClaimBoostWithLinkRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.challenge is None and "challenge" in self.model_fields_set and "challenge" not in excluded_fields:
-            _dict['challenge'] = None
-
         return _dict
 
     @classmethod

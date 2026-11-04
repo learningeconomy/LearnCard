@@ -59,8 +59,8 @@ class ProfileManagerCreateChildProfileManagerRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -73,14 +73,6 @@ class ProfileManagerCreateChildProfileManagerRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of profile
         if self.profile:
             _dict['profile'] = self.profile.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.parent_uri is None and "parent_uri" in self.model_fields_set and "parent_uri" not in excluded_fields:
-            _dict['parentUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.profile is None and "profile" in self.model_fields_set and "profile" not in excluded_fields:
-            _dict['profile'] = None
-
         return _dict
 
     @classmethod

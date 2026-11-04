@@ -73,8 +73,8 @@ class BoostSendRequestOptions(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -87,26 +87,6 @@ class BoostSendRequestOptions(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of branding
         if self.branding:
             _dict['branding'] = self.branding.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
-            _dict['webhookUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.suppress_delivery is None and "suppress_delivery" in self.model_fields_set and "suppress_delivery" not in excluded_fields:
-            _dict['suppressDelivery'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.branding is None and "branding" in self.model_fields_set and "branding" not in excluded_fields:
-            _dict['branding'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
-            _dict['guardianEmail'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
-            _dict['expiresInDays'] = None
-
         return _dict
 
     @classmethod

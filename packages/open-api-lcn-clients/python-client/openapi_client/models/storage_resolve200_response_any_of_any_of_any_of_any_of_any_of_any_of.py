@@ -83,8 +83,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -133,78 +133,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOf(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.context is None and "context" in self.model_fields_set and "context" not in excluded_fields:
-            _dict['@context'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.issuer is None and "issuer" in self.model_fields_set and "issuer" not in excluded_fields:
-            _dict['issuer'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential_subject is None and "credential_subject" in self.model_fields_set and "credential_subject" not in excluded_fields:
-            _dict['credentialSubject'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.refresh_service is None and "refresh_service" in self.model_fields_set and "refresh_service" not in excluded_fields:
-            _dict['refreshService'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential_schema is None and "credential_schema" in self.model_fields_set and "credential_schema" not in excluded_fields:
-            _dict['credentialSchema'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.issuance_date is None and "issuance_date" in self.model_fields_set and "issuance_date" not in excluded_fields:
-            _dict['issuanceDate'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expiration_date is None and "expiration_date" in self.model_fields_set and "expiration_date" not in excluded_fields:
-            _dict['expirationDate'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential_status is None and "credential_status" in self.model_fields_set and "credential_status" not in excluded_fields:
-            _dict['credentialStatus'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.valid_from is None and "valid_from" in self.model_fields_set and "valid_from" not in excluded_fields:
-            _dict['validFrom'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.valid_until is None and "valid_until" in self.model_fields_set and "valid_until" not in excluded_fields:
-            _dict['validUntil'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms_of_use is None and "terms_of_use" in self.model_fields_set and "terms_of_use" not in excluded_fields:
-            _dict['termsOfUse'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.evidence is None and "evidence" in self.model_fields_set and "evidence" not in excluded_fields:
-            _dict['evidence'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.render_method is None and "render_method" in self.model_fields_set and "render_method" not in excluded_fields:
-            _dict['renderMethod'] = None
 
         return _dict
 

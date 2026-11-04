@@ -70,8 +70,8 @@ class ContractsUpdateConsentFlowContract200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -90,22 +90,6 @@ class ContractsUpdateConsentFlowContract200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
-            _dict['version'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.kind is None and "kind" in self.model_fields_set and "kind" not in excluded_fields:
-            _dict['kind'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.affected_users is None and "affected_users" in self.model_fields_set and "affected_users" not in excluded_fields:
-            _dict['affectedUsers'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.preview is None and "preview" in self.model_fields_set and "preview" not in excluded_fields:
-            _dict['preview'] = None
 
         return _dict
 

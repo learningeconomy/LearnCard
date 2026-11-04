@@ -68,8 +68,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,42 +91,6 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfAddress(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.address_country is None and "address_country" in self.model_fields_set and "address_country" not in excluded_fields:
-            _dict['addressCountry'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.address_country_code is None and "address_country_code" in self.model_fields_set and "address_country_code" not in excluded_fields:
-            _dict['addressCountryCode'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.address_region is None and "address_region" in self.model_fields_set and "address_region" not in excluded_fields:
-            _dict['addressRegion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.address_locality is None and "address_locality" in self.model_fields_set and "address_locality" not in excluded_fields:
-            _dict['addressLocality'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.street_address is None and "street_address" in self.model_fields_set and "street_address" not in excluded_fields:
-            _dict['streetAddress'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.post_office_box_number is None and "post_office_box_number" in self.model_fields_set and "post_office_box_number" not in excluded_fields:
-            _dict['postOfficeBoxNumber'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.postal_code is None and "postal_code" in self.model_fields_set and "postal_code" not in excluded_fields:
-            _dict['postalCode'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.geo is None and "geo" in self.model_fields_set and "geo" not in excluded_fields:
-            _dict['geo'] = None
 
         return _dict
 

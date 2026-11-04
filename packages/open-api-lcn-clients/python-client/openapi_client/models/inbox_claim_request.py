@@ -60,8 +60,8 @@ class InboxClaimRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -77,14 +77,6 @@ class InboxClaimRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of configuration
         if self.configuration:
             _dict['configuration'] = self.configuration.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
-            _dict['credential'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.configuration is None and "configuration" in self.model_fields_set and "configuration" not in excluded_fields:
-            _dict['configuration'] = None
-
         return _dict
 
     @classmethod

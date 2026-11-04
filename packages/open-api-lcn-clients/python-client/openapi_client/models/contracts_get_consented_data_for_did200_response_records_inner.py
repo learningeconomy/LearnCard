@@ -80,8 +80,8 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -109,58 +109,6 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credentials is None and "credentials" in self.model_fields_set and "credentials" not in excluded_fields:
-            _dict['credentials'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.personal is None and "personal" in self.model_fields_set and "personal" not in excluded_fields:
-            _dict['personal'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.var_date is None and "var_date" in self.model_fields_set and "var_date" not in excluded_fields:
-            _dict['date'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
-            _dict['createdAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set and "contract_updated_at" not in excluded_fields:
-            _dict['contractUpdatedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract_expires_at is None and "contract_expires_at" in self.model_fields_set and "contract_expires_at" not in excluded_fields:
-            _dict['contractExpiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.reason_for_accessing is None and "reason_for_accessing" in self.model_fields_set and "reason_for_accessing" not in excluded_fields:
-            _dict['reasonForAccessing'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian is None and "guardian" in self.model_fields_set and "guardian" not in excluded_fields:
-            _dict['guardian'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract_uri is None and "contract_uri" in self.model_fields_set and "contract_uri" not in excluded_fields:
-            _dict['contractUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms_uri is None and "terms_uri" in self.model_fields_set and "terms_uri" not in excluded_fields:
-            _dict['termsUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
-            _dict['expiresAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms is None and "terms" in self.model_fields_set and "terms" not in excluded_fields:
-            _dict['terms'] = None
 
         return _dict
 

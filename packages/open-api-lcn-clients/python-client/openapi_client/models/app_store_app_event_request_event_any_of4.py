@@ -90,8 +90,8 @@ class AppStoreAppEventRequestEventAnyOf4(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -101,34 +101,6 @@ class AppStoreAppEventRequestEventAnyOf4(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.include_credentials is None and "include_credentials" in self.model_fields_set and "include_credentials" not in excluded_fields:
-            _dict['includeCredentials'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.include_personal_data is None and "include_personal_data" in self.model_fields_set and "include_personal_data" not in excluded_fields:
-            _dict['includePersonalData'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.format is None and "format" in self.model_fields_set and "format" not in excluded_fields:
-            _dict['format'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.instructions is None and "instructions" in self.model_fields_set and "instructions" not in excluded_fields:
-            _dict['instructions'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.detail_level is None and "detail_level" in self.model_fields_set and "detail_level" not in excluded_fields:
-            _dict['detailLevel'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.wait_for_sync is None and "wait_for_sync" in self.model_fields_set and "wait_for_sync" not in excluded_fields:
-            _dict['waitForSync'] = None
-
         return _dict
 
     @classmethod

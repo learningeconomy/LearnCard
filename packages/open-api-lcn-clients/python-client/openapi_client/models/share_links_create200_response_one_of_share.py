@@ -155,8 +155,8 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -176,85 +176,37 @@ class ShareLinksCreate200ResponseOneOfShare(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.title is None and "title" in self.model_fields_set and "title" not in excluded_fields:
-            _dict['title'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.note is None and "note" in self.model_fields_set and "note" not in excluded_fields:
             _dict['note'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.selected_count is None and "selected_count" in self.model_fields_set and "selected_count" not in excluded_fields:
-            _dict['selectedCount'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.version is None and "version" in self.model_fields_set and "version" not in excluded_fields:
-            _dict['version'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.content_version is None and "content_version" in self.model_fields_set and "content_version" not in excluded_fields:
-            _dict['contentVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.attachment_id is None and "attachment_id" in self.model_fields_set and "attachment_id" not in excluded_fields:
             _dict['attachmentId'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.attachment_chunk_count is None and "attachment_chunk_count" in self.model_fields_set and "attachment_chunk_count" not in excluded_fields:
             _dict['attachmentChunkCount'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.content_state is None and "content_state" in self.model_fields_set and "content_state" not in excluded_fields:
-            _dict['contentState'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.created_at is None and "created_at" in self.model_fields_set and "created_at" not in excluded_fields:
             _dict['createdAt'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.updated_at is None and "updated_at" in self.model_fields_set and "updated_at" not in excluded_fields:
             _dict['updatedAt'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.expires_at is None and "expires_at" in self.model_fields_set and "expires_at" not in excluded_fields:
             _dict['expiresAt'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.stopped_at is None and "stopped_at" in self.model_fields_set and "stopped_at" not in excluded_fields:
             _dict['stoppedAt'] = None
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.last_viewed_at is None and "last_viewed_at" in self.model_fields_set and "last_viewed_at" not in excluded_fields:
             _dict['lastViewedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.view_count is None and "view_count" in self.model_fields_set and "view_count" not in excluded_fields:
-            _dict['viewCount'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.passcode_protected is None and "passcode_protected" in self.model_fields_set and "passcode_protected" not in excluded_fields:
-            _dict['passcodeProtected'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.notify_on_view is None and "notify_on_view" in self.model_fields_set and "notify_on_view" not in excluded_fields:
-            _dict['notifyOnView'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.minor_policy is None and "minor_policy" in self.model_fields_set and "minor_policy" not in excluded_fields:
-            _dict['minorPolicy'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.content_url is None and "content_url" in self.model_fields_set and "content_url" not in excluded_fields:
-            _dict['contentUrl'] = None
 
         return _dict
 

@@ -77,8 +77,8 @@ class BoostAllocateCredentialStatus200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -97,26 +97,6 @@ class BoostAllocateCredentialStatus200ResponseInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status_purpose is None and "status_purpose" in self.model_fields_set and "status_purpose" not in excluded_fields:
-            _dict['statusPurpose'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status_list_index is None and "status_list_index" in self.model_fields_set and "status_list_index" not in excluded_fields:
-            _dict['statusListIndex'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status_list_credential is None and "status_list_credential" in self.model_fields_set and "status_list_credential" not in excluded_fields:
-            _dict['statusListCredential'] = None
 
         return _dict
 

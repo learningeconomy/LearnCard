@@ -106,8 +106,8 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -123,74 +123,6 @@ class ActivityGetActivityChain200ResponseInner(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of recipient_profile
         if self.recipient_profile:
             _dict['recipientProfile'] = self.recipient_profile.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.activity_id is None and "activity_id" in self.model_fields_set and "activity_id" not in excluded_fields:
-            _dict['activityId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.event_type is None and "event_type" in self.model_fields_set and "event_type" not in excluded_fields:
-            _dict['eventType'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.timestamp is None and "timestamp" in self.model_fields_set and "timestamp" not in excluded_fields:
-            _dict['timestamp'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.actor_profile_id is None and "actor_profile_id" in self.model_fields_set and "actor_profile_id" not in excluded_fields:
-            _dict['actorProfileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.on_behalf_of is None and "on_behalf_of" in self.model_fields_set and "on_behalf_of" not in excluded_fields:
-            _dict['onBehalfOf'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.recipient_type is None and "recipient_type" in self.model_fields_set and "recipient_type" not in excluded_fields:
-            _dict['recipientType'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.recipient_identifier is None and "recipient_identifier" in self.model_fields_set and "recipient_identifier" not in excluded_fields:
-            _dict['recipientIdentifier'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential_uri is None and "credential_uri" in self.model_fields_set and "credential_uri" not in excluded_fields:
-            _dict['credentialUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.inbox_credential_id is None and "inbox_credential_id" in self.model_fields_set and "inbox_credential_id" not in excluded_fields:
-            _dict['inboxCredentialId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.integration_id is None and "integration_id" in self.model_fields_set and "integration_id" not in excluded_fields:
-            _dict['integrationId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.source is None and "source" in self.model_fields_set and "source" not in excluded_fields:
-            _dict['source'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.metadata is None and "metadata" in self.model_fields_set and "metadata" not in excluded_fields:
-            _dict['metadata'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.status is None and "status" in self.model_fields_set and "status" not in excluded_fields:
-            _dict['status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost is None and "boost" in self.model_fields_set and "boost" not in excluded_fields:
-            _dict['boost'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.recipient_profile is None and "recipient_profile" in self.model_fields_set and "recipient_profile" not in excluded_fields:
-            _dict['recipientProfile'] = None
-
         return _dict
 
     @classmethod

@@ -63,8 +63,8 @@ class AppStoreApplyManifestVersion200ResponseReconciled(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -80,26 +80,6 @@ class AppStoreApplyManifestVersion200ResponseReconciled(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.templates_upserted is None and "templates_upserted" in self.model_fields_set and "templates_upserted" not in excluded_fields:
-            _dict['templatesUpserted'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.templates_skipped is None and "templates_skipped" in self.model_fields_set and "templates_skipped" not in excluded_fields:
-            _dict['templatesSkipped'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contracts_upserted is None and "contracts_upserted" in self.model_fields_set and "contracts_upserted" not in excluded_fields:
-            _dict['contractsUpserted'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contracts_skipped is None and "contracts_skipped" in self.model_fields_set and "contracts_skipped" not in excluded_fields:
-            _dict['contractsSkipped'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signing_authority_ensured is None and "signing_authority_ensured" in self.model_fields_set and "signing_authority_ensured" not in excluded_fields:
-            _dict['signingAuthorityEnsured'] = None
 
         return _dict
 

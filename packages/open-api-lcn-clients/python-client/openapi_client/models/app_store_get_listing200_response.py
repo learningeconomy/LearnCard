@@ -129,8 +129,8 @@ class AppStoreGetListing200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -152,106 +152,6 @@ class AppStoreGetListing200Response(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.listing_id is None and "listing_id" in self.model_fields_set and "listing_id" not in excluded_fields:
-            _dict['listing_id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.slug is None and "slug" in self.model_fields_set and "slug" not in excluded_fields:
-            _dict['slug'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.display_name is None and "display_name" in self.model_fields_set and "display_name" not in excluded_fields:
-            _dict['display_name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.tagline is None and "tagline" in self.model_fields_set and "tagline" not in excluded_fields:
-            _dict['tagline'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.full_description is None and "full_description" in self.model_fields_set and "full_description" not in excluded_fields:
-            _dict['full_description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.icon_url is None and "icon_url" in self.model_fields_set and "icon_url" not in excluded_fields:
-            _dict['icon_url'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.app_listing_status is None and "app_listing_status" in self.model_fields_set and "app_listing_status" not in excluded_fields:
-            _dict['app_listing_status'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.launch_type is None and "launch_type" in self.model_fields_set and "launch_type" not in excluded_fields:
-            _dict['launch_type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.launch_config_json is None and "launch_config_json" in self.model_fields_set and "launch_config_json" not in excluded_fields:
-            _dict['launch_config_json'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.category is None and "category" in self.model_fields_set and "category" not in excluded_fields:
-            _dict['category'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.promo_video_url is None and "promo_video_url" in self.model_fields_set and "promo_video_url" not in excluded_fields:
-            _dict['promo_video_url'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.promotion_level is None and "promotion_level" in self.model_fields_set and "promotion_level" not in excluded_fields:
-            _dict['promotion_level'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.ios_app_store_id is None and "ios_app_store_id" in self.model_fields_set and "ios_app_store_id" not in excluded_fields:
-            _dict['ios_app_store_id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.android_app_store_id is None and "android_app_store_id" in self.model_fields_set and "android_app_store_id" not in excluded_fields:
-            _dict['android_app_store_id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.privacy_policy_url is None and "privacy_policy_url" in self.model_fields_set and "privacy_policy_url" not in excluded_fields:
-            _dict['privacy_policy_url'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.terms_url is None and "terms_url" in self.model_fields_set and "terms_url" not in excluded_fields:
-            _dict['terms_url'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.hero_background_color is None and "hero_background_color" in self.model_fields_set and "hero_background_color" not in excluded_fields:
-            _dict['hero_background_color'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.min_age is None and "min_age" in self.model_fields_set and "min_age" not in excluded_fields:
-            _dict['min_age'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.age_rating is None and "age_rating" in self.model_fields_set and "age_rating" not in excluded_fields:
-            _dict['age_rating'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.submitted_at is None and "submitted_at" in self.model_fields_set and "submitted_at" not in excluded_fields:
-            _dict['submitted_at'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contact_email is None and "contact_email" in self.model_fields_set and "contact_email" not in excluded_fields:
-            _dict['contact_email'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.highlights is None and "highlights" in self.model_fields_set and "highlights" not in excluded_fields:
-            _dict['highlights'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.screenshots is None and "screenshots" in self.model_fields_set and "screenshots" not in excluded_fields:
-            _dict['screenshots'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.submitter is None and "submitter" in self.model_fields_set and "submitter" not in excluded_fields:
-            _dict['submitter'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.pending_update is None and "pending_update" in self.model_fields_set and "pending_update" not in excluded_fields:
-            _dict['pending_update'] = None
 
         return _dict
 

@@ -62,8 +62,8 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -85,18 +85,6 @@ class BoostGetBoost200ResponseBoostIssuerAnyOfOtherIdentifierInner(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.identifier is None and "identifier" in self.model_fields_set and "identifier" not in excluded_fields:
-            _dict['identifier'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.identifier_type is None and "identifier_type" in self.model_fields_set and "identifier_type" not in excluded_fields:
-            _dict['identifierType'] = None
 
         return _dict
 

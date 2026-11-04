@@ -68,8 +68,8 @@ class AppStoreAppEventRequestEventAnyOf3(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,25 +79,9 @@ class AppStoreAppEventRequestEventAnyOf3(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.template_alias is None and "template_alias" in self.model_fields_set and "template_alias" not in excluded_fields:
-            _dict['templateAlias'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.limit is None and "limit" in self.model_fields_set and "limit" not in excluded_fields:
             _dict['limit'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.cursor is None and "cursor" in self.model_fields_set and "cursor" not in excluded_fields:
-            _dict['cursor'] = None
 
         return _dict
 

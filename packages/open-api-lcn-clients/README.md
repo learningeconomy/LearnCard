@@ -43,11 +43,18 @@ are in inputs, not hand-edited generated files:
   in UTC with a `Z` suffix, matching the unchanged server validators. Naive
   datetimes raise a clear `ValueError`; no machine-local timezone is inferred.
 
+Nonnullable optional request fields keep Python's `None`-as-omission behavior;
+for example, `limit=None` does not send JSON `null`. Explicit nullable values
+remain meaningful: a null cursor is retained where supported, and
+`changes.expiresAt=None` clears expiry instead of dropping the edit.
+
 The allocation server contract remains optional **but nonnullable**:
 `profileId` omission and a string are valid; explicit null is invalid. Python's
 optional field annotation still accepts `None`, but an explicitly supplied null
 is preserved in prepared JSON rather than silently omitted or made valid. Both
 the exported schema and actual source validator reject that prepared payload.
+The source-owned `x-python-preserve-explicit-null` annotation preserves this
+existing strict allocation case without changing serialization for other models.
 
 ## Offline verification
 

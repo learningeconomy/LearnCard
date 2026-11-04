@@ -93,8 +93,8 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -126,89 +126,9 @@ class BoostSendRequestTemplateCredentialAnyOfIssuerAnyOf(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.id is None and "id" in self.model_fields_set and "id" not in excluded_fields:
-            _dict['id'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.name is None and "name" in self.model_fields_set and "name" not in excluded_fields:
-            _dict['name'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.url is None and "url" in self.model_fields_set and "url" not in excluded_fields:
-            _dict['url'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.phone is None and "phone" in self.model_fields_set and "phone" not in excluded_fields:
-            _dict['phone'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.description is None and "description" in self.model_fields_set and "description" not in excluded_fields:
-            _dict['description'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.endorsement is None and "endorsement" in self.model_fields_set and "endorsement" not in excluded_fields:
-            _dict['endorsement'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.image is None and "image" in self.model_fields_set and "image" not in excluded_fields:
-            _dict['image'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.email is None and "email" in self.model_fields_set and "email" not in excluded_fields:
-            _dict['email'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.address is None and "address" in self.model_fields_set and "address" not in excluded_fields:
-            _dict['address'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.other_identifier is None and "other_identifier" in self.model_fields_set and "other_identifier" not in excluded_fields:
-            _dict['otherIdentifier'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.official is None and "official" in self.model_fields_set and "official" not in excluded_fields:
-            _dict['official'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.parent_org is None and "parent_org" in self.model_fields_set and "parent_org" not in excluded_fields:
             _dict['parentOrg'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.family_name is None and "family_name" in self.model_fields_set and "family_name" not in excluded_fields:
-            _dict['familyName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.given_name is None and "given_name" in self.model_fields_set and "given_name" not in excluded_fields:
-            _dict['givenName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.additional_name is None and "additional_name" in self.model_fields_set and "additional_name" not in excluded_fields:
-            _dict['additionalName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.patronymic_name is None and "patronymic_name" in self.model_fields_set and "patronymic_name" not in excluded_fields:
-            _dict['patronymicName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.honorific_prefix is None and "honorific_prefix" in self.model_fields_set and "honorific_prefix" not in excluded_fields:
-            _dict['honorificPrefix'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.honorific_suffix is None and "honorific_suffix" in self.model_fields_set and "honorific_suffix" not in excluded_fields:
-            _dict['honorificSuffix'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.family_name_prefix is None and "family_name_prefix" in self.model_fields_set and "family_name_prefix" not in excluded_fields:
-            _dict['familyNamePrefix'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.date_of_birth is None and "date_of_birth" in self.model_fields_set and "date_of_birth" not in excluded_fields:
-            _dict['dateOfBirth'] = None
 
         return _dict
 

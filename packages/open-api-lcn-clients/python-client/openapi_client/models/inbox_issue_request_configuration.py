@@ -75,8 +75,8 @@ class InboxIssueRequestConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -92,30 +92,6 @@ class InboxIssueRequestConfiguration(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of delivery
         if self.delivery:
             _dict['delivery'] = self.delivery.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_email is None and "guardian_email" in self.model_fields_set and "guardian_email" not in excluded_fields:
-            _dict['guardianEmail'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.signing_authority is None and "signing_authority" in self.model_fields_set and "signing_authority" not in excluded_fields:
-            _dict['signingAuthority'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.webhook_url is None and "webhook_url" in self.model_fields_set and "webhook_url" not in excluded_fields:
-            _dict['webhookUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.expires_in_days is None and "expires_in_days" in self.model_fields_set and "expires_in_days" not in excluded_fields:
-            _dict['expiresInDays'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.template_data is None and "template_data" in self.model_fields_set and "template_data" not in excluded_fields:
-            _dict['templateData'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.delivery is None and "delivery" in self.model_fields_set and "delivery" not in excluded_fields:
-            _dict['delivery'] = None
-
         return _dict
 
     @classmethod

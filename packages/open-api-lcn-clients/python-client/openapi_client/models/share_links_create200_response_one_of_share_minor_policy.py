@@ -68,8 +68,8 @@ class ShareLinksCreate200ResponseOneOfShareMinorPolicy(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,21 +86,9 @@ class ShareLinksCreate200ResponseOneOfShareMinorPolicy(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # Preserve explicit null rather than silently turning it into omission.
+        # Preserve a supplied nullable value.
         if self.is_minor is None and "is_minor" in self.model_fields_set and "is_minor" not in excluded_fields:
             _dict['isMinor'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.policy_resolved is None and "policy_resolved" in self.model_fields_set and "policy_resolved" not in excluded_fields:
-            _dict['policyResolved'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.default_expiry_days is None and "default_expiry_days" in self.model_fields_set and "default_expiry_days" not in excluded_fields:
-            _dict['defaultExpiryDays'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.view_counting_enabled is None and "view_counting_enabled" in self.model_fields_set and "view_counting_enabled" not in excluded_fields:
-            _dict['viewCountingEnabled'] = None
 
         return _dict
 

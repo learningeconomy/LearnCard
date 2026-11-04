@@ -61,8 +61,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfOtherIde
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -78,18 +78,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOfAnyOfAnyOfAnyOfIssuerAnyOfOtherIde
         # override the default output from pydantic by calling `to_dict()` of identifier_type
         if self.identifier_type:
             _dict['identifierType'] = self.identifier_type.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.identifier is None and "identifier" in self.model_fields_set and "identifier" not in excluded_fields:
-            _dict['identifier'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.identifier_type is None and "identifier_type" in self.model_fields_set and "identifier_type" not in excluded_fields:
-            _dict['identifierType'] = None
-
         return _dict
 
     @classmethod

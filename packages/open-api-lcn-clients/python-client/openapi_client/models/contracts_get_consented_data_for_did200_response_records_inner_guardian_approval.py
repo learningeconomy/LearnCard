@@ -68,8 +68,8 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval(Bas
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,22 +79,6 @@ class ContractsGetConsentedDataForDid200ResponseRecordsInnerGuardianApproval(Bas
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_profile_id is None and "guardian_profile_id" in self.model_fields_set and "guardian_profile_id" not in excluded_fields:
-            _dict['guardianProfileId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.guardian_did is None and "guardian_did" in self.model_fields_set and "guardian_did" not in excluded_fields:
-            _dict['guardianDid'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.approved_at is None and "approved_at" in self.model_fields_set and "approved_at" not in excluded_fields:
-            _dict['approvedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.contract_updated_at is None and "contract_updated_at" in self.model_fields_set and "contract_updated_at" not in excluded_fields:
-            _dict['contractUpdatedAt'] = None
-
         return _dict
 
     @classmethod

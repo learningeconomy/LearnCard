@@ -57,8 +57,8 @@ class InboxApproveGuardianCredentialRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -68,10 +68,6 @@ class InboxApproveGuardianCredentialRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.otp_code is None and "otp_code" in self.model_fields_set and "otp_code" not in excluded_fields:
-            _dict['otpCode'] = None
-
         return _dict
 
     @classmethod

@@ -82,8 +82,8 @@ class AppStoreSubmitAppManifestRequestManifest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -111,66 +111,6 @@ class AppStoreSubmitAppManifestRequestManifest(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.manifest_version is None and "manifest_version" in self.model_fields_set and "manifest_version" not in excluded_fields:
-            _dict['manifestVersion'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.app_url is None and "app_url" in self.model_fields_set and "app_url" not in excluded_fields:
-            _dict['appUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.app_key is None and "app_key" in self.model_fields_set and "app_key" not in excluded_fields:
-            _dict['appKey'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.suggested_name is None and "suggested_name" in self.model_fields_set and "suggested_name" not in excluded_fields:
-            _dict['suggestedName'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.suggested_icon_url is None and "suggested_icon_url" in self.model_fields_set and "suggested_icon_url" not in excluded_fields:
-            _dict['suggestedIconUrl'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.permissions is None and "permissions" in self.model_fields_set and "permissions" not in excluded_fields:
-            _dict['permissions'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.templates is None and "templates" in self.model_fields_set and "templates" not in excluded_fields:
-            _dict['templates'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.consent_requests is None and "consent_requests" in self.model_fields_set and "consent_requests" not in excluded_fields:
-            _dict['consentRequests'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.used_consent_contract is None and "used_consent_contract" in self.model_fields_set and "used_consent_contract" not in excluded_fields:
-            _dict['usedConsentContract'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.features_launched is None and "features_launched" in self.model_fields_set and "features_launched" not in excluded_fields:
-            _dict['featuresLaunched'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.counter_keys is None and "counter_keys" in self.model_fields_set and "counter_keys" not in excluded_fields:
-            _dict['counterKeys'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.used_learner_context is None and "used_learner_context" in self.model_fields_set and "used_learner_context" not in excluded_fields:
-            _dict['usedLearnerContext'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.used_notifications is None and "used_notifications" in self.model_fields_set and "used_notifications" not in excluded_fields:
-            _dict['usedNotifications'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.first_captured_at is None and "first_captured_at" in self.model_fields_set and "first_captured_at" not in excluded_fields:
-            _dict['firstCapturedAt'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.last_updated_at is None and "last_updated_at" in self.model_fields_set and "last_updated_at" not in excluded_fields:
-            _dict['lastUpdatedAt'] = None
 
         return _dict
 

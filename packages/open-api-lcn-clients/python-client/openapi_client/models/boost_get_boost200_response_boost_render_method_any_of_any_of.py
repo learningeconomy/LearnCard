@@ -70,8 +70,8 @@ class BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -90,26 +90,6 @@ class BoostGetBoost200ResponseBoostRenderMethodAnyOfAnyOf(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.type is None and "type" in self.model_fields_set and "type" not in excluded_fields:
-            _dict['type'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.render_suite is None and "render_suite" in self.model_fields_set and "render_suite" not in excluded_fields:
-            _dict['renderSuite'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.template is None and "template" in self.model_fields_set and "template" not in excluded_fields:
-            _dict['template'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.render_property is None and "render_property" in self.model_fields_set and "render_property" not in excluded_fields:
-            _dict['renderProperty'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.output_preference is None and "output_preference" in self.model_fields_set and "output_preference" not in excluded_fields:
-            _dict['outputPreference'] = None
 
         return _dict
 

@@ -62,8 +62,8 @@ class CredentialRefreshSendRefreshableCredentialRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * Explicit `None` values are preserved for supplied fields, including
-          optional-but-nonnullable inputs. Unset `None` defaults stay omitted.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -76,22 +76,6 @@ class CredentialRefreshSendRefreshableCredentialRequest(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of credential
         if self.credential:
             _dict['credential'] = self.credential.to_dict()
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.refresh_id is None and "refresh_id" in self.model_fields_set and "refresh_id" not in excluded_fields:
-            _dict['refreshId'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.credential is None and "credential" in self.model_fields_set and "credential" not in excluded_fields:
-            _dict['credential'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.boost_uri is None and "boost_uri" in self.model_fields_set and "boost_uri" not in excluded_fields:
-            _dict['boostUri'] = None
-
-        # Preserve explicit null rather than silently turning it into omission.
-        if self.skip_notification is None and "skip_notification" in self.model_fields_set and "skip_notification" not in excluded_fields:
-            _dict['skipNotification'] = None
-
         return _dict
 
     @classmethod
