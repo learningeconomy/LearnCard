@@ -49,7 +49,7 @@ it('uses CONFIG_STAGE outside Lambda rather than LAMBDA_STAGE', async () => {
     vi.unstubAllEnvs();
 });
 
-it('does not serve a request until legacy access is migrated', async () => {
+it.each(LAMBDA_APP_HANDLERS)('%s waits until legacy access is migrated', async handler => {
     let finishMigration!: () => void;
     mocks.migrate.mockReturnValue(
         new Promise<void>(resolve => {
@@ -58,11 +58,9 @@ it('does not serve a request until legacy access is migrated', async () => {
     );
     const lambda = await import('./lambda');
     let finished = false;
-    const request = lambda
-        .trpcHandler({} as APIGatewayProxyEventV2, {} as Context, vi.fn())
-        .finally(() => {
-            finished = true;
-        });
+    const request = lambda[handler]({} as never, {} as never, vi.fn()).finally(() => {
+        finished = true;
+    });
     await vi.waitFor(() => expect(mocks.migrate).toHaveBeenCalled());
     expect(finished).toBe(false);
     finishMigration();
