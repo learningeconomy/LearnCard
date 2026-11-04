@@ -13,7 +13,7 @@ const STAGING_AIP = 'https://staging-lca-backend.fly.dev';
 
 const aiServiceFor = (overlay?: Record<string, unknown>): string => {
     const merged = overlay ? deepMerge(baseConfig, overlay) : baseConfig;
-    initNetworkStoreFromTenant(parseTenantConfig(merged).apis, 'learncard');
+    initNetworkStoreFromTenant(parseTenantConfig(merged, 'learncard stage overlay').apis, 'learncard');
     return networkStore.get.aiServiceUrl();
 };
 
