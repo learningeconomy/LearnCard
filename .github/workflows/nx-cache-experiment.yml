@@ -66,21 +66,24 @@ jobs:
                         return data.sha;
                       };
                       const main = await resolve('main');
-                      const head = await resolve(process.env.CONSUMER_REF || context.sha);
+                      const sourceRef = process.env.CONSUMER_REF || context.sha;
+                      const head = await resolve(sourceRef);
                       const matrix = [];
                       for (const repeat of [1, 2]) {
-                        for (const mode of ['off', 'cold', 'warm']) matrix.push({ mode, repeat, source: head, sample: 'paired' });
+                        for (const mode of ['off', 'cold', 'warm']) matrix.push({ mode, repeat, source: head, sourceRef, sample: 'paired' });
                       }
-                      matrix.push({ mode: 'invalidate', repeat: 1, source: head, sample: 'invalidation' });
+                      matrix.push({ mode: 'invalidate', repeat: 1, source: head, sourceRef, sample: 'invalidation' });
                       if (process.env.SECOND_PR_REF) {
                         if (!/^refs\/pull\/[0-9]+\/head$/.test(process.env.SECOND_PR_REF)) throw new Error('Expected an independent PR head ref');
-                        matrix.push({ mode: 'warm', repeat: 1, source: await resolve(process.env.SECOND_PR_REF), sample: 'second-pr' });
+                        const second = await resolve(process.env.SECOND_PR_REF);
+                        if (second === head || process.env.SECOND_PR_REF === sourceRef) throw new Error('Expected a different PR commit');
+                        matrix.push({ mode: 'warm', repeat: 1, source: second, sourceRef: process.env.SECOND_PR_REF, sample: 'second-pr' });
                       }
                       if (process.env.QUEUE_RUN) {
                         if (!/^[0-9]+$/.test(process.env.QUEUE_RUN)) throw new Error('Invalid queue run ID');
                         const { data: run } = await github.rest.actions.getWorkflowRun({ ...repo, run_id: Number(process.env.QUEUE_RUN) });
                         if (run.event !== 'merge_group' || run.conclusion !== 'success' || run.path !== '.github/workflows/test.yml' || run.head_repository.full_name !== `${repo.owner}/${repo.repo}`) throw new Error('Expected a successful same-repository Test Runner merge-group run');
-                        matrix.push({ mode: 'warm', repeat: 1, source: run.head_sha, sample: 'queue-replay' });
+                        matrix.push({ mode: 'warm', repeat: 1, source: run.head_sha, sourceRef: run.head_branch, originRunId: run.id, sample: 'queue-replay' });
                       }
                       if (process.env.PRODUCER_RUN) {
                         if (!/^[0-9]+$/.test(process.env.PRODUCER_RUN)) throw new Error('Invalid producer run ID');
@@ -102,6 +105,7 @@ jobs:
         env:
             MONGOMS_DISABLE_POSTINSTALL: '1'
             LC_NX_SOURCE_SHA: ${{ needs.plan.outputs.main }}
+            LC_NX_SOURCE_REF: refs/heads/main
             LC_NX_PRODUCER_BRANCH: main
         steps:
             - uses: actions/checkout@v7
@@ -154,6 +158,8 @@ jobs:
         env:
             MONGOMS_DISABLE_POSTINSTALL: '1'
             LC_NX_SOURCE_SHA: ${{ matrix.source }}
+            LC_NX_SOURCE_REF: ${{ matrix.sourceRef }}
+            LC_NX_ORIGIN_RUN_ID: ${{ matrix.originRunId }}
         steps:
             - uses: actions/checkout@v7
               with:

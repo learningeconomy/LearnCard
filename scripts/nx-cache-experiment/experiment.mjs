@@ -308,6 +308,8 @@ export async function experiment({ workspace, output, cache, mode }) {
         const result = {
             mode,
             sourceSha: process.env.LC_NX_SOURCE_SHA,
+            sourceRef: process.env.LC_NX_SOURCE_REF,
+            originRunId: process.env.LC_NX_ORIGIN_RUN_ID || undefined,
             identity,
             tasks,
             coverage: coverage.sort((a, b) => a.project.localeCompare(b.project)),

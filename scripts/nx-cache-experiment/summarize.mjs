@@ -11,6 +11,7 @@ for (const sample of matrix) {
     );
     assert.equal(result.mode, sample.mode);
     assert.equal(result.sourceSha, sample.source);
+    assert.equal(result.sourceRef, sample.sourceRef);
     rows.push({ ...sample, ...result });
 }
 assert.equal(process.env.SAMPLE_RESULT, 'success');
