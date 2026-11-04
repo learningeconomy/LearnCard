@@ -15,7 +15,8 @@
  * exposed through the KeyDerivationStrategy recovery interface.
  */
 
-import { Web3Auth } from '@web3auth/single-factor-auth';
+import { Capacitor } from '@capacitor/core';
+import { SDK_MODE, Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
@@ -31,6 +32,15 @@ let derivationAttempt = 0;
 // Also deduplicate coordinator recreation within a document, including hosts
 // without Web Locks. Entries live only until the operation settles.
 const pendingDerivations = new Map<string, Promise<string>>();
+const JWT_PATTERN = /[\w-]{2,}\.[\w=-]{8,}\.[\w=-]{8,}/g;
+
+/** Error name and message with anything JWT-shaped removed, for logs only. */
+const describeError = (error: unknown): { errorName: string; errorMessage: string } => ({
+    errorName: error instanceof Error ? error.name : typeof error,
+    errorMessage: (error instanceof Error ? error.message : String(error))
+        .replace(JWT_PATTERN, '[redacted-jwt]')
+        .slice(0, 300),
+});
 
 // ---------------------------------------------------------------------------
 // Config
@@ -140,6 +150,11 @@ export const createWeb3AuthStrategy = (
             >[0]['web3AuthNetwork'],
             privateKeyProvider,
             usePnPKey: config.usePnPKey ?? true,
+            // session.web3auth.io rejects CORS from Capacitor's localhost origins,
+            // so web-mode connect() fails after the key is derived. Native never
+            // restores that session anyway (the read is blocked too); node mode
+            // skips the session server and keeps derivation identical.
+            ...(Capacitor.isNativePlatform() ? { mode: SDK_MODE.NODE } : {}),
         });
 
         await web3auth.init();
@@ -270,6 +285,7 @@ export const createWeb3AuthStrategy = (
                     crossTabLockAvailable: Boolean(locks),
                     lockWaitTimedOut,
                     elapsedMs: Math.round(performance.now() - startedAt),
+                    ...describeError(error),
                 });
                 // Torus errors can embed the full OAuth JWT. Do not propagate
                 // them into coordinator state, debug events, or the overlay.
