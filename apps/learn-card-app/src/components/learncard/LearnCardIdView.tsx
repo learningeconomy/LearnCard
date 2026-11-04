@@ -10,6 +10,7 @@ import { useTenantBrandingAssets, DEFAULT_BRAND_MARK } from '../../config/brandi
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
 
 import { getIdBackgroundStyles } from '../learncardID-CMS/learncard-cms.helpers';
+import FeaturedCredentialBubbles from '../featured-credentials/FeaturedCredentialBubbles';
 import { LCNProfile } from '@learncard/types';
 
 type LearnCardIdViewProps = {
@@ -34,6 +35,7 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
     const backgroundStyles = getIdBackgroundStyles(user?.display ?? currentLCNUser?.display);
 
     const displayStyles = user?.display ?? currentLCNUser?.display;
+    const featuredProfile = user ?? currentLCNUser ?? undefined;
 
     return (
         <div className="rounded-[15px] flex flex-col overflow-hidden relative shadow-bottom-4-4 min-w-[305px]">
@@ -60,6 +62,12 @@ const LearnCardIdView: React.FC<LearnCardIdViewProps> = ({ user }) => {
                     {!hasParentSwitchedProfiles && !user && (
                         <span className="font-notoSans font-[600] text-[12px]">@{profileId}</span>
                     )}
+
+                    <FeaturedCredentialBubbles
+                        uris={featuredProfile?.highlightedCredentials}
+                        owner={featuredProfile}
+                        className="mt-0.5"
+                    />
 
                     {/* {issuedDateOverride || (
                         <span className="font-notoSans font-[600] text-[12px]">

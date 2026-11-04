@@ -4,9 +4,16 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { UserProfilePicture } from 'learn-card-base/components/profilePicture/ProfilePicture';
 import LearnCardIdView from './LearnCardIdView';
 
+type TestLCNUser = {
+    profileId: string;
+    displayName: string;
+    image: string;
+    highlightedCredentials?: string[];
+};
+
 const state = vi.hoisted(() => ({
     currentUser: { name: 'Lil Demo', profileImage: 'https://example.com/local-child.png' },
-    currentLCNUser: { profileId: 'child', displayName: '', image: '' },
+    currentLCNUser: { profileId: 'child', displayName: '', image: '' } as TestLCNUser,
 }));
 vi.mock('learn-card-base', () => ({
     useCurrentUser: () => state.currentUser,
@@ -28,6 +35,15 @@ vi.mock('learn-card-base/config/TenantConfigProvider', () => ({
 vi.mock('../../config/brandingAssets', () => ({
     useTenantBrandingAssets: () => ({ brandMark: '/logo.png' }),
     DEFAULT_BRAND_MARK: '/logo.png',
+}));
+vi.mock('../featured-credentials/FeaturedCredentialBubbles', () => ({
+    default: ({ uris, owner }: { uris?: readonly string[]; owner?: { profileId: string } }) => (
+        <div
+            data-testid="featured-credentials"
+            data-uris={JSON.stringify(uris ?? null)}
+            data-owner={owner?.profileId}
+        />
+    ),
 }));
 
 describe('sidebar profile identity', () => {
@@ -100,5 +116,47 @@ describe('sidebar profile identity', () => {
         );
         expect(screen.getByText('Bea')).toBeTruthy();
         expect(screen.queryByRole('img', { name: 'user' })).toBeNull();
+    });
+
+    it('features the signed-in network profile selection on the own identity card', () => {
+        state.currentLCNUser = {
+            profileId: 'child',
+            displayName: 'Lil Demo',
+            image: '',
+            highlightedCredentials: ['lc:boost:first', 'lc:boost:second'],
+        };
+        render(<LearnCardIdView />);
+
+        const bubbles = screen.getByTestId('featured-credentials');
+        expect(bubbles.getAttribute('data-uris')).toBe(
+            JSON.stringify(['lc:boost:first', 'lc:boost:second'])
+        );
+        expect(bubbles.getAttribute('data-owner')).toBe('child');
+    });
+
+    it('features only the explicit profile selection when viewing another profile', () => {
+        state.currentLCNUser = {
+            profileId: 'parent',
+            displayName: 'Parent',
+            image: '',
+            highlightedCredentials: ['lc:boost:parent-only'],
+        };
+        render(
+            <LearnCardIdView
+                user={{
+                    profileId: 'bea',
+                    displayName: 'Bea',
+                    did: 'did:example:bea',
+                    image: '',
+                    shortBio: '',
+                    bio: '',
+                    highlightedCredentials: ['lc:boost:bea'],
+                }}
+            />
+        );
+
+        const bubbles = screen.getByTestId('featured-credentials');
+        expect(bubbles.getAttribute('data-uris')).toBe(JSON.stringify(['lc:boost:bea']));
+        expect(bubbles.getAttribute('data-owner')).toBe('bea');
     });
 });

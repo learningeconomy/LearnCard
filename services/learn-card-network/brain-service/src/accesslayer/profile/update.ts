@@ -8,10 +8,21 @@ export const updateProfile = async (profile: ProfileType, updates: Partial<Profi
     const currentDisplay = profile.display;
     const newDisplay = { ...(currentDisplay || {}), ...(updates.display || {}) };
 
-    const newUpdates = flattenObject<Partial<ProfileType>>({
+    const newUpdates: Record<string, unknown> = flattenObject<Partial<ProfileType>>({
         ...updates,
         ...((currentDisplay || newDisplay) && { display: newDisplay }),
     });
+
+    if (updates.highlightedCredentials !== undefined) {
+        for (const key of Object.keys(flattenObject(profile))) {
+            if (
+                (key === 'highlightedCredentials' || key.startsWith('highlightedCredentials.')) &&
+                !(key in newUpdates)
+            ) {
+                newUpdates[key] = null;
+            }
+        }
+    }
 
     const query = new QueryBuilder(new BindParam({ params: newUpdates }))
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
