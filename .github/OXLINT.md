@@ -6,11 +6,11 @@
 
 ## Coexistence with ESLint
 
-| Path                | Tool                                   | Role                                                  |
-| ------------------- | -------------------------------------- | ----------------------------------------------------- |
-| `WorkspaceLint` job | ESLint (`lint:workspace`)              | Source of truth / ratchet / baseline                  |
-| `OxLint` job        | oxlint (`lint:ox`)                     | Fast correctness subset; fail closed on enabled rules |
-| `#1867` (CI-13)     | ESLint result cache on `WorkspaceLint` | Speeds **repeat** PR lint; does not touch `OxLint`    |
+| Path                              | Tool                                   | Role                                                  |
+| --------------------------------- | -------------------------------------- | ----------------------------------------------------- |
+| `WorkspaceLint` job               | ESLint (`lint:workspace`)              | Source of truth / ratchet / baseline                  |
+| `Run oxlint` step in `SourceLint` | oxlint (`lint:ox`)                     | Fast correctness subset; fail closed on enabled rules |
+| `#1867` (CI-13)                   | ESLint result cache on `WorkspaceLint` | Speeds **repeat** PR lint; independent of oxlint      |
 
 Rules of engagement:
 
@@ -25,7 +25,7 @@ Rules of engagement:
 bun run lint:ox
 ```
 
-`package.json` `scripts.lint:ox` and `devDependencies.oxlint` are the single source of truth for flags and version. The `OxLint` CI job runs `bun run lint:ox` after the shared composite setup (`bun install --frozen-lockfile`, cache consumer) so CI matches local with no duplicated CLI. An earlier bunx pin skipped install for wall clock; frozen-lockfile + the script is preferred so the lockfile stays the version pin and flags cannot drift.
+`package.json` `scripts.lint:ox` and `devDependencies.oxlint` are the single source of truth for flags and version. The `Run oxlint` step runs first after the shared `SourceLint` composite setup (`bun install --frozen-lockfile`), so CI matches local with no duplicated CLI. Formatting, accessibility and i18n AST checks share that installation; ESLint remains in its own job with its existing cache. Later source checks still run if oxlint fails, and its failure still fails the job. An earlier bunx pin skipped install for wall clock; frozen-lockfile + the script is preferred so the lockfile stays the version pin and flags cannot drift.
 
 ## Expanding coverage
 
