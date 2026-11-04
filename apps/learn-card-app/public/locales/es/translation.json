@@ -1789,14 +1789,15 @@
             "whoAreYou": "¿Quién eres? (Opcional)",
             "explore": "Explorar {{brand}}",
             "pin": {
-                "title": "Añadir un PIN de recuperación",
-                "body": "Si alguna vez pierdes este dispositivo, un PIN de 6 dígitos te permitirá volver a entrar en segundos.",
+                "title": "Crea tu PIN",
+                "body": "Lo usarás para iniciar sesión en dispositivos nuevos.",
                 "confirmTitle": "Confirma tu PIN",
                 "confirmBody": "Introduce los mismos 6 dígitos de nuevo.",
                 "saving": "Guardando tu PIN…",
                 "success": "Estás protegido",
                 "skip": "Omitir por ahora",
                 "startOver": "Empezar de nuevo",
+                "saveFailedSkip": "No se pudo guardar tu PIN. Inténtalo de nuevo u omítelo por ahora y configúralo más tarde.",
                 "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
             }
         }
@@ -2258,14 +2259,26 @@
             "change": "Cambiar",
             "afterRecovery": {
                 "title": "Configura un nuevo PIN de recuperación",
-                "body": "El PIN que acabas de usar ha sido retirado: cada PIN funciona una sola vez para mantener tu cuenta protegida. Elige uno nuevo para tener lista la recuperación instantánea.",
+                "body": "Tu PIN de recuperación ya no está activo. Elige uno nuevo para tener lista la recuperación instantánea.",
                 "hint": "Las mismas reglas: 6 dígitos, nada obvio."
             },
             "pinResetRequired": {
                 "title": "Configura un nuevo PIN de recuperación",
                 "body": "Tu PIN de recuperación anterior ya no se puede usar desde que se recuperó tu cuenta. Configura un nuevo PIN de 6 dígitos para restaurar la recuperación automática."
             },
-            "useInstead": "Usar mi PIN de recuperación"
+            "useInstead": "Usar mi PIN de recuperación",
+            "incorrect": "PIN incorrecto. Te quedan {{attempts}} intentos.",
+            "locked": "Demasiados intentos. Aún puedes recuperar tu cuenta esperando 7 días.",
+            "confirmPin": "Confirma tu PIN",
+            "confirmPinDesc": "Introduce tu PIN de nuevo para confirmarlo.",
+            "trivial": "Elige un PIN más difícil de adivinar.",
+            "mismatch": "Los PIN no coinciden.",
+            "samePin": "Elige un PIN diferente del que acabas de usar.",
+            "newPinRequired": {
+                "title": "Elige un nuevo PIN de recuperación",
+                "body": "Tu PIN de recuperación se introdujo incorrectamente antes, así que le quedan menos intentos. Elige un PIN diferente de 6 dígitos para recuperar todos tus intentos.",
+                "skipNote": "Si omites este paso, tu PIN actual seguirá funcionando con menos intentos. Puedes elegir uno nuevo más tarde en Recuperación de cuenta."
+            }
         },
         "confirmCode": {
             "mismatch": "Ese código no es correcto. Inténtalo de nuevo.",
@@ -2536,7 +2549,8 @@
             "successDescription": "Tu cuenta está conectada a tu nuevo acceso. Configura de nuevo la recuperación para mantenerla protegida.",
             "tooManyAttempts": "Demasiados intentos incorrectos. Inténtalo más tarde.",
             "invalidCode": "El código es incorrecto o venció. Solicita uno nuevo e inténtalo otra vez.",
-            "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método."
+            "invalidRecoveryMethod": "Ese método no pudo verificar tu cuenta. Prueba otro método.",
+            "successDescriptionKept": "Tu cuenta está conectada a tu nuevo inicio de sesión. Tus otros dispositivos y métodos de recuperación siguen funcionando."
         },
         "cancel": {
             "invalidLink": {
@@ -2617,7 +2631,71 @@
             "discardEmail": "Descartar",
             "discardNote": "El que guardaste no funcionará. Puedes crear uno nuevo en cualquier momento."
         },
-        "notFinished": "Sin terminar"
+        "notFinished": "Sin terminar",
+        "pinHero": {
+            "title": "Confirma que eres tú",
+            "description": "Introduce tu PIN de 6 dígitos para terminar de iniciar sesión.",
+            "otherWays": "Otras formas de confirmar",
+            "device": "Aprobar desde otro dispositivo",
+            "deviceDesc": "Escanea un código con un dispositivo en el que hayas iniciado sesión",
+            "showMore": "Mostrar {{count}} más",
+            "showLess": "Mostrar menos",
+            "trouble": "¿Problemas para iniciar sesión?"
+        },
+        "pinSignIn": {
+            "verifying": "Comprobando tu PIN...",
+            "incorrectOne": "PIN incorrecto. Te queda 1 intento.",
+            "unavailable": "El inicio de sesión con PIN no está disponible para esta cuenta. Usa otra forma de iniciar sesión.",
+            "failed": "Algo salió mal. Inténtalo de nuevo.",
+            "newCodeNeeded": "Por tu seguridad, cada intento con el PIN necesita un nuevo código por correo. Envía un nuevo código para volver a intentarlo."
+        },
+        "pinSignInReview": {
+            "title": "Has iniciado sesión",
+            "body": "Tus otros dispositivos también siguen con la sesión iniciada.",
+            "secureLink": "¿Perdiste un dispositivo? Protege tu cuenta",
+            "warnTitle": "Es posible que alguien haya probado tu PIN",
+            "warnBodyOne": "Se introdujo incorrectamente 1 vez antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBodyTwo": "Se introdujo incorrectamente 2 veces antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBody": "Se introdujo incorrectamente {{count}} veces antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "warnBodyUnknown": "Es posible que tu PIN se haya introducido incorrectamente antes de que iniciaras sesión. Elige un nuevo PIN para seguir protegido.",
+            "choosePin": "Elegir un nuevo PIN",
+            "notNow": "Ahora no"
+        },
+        "secureAccount": {
+            "title": "Protege tu cuenta",
+            "intro": "Usa esta opción si crees que otra persona entró en tu cuenta. Esto:",
+            "signOut": "Impedirá que tus otros dispositivos y otros inicios de sesión vuelvan a entrar",
+            "turnOff": "Desactivará tu frase de recuperación, archivo de respaldo, clave de acceso y clave de recuperación por correo anteriores",
+            "stayHere": "Mantendrá tu sesión iniciada en este dispositivo",
+            "openDevices": "Un dispositivo que esté abierto ahora puede seguir funcionando hasta que cierre sesión. Esto no puede deshacer lo que otra persona ya haya hecho con tu cuenta.",
+            "afterwards": "Después, añadirás nuevas formas de volver a entrar.",
+            "continue": "Proteger mi cuenta",
+            "pinTitle": "Conserva un PIN de recuperación",
+            "pinDesc": "Elige un PIN de 6 dígitos. Si otra persona podría conocer tu PIN actual, elige uno nuevo. Para conservar tu PIN actual, introdúcelo aquí.",
+            "skipPin": "Continuar sin PIN",
+            "skipPinNote": "Puedes configurar un nuevo PIN más tarde en Recuperación de cuenta.",
+            "working": "Protegiendo tu cuenta...",
+            "workingHint": "Mantén esta página abierta hasta que termine.",
+            "doneTitle": "Tu cuenta está protegida",
+            "doneBody": "Los demás dispositivos e inicios de sesión ya no pueden volver a entrar, y tus métodos de recuperación anteriores están desactivados.",
+            "pinKept": "Tu PIN de recuperación está activado.",
+            "pinNotKept": "Tu PIN de recuperación está desactivado. Puedes volver a configurarlo en Recuperación de cuenta.",
+            "nextStep": "Añade una nueva forma de volver a entrar para no quedarte sin acceso.",
+            "setUpPasskey": "Configurar una clave de acceso",
+            "setUpRecovery": "Añadir un método de recuperación",
+            "conflict": "Tu cuenta cambió mientras la protegíamos. Inténtalo de nuevo.",
+            "failed": "No pudimos terminar de proteger tu cuenta. Inténtalo de nuevo.",
+            "sessionExpired": "Tu sesión expiró. Vuelve a iniciar sesión para proteger tu cuenta.",
+            "opening": "Abriendo la seguridad de la cuenta...",
+            "pinDescNewPin": "Elige un nuevo PIN de 6 dígitos, diferente del actual."
+        },
+        "signOutOtherDevices": {
+            "section": "Seguridad",
+            "label": "Cerrar sesión en otros dispositivos",
+            "caption": "¿Perdiste un dispositivo o ves algo desconocido?",
+            "attention": "Tu PIN se introdujo incorrectamente."
+        },
+        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo."
     },
     "alerts": {
         "title": "Alertas",

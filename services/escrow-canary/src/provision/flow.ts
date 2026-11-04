@@ -466,6 +466,7 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
             writer = new ProvisioningVersion(deps.secrets, target.secretId, undefined, {
                 newToken: deps.newToken,
                 now: deps.now,
+                sleep: deps.sleep,
             });
             const versionId = await step(target, 'secret', () => writer.write(secret), true);
             deps.out(`${target.label} write-ahead ok version=${versionId} did=${secret.did}`);
@@ -481,6 +482,7 @@ export const createProvisioner = (plan: Plan, options: ProvisionOptions, deps: P
             writer = new ProvisioningVersion(deps.secrets, target.secretId, found.provisioning, {
                 newToken: deps.newToken,
                 now: deps.now,
+                sleep: deps.sleep,
             });
             // Claim the staged version before reading or changing server state: of two
             // runs resuming it, the second stops here.

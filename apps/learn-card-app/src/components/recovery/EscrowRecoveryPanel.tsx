@@ -14,7 +14,6 @@ import {
     type EscrowRecoveryExpectations,
     type EscrowRecoveryStart,
 } from '@learncard/sss-key-manager';
-import { escrowPinMismatchMessage } from '@learncard/types';
 import {
     clearPendingEscrowRecovery,
     loadPendingEscrowRecovery,
@@ -53,7 +52,13 @@ export interface EscrowRecoveryPanelProps {
     view: 'status' | 'start';
     scope?: string;
     available: boolean;
+    /**
+     * The account has a usable recovery PIN. Read by RecoveryFlowModal, which offers
+     * PIN sign-in on its first screen; this panel only runs the 7-day hold.
+     */
     pinAvailable?: boolean;
+    /** Shown on the start view as "Use my recovery PIN instead" when PIN sign-in is offered. */
+    onUsePin?: () => void;
     canResumeCompleted?: () => boolean;
     onStart: (options?: { restart?: boolean }) => Promise<EscrowRecoveryStart>;
     onStatus: (proof: {
@@ -92,7 +97,7 @@ const isEscrowRefusal = (error: unknown): boolean =>
 export const EscrowRecoveryPanel = ({
     scope = 'default',
     available,
-    pinAvailable = false,
+    onUsePin,
     onStart,
     onStatus,
     onRecover,
@@ -181,16 +186,6 @@ export const EscrowRecoveryPanel = ({
         if (!active.current) return;
         setSaved(true);
     };
-
-    const [showPinFlow, setShowPinFlow] = useState(pinAvailable);
-    const [pinInput, setPinInput] = useState('');
-    const [pinError, setPinError] = useState('');
-    // Locked or unavailable PINs must not be offered again from the wait view.
-    const [pinBlocked, setPinBlocked] = useState(false);
-
-    useEffect(() => {
-        if (pinAvailable) setShowPinFlow(true);
-    }, [pinAvailable]);
 
     useEffect(() => {
         active.current = true;
@@ -376,44 +371,6 @@ export const EscrowRecoveryPanel = ({
                       ? 'This recovery request expired. Start a new one.'
                       : 'Something went wrong. Please try again.'
             );
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handlePinRecover = async (pin: string) => {
-        setLoading(true);
-        setPinError('');
-        try {
-            await onRecover({ method: 'escrow-pin', pin });
-        } catch (cause) {
-            const err = cause instanceof Error ? cause : new Error();
-            if (err.name === 'EscrowPinMismatchError') {
-                const attempts = 'attemptsRemaining' in err ? Number(err.attemptsRemaining) : 0;
-                setPinError(escrowPinMismatchMessage(attempts));
-                setPinInput('');
-            } else if (err.name === 'EscrowPinThrottledError') {
-                setPinError(m['recovery.pin.throttled']());
-                setPinInput('');
-            } else if (err.name === 'EscrowPinLockedError') {
-                setPinError('Too many attempts. You can still recover by waiting 7 days.');
-                setPinBlocked(true);
-                setShowPinFlow(false);
-            } else {
-                if (
-                    err.name === 'EscrowPinUnavailableError' ||
-                    (err.name === 'EscrowRequestError' && 'status' in err && err.status === 403)
-                ) {
-                    setPinError(
-                        "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
-                    );
-                    setPinBlocked(true);
-                    setShowPinFlow(false);
-                } else {
-                    setPinError('Something went wrong. Please try again.');
-                }
-                setPinInput('');
-            }
         } finally {
             setLoading(false);
         }
@@ -966,96 +923,35 @@ export const EscrowRecoveryPanel = ({
                   !existingHold &&
                   view === 'start' && (
                       <>
-                          {showPinFlow ? (
-                              <div className="space-y-v3-4">
-                                  <h3 className="text-xl font-semibold text-grayscale-900">
-                                      Enter my recovery PIN
-                                  </h3>
-                                  <p className="text-sm text-grayscale-600 leading-relaxed">
-                                      Enter your 6-digit PIN for instant recovery.
-                                  </p>
-                                  <div className="flex justify-center py-2">
-                                      <RecoveryPinInput
-                                          value={pinInput}
-                                          onChange={val => {
-                                              setPinInput(val);
-                                              setPinError('');
-                                          }}
-                                          onComplete={handlePinRecover}
-                                          disabled={loading}
-                                          error={!!pinError}
-                                      />
-                                  </div>
-                                  {pinError && (
-                                      <p className="text-sm text-red-600 text-center">{pinError}</p>
-                                  )}
-                                  {loading && (
-                                      <div className="flex justify-center">
-                                          {spinner('Verifying...')}
-                                      </div>
-                                  )}
-                                  <button
-                                      onClick={() => setShowPinFlow(false)}
-                                      className="w-full py-2.5 text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors"
-                                      disabled={loading}
-                                  >
-                                      I don't have a PIN
-                                  </button>
-                              </div>
-                          ) : (
-                              <>
-                                  {pinError && (
-                                      <div
-                                          role="alert"
-                                          className="p-3 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-2.5 mb-4"
-                                      >
-                                          <IonIcon
-                                              icon={alertCircleOutline}
-                                              className="text-red-400 text-lg mt-0.5 shrink-0"
-                                          />
-                                          <span className="text-sm text-red-700 leading-relaxed">
-                                              {pinError}
-                                          </span>
-                                      </div>
-                                  )}
-                                  <div className="p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-3 mb-5">
-                                      <IonIcon
-                                          icon={shieldCheckmarkOutline}
-                                          className="text-grayscale-900 text-xl mt-0.5 shrink-0"
-                                      />
-                                      <p className="text-sm text-grayscale-700 leading-relaxed">
-                                          Wait 7 days, then return to this browser to restore your
-                                          account.
-                                      </p>
-                                  </div>
-                                  <button
-                                      className={button}
-                                      disabled={!loaded || loading || !storageAvailable}
-                                      onClick={() =>
-                                          void run(async () => {
-                                              const result = await onStart();
-                                              await handleStarted(result);
-                                          })
-                                      }
-                                  >
-                                      {loading
-                                          ? spinner('Starting recovery...')
-                                          : 'Start a 7-day recovery'}
-                                  </button>
-                                  {pinAvailable && !pinBlocked && (
-                                      <button
-                                          onClick={() => {
-                                              setPinError('');
-                                              setPinInput('');
-                                              setShowPinFlow(true);
-                                          }}
-                                          disabled={loading}
-                                          className="w-full mt-1 py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
-                                      >
-                                          {m['recovery.pin.useInstead']()}
-                                      </button>
-                                  )}
-                              </>
+                          <div className="p-4 bg-grayscale-10 border border-grayscale-200 rounded-2xl flex items-start gap-3 mb-5">
+                              <IonIcon
+                                  icon={shieldCheckmarkOutline}
+                                  className="text-grayscale-900 text-xl mt-0.5 shrink-0"
+                              />
+                              <p className="text-sm text-grayscale-700 leading-relaxed">
+                                  Wait 7 days, then return to this browser to restore your account.
+                              </p>
+                          </div>
+                          <button
+                              className={button}
+                              disabled={!loaded || loading || !storageAvailable}
+                              onClick={() =>
+                                  void run(async () => {
+                                      const result = await onStart();
+                                      await handleStarted(result);
+                                  })
+                              }
+                          >
+                              {loading ? spinner('Starting recovery...') : 'Start a 7-day recovery'}
+                          </button>
+                          {onUsePin && (
+                              <button
+                                  onClick={onUsePin}
+                                  disabled={loading}
+                                  className="w-full mt-1 py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors disabled:opacity-40"
+                              >
+                                  {m['recovery.pin.useInstead']()}
+                              </button>
                           )}
                       </>
                   )}

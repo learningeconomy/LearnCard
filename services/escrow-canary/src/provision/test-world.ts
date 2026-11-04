@@ -129,6 +129,17 @@ export class ProvisionWorld {
         tamperReadback: false,
         sdkLogs: false,
     };
+    /**
+     * DescribeSecret eventual consistency: after a successful stage move, the next
+     * `describeLag` describes of that secret return its stages as they were before
+     * the move (the oldest unseen state while reads are still stale).
+     */
+    describeLag = 0;
+    describes = 0;
+    private readonly staleDescribes = new Map<
+        string,
+        { reads: number; versions: Record<string, string[]> }
+    >();
     private sequence = 0;
     private versionSequence = 0;
     /** Sentinel values that must never appear in output. */
@@ -245,10 +256,25 @@ export class ProvisionWorld {
         return { token, refreshToken: rotated };
     };
 
+    /** The true (never lagging) versionId -> stages map, for assertions. */
+    stagesOf(secretId: string): Record<string, string[]> {
+        return Object.fromEntries(
+            [...this.secrets.get(secretId)!.entries()]
+                .filter(([, version]) => version.stages.size > 0)
+                .map(([id, version]) => [id, [...version.stages]])
+        );
+    }
+
     secretStore: StagedSecretStore = {
         describe: async secretId => {
             const versions = this.secrets.get(secretId);
             if (!versions) throw new Error('ResourceNotFound');
+            this.describes += 1;
+            const stale = this.staleDescribes.get(secretId);
+            if (stale) {
+                stale.reads -= 1;
+                if (stale.reads <= 0) this.staleDescribes.delete(secretId);
+            }
             const name = secretId.startsWith('arn:')
                 ? secretId.split(':secret:')[1].replace(/-[A-Za-z0-9]{6}$/, '')
                 : secretId;
@@ -257,11 +283,7 @@ export class ProvisionWorld {
                     ? secretId
                     : `arn:aws:secretsmanager:us-east-1:000000000000:secret:${secretId}-AbCdEf`,
                 name,
-                versions: Object.fromEntries(
-                    [...versions.entries()]
-                        .filter(([, version]) => version.stages.size > 0)
-                        .map(([id, version]) => [id, [...version.stages]])
-                ),
+                versions: stale?.versions ?? this.stagesOf(secretId),
             } satisfies SecretMetadata;
         },
         read: async (secretId, ref) => {
@@ -307,6 +329,11 @@ export class ProvisionWorld {
             if (holder && holder[0] !== to && holder[0] !== from)
                 throw new Error('InvalidParameter');
             if (from && !versions.get(from)?.stages.has(stage)) throw new Error('InvalidParameter');
+            if (this.describeLag > 0 && !this.staleDescribes.has(secretId))
+                this.staleDescribes.set(secretId, {
+                    reads: this.describeLag,
+                    versions: this.stagesOf(secretId),
+                });
             if (from) versions.get(from)!.stages.delete(stage);
             if (to) {
                 if (stage === 'AWSCURRENT')

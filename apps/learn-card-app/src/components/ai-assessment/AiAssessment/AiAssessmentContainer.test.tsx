@@ -6,12 +6,16 @@ import type { AiSession } from 'learn-card-base';
 
 import AiAssessmentContainer from './AiAssessmentContainer';
 import { AiServiceError } from 'learn-card-base/helpers/aiErrors';
+import { aiLoadingStore } from 'learn-card-base/stores/aiLoadingStore';
 
 const mocks = vi.hoisted(() => ({
     preload: vi.fn(),
     finish: vi.fn(),
     logError: vi.fn(),
     closeModal: vi.fn(),
+    sync: vi.fn(),
+    summary: vi.fn(),
+    enriched: vi.fn(),
 }));
 vi.mock('@ionic/react', () => ({ IonIcon: () => null }));
 
@@ -22,19 +26,13 @@ vi.mock('learn-card-base', () => ({
     useDeviceTypeByWidth: () => ({ isDesktop: true, isMobile: false }),
     usePreloadAssessment: () => ({ mutateAsync: mocks.preload }),
     useFinishAssessmentMutation: () => ({ mutateAsync: mocks.finish }),
-    useSyncConsentFlow: () => ({ refetch: vi.fn() }),
+    useSyncConsentFlow: () => ({ refetch: mocks.sync }),
     usePathQuery: () => new URLSearchParams(),
-    useGetEnrichedSession: () => ({ refetch: vi.fn() }),
-    useGetSummaryInfo: () => ({ refetch: async () => ({ data: {} }) }),
+    useGetEnrichedSession: () => ({ refetch: mocks.enriched }),
+    useGetSummaryInfo: () => ({ refetch: mocks.summary }),
 }));
 vi.mock('learn-card-base/hooks/useWallet', () => ({
     useWallet: () => ({ initWallet: async () => ({ id: { did: () => 'did:example:learner' } }) }),
-}));
-vi.mock('learn-card-base/stores/aiLoadingStore', () => ({
-    aiLoadingStore: {
-        use: { isFinishingAssessment: () => false },
-        set: { isFinishingAssessment: vi.fn() },
-    },
 }));
 vi.mock('../../../paraglide/messages.js', () => ({
     'error.generic': () => 'Something went wrong. Please try again.',
@@ -76,7 +74,10 @@ vi.mock('../../new-ai-session/AiSessionLoader', () => ({
 vi.mock('./AiAssessmentHeader', () => ({ default: () => null }));
 vi.mock('./AiAssessmentFooter', () => ({ default: () => null }));
 vi.mock('./helpers/ViewAssessmentBadgeButton', () => ({ default: () => null }));
-vi.mock('../FinishedAiSessionAssessmentPreview', () => ({ default: () => null }));
+vi.mock('../FinishedAiSessionAssessmentPreview', () => ({
+    default: ({ isCompleted }: { isCompleted?: boolean }) =>
+        isCompleted ? <h1>Assessment complete</h1> : null,
+}));
 vi.mock('./helpers/AssessmentAnswerInput', () => ({
     default: ({
         handleAnswer,
@@ -120,7 +121,12 @@ const showAssessment = async (vc: unknown = signedSummary, cached?: unknown) => 
 describe('AI final assessment loading', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        aiLoadingStore.set.isFinishingAssessment(false);
         mocks.preload.mockResolvedValue({ assessment: questions });
+        mocks.finish.mockResolvedValue({ success: true });
+        mocks.summary.mockResolvedValue({ data: {} });
+        mocks.sync.mockResolvedValue(undefined);
+        mocks.enriched.mockResolvedValue(undefined);
         Element.prototype.scrollIntoView = vi.fn();
     });
 
@@ -159,6 +165,52 @@ describe('AI final assessment loading', () => {
         });
         await screen.findByText('What did you learn?');
         expect(mocks.preload.mock.calls[0][0].summaryCredential).toEqual(signedSummary);
+    });
+
+    it('shows desktop saving feedback until completion, then opens the completed assessment', async () => {
+        let complete!: (value: unknown) => void;
+        mocks.finish.mockImplementationOnce(
+            () =>
+                new Promise(resolve => {
+                    complete = resolve;
+                })
+        );
+        await showAssessment();
+        fireEvent.change(await screen.findByRole('textbox', { name: 'Answer' }), {
+            target: { value: 'Negative feedback opposes change.' },
+        });
+        await waitFor(() => expect(mocks.finish).toHaveBeenCalledTimes(1));
+        expect(screen.getByRole('status')).toBeInTheDocument();
+        expect(
+            screen.queryByRole('heading', { name: 'Assessment complete' })
+        ).not.toBeInTheDocument();
+        complete({ success: true });
+        await screen.findByRole('heading', { name: 'Assessment complete' });
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+        expect(mocks.sync).toHaveBeenCalledTimes(1);
+        expect(mocks.enriched).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows an already saved assessment without submitting it again', async () => {
+        mocks.summary.mockResolvedValue({ data: { assessmentVc: { id: 'saved-assessment' } } });
+        await showAssessment();
+        await screen.findByRole('heading', { name: 'Assessment complete' });
+        expect(mocks.finish).not.toHaveBeenCalled();
+    });
+
+    it('keeps the saved result visible when the personal index refresh fails', async () => {
+        mocks.sync.mockRejectedValueOnce(new Error('Index unavailable'));
+        await showAssessment();
+        fireEvent.change(await screen.findByRole('textbox', { name: 'Answer' }), {
+            target: { value: 'Negative feedback.' },
+        });
+        await screen.findByRole('heading', { name: 'Assessment complete' });
+        await waitFor(() =>
+            expect(mocks.logError).toHaveBeenCalledWith(
+                'Could not refresh the completed assessment'
+            )
+        );
+        expect(mocks.finish).toHaveBeenCalledTimes(1);
     });
 
     it('shows an error and retries a failed request, with feedback while retrying', async () => {

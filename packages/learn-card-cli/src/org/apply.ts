@@ -2,7 +2,14 @@ import fs from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import type { LCALearnCard } from '@learncard/lca-api-plugin';
-import { ensureGitignored, parseEnv, upsertEnv, saveProject, type Project } from '../project';
+import {
+    ensureGitignored,
+    noteCreatedProfileDid,
+    parseEnv,
+    upsertEnv,
+    saveProject,
+    type Project,
+} from '../project';
 import { setupSigning } from '../setup-signing';
 import { out } from '../out';
 import {
@@ -298,7 +305,9 @@ const applyIssuerProfile = async (
             changes.push({ resource: 'issuer', name: profileId, action: 'would-create' });
             return false;
         }
-        await learnCard.invoke.createProfile({ profileId, displayName, bio: '', shortBio: '' });
+        noteCreatedProfileDid(
+            await learnCard.invoke.createProfile({ profileId, displayName, bio: '', shortBio: '' })
+        );
         changes.push({ resource: 'issuer', name: profileId, action: 'created' });
         return true;
     }

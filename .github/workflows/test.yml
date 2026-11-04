@@ -124,6 +124,8 @@ jobs:
               run: >-
                   bunx vitest run --config vitest.integration.config.ts
                   test/keys-escrow.spec.ts
+                  test/keys-pin-sign-in.spec.ts
+                  test/keys-pin-lease.spec.ts
                   test/models/escrow.spec.ts
                   test/jobs/escrowBlobRewrap.spec.ts
                   test/jobs/escrowHoldReminders.spec.ts

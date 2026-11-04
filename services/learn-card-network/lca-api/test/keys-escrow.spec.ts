@@ -1971,6 +1971,24 @@ describe('escrow PIN release', () => {
         expect((await record())?.escrowPin?.failedAttempts).toBe(2);
     });
 
+    it('never reports "Incorrect PIN." for a mismatch whose wrong entry was not recorded', async () => {
+        // The record changed under the compare (re-enrolled/rotated elsewhere): clients
+        // count every "Incorrect PIN." as their own recorded entry (own-typos rule).
+        await enrollPin();
+        const hold = await startPin();
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.spyOn(models, 'recordEscrowPinFailure').mockResolvedValueOnce(null);
+        await expect(completePin(hold, wrongProof)).rejects.toMatchObject({
+            code: 'CONFLICT',
+            message: 'Automatic recovery changed; please refresh.',
+        });
+        expect(await findEscrowHoldById(hold.holdId)).toMatchObject({
+            status: 'cancelled',
+            cancelReason: 'pin-mismatch',
+        });
+        expect((await record())?.escrowPin?.verifiedFailedAttempts ?? 0).toBe(0);
+    });
+
     it('locks after ten mismatches and still permits delayed recovery', async () => {
         await enrollPin();
         let lockingHoldId = '';
@@ -2499,11 +2517,13 @@ describe('escrow PIN release', () => {
             enabled: true,
             attemptsRemaining: 10,
             salt: pinSalt,
+            wrongAttempts: 0,
         });
         await getUserKeysCollection().updateOne(
             { 'authProviders.id': authProvider.id },
             { $set: { 'escrowPin.failedAttempts': 10, 'escrowPin.disabledAt': new Date() } }
         );
+        // Legacy charged history without the verified counter: no wrong-entry count.
         expect((await owner().keys.getAuthShare(auth))?.escrowPin).toEqual({
             state: 'locked',
             enabled: false,
@@ -2518,6 +2538,7 @@ describe('escrow PIN release', () => {
             state: 'stale',
             enabled: false,
             attemptsRemaining: 10,
+            wrongAttempts: 0,
         });
         await expect(startPin()).rejects.toMatchObject({ code: 'FORBIDDEN' });
     });
@@ -2580,6 +2601,7 @@ describe('escrow PIN release', () => {
             enabled: true,
             attemptsRemaining: 10,
             salt: pinSalt,
+            wrongAttempts: 0,
         });
         // Required for a no-provider Nitro escrow start/restart to bind to this account.
         expect(result.primaryDid).toBe(did);

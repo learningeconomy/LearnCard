@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-plugin",
-    "version": "2.3.49",
+    "version": "2.3.51",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

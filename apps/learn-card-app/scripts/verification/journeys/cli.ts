@@ -81,10 +81,18 @@ export const cliFeature: FeatureDefinition = {
             const verify = await cli(['verify', credentialFile, '--json']);
             expect(verify.exitCode, verify.stderr).toBe(0);
             // The actual CLI verifies the received credential inside its confined child process.
-            const result = JSON.parse(verify.stdout) as { checks: string[]; errors: string[] };
-            expect(result.errors).toEqual([]);
-            expect(result.checks).toContain('proof');
-            return result;
+            // `verify --json` prints one envelope line: { ok, command, verified, result }.
+            const envelope = verify.json as {
+                ok: boolean;
+                command: string;
+                verified: boolean;
+                result: { checks: string[]; errors: string[] };
+            };
+            expect(envelope.ok).toBe(true);
+            expect(envelope.verified).toBe(true);
+            expect(envelope.result.errors).toEqual([]);
+            expect(envelope.result.checks).toContain('proof');
+            return envelope.result;
         });
 
         return {

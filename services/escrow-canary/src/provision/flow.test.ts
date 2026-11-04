@@ -1,6 +1,7 @@
 import { validatePin } from '@learncard/sss-key-manager';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { secretSchema } from '../secrets';
+import { holdLabel } from '../tier3/config';
 import { keys } from '../tier3/ledger';
 import { runnerConfig } from '../tier3/test-fakes';
 import { ProvisionError } from './errors';
@@ -549,6 +550,20 @@ describe('idempotency and resume', () => {
         await run(3);
         const secret = JSON.parse(current(HOLD_01)!);
         expect(secret.refreshToken).toMatch(/#r[0-9]+$/);
+    });
+});
+
+describe('eventually consistent DescribeSecret', () => {
+    it('12 tier-3 accounts provision while every describe lags the last label move', async () => {
+        world.describeLag = 2;
+        const labels = runnerConfig.holdAccounts.map((_, index) => holdLabel(index));
+        const results = await run(3, labels, { accountGapMs: 0 });
+        expect(results.map(result => result.result)).toEqual(labels.map(() => 'provisioned'));
+        for (const account of runnerConfig.holdAccounts) {
+            const versions = world.stagesOf(account.secretId);
+            expect(versionWith({ arn: '', name: '', versions }, 'PROVISIONING')).toBeUndefined();
+            expect(current(account.secretId)).not.toBe('{}');
+        }
     });
 });
 

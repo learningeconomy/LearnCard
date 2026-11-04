@@ -14,9 +14,14 @@ existing host-trusted model, but does not protect against a malicious host eithe
 The API atomically reserves one of ten lifetime attempts before claiming the hold
 and calling the enclave. Failed releases burn the single-use hold. Exhaustion
 disables PIN recovery and cancels pending PIN holds; delayed recovery remains
-available. Successful PIN recovery does not replenish the lifetime budget; authenticated
-enrollment with a new PIN starts a fresh counter. Setting or changing a PIN requires
-client share rotation. Inbox compromise plus a correct PIN guess can recover the
+available. Successful PIN recovery does not replenish the lifetime budget by itself;
+authenticated enrollment of a PIN starts a fresh counter. A PIN sign-in (keep mode,
+pending security approval; see `services/escrow-enclave-app/SECURITY.md` D19) re-enrolls
+the same PIN at the same share version straight after the release, which starts a fresh
+counter without a rotation, but only when the PIN status records no wrong attempt for the
+current PIN; otherwise the client keeps the reduced budget and asks the user for a different
+PIN. Otherwise, setting or changing a PIN requires client share
+rotation. Inbox compromise plus a correct PIN guess can recover the
 account (at most 10/1,000,000 for a uniformly random six-digit PIN).
 
 Software hold records contain a non-cryptographic signature placeholder and no
