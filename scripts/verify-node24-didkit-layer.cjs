@@ -6,9 +6,9 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const verifyLayer = (layerRoot, nodeMajor = Number(process.versions.node.split('.')[0])) => {
-    assert.equal(nodeMajor, 24, 'LCA deployment must run with Node 24');
-    assert.equal(process.platform, 'linux', 'LCA native layer requires Linux');
-    assert.equal(process.arch, 'x64', 'LCA native layer requires x86_64');
+    assert.equal(nodeMajor, 24, 'Lambda deployment must run with Node 24');
+    assert.equal(process.platform, 'linux', 'Lambda native layer requires Linux');
+    assert.equal(process.arch, 'x64', 'Lambda native layer requires x86_64');
     const modules = path.join(layerRoot, 'nodejs/node_modules/@learncard');
     const native = path.join(modules, 'didkit-plugin-node');
     const binary = path.join(native, 'index.linux-x64-gnu.node');
@@ -45,5 +45,5 @@ const verifyLayer = (layerRoot, nodeMajor = Number(process.versions.node.split('
 module.exports = { verifyLayer };
 if (require.main === module) {
     verifyLayer(path.resolve('didkit-native-layer'));
-    console.log('LCA Node 24 native layer ABI, libc and package checks passed');
+    console.log('Node 24 native layer ABI, libc and package checks passed');
 }

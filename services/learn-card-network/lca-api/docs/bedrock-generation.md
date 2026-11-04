@@ -88,15 +88,16 @@ explicit deployment approval. There is no runtime silent fallback to the old mod
 
 All LCA Lambda functions and the native DIDKit layer declare `nodejs24.x`; esbuild
 targets Node 24. The native addon uses stable N-API v4, supported by Node 24.
-Both Node 20 and Node 24 Lambda use AL2023. Before deployment, the LCA-only
-`verify-node24-layer.cjs` preflight requires the Linux x64 GNU artifact, both
+Both Node 20 and Node 24 Lambda use AL2023. Before deployment, the shared
+`scripts/verify-node24-didkit-layer.cjs` preflight (also used by brain-service and
+learn-cloud-service) requires the Linux x64 GNU artifact, both
 packaged runtime dependencies, libc symbols no newer than glibc 2.34, and an actual
 Node 24 native key-to-DID smoke check. Missing/incompatible artifacts stop the action
 before Serverless deployment; WASM fallback is not evidence of native compatibility.
 
-LCA pins serverless-esbuild 1.57.2 for Node 24 target support. The service-local
-`node24-runtime.cjs` plugin adds Node 24 to Serverless 3.40's older runtime schema
-without disabling validation or changing other services. Deployment tools run on
+LCA pins serverless-esbuild 1.57.2 for Node 24 target support. The shared
+`scripts/serverless-node24-runtime.cjs` plugin adds Node 24 to Serverless 3.40's older
+runtime schema without disabling validation. Deployment tools run on
 Node 24.12.0 in the LCA action. Local offline configuration uses Node 24 too.
 
 The `LcaDevBedrockGenerationPolicy` CloudFormation resource attaches the scoped
