@@ -216,8 +216,8 @@ Earlier attempts throw `EscrowHoldRestartThrottledError`, with `retryAfter` when
 The escrow enclave is single-tenant: it signs every authority record with its measured
 authority label and requires the same label in every signed enrollment intent. An app that
 uses another tenant's enclave sets `auth.sss.escrowAuthorityTenant` to that label; VetPass
-will set `"learncard"` when the SSS switch turns its escrow on (escrow is off for
-VetPass at every stage until then). The strategy uses this value for the intent tenant, the signed
+sets `"learncard"` on staging, where its escrow is on; VetPass production stays off until
+the SSS switch turns it on with LearnCard production. The strategy uses this value for the intent tenant, the signed
 authority-state, hold-record and code-delivery checks, and the persisted
 `EscrowRecoveryExpectations.tenant`. Everything else (`X-Tenant-Id`, lca-api emails and
 links, `EscrowHold.tenantId`, rollout bucketing) uses the app tenant. Unset, it defaults to
