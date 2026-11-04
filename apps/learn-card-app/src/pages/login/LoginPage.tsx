@@ -346,7 +346,7 @@ export const LoginContent: React.FC = () => {
                   {
                       id: 3,
                       src: ClassLinkIcon,
-                      alt: 'classlink',
+                      alt: 'Sign in with ClassLink',
                       onClick: classLinkLogin,
                       type: SocialLoginTypes.classlink,
                   },
