@@ -39,6 +39,7 @@ const StateValidator = z.object({
 });
 
 import { getLogger } from 'learn-card-base';
+import { getClassLinkProfileDefaults } from '../../auth/classlink/classlinkProfileDefaults';
 const log = getLogger('join-network-prompt');
 
 export const JoinNetworkPrompt: React.FC<{
@@ -113,6 +114,7 @@ export const JoinNetworkPrompt: React.FC<{
                     bio: '',
                     image: currentUser?.profileImage ?? '',
                     notificationsWebhook: getNotificationsEndpoint(),
+                    ...(await getClassLinkProfileDefaults()),
                 });
 
                 if (didWeb) {

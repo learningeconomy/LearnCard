@@ -11,6 +11,21 @@ import * as m from '../../paraglide/messages.js';
 
 const log = getLogger('classlink');
 
+const RELAUNCH_KEY = 'classlink-relaunch-at';
+
+/**
+ * A launch from the ClassLink dashboard arrives with a code we did not request (no stored
+ * state/PKCE attempt). Never exchange it; restart our own sign-in once instead. The student
+ * already has a ClassLink session, so this completes without another login.
+ */
+const shouldRestartLaunch = (code: string | null): boolean => {
+    if (!code) return false;
+    const last = Number(sessionStorage.getItem(RELAUNCH_KEY) ?? 0);
+    if (Date.now() - last < 2 * 60 * 1000) return false;
+    sessionStorage.setItem(RELAUNCH_KEY, String(Date.now()));
+    return true;
+};
+
 const ClassLinkCallback: React.FC = () => {
     const query = usePathQuery();
     const history = useHistory();
@@ -46,6 +61,11 @@ const ClassLinkCallback: React.FC = () => {
                 return;
             }
 
+            if (!state && shouldRestartLaunch(code)) {
+                history.replace('/auth/classlink/start');
+                return;
+            }
+
             if (!code || !state) {
                 presentToast(m['login.classlink.expired'](), {
                     type: ToastTypeEnum.Error,
@@ -56,6 +76,10 @@ const ClassLinkCallback: React.FC = () => {
             }
 
             const attempt = await consumeClassLinkAttempt(state);
+            if (!attempt && shouldRestartLaunch(code)) {
+                history.replace('/auth/classlink/start');
+                return;
+            }
             if (!attempt) {
                 presentToast(m['login.classlink.expired'](), {
                     type: ToastTypeEnum.Error,

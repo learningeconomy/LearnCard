@@ -78,6 +78,7 @@ import {
 } from '@analytics';
 
 import countries from '../../../constants/countries.json';
+import { getClassLinkProfileDefaults } from '../../../auth/classlink/classlinkProfileDefaults';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
@@ -565,6 +566,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                 bio: '',
                 image: photo,
                 notificationsWebhook: getNotificationsEndpoint(),
+                ...(await getClassLinkProfileDefaults()),
                 role,
                 dob,
                 country,
