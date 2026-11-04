@@ -11,10 +11,30 @@ source "$REPO_ROOT/scripts/e2e-hosted/compose-pull.sh"
 source "$REPO_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 e2e_metrics_init service
 
+stop_sdk_preparation_tree() {
+    local pid="${1:?SDK preparation PID required}" child
+    # Same shape as run-browser.sh: freeze each parent before enumerating its
+    # children so Bun/Nx/tsc cannot fork replacements, then TERM the whole tree.
+    kill -STOP "$pid" 2>/dev/null || return 0
+    while read -r child; do
+        [[ -z "$child" ]] || stop_sdk_preparation_tree "$child"
+    done < <(pgrep -P "$pid" || true)
+    kill -TERM "$pid" 2>/dev/null || true
+    kill -CONT "$pid" 2>/dev/null || true
+}
+
+cleanup_sdk_preparation() {
+    if [[ -n "${E2E_SDK_PREP_PID:-}" ]]; then
+        stop_sdk_preparation_tree "$E2E_SDK_PREP_PID"
+        wait "$E2E_SDK_PREP_PID" 2>/dev/null || true
+    fi
+    E2E_SDK_PREP_PID=''
+}
+
 collect_service_artifacts() {
     local status=$?
     set +e
-    [[ -z "${E2E_SDK_PREP_PID:-}" ]] || kill "$E2E_SDK_PREP_PID" 2>/dev/null
+    cleanup_sdk_preparation
     cd "$SERVICE_DIR"
     docker compose logs --no-color > "$E2E_ARTIFACT_DIR/docker-compose.log" 2>&1
     e2e_snapshot before-cleanup

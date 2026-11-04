@@ -11,6 +11,8 @@ source "$SOURCE_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 eval "$(sed -n '/^run_service_suite() {$/,/^}$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh")"
 # The hosted runner prepares the SDK in the background while the stack starts.
 eval "$(sed -n '/^start_shared_sdk_preparation() {$/,/^}$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh")"
+eval "$(sed -n '/^stop_sdk_preparation_tree() {$/,/^}$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh")"
+eval "$(sed -n '/^cleanup_sdk_preparation() {$/,/^}$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh")"
 e2e_timed() { shift; "$@"; }
 node() {
     echo "$2" >> "$TEST_ROOT/prepare"
@@ -60,4 +62,15 @@ for scenario in disabled miss baseline hit corrupt build-failed test-failed; do
     esac
 done
 done
+# Early failure: the EXIT trap must stop the whole background SDK build tree,
+# not just the subshell, so persistent runners do not keep Bun/Nx/tsc alive.
+( sleep 300 & echo "$!" > "$TEST_ROOT/grandchild"; ( sleep 300 ) & wait ) &
+E2E_SDK_PREP_PID=$!
+for _ in $(seq 50); do [[ -s "$TEST_ROOT/grandchild" ]] && break; sleep 0.1; done
+grandchild=$(cat "$TEST_ROOT/grandchild")
+cleanup_sdk_preparation
+[[ -z "$E2E_SDK_PREP_PID" ]]
+for _ in $(seq 50); do kill -0 "$grandchild" 2>/dev/null || break; sleep 0.1; done
+! kill -0 "$grandchild" 2>/dev/null
+grep -q '^    cleanup_sdk_preparation$' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh"
 echo 'SDK miss/hit/corruption/disabled paths (inline and background), fresh sharded test execution and failure propagation passed'

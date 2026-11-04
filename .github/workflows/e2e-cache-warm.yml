@@ -12,6 +12,7 @@ on:
         branches: [main]
         paths:
             - 'bun.lock'
+            - 'bunfig.toml'
             - '**/package.json'
             - 'patches/**'
             - 'Dockerfile.monorepo'
