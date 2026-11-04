@@ -546,7 +546,6 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
-            needs.build-native-plugin.result == 'success' &&
             (
               (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-brain-service == 'true') ||
               (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.brain_service_changed == 'true') ||
@@ -558,6 +557,20 @@ jobs:
             matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
         environment: ${{ matrix.brain_env }}
         steps:
+            # Selected deploys fail (not skip) without the native plugin, so frontend,
+            # npm, and docker gates see a failure instead of an OK-looking skip.
+            - name: Require native DIDKit plugin
+              if: needs.build-native-plugin.result != 'success'
+              env:
+                  NATIVE_RESULT: ${{ needs.build-native-plugin.result }}
+              run: |
+                  if [[ "$NATIVE_RESULT" == 'skipped' ]]; then
+                    echo "::error::Native DIDKit build was skipped, but this deploy was selected. native_plugin_needed is out of sync with this job's selection."
+                  else
+                    echo "::error::Native DIDKit build is a prerequisite for this deploy and finished with: $NATIVE_RESULT"
+                  fi
+                  exit 1
+
             - name: Checkout Repo
               uses: actions/checkout@v7
 
@@ -706,7 +719,6 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
-            needs.build-native-plugin.result == 'success' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-learn-cloud == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.learn_cloud_changed == 'true') ||
@@ -718,6 +730,20 @@ jobs:
             matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
         environment: ${{ matrix.cloud_env }}
         steps:
+            # Selected deploys fail (not skip) without the native plugin, so frontend,
+            # npm, and docker gates see a failure instead of an OK-looking skip.
+            - name: Require native DIDKit plugin
+              if: needs.build-native-plugin.result != 'success'
+              env:
+                  NATIVE_RESULT: ${{ needs.build-native-plugin.result }}
+              run: |
+                  if [[ "$NATIVE_RESULT" == 'skipped' ]]; then
+                    echo "::error::Native DIDKit build was skipped, but this deploy was selected. native_plugin_needed is out of sync with this job's selection."
+                  else
+                    echo "::error::Native DIDKit build is a prerequisite for this deploy and finished with: $NATIVE_RESULT"
+                  fi
+                  exit 1
+
             - name: Checkout Repo
               uses: actions/checkout@v7
 
@@ -817,7 +843,6 @@ jobs:
         if: |
             always() &&
             !cancelled() &&
-            needs.build-native-plugin.result == 'success' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-lca-api == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_api_changed == 'true') ||
@@ -829,6 +854,20 @@ jobs:
             matrix: ${{ fromJSON(needs.determine-affected.outputs.service_deployment_matrix) }}
         environment: ${{ matrix.lca_api_env }}
         steps:
+            # Selected deploys fail (not skip) without the native plugin, so frontend,
+            # npm, and docker gates see a failure instead of an OK-looking skip.
+            - name: Require native DIDKit plugin
+              if: needs.build-native-plugin.result != 'success'
+              env:
+                  NATIVE_RESULT: ${{ needs.build-native-plugin.result }}
+              run: |
+                  if [[ "$NATIVE_RESULT" == 'skipped' ]]; then
+                    echo "::error::Native DIDKit build was skipped, but this deploy was selected. native_plugin_needed is out of sync with this job's selection."
+                  else
+                    echo "::error::Native DIDKit build is a prerequisite for this deploy and finished with: $NATIVE_RESULT"
+                  fi
+                  exit 1
+
             - name: Checkout Repo
               uses: actions/checkout@v7
 
@@ -976,10 +1015,13 @@ jobs:
                 deploy-brain-service,
                 deploy-learn-cloud,
                 deploy-lca-api,
+                build-native-plugin,
             ]
         if: |
             always() &&
             !cancelled() &&
+            needs.build-native-plugin.result != 'failure' &&
+            needs.build-native-plugin.result != 'cancelled' &&
             needs.determine-affected.outputs.frontend_matrix_has_legs == 'true' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
@@ -1451,10 +1493,12 @@ jobs:
     # ============================================================================
     push-docker-images:
         name: Push Docker Images
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud]
+        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, build-native-plugin]
         if: |
             always() &&
             !cancelled() &&
+            needs.build-native-plugin.result != 'failure' &&
+            needs.build-native-plugin.result != 'cancelled' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.push-docker == 'true') ||
                 (needs.determine-affected.outputs.is_release == 'true' && (needs.determine-affected.outputs.brain_service_changed == 'true' || needs.determine-affected.outputs.learn_cloud_changed == 'true'))
@@ -1544,10 +1588,19 @@ jobs:
     # ============================================================================
     publish-npm:
         name: Publish Registry Packages
-        needs: [determine-affected, deploy-brain-service, deploy-learn-cloud, deploy-lca-api]
+        needs:
+            [
+                determine-affected,
+                deploy-brain-service,
+                deploy-learn-cloud,
+                deploy-lca-api,
+                build-native-plugin,
+            ]
         if: |
             always() &&
             !cancelled() &&
+            needs.build-native-plugin.result != 'failure' &&
+            needs.build-native-plugin.result != 'cancelled' &&
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-npm == 'true') ||
                 needs.determine-affected.outputs.is_release == 'true'
