@@ -17,6 +17,8 @@ on:
                     - production
                     - scouts
                     - scouts-staging
+                    - vetpass
+                    - vetpass-staging
             # Component selection - which things to deploy
             deploy-brain-service:
                 description: 'Deploy Brain Service (Network API)'
@@ -235,14 +237,20 @@ jobs:
                   SCOUTS_FE_STAGING='{"name":"ScoutPass Staging","environment":"scout-app-staging","capgo":false,"stage":"staging"}'
                   SCOUTS_FE_PRODUCTION='{"name":"ScoutPass Production","environment":"scout-app-production","capgo":true,"stage":"production"}'
                   # VetPass is a learn-card-app tenant on the LearnCard network services, so it
-                  # adds frontend legs only (no service legs) and ships with LearnCard: staging
-                  # on affected main pushes, production on LearnCard releases. TENANT/STAGE come
-                  # from the GitHub Environment. No CapGo: VetPass has no OTA channel.
-                  # tenant_leg=true: a failed VetPass leg must not fail deploy-frontend's
-                  # aggregate result, which gates LearnCard native publishing, the production
-                  # smoketest and Jira tagging (see continue-on-error on deploy-frontend).
-                  VETPASS_FE_STAGING='{"name":"VetPass Staging","environment":"vetpass-app-staging","capgo":false,"tenant_leg":true}'
-                  VETPASS_FE_PRODUCTION='{"name":"VetPass Production","environment":"vetpass-app-production","capgo":false,"tenant_leg":true}'
+                  # has frontend legs only (no service legs). Automatic runs ship it alongside
+                  # LearnCard (staging on affected main pushes, production on releases); manual
+                  # runs deploy it alone via the 'vetpass' / 'vetpass-staging' targets, like
+                  # ScoutPass. TENANT/STAGE come from the GitHub Environment. No CapGo: VetPass
+                  # has no OTA channel.
+                  VETPASS_FE_STAGING='{"name":"VetPass Staging","environment":"vetpass-app-staging","capgo":false}'
+                  VETPASS_FE_PRODUCTION='{"name":"VetPass Production","environment":"vetpass-app-production","capgo":false}'
+                  # Ride-along variants for automatic runs. tenant_leg=true makes the leg
+                  # continue-on-error, so a VetPass failure can't fail deploy-frontend's aggregate
+                  # result, which gates LearnCard native publishing, the production smoketest and
+                  # Jira tagging. A failing ride-along leg alerts Slack itself. Manual VetPass
+                  # dispatches use the plain legs, so their failure fails the run.
+                  VETPASS_FE_STAGING_RIDEALONG="${VETPASS_FE_STAGING%\}},\"tenant_leg\":true}"
+                  VETPASS_FE_PRODUCTION_RIDEALONG="${VETPASS_FE_PRODUCTION%\}},\"tenant_leg\":true}"
 
                   set_service_matrix() {
                     local legs
@@ -267,7 +275,21 @@ jobs:
                     tr ',' '\n' <<< "$AFFECTED" | grep -qx "$1"
                   }
 
-                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
+                  if [[ "${{ github.event_name }}" == 'workflow_dispatch' && ("${{ github.event.inputs.target-environment }}" == 'vetpass' || "${{ github.event.inputs.target-environment }}" == 'vetpass-staging') ]]; then
+                    # VetPass runs on the LearnCard services; deploy those via 'staging'/'production'.
+                    if [[ "${{ github.event.inputs.deploy-brain-service }}" == 'true' || "${{ github.event.inputs.deploy-learn-cloud }}" == 'true' || "${{ github.event.inputs.deploy-lca-api }}" == 'true' ]]; then
+                      echo "::error::VetPass has no services of its own (it uses LearnCard's). Untick the service boxes, or dispatch 'staging'/'production' to deploy LearnCard services."
+                      exit 1
+                    fi
+                    set_service_matrix
+                    if [[ "${{ github.event.inputs.target-environment }}" == 'vetpass' ]]; then
+                      echo "frontend_env=vetpass-app-production" >> "$GITHUB_OUTPUT"
+                      set_frontend_matrix "$VETPASS_FE_PRODUCTION"
+                    else
+                      echo "frontend_env=vetpass-app-staging" >> "$GITHUB_OUTPUT"
+                      set_frontend_matrix "$VETPASS_FE_STAGING"
+                    fi
+                  elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'scouts' ]]; then
                     echo "frontend_env=scout-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$SCOUTS_PRODUCTION"
                     set_frontend_matrix "$SCOUTS_FE_PRODUCTION"
@@ -278,18 +300,18 @@ jobs:
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ github.event.inputs.target-environment }}" == 'production' ]]; then
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_PRODUCTION"
-                    set_frontend_matrix "$LC_FE_PRODUCTION" "$VETPASS_FE_PRODUCTION"
+                    set_frontend_matrix "$LC_FE_PRODUCTION"
                   elif [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
                     echo "frontend_env=learn-card-app-staging" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_STAGING"
-                    set_frontend_matrix "$LC_FE_STAGING" "$VETPASS_FE_STAGING"
+                    set_frontend_matrix "$LC_FE_STAGING"
                   elif [[ "${{ steps.check_release.outputs.is_release }}" == 'true' ]]; then
                     # ScoutPass production is deliberately excluded from release
                     # pushes — it deploys only via the manual 'scouts' dispatch.
                     echo "frontend_env=learn-card-app-production" >> "$GITHUB_OUTPUT"
                     set_service_matrix "$LC_PRODUCTION"
                     if [[ "${{ steps.check_versions.outputs.lca_app_changed }}" == 'true' ]]; then
-                      set_frontend_matrix "$LC_FE_PRODUCTION" "$VETPASS_FE_PRODUCTION"
+                      set_frontend_matrix "$LC_FE_PRODUCTION" "$VETPASS_FE_PRODUCTION_RIDEALONG"
                     else
                       set_frontend_matrix
                     fi
@@ -300,7 +322,7 @@ jobs:
                     # Netlify branch builds), only when their Nx project is affected.
                     FE_LEGS=()
                     if is_affected learn-card-app; then
-                      FE_LEGS+=("$LC_FE_STAGING" "$VETPASS_FE_STAGING")
+                      FE_LEGS+=("$LC_FE_STAGING" "$VETPASS_FE_STAGING_RIDEALONG")
                     fi
                     if is_affected scouts; then
                       FE_LEGS+=("$SCOUTS_FE_STAGING")
@@ -967,6 +989,7 @@ jobs:
             (
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.deploy-frontend == 'true') ||
                 (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.target-environment == 'scouts') ||
+                (needs.determine-affected.outputs.is_manual == 'true' && startsWith(github.event.inputs.target-environment, 'vetpass')) ||
                 (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true') ||
                 (needs.determine-affected.outputs.is_manual != 'true' && needs.determine-affected.outputs.is_release != 'true' && needs.test-affected.result == 'success')
             ) &&
@@ -974,8 +997,8 @@ jobs:
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
-        # Tenant legs (VetPass) ride along with LearnCard but must not block it: their
-        # failure shows on the leg, not in needs.deploy-frontend.result.
+        # Ride-along tenant legs (VetPass on automatic runs) must not block LearnCard: their
+        # failure shows on the leg and alerts Slack, not in needs.deploy-frontend.result.
         continue-on-error: ${{ matrix.tenant_leg == true }}
         strategy:
             fail-fast: false
