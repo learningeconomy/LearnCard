@@ -238,8 +238,11 @@ jobs:
                   # adds frontend legs only (no service legs) and ships with LearnCard: staging
                   # on affected main pushes, production on LearnCard releases. TENANT/STAGE come
                   # from the GitHub Environment. No CapGo: VetPass has no OTA channel.
-                  VETPASS_FE_STAGING='{"name":"VetPass Staging","environment":"vetpass-app-staging","capgo":false}'
-                  VETPASS_FE_PRODUCTION='{"name":"VetPass Production","environment":"vetpass-app-production","capgo":false}'
+                  # tenant_leg=true: a failed VetPass leg must not fail deploy-frontend's
+                  # aggregate result, which gates LearnCard native publishing, the production
+                  # smoketest and Jira tagging (see continue-on-error on deploy-frontend).
+                  VETPASS_FE_STAGING='{"name":"VetPass Staging","environment":"vetpass-app-staging","capgo":false,"tenant_leg":true}'
+                  VETPASS_FE_PRODUCTION='{"name":"VetPass Production","environment":"vetpass-app-production","capgo":false,"tenant_leg":true}'
 
                   set_service_matrix() {
                     local legs
@@ -971,6 +974,9 @@ jobs:
             !contains(needs.deploy-learn-cloud.result, 'failure') &&
             !contains(needs.deploy-lca-api.result, 'failure')
         runs-on: ubuntu-latest
+        # Tenant legs (VetPass) ride along with LearnCard but must not block it: their
+        # failure shows on the leg, not in needs.deploy-frontend.result.
+        continue-on-error: ${{ matrix.tenant_leg == true }}
         strategy:
             fail-fast: false
             matrix: ${{ fromJSON(needs.determine-affected.outputs.frontend_deployment_matrix) }}
@@ -1058,15 +1064,33 @@ jobs:
               working-directory: apps/scouts
               run: bun scripts/lc.ts stage-env "${{ matrix.stage || 'production' }}" | tee -a "$GITHUB_OUTPUT"
 
+            # learn-card-app's `build` script re-runs prepare-native-config with
+            # ${TENANT:-learncard} ${STAGE:+--stage $STAGE}, so both must be passed here or
+            # the build re-bakes LearnCard production over the tenant prepared above.
             - name: Build App
               run: bunx nx build ${{ steps.vars.outputs.project_name }}
               env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
                   NODE_ENV: ${{ vars.NODE_ENV }}
                   VITE_NODE_ENV: ${{ steps.scouts-stage-env.outputs.VITE_NODE_ENV || vars.VITE_NODE_ENV }}
                   VITE_ENABLE_AUTH_DEBUG_WIDGET: ${{ vars.VITE_ENABLE_AUTH_DEBUG_WIDGET }}
                   VITE_WEB3AUTH_CLIENT_ID: ${{ secrets.VITE_WEB3AUTH_CLIENT_ID }}
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+
+            - name: Verify baked tenant
+              if: steps.vars.outputs.project_name == 'learn-card-app'
+              working-directory: apps/learn-card-app
+              env:
+                  TENANT: ${{ vars.TENANT || 'learncard' }}
+              run: |
+                  BAKED=$(bun -e "console.log(require('./build/tenant-config.json').tenantId)")
+                  if [[ "$BAKED" != "$TENANT" ]]; then
+                    echo "::error::build/tenant-config.json is tenant '$BAKED', expected '$TENANT' — refusing to deploy."
+                    exit 1
+                  fi
+                  echo "Baked tenant: $BAKED"
 
             - name: Validate Netlify target
               run: |

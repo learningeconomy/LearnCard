@@ -1717,7 +1717,7 @@ const nativeBuild = async (tenantId?: string, platform?: Platform, lane?: Fastla
     log.info(bold(`🚀 Fastlane build: ${displayName} → ${platform} ${lane}`));
     log.info(`   Bundle ID: ${cyan(bundleId)}`);
 
-    const stage = lane === 'upload_to_appetize' ? 'alpha' : 'production';
+    const stage = lane === 'upload_to_appetize' ? 'staging' : 'production';
 
     // Step 1: Populate public/ with tenant config + assets
     execBlocking(

@@ -116,20 +116,32 @@ If no `--stage` is specified, **production** is assumed (no overlay applied).
 
 Tenant web apps deploy from CI (`.github/workflows/deploy.yml`, `deploy-frontend`),
 one Netlify site per GitHub Environment. The Environment's `TENANT` and `STAGE`
-variables pick the baked config and pin the edge overlay; `NETLIFY_SITE_ID` picks
-the site. Staging legs deploy on `main` pushes that affect `learn-card-app`;
-production legs deploy on release commits.
+variables pick the baked config (`public/tenant-config.json`) and pin the edge
+overlay; `NETLIFY_SITE_ID` picks the site. `NETLIFY_AUTH_TOKEN` is a repository
+secret, so Environments inherit it.
 
-| Tenant    | Staging Environment (host)                        | Production Environment (host)                 |
+- **Staging** legs deploy on `main` pushes that affect `learn-card-app`, and on a
+  manual `staging` dispatch.
+- **Production** legs deploy on release commits that bump `learn-card-app`, and on
+  a manual `production` dispatch.
+
+| Tenant    | Staging Environment → host                        | Production Environment → host                 |
 | --------- | ------------------------------------------------- | --------------------------------------------- |
-| learncard | `learn-card-app-staging` (`staging.learncard.ai`) | `learn-card-app-production` (`learncard.app`) |
-| vetpass   | `vetpass-app-staging` (`staging.vetpass.app`)     | `vetpass-app-production` (`vetpass.app`)      |
+| learncard | `learn-card-app-staging` → `staging.learncard.ai` | `learn-card-app-production` → `learncard.app` |
+| vetpass   | `vetpass-app-staging` → `staging.vetpass.app`     | `vetpass-app-production` → `vetpass.app`      |
 
-To add a tenant: create both Environments (copy the variables from an existing
-pair, set `TENANT`, `STAGE=staging` on staging only, `NETLIFY_SITE_ID`, and the
-`NETLIFY_AUTH_TOKEN` secret), then add its legs next to `VETPASS_FE_*` in
-`deploy.yml`. Disable Netlify's own git builds on the site so CI is the only
-publisher.
+Tenant legs other than LearnCard set `"tenant_leg": true`, so a failed tenant deploy
+doesn't fail the job result that gates LearnCard native publishing. A failed tenant
+leg therefore doesn't fail the run or trigger the failure notification, so check the
+leg itself.
+
+To add a tenant:
+
+1. Create a Netlify site per stage. Attach each hostname to its site and turn off
+   Netlify's own git builds (`stop_builds`), so CI is the only publisher.
+2. Create both GitHub Environments: copy the variables from an existing pair, then
+   set `TENANT`, `STAGE=staging` (staging only) and `NETLIFY_SITE_ID`.
+3. Add the tenant's legs next to `VETPASS_FE_*` in `deploy.yml`.
 
 ## Switching tenants
 
