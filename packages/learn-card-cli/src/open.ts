@@ -5,6 +5,7 @@ import {
     appUrlFor,
     loadProject,
     PRODUCTION_NETWORK,
+    requireIdentity,
     resolveServices,
     STAGING_NETWORK,
     type ProjectOptions,
@@ -102,6 +103,8 @@ export interface OpenOptions extends ProjectOptions {
     urlFragment?: boolean;
     /** commander's attribute name for `--no-browser`; false only when that flag is passed. */
     browser?: boolean;
+    /** With `--url-fragment`, print/return the full URL including `#seed=…`. */
+    showSecret?: boolean;
 }
 
 export type SeedDelivery = 'clipboard' | 'fragment' | 'none';
@@ -112,16 +115,34 @@ export const impliesNoBrowser = (
     isTTY: boolean
 ): boolean => options.browser === false || !isTTY || !!options.json;
 
+/**
+ * How the seed reaches the app. The clipboard is only used for a person at a terminal:
+ * a script or agent (no TTY, or `--json`) has nobody to paste, and copying would leave the
+ * seed on the clipboard of whoever's machine this is (and block for the clear TTL).
+ */
+export const seedDeliveryFor = (
+    options: { urlFragment?: boolean; json?: boolean },
+    isTTY: boolean
+): SeedDelivery => {
+    if (options.urlFragment) return 'fragment';
+    if (options.json || !isTTY) return 'none';
+    return 'clipboard';
+};
+
+/** The URL to print or return: the `#seed=` fragment is removed unless `showSecret`. */
+export const shareableUrl = (url: string, showSecret?: boolean): string => {
+    if (showSecret) return url;
+    const parsed = new URL(url);
+    parsed.hash = '';
+    return parsed.toString();
+};
+
 export const runOpen = async (
     target: OpenTarget = 'portal',
     options: OpenOptions
 ): Promise<void> => {
     const project = await loadProject(process.cwd());
-    const seed = project.env.SECURE_SEED;
-    if (!seed)
-        throw new Error(
-            'No SECURE_SEED in .env. Run a command that creates one first, e.g. npx @learncard/cli send'
-        );
+    const seed = requireIdentity(project);
 
     const path = openPath(target, project.env);
     if (!path)
@@ -137,50 +158,58 @@ export const runOpen = async (
             `${network} has no hosted LearnCard app. Pass --app-url <url> for the app connected to it.`
         );
     const appUrl = appUrlFor(network, options.appUrl);
-    const noBrowser = impliesNoBrowser(options, !!process.stdout.isTTY);
+    const isTTY = !!process.stdout.isTTY;
+    const noBrowser = impliesNoBrowser({ ...options, json: options.json || out.json }, isTTY);
+    const seedDelivery = seedDeliveryFor({ ...options, json: out.json }, isTTY);
 
-    let url: string;
-    let seedDelivery: SeedDelivery;
+    // The URL handed to the browser; the one printed/returned hides the seed unless --show-secret.
+    const url = signInUrl(appUrl, path, seedDelivery === 'fragment' ? seed : undefined);
+    const shownUrl = shareableUrl(url, options.showSecret);
+    let delivered: SeedDelivery = seedDelivery;
     let clipboardCleared: Promise<void> | undefined;
-    if (options.urlFragment) {
-        url = signInUrl(appUrl, path, seed);
+    if (seedDelivery === 'fragment') {
         out.log(
             'Warning: --url-fragment puts your seed in the browser URL (history, screenshots).'
         );
-        seedDelivery = 'fragment';
-    } else if (out.json) {
+        if (noBrowser && !options.showSecret)
+            out.log('The printed URL omits the seed; pass --show-secret to print the full URL.');
+    } else if (seedDelivery === 'none') {
         // Non-interactive: nobody is there to paste, and blocking a script for the clipboard TTL
         // would be worse than not copying. Scripts that need the seed use --url-fragment.
-        url = signInUrl(appUrl, path);
         out.log(
-            'Seed not copied in --json mode. Paste it from .env, or re-run with --url-fragment.'
+            'Seed not copied (no terminal or --json). Paste it from .env, or re-run with --url-fragment.'
         );
-        seedDelivery = 'none';
     } else {
-        url = signInUrl(appUrl, path);
         try {
             await clipboard.write(seed);
             out.log(`Copied your seed to the clipboard (clears in ${CLIPBOARD_TTL_MS / 1000}s).`);
-            seedDelivery = 'clipboard';
             clipboardCleared = waitForClipboardClear(seed);
         } catch {
             out.log(
                 'Clipboard unavailable. Paste the seed from .env, or re-run with --url-fragment.'
             );
-            seedDelivery = 'none';
+            delivered = 'none';
         }
     }
 
-    if (!options.urlFragment) out.log('→ Click "Paste from clipboard", then Sign in.');
+    if (delivered === 'clipboard') out.log('→ Click "Paste from clipboard", then Sign in.');
     if (!noBrowser) launchBrowser(url);
     // Printed last so `$(cli open | tail -1)` captures this line in non-json mode.
     out.log(
-        `Opening ${OPEN_TARGETS[target]}: ${options.urlFragment ? url.split('#')[0] + '#seed=…' : url}`
+        `Opening ${OPEN_TARGETS[target]}: ${
+            seedDelivery === 'fragment' && !options.showSecret ? `${shownUrl}#seed=…` : shownUrl
+        }`
     );
 
-    out.set({ url, target, next: path, seedDelivery });
+    out.set({
+        url: shownUrl,
+        target,
+        next: path,
+        seedDelivery: delivered,
+        ...(seedDelivery === 'fragment' ? { seedInFragment: true } : {}),
+    });
 
     // Keep the process alive until the clipboard is actually cleared (or Ctrl-C clears it early);
-    // index.tsx's runCommand exits right after this promise resolves.
+    // runCommand exits right after this promise resolves. Only reached at a real terminal.
     await clipboardCleared;
 };

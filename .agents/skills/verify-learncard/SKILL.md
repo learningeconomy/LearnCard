@@ -23,8 +23,10 @@ Use focused unit/mock tests in the edit loop. When you need real-stack feedback,
 | SDK, a plugin, `@learncard/types`, or a brain/cloud/LCA route | `run sdk` (plus `sdk-to-app` if users see the result), then a `script` that calls your new method                                          |
 | `packages/learn-card-cli`                                     | `run cli`, then `learncard -- <your subcommand>`                                                                                           |
 | ConsentFlow (contracts, consent UI, data sharing)             | `run consent-flow`                                                                                                                         |
+| AI session app pickers or the AI apps catalog                 | `run ai-sessions` (starting a session is not covered: no AI service)                                                                       |
 | `docs/` code or snippets                                      | `run docs` (it also runs `scripts/check-docs-snippets.mjs`)                                                                                |
 | Partner Connect SDK or `examples/app-store-apps`              | `run app-store`                                                                                                                            |
+| `apps/ai-passport` or `services/ai-passport-backend`          | Not served by this stack. Run the AI Passport gates instead (see the feature map's "Not covered yet").                                     |
 | Anything not in the catalog                                   | `script` (below). Never stretch a nearby journey to stand in for it.                                                                       |
 
 `run all` runs catalog features **serially**: previous runs took about 13–15 minutes, plus several minutes for a cold Docker build. These are observations, not a timing guarantee. Do not parallelize stateful journeys within one harness or add a fictional `--serial` switch.
@@ -66,7 +68,11 @@ gh workflow run verification.yml --ref <branch>
 gh run list --workflow verification.yml
 ```
 
-The workflow also runs for non-draft PRs touching the covered surfaces, on an ephemeral GitHub-hosted Ubuntu runner, never `pull_request_target` or a privileged self-hosted runner. It installs the pinned toolchain/dependencies/Chromium, runs the in-app message unit, lint and typecheck steps, prepares and preflights, brings up one owned stack (`up --dir`), drives the in-app message navigation script (`script …/in-app-messages/examples/verify-navigation.mjs --dir … --video`), runs `run all --dir` on that stack, and always attempts ownership-checked teardown. It uploads two artifacts with 14-day retention: selected proof media (screenshots only, no videos) plus sanitized rendering data from the newest run (`bun scripts/proof.ts stage --images-only`, `lc-proof-media-<run id>`) and an allowlisted status/count/duration summary. Raw reports, logs, sessions, traces, seeds and videos stay off artifacts. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
+The workflow also runs for non-draft PRs touching the covered surfaces, on ephemeral GitHub-hosted Ubuntu runners, never `pull_request_target` or privileged self-hosted runners. Unit/static checks and the production SQLite bundle check start independently. Three catalog shards each install the pinned tools/dependencies/Chromium, prepare and preflight, and start their own owned stack. Each shard drives its assigned features serially; there is no concurrent mutation of a shared harness, checkout, database or session. Message navigation runs once on shard 1; campaign authorization runs once on shard 2. Shard 3 has no extra script. All three always attempt ownership-checked teardown.
+
+`scripts/verification-shards.json` is the fixed partition. `verification-catalog.mjs` reads the executable feature declarations without importing SDKs or generated files, and the source checks reject missing/duplicated features or scripts. Before sanitization can hide duplicate/unknown rows, shard staging validates exact original feature and entry IDs against that catalog. A passing hosted full-catalog gate requires the union of all three shards to cover every required entry, plus successful source checks, bundle checks, startup, assigned scripts, catalog, teardown and evidence handoff. Local `run all` remains serial.
+
+Each shard retains only a validated envelope and already-staged screenshots/report, plus separate numeric timing/browser-profile artifacts. These are bound to run ID, checkout SHA, PR head SHA, catalog/partition fingerprints and attempt. The aggregate uses the newest attempt for each shard within the same run/source; rerun-failed-jobs may reuse an earlier successful sibling. An invalid newer artifact cannot fall back to older green evidence. The aggregate replaces the publisher-compatible `lc-proof-media-<run id>` and `lc-verification-summary-<run id>` artifacts, including a current failed report-only payload if evidence is missing. Safe partial failure screenshots remain publishable while the gate fails. Raw reports, logs, sessions, traces, seeds, videos, database state and compiled outputs are never transferred between runners. Retention is 14 days. Hosted execution is unobserved until a workflow run actually completes; local results are not a hosted-CI pass.
 
 ### Build caching and timings
 
@@ -113,6 +119,24 @@ startup or navigation command cannot appear successful merely because the catalo
 
 The hosted Markdown/JSON summaries retain only allowlisted phase/feature names, statuses,
 coverage counts and validated numeric durations. Raw timestamps and error text are excluded.
+
+CI also runs `python3 -B scripts/profile-verification-traces.py STACK_DIR OUTPUT_DIR`
+(Python 3 standard library) after teardown. It reads the existing per-feature Playwright
+trace archives in place and adds `browser-profile.json` / `.md` to the sanitized-summary
+artifact. The current parser supports the repository-pinned Playwright trace version 8;
+unsupported, malformed, truncated and incomplete traces are counted explicitly.
+Only fixed feature/operation names, counts and numeric durations leave the runner. It
+never extracts or uploads trace payloads, parameters, selectors, URLs, errors or images.
+The profiler is diagnostic and cannot turn a failed verification into success. A two-minute
+step timeout, a 1 GiB total trace-stream budget, per-archive limits and call/line caps bound
+diagnostic cost; hitting a budget is reported as limited input.
+
+Use the per-feature navigation, screenshot, assertion and interaction rows to identify
+where to investigate next. API durations include browser/load/actionability waits, not
+just server work. Active time merges overlapping calls within the feature's browser
+clock; category rows may overlap and must not be added as wall time. SDK work, setup,
+trace/context closure and time between browser calls are outside this profile. It does
+not replace the full feature/command timings or justify removing persistence assertions.
 
 ### Sharing a live stack between agents
 

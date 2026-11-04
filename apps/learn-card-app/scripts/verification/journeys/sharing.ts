@@ -4,7 +4,7 @@ import { prepareFixtureById } from '@learncard/credential-library';
 
 import { expect } from '../expect';
 import type { FeatureDefinition } from '../types';
-import { UI_TIMEOUT, issueSelfBadge, openStoredBadge, readIssuer } from './shared';
+import { BADGES, UI_TIMEOUT, issueSelfBadge, openStoredBadge, readIssuer } from './shared';
 import { boostTemplate } from './sdk';
 
 export const sharingFeature: FeatureDefinition = {
@@ -24,8 +24,42 @@ export const sharingFeature: FeatureDefinition = {
         await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], {
             origin: context.baseUrl,
         });
+        const closeShare = async (): Promise<void> => {
+            // Dismiss both overlays through the UI before the automatic "after" capture.
+            // A share link and its QR code contain bearer secrets; neither may remain visible.
+            await page
+                .getByRole('dialog')
+                .getByRole('button', { name: 'Close', exact: true })
+                .click();
+            // Closing overlays become aria-hidden before their exit animation/unmount finishes.
+            // Include hidden nodes and require removal, not just accessibility-tree disappearance.
+            await expect(
+                page.getByRole('button', { name: 'Copy Link', exact: true, includeHidden: true })
+            ).toHaveCount(0);
+            await expect(
+                page.getByRole('img', { name: 'Share QR code', exact: true, includeHidden: true })
+            ).toHaveCount(0);
+            await expect(
+                page.getByRole('link', {
+                    name: 'Post to LinkedIn',
+                    exact: true,
+                    includeHidden: true,
+                })
+            ).toHaveCount(0);
+            await expect(
+                page.getByRole('dialog').getByRole('button', { name: 'More options', exact: true })
+            ).toBeVisible();
+            await page
+                .getByRole('dialog')
+                .getByRole('button', { name: 'Close', exact: true })
+                .click();
+            // These overlays live in the shared modal portal. Legacy Ionic dialogs can stay
+            // mounted elsewhere while hidden, so a global hidden-dialog count is too broad.
+            await expect(page.locator('#modal-mid-root > [data-lc-surface]')).toHaveCount(0);
+            await expect(page).toHaveURL(BADGES);
+        };
         const publishPreview = async (credentialTitle: string): Promise<URL> => {
-            await page.goto('/socialBadges', { waitUntil: 'domcontentloaded' });
+            await expect(page).toHaveURL(BADGES);
             const badge = page.getByText(credentialTitle, { exact: true }).first();
             await expect(badge).toBeVisible({ timeout: UI_TIMEOUT });
             await badge.click();
@@ -48,11 +82,7 @@ export const sharingFeature: FeatureDefinition = {
             const link = new URL(
                 new URL((await post.getAttribute('href'))!).searchParams.get('url')!
             );
-            // Leave bearer-link UI before the step's automatic "after" screenshot.
-            await page.goto('/wallet');
-            await expect(
-                page.getByRole('button', { name: 'Open profile', exact: true })
-            ).toBeVisible();
+            await closeShare();
             return link;
         };
         const readPreview = (link: URL, uri = link.searchParams.get('uri')!): Promise<Response> => {
@@ -86,11 +116,7 @@ export const sharingFeature: FeatureDefinition = {
             for (const param of ['uri', 'seed', 'pin'])
                 expect(link.searchParams.get(param)).toBeTruthy();
             await expect(page.getByText(url, { exact: true })).toBeVisible();
-            // Leave the bearer link/QR screen before the step's automatic "after" capture.
-            await page.goto('/wallet');
-            await expect(
-                page.getByRole('button', { name: 'Open profile', exact: true })
-            ).toBeVisible();
+            await closeShare();
             return url;
         });
         const publicLink = await context.step(page, 'share-public-preview-isolation', async () => {
@@ -176,6 +202,9 @@ export const sharingFeature: FeatureDefinition = {
                 originalCredentialId: credentialId,
                 visibility: 'public',
             });
+            // The independent SDK just changed the stored index. Reload once to observe it;
+            // closing and reopening Share alone intentionally retains the current app session.
+            await page.reload();
             const first = await publishPreview(endorsedTitle);
             const second = await publishPreview(endorsedTitle);
             expect(second.searchParams.get('uri')).not.toBe(first.searchParams.get('uri'));

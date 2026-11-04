@@ -156,17 +156,18 @@ binding already prevents duplicate delivery. A key without prior preparation is 
 
 ### `sendBoost` also issues refreshable credentials
 
-For a guided demonstration without writing SDK code, the CLI offers `learncard demo refresh`.
+For a guided demonstration without writing SDK code, the CLI (`@learncard/cli` 3.6.0 or
+later) offers `npx @learncard/cli demo refresh`.
 It creates demo issuer and recipient accounts, sends a provisional certificate through
 `sendBoost`, publishes a final version, and refreshes the recipient's copy. Press Enter
 between steps to present the before and after. It defaults to the local network at
-`http://localhost:4000/trpc`; use `--network staging` for a staging network with managed
-refresh and LC-2198 deployed. Use a CLI build containing this command. The updated copy
+`http://localhost:4000/trpc`; use `--network staging` for a staging network that has managed
+refresh enabled. The updated copy
 is displayed in the terminal, not saved to the app. Demo records remain on the selected
 network; account keys stay in memory for the session.
 
 To demonstrate the recipient experience in the local LearnCard app, start its local
-development stack and run `learncard demo refresh --ui` (or, from this repository,
+development stack and run `npx @learncard/cli demo refresh --ui` (or, from this repository,
 `bun --cwd packages/learn-card-cli start demo refresh --ui`). Follow the printed demo
 sign-in link, then press Enter to send. In the app, open **Alerts → Claim → Accept**.
 Press Enter in the terminal to publish the update, then open the new update notification
@@ -388,7 +389,7 @@ Enter an address you can access. The demo school emails a provisional certificat
 
 This walkthrough deliberately publishes only after claim, so you can see the change. Publishing before the recipient creates an account also works; the recipient gets the latest pending version at claim, as described below.
 
-For an optional disposable-account demonstration with no actual email, run `learncard demo refresh --inbox --ui`. It demonstrates the pre-claim update separately. Omit `--ui` for terminal-only testing (add `--lca-url http://localhost:5200/trpc` for the E2E stack). The UI mode reads service URLs from the running app's tenant configuration.
+For an optional disposable-account demonstration with no actual email, run `npx @learncard/cli demo refresh --inbox --ui`. It demonstrates the pre-claim update separately. Omit `--ui` for terminal-only testing (add `--lca-url http://localhost:5200/trpc` for the E2E stack). The UI mode reads service URLs from the running app's tenant configuration.
 
 ```javascript
 const template = {

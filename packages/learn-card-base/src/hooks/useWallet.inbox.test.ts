@@ -70,7 +70,9 @@ vi.mock('./useConsentedContracts', () => ({
 vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
     queueAiInsightCredentialRefresh: vi.fn(),
 }));
-vi.mock('learn-card-base/constants/aiPassport', () => ({ LEARNCARD_AI_PASSPORT_CONTRACT_URI: '' }));
+vi.mock('learn-card-base/constants/aiPassport', () => ({
+    isLearnCardAiPassportContractUri: () => false,
+}));
 import { useWallet } from './useWallet';
 import {
     addCredentialSummary,

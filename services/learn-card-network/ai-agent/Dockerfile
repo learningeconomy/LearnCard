@@ -6,6 +6,12 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
+# ARM64 dependencies can fall back to node-gyp during the frozen install.
+# Keep the compiler toolchain in this build stage, out of the runtime image.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY . .
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \

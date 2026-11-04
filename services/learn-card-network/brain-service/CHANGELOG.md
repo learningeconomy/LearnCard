@@ -1,5 +1,61 @@
 # @learncard/network-brain-service
 
+## 4.1.3
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/credential-library@2.1.6
+    - @learncard/core@9.4.43
+    - @learncard/helpers@1.7.3
+    - @learncard/did-web-plugin@1.1.43
+    - @learncard/didkey-plugin@1.1.43
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/didkit-plugin-node@0.3.9
+    - @learncard/encryption-plugin@1.1.43
+    - @learncard/learn-card-plugin@1.2.43
+    - @learncard/vc-plugin@1.6.9
+    - @learncard/vc-templates-plugin@1.1.43
+    - @learncard/crypto-plugin@1.1.43
+    - @learncard/dynamic-loader-plugin@1.1.43
+    - @learncard/expiration-plugin@1.2.43
+
+## 4.1.2
+
+### Patch Changes
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+    - @learncard/email-templates@1.2.2
+    - @learncard/credential-library@2.1.5
+    - @learncard/core@9.4.42
+    - @learncard/helpers@1.7.2
+    - @learncard/did-web-plugin@1.1.42
+    - @learncard/didkey-plugin@1.1.42
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/didkit-plugin-node@0.3.8
+    - @learncard/encryption-plugin@1.1.42
+    - @learncard/learn-card-plugin@1.2.42
+    - @learncard/vc-plugin@1.6.8
+    - @learncard/vc-templates-plugin@1.1.42
+    - @learncard/crypto-plugin@1.1.42
+    - @learncard/dynamic-loader-plugin@1.1.42
+    - @learncard/expiration-plugin@1.2.42
+
+## 4.1.1
+
+### Patch Changes
+
+- [#1887](https://github.com/learningeconomy/LearnCard/pull/1887) [`decc065dcc7ecf3a5aacd06850ed23356f528153`](https://github.com/learningeconomy/LearnCard/commit/decc065dcc7ecf3a5aacd06850ed23356f528153) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop reporting expected `CONFLICT` tRPC errors (like re-consenting to a contract you've already consented to) to Sentry, the same way `BAD_REQUEST`, `NOT_FOUND` and `FORBIDDEN` are already filtered.
+
+- [#1883](https://github.com/learningeconomy/LearnCard/pull/1883) [`9bca968ad4da81ce98674d0e1a3959956d7521ca`](https://github.com/learningeconomy/LearnCard/commit/9bca968ad4da81ce98674d0e1a3959956d7521ca) Thanks [@goblincore](https://github.com/goblincore)! - Sequence app credential activity and delivery graph writes to reduce Neo4j deadlocks, and avoid duplicate listing attribution when the listing is already the issuer.
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/credential-library@2.1.4
+    - @learncard/didkit-plugin-node@0.3.7
+
 ## 4.1.0
 
 ### Minor Changes

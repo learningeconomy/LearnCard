@@ -68,6 +68,18 @@ jobs:
             - name: Test retry reporting contract
               run: node --test scripts/ci-test-retries/retry.test.cjs
 
+            - name: Test SDK build cache policy when its configuration changes
+              run: |
+                  if git diff --quiet origin/main...HEAD -- \
+                      nx.json package.json bun.lock bunfig.toml .nvmrc ':(glob)tsconfig*.json' \
+                      packages/learn-card-types packages/learn-card-helpers packages/learn-card-core \
+                      tools/executors/workspace/run-command \
+                      .github/tests/test-sdk-cache-policy.cjs .github/workflows/test.yml; then
+                    echo "SDK cache policy unchanged"
+                  else
+                    node --test .github/tests/test-sdk-cache-policy.cjs
+                  fi
+
             - name: Run tests
               id: tests
               timeout-minutes: 20
@@ -124,6 +136,8 @@ jobs:
               run: >-
                   bunx vitest run --config vitest.integration.config.ts
                   test/keys-escrow.spec.ts
+                  test/keys-pin-sign-in.spec.ts
+                  test/keys-pin-lease.spec.ts
                   test/models/escrow.spec.ts
                   test/jobs/escrowBlobRewrap.spec.ts
                   test/jobs/escrowHoldReminders.spec.ts

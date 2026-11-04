@@ -1,5 +1,102 @@
 # @learncard/cli
 
+## 4.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/holder-continuity@0.2.28
+    - @learncard/core@9.4.43
+    - @learncard/init@2.5.9
+    - @learncard/network-brain-client@2.6.3
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/lca-api-plugin@2.0.15
+    - @learncard/learn-cloud-plugin@2.3.51
+    - @learncard/ler-rs-plugin@0.1.34
+    - @learncard/linked-claims-plugin@0.2.43
+    - @learncard/open-badge-v2-plugin@1.1.44
+    - @learncard/render-method-plugin@12.0.2
+
+## 4.0.0
+
+### Major Changes
+
+- [#1908](https://github.com/learningeconomy/LearnCard/pull/1908) [`e580fe754ca4697a52c4642faac056c31b0280b9`](https://github.com/learningeconomy/LearnCard/commit/e580fe754ca4697a52c4642faac056c31b0280b9) Thanks [@Custard7](https://github.com/Custard7)! - Make the CLI safer and more predictable for scripts and AI agents.
+
+    **Upgrading from 3.x.** This release is a major version because scripts that parse CLI output or rely on the old behaviour may break:
+
+    - `verify --json` prints one line, `{ ok, command: "verify", verified, result }`. Read `verified` and `result` instead of the raw result.
+    - `token --json` no longer includes `token`. Read `API_TOKEN` from the `.env` named in `tokenSavedTo`, or pass `--show-secret`.
+    - `open --json --url-fragment` returns the URL without `#seed=`. Pass `--show-secret` for the old URL.
+    - Read-only commands (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`/`--revoke`, `open`) fail with `NO_IDENTITY` in a folder with no identity instead of creating one. Run `init` (or `org apply`) first.
+    - Invalid flag values that used to be accepted are now rejected, as described below.
+    - Node 20 or later is required (`engines.node >= 20`).
+
+    **All changes:**
+
+    - `revoke`, `token --list` and `token --revoke` no longer create a seed, `.env` or profile in an empty folder. All commands that only read or act on an existing identity (`whoami`, `status`, `inbox list`, `refresh history`, `doctor`, `revoke`, `token --list`, `token --revoke`, `open`, `clr validate --dry-run-sign`) now fail in such a folder with `code: "NO_IDENTITY"` and the same hint to run `init`, and no longer write `NETWORK_URL` to `.env`. When `init`, `send`, `org apply` or another setup command creates a new identity, it says so on stderr and adds `identityCreated: { profileId, did, network }` to the `--json` result.
+    - `--profile-id`, `send --guardian-email` and `send --webhook-url` are checked before an identity is created, so a malformed value no longer leaves a broken `.env` behind.
+    - Flags and arguments are checked before anything is written or sent: an invalid recipient, `--network`, `--expires`, `--scope`, `status --limit`/`--event`, `inbox list --status`/`--limit`, or `setup-signing --endpoint`/`--did`.
+    - `--network` accepts `production`, `prod`, `staging`, `local` or a tRPC URL on every command (`--network production` used to fail with "Invalid URL" everywhere except `promote`).
+    - Every command except `repl` accepts `-y`, `--json` and `--network`. Commands that don't use a flag accept and ignore it.
+    - `--json` errors are now `{ ok: false, command, error, code, hint?, detail? }`. `detail` holds the full message when it spans several lines. With `--json`, usage errors (unknown command or option, missing argument, `--json` placed before the command) also print one JSON line with `code: "USAGE"`.
+    - `--json` errors are `code: "USAGE"` when a required value is missing in a non-interactive run or a flag value is invalid. If a command created a new identity before it failed, the error envelope also carries `identityCreated`. `--json` never prompts, so stdout holds only the JSON line even at a terminal without `-y`.
+    - **Breaking for scripts:** `verify --json` now prints one line, `{ ok: true, command: "verify", verified, result }`, instead of the raw result spread over several lines. It still exits 1 when the credential does not verify.
+    - **Breaking for scripts:** `token --json` no longer includes the raw `token` unless you pass `--show-secret`. It adds `tokenSavedTo`, the `.env` path where the token is saved as `API_TOKEN`.
+    - **Breaking for scripts:** `open --json --url-fragment` returns the URL without the `#seed=` fragment, plus `seedInFragment: true`, unless you pass `--show-secret`. `open` only copies the seed to the clipboard when stdout is a terminal; piped or `--json` runs (e.g. `$(cli open | tail -1)`) no longer copy it and no longer wait 60 seconds to clear the clipboard.
+    - Human-mode `webhook` now stops after `--timeout` (default 60 seconds) when stdin is not a terminal, as `--json` already did.
+    - Stricter flag validation rejects values that used to be accepted: `webhook --timeout`, `token --expires` (a positive number of days) and `status --limit` (a whole number from 1 to 100).
+    - The package installs a `learncard` binary as well as the existing `cli`. It now declares `engines.node >= 20` and publishes only `dist`, `examples` and the docs.
+
+### Minor Changes
+
+- [#1911](https://github.com/learningeconomy/LearnCard/pull/1911) [`076f2548d018060a4a744305167e387ed8380ec1`](https://github.com/learningeconomy/LearnCard/commit/076f2548d018060a4a744305167e387ed8380ec1) Thanks [@Custard7](https://github.com/Custard7)! - Help coding agents discover and use the whole LearnCard surface from the CLI.
+
+    - `commands [name...] [--json]` prints a manifest of every command, built from the CLI's own command tree: arguments, options, effect (`read`, `write`, `local` or `varies`), whether it can create an identity or connect, output fields and examples, plus global flags, environment variables, error codes and docs links. Each command's `--help` now ends with examples.
+    - `capabilities [id] [--json]` maps what LearnCard can do to the CLI command, SDK method, Network REST route and docs page for each.
+    - `call <method>` calls any `learnCard.invoke` SDK method as the folder's identity (`--args <json|@file|->`, `--as`, `--list`, `--describe`, `--dry-run`). `--describe` shows a method's TypeScript signature, parameters, the flags a call needs and an example, offline; `--args` also takes a bare non-JSON value such as an `lc:` URI as one string. Methods that can change data need `--write`, and methods that return secrets need `--show-secret`. On-chain methods (`transferTokens`) also need `--chain <name>`, and the wallet's chain is checked before anything is submitted; mainnet is used only when named. It never creates an identity, read calls don't register DIDs with LearnCloud, and results are converted to plain JSON.
+    - `api <METHOD> <path>` calls the LearnCard Network REST API with `LEARNCARD_API_KEY` or the folder's `API_TOKEN` (`--data`, `--query`, `--timeout`, `--dry-run`, `--spec [--fetch]`). Methods other than `GET`/`HEAD` need `--write`, as do the `GET` routes that change state (`/challenges`, `/inbox/guardian-approval/{token}`) however the path is spelled. The token is never printed, and non-2xx responses fail with code `HTTP_<status>`.
+    - `skill install` writes the LearnCard skill for coding agents to `.claude/skills/`, `.cursor/rules/` or `.agents/skills/` (`--target`, `--dir`, `--force`, `--print`). It works offline, never touches the folder's identity, and refuses to write through symlinks (`UNSAFE_PATH`).
+
+    Smaller fixes found by running the CLI as an agent on staging and production:
+
+    - `doctor` checks the production signing service (`api.learncard.app`) when no `LCA_API_URL` is set, instead of reporting hosted signing as unavailable while `setup-signing` used it.
+    - `send --suppress-delivery` no longer says the recipient will get a claim email.
+    - `call` and `api` no longer repeat the result on stderr in `--json` mode.
+    - Using `--network` that differs from the folder's network fails with `NETWORK_MISMATCH` and a hint; an unknown `status` activity ID fails with `NOT_FOUND`. Unknown commands get a "Did you mean …?" `hint`.
+    - `--json`, `-y` and `--network` may come before the command (`learncard --json whoami`).
+    - `identityCreated.did` is now the new profile's DID (the same as the result's `did`); the seed's `did:key` moves to `identityCreated.keyDid`.
+    - `--help` lists `LEARNCARD_AS`, `LEARNCARD_API_KEY` and `CLOUD_URL` with the other environment variables.
+
+### Patch Changes
+
+- Updated dependencies [[`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/types@5.24.1
+    - @learncard/holder-continuity@0.2.27
+    - @learncard/core@9.4.42
+    - @learncard/init@2.5.8
+    - @learncard/network-brain-client@2.6.2
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/lca-api-plugin@2.0.14
+    - @learncard/learn-cloud-plugin@2.3.50
+    - @learncard/ler-rs-plugin@0.1.33
+    - @learncard/linked-claims-plugin@0.2.42
+    - @learncard/open-badge-v2-plugin@1.1.43
+    - @learncard/render-method-plugin@12.0.1
+
+## 3.6.8
+
+### Patch Changes
+
+- Updated dependencies [[`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/network-brain-client@2.6.1
+    - @learncard/holder-continuity@0.2.26
+    - @learncard/init@2.5.7
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/learn-cloud-plugin@2.3.49
+
 ## 3.6.7
 
 ### Patch Changes
