@@ -36,7 +36,7 @@ import { useFirebase } from '../../hooks/useFirebase';
 import useLogout from '../../hooks/useLogout';
 import { useClassLinkAuthorizeUrl } from 'learn-card-base/react-query/mutations/firebase';
 import { startClassLinkLogin } from '../../auth/classlink/startClassLinkLogin';
-import ClassLinkIcon from 'learn-card-base/assets/images/classlink-logo.svg';
+import ClassLinkIcon from 'learn-card-base/assets/images/classlink-logo.png';
 
 import { changeSignInPersistence, useSignInPersistence } from '../../auth/signInPersistence';
 import { SignInPersistenceError } from './SignInPersistenceError';
