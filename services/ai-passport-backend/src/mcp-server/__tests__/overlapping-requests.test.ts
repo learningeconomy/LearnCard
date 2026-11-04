@@ -111,3 +111,35 @@ test('overlapping authenticated MCP requests each get their own server', async (
     expect(secondBody.id).toBe(2);
     expect(secondBody.result.structuredContent).toEqual({ general_summary: 'summary for bob' });
 });
+
+test('mounts the AI Passport tools with their behavior annotations', async () => {
+    const response = await fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+            authorization: `Bearer ${jwt.sign({ sub: 'did:example:carol', aud: 'test-client' }, JWT_SECRET, { expiresIn: '5m' })}`,
+            'content-type': 'application/json',
+            accept: 'application/json, text/event-stream',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} }),
+    });
+
+    expect(response.status).toBe(200);
+    const { result } = await response.json();
+    const byName = Object.fromEntries(
+        result.tools.map((tool: { name: string; annotations: Record<string, unknown> }) => [
+            tool.name,
+            tool.annotations,
+        ])
+    );
+
+    expect(Object.keys(byName).sort()).toEqual([
+        'get_answer_about_user',
+        'get_user_context',
+        'save_session_summary',
+    ]);
+    expect(byName.get_user_context).toMatchObject({ readOnlyHint: true, destructiveHint: false });
+    expect(byName.save_session_summary).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: false,
+    });
+});

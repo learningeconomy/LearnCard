@@ -9,6 +9,7 @@ on:
         paths:
             - 'apps/ai-passport/**'
             - 'services/ai-passport-backend/**'
+            - 'packages/learn-card-mcp/**'
             - 'packages/learn-card-types/src/aiPassport.ts'
             - 'bun.lock'
             - '.github/workflows/ai-passport.yml'
