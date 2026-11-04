@@ -11,6 +11,7 @@ const host = vi.hoisted(() => ({
     walletReady: true,
     getDID: vi.fn(),
     getPreferencesForDid: vi.fn(),
+    wallet: { id: { did: () => 'did:key:a' } },
 }));
 
 vi.mock('learn-card-base', () => ({
@@ -19,6 +20,7 @@ vi.mock('learn-card-base', () => ({
         // so effect/state feedback loops are covered.
         getDID: () => host.getDID(),
         initWallet: async () => ({
+            ...host.wallet,
             invoke: { getPreferencesForDid: host.getPreferencesForDid },
         }),
     }),
@@ -36,8 +38,7 @@ vi.mock('../../stores/currentUserStore', () => ({
 vi.mock('../../stores/walletStore', () => ({
     walletStore: {
         use: {
-            wallet: () =>
-                host.walletReady ? { id: { did: () => host.switchedDid ?? 'did:key:a' } } : null,
+            wallet: () => (host.walletReady ? host.wallet : null),
         },
     },
     switchedProfileStore: {
@@ -69,6 +70,7 @@ describe('useGetPreferencesForDid identity transitions', () => {
         host.currentUser = { uid: 'account-a' };
         host.switchedDid = undefined;
         host.walletReady = true;
+        host.wallet = { id: { did: () => 'did:key:a' } };
         host.getDID.mockResolvedValue('did:key:a');
         host.getPreferencesForDid.mockImplementation(async () => ({
             bugReportsEnabled: host.currentUser?.uid === 'account-b',
@@ -169,5 +171,39 @@ describe('useGetPreferencesForDid identity transitions', () => {
         await waitFor(() => expect(result.current.consentResolved).toBe(true));
         expect(result.current.did).toBe('did:key:a');
         expect(result.current.data?.analyticsEnabled).toBe(true);
+    });
+
+    it('shares fresh consent with a late observer instead of revalidating the same session', async () => {
+        host.getPreferencesForDid.mockResolvedValue({ analyticsEnabled: true });
+        const wrapper = createWrapper();
+        const first = renderHook(() => useGetPreferencesForDid(), { wrapper });
+        await waitFor(() => expect(first.result.current.consentResolved).toBe(true));
+        const late = renderHook(() => useGetPreferencesForDid(), { wrapper });
+        await waitFor(() => expect(late.result.current.consentResolved).toBe(true));
+        expect(late.result.current.data?.analyticsEnabled).toBe(true);
+        expect(host.getPreferencesForDid).toHaveBeenCalledTimes(1);
+    });
+
+    it('revalidates a same-DID login even while the previous session cache is fresh', async () => {
+        host.getPreferencesForDid.mockResolvedValueOnce({ analyticsEnabled: true });
+        const { result, rerender } = renderHook(() => useGetPreferencesForDid(), {
+            wrapper: createWrapper(),
+        });
+        await waitFor(() => expect(result.current.consentResolved).toBe(true));
+        host.currentUser = null;
+        host.walletReady = false;
+        rerender();
+        expect(result.current.data).toBeUndefined();
+        const next = Promise.withResolvers<{ analyticsEnabled: boolean }>();
+        host.getPreferencesForDid.mockReturnValue(next.promise);
+        host.wallet = { id: { did: () => 'did:key:a' } };
+        host.currentUser = { uid: 'account-a' };
+        host.walletReady = true;
+        rerender();
+        await waitFor(() => expect(host.getPreferencesForDid).toHaveBeenCalledTimes(2));
+        expect(result.current.consentResolved).toBe(false);
+        await act(async () => next.resolve({ analyticsEnabled: false }));
+        await waitFor(() => expect(result.current.consentResolved).toBe(true));
+        expect(result.current.data?.analyticsEnabled).toBe(false);
     });
 });

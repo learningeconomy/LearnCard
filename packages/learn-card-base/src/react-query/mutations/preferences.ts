@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseMutationResult } from '@tanstack/react-query';
 
@@ -28,10 +29,24 @@ type PreferenceWrite = PreferencesType & {
     [requestedWallet]?: Promise<BespokeLearnCard>;
 };
 
+const bindPreferenceWrite = (
+    preferences: PreferencesType,
+    pendingWallet: Promise<BespokeLearnCard>
+): PreferenceWrite => {
+    // A global mutation hook may reject before onMutate attaches. Observe the
+    // bound promise now; awaiting the original still propagates its failure.
+    void pendingWallet.catch(() => undefined);
+    return { ...preferences, [requestedWallet]: pendingWallet };
+};
+
 const usePreferencesMutation = (
     operation: 'create' | 'update'
 ): UseMutationResult<boolean, Error, PreferencesType, PreferencesMutationContext> => {
     const { initWallet } = useWallet();
+    const initWalletRef = useRef(initWallet);
+    useEffect(() => {
+        initWalletRef.current = initWallet;
+    }, [initWallet]);
     const queryClient = useQueryClient();
     const mutation = useMutation<boolean, Error, PreferenceWrite, PreferencesMutationContext>({
         mutationFn: async request => {
@@ -68,13 +83,21 @@ const usePreferencesMutation = (
         },
     });
 
-    return {
-        ...mutation,
-        mutate: (preferences, options) =>
-            mutation.mutate({ ...preferences, [requestedWallet]: initWallet() }, options),
-        mutateAsync: (preferences, options) =>
-            mutation.mutateAsync({ ...preferences, [requestedWallet]: initWallet() }, options),
-    };
+    const mutate = useCallback(
+        (preferences: PreferencesType, options?: Parameters<typeof mutation.mutate>[1]) =>
+            mutation.mutate(bindPreferenceWrite(preferences, initWalletRef.current()), options),
+        [mutation.mutate]
+    );
+    const mutateAsync = useCallback(
+        (preferences: PreferencesType, options?: Parameters<typeof mutation.mutateAsync>[1]) =>
+            mutation.mutateAsync(
+                bindPreferenceWrite(preferences, initWalletRef.current()),
+                options
+            ),
+        [mutation.mutateAsync]
+    );
+
+    return { ...mutation, mutate, mutateAsync };
 };
 
 export const useUpdatePreferences = () => usePreferencesMutation('update');
