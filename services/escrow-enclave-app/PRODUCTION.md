@@ -48,8 +48,13 @@ of cross-brand copy; retain product/security sign-off and sample messages before
 enabling either tenant. Once the SSS switch turns its escrow on, VetPass uses this enclave with authority tenant `learncard`
 (`auth.sss.escrowAuthorityTenant`; see [SECURITY.md](SECURITY.md) D20), so the code,
 recovery-started and release-warning emails it sends to VetPass users are branded
-**LearnCard**, not VetPass. The VetPass app tells users so on the recovery screens.
-Tenant-branded enclave emails need an image change and are not planned for this roll.
+**LearnCard**, not VetPass, until VetPass seals its own brand. The VetPass app tells
+users so on the recovery screens. The brand-aware image (D21) lets the owner's device
+seal the app's display name into the blob; clients do so only once
+`auth.sss.escrowSealEmailBrand` is turned on, after every host runs that image (see
+[ROLLOUT.md](ROLLOUT.md)). Launch approval of cross-brand copy should then include
+sample "VetPass"-branded messages as well as the LearnCard-branded fallback, which
+older blobs keep.
 
 ## Ordered bootstrap and verification
 

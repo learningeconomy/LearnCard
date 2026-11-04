@@ -58,6 +58,8 @@ describe('authConfig', () => {
             escrowEnclaveMode: 'off',
             escrowEnclavePublicKeys: [],
             escrowEnclaveMeasurements: [],
+            escrowSealEmailBrand: false,
+            escrowSharedEmailBrands: [],
             enableEmailBackupShare: true,
             requireEmailForPhoneUsers: true,
         });
@@ -311,11 +313,145 @@ describe('authConfig', () => {
             const sss = { escrowAuthorityTenant: 'learncard' };
             expect(
                 getEscrowEmailSender({ tenantId: 'vetpass', branding: { name: 'VetPass' } }, sss)
-            ).toEqual({ sender: 'LearnCard', brand: 'VetPass' });
+            ).toEqual({ sender: 'LearnCard', brand: 'VetPass', mixed: false });
             expect(
                 getEscrowEmailSender({ tenantId: 'learncard', branding: { name: 'LearnCard' } }, {})
             ).toBeUndefined();
             expect(getEscrowEmailSender({ tenantId: 'vetpass' }, sss)).toBeUndefined();
+        });
+    });
+
+    // D21: the owner-sealed enclave email brand.
+    describe('escrow sealed email brand', () => {
+        const pcrTuple = { pcr0: PCR0, pcr1: PCR1, pcr2: PCR2 };
+        const configure = (escrowSealEmailBrand?: boolean) =>
+            setAuthConfigOverrides({
+                tenantId: 'vetpass',
+                providerConfig: {
+                    sss: {
+                        escrowEnclaveMode: 'nitro',
+                        escrowEnclaveMeasurements: [pcrTuple],
+                        escrowAuthorityTenant: 'learncard',
+                        ...(escrowSealEmailBrand !== undefined ? { escrowSealEmailBrand } : {}),
+                    },
+                },
+            });
+
+        it('seals no brand with the flag off or unset', () => {
+            for (const flag of [undefined, false]) {
+                configure(flag);
+                expect(getSSSConfig().escrowSealEmailBrand).toBe(false);
+                expect(
+                    getEscrowStrategyConfig(getSSSConfig(), { appBrandName: 'VetPass' })
+                ).not.toHaveProperty('emailBrand');
+            }
+        });
+
+        it('seals the canonical app brand with the flag on', () => {
+            configure(true);
+            expect(
+                getEscrowStrategyConfig(getSSSConfig(), { appBrandName: ' Vet  Pass ' })
+            ).toMatchObject({
+                enabled: true,
+                authorityTenant: 'learncard',
+                emailBrand: 'Vet Pass',
+            });
+        });
+
+        it('omits an unsealable brand and logs, without disabling escrow', () => {
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            configure(true);
+            for (const appBrandName of [undefined, 'vetpass.com', 'Café']) {
+                const escrow = getEscrowStrategyConfig(getSSSConfig(), { appBrandName });
+                expect(escrow).toMatchObject({ enabled: true, authorityTenant: 'learncard' });
+                expect(escrow).not.toHaveProperty('emailBrand');
+            }
+            expect(errorSpy).toHaveBeenCalledWith('[auth-config]', 'escrow.email-brand.invalid', {
+                tenantId: 'vetpass',
+            });
+        });
+
+        it('words the in-app note as "either brand" only when this app seals its brand', () => {
+            const tenant = { tenantId: 'vetpass', branding: { name: 'VetPass' } };
+            const sss = { escrowAuthorityTenant: 'learncard' };
+            expect(getEscrowEmailSender(tenant, { ...sss, escrowSealEmailBrand: true })).toEqual({
+                sender: 'LearnCard',
+                brand: 'VetPass',
+                mixed: true,
+            });
+            expect(getEscrowEmailSender(tenant, { ...sss, escrowSealEmailBrand: false })).toEqual({
+                sender: 'LearnCard',
+                brand: 'VetPass',
+                mixed: false,
+            });
+            // An unsealable name never gets sealed, so the plain note stays accurate.
+            expect(
+                getEscrowEmailSender(
+                    { tenantId: 'x', branding: { name: 'x.example' } },
+                    { ...sss, escrowSealEmailBrand: true }
+                )
+            ).toMatchObject({ mixed: false });
+        });
+
+        // A LearnCard user on a DID last written by VetPass gets VetPass-branded enclave
+        // emails ("last writer wins"), so LearnCard names its co-tenants once it seals.
+        it('names co-tenant brands for an app whose authority brand is its own', () => {
+            const tenant = { tenantId: 'learncard', branding: { name: 'LearnCard' } };
+            expect(
+                getEscrowEmailSender(tenant, {
+                    escrowSealEmailBrand: true,
+                    escrowSharedEmailBrands: ['VetPass'],
+                })
+            ).toEqual({ sender: 'VetPass', brand: 'LearnCard', mixed: true, shared: true });
+            // Sealing off: every blob carries the authority brand, LearnCard's own.
+            expect(
+                getEscrowEmailSender(tenant, {
+                    escrowSealEmailBrand: false,
+                    escrowSharedEmailBrands: ['VetPass'],
+                })
+            ).toBeUndefined();
+            // No co-tenants listed (or only itself): nothing else can seal a brand.
+            expect(getEscrowEmailSender(tenant, { escrowSealEmailBrand: true })).toBeUndefined();
+            expect(
+                getEscrowEmailSender(tenant, {
+                    escrowSealEmailBrand: true,
+                    escrowSharedEmailBrands: ['LearnCard', ' '],
+                })
+            ).toBeUndefined();
+            // The authority-brand note wins for VetPass (its list is not consulted).
+            expect(
+                getEscrowEmailSender(
+                    { tenantId: 'vetpass', branding: { name: 'VetPass' } },
+                    {
+                        escrowAuthorityTenant: 'learncard',
+                        escrowSealEmailBrand: true,
+                        escrowSharedEmailBrands: ['LearnCard'],
+                    }
+                )
+            ).toEqual({ sender: 'LearnCard', brand: 'VetPass', mixed: true });
+        });
+
+        it('reads escrowSharedEmailBrands from the tenant config', () => {
+            setAuthConfigOverrides({
+                tenantId: 'learncard',
+                providerConfig: { sss: { escrowSharedEmailBrands: ['VetPass'] } },
+            });
+            expect(getSSSConfig().escrowSharedEmailBrands).toEqual(['VetPass']);
+            setAuthConfigOverrides({ tenantId: 'learncard', providerConfig: { sss: {} } });
+            expect(getSSSConfig().escrowSharedEmailBrands).toEqual([]);
+        });
+
+        it('schema accepts the boolean flag and rejects other types', () => {
+            const withFlag = (escrowSealEmailBrand: unknown) =>
+                tenantConfigSchema.safeParse({
+                    ...DEFAULT_LEARNCARD_TENANT_CONFIG,
+                    auth: {
+                        ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth,
+                        sss: { ...DEFAULT_LEARNCARD_TENANT_CONFIG.auth.sss, escrowSealEmailBrand },
+                    },
+                });
+            expect(withFlag(true).success).toBe(true);
+            expect(withFlag('yes').success).toBe(false);
         });
 
         it('schema accepts a valid authority tenant and rejects a malformed one', () => {

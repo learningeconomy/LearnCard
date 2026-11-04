@@ -1,0 +1,225 @@
+{
+    "description": "D21 cross-language contract for the owner-sealed escrow email brand (recoveryBrand). Rust canonical_brand (services/escrow-enclave-app/src/crypto.rs) and TypeScript canonicalEscrowEmailBrand (escrow-crypto.ts) must map every input to the same canonical form, or both reject it (expected: null). Rules: trim and collapse runs of ASCII space (0x20) only; any other whitespace or control character rejects; allowed characters are A-Z a-z 0-9, space, '-', ''' and '&'; first character a letter; 1-32 characters after canonicalization; at most 3 digits in total (not per run); no 'http' or 'www' in any case. Never make these rules stricter without a migration: stored blobs are re-checked on every decrypt.",
+    "cases": [
+        {
+            "name": "plain brand",
+            "input": "VetPass",
+            "expected": "VetPass"
+        },
+        {
+            "name": "LearnCard",
+            "input": "LearnCard",
+            "expected": "LearnCard"
+        },
+        {
+            "name": "ScoutPass",
+            "input": "ScoutPass",
+            "expected": "ScoutPass"
+        },
+        {
+            "name": "trims and collapses ASCII spaces",
+            "input": "  Learn   Card ",
+            "expected": "Learn Card"
+        },
+        {
+            "name": "allowed punctuation",
+            "input": "Learn-Card's & Co",
+            "expected": "Learn-Card's & Co"
+        },
+        {
+            "name": "three digits allowed",
+            "input": "Pass 123",
+            "expected": "Pass 123"
+        },
+        {
+            "name": "exactly 32 characters",
+            "input": "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "expected": "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+            "name": "32 after collapsing",
+            "input": "  Aaaaaaaaaaaaaaaa    bbbbbbbbbbbbbbb ",
+            "expected": "Aaaaaaaaaaaaaaaa bbbbbbbbbbbbbbb"
+        },
+        {
+            "name": "33 characters",
+            "input": "Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "expected": null
+        },
+        {
+            "name": "empty",
+            "input": "",
+            "expected": null
+        },
+        {
+            "name": "only spaces",
+            "input": "    ",
+            "expected": null
+        },
+        {
+            "name": "leading digit",
+            "input": "1Pass",
+            "expected": null
+        },
+        {
+            "name": "leading hyphen",
+            "input": "-Pass",
+            "expected": null
+        },
+        {
+            "name": "four-digit run",
+            "input": "a1234",
+            "expected": null
+        },
+        {
+            "name": "code split by spaces",
+            "input": "Code 123 456 78",
+            "expected": null
+        },
+        {
+            "name": "phone split by hyphens",
+            "input": "A 555-123-456",
+            "expected": null
+        },
+        {
+            "name": "pin split into pairs",
+            "input": "Pin 12-34-56-78",
+            "expected": null
+        },
+        {
+            "name": "four digits apart",
+            "input": "A1 B2 C3 D4",
+            "expected": null
+        },
+        {
+            "name": "three digits apart",
+            "input": "A1 B2 C3",
+            "expected": "A1 B2 C3"
+        },
+        {
+            "name": "phone look-alike",
+            "input": "Call 5551234",
+            "expected": null
+        },
+        {
+            "name": "http substring",
+            "input": "http",
+            "expected": null
+        },
+        {
+            "name": "HTTP any case",
+            "input": "MyHttpBrand",
+            "expected": null
+        },
+        {
+            "name": "www substring",
+            "input": "Www Brand",
+            "expected": null
+        },
+        {
+            "name": "carriage return",
+            "input": "Vet\rPass",
+            "expected": null
+        },
+        {
+            "name": "line feed",
+            "input": "Vet\nPass",
+            "expected": null
+        },
+        {
+            "name": "CRLF header injection",
+            "input": "VetPass\r\nBcc: x",
+            "expected": null
+        },
+        {
+            "name": "tab",
+            "input": "Vet\tPass",
+            "expected": null
+        },
+        {
+            "name": "leading tab is not trimmed",
+            "input": "\tVetPass",
+            "expected": null
+        },
+        {
+            "name": "NBSP",
+            "input": "Vet Pass",
+            "expected": null
+        },
+        {
+            "name": "line separator",
+            "input": "Vet Pass",
+            "expected": null
+        },
+        {
+            "name": "RLO bidi override",
+            "input": "Vet‮Pass",
+            "expected": null
+        },
+        {
+            "name": "LRI bidi isolate",
+            "input": "Vet⁦Pass",
+            "expected": null
+        },
+        {
+            "name": "zero-width space",
+            "input": "Vet​Pass",
+            "expected": null
+        },
+        {
+            "name": "Cyrillic homoglyph",
+            "input": "VеtPass",
+            "expected": null
+        },
+        {
+            "name": "accented letter",
+            "input": "Café",
+            "expected": null
+        },
+        {
+            "name": "less-than",
+            "input": "Vet<Pass",
+            "expected": null
+        },
+        {
+            "name": "double quote",
+            "input": "Vet\"Pass",
+            "expected": null
+        },
+        {
+            "name": "backslash",
+            "input": "Vet\\Pass",
+            "expected": null
+        },
+        {
+            "name": "at sign",
+            "input": "Vet@Pass",
+            "expected": null
+        },
+        {
+            "name": "dot",
+            "input": "vetpass.com",
+            "expected": null
+        },
+        {
+            "name": "slash",
+            "input": "Vet/Pass",
+            "expected": null
+        },
+        {
+            "name": "colon",
+            "input": "Vet:Pass",
+            "expected": null
+        },
+        {
+            "name": "percent",
+            "input": "Vet%Pass",
+            "expected": null
+        },
+        {
+            "name": "NUL",
+            "input": "Vet\u0000Pass",
+            "expected": null
+        }
+    ]
+}

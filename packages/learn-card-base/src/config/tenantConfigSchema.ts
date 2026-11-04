@@ -134,6 +134,21 @@ export const tenantSSSConfigSchema = z
             .string()
             .regex(/^[A-Za-z0-9_-]{1,128}$/, 'Expected 1-128 letters, digits, "_" or "-"')
             .optional(),
+        /**
+         * D21: seal this app's `branding.name` into the escrow blob so the enclave's own
+         * recovery emails (code, recovery started, release warning) carry this app's brand
+         * instead of the authority tenant's. Default false. Turn on only after every live
+         * enclave host runs the brand-aware image: an older image drops the sealed brand
+         * whenever it re-encrypts a blob. See ROLLOUT.md.
+         */
+        escrowSealEmailBrand: z.boolean().optional(),
+        /**
+         * D21: `branding.name` of the other apps that share this app's DIDs and seal their own
+         * brand (LearnCard lists `VetPass`). While `escrowSealEmailBrand` is on, the recovery
+         * screens warn that enclave emails may carry one of these brands ("last writer wins"
+         * on a shared DID). Ignored while sealing is off.
+         */
+        escrowSharedEmailBrands: z.array(z.string().trim().min(1).max(64)).optional(),
         enableEmailBackupShare: z.boolean().default(true),
         requireEmailForPhoneUsers: z.boolean().default(true),
     })

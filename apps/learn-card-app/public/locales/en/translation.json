@@ -2505,7 +2505,11 @@
         "inProgress": "Recovery is already running. Wait for it to finish, then try again.",
         "emailSender": {
             "code": "We'll email you a code from {{sender}}, the service that secures your {{brand}} account.",
-            "updates": "Some emails about this request come from {{sender}}, the service that secures your {{brand}} account."
+            "updates": "Some emails about this request come from {{sender}}, the service that secures your {{brand}} account.",
+            "codeMixed": "Your code may come from {{brand}} or from {{sender}}, the service that secures your {{brand}} account.",
+            "updatesMixed": "Some emails about this request may come from {{brand}} or from {{sender}}, the service that secures your {{brand}} account.",
+            "codeShared": "If you also use {{sender}} with this account, your code may come from {{sender}} instead of {{brand}}.",
+            "updatesShared": "If you also use {{sender}} with this account, some emails about this request may come from {{sender}} instead of {{brand}}."
         }
     },
     "alerts": {

@@ -7,7 +7,11 @@ import {
     type SSSStorageFunctions,
     type SSSStrategyConfig,
 } from './sss-strategy';
-import { escrowAuthorityMeasurements, type EscrowHoldRecordLike } from './escrow-authority';
+import {
+    escrowAuthorityMeasurements,
+    violatesCarryContactRule,
+    type EscrowHoldRecordLike,
+} from './escrow-authority';
 import type { EscrowRecoveryStart } from './types';
 import { EscrowAuthorityTenantMismatchError } from './escrow-authority.types';
 import { verifyEnclaveAttestation } from './escrow-attestation';
@@ -94,9 +98,20 @@ const response = (value: unknown, status = 200): Response =>
  */
 const setup = async (
     legacyEnrolled = false,
-    tenants: { appTenant?: string; authorityTenant?: string; enclaveTenant?: string } = {}
+    tenants: {
+        appTenant?: string;
+        authorityTenant?: string;
+        enclaveTenant?: string;
+        /** D21: the client's `escrow.emailBrand`. */
+        emailBrand?: string;
+    } = {}
 ) => {
-    const { appTenant = 'learncard', authorityTenant, enclaveTenant = 'learncard' } = tenants;
+    const {
+        appTenant = 'learncard',
+        authorityTenant,
+        enclaveTenant = 'learncard',
+        emailBrand,
+    } = tenants;
     const pins = [
         { pcr0: '01'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
         { pcr0: '04'.repeat(48), pcr1: '02'.repeat(48), pcr2: '03'.repeat(48) },
@@ -198,7 +213,15 @@ const setup = async (
     const tenantHeaders = new Set<string | undefined>();
     const nonces: string[] = [];
     const intents: SignedEscrowEnrollmentIntent[] = [];
-    const enrollments: Array<{ pinSalt?: unknown; clearPin?: unknown; pinVerifier?: string }> = [];
+    const enrollments: Array<{
+        pinSalt?: unknown;
+        clearPin?: unknown;
+        pinVerifier?: string;
+        action?: string;
+        /** D21: the target blob plaintext exactly as the client sealed it. */
+        recoveryEmail?: string;
+        recoveryBrand?: string;
+    }> = [];
     const faults: {
         snapshotNonce?: boolean;
         returnedEnvelope?: boolean;
@@ -381,11 +404,23 @@ const setup = async (
                         pinSalt: body.pinSalt,
                         clearPin: body.clearPin,
                         pinVerifier: plaintext.pinVerifier,
+                        action: signed.intent.action,
+                        recoveryEmail: plaintext.recoveryEmail,
+                        recoveryBrand: plaintext.recoveryBrand,
                     });
-                    if (signed.intent.action === 'carry')
-                        plaintext.pinVerifier = (
-                            await decryptEscrowBlob(state.envelope!, keys.privateKey)
-                        ).pinVerifier;
+                    // Mirrors the enclave's Carry rule: refuse a target claiming
+                    // contact/brand, then inherit them (and the PIN) from the source.
+                    if (violatesCarryContactRule(signed.intent.action, plaintext))
+                        return response({ message: 'Carry target claims contact' }, 400);
+                    if (signed.intent.action === 'carry') {
+                        const source = await decryptEscrowBlob(state.envelope!, keys.privateKey);
+                        plaintext.pinVerifier = source.pinVerifier;
+                        if (source.recoveryEmail) {
+                            plaintext.recoveryEmail = source.recoveryEmail;
+                            plaintext.recoveryLanguage = source.recoveryLanguage;
+                        }
+                        if (source.recoveryBrand) plaintext.recoveryBrand = source.recoveryBrand;
+                    }
                     output = await encryptEscrowBlob(plaintext, keys.publicKey, identity.keyId);
                 }
                 const pinChange = signed.intent.pinAction !== 'keep';
@@ -616,6 +651,7 @@ const setup = async (
                 pinnedMeasurements: pins,
             },
             ...(authorityTenant ? { authorityTenant } : {}),
+            ...(emailBrand !== undefined ? { emailBrand } : {}),
         },
     };
     const strategy = createSSSStrategy(config);
@@ -642,6 +678,9 @@ const setup = async (
         reload: () => createSSSStrategy(config),
         emailShare: () => formatVersionedEmailShare(recoveryShares.emailShare, version),
         state: () => state,
+        /** D21: the plaintext of the authority's current blob. */
+        sealed: async () =>
+            state.envelope ? decryptEscrowBlob(state.envelope, keys.privateKey) : null,
         advance: () => {
             version++;
             enrolled = false;
@@ -1758,5 +1797,122 @@ describe('Escrow authority tenant decoupled from the app tenant (VetPass on the 
         ).resolves.toMatchObject({ escrowRecovery: true, pinSignIn: { mode: 'kept' } });
         expect(f.intents.every(signed => signed.intent.tenant === 'learncard')).toBe(true);
         expect(f.tenantHeaders).toEqual(new Set(['learncard', 'vetpass']));
+    });
+});
+
+// D21: the owner-sealed email brand comes from one strategy config value, so
+// every enrollment path that seals the recovery contact also seals the brand,
+// and no path that carries (or seals no contact) ever sends one.
+describe('Owner-sealed escrow email brand (D21)', () => {
+    const vetpass = {
+        appTenant: 'vetpass',
+        authorityTenant: 'learncard',
+        emailBrand: '  Vet  Pass ',
+    } as const;
+    const pinEnroll = (f: Awaited<ReturnType<typeof setup>>) =>
+        f.strategy.ensureEscrowEnrollment!({
+            ...f.params,
+            options: { ...f.params.options, pin: '135790' },
+        });
+
+    it('rejects an invalid email brand at construction', () => {
+        for (const emailBrand of ['', 'vetpass.com', 'Vet\nPass', 'Call 5551234', 'a'.repeat(33)])
+            expect(() =>
+                createSSSStrategy({
+                    serverUrl: 'https://example.test',
+                    tenantId: 'vetpass',
+                    escrow: {
+                        enabled: true,
+                        attestation: { mode: 'software', pinnedPublicKeys: [] },
+                        emailBrand,
+                    },
+                })
+            ).toThrow('Invalid escrow email brand');
+    });
+
+    it('seals the canonical brand with the contact on first enroll, PIN change and clear', async () => {
+        const f = await setup(false, vetpass);
+        await pinEnroll(f);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'enroll',
+            recoveryEmail: 'owner@example.com',
+            recoveryBrand: 'Vet Pass',
+        });
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '824957' });
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'replace',
+            recoveryBrand: 'Vet Pass',
+        });
+        await f.strategy.clearEscrowPin!(f.params);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'replace',
+            recoveryBrand: 'Vet Pass',
+        });
+        // The brand is not part of the signed intent (bound via the target identity).
+        expect(f.intents.at(-1)!.intent).not.toHaveProperty('recoveryBrand');
+        expect((await f.sealed())?.recoveryBrand).toBe('Vet Pass');
+    });
+
+    it('never sends the brand on a carry; the authority inherits the sealed one', async () => {
+        const f = await setup(false, vetpass);
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '593827' });
+        f.advance();
+        await f.strategy.ensureEscrowEnrollment!(f.params);
+        expect(f.intents.at(-1)?.intent).toMatchObject({ action: 'carry', pinAction: 'keep' });
+        expect(f.enrollments.at(-1)).toMatchObject({ action: 'carry' });
+        expect(f.enrollments.at(-1)!.recoveryBrand).toBeUndefined();
+        expect(f.enrollments.at(-1)!.recoveryEmail).toBeUndefined();
+        expect((await f.sealed())?.recoveryBrand).toBe('Vet Pass');
+    });
+
+    it('seals the brand on the PIN sign-in keep/refresh re-set', async () => {
+        const f = await setup(false, vetpass);
+        await pinEnroll(f);
+        f.spend();
+        f.faults.wrongPinAttempts = 0;
+        const before = f.enrollments.length;
+        await expect(
+            f.strategy.executeRecovery({
+                token: 'token',
+                providerType: 'firebase',
+                input: { method: 'escrow-pin', pin: '135790', expectedDid: owner.intent.did },
+                didFromPrivateKey: async () => owner.intent.did,
+                signDidAuthVp: f.params.signDidAuthVp,
+                options: f.params.options,
+            })
+        ).resolves.toMatchObject({ pinSignIn: { mode: 'kept', pinRefreshed: true } });
+        expect(f.enrollments.length).toBeGreaterThan(before);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'replace',
+            recoveryBrand: 'Vet Pass',
+        });
+    });
+
+    it('seals the brand on the post-recovery rebind enrollment', async () => {
+        const f = await setup(false, vetpass);
+        const hold = await f.strategy.startEscrowRecovery!({
+            recoverySessionToken: 'otp-session',
+            expectedDid: owner.intent.did,
+        });
+        await f.strategy.executeRecovery({
+            token: '',
+            providerType: 'firebase',
+            input: { method: 'escrow', ...hold, resumeToken: hold.resumeToken! },
+            didFromPrivateKey: async () => owner.intent.did,
+        });
+        await f.strategy.completeIdentityRecovery!(f.params);
+        expect(f.enrollments.at(-1)).toMatchObject({
+            action: 'enroll',
+            recoveryBrand: 'Vet Pass',
+        });
+    });
+
+    it('seals no brand when the config leaves it unset', async () => {
+        const f = await setup(false, { appTenant: 'vetpass', authorityTenant: 'learncard' });
+        await pinEnroll(f);
+        await f.strategy.setEscrowPin!({ ...f.params, pin: '824957' });
+        expect(f.enrollments.length).toBeGreaterThan(0);
+        expect(f.enrollments.every(e => e.recoveryBrand === undefined)).toBe(true);
+        expect(await f.sealed()).not.toHaveProperty('recoveryBrand');
     });
 });

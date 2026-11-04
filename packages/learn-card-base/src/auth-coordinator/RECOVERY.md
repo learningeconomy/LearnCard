@@ -234,6 +234,15 @@ the app's `tenantId`, so LearnCard and ScoutPass are unchanged.
   service that secures your VetPass account." on the start and confirm-code steps, and
   "Some emails about this request come from LearnCard, ..." while the hold runs (lca-api
   still sends the cancelled and PIN-locked notices under the app brand).
+- With `auth.sss.escrowSealEmailBrand` on (D21, only after the brand-aware enclave image is
+  on every host), the strategy seals the app's `branding.name` into the blob
+  (`escrow.emailBrand`) and the enclave brands its emails with it. The note then reads
+  "Your code may come from VetPass or from LearnCard, ..." (`emailSender.mixed`): the
+  client cannot see which brand the stored blob carries, and older or LearnCard-enrolled
+  blobs keep "LearnCard". LearnCard, whose fallback brand is its own, lists the co-tenant
+  apps in `auth.sss.escrowSharedEmailBrands` and shows "If you also use VetPass with this
+  account, your code may come from VetPass instead of LearnCard." (`emailSender.shared`),
+  because a shared DID last enrolled from VetPass carries "VetPass" ("last writer wins").
 
 See `services/escrow-enclave-app/SECURITY.md` (D20).
 

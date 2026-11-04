@@ -137,6 +137,51 @@ describe('EscrowRecoveryPanel', () => {
             expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
             expect(screen.getByText(updatesNote)).toBeInTheDocument();
         });
+
+        // D21: with the app brand sealed, the stored blob may still carry either brand.
+        describe('when this app seals its own brand (mixed)', () => {
+            const mixed = { ...emailSender, mixed: true };
+            const codeMixed =
+                'Your code may come from VetPass or from LearnCard, the service that secures your VetPass account.';
+            const updatesMixed =
+                'Some emails about this request may come from VetPass or from LearnCard, the service that secures your VetPass account.';
+
+            it('says the code may come from either brand', async () => {
+                render(panel({ emailSender: mixed }));
+                expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+                expect(screen.getByText(codeMixed)).toBeInTheDocument();
+                expect(screen.queryByText(codeNote)).not.toBeInTheDocument();
+            });
+
+            it('says hold updates may come from either brand', async () => {
+                render(panel({ view: 'status', emailSender: mixed, onStatus: pendingHold(true) }));
+                expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+                expect(screen.getByText(updatesMixed)).toBeInTheDocument();
+            });
+        });
+
+        // D21: LearnCard (its own authority brand) names a co-tenant app that may have sealed
+        // its brand on a shared DID.
+        describe('when another app on the account may have sealed its brand (shared)', () => {
+            const shared = { sender: 'VetPass', brand: 'LearnCard', mixed: true, shared: true };
+            const codeShared =
+                'If you also use VetPass with this account, your code may come from VetPass instead of LearnCard.';
+            const updatesShared =
+                'If you also use VetPass with this account, some emails about this request may come from VetPass instead of LearnCard.';
+
+            it('says the code may come from the other app', async () => {
+                render(panel({ emailSender: shared }));
+                expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+                expect(screen.getByText(codeShared)).toBeInTheDocument();
+                expect(screen.queryByText(/the service that secures your/)).not.toBeInTheDocument();
+            });
+
+            it('says hold updates may come from the other app', async () => {
+                render(panel({ view: 'status', emailSender: shared, onStatus: pendingHold(true) }));
+                expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+                expect(screen.getByText(updatesShared)).toBeInTheDocument();
+            });
+        });
     });
 
     const mockOnStart = vi.fn();

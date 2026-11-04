@@ -247,5 +247,17 @@ switch already does without disrupting existing users.
   with LearnCard production; that PR must set VetPass's mode, pins and
   `escrowAuthorityTenant` in the same change. Update both
   tenants' pins on every image roll.
+- **Sealed email brand (D21).** `auth.sss.escrowSealEmailBrand` makes the client
+  seal the app's `branding.name` into the escrow blob so enclave-sent emails carry
+  that brand. Keep it off until every live host (staging, then production) runs the
+  brand-aware image, because an older image drops the field whenever it re-encrypts
+  a blob. Then turn it on for LearnCard and VetPass in one config PR, which also sets
+  LearnCard's `auth.sss.escrowSharedEmailBrands: ["VetPass"]` (parity and the list are
+  enforced by `escrowTenantParity.test.ts`). Existing blobs keep the LearnCard brand
+  until their next enroll/replace, so the VetPass in-app note stays on, worded as
+  "may come from VetPass or from LearnCard". A shared DID last written by VetPass
+  sends VetPass-branded emails even when recovery starts in LearnCard, so LearnCard
+  shows "If you also use VetPass with this account, your code may come from VetPass". Rolling back the image reverts sealed
+  brands to "LearnCard"; it does not break recovery.
 - Never put a raw DID or email in a PR, ticket, or this document — only the
   SHA-256 hash described above.

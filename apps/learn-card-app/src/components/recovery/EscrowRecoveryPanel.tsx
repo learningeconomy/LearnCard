@@ -94,8 +94,11 @@ export interface EscrowRecoveryPanelProps {
     /**
      * Set when the escrow enclave's own emails carry another brand than this app (VetPass
      * shares LearnCard's enclave): `sender` is the email brand, `brand` this app's name.
+     * `mixed` (D21): this app seals its own brand, but the stored blob may predate that or
+     * come from the other app, so the email may come from either brand. `shared`: `sender`
+     * is another app on the same account (LearnCard naming VetPass), not the securing service.
      */
-    emailSender?: { sender: string; brand: string };
+    emailSender?: { sender: string; brand: string; mixed?: boolean; shared?: boolean };
 }
 
 /** lca-api answers 403 when the code or resend was refused; anything else is transport/service. */
@@ -122,8 +125,16 @@ export const EscrowRecoveryPanel = ({
         emailSender && (
             <p className="text-xs text-grayscale-500 leading-relaxed">
                 {kind === 'code'
-                    ? m['recovery.emailSender.code'](emailSender)
-                    : m['recovery.emailSender.updates'](emailSender)}
+                    ? emailSender.shared
+                        ? m['recovery.emailSender.codeShared'](emailSender)
+                        : emailSender.mixed
+                          ? m['recovery.emailSender.codeMixed'](emailSender)
+                          : m['recovery.emailSender.code'](emailSender)
+                    : emailSender.shared
+                      ? m['recovery.emailSender.updatesShared'](emailSender)
+                      : emailSender.mixed
+                        ? m['recovery.emailSender.updatesMixed'](emailSender)
+                        : m['recovery.emailSender.updates'](emailSender)}
             </p>
         );
     const active = useRef(true);

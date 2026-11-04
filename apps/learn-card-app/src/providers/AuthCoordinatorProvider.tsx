@@ -48,7 +48,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
-    getEscrowStrategyConfig,
+    getTenantEscrowStrategyConfig,
     getEscrowEmailSender,
     getLogger,
     useToast,
@@ -58,6 +58,7 @@ import {
     type AuthUser,
     type DebugEventLevel,
     type KeyDerivationStrategy,
+    type EscrowEmailSenderNote,
     isEmailRelayConfigured,
 } from 'learn-card-base';
 
@@ -296,7 +297,7 @@ const DeviceLinkOverlay: React.FC<{
  * enclave brands the emails it sends (code, recovery started, release warning) from its own
  * authority tenant, so tell the user who they will hear from. `undefined` when the brands match.
  */
-const resolveEscrowEmailSender = (): { sender: string; brand: string } | undefined => {
+const resolveEscrowEmailSender = (): EscrowEmailSenderNote | undefined => {
     try {
         return getEscrowEmailSender(getResolvedTenantConfig(), getSSSConfig());
     } catch {
@@ -311,24 +312,26 @@ registerKeyDerivationFactory('sss', () => {
     // lca-api are branded for the tenant the user signed up under.
     // The factory runs after bootstrapTenantConfig() resolves, but we
     // guard defensively for test / edge-case paths.
-    let tenantId: string | undefined;
+    let tenant: ReturnType<typeof getResolvedTenantConfig> | undefined;
 
     try {
-        tenantId = getResolvedTenantConfig().tenantId;
+        tenant = getResolvedTenantConfig();
     } catch {
-        tenantId = undefined;
+        tenant = undefined;
     }
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
         escrowRelayPublicKey: sss.escrowRelayPublicKey,
         escrowRelayKeyId: sss.escrowRelayKeyId,
-        escrow: getEscrowStrategyConfig(sss),
+        // D21: seals `branding.name` as the enclave email brand when the tenant turns on
+        // `auth.sss.escrowSealEmailBrand`.
+        escrow: getTenantEscrowStrategyConfig(sss, tenant),
         onEscrowError: err => log.warn('escrow.enrollment.failed', err),
         onEscrowPinAutoCleared: event => log.warn('escrow.pin.auto_cleared', event),
         storage: createDeviceShareStorage(),
         enableEmailBackupShare: sss.enableEmailBackupShare,
-        tenantId,
+        tenantId: tenant?.tenantId,
     });
 });
 

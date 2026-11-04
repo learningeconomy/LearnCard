@@ -3,7 +3,11 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { getEscrowEmailSender } from 'learn-card-base/config/authConfig';
+import {
+    getEscrowEmailSender,
+    getTenantEscrowStrategyConfig,
+    type SSSConfig,
+} from 'learn-card-base/config/authConfig';
 import { deepMerge } from 'learn-card-base/config/deepMerge';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/config/tenantDefaults';
 import { tenantConfigSchema } from 'learn-card-base/config/tenantConfigSchema';
@@ -71,6 +75,13 @@ describe('VetPass / LearnCard escrow parity', () => {
 
         expect(vetpass.auth.keyDerivation).toBe(learncard.auth.keyDerivation);
         expect(vSss.escrowEnclaveMode).toBe(lSss.escrowEnclaveMode);
+        // D21: both apps seal their brand or neither does (a shared DID's brand is
+        // "last app to enroll/replace"); turned on together after the image roll.
+        expect(!!vSss.escrowSealEmailBrand).toBe(!!lSss.escrowSealEmailBrand);
+        // ...and LearnCard then names VetPass in its note (a LearnCard user on a DID last
+        // written by VetPass gets VetPass-branded enclave emails).
+        if (lSss.escrowSealEmailBrand)
+            expect(lSss.escrowSharedEmailBrands ?? []).toContain(vetpass.branding.name);
 
         if (vSss.escrowEnclaveMode === 'off') return;
 
@@ -86,14 +97,87 @@ describe('VetPass / LearnCard escrow parity', () => {
     // authority tenant the switch will set.
     it.each(STAGES)('vetpass %s names LearnCard as the escrow email sender', vetpassStage => {
         const vetpass = resolveTenant('vetpass', vetpassStage);
-        expect(getEscrowEmailSender(vetpass, { escrowAuthorityTenant: 'learncard' })).toEqual({
+        expect(
+            getEscrowEmailSender(vetpass, {
+                escrowAuthorityTenant: 'learncard',
+                escrowSealEmailBrand: vetpass.auth.sss?.escrowSealEmailBrand,
+            })
+        ).toEqual({
             sender: 'LearnCard',
             brand: 'VetPass',
+            mixed: !!vetpass.auth.sss?.escrowSealEmailBrand,
         });
     });
 
-    it.each(STAGES)('learncard %s shows no escrow email sender note', (_v, learncardStage) => {
+    // D21: once VetPass seals its brand, the note must still be shown (older blobs and
+    // LearnCard-enrolled shared DIDs keep the LearnCard brand), worded as "either".
+    it.each(STAGES)('vetpass %s keeps a mixed note when sealing its brand', vetpassStage => {
+        const vetpass = resolveTenant('vetpass', vetpassStage);
+        expect(
+            getEscrowEmailSender(vetpass, {
+                escrowAuthorityTenant: 'learncard',
+                escrowSealEmailBrand: true,
+            })
+        ).toEqual({ sender: 'LearnCard', brand: 'VetPass', mixed: true });
+    });
+
+    // D21: LearnCard's enclave emails carry its own brand, so it needs no note while sealing
+    // is off. Once sealing is on, a shared DID last enrolled from VetPass gets VetPass-branded
+    // emails, so LearnCard must name VetPass (from `escrowSharedEmailBrands`).
+    it.each(STAGES)('learncard %s notes VetPass only while sealing', (_v, learncardStage) => {
         const learncard = resolveTenant('learncard', learncardStage);
-        expect(getEscrowEmailSender(learncard, learncard.auth.sss ?? {})).toBeUndefined();
+        const sss = learncard.auth.sss;
+        const note = getEscrowEmailSender(learncard, sss ?? {});
+        if (!sss?.escrowSealEmailBrand) expect(note).toBeUndefined();
+        else
+            expect(note).toEqual({
+                sender: 'VetPass',
+                brand: 'LearnCard',
+                mixed: true,
+                shared: true,
+            });
+    });
+
+    it.each(STAGES)('learncard %s names VetPass once both seal', (vetpassStage, learncardStage) => {
+        const learncard = resolveTenant('learncard', learncardStage);
+        const vetpass = resolveTenant('vetpass', vetpassStage);
+        expect(
+            getEscrowEmailSender(learncard, {
+                ...learncard.auth.sss,
+                escrowSealEmailBrand: true,
+                escrowSharedEmailBrands: [vetpass.branding.name!],
+            })
+        ).toEqual({ sender: 'VetPass', brand: 'LearnCard', mixed: true, shared: true });
+    });
+
+    // The providers' `sss` factory wiring: the resolved tenant's `branding.name` becomes the
+    // sealed `escrow.emailBrand` when the flag is on, and nothing is sealed when it is off.
+    it.each(STAGES)('vetpass %s seals its branding.name as the email brand', vetpassStage => {
+        const vetpass = resolveTenant('vetpass', vetpassStage);
+        const learncard = resolveTenant('learncard', 'staging');
+        const sss = (escrowSealEmailBrand: boolean): SSSConfig => ({
+            serverUrl: '',
+            escrowRelayPublicKey: '',
+            escrowRelayKeyId: '',
+            escrowEnclaveMode: 'nitro',
+            escrowEnclavePublicKeys: [],
+            escrowEnclaveMeasurements: learncard.auth.sss!.escrowEnclaveMeasurements ?? [],
+            escrowAuthorityTenant: 'learncard',
+            escrowSealEmailBrand,
+            enableEmailBackupShare: false,
+            requireEmailForPhoneUsers: false,
+        });
+        const options = { tenantId: 'vetpass', stage: 'staging' as const };
+        expect(getTenantEscrowStrategyConfig(sss(true), vetpass, options)).toMatchObject({
+            enabled: true,
+            authorityTenant: 'learncard',
+            emailBrand: 'VetPass',
+        });
+        expect(getTenantEscrowStrategyConfig(sss(false), vetpass, options)).not.toHaveProperty(
+            'emailBrand'
+        );
+        expect(getTenantEscrowStrategyConfig(sss(true), undefined, options)).not.toHaveProperty(
+            'emailBrand'
+        );
     });
 });

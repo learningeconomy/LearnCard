@@ -622,16 +622,19 @@ export const resolveEscrowEnrollmentAction = (
 /** P2-d cross-language contract: mirrors the enclave's Carry contact-field
  * rejection rule (`apply_enrollment_intent` in authority.rs) — true means
  * the enclave would refuse this target blob. The enclave always fills
- * recoveryEmail/recoveryLanguage in from the source blob on carry, so a
- * target that already claims either field is refused. Shared by
+ * recoveryEmail/recoveryLanguage (and, D21, the sealed recoveryBrand) in from
+ * the source blob on carry, so a target that already claims any of them is
+ * refused. Shared by
  * `escrow-carry-contact-contract-v1.json`'s TS and Rust tests, and by any
  * caller (e.g. a test fake) that wants to fail the same way the real
  * enclave does instead of accepting a shape it would reject. */
 export const violatesCarryContactRule = (
     action: EscrowEnrollmentIntent['action'],
-    target: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage'> | null
+    target: Pick<EscrowBlobPlaintext, 'recoveryEmail' | 'recoveryLanguage' | 'recoveryBrand'> | null
 ): boolean =>
-    action === 'carry' && !!target && (!!target.recoveryEmail || !!target.recoveryLanguage);
+    action === 'carry' &&
+    !!target &&
+    (!!target.recoveryEmail || !!target.recoveryLanguage || !!target.recoveryBrand);
 
 /** Owner-only mutation selection. Recovery itself never calls this helper.
  * P9.1 (attack C): `recoveryEmail`/`recoveryLanguage` are always supplied by the

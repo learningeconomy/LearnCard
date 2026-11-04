@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+    decryptEscrowBlob,
     encryptEscrowBlob,
     generateEscrowKeyPair,
     openEscrowRelease,
@@ -51,7 +52,13 @@ describe('software enclave', () => {
             shareVersion: targetVersion,
             ...(scenario === 'target PIN' ? { pinVerifier } : {}),
         };
-        const targetEnvelope = await encryptEscrowBlob(target, keys.publicKey, 'test');
+        // D21: the owner-sealed email brand must survive the carry re-seal (the
+        // shared parser used to drop unknown plaintext fields).
+        const targetEnvelope = await encryptEscrowBlob(
+            { ...target, recoveryBrand: 'VetPass' },
+            keys.publicKey,
+            'test'
+        );
         const result = enclave.carryPinVerifier({
             sourceEnvelope,
             targetEnvelope,
@@ -68,6 +75,7 @@ describe('software enclave', () => {
         }
         const { envelope } = await result;
         expect(envelope.ciphertext).not.toBe(targetEnvelope.ciphertext);
+        expect((await decryptEscrowBlob(envelope, keys.privateKey)).recoveryBrand).toBe('VetPass');
         expect(
             await enclave.verifyEscrowBlob({ envelope, expectedDid: did, expectedShareVersion: 3 })
         ).toEqual({ ok: true, hasPin: true });
@@ -116,8 +124,9 @@ describe('software enclave', () => {
             const target = { recoveryShare: 'ef'.repeat(33), did, shareVersion: 1 };
             const sourceKeys = scenario === 'current key' ? current : previous;
             const sourceKeyId = scenario === 'current key' ? 'current' : 'previous';
+            // D21: the owner-sealed email brand must survive the rewrap.
             const sourceEnvelope = await encryptEscrowBlob(
-                { ...target, pinVerifier },
+                { ...target, pinVerifier, recoveryBrand: 'VetPass' },
                 sourceKeys.publicKey,
                 sourceKeyId
             );
@@ -141,6 +150,9 @@ describe('software enclave', () => {
             }
             const { envelope } = await result;
             expect(envelope.ciphertext).not.toBe(sourceEnvelope.ciphertext);
+            expect((await decryptEscrowBlob(envelope, current.privateKey)).recoveryBrand).toBe(
+                'VetPass'
+            );
             expect(
                 await enclave.verifyEscrowBlob({
                     envelope,
