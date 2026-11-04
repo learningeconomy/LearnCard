@@ -69,10 +69,10 @@ test('result gate rejects cached tests, missing tasks, failed builds and local r
     rows.pop();
     assert.throws(() => validateTasks(rows, 'warm'));
     rows = changed();
-    rows[4].code = 1;
+    rows.find(row => row.id === 'core:build').code = 1;
     assert.throws(() => validateTasks(rows, 'cold'));
     rows = changed();
-    rows[4].status = 'local-cache';
+    rows.find(row => row.id === 'core:build').status = 'local-cache';
     assert.throws(() => validateTasks(rows, 'warm'));
 });
 
@@ -107,4 +107,120 @@ test('manifest rejects corrupt payloads, extra files and incompatible toolchains
     await rm(path.join(directory, 'unexpected'));
     await writeFile(path.join(directory, entries[0].hash), 'tampered!');
     await assert.rejects(verifyCache(directory, identity));
+});
+
+test('fresh reports must cover each expected project exactly once', async () => {
+    const { validateCoverage } = await api;
+    const rows = [{ project: 'core' }, { project: 'types' }];
+    validateCoverage(rows, ['core', 'types']);
+    assert.throws(() =>
+        validateCoverage([{ project: 'core' }, { project: 'core' }], ['core', 'types'])
+    );
+    assert.throws(() => validateCoverage(rows.slice(1), ['core', 'types']));
+});
+
+test('unaudited dependency builds cannot be remote hits', async () => {
+    const { validateTasks, builds, projects } = await api;
+    const rows = [
+        ...projects.map(name => ({ id: `${name}:test`, target: 'test' })),
+        ...[...builds, 'didkit-plugin'].map(name => ({ id: `${name}:build`, target: 'build' })),
+    ].map(row => ({ ...row, code: 0, hash: '1234567890abcdef', status: 'success' }));
+    const expected = rows.map(row => row.id);
+    validateTasks(rows, 'warm', expected);
+    rows.find(row => row.id === 'didkit-plugin:build').status = 'remote-cache';
+    assert.throws(() => validateTasks(rows, 'warm', expected), /execute freshly/);
+});
+
+test('summary rejects independent misses/hash drift and broken invalidation', async t => {
+    const { mkdir } = require('node:fs/promises');
+    const { execFileSync } = require('node:child_process');
+    const root = await fixture(t);
+    const matrix = [];
+    for (const repeat of [1, 2])
+        for (const mode of ['off', 'cold', 'warm'])
+            matrix.push({
+                sample: 'paired',
+                mode,
+                repeat,
+                source: 'a'.repeat(40),
+                sourceRef: 'pr',
+            });
+    for (const probe of ['source', 'config', 'lock'])
+        matrix.push({
+            sample: `invalidation-${probe}`,
+            mode: `invalidate-${probe}`,
+            repeat: 1,
+            source: 'a'.repeat(40),
+            sourceRef: 'pr',
+        });
+    matrix.push({
+        sample: 'second-pr',
+        mode: 'warm',
+        repeat: 1,
+        source: 'b'.repeat(40),
+        sourceRef: 'other-pr',
+    });
+    const rows = matrix.map(sample => ({
+        ...sample,
+        sourceSha: sample.source,
+        tasks: ['core', 'helpers', 'types'].map((name, i) => {
+            const invalid =
+                sample.mode === 'invalidate-lock' ||
+                sample.mode === 'invalidate-source' ||
+                (sample.mode === 'invalidate-config' && name === 'core');
+            return {
+                id: `${name}:build`,
+                status:
+                    sample.mode === 'warm' ||
+                    (sample.mode === 'invalidate-config' && name !== 'core')
+                        ? 'remote-cache'
+                        : 'success',
+                hash: String(i + (invalid ? 10 : 0)).padStart(16, '0'),
+            };
+        }),
+        coverage: [{ project: 'core', counts: { passed: 1 } }],
+        graph: {},
+        timings: { commandMs: 1 },
+    }));
+    const save = async () => {
+        for (const row of rows) {
+            const dir = path.join(root, `nx-result-${row.sample}-${row.mode}-${row.repeat}`);
+            await mkdir(dir, { recursive: true });
+            await writeFile(path.join(dir, 'result.json'), JSON.stringify(row));
+        }
+    };
+    const run = () =>
+        execFileSync(
+            process.execPath,
+            [path.resolve(__dirname, '../../scripts/nx-cache-experiment/summarize.mjs'), root],
+            {
+                env: {
+                    ...process.env,
+                    MATRIX: JSON.stringify({ include: matrix }),
+                    SAMPLE_RESULT: 'success',
+                    GITHUB_STEP_SUMMARY: '',
+                },
+                stdio: 'pipe',
+            }
+        );
+    await save();
+    run();
+    const independent = rows.at(-1).tasks[0];
+    independent.status = 'success';
+    await save();
+    assert.throws(run);
+    independent.status = 'remote-cache';
+    independent.hash = '9999999999999999';
+    await save();
+    assert.throws(run);
+    independent.hash = rows[2].tasks[0].hash;
+    for (const row of rows.filter(row => row.mode.startsWith('invalidate-'))) {
+        const original = row.tasks[0].hash;
+        row.tasks[0].hash = rows[0].tasks[0].hash;
+        await save();
+        assert.throws(run);
+        row.tasks[0].hash = original;
+    }
+    await save();
+    run();
 });

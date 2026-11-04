@@ -121,6 +121,14 @@ export function validateTasks(
     }
 }
 
+export function validateCoverage(coverage, expectedRoots) {
+    assert.deepEqual(
+        coverage.map(row => row.project).sort(),
+        [...expectedRoots].sort(),
+        'Every expected test project must report exactly once'
+    );
+}
+
 export async function verifyCache(directory, identity) {
     const manifest = await json(path.join(directory, 'manifest.json'));
     assert.deepEqual(manifest.identity, identity, 'Toolchain/lockfile differs: reject this cache');
@@ -291,6 +299,10 @@ export async function experiment({ workspace, output, cache, mode }) {
             assert.equal(report.failedModules + report.unhandledErrors + report.counts.failed, 0);
             coverage.push({ project: report.project, counts: report.counts });
         }
+        validateCoverage(
+            coverage,
+            projects.map(name => graph.graph.nodes[name].data.root)
+        );
         if (mode === 'producer') {
             assert.equal(process.env.LC_NX_PRODUCER_BRANCH, 'main');
             const entries = [];

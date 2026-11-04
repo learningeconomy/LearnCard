@@ -27,12 +27,27 @@ for (const row of paired) {
             'Warm paired arm must reuse all three production-cacheable build tasks'
         );
 }
+for (const row of rows.filter(row => row.mode === 'warm')) {
+    const hits = row.tasks.filter(task => task.status === 'remote-cache');
+    assert.deepEqual(hits.map(task => task.id).sort(), [
+        'core:build',
+        'helpers:build',
+        'types:build',
+    ]);
+    const pairedWarm = paired.find(sample => sample.mode === 'warm');
+    for (const hit of hits)
+        assert.equal(
+            hit.hash,
+            pairedWarm.tasks.find(task => task.id === hit.id).hash,
+            'Independent consumers must reuse identical producer hashes'
+        );
+}
 for (const mode of ['invalidate-source', 'invalidate-config', 'invalidate-lock']) {
     const invalidation = rows.find(row => row.mode === mode);
     const misses = mode === 'invalidate-config' ? ['core'] : ['core', 'types', 'helpers'];
     for (const name of ['core', 'types', 'helpers']) {
         const task = invalidation.tasks.find(task => task.id === `${name}:build`);
-        const prior = baseline.tasks.find(task => task.id === task.id);
+        const prior = baseline.tasks.find(priorTask => priorTask.id === task.id);
         assert.equal(task.status, misses.includes(name) ? 'success' : 'remote-cache');
         if (misses.includes(name)) assert.notEqual(task.hash, prior.hash);
         else assert.equal(task.hash, prior.hash);

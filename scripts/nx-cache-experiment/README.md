@@ -50,7 +50,7 @@ unrelated PR merely to simulate that claim, and never bypass branch protection.
 
 Node 24.12.0 and Bun 1.4.4 are pinned in measured jobs. Numeric results retain image version,
 CPU/model/count, OS/architecture, lock digest, task hashes, fresh test counts, and phase times.
-Run `node .github/tests/test-nx-cache-experiment.test.cjs` for offline safety contracts, and
+Run `node .github/tests/test-nx-cache-experiment.test.cjs` for seven offline safety and comparison contracts, and
 `node --test .github/tests/test-sdk-cache-policy.cjs` for native production-policy invalidation.
 
 ## Interpreting evidence
