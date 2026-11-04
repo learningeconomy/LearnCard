@@ -21,6 +21,7 @@ export default createVitestConfig(nodePreset, {
             'test/oidc.spec.ts',
             'test/classlink-config.spec.ts',
             'test/classlink-verify.spec.ts',
+            'test/classlink-pii.spec.ts',
             'test/issuer-assertion.spec.ts',
             'test/oidcLambdaApp.boot.spec.ts',
             'test/auth-tickets.spec.ts',

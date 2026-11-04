@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+    clearExpiredStateStudentIds,
+    clearStateStudentIdIfUnchanged,
     deleteClassLinkIdentitiesByFirebaseUid,
     getClassLinkIdentitiesCollection,
     upsertClassLinkIdentity,
 } from '../src/models/ClassLinkIdentity';
+import { getStateStudentId, sealStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import {
     createTranscriptRequest,
     deleteTranscriptRequestsByFirebaseUid,
@@ -18,7 +21,6 @@ const identity = (identityKey = 'classlink:tenant-test:source-1') => ({
     sub: 'sub-1',
     role: 'student',
     email: 'student@example.edu',
-    stateStudentId: 'state-1',
     state: 'XX',
     firebaseUid: 'uid-x',
     subject: 'subject-x',
@@ -34,8 +36,12 @@ afterEach(async () => {
 
 describe('ClassLink and transcript models', () => {
     it('upserts idempotently and preserves createdAt', async () => {
-        const first = await upsertClassLinkIdentity(identity());
-        const second = await upsertClassLinkIdentity({ ...identity(), email: 'new@example.edu' });
+        const first = await upsertClassLinkIdentity({ ...identity(), sealedStateStudentId: null });
+        const second = await upsertClassLinkIdentity({
+            ...identity(),
+            email: 'new@example.edu',
+            sealedStateStudentId: null,
+        });
         expect(second.createdAt).toEqual(first.createdAt);
         expect(
             await getClassLinkIdentitiesCollection().countDocuments({
@@ -46,7 +52,7 @@ describe('ClassLink and transcript models', () => {
     });
 
     it('enforces unique identity keys', async () => {
-        await upsertClassLinkIdentity(identity());
+        await upsertClassLinkIdentity({ ...identity(), sealedStateStudentId: null });
         await expect(
             getClassLinkIdentitiesCollection().insertOne({
                 ...identity(),
@@ -79,5 +85,70 @@ describe('ClassLink and transcript models', () => {
         expect(latest?.jti).toBe('jti-new');
         expect(await deleteClassLinkIdentitiesByFirebaseUid('uid-x')).toBe(0);
         expect(await deleteTranscriptRequestsByFirebaseUid('uid-x')).toBe(2);
+    });
+
+    it('does not clear a state ID stored by a newer sign-in', async () => {
+        const key = identity().identityKey;
+        const stale = await upsertClassLinkIdentity({
+            ...identity(),
+            sealedStateStudentId: sealStateStudentId('state-old', key, new Date(), 60),
+        });
+        await upsertClassLinkIdentity({
+            ...identity(),
+            sealedStateStudentId: sealStateStudentId('state-new', key, new Date(), 3600),
+        });
+        await expect(clearStateStudentIdIfUnchanged(stale)).resolves.toBe(false);
+        const current = await getClassLinkIdentitiesCollection().findOne({ identityKey: key });
+        expect(getStateStudentId(current!)).toBe('state-new');
+    });
+
+    it('clears only expired and legacy plaintext state IDs', async () => {
+        const fresh = identity('classlink:tenant-test:fresh');
+        await upsertClassLinkIdentity({
+            ...fresh,
+            sealedStateStudentId: sealStateStudentId(
+                'state-fresh',
+                fresh.identityKey,
+                new Date(),
+                3600
+            ),
+        });
+        const expired = identity('classlink:tenant-test:expired');
+        await upsertClassLinkIdentity({
+            ...expired,
+            sealedStateStudentId: sealStateStudentId(
+                'state-expired',
+                expired.identityKey,
+                new Date(),
+                3600
+            ),
+        });
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey: expired.identityKey },
+            { $set: { stateStudentIdExpiresAt: new Date(Date.now() - 1000) } }
+        );
+        await getClassLinkIdentitiesCollection().insertOne({
+            ...identity('classlink:tenant-test:legacy'),
+            stateStudentId: 'legacy-plaintext',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        await expect(clearExpiredStateStudentIds()).resolves.toBe(2);
+        const rows = await getClassLinkIdentitiesCollection().find({}).toArray();
+        expect(JSON.stringify(rows)).not.toContain('legacy-plaintext');
+        expect(rows.filter(row => row.stateStudentIdEnc)).toHaveLength(1);
+        const kept = rows.find(row => row.identityKey === fresh.identityKey);
+        expect(getStateStudentId(kept!)).toBe('state-fresh');
+    });
+
+    it('binds the ciphertext to its identity', async () => {
+        const sealed = sealStateStudentId('state-1', 'classlink:a:1', new Date(), 3600)!;
+        expect(
+            getStateStudentId({
+                identityKey: 'classlink:b:1',
+                ...sealed,
+            })
+        ).toBeNull();
+        expect(getStateStudentId({ identityKey: 'classlink:a:1', ...sealed })).toBe('state-1');
     });
 });

@@ -1,5 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const lookup = vi.hoisted(() => ({ fail: false }));
+vi.mock('../src/models/UserKey', async importOriginal => {
+    const actual = await importOriginal<typeof import('../src/models/UserKey')>();
+    return {
+        ...actual,
+        findUserKeyByDid: async (did: string) => {
+            if (lookup.fail) throw new Error('lookup unavailable');
+            return actual.findUserKeyByDid(did);
+        },
+    };
+});
 vi.mock('@routes', async () => {
     const { initTRPC } = await import('@trpc/server');
     const t = initTRPC.create();
@@ -23,10 +34,12 @@ const minor = {
     aiEnabled: false,
     analyticsEnabled: false,
     bugReportsEnabled: false,
+    bugReportsAutoDisabled: true,
     isMinor: true,
 };
 
 beforeEach(async () => {
+    lookup.fail = false;
     await mongodb.collection('userkeys').deleteMany({});
     await getClassLinkIdentitiesCollection().deleteMany({});
     await Preferences.deleteMany({});
@@ -41,7 +54,7 @@ beforeEach(async () => {
         sub: 'sub-1',
         role: 'Student',
         email: 'student@example.edu',
-        stateStudentId: null,
+        sealedStateStudentId: null,
         state: '',
         firebaseUid: 'uid-student',
         subject: 'subject-1',
@@ -90,5 +103,30 @@ describe('ClassLink student privacy settings', () => {
             aiEnabled: true,
             isMinor: false,
         });
+    });
+
+    it('fails safe when the student lookup fails', async () => {
+        await caller(adult).createPreferences({ theme: ThemeEnum.Colorful });
+        await caller(adult).updatePreferences({ aiEnabled: true, isMinor: false });
+        await caller(student).createPreferences({ theme: ThemeEnum.Colorful });
+        lookup.fail = true;
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+        await expect(
+            caller(student).updatePreferences({ aiEnabled: true, isMinor: false })
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+        await expect(
+            caller(adult).createPreferences({ theme: ThemeEnum.Formal })
+        ).rejects.toMatchObject({ code: 'INTERNAL_SERVER_ERROR' });
+        expect(await caller(student).getPreferencesForDid()).toMatchObject(minor);
+        expect(await caller(adult).getPreferencesForDid()).toMatchObject(minor);
+
+        expect(await Preferences.findOne({ did: adult })).toMatchObject({
+            aiEnabled: true,
+            isMinor: false,
+        });
+        expect(await Preferences.findOne({ did: student })).toMatchObject(minor);
+        expect(warn).toHaveBeenCalledWith('classlink.student_lookup.failed');
+        warn.mockRestore();
     });
 });

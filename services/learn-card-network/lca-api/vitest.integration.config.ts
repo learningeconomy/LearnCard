@@ -22,6 +22,8 @@ export default createVitestConfig(serviceIntegrationPreset, {
             IS_E2E_TEST: 'true',
             ESCROW_RELAY_URL: 'https://escrow-relay.example',
             ESCROW_RELAY_AUTH_TOKEN: 'relay-auth-token',
+            // Test-only key (32 bytes of 0x07).
+            CLASSLINK_PII_KEY: 'BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=',
         },
         // Fully-mocked unit specs (mock @cache/@models/@environment) run under
         // vitest.config.ts; they must not load the live-Mongo integration setup.

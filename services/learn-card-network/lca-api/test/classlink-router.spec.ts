@@ -14,10 +14,15 @@ import {
     findAuthSubjectByIdentityKey,
 } from '../src/models/AuthSubject';
 import { getContactMethodFromUser, verifyFirebaseToken } from '../src/helpers/auth.helpers';
+import { getStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkClaims, ClassLinkConfig } from '../src/types/classlink';
 
 const { env, firebase, counts, windows } = vi.hoisted(() => ({
-    env: { IS_E2E_TEST: false, IS_OFFLINE: false },
+    env: {
+        IS_E2E_TEST: false,
+        IS_OFFLINE: false,
+        CLASSLINK_PII_KEY: Buffer.alloc(32, 7).toString('base64') as string | undefined,
+    },
     firebase: {
         getUserByEmail: vi.fn(),
         createUser: vi.fn(),
@@ -90,6 +95,7 @@ beforeEach(async () => {
     windows.clear();
     env.IS_E2E_TEST = false;
     env.IS_OFFLINE = false;
+    env.CLASSLINK_PII_KEY = Buffer.alloc(32, 7).toString('base64');
     config = {
         clientId: 'client-test',
         clientSecret: 'secret-test',
@@ -106,13 +112,14 @@ beforeEach(async () => {
             },
         },
     };
+    const now = Math.floor(Date.now() / 1000);
     claims = {
         iss: 'https://school.example',
         aud: 'client-test',
         sub: 'private-sub',
-        iat: 1800000000,
-        exp: 1800000300,
-        auth_time: 1799999999,
+        iat: now,
+        exp: now + 300,
+        auth_time: now - 1,
         nonce: exchange.nonce,
         classLink_tenant_id: 'tenant-test',
         classLink_sourcedId: 'source-1',
@@ -176,9 +183,14 @@ describe('ClassLink sign-in broker', () => {
             subject: first?.subject,
             firebaseUid: uid,
             lastAuthTime: new Date(claims.iat * 1000),
-            stateStudentId: 'private-student-id',
+            stateStudentIdExpiresAt: new Date((claims.iat + config.maxAuthAgeSeconds) * 1000),
             isMinorHint: true,
         });
+        const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+        expect(stored).not.toHaveProperty('stateStudentId');
+        expect(stored?.stateStudentIdEnc).toMatch(/^v1:/);
+        expect(JSON.stringify(stored)).not.toContain('private-student-id');
+        expect(getStateStudentId(stored!)).toBe('private-student-id');
         expect(verifyClassLinkIdToken).toHaveBeenCalledWith('private-id-token', {
             nonce: exchange.nonce,
         });
@@ -270,8 +282,10 @@ describe('ClassLink sign-in broker', () => {
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             firebaseUid: uid,
             state: '',
-            stateStudentId: null,
         });
+        expect(
+            await getClassLinkIdentitiesCollection().findOne({ identityKey })
+        ).not.toHaveProperty('stateStudentIdEnc');
     });
     it('never joins an existing email account for a district without an override', async () => {
         config.tenants = {};
@@ -285,10 +299,32 @@ describe('ClassLink sign-in broker', () => {
         claims.classLink_role = 'teacher';
         await caller().exchangeCode(exchange);
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
-            stateStudentId: null,
             lastAuthTime: new Date(claims.iat * 1000),
             isMinorHint: false,
         });
+    });
+    it('clears a stored state ID and legacy plaintext when a sign-in supplies no ID', async () => {
+        await caller().exchangeCode(exchange);
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { stateStudentId: 'legacy-plaintext' } }
+        );
+        delete claims.api_fields;
+        await caller().exchangeCode(exchange);
+        const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+        expect(stored).not.toHaveProperty('stateStudentId');
+        expect(stored).not.toHaveProperty('stateStudentIdEnc');
+        expect(stored).not.toHaveProperty('stateStudentIdExpiresAt');
+    });
+    it('stores no state ID without an encryption key and logs no values', async () => {
+        env.CLASSLINK_PII_KEY = undefined;
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await caller().exchangeCode(exchange);
+        const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+        expect(stored).not.toHaveProperty('stateStudentIdEnc');
+        expect(JSON.stringify(stored)).not.toContain('private-student-id');
+        expect(warn).toHaveBeenCalledWith('classlink.pii.key_missing');
+        expect(JSON.stringify(warn.mock.calls)).not.toContain('private-student-id');
     });
     it('rejects both procedures when unconfigured', async () => {
         vi.mocked(getClassLinkConfig).mockReturnValue(null);

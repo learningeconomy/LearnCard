@@ -14,6 +14,7 @@ export const MongoPreferencesValidator = z.object({
     analyticsEnabled: z.boolean().optional(),
     analyticsAutoDisabled: z.boolean().optional(),
     bugReportsEnabled: z.boolean().optional(),
+    bugReportsAutoDisabled: z.boolean().optional(),
     isMinor: z.boolean().optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
@@ -49,23 +50,6 @@ export const createPreferencesCollection = async () => {
     });
 };
 
-export const createMinorPreferencesIfAbsent = async (did: string): Promise<boolean> => {
-    const collection = mongodb.collection<MongoPreferencesType>(PREFERENCES_COLLECTION);
-    if (await collection.findOne({ did })) return false;
-    await collection.insertOne({
-        _id: randomUUID(),
-        did,
-        theme: ThemeEnum.Colorful,
-        aiEnabled: false,
-        analyticsEnabled: false,
-        bugReportsEnabled: false,
-        isMinor: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    });
-    return true;
-};
-
 /** Settings every ClassLink student account must have (AI, analytics, bug reports off). */
 export const MINOR_PREFERENCE_VALUES = Object.freeze({
     aiEnabled: false,
@@ -73,8 +57,23 @@ export const MINOR_PREFERENCE_VALUES = Object.freeze({
     analyticsEnabled: false,
     analyticsAutoDisabled: true,
     bugReportsEnabled: false,
+    bugReportsAutoDisabled: true,
     isMinor: true,
 });
+
+export const createMinorPreferencesIfAbsent = async (did: string): Promise<boolean> => {
+    const collection = mongodb.collection<MongoPreferencesType>(PREFERENCES_COLLECTION);
+    if (await collection.findOne({ did })) return false;
+    await collection.insertOne({
+        _id: randomUUID(),
+        did,
+        theme: ThemeEnum.Colorful,
+        ...MINOR_PREFERENCE_VALUES,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    });
+    return true;
+};
 
 /** Force minor settings, creating the record if needed. Returns true when anything changed. */
 export const enforceMinorPreferences = async (did: string): Promise<boolean> => {

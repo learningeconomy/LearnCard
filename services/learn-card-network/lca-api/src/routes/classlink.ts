@@ -35,6 +35,7 @@ import {
 } from '@helpers/classlink.helpers';
 import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
+import { sealStateStudentId } from '@helpers/classlinkPii.helpers';
 import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 import {
     findAuthSubjectByIdentityKey,
@@ -214,6 +215,10 @@ export const classlinkRouter = t.router({
                             : await getOrCreateAuthSubject(identityKey, attrs)
                     ).subject;
                 }
+                // Time of this verified sign-in. ClassLink's auth_time is the start of the
+                // ClassLink session and does not move on later sign-ins, so it cannot prove
+                // freshness; iat is checked to be within five minutes of now.
+                const lastAuthTime = new Date(claims.iat * 1000);
                 await upsertClassLinkIdentity({
                     identityKey,
                     tenantId,
@@ -221,14 +226,17 @@ export const classlinkRouter = t.router({
                     sub: claims.sub,
                     role: claims.classLink_role ?? '',
                     email,
-                    stateStudentId: await resolveStateStudentId(claims, tenant),
+                    // Kept only for the transcript sign-in window, encrypted.
+                    sealedStateStudentId: sealStateStudentId(
+                        await resolveStateStudentId(claims, tenant),
+                        identityKey,
+                        lastAuthTime,
+                        config.maxAuthAgeSeconds
+                    ),
                     state: tenant.state,
                     firebaseUid: uid,
                     subject,
-                    // Time of this verified sign-in. ClassLink's auth_time is the start of the
-                    // ClassLink session and does not move on later sign-ins, so it cannot prove
-                    // freshness; iat is checked to be within five minutes of now.
-                    lastAuthTime: new Date(claims.iat * 1000),
+                    lastAuthTime,
                     // Preferences require a DID; apply this hint when the account first binds one.
                     isMinorHint:
                         existing?.isMinorHint === true ||

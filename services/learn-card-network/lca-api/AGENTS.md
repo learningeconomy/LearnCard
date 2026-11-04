@@ -279,6 +279,8 @@ sequenceDiagram
 ```
 
 - The state student ID is read only on the server, from the verified id_token `api_fields`, using the tenant's `stateStudentIdField`. It is never accepted from a client. A missing ID does not block sign-in.
+- It is stored encrypted (`src/helpers/classlinkPii.helpers.ts`): AES-256-GCM with `CLASSLINK_PII_KEY`, additional data bound to the identity key, versioned `v1:` payload in `stateStudentIdEnc`. It is kept only for the transcript window: `stateStudentIdExpiresAt` = sign-in time + `CLASSLINK_MAX_AUTH_AGE_SECONDS`. Read it only through `getStateStudentId`, which returns null once expired or unreadable.
+- Every write removes the legacy plaintext `stateStudentId`. A sign-in without a valid ID clears any stored one. Without a usable key nothing is stored and `classlink.pii.key_missing` is logged (no values). Expired IDs are removed lazily in `resolveClassLinkContext` (only if unchanged, so a newer sign-in is never cleared) and by the cleanup script. A transcript request does not clear the ID.
 - An email (`email`, falling back to `or_email`) is required; without one the exchange fails with a friendly `BAD_REQUEST`.
 
 ### Districts
@@ -289,11 +291,11 @@ sequenceDiagram
 
 ### Linking rules
 
-- Identity key: `classlink:<tenant_id>:<sourcedId>`, stored as an AuthSubject and a `ClassLinkIdentity` record (tenant, sourcedId, sub, role, state student ID, Firebase uid, subject, last auth time).
+- Identity key: `classlink:<tenant_id>:<sourcedId>`, stored as an AuthSubject and a `ClassLinkIdentity` record (tenant, sourcedId, sub, role, encrypted state student ID, Firebase uid, subject, last auth time).
 - A known ClassLink identity always reuses its Firebase uid. If its email now belongs to a different Firebase user, the exchange fails closed with `CONFLICT`.
 - A first-time ClassLink identity links to an existing Firebase email user only when the email domain is in the tenant's `allowedEmailDomains`, the Firebase email is verified, and the id_token does not say `email_verified: false`. Otherwise `CONFLICT`. An empty allowlist never links.
 - New users get a deterministic uid: `classlink_` + first 28 hex chars of sha256(identity key).
-- Students get `isMinorHint`; minor privacy defaults are applied the first time the DID calls `transcripts.getStatus`.
+- Students get `isMinorHint`. The preferences routes force `MINOR_PREFERENCE_VALUES` for them (AI, analytics and bug reports off, each with its `*AutoDisabled` flag, and `isMinor`), whatever the client sends. If the student lookup fails, writes are refused and reads report locked settings without saving them, so a failure never unlocks a student or locks an adult.
 - Code exchange failures are rate limited per IP. Never log email, sub, state student ID, codes or tokens.
 
 ### Transcript requests
@@ -312,13 +314,13 @@ sequenceDiagram
 
 All optional; without client ID and secret the routes return `PRECONDITION_FAILED`. `CLASSLINK_TENANTS` is optional (overrides only).
 
-| Key                                                                                                                                                                                                                                                              | Where                                                                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` (comma list, exact match, include native `<bundleId>://auth/classlink/callback`), `CLASSLINK_MAX_AUTH_AGE_SECONDS`                                                                                          | stage config                                                                                                                            |
-| `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS` (optional JSON map of per-district overrides: displayName, state, stateStudentIdField, allowedEmailDomains, transcriptEnabled), `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` | runtime secrets bundle (`PROVIDER_SECRETS`); never in stage files, which would override the bundle and publish district/partner details |
+| Key                                                                                                                                                                                                                                                                                                                                          | Where                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLASSLINK_DISCOVERY_URL`, `CLASSLINK_REDIRECT_URIS` (comma list, exact match, include native `<bundleId>://auth/classlink/callback`), `CLASSLINK_MAX_AUTH_AGE_SECONDS`                                                                                                                                                                      | stage config                                                                                                                            |
+| `CLASSLINK_CLIENT_SECRET`, `CLASSLINK_PII_KEY` (base64 of 32 random bytes; `openssl rand -base64 32`), `CLASSLINK_CLIENT_ID`, `CLASSLINK_TENANTS` (optional JSON map of per-district overrides: displayName, state, stateStudentIdField, allowedEmailDomains, transcriptEnabled), `TRANSCRIPT_ISSUER_ENDPOINT`, `TRANSCRIPT_ISSUER_AUDIENCE` | runtime secrets bundle (`PROVIDER_SECRETS`); never in stage files, which would override the bundle and publish district/partner details |
 
 ### Operations
 
-- Account deletion: the app calls `classlink.deleteMyData` before deleting keys. `scripts/cleanup-orphan-classlink-data.ts` removes ClassLink and transcript rows whose Firebase uid has no UserKey (dry run by default, `--apply` to delete).
+- Account deletion: the app calls `classlink.deleteMyData` before deleting keys. `scripts/cleanup-orphan-classlink-data.ts` removes ClassLink and transcript rows whose Firebase uid has no UserKey, and expired or legacy plaintext state student IDs (dry run by default, `--apply` to delete).
 - `provision:keycloak` reuses the ClassLink subject for ClassLink-only users; `--report-classlink` only prints how many users resolved that way.
 - Keycloak era: ClassLink sign-in becomes another lca-api login ticket (`classlink:<tenant>:<sourcedId>`) brokered by Keycloak's existing `lca-api` identity provider, so provisioned federated links keep the same subject and DID.

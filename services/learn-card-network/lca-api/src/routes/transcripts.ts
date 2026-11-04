@@ -7,6 +7,7 @@ import { t, didAndChallengeRoute } from '@routes';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '@helpers/classlink.config';
 import { resolveClassLinkContext, type ClassLinkContext } from '@helpers/classlinkContext.helpers';
 import { signIssuerAssertion } from '@helpers/issuerAssertion.helpers';
+import { getStateStudentId } from '@helpers/classlinkPii.helpers';
 import {
     createTranscriptRequest,
     findLatestTranscriptRequest,
@@ -48,7 +49,7 @@ const eligibility = ({ tenant, identity }: ClassLinkContext) => {
         Date.now() - identity.lastAuthTime.getTime() > config.maxAuthAgeSeconds * 1000
     )
         return 'reauth_required' as const;
-    if (!identity.stateStudentId) return 'no_state_id' as const;
+    if (!getStateStudentId(identity)) return 'no_state_id' as const;
     return undefined;
 };
 
@@ -87,7 +88,8 @@ export const transcriptsRouter = t.router({
                 const reason = eligibility(context);
                 const issuer = getTranscriptIssuerConfig();
                 const { identity, firebaseUid } = context;
-                if (reason || !issuer || !identity.stateStudentId) {
+                const stateStudentId = getStateStudentId(identity);
+                if (reason || !issuer || !stateStudentId) {
                     throw new TRPCError({
                         code: 'PRECONDITION_FAILED',
                         message:
@@ -120,7 +122,7 @@ export const transcriptsRouter = t.router({
                     {
                         sub: ctx.user.did,
                         state: identity.state,
-                        state_student_id: identity.stateStudentId,
+                        state_student_id: stateStudentId,
                         classlink_tenant_id: identity.tenantId,
                         classlink_sourced_id: identity.sourcedId,
                         classlink_auth_time: Math.floor(identity.lastAuthTime.getTime() / 1000),

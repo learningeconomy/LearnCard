@@ -63,7 +63,7 @@ beforeEach(async () => {
         sub: 'upstream',
         role: 'student',
         email: 'student@example.edu',
-        stateStudentId: null,
+        sealedStateStudentId: null,
         state: 'XX',
         firebaseUid: 'uid-test',
         subject: 'same-subject',

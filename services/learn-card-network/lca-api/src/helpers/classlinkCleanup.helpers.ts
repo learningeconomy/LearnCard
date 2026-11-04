@@ -1,4 +1,6 @@
 import {
+    clearExpiredStateStudentIds,
+    countExpiredStateStudentIds,
     deleteClassLinkIdentitiesByFirebaseUid,
     getClassLinkIdentitiesCollection,
 } from '../models/ClassLinkIdentity';
@@ -25,4 +27,11 @@ export const cleanupOrphanClassLinkData = async (apply: boolean): Promise<number
         console.log(`${apply ? 'orphan deleted' : 'orphan found'}: ${uid} (${count})`);
     }
     return deleted;
+};
+
+/** Remove state student IDs past their sign-in window. Dry runs only count them. */
+export const clearExpiredClassLinkStateIds = async (apply: boolean): Promise<number> => {
+    const count = apply ? await clearExpiredStateStudentIds() : await countExpiredStateStudentIds();
+    console.log(`${apply ? 'expired state IDs cleared' : 'expired state IDs found'}: ${count}`);
+    return count;
 };

@@ -11,6 +11,7 @@ import {
     updateClassLinkIdentity,
 } from '../src/models/ClassLinkIdentity';
 import { getTranscriptRequestsCollection } from '../src/models/TranscriptRequest';
+import { getStateStudentId, sealStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkConfig } from '../src/types/classlink';
 
 const mocks = vi.hoisted(() => ({ keypair: vi.fn() }));
@@ -65,7 +66,12 @@ beforeEach(async () => {
         role: 'student',
         email: 'student@example.edu',
         state: 'XX',
-        stateStudentId: 'private-student-id',
+        sealedStateStudentId: sealStateStudentId(
+            'private-student-id',
+            identityKey,
+            new Date(),
+            86400
+        ),
         lastAuthTime: new Date(),
     });
     config = {
@@ -121,6 +127,8 @@ describe('transcript requests', () => {
                 return { status: httpStatus, data: { status: 'accepted' } };
             });
             const result = await caller().request({ consent: true });
+            const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+            expect(getStateStudentId(stored!)).toBe('private-student-id');
             expect(Object.keys(result).sort()).toEqual(['requestedAt', 'status']);
             expect(result.status).toBe('requested');
             expect(await caller().getStatus()).toMatchObject({
@@ -231,7 +239,10 @@ describe('transcript requests', () => {
                     lastAuthTime: new Date(Date.now() - 86401000),
                 });
             if (reason === 'no_state_id')
-                await updateClassLinkIdentity(identityKey, { stateStudentId: null });
+                await getClassLinkIdentitiesCollection().updateOne(
+                    { identityKey },
+                    { $unset: { stateStudentIdEnc: '', stateStudentIdExpiresAt: '' } }
+                );
             if (reason === 'not_enabled') config.tenants['tenant-test']!.transcriptEnabled = false;
             expect(await caller().getStatus()).toMatchObject({ eligible: false, reason });
             await expect(caller().request({ consent: true })).rejects.toMatchObject({
@@ -240,6 +251,36 @@ describe('transcript requests', () => {
             expect(axios.post).not.toHaveBeenCalled();
         }
     );
+    it('treats an expired state ID as missing and removes it', async () => {
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            { $set: { stateStudentIdExpiresAt: new Date(Date.now() - 1000) } }
+        );
+        expect(await caller().getStatus()).toMatchObject({
+            eligible: false,
+            reason: 'no_state_id',
+        });
+        const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
+        expect(stored).not.toHaveProperty('stateStudentIdEnc');
+        expect(stored).not.toHaveProperty('stateStudentIdExpiresAt');
+        await expect(caller().request({ consent: true })).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+        });
+        expect(axios.post).not.toHaveBeenCalled();
+    });
+    it('never reads legacy plaintext state IDs and removes them', async () => {
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey },
+            {
+                $set: { stateStudentId: 'legacy-plaintext' },
+                $unset: { stateStudentIdEnc: '', stateStudentIdExpiresAt: '' },
+            }
+        );
+        expect(await caller().getStatus()).toMatchObject({ reason: 'no_state_id' });
+        expect(
+            await getClassLinkIdentitiesCollection().findOne({ identityKey })
+        ).not.toHaveProperty('stateStudentId');
+    });
     it.each([
         { consent: false },
         { consent: true, did },

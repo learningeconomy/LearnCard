@@ -1,10 +1,15 @@
 #!/usr/bin/env bun
-import { cleanupOrphanClassLinkData } from '../src/helpers/classlinkCleanup.helpers';
+import {
+    cleanupOrphanClassLinkData,
+    clearExpiredClassLinkStateIds,
+} from '../src/helpers/classlinkCleanup.helpers';
 
 if (import.meta.main) {
-    cleanupOrphanClassLinkData(process.argv.includes('--apply'))
+    const apply = process.argv.includes('--apply');
+    cleanupOrphanClassLinkData(apply)
         .then(async deleted => {
-            console.log(`deleted=${deleted}`);
+            const cleared = await clearExpiredClassLinkStateIds(apply);
+            console.log(`deleted=${deleted} stateIdsCleared=${cleared}`);
         })
         .catch(async error => {
             console.error('cleanup-orphan-classlink-data failed:', error);

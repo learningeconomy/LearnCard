@@ -50,7 +50,6 @@ beforeEach(async () => {
         sub: 'sub',
         role: 'student',
         email: 'cleanup@example.test',
-        stateStudentId: null,
         state: 'XX',
         firebaseUid: uid,
         subject: 'subject',
@@ -108,6 +107,32 @@ describe('ClassLink account cleanup', () => {
         expect(remainingLiveCount).toBe(1);
     });
 
+    it('clears expired state IDs only when applied', async () => {
+        const { clearExpiredClassLinkStateIds } =
+            await import('../src/helpers/classlinkCleanup.helpers');
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey: 'classlink:cleanup:identity' },
+            {
+                $set: {
+                    stateStudentIdEnc: 'v1:expired',
+                    stateStudentIdExpiresAt: new Date(Date.now() - 1000),
+                },
+            }
+        );
+        await expect(clearExpiredClassLinkStateIds(false)).resolves.toBe(1);
+        expect(
+            await getClassLinkIdentitiesCollection().countDocuments({
+                stateStudentIdEnc: { $exists: true },
+            })
+        ).toBe(1);
+        await expect(clearExpiredClassLinkStateIds(true)).resolves.toBe(1);
+        expect(
+            await getClassLinkIdentitiesCollection().countDocuments({
+                stateStudentIdEnc: { $exists: true },
+            })
+        ).toBe(0);
+    });
+
     it('creates minor defaults once and leaves existing preferences untouched', async () => {
         const minorDid = `did:key:minor-${Date.now()}`;
         await getClassLinkIdentitiesCollection().deleteMany({});
@@ -117,6 +142,7 @@ describe('ClassLink account cleanup', () => {
             aiEnabled: false,
             analyticsEnabled: false,
             bugReportsEnabled: false,
+            bugReportsAutoDisabled: true,
             isMinor: true,
         });
         await Preferences.deleteOne({ did: minorDid });
