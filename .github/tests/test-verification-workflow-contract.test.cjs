@@ -87,11 +87,20 @@ assert.match(recheckStep.run, /verification-runner-storage\.sh before-preflight 
 const position = name => steps.findIndex(step => step.name === name);
 assert.ok(position('Prepare catalog runner disk space') < position('Setup Bun and dependencies'));
 assert.ok(position('Setup Bun and dependencies') < position('Measure disk after dependencies'));
-assert.ok(position('Install Chromium and Linux libraries') < position('Recheck catalog runner disk space'));
+assert.ok(
+    position('Install Chromium and Linux libraries') < position('Recheck catalog runner disk space')
+);
 assert.ok(position('Prepare clean checkout') < position('Recheck catalog runner disk space'));
 assert.ok(position('Recheck catalog runner disk space') < position('Check local prerequisites'));
-assert.match(named(source, 'Check sanitized timing summaries').run, /test-verification-runner-storage\.test\.sh/);
-assert.ok((workflow.on ?? workflow.true).pull_request.paths.includes('scripts/verification-runner-storage.sh'));
+assert.match(
+    named(source, 'Check sanitized timing summaries').run,
+    /test-verification-runner-storage\.test\.sh/
+);
+assert.ok(
+    (workflow.on ?? workflow.true).pull_request.paths.includes(
+        'scripts/verification-runner-storage.sh'
+    )
+);
 assert.ok(!source.some(step => /playwright install|lc verify up/.test(step.run ?? '')));
 assert.ok(!steps.some(step => /nx run-many -t build|tsc -p/.test(step.run ?? '')));
 assert.ok(!bundle.some(step => /lc verify/.test(step.run ?? '')));
