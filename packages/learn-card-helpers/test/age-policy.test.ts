@@ -23,4 +23,15 @@ describe('shared age policy', () => {
         expect(Number.isNaN(calculateAgeFromISODate('2008-01-01T25:00:00Z', now))).toBe(true);
         expect(Number.isNaN(calculateAgeFromISODate('not-a-date', now))).toBe(true);
     });
+
+    it.each([
+        '2008-10-29T12:30',
+        '20081029',
+        '2008-W44-3',
+        '2008-303',
+        '2008-10-29T23:30:00-12:00',
+    ])('preserves legacy ISO DOB %s without timezone-dependent age changes', dob => {
+        expect(calculateAgeFromISODate(dob, new Date('2026-10-29T12:00:00Z'))).toBe(18);
+        expect(calculateAgeFromISODate(dob, new Date('2026-10-28T12:00:00Z'))).toBe(17);
+    });
 });

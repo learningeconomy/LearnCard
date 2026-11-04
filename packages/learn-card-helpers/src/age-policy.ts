@@ -1,3 +1,5 @@
+import moment from 'moment';
+
 // Canonical GDPR age-of-consent thresholds for EU countries.
 export const GDPR_AGE_LIMIT: Record<string, number> = {
     Germany: 16,
@@ -62,29 +64,17 @@ export const getMinorAgeThreshold = (countryCode?: string): number => {
 
 /** Returns completed years for a valid ISO date/timestamp, or NaN if invalid/future. */
 export const calculateAgeFromISODate = (dob: string, now: Date = new Date()): number => {
-    const match =
-        /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?)?$/.exec(
-            dob
-        );
-    if (!match) return Number.NaN;
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    const hour = Number(match[4] ?? 0);
-    const minute = Number(match[5] ?? 0);
-    const second = Number(match[6] ?? 0);
-    const birth = new Date(Date.UTC(year, month - 1, day));
-    if (
-        birth.getUTCFullYear() !== year ||
-        birth.getUTCMonth() !== month - 1 ||
-        birth.getUTCDate() !== day ||
-        hour > 23 ||
-        minute > 59 ||
-        second > 59 ||
-        (dob.includes('T') && !Number.isFinite(Date.parse(dob)))
-    ) {
-        return Number.NaN;
-    }
+    // Keep the ISO forms accepted by the existing profile/forms parser, including
+    // compact, week and ordinal dates. parseZone preserves the DOB's calendar day
+    // instead of shifting it with the browser/server timezone.
+    const parsed = moment.parseZone(dob, moment.ISO_8601, true);
+    if (!parsed.isValid()) return Number.NaN;
+    const year = parsed.year();
+    const month = parsed.month() + 1;
+    const day = parsed.date();
+    const birth = new Date(0);
+    birth.setUTCFullYear(year, month - 1, day);
+    birth.setUTCHours(0, 0, 0, 0);
     const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     if (birth > today) return Number.NaN;
     let age = today.getUTCFullYear() - year;
