@@ -21,10 +21,13 @@ type SharedUriResolution = {
     status: 'reused' | 'created' | 'missing';
 };
 
-const getCredentialListQueryKey = (category: string) => [
+type CredentialListQueryKey = ['useGetCredentialList', string, string, string];
+
+const getCredentialListQueryKey = (category: string, readerDid: string): CredentialListQueryKey => [
     'useGetCredentialList',
     switchedProfileStore.get.switchedDid() ?? '',
     category,
+    readerDid,
 ];
 
 export type ConsentDataAudience = string | string[];
@@ -57,10 +60,9 @@ export const getConsentAudienceCacheKey = (audience: ConsentDataAudience): strin
 
 const syncCachedCategoryRecords = (
     queryClient: QueryClient,
-    category: string,
+    queryKey: CredentialListQueryKey,
     records: LCR[]
 ): void => {
-    const queryKey = getCredentialListQueryKey(category);
     const recordMap = new Map(records.map(record => [record.id, record]));
 
     queryClient.setQueriesData<InfiniteData<CredentialListPage, string>>({ queryKey }, oldData =>
@@ -195,7 +197,7 @@ export const getOrCreateSharedUriForWallet = async (
     credUri: string,
     category: string
 ): Promise<string | false> => {
-    const didWeb = switchedProfileStore.get.switchedDid() ?? wallet.id?.did();
+    const didWeb = wallet.id.did();
     const credentialKey = JSON.stringify([didWeb, credUri]);
     const inFlightKey = [didWeb, credUri, getConsentAudienceCacheKey(contractOwnerDid)]
         .filter(Boolean)
@@ -228,7 +230,7 @@ const createSharedUriForWallet = async (
     credUri: string,
     category: string
 ): Promise<string | false> => {
-    const queryKey = getCredentialListQueryKey(category);
+    const queryKey = getCredentialListQueryKey(category, wallet.id.did());
     const cache = queryClient.getQueryData<InfiniteData<CredentialListPage, string>>(queryKey);
     const cachedRecords = cache?.pages.flatMap(page => page.records) ?? [];
 
@@ -241,7 +243,7 @@ const createSharedUriForWallet = async (
         );
 
         if (cachedResult.status !== 'missing') {
-            syncCachedCategoryRecords(queryClient, category, cachedRecords);
+            syncCachedCategoryRecords(queryClient, queryKey, cachedRecords);
             return cachedResult.sharedUri;
         }
     }
@@ -254,7 +256,7 @@ const createSharedUriForWallet = async (
         records
     );
 
-    syncCachedCategoryRecords(queryClient, category, records);
+    syncCachedCategoryRecords(queryClient, queryKey, records);
     return result.sharedUri;
 };
 
@@ -282,6 +284,7 @@ export const getTermsWithSharedUrisForWallet = async (
     });
 
     for (const category of categories) {
+        const queryKey = getCredentialListQueryKey(category, wallet.id.did());
         const requestedCredUris = Array.from(
             new Set(terms.terms.read.credentials.categories[category].shared ?? [])
         );
@@ -316,7 +319,7 @@ export const getTermsWithSharedUrisForWallet = async (
             }
         }
 
-        syncCachedCategoryRecords(queryClient, category, records);
+        syncCachedCategoryRecords(queryClient, queryKey, records);
         terms.terms.read.credentials.categories[category].shared = newCredUris;
 
         log.debug('Prepared shared URIs for category', {

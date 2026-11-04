@@ -7,7 +7,7 @@ import {
     newCredsStore,
     CredentialCategory,
     CredentialCategoryEnum,
-    useGetCredentialCount,
+    useCredentialCollection,
     useGetCredentialsForSkills,
     useGetAllAiTopicCredentials,
     useAiInsightCredential,
@@ -48,11 +48,11 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
         categoryType === CredentialCategoryEnum.selfAssignedSkills;
     const enableAiInsightCount = categoryType === CredentialCategoryEnum.aiInsight;
 
-    // normal credential count
-    const { data, isLoading: loading } = useGetCredentialCount(
-        categoryType as CredentialCategory,
-        enableCategoryCount
-    );
+    const collection = useCredentialCollection(undefined, {
+        mode: 'complete',
+        enabled: enableCategoryCount,
+    });
+    const loading = enableCategoryCount && !collection.isComplete && !collection.isError;
 
     // ai topic count
     const { data: aiTopicsCount, isLoading: aiTopicsLoading } =
@@ -66,7 +66,9 @@ const WalletPageItemWrapper: React.FC<WalletPageItemWrapperProps> = ({
 
     const { alignments } = useAlignments();
 
-    let categoryCount = data !== null && data !== undefined ? Number(data) : 0;
+    let categoryCount: number | null = collection.isComplete
+        ? collection.records.filter(record => record.category === categoryType).length
+        : null;
     if (enableAiCount) categoryCount = aiTopicsCount?.length ?? 0;
     if (enableSkillsCount) {
         categoryCount = alignments.length;

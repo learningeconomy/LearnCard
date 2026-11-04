@@ -1083,6 +1083,7 @@ export const useDeleteEarnedBoostMutation = () => {
         onMutate: async update => {
             const { boostUri, category } = update;
             const didWeb = switchedProfileStore.get.switchedDid();
+            const readerDid = (await initWallet()).id.did();
 
             await queryClient.cancelQueries({
                 queryKey: ['useGetCredentials', didWeb ?? '', category],
@@ -1107,6 +1108,7 @@ export const useDeleteEarnedBoostMutation = () => {
                 'useGetCredentialList',
                 didWeb ?? '',
                 category,
+                readerDid,
             ]);
             const currentIDQueryList = queryClient.getQueryData(getIDsQueryKey(didWeb));
 
@@ -1152,7 +1154,7 @@ export const useDeleteEarnedBoostMutation = () => {
                     updatedQuery
                 );
                 queryClient.setQueryData(
-                    ['useGetCredentialList', didWeb ?? '', category],
+                    ['useGetCredentialList', didWeb ?? '', category, readerDid],
                     updatedQueryList
                 );
 
@@ -1175,7 +1177,7 @@ export const useDeleteEarnedBoostMutation = () => {
             });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
             queryClient.invalidateQueries({
-                queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                queryKey: ['useGetCredentialList', didWeb ?? ''],
             });
             queryClient.invalidateQueries({
                 queryKey: ['useGetCredentialCount', didWeb ?? '', category],
