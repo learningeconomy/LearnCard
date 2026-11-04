@@ -1,0 +1,90 @@
+---
+import NewAiSessionIcon from "./svgs/NewAiSessionIcon";
+import MenuLeftIcon from "./svgs/MenuLeftIcon";
+import ProfilePicture from "./ProfilePicture.astro";
+import Notch from "./svgs/Notch";
+import OpenAILogo from "../assets/openai.svg";
+
+const isLocalhost = Astro.request.url.includes("localhost");
+const newSessionHref = isLocalhost
+  ? "http://localhost:3000/ai/topics?startNewSession=true"
+  : "https://learncard.app/ai/topics?startNewSession=true";
+---
+
+<header
+  class="flex justify-between w-full py-[20px] px-[30px] bg-white hidden sm:flex"
+>
+  <a href={newSessionHref} class="w-[40px] h-[40px]">
+    <NewAiSessionIcon />
+  </a>
+  <ProfilePicture />
+</header>
+
+<!-- Mobile -->
+<header class="bg-grayscale-50-off-white sm:hidden relative">
+  <div
+    class="flex items-center justify-between w-full py-[20px] px-[30px] relative z-50 bg-grayscale-50-off-white"
+  >
+    <button
+      id="mobile-menu-button"
+      class="p-[5px] sm:hidden cursor-pointer"
+      aria-label="Toggle sidebar"
+    >
+      <MenuLeftIcon />
+    </button>
+
+    <div>
+      <span class="text-[17px] font-[600] text-indigo-500 font-poppins">
+        AI Session
+      </span>
+      <span class="text-grayscale-900 font-[600] text-[17px] font-poppins">
+        &nbsp;• ChatGPT
+      </span>
+    </div>
+
+    <a href={newSessionHref}>
+      <NewAiSessionIcon />
+    </a>
+  </div>
+
+  <div class="absolute flex left-0 bottom-[-40px] z-40 w-full">
+    <div
+      class="w-[40%] relative bottom-[5px] bg-grayscale-50-off-white filter-[drop-shadow(0px_1px_4px_rgba(0,_0,_0,_0.25))]"
+    >
+    </div>
+    <div class="relative flex mx-[-5px] z-10">
+      <div
+        class="w-[5px] h-full relative left-[5px] bottom-[5px] bg-grayscale-50-off-white"
+      >
+      </div>
+      <Notch className="z-[-1] shrink-0" />
+      <div
+        class="w-[5px] h-full relative right-[5px] bottom-[5px] bg-grayscale-50-off-white"
+      >
+      </div>
+    </div>
+    <div
+      class="w-[40%] relative bottom-[5px] bg-grayscale-50-off-white filter-[drop-shadow(0px_1px_4px_rgba(0,_0,_0,_0.25))]"
+    >
+    </div>
+  </div>
+
+  <div class="absolute bottom-[-67px] left-0 right-0 z-40">
+    <div class="w-fit mx-auto">
+      <OpenAILogo />
+    </div>
+  </div>
+</header>
+
+<script>
+  // Mobile menu toggle button
+  document.addEventListener("DOMContentLoaded", () => {
+    const menuButton = document.getElementById("mobile-menu-button");
+
+    menuButton?.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent event from bubbling up
+      const event = new CustomEvent("toggle-mobile-menu");
+      document.dispatchEvent(event);
+    });
+  });
+</script>

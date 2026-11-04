@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.90.49
+
+### Patch Changes
+
+- [#1929](https://github.com/learningeconomy/LearnCard/pull/1929) [`2c75125b4e03dfb2cc7579cfa5b796b3519e3ac4`](https://github.com/learningeconomy/LearnCard/commit/2c75125b4e03dfb2cc7579cfa5b796b3519e3ac4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix native sign-in failing at Web3Auth account setup. Web3Auth's session server rejects CORS from Capacitor's localhost origin, so native builds now derive the key without saving an SDK session there. Web behavior is unchanged.
+
+- [#1928](https://github.com/learningeconomy/LearnCard/pull/1928) [`e6ce315cf2fa13247b41952977649ca265dfec54`](https://github.com/learningeconomy/LearnCard/commit/e6ce315cf2fa13247b41952977649ca265dfec54) Thanks [@Custard7](https://github.com/Custard7)! - Restore quiet retry for Web3Auth sign-in network failures. Since the multi-tab sign-in fix, every Web3Auth error was rewritten to a generic message before the auth coordinator saw it, so connectivity failures showed the "We couldn't finish signing you in" error screen instead of returning to idle and retrying.
+
+    Record which Web3Auth setup step failed (init, connect, identity check, private key, ...) and a redacted error type, code and message in the "Web3Auth account setup failed" log, so production sign-in failures can be diagnosed.
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/sss-key-manager@0.2.7
+    - @learncard/helpers@1.7.3
+    - @learncard/lca-api-plugin@2.0.15
+    - @learncard/react@3.0.4
+
 ## 1.90.48
 
 ### Patch Changes

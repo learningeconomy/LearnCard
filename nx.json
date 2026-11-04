@@ -3,15 +3,7 @@
     "cli": {
         "packageManager": "bun"
     },
-    "tasksRunnerOptions": {
-        "default": {
-            "runner": "nx/tasks-runners/default",
-            "options": {
-                "cacheDirectory": ".nx-cache",
-                "cacheableOperations": ["build", "test"]
-            }
-        }
-    },
+    "cacheDirectory": ".nx-cache",
     "targetDefaults": {
         "start": {
             "dependsOn": ["^build"]
@@ -20,15 +12,18 @@
             "dependsOn": ["^build"]
         },
         "build": {
+            "cache": false,
             "dependsOn": ["^build"],
             "outputs": ["{projectRoot}/dist"]
         },
         "test": {
+            "cache": false,
             "dependsOn": ["^build"],
             "outputs": ["{projectRoot}/coverage"],
             "inputs": ["default", "^default", "ciTestConfig"]
         },
         "test:coverage": {
+            "cache": false,
             "dependsOn": ["^build"],
             "outputs": ["{projectRoot}/coverage"],
             "inputs": ["default", "^default", "ciTestConfig"]
@@ -36,6 +31,23 @@
     },
     "defaultBase": "main",
     "namedInputs": {
+        "sdkBuild": [
+            "{projectRoot}/src/**/*",
+            "{projectRoot}/scripts/**/*",
+            "{projectRoot}/*",
+            "{workspaceRoot}/package.json",
+            "{workspaceRoot}/bun.lock",
+            "{workspaceRoot}/bunfig.toml",
+            "{workspaceRoot}/tsconfig*.json",
+            "{workspaceRoot}/nx.json",
+            "{workspaceRoot}/.nvmrc",
+            {
+                "runtime": "node -p \"JSON.stringify([process.version, process.platform, process.arch])\""
+            },
+            { "runtime": "bun --version" },
+            { "env": "NODE_ENV" },
+            { "env": "NODE_OPTIONS" }
+        ],
         "ciTestConfig": [
             "{workspaceRoot}/vitest.shared.ts",
             "{workspaceRoot}/scripts/ci-test-retries/**/*",

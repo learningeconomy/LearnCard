@@ -1,0 +1,145 @@
+---
+import ChatHeader from "./ChatHeader.astro";
+import ChatInterface from "./ChatInterface";
+import ThreadListSidebar from "./ThreadListSidebar.astro";
+import TopicCredentials from "./TopicCredentials";
+import FeedbackToast from "./FeedbackToast";
+
+import type { ChatMessage, Thread } from "@learncard/types";
+
+type Props = {
+  initialMessages?: ChatMessage[];
+  initialThreadId?: string | undefined;
+  initialThreadList?: Thread[];
+  showThreadList?: boolean;
+  initialTopic?: string;
+  initialTopicUri?: string;
+};
+
+const {
+  initialMessages = [],
+  initialThreadId = undefined,
+  initialThreadList = [],
+  showThreadList = true,
+  initialTopic = undefined,
+  initialTopicUri = undefined,
+} = Astro.props;
+---
+
+<div class="flex h-full bg-gray-100">
+  {
+    showThreadList && (
+      <ThreadListSidebar
+        initialThreadId={initialThreadId}
+        initialThreadList={initialThreadList}
+        isMobile={false}
+      />
+    )
+  }
+
+  <style>
+    /* Hide ChatHeader when FeedbackToast is visible on desktop */
+    @media (width >= 40rem) {
+      .feedback-visible + .chat-header {
+        display: none;
+      }
+    }
+
+    /* Hide mobile toast on desktop and desktop toast on mobile */
+    .feedback-toast-mobile {
+      display: block;
+    }
+    .feedback-toast-desktop {
+      display: none;
+    }
+    @media (width >= 40rem) {
+      .feedback-toast-mobile {
+        display: none;
+      }
+      .feedback-toast-desktop {
+        display: block;
+      }
+    }
+  </style>
+
+  <!-- Chat area -->
+  <div class="flex flex-col h-full w-full">
+    <!-- Desktop toast (visible only on desktop) -->
+    <div id="feedbackToast" class="feedback-visible feedback-toast-desktop">
+      <FeedbackToast client:load />
+    </div>
+
+    <div class="chat-header z-[9999]">
+      <ChatHeader />
+    </div>
+
+    <!-- Mobile toast (visible only on mobile) -->
+    <div
+      id="feedbackToastMobile"
+      class="feedback-visible feedback-toast-mobile"
+    >
+      <FeedbackToast client:load />
+    </div>
+
+    <script>
+      document.addEventListener("astro:page-load", async () => {
+        const { showToast } = await import("@/stores/toastStore");
+        const feedbackContainer = document.getElementById(
+          "feedbackToast",
+        ) as HTMLElement | null;
+
+        // Only apply on desktop (40rem / 640px)
+        const isDesktop = window.innerWidth >= 640;
+
+        if (feedbackContainer && isDesktop) {
+          feedbackContainer.classList.toggle(
+            "feedback-visible",
+            showToast.get(),
+          );
+        }
+
+        showToast.subscribe((isVisible: boolean) => {
+          if (feedbackContainer && isDesktop) {
+            feedbackContainer.classList.toggle("feedback-visible", isVisible);
+          }
+        });
+      });
+    </script>
+
+    <div class="flex flex-1 overflow-hidden">
+      <main
+        class="flex-1 flex flex-col items-center justify-center bg-white m-0 h-full w-full"
+      >
+        <ChatInterface
+          client:load
+          initialMessages={initialMessages}
+          initialTopic={initialTopic}
+          initialTopicUri={initialTopicUri}
+        />
+      </main>
+      <aside class="w-64 border-l border-gray-200 hidden md:block">
+        <TopicCredentials client:load />
+      </aside>
+    </div>
+  </div>
+
+  <!-- Mobile sidebar (hidden by default) -->
+  {
+    showThreadList && (
+      <ThreadListSidebar
+        initialThreadId={initialThreadId}
+        initialThreadList={initialThreadList}
+        isMobile={true}
+      />
+    )
+  }
+</div>
+
+<script>
+  import { logout } from "@/stores/authStore";
+
+  document.getElementById("logout")?.addEventListener("click", async () => {
+    await logout();
+    window.location.href = "/login";
+  });
+</script>

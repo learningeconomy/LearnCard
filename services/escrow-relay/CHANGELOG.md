@@ -1,5 +1,12 @@
 # @learncard/escrow-relay-service
 
+## 0.1.8
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/sss-key-manager@0.2.7
+
 ## 0.1.7
 
 ### Patch Changes
