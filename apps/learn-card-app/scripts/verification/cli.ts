@@ -17,7 +17,7 @@ import { queryMongo, queryNeo4j, serviceLogs } from './inspect';
 import { runLearnCardCli, stopLearnCardCommands } from './learncard-cli';
 import { createScriptContext, loadScript, writeInlineScript } from './script';
 import { doctorStack, readStackEndpoints, startStack, stopStack } from './stack';
-import { preflightVerification } from './preflight';
+import { preflightVerification, type PreflightCheck } from './preflight';
 import { browserCrashHint } from './crash';
 import { prepareVerification } from './prepare';
 import type { FeatureDefinition, FeatureResult, StackEndpoints, VerificationActor } from './types';
@@ -740,9 +740,20 @@ export const runVerificationCli = async (args: string[]): Promise<void> => {
     // `bun run --cwd …` hides the caller's directory, so a relative --dir would be ambiguous.
     assert(!values.dir || isAbsolute(values.dir), `--dir must be an absolute path: ${values.dir}`);
     if (values.preflight) {
-        const result = await preflightVerification(values.dir);
-        if (values.json) writeEvent({ event: 'result', command: 'preflight', ...result });
-        else console.log(JSON.stringify(result, null, 2));
+        let check: PreflightCheck | 'initialization' = 'initialization';
+        try {
+            const result = await preflightVerification(values.dir, {
+                onCheck: value => {
+                    check = value;
+                },
+            });
+            if (values.json) writeEvent({ event: 'result', command: 'preflight', ...result });
+            else console.log(JSON.stringify(result, null, 2));
+        } catch (error) {
+            // Fixed check IDs are safe to summarize; raw errors stay in private logs.
+            if (values.json) writeEvent({ event: 'preflight-failure', check });
+            throw error;
+        }
         return;
     }
     if (command !== 'run') assert(values.dir, `${command} requires --dir`);
