@@ -22,6 +22,7 @@ on:
             - DIDKit Plugin Node Prebuilds
             - Docs Link Integrity
             - E2E
+            - E2E cache warm
             - Escrow Enclave EIF
             - Escrow Host/Monitor Audit
             - fastlane-deploy-native-apps

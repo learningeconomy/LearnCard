@@ -94,6 +94,10 @@ jobs:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/browser
             E2E_HOST_BROWSER_BUILD: 'true'
             E2E_TEST_FILES: ${{ github.event.inputs.test_files || 'consent-flow-race.spec.ts app-store.spec.ts wallet-credentials.spec.ts' }}
+            # Merge-group caches are unreadable by any later run (see docker-bake.hcl);
+            # shard 1 owns the backend dependency scope on pull requests.
+            E2E_EXPORT_BROWSER_CACHE: ${{ github.event_name != 'merge_group' }}
+            E2E_EXPORT_BACKEND_CACHE: 'false'
         steps:
             - name: Checkout tested revision
               id: checkout
@@ -215,6 +219,8 @@ jobs:
             E2E_ARTIFACT_DIR: /tmp/learncard-e2e-artifacts/service
             E2E_SHARD: ${{ matrix.shard }}
             E2E_SHARD_TOTAL: ${{ strategy.job-total }}
+            # One writer per scope, and none for single-use merge-group refs.
+            E2E_EXPORT_BACKEND_CACHE: ${{ github.event_name != 'merge_group' && matrix.shard == 1 }}
         steps:
             - name: Checkout tested revision
               id: checkout

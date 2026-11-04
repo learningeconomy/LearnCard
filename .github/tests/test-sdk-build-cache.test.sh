@@ -9,6 +9,8 @@ mkdir -p "$REPO_ROOT" "$E2E_ARTIFACT_DIR"
 source "$SOURCE_ROOT/scripts/e2e-hosted/prepare-sdk-build.sh"
 # Load only the real suite entrypoint; the test never starts or stops a stack.
 eval "$(sed -n '/^run_service_suite() {$/,/^}$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh")"
+# The hosted runner prepares the SDK in the background while the stack starts.
+eval "$(sed -n '/^start_shared_sdk_preparation() {$/,/^}$/p' "$SOURCE_ROOT/scripts/e2e-hosted/run-service.sh")"
 e2e_timed() { shift; "$@"; }
 node() {
     echo "$2" >> "$TEST_ROOT/prepare"
@@ -26,10 +28,11 @@ bunx() {
 }
 E2E_SDK_SPEC="$TEST_ROOT/spec" E2E_SDK_CACHE_DIR="$TEST_ROOT/cache"
 E2E_SHARD=2 E2E_SHARD_TOTAL=3
+for mode in inline background; do
 for scenario in disabled miss baseline hit corrupt build-failed test-failed; do
     : > "$TEST_ROOT/prepare"
     : > "$TEST_ROOT/tests"
-    E2E_SDK_CACHE_ENABLED=true E2E_SDK_CACHE_HIT=false
+    E2E_SDK_CACHE_ENABLED=true E2E_SDK_CACHE_HIT=false E2E_SDK_PREPARED=false E2E_SDK_PREP_PID=''
     RESTORE_OK=true BUILD_OK=true TEST_STATUS=0
     EXPECTED_SKIP=' --excludeTaskDependencies'
     case "$scenario" in
@@ -39,8 +42,10 @@ for scenario in disabled miss baseline hit corrupt build-failed test-failed; do
         build-failed) BUILD_OK=false ;;
         test-failed) TEST_STATUS=7 ;;
     esac
+    [[ "$mode" == inline ]] || start_shared_sdk_preparation
     status=0
     run_service_suite || status=$?
+    [[ -z "$E2E_SDK_PREP_PID" ]]
     if [[ "$scenario" == build-failed ]]; then
         [[ "$status" != 0 && "$E2E_SDK_PREPARED" == false && ! -s "$TEST_ROOT/tests" ]]
     else
@@ -54,4 +59,5 @@ for scenario in disabled miss baseline hit corrupt build-failed test-failed; do
         *) [[ $(cat "$TEST_ROOT/prepare") == build ]] ;;
     esac
 done
-echo 'SDK miss/hit/corruption/disabled paths, fresh sharded test execution and failure propagation passed'
+done
+echo 'SDK miss/hit/corruption/disabled paths (inline and background), fresh sharded test execution and failure propagation passed'
