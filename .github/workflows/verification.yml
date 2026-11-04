@@ -19,6 +19,8 @@ on:
             - 'scripts/verify-web-sqlite-build.mjs'
             - 'scripts/verify-web-sqlite-build.test.mjs'
             - 'scripts/summarize-verification*.mjs'
+            - 'scripts/verification-runner-storage.sh'
+            - '.github/tests/test-verification-runner-storage.test.sh'
             - 'scripts/profile-verification-traces.py'
             - 'scripts/test_profile_verification_traces.py'
             - 'tests/smoketests/**'
@@ -122,6 +124,7 @@ jobs:
 
             - name: Check sanitized timing summaries
               run: |
+                  bash .github/tests/test-verification-runner-storage.test.sh
                   node --test scripts/summarize-verification.test.mjs scripts/verification-shards.test.mjs
                   node scripts/verification-shards.mjs check
                   python3 -B -m unittest discover -s scripts -p test_profile_verification_traces.py
@@ -196,6 +199,10 @@ jobs:
               with:
                   persist-credentials: false
 
+            # Leave headroom for dependency and browser installation on smaller hosted VMs.
+            - name: Prepare catalog runner disk space
+              run: bash scripts/verification-runner-storage.sh before-setup 20971520
+
             - name: Setup Node
               uses: actions/setup-node@v6
               with:
@@ -205,6 +212,9 @@ jobs:
               uses: ./.github/actions/setup
               with:
                   save-cache: 'false'
+
+            - name: Measure disk after dependencies
+              run: df -Pk apps/learn-card-app | awk 'NR == 2 { printf "after-dependencies available_kib=%s\n", $4 }'
 
             - name: Setup local Docker cache builder
               if: ${{ github.event_name == 'workflow_dispatch' && inputs.use_docker_cache }}
@@ -240,6 +250,9 @@ jobs:
 
             - name: Install Chromium and Linux libraries
               run: bunx playwright install --with-deps chromium
+
+            - name: Recheck catalog runner disk space
+              run: bash scripts/verification-runner-storage.sh before-preflight 10485760
 
             - name: Prepare clean checkout
               run: |
