@@ -31,7 +31,7 @@ vi.mock('@accesslayer/preferences/update', () => ({
 }));
 vi.mock('@helpers/currentProfile', () => ({
     getCurrentProfile: async () => {
-        if (state.profileUnavailable) throw new Error('Unable to resolve current profile');
+        if (state.profileUnavailable) return null;
         return { ...state.profile };
     },
 }));
@@ -132,18 +132,54 @@ describe('backend analytics age authorization', () => {
         }
     );
 
-    it('does not overwrite saved consent when trusted profile lookup fails', async () => {
-        state.saved.analyticsEnabled = false;
+    it('keeps preferences available and analytics transiently off when age authority is unknown', async () => {
+        state.saved = {
+            theme: ThemeEnum.Formal,
+            aiEnabled: true,
+            analyticsEnabled: true,
+            isMinor: false,
+        };
         state.profileUnavailable = true;
-        await expect(caller.updatePreferences({ analyticsEnabled: true })).rejects.toThrow(
-            'Unable to resolve current profile'
-        );
-        await expect(caller.getPreferencesForDid()).rejects.toThrow(
-            'Unable to resolve current profile'
-        );
-        await expect(caller.createPreferences({ theme: ThemeEnum.Formal })).rejects.toThrow(
-            'Unable to resolve current profile'
-        );
-        expect(state.saved).toEqual({ theme: ThemeEnum.Colorful, analyticsEnabled: false });
+        await expect(caller.getPreferencesForDid()).resolves.toMatchObject({
+            theme: ThemeEnum.Formal,
+            aiEnabled: true,
+            analyticsEnabled: false,
+        });
+        expect(state.saved.analyticsEnabled).toBe(true);
+        await expect(
+            caller.updatePreferences({ theme: ThemeEnum.Colorful, aiEnabled: false })
+        ).resolves.toBe(true);
+        expect(state.saved).toMatchObject({
+            theme: ThemeEnum.Colorful,
+            aiEnabled: false,
+            analyticsEnabled: true,
+        });
+        await caller.updatePreferences({ analyticsEnabled: false, isMinor: true });
+        expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: false });
+    });
+
+    it('allows onboarding theme writes without a profile and rejects forged analytics authority', async () => {
+        state.profileUnavailable = true;
+        await expect(caller.createPreferences({ theme: ThemeEnum.Formal })).resolves.toBe(true);
+        await caller.updatePreferences({
+            analyticsEnabled: true,
+            analyticsAutoDisabled: false,
+            isMinor: false,
+        });
+        expect(state.saved).toEqual({ theme: ThemeEnum.Formal });
+    });
+
+    it('repairs a known minor and restores adult authorization after authority recovers', async () => {
+        state.saved = { theme: ThemeEnum.Formal, analyticsEnabled: true };
+        state.profile = { dob: '2012-01-01', country: 'US' };
+        await caller.getPreferencesForDid();
+        expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: true });
+        state.profileUnavailable = true;
+        await caller.getPreferencesForDid();
+        expect(state.saved.analyticsEnabled).toBe(false);
+        state.profileUnavailable = false;
+        state.profile = { dob: '1990-01-01', country: 'US' };
+        await caller.updatePreferences({ analyticsEnabled: true });
+        expect(state.saved).toMatchObject({ analyticsEnabled: true, isMinor: false });
     });
 });

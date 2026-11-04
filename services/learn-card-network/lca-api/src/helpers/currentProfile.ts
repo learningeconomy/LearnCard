@@ -12,19 +12,19 @@ const profileUrl = brainServiceUrl
     : null;
 
 const currentProfileSchema = z.object({
-    did: z.string(),
     dob: z.string().nullish(),
     country: z.string().nullish(),
     type: z.string().nullish(),
 });
 
-/** Read the signed-in holder's persisted profile from brain-service; never cache age authority. */
+/** Resolve the authenticated holder's persisted profile; null means unknown age authority. */
+// Brain's self-profile uses didRoute and verifies this same signed VP without
+// consuming a second challenge. A challenge-consuming route would need a new
+// service-auth contract. Brain may rewrite profile DIDs; the VP establishes identity.
 export const getCurrentProfile = async (
     ctx: Pick<Context, 'authorizationHeader' | 'tenant' | 'user'>
 ) => {
-    if (!ctx.authorizationHeader || !ctx.user?.did)
-        throw new Error('Missing verified profile authorization');
-    if (!profileUrl) throw new Error('Profile authority is not configured');
+    if (!ctx.authorizationHeader || !ctx.user?.did || !profileUrl) return null;
 
     try {
         const { data } = await axios.get(profileUrl, {
@@ -37,6 +37,7 @@ export const getCurrentProfile = async (
         });
         return currentProfileSchema.parse(data);
     } catch {
-        throw new Error('Unable to resolve current profile');
+        // Missing/malformed profiles and outages are unknown, never adult authority.
+        return null;
     }
 };

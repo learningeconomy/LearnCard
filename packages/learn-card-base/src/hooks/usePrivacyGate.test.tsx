@@ -11,6 +11,7 @@ const state = vi.hoisted(() => ({
     consentResolved: false,
     isLoading: false,
     isError: false,
+    updatePreferences: vi.fn(),
 }));
 vi.mock('./useGetCurrentLCNUser', () => ({
     useGetCurrentLCNUser: () => ({
@@ -31,9 +32,9 @@ vi.mock('../react-query/queries/preferences', () => ({
     }),
 }));
 vi.mock('../react-query/mutations/preferences', () => ({
-    useUpdatePreferences: () => ({ mutate: vi.fn() }),
+    useUpdatePreferences: () => ({ mutate: state.updatePreferences }),
 }));
-import { usePrivacyConsent } from './usePrivacyGate';
+import { usePrivacyConsent, usePrivacyGate } from './usePrivacyGate';
 
 afterEach(() => {
     cleanup();
@@ -42,11 +43,12 @@ afterEach(() => {
 beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-29T12:00:00Z'));
+    state.updatePreferences.mockClear();
     Object.assign(state, {
         profile: { profileId: 'adult', dob: '1990-01-01', country: 'US' },
         profileType: null,
         profileLoading: false,
-        preferences: { analyticsEnabled: true },
+        preferences: { analyticsEnabled: true, isMinor: false },
         identityKey: 'account-a:did:key:a',
         consentResolved: true,
         isLoading: false,
@@ -104,17 +106,32 @@ describe('active identity privacy authorization', () => {
     it('requires saved opt-in and never carries it into an unresolved next account', () => {
         const { result, rerender } = renderHook(() => usePrivacyConsent());
         expect(result.current.analyticsEnabled).toBe(true);
-        state.preferences = { analyticsEnabled: false };
+        state.preferences = { analyticsEnabled: false, isMinor: false };
         rerender();
         expect(result.current.analyticsEnabled).toBe(false);
         state.identityKey = null;
-        state.preferences = { analyticsEnabled: true };
+        state.preferences = { analyticsEnabled: true, isMinor: false };
         rerender();
         expect(result.current.analyticsEnabled).toBe(false);
         expect(result.current.identityKey).toBeNull();
         state.identityKey = 'account-b:did:key:b';
         state.profile = { profileId: 'child', type: 'child' };
         rerender();
+        expect(result.current.analyticsEnabled).toBe(false);
+    });
+
+    it('does not persist a transient analytics-off projection as first-login defaults', () => {
+        state.preferences = { analyticsEnabled: false };
+        const { result } = renderHook(() => usePrivacyGate());
+        expect(result.current.isResolved).toBe(false);
+        expect(result.current.analyticsEnabled).toBe(false);
+        expect(state.updatePreferences).not.toHaveBeenCalled();
+    });
+
+    it('honors server-owned minor status before the cached profile refreshes', () => {
+        state.preferences = { analyticsEnabled: true, isMinor: true };
+        const { result } = renderHook(() => usePrivacyConsent());
+        expect(result.current.isMinor).toBe(true);
         expect(result.current.analyticsEnabled).toBe(false);
     });
 });

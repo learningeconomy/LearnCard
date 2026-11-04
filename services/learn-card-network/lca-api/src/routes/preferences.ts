@@ -49,7 +49,6 @@ export const preferencesRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            await getCurrentProfile(ctx);
             const success = await createPreferences(ctx.user.did, input.theme);
 
             if (!success) {
@@ -76,14 +75,20 @@ export const preferencesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const profile = await getCurrentProfile(ctx);
-            const restricted = isAnalyticsRestricted(profile);
+            const restricted = profile !== null && isAnalyticsRestricted(profile);
             // Age-derived metadata is server-owned, not a caller assertion.
-            const safeInput = {
-                ...input,
-                isMinor: restricted,
-                analyticsAutoDisabled: restricted,
-            };
-            if (restricted) safeInput.analyticsEnabled = false;
+            const safeInput: typeof input = { ...input };
+            if (profile !== null) {
+                safeInput.isMinor = restricted;
+                safeInput.analyticsAutoDisabled = restricted;
+                if (restricted) safeInput.analyticsEnabled = false;
+            } else {
+                // Unknown authority cannot grant opt-in or persist fabricated age
+                // metadata; an explicit opt-out remains safe to save.
+                delete safeInput.isMinor;
+                delete safeInput.analyticsAutoDisabled;
+                if (safeInput.analyticsEnabled === true) delete safeInput.analyticsEnabled;
+            }
             const success = await updatePreferences(ctx.user.did, safeInput);
 
             if (!success) {
@@ -110,11 +115,12 @@ export const preferencesRouter = t.router({
         .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
             const profile = await getCurrentProfile(ctx);
-            const restricted = isAnalyticsRestricted(profile);
+            const restricted = profile !== null && isAnalyticsRestricted(profile);
             const preferences = await getPreferencesForDid(ctx.user.did);
 
             if (
                 preferences &&
+                profile !== null &&
                 ((restricted && preferences.analyticsEnabled === true) ||
                     preferences.isMinor !== restricted ||
                     (restricted && preferences.analyticsAutoDisabled !== true))
@@ -130,10 +136,16 @@ export const preferencesRouter = t.router({
                 theme: preferences?.theme,
                 aiEnabled: preferences?.aiEnabled,
                 aiAutoDisabled: preferences?.aiAutoDisabled,
-                analyticsEnabled: restricted ? false : preferences?.analyticsEnabled,
-                analyticsAutoDisabled: restricted ? true : preferences?.analyticsAutoDisabled,
+                analyticsEnabled:
+                    profile === null || restricted ? false : preferences?.analyticsEnabled,
+                analyticsAutoDisabled:
+                    profile === null
+                        ? preferences?.analyticsAutoDisabled
+                        : restricted
+                          ? true
+                          : preferences?.analyticsAutoDisabled,
                 bugReportsEnabled: preferences?.bugReportsEnabled,
-                isMinor: restricted,
+                ...(profile === null ? {} : { isMinor: restricted }),
             };
         }),
 });

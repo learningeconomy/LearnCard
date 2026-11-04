@@ -27,6 +27,7 @@ export function usePrivacyConsent() {
               ? calculateAgeFromISODate(dob)
               : Number.NaN;
     const isMinor =
+        preferences?.isMinor === true ||
         profileType === 'child' ||
         currentLCNUser?.type === 'child' ||
         (age !== null &&
@@ -38,7 +39,14 @@ export function usePrivacyConsent() {
             ? `${query.identityKey}:${currentLCNUser.profileId}`
             : null;
     const isResolved = Boolean(
-        identityKey && !isLoading && query.consentResolved && !query.isError && preferences
+        identityKey &&
+        !isLoading &&
+        query.consentResolved &&
+        !query.isError &&
+        preferences &&
+        // Missing server-owned age metadata means authority was unavailable.
+        // Do not initialize defaults from its transient analytics-off projection.
+        typeof preferences.isMinor === 'boolean'
     );
 
     return {
