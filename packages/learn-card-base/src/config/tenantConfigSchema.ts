@@ -295,6 +295,9 @@ export const tenantFeatureConfigSchema = z
         /** Allow the tenant to opt users into ClassLink transcript sharing. */
         classlinkTranscriptOptIn: z.boolean().default(false),
 
+        /** Show the School Connect app, where users connect a school account (ClassLink today). */
+        schoolConnect: z.boolean().default(false),
+
         /**
          * Pathways v2 — greenfield experimental feature at `/pathways`.
          * Default off. See `apps/learn-card-app/src/pages/pathways/docs/architecture.md`.
@@ -375,6 +378,8 @@ export const tenantLinksConfigSchema = z
         privacyPolicyUrl: urlOrPlaceholder().optional(),
         contactUrl: urlOrPlaceholder().optional(),
         websiteUrl: urlOrPlaceholder().optional(),
+        /** Where users can ask for help, e.g. to request that their school be added. */
+        supportEmail: z.string().email().optional(),
     })
     .passthrough();
 

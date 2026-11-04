@@ -94,7 +94,7 @@ export const transcriptsRouter = t.router({
                         code: 'PRECONDITION_FAILED',
                         message:
                             reason === 'reauth_required'
-                                ? 'Sign in with ClassLink again to request your transcript.'
+                                ? 'Reconnect your school account to request your transcript.'
                                 : 'Your transcript is not available to request right now.',
                     });
                 }

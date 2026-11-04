@@ -12,6 +12,15 @@ import {
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 
+export type SchoolConnection = {
+    available: boolean;
+    canConnect: boolean;
+    connected: boolean;
+    isStudent: boolean;
+    schoolName?: string;
+    lastConnectedAt?: string;
+};
+
 export type BoostSkills = {
     category: string;
     skill: string;
@@ -359,6 +368,13 @@ export type LCAPluginMethods = {
         redirectUri: string;
         nonce: string;
     }) => Promise<{ token: string }>;
+    classlinkGetConnection: () => Promise<SchoolConnection>;
+    classlinkConnect: (args: {
+        code: string;
+        codeVerifier: string;
+        redirectUri: string;
+        nonce: string;
+    }) => Promise<{ isStudent: boolean; schoolName?: string }>;
     transcriptsGetStatus: () => Promise<{
         eligible: boolean;
         reason?: 'no_state_id' | 'reauth_required' | 'not_enabled';

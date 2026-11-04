@@ -108,6 +108,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         launchPadQuickActions: true,
         classlinkSso: false,
         classlinkTranscriptOptIn: false,
+        schoolConnect: false,
         pathways: false,
         dashboardHome: false,
         useSeededSkillFrameworks: false,
@@ -143,6 +144,7 @@ export const DEFAULT_LEARNCARD_TENANT_CONFIG: TenantConfig = {
         privacyPolicyUrl: 'https://www.learncard.com/learncard-privacy-policy',
         contactUrl: 'https://www.learningeconomy.io/contact',
         websiteUrl: 'https://www.learncard.com/',
+        supportEmail: 'support@learningeconomy.io',
     },
 
     native: {

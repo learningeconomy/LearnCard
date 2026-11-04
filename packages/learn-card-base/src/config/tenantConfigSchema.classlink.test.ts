@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ZodError } from 'zod';
-import { tenantFeatureConfigSchema } from './tenantConfigSchema';
+import { tenantFeatureConfigSchema, tenantLinksConfigSchema } from './tenantConfigSchema';
+import { DEFAULT_LEARNCARD_TENANT_CONFIG } from './tenantDefaults';
 
 describe('ClassLink tenant feature flags', () => {
     it('defaults both flags to false', () => {
@@ -8,6 +9,7 @@ describe('ClassLink tenant feature flags', () => {
 
         expect(features.classlinkSso).toBe(false);
         expect(features.classlinkTranscriptOptIn).toBe(false);
+        expect(features.schoolConnect).toBe(false);
     });
 
     it('rejects non-boolean values', () => {
@@ -25,5 +27,23 @@ describe('ClassLink tenant feature flags', () => {
 
         expect(features.classlinkSso).toBe(true);
         expect(features.classlinkTranscriptOptIn).toBe(true);
+    });
+});
+
+describe('School Connect tenant settings', () => {
+    it('accepts a support email and rejects anything else', () => {
+        expect(tenantLinksConfigSchema.parse({ supportEmail: 'help@example.org' })).toMatchObject({
+            supportEmail: 'help@example.org',
+        });
+        expect(() => tenantLinksConfigSchema.parse({ supportEmail: 'not-an-email' })).toThrow(
+            ZodError
+        );
+    });
+
+    it('defaults School Connect off with a support email to request schools', () => {
+        expect(DEFAULT_LEARNCARD_TENANT_CONFIG.features.schoolConnect).toBe(false);
+        expect(DEFAULT_LEARNCARD_TENANT_CONFIG.links.supportEmail).toBe(
+            'support@learningeconomy.io'
+        );
     });
 });

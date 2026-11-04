@@ -26,13 +26,15 @@ import { z } from 'zod';
 import { environment } from '@environment';
 import { didAndChallengeRoute, openRoute, t } from '@routes';
 import app from '../firebase';
-import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
+import { getClassLinkDiscovery, getClassLinkEmail } from '@helpers/classlink.helpers';
 import {
-    exchangeClassLinkCode,
-    getClassLinkDiscovery,
-    getClassLinkEmail,
-    verifyClassLinkIdToken,
-} from '@helpers/classlink.helpers';
+    classLinkExchangeInput,
+    classLinkNonce,
+    classLinkRedirectUri,
+    isClassLinkStudent,
+    requireClassLinkConfig,
+    verifyClassLinkExchange,
+} from '@helpers/classlinkExchange.helpers';
 import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
 import { sealStateStudentId } from '@helpers/classlinkPii.helpers';
@@ -49,25 +51,8 @@ import {
 } from '../models/ClassLinkIdentity';
 import { deleteTranscriptRequestsByFirebaseUid } from '../models/TranscriptRequest';
 import { findUserKeyByDid } from '../models/UserKey';
-import type { ClassLinkConfig } from '../types/classlink';
 import { personalEmailProcedures } from './classlinkPersonalEmail';
-
-const requireConfig = (redirectUri: string): ClassLinkConfig => {
-    const config = getClassLinkConfig();
-    if (!config)
-        throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'School sign-in is not configured.',
-        });
-    // Exact matching also supports explicitly registered native custom schemes.
-    if (!config.redirectUris.includes(redirectUri)) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'This sign-in return address is not allowed.',
-        });
-    }
-    return config;
-};
+import { connectProcedures } from './classlinkConnect';
 
 const conflict = (tenantId: string): never => {
     console.warn('classlink.link.conflict', { tenantId });
@@ -78,43 +63,23 @@ const conflict = (tenantId: string): never => {
     });
 };
 
-const redirectUri = z.string().min(1).max(2048);
-const nonce = z.string().min(1).max(512);
-
-/**
- * Log which api_fields names a district sends (never values) so admins can set the
- * district's stateStudentIdField. Field names are configured by district admins.
- */
-const logApiFieldNames = (tenantId: string, apiFields: unknown): void => {
-    let fields = apiFields;
-    if (typeof fields === 'string') {
-        try {
-            fields = JSON.parse(fields);
-        } catch {
-            fields = undefined;
-        }
-    }
-    const names =
-        fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.keys(fields) : [];
-    console.info('classlink.api_fields', { tenantId, fieldNames: names.slice(0, 50) });
-};
-
 export const classlinkRouter = t.router({
     ...personalEmailProcedures,
+    ...connectProcedures,
     getAuthorizeUrl: openRoute
         .input(
             z
                 .object({
-                    redirectUri,
+                    redirectUri: classLinkRedirectUri,
                     codeChallenge: z.string().regex(/^[A-Za-z0-9_-]{43}$/),
                     state: z.string().min(1).max(512),
-                    nonce,
+                    nonce: classLinkNonce,
                 })
                 .strict()
         )
         .output(z.object({ url: z.string() }))
         .mutation(async ({ input }) => {
-            const config = requireConfig(input.redirectUri);
+            const config = requireClassLinkConfig(input.redirectUri);
             const discovery = await getClassLinkDiscovery();
             const url = new URL(discovery.authorization_endpoint);
             url.search = new URLSearchParams({
@@ -130,16 +95,7 @@ export const classlinkRouter = t.router({
             return { url: url.toString() };
         }),
     exchangeCode: openRoute
-        .input(
-            z
-                .object({
-                    code: z.string().min(1).max(4096),
-                    codeVerifier: z.string().regex(/^[A-Za-z0-9._~-]{43,128}$/),
-                    redirectUri,
-                    nonce,
-                })
-                .strict()
-        )
+        .input(classLinkExchangeInput)
         .output(z.object({ token: z.string() }))
         .mutation(async ({ input, ctx }) => {
             const rateKey = `classlink:rate:exchange:${ctx.clientIp ?? 'unknown'}`;
@@ -150,15 +106,8 @@ export const classlinkRouter = t.router({
                 });
             }
             try {
-                const config = requireConfig(input.redirectUri);
-                const tokens = await exchangeClassLinkCode(input);
-                const claims = await verifyClassLinkIdToken(tokens.id_token, {
-                    nonce: input.nonce,
-                });
-                const tenantId = claims.classLink_tenant_id;
-                const tenant = getClassLinkTenant(config, tenantId);
-                const identityKey = `classlink:${tenantId}:${claims.classLink_sourcedId}`;
-                logApiFieldNames(tenantId, claims.api_fields);
+                const { config, claims, tenantId, tenant, identityKey } =
+                    await verifyClassLinkExchange(input);
                 // Lookup before the verification guard so an unsafe existing-email join is CONFLICT.
                 const email = (claims.email?.trim() || claims.or_email?.trim())?.toLowerCase();
                 if (!email || !z.string().email().safeParse(email).success)
@@ -219,6 +168,7 @@ export const classlinkRouter = t.router({
                 // ClassLink session and does not move on later sign-ins, so it cannot prove
                 // freshness; iat is checked to be within five minutes of now.
                 const lastAuthTime = new Date(claims.iat * 1000);
+                const isStudent = existing?.isMinorHint === true || isClassLinkStudent(claims);
                 await upsertClassLinkIdentity({
                     identityKey,
                     tenantId,
@@ -238,13 +188,15 @@ export const classlinkRouter = t.router({
                     subject,
                     lastAuthTime,
                     // Preferences require a DID; apply this hint when the account first binds one.
-                    isMinorHint:
-                        existing?.isMinorHint === true ||
-                        claims.classLink_role?.toLowerCase() === 'student',
+                    isMinorHint: isStudent,
                 });
                 return {
                     token: auth
-                        ? await auth.createCustomToken(uid, { classlink: true })
+                        ? await auth.createCustomToken(uid, {
+                              classlink: true,
+                              // Lets onboarding show student privacy settings before the account exists.
+                              ...(isStudent ? { classlinkStudent: true } : {}),
+                          })
                         : `classlink-e2e-${uid}`,
                 };
             } catch (error) {

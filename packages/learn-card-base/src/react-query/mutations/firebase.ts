@@ -271,6 +271,22 @@ export const useClassLinkAuthorizeUrl = () => {
     });
 };
 
+export const useClassLinkConnect = () => {
+    const { initWallet } = useWallet();
+
+    return useMutation<
+        { isStudent: boolean; schoolName?: string },
+        Error,
+        { code: string; codeVerifier: string; redirectUri: string; nonce: string }
+    >({
+        mutationFn: async args => {
+            // Errors propagate unwrapped so callers keep the tRPC `data.code`.
+            const wallet = await initWallet();
+            return wallet.invoke.classlinkConnect(args);
+        },
+    });
+};
+
 export const useClassLinkExchangeCode = () => {
     const { initWallet } = useWallet();
 

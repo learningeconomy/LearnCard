@@ -306,6 +306,15 @@ sequenceDiagram
 - lca-api signs a 5-minute EdDSA JWT with the service `did:web` `#owner` key (`src/helpers/issuerAssertion.helpers.ts`; claims: iss, aud, sub = student DID, state, state_student_id, ClassLink tenant/sourcedId/auth_time, consent_at, jti, iat, exp) and POSTs it to `TRANSCRIPT_ISSUER_ENDPOINT`. The issuer verifies it against `/.well-known/did.json`.
 - Delivery is asynchronous: the issuer later sends the credential through the existing send API. Responses map to `requested`, `none_yet` or `failed`; there is no automatic retry, webhook or polling.
 
+### School Connect (connect a school account to an existing account)
+
+- `classlink.getConnection` and `classlink.connect` are DID-auth routes in `src/routes/classlinkConnect.ts`. `connect` runs the same server-side code exchange and id_token checks as sign-in (`src/helpers/classlinkExchange.helpers.ts`), then attaches the ClassLink identity to the caller's account instead of signing in. It never creates a Firebase user or custom token, so the session does not change.
+- The caller's account is the one bound to the authenticated DID (UserKey → its Firebase uid). Accounts without a Firebase sign-in get `PRECONDITION_FAILED` for now.
+- Refuses with `CONFLICT` when the ClassLink identity already belongs to another account, or when the account is already connected to a different ClassLink identity. Accounts are never merged.
+- A new ClassLink AuthSubject adopts the account's `email:<contact>` subject when one exists, so a later Keycloak cutover sees one person.
+- Calling `connect` again refreshes the connection: new sign-in time and state student ID (encrypted, 24-hour window). The app uses it for the transcript "Reconnect" step for every ClassLink account, so refreshing never re-runs sign-in.
+- Students (`isMinorHint`) get `enforceMinorPreferences` immediately. The app warns before connecting when the account is not already locked.
+
 ### Personal email
 
 `classlink.startPersonalEmail` / `verifyPersonalEmail` / `getPersonalEmail` record a verified personal (non-school-domain) email with a single-use 6-digit code (5-minute TTL, attempt and send limits). On success the `email:<addr>` AuthSubject is linked to the ClassLink subject so a later Keycloak email login lands in the same account. It is not a Firebase sign-in method before the Keycloak cutover, and it does not change the Firebase email or `UserKey.contactMethod`.

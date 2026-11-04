@@ -178,7 +178,10 @@ describe('ClassLink sign-in broker', () => {
             emailVerified: true,
             displayName: claims.name,
         });
-        expect(firebase.createCustomToken).toHaveBeenLastCalledWith(uid, { classlink: true });
+        expect(firebase.createCustomToken).toHaveBeenLastCalledWith(uid, {
+            classlink: true,
+            classlinkStudent: true,
+        });
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             subject: first?.subject,
             firebaseUid: uid,
