@@ -183,9 +183,13 @@ test.describe('campaign composer @mocked', () => {
                 campaignId: saved!.id,
                 audienceCount: members.size,
                 alreadyNotifiedCount: notified,
-                recipientCount: notified ? 0 : 1,
+                recipientCount: saved!.channels.includes('email') ? 1 : notified ? 0 : 1,
+                notificationRecipientCount: notified ? 0 : 1,
+                emailRecipientCount: saved!.channels.includes('email') ? 1 : 0,
                 previewToken: dispatchToken,
-                ...(notified ? { blockedReason: 'no_recipients' } : {}),
+                ...(notified && !saved!.channels.includes('email')
+                    ? { blockedReason: 'no_recipients' }
+                    : {}),
             };
         });
         mock.on('campaigns.dispatch', value => {
@@ -447,10 +451,10 @@ test.describe('campaign composer @mocked', () => {
         ).toBeInViewport({ ratio: 1 });
         await page.screenshot({ path: 'test-results/campaign-dispatch-mobile.png' });
         await page.getByRole('button', { name: 'Confirm notification send', exact: true }).click();
-        await expect(page.getByText(/Notification delivery started/)).toBeVisible();
+        await expect(page.getByText(/Delivery started/)).toBeVisible();
         expect(dispatches).toBe(1);
         await page.getByRole('button', { name: 'Send Notifications', exact: true }).click();
-        await expect(page.getByText(/No eligible members remain to notify/)).toBeVisible();
+        await expect(page.getByText(/No eligible recipients remain/)).toBeVisible();
         await expect(
             page.getByRole('button', { name: 'Confirm notification send', exact: true })
         ).toBeDisabled();
@@ -504,8 +508,22 @@ test.describe('campaign composer @mocked', () => {
         expect(testSends).toBe(2);
         expect(dispatches).toBe(1);
         await expect(
-            page.getByRole('button', { name: 'Send Notifications', exact: true })
+            page.getByRole('button', { name: 'Send campaign', exact: true })
         ).toBeDisabled();
+        await page.getByRole('button', { name: 'Go Live', exact: true }).click();
+        await page.getByRole('button', { name: 'Confirm live' }).click();
+        await page.getByRole('button', { name: 'Send campaign', exact: true }).click();
+        await expect(page.getByRole('dialog', { name: 'Send campaign?' })).toBeVisible();
+        await expect(page.getByText('0 inbox notifications · 1 emails')).toBeVisible();
+        await page.screenshot({ path: 'test-results/campaign-email-dispatch-desktop.png' });
+        await page.setViewportSize({ width: 390, height: 844 });
+        await expect(page.getByRole('button', { name: 'Confirm campaign send' })).toBeInViewport({
+            ratio: 1,
+        });
+        await page.screenshot({ path: 'test-results/campaign-email-dispatch-mobile.png' });
+        await page.getByRole('button', { name: 'Confirm campaign send' }).click();
+        await expect(page.getByText(/Delivery started/)).toBeVisible();
+        expect(dispatches).toBe(2);
         await page.setViewportSize({ width: 390, height: 844 });
         await page
             .getByRole('heading', { name: 'Email content', exact: true })
@@ -596,7 +614,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Archive', exact: true }).click();
         await page.getByRole('button', { name: 'Confirm archived' }).click();
         await expect(page.getByText('Campaign is archived.')).toBeVisible();
-        expect(dispatches).toBe(1);
+        expect(dispatches).toBe(2);
         expect(events).toBe(0);
         await page.getByRole('link', { name: 'Back to campaigns' }).click();
         await expect(page.getByRole('link', { name: 'Composer local QA' })).toBeVisible();
