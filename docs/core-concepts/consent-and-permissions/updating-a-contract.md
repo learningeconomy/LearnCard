@@ -26,6 +26,8 @@ The optional proposal window lasts 14 days. After it expires, reopening uses sav
 
 Quiet optional updates advance the accepted version immediately, but do not acknowledge the user's review. `lastReviewedVersion` tracks the last explicit consent or sharing-settings save. Review accumulates every change since that version, so adding Alpha, then Beta, then editing a subtitle still shows both unreviewed options. Adding, changing, or removing an existing item's reason requires notification and approval, whether the item is required or optional. Redirect-only edits remain quiet.
 
+Reviews of existing items use the general “changed its request” summary and **Updated** badges, including reason-only edits. They do not count existing items as new access. Required items still have a **Required** indicator; previews consisting only of newly added items retain their new-access summary.
+
 ## Preview, then save
 
 Save this example as `update-contract.mjs` alongside the files from the [ConsentFlow tutorial](../../tutorials/create-a-consentflow.md). Use the owner's `SECURE_SEED` and existing `CONTRACT_URI` in `.env`.

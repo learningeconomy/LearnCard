@@ -404,8 +404,8 @@ export const buildContractUpdatePreview = ({
     const text = (key: string, fallback: string, values?: Record<string, unknown>) =>
         translate?.(`consentUpdate.${key}`, values) ?? fallback;
     const label = (scope: ConsentFlowContractScope) => scopeCopy(scope, translate).label;
-    const consentChanges = [...diff.added, ...diff.changed];
-    const consentChangeCount = consentChanges.length;
+    const addedScopeCount = diff.added.length;
+    const onlyAddedScopes = diff.changed.length === 0 && !diff.details?.length;
     let headline: string;
     let subhead: string;
     let primaryLabel: string;
@@ -413,8 +413,8 @@ export const buildContractUpdatePreview = ({
         headline = text('headline.paused', `${name}'s access is paused`, { name });
         subhead = text('subhead.reconnect', 'Approve the update to reconnect.');
         primaryLabel = text('action.reconnect', 'Reconnect');
-    } else if (kind === 'requires_consent' && consentChangeCount === 1 && !diff.details?.length) {
-        const scope = consentChanges[0]!;
+    } else if (kind === 'requires_consent' && addedScopeCount === 1 && onlyAddedScopes) {
+        const scope = diff.added[0]!;
         const values = { name, label: label(scope) };
         headline =
             scope.area === 'read'
@@ -426,10 +426,10 @@ export const buildContractUpdatePreview = ({
                   );
         subhead = '';
         primaryLabel = text('action.allow', 'Allow');
-    } else if (kind === 'requires_consent' && consentChangeCount > 1 && !diff.details?.length) {
+    } else if (kind === 'requires_consent' && addedScopeCount > 1 && onlyAddedScopes) {
         headline = text('headline.multiple', `${name} is asking for more access`, { name });
-        subhead = text('subhead.newItems', `${consentChangeCount} new items`, {
-            count: consentChangeCount,
+        subhead = text('subhead.newItems', `${addedScopeCount} new items`, {
+            count: addedScopeCount,
         });
         primaryLabel = text('action.allowAccess', 'Allow access');
     } else if (kind === 'requires_consent') {

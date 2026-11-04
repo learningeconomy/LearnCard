@@ -8,7 +8,6 @@ import {
 } from '../src';
 import type {
     ConsentFlowContract,
-    ConsentFlowContractChangeKind,
     ConsentFlowContractDiff,
     ConsentFlowContractScope,
 } from '@learncard/types';
@@ -260,112 +259,91 @@ describe('diffContractChange', () => {
     });
 });
 
-describe('buildContractUpdatePreview headline grammar', () => {
-    const read: ConsentFlowContractScope = {
-        area: 'read',
-        type: 'credential',
-        key: 'Transcripts',
-        required: true,
-    };
-    const write: ConsentFlowContractScope = {
-        area: 'write',
-        type: 'credential',
-        key: 'Certificates',
-        required: true,
-    };
-    const diff = (added: ConsentFlowContractScope[] = []): ConsentFlowContractDiff => ({
-        added,
-        removed: [],
-        changed: [],
+describe('existing-scope update previews', () => {
+    const summarize = ({
+        headline,
+        subhead,
+        primaryLabel,
+    }: ReturnType<typeof buildContractUpdatePreview>) => ({
+        headline,
+        subhead,
+        primaryLabel,
     });
-    const previewCases: Array<
-        [string, ConsentFlowContractChangeKind, ConsentFlowContractDiff, string, string, string]
-    > = [
-        [
-            'single read',
-            'requires_consent',
-            diff([read]),
-            'Acme is asking to see your Transcripts',
-            '',
-            'Allow',
-        ],
-        [
-            'single write',
-            'requires_consent',
-            diff([write]),
-            'Acme is asking to add Certificates to your account',
-            '',
-            'Allow',
-        ],
-        [
-            'multiple required',
-            'requires_consent',
-            diff([read, write]),
-            'Acme is asking for more access',
-            '2 new items',
-            'Allow access',
-        ],
-        [
-            'non-data update',
-            'requires_consent',
-            diff(),
-            'Acme changed its request',
-            "Review what's different.",
-            'Allow',
-        ],
-        [
-            'optional',
-            'expanded_optional',
-            diff([{ ...read, required: false }]),
-            'Acme has a new option',
-            'Turn it on if you want. Nothing changes unless you do.',
-            'Continue',
-        ],
-        [
-            'relaxed',
-            'relaxed',
-            { added: [], removed: [read], changed: [] },
-            'Acme now sees less',
-            'Stopped asking for Transcripts.',
-            'Done',
-        ],
-        [
-            'name update with one removed scope uses non-data grammar',
-            'requires_consent',
-            { added: [], removed: [read], changed: [] },
-            'Acme changed its request',
-            "Review what's different.",
-            'Allow',
-        ],
-        [
-            'suspended',
-            'requires_consent',
-            diff([read]),
-            "Acme's access is paused",
-            'Approve the update to reconnect.',
-            'Reconnect',
-        ],
-        [
-            'relaxed without removal',
-            'relaxed',
-            diff(),
-            'Acme changed its request',
-            'Its request has changed.',
-            'Done',
-        ],
-    ];
-    it.each(previewCases)('%s', (label, kind, changes, headline, subhead, primaryLabel) => {
-        const preview = buildContractUpdatePreview({
-            name: 'Acme',
-            kind,
-            diff: changes,
-            status: label === 'suspended' ? 'suspended' : undefined,
+    const preview = (diff: ConsentFlowContractDiff) =>
+        buildContractUpdatePreview({ name: 'Acme', kind: 'requires_consent', diff });
+    const generalReview = () =>
+        preview({
+            added: [],
+            removed: [],
+            changed: [],
+            details: [
+                {
+                    field: 'reasonForAccessing',
+                    before: 'Verify enrollment',
+                    after: 'Track progress',
+                },
+            ],
         });
-        expect(preview).toMatchObject({ headline, subhead, primaryLabel });
-        expect(preview.rows).toHaveLength(
-            changes.added.length + changes.removed.length + changes.changed.length
+
+    it.each([1, 2])(
+        'treats %i existing reason changes as a general review, not new access',
+        count => {
+            const previous = structuredClone(empty);
+            const current = structuredClone(empty);
+            for (let index = 0; index < count; index++) {
+                const key = `Existing${index}`;
+                previous.read.credentials.categories[key] = {
+                    required: index === 0,
+                    reason: 'Verify enrollment',
+                };
+                current.read.credentials.categories[key] = {
+                    required: index === 0,
+                    reason: 'Personalize learning',
+                };
+            }
+            const before = snapshot({ contract: previous });
+            const after = snapshot({ contract: current });
+            expect(classifyContractChange(before, after)).toBe('requires_consent');
+            const result = preview(diffContractChange(before, after));
+            expect(summarize(result)).toEqual(summarize(generalReview()));
+            expect(result.rows.map(row => row.change)).toEqual(Array(count).fill('changed'));
+        }
+    );
+
+    it('uses a general review for mixed new scopes and existing reason changes', () => {
+        const previous = withRead('Transcript', true);
+        previous.read.credentials.categories.Transcript.reason = 'Verify enrollment';
+        const current = structuredClone(previous);
+        current.read.credentials.categories.Transcript.reason = 'Personalize learning';
+        current.write.credentials.categories.Achievement = { required: true };
+        const result = preview(
+            diffContractChange(snapshot({ contract: previous }), snapshot({ contract: current }))
         );
+        expect(summarize(result)).toEqual(summarize(generalReview()));
+        expect(result.rows.map(row => row.change)).toEqual(['added', 'changed']);
     });
+
+    it('does not describe an existing item becoming required as a newly added item', () => {
+        const result = preview(
+            diffContractChange(
+                snapshot({ contract: withRead('Transcript', false) }),
+                snapshot({ contract: withRead('Transcript', true) })
+            )
+        );
+        expect(summarize(result)).toEqual(summarize(generalReview()));
+        expect(result.rows[0]?.change).toBe('changed');
+    });
+
+    it.each(['read', 'write'] as const)(
+        'retains new-access review for a genuinely added %s scope',
+        area => {
+            const contract = structuredClone(empty);
+            contract[area].credentials.categories.Transcript = { required: true };
+            const result = preview(diffContractChange(snapshot(), snapshot({ contract })));
+            expect(result.headline).not.toBe(generalReview().headline);
+            expect(result.rows[0]?.change).toBe('added');
+        }
+    );
 });
 
 describe('canonical contract preview scope copy', () => {

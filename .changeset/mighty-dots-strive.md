@@ -64,3 +64,5 @@ Use opaque timestamp-and-ID cursors for holder consent lists, between-profile da
 Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
 
 Explain approval notifications above Publish Update without changing checked-by-default Opt-out selections. Synchronize the CLI method catalog with the versioned contract SDK, removing obsolete AutoBoost commands and exposing update, history, status, and acceptance methods.
+
+Use neutral changed-request summaries and Updated badges for existing-scope edits, including reason-only reviews. Reserve new-access headlines and new-item counts for pure scope additions without material request-detail edits, and retain existing optional choices during approval.

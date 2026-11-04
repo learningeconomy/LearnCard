@@ -347,9 +347,7 @@ export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProp
                                                             ? 'consentUpdate.ui.new'
                                                             : row.change === 'removed'
                                                               ? 'consentUpdate.ui.removed'
-                                                              : row.scope.required
-                                                                ? 'consentUpdate.ui.nowRequired'
-                                                                : 'consentUpdate.ui.updated'
+                                                              : 'consentUpdate.ui.updated'
                                                     )}
                                                 </span>
                                             </div>
