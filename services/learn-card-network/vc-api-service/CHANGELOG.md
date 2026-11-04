@@ -1,5 +1,22 @@
 # @learncard/vc-api-service
 
+## 1.0.14
+
+### Patch Changes
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/types@5.24.2
+    - @learncard/core@9.4.43
+    - @learncard/didkey-plugin@1.1.43
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/encryption-plugin@1.1.43
+    - @learncard/learn-card-plugin@1.2.43
+    - @learncard/vc-plugin@1.6.9
+    - @learncard/vc-templates-plugin@1.1.43
+    - @learncard/crypto-plugin@1.1.43
+    - @learncard/dynamic-loader-plugin@1.1.43
+    - @learncard/expiration-plugin@1.2.43
+
 ## 1.0.13
 
 ### Patch Changes
