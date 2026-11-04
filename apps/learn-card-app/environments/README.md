@@ -112,6 +112,25 @@ Example `config.local.json` — only the diffs:
 
 If no `--stage` is specified, **production** is assumed (no overlay applied).
 
+## Web deployments
+
+Tenant web apps deploy from CI (`.github/workflows/deploy.yml`, `deploy-frontend`),
+one Netlify site per GitHub Environment. The Environment's `TENANT` and `STAGE`
+variables pick the baked config and pin the edge overlay; `NETLIFY_SITE_ID` picks
+the site. Staging legs deploy on `main` pushes that affect `learn-card-app`;
+production legs deploy on release commits.
+
+| Tenant    | Staging Environment (host)                        | Production Environment (host)                 |
+| --------- | ------------------------------------------------- | --------------------------------------------- |
+| learncard | `learn-card-app-staging` (`staging.learncard.ai`) | `learn-card-app-production` (`learncard.app`) |
+| vetpass   | `vetpass-app-staging` (`staging.vetpass.app`)     | `vetpass-app-production` (`vetpass.app`)      |
+
+To add a tenant: create both Environments (copy the variables from an existing
+pair, set `TENANT`, `STAGE=staging` on staging only, `NETLIFY_SITE_ID`, and the
+`NETLIFY_AUTH_TOKEN` secret), then add its legs next to `VETPASS_FE_*` in
+`deploy.yml`. Disable Netlify's own git builds on the site so CI is the only
+publisher.
+
 ## Switching tenants
 
 ### Opt-in local Keycloak
