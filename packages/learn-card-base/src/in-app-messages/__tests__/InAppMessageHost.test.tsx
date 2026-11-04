@@ -600,6 +600,28 @@ describe('campaign presentation in the shared host', () => {
         state.flagDeliveryReady = true;
     });
     afterEach(cleanup);
+    it('reports one server impression across diagnostics and campaign source refreshes', async () => {
+        let campaigns = source();
+        const record = vi.fn();
+        campaigns.record = record;
+        state.gate = true;
+        const view = render(<InAppMessageHost campaignSource={campaigns} />);
+        await waitFor(() => expect(screen.getByText('Server campaign')).toBeTruthy());
+
+        for (let refresh = 0; refresh < 3; refresh++) {
+            campaigns = {
+                ...campaigns,
+                campaigns: structuredClone(campaigns.campaigns),
+                record: (...args) => record(...args),
+            };
+            view.rerender(<InAppMessageHost campaignSource={campaigns} />);
+        }
+
+        expect(record.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(1);
+        fireEvent.click(screen.getByText('Server campaign'));
+        expect(record.mock.calls.map(([event]) => event.type)).toEqual(['shown', 'dismissed']);
+    });
+
     it('keeps deep-link targeting/frequency bypass behind the gate and reports campaign identity once', async () => {
         const campaigns = source();
         campaigns.campaigns[0].campaign.message.targeting = { platform: ['ios'] };
