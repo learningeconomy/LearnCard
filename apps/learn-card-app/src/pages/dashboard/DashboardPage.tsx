@@ -8,20 +8,17 @@ import {
     CredentialCategoryEnum,
     useAllContractRequestsForProfile,
     useCurrentUser,
-    useGetCredentialList,
+    useCredentialCollection,
     useGetConnections,
     useGetConnectionsRequests,
     useGetCurrentLCNUser,
-    useGetSelfAssignedSkillsBoost,
     useGetUnreadUserNotifications,
     useVerifiableData,
-    isVerifiableDataRecord,
     useExistingAiInsightCredential,
     useAiFeatureGate,
     useGetCredentialsForSkills,
     useDeviceTypeByWidth,
 } from 'learn-card-base';
-import { SELF_ASSIGNED_SKILLS_BOOST_NAME } from 'learn-card-base/helpers/credentialHelpers';
 import firstStartupStore from 'learn-card-base/stores/firstStartupStore';
 
 import { useConsentedContracts } from 'learn-card-base/hooks/useConsentedContracts';
@@ -75,7 +72,6 @@ import { useSkillProfileCompletion } from '../ai-pathways/ai-pathways-skill-prof
 import { DEFAULT_REGISTRY } from './quickActions/registry';
 import { resolveSlots } from './quickActions/resolveSlots';
 import type { ActionHandlers, DashboardState, SlotIcons } from './quickActions/types';
-import { isHiddenActivity } from '../wallet/activity-feed/activityFeed.helpers';
 import { useGlobalSkillFrameworks } from '../../helpers/globalSkillFrameworks.helpers';
 
 import { AnalyticsEvents, useAnalytics } from '@analytics';
@@ -129,34 +125,19 @@ const DashboardPage: React.FC = () => {
     const currentUser = useCurrentUser();
     const { currentLCNUser } = useGetCurrentLCNUser();
 
-    const { data: allCredentials, isLoading: allCredentialsLoading } =
-        useGetCredentialList(undefined);
-
-    const { data: skillCredentials } = useGetCredentialList(CredentialCategoryEnum.skill);
-    const skillsCount = useMemo(
-        () => skillCredentials?.pages?.flatMap(p => p?.records ?? []).length ?? 0,
-        [skillCredentials]
-    );
+    const collection = useCredentialCollection(undefined, { mode: 'complete' });
+    const allCredentialRecords = collection.records;
+    const allCredentialsLoading = !collection.isComplete && !collection.isError;
+    const totalCredentialCount = collection.isComplete ? allCredentialRecords.length : null;
+    const skillsCount = collection.isComplete
+        ? allCredentialRecords.filter(record => record.category === CredentialCategoryEnum.skill)
+              .length
+        : null;
 
     const { data: skillProfileData } =
         useVerifiableData<SkillProfileProfileData>(SKILL_PROFILE_PROFILE_KEY);
     const { data: skillProfileGoalsData } =
         useVerifiableData<SkillProfileGoalsData>(SKILL_PROFILE_GOALS_KEY);
-    const { data: selfAssignedSkillsBoost } = useGetSelfAssignedSkillsBoost();
-
-    const selfAssignedSkillsUri = selfAssignedSkillsBoost?.uri;
-    const allCredentialRecords = useMemo(
-        () =>
-            (allCredentials?.pages?.flatMap(p => p?.records ?? []) ?? []).filter(record => {
-                if (isVerifiableDataRecord(record)) return false;
-                if (isHiddenActivity(record.category)) return false;
-                if (selfAssignedSkillsUri && record.uri === selfAssignedSkillsUri) return false;
-                if (record.title?.trim() === SELF_ASSIGNED_SKILLS_BOOST_NAME) return false;
-                return true;
-            }),
-        [allCredentials, selfAssignedSkillsUri]
-    );
-    const totalCredentialCount = allCredentialRecords.length;
 
     const { data: unreadNotificationsData } = useGetUnreadUserNotifications();
     const unreadNotifications = unreadNotificationsData?.notifications ?? [];
@@ -323,7 +304,7 @@ const DashboardPage: React.FC = () => {
         if (pathwaysEnabled) history.push('/pathways/today');
     };
 
-    const hasCredentials = totalCredentialCount > 0;
+    const hasCredentials = allCredentialRecords.length > 0;
     const hasGoal = pathwaysEnabled ? !!activePathway : !!goalSummary;
     const hasSkillProfile = skillProfilePercentage >= 100;
     const hasDiscoveredApps = installedApps.length > 0;
@@ -347,7 +328,8 @@ const DashboardPage: React.FC = () => {
 
     const secondStepDone = pathwaysEnabled ? hasGoal : hasDiscoveredApps;
 
-    const showGetStarted = !getStartedDismissed && (!hasCredentials || !secondStepDone);
+    const showGetStarted =
+        collection.isComplete && !getStartedDismissed && (!hasCredentials || !secondStepDone);
     const heroSlot: 'getStarted' | 'goal' = showGetStarted ? 'getStarted' : 'goal';
 
     const withChecklistTracking = (item: {
@@ -517,6 +499,13 @@ const DashboardPage: React.FC = () => {
 
     const viewModel: DashboardViewModel = {
         brandName: brandingConfig.name,
+        collection: {
+            total: totalCredentialCount,
+            skills: skillsCount,
+            isError: collection.isError,
+            isFetching: collection.isFetching,
+            retry: collection.retry,
+        },
         header: {
             displayName,
             profileImage,

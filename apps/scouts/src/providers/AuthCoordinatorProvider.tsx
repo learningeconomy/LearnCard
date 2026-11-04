@@ -108,6 +108,7 @@ import { createPreAuthEmailPayload } from '../i18n/preAuthEmail';
 import { clearStoragePreservingLocale } from '../i18n/storage';
 import * as m from '../paraglide/messages.js';
 import { RecoverySetupModal } from '../components/recovery/RecoverySetupModal';
+import { peekResolvedTenantConfig } from '../config/bootstrapTenantConfig';
 import { countConfiguredRecoveryMethods } from 'learn-card-base';
 import ReAuthOverlay from '../components/auth/ReAuthOverlay';
 
@@ -261,18 +262,15 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
-    let tenantId: string | undefined;
-    let emailBranding: ReturnType<typeof getResolvedTenantConfig>['email'];
 
-    try {
-        const tenant = getResolvedTenantConfig();
-
-        tenantId = tenant.tenantId;
-        emailBranding = tenant.email;
-    } catch {
-        tenantId = undefined;
-        emailBranding = undefined;
-    }
+    // Resolve the active tenant so the lca-api brands recovery / OTP emails for
+    // ScoutPass (sent as `X-Tenant-Id`). The factory runs after
+    // bootstrapTenantConfig() resolves; if it somehow hasn't, fall back to the
+    // server's default tenant. Deliberately not a catch-all: a bare `catch {}`
+    // here once hid a missing import and silently dropped the tenant.
+    const tenant = peekResolvedTenantConfig();
+    const tenantId = tenant?.tenantId;
+    const emailBranding = tenant?.email;
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,

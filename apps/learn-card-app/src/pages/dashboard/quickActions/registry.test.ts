@@ -58,3 +58,15 @@ describe('understand-active quick action', () => {
         expect(action.onClick).toBe(handlers.goToSkills);
     });
 });
+
+it('offers the neutral collection action, not first-credential onboarding, while totals are unknown', () => {
+    const unknown = { ...state, credentialsCount: null, skillsCount: null };
+    const collect = DEFAULT_REGISTRY.filter(
+        action => action.slot === 'collect' && action.eligible(unknown)
+    );
+    expect(collect.map(action => action.id)).toEqual(['collect-add']);
+    const empty = { ...state, credentialsCount: 0 };
+    expect(DEFAULT_REGISTRY.find(action => action.id === 'connect-new')?.eligible(empty)).toBe(
+        true
+    );
+});

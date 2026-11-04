@@ -79,6 +79,31 @@ assert.match(
 named(steps, 'Install Chromium and Linux libraries');
 named(steps, 'Prepare clean checkout');
 named(steps, 'Check local prerequisites');
+const storageStep = named(steps, 'Prepare catalog runner disk space');
+const recheckStep = named(steps, 'Recheck catalog runner disk space');
+const measurement = steps.find(step => step.name === 'Measure disk after dependencies');
+assert.ok(measurement, 'missing after-dependencies measurement');
+assert.equal(measurement.if, undefined, 'measurement must run unconditionally');
+assert.equal(measurement['continue-on-error'], true, 'diagnostic measurement is advisory');
+assert.match(storageStep.run, /verification-runner-storage\.sh before-setup 20971520/);
+assert.match(recheckStep.run, /verification-runner-storage\.sh before-preflight 10485760/);
+const position = name => steps.findIndex(step => step.name === name);
+assert.ok(position('Prepare catalog runner disk space') < position('Setup Bun and dependencies'));
+assert.ok(position('Setup Bun and dependencies') < position('Measure disk after dependencies'));
+assert.ok(
+    position('Install Chromium and Linux libraries') < position('Recheck catalog runner disk space')
+);
+assert.ok(position('Prepare clean checkout') < position('Recheck catalog runner disk space'));
+assert.ok(position('Recheck catalog runner disk space') < position('Check local prerequisites'));
+assert.match(
+    named(source, 'Check sanitized timing summaries').run,
+    /test-verification-runner-storage\.test\.sh/
+);
+assert.ok(
+    (workflow.on ?? workflow.true).pull_request.paths.includes(
+        'scripts/verification-runner-storage.sh'
+    )
+);
 assert.ok(!source.some(step => /playwright install|lc verify up/.test(step.run ?? '')));
 assert.ok(!steps.some(step => /nx run-many -t build|tsc -p/.test(step.run ?? '')));
 assert.ok(!bundle.some(step => /lc verify/.test(step.run ?? '')));

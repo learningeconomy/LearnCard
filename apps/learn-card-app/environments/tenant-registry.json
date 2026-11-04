@@ -9,10 +9,6 @@
             "tenantId": "learncard",
             "domain": "learncard.app"
         },
-        "alpha.vetpass.app": {
-            "tenantId": "vetpass",
-            "domain": "alpha.vetpass.app"
-        },
         "staging.vetpass.app": {
             "tenantId": "vetpass",
             "domain": "staging.vetpass.app"
