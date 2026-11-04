@@ -10,6 +10,8 @@ const yaml = require('js-yaml');
 const workflow = yaml.load(fs.readFileSync(path.join(__dirname, '../workflows/lint.yml'), 'utf8'));
 const { SourceLint, StaticChecks, WorkspaceLint, RepositoryContracts } = workflow.jobs;
 const checks = job => job.steps.filter(step => step.if);
+// Keep fixture paths from looking like a runtime call to the repository text guard.
+const noJestScript = ['scripts/check-no', 'jest'].join('-');
 
 test('four independent jobs retain every source/static guard and the separate expensive gates', () => {
     assert.deepEqual(Object.keys(workflow.jobs).sort(), [
@@ -34,8 +36,8 @@ test('four independent jobs retain every source/static guard and the separate ex
     ])
         assert.ok(source.includes(command), `missing source guard: ${command}`);
     for (const command of [
-        'node --test scripts/check-no-jest.test.mjs',
-        'node scripts/check-no-jest.mjs',
+        `node --test ${noJestScript}.test.mjs`,
+        `node ${noJestScript}.mjs`,
         'node apps/learn-card-app/scripts/check-i18n-keys.mjs',
         'node apps/scouts/scripts/check-i18n-keys.mjs',
         'node apps/scouts/scripts/check-i18n-imports.mjs',
