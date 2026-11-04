@@ -10,11 +10,14 @@ import { tenantConfigSchema } from 'learn-card-base/config/tenantConfigSchema';
 
 /**
  * VetPass shares LearnCard's single-tenant escrow enclave (authority tenant "learncard")
- * and one account per Firebase user, so the two apps must not drift apart per deploy stage:
+ * and one account per Firebase user, so once VetPass escrow is on at a deploy stage the two
+ * apps must not drift apart there:
  *  - same key derivation and escrow mode (a client without escrow can rotate shares and
  *    strand the shared account's escrow copy);
- *  - when escrow is on, the same enclave pins (copied by hand; update both on every image
- *    roll) and VetPass's `escrowAuthorityTenant` set to "learncard".
+ *  - the same enclave pins (copied by hand; update both on every image roll) and VetPass's
+ *    `escrowAuthorityTenant` set to "learncard".
+ * VetPass staging and production deploy from main, so VetPass escrow stays off at every
+ * stage until the SSS switch turns it on together with LearnCard production (D20).
  * Local stages are excluded: LearnCard local runs a software enclave, VetPass local is off.
  */
 const ENVIRONMENTS = resolve(__dirname, '../../environments');
@@ -40,6 +43,17 @@ const STAGES: Array<[string | undefined, string | undefined]> = [
     ['alpha', undefined],
 ];
 
+/**
+ * VetPass stages whose escrow is deliberately still off. The SSS switch PR turns VetPass
+ * escrow on with LearnCard production and empties this list; parity then applies everywhere.
+ */
+const VETPASS_ESCROW_PENDING_SWITCH = new Set<string | undefined>([
+    undefined,
+    'staging',
+    'sss-pilot',
+    'alpha',
+]);
+
 describe('VetPass / LearnCard escrow parity', () => {
     it.each(STAGES)('vetpass %s matches learncard %s', (vetpassStage, learncardStage) => {
         const vetpass = resolveTenant('vetpass', vetpassStage);
@@ -48,6 +62,13 @@ describe('VetPass / LearnCard escrow parity', () => {
         const lSss = learncard.auth.sss!;
 
         expect(vetpass.tenantId).toBe('vetpass');
+
+        if (VETPASS_ESCROW_PENDING_SWITCH.has(vetpassStage)) {
+            // Turning escrow on here must come with the whole parity block below.
+            expect(vSss.escrowEnclaveMode).toBe('off');
+            return;
+        }
+
         expect(vetpass.auth.keyDerivation).toBe(learncard.auth.keyDerivation);
         expect(vSss.escrowEnclaveMode).toBe(lSss.escrowEnclaveMode);
 
@@ -61,11 +82,11 @@ describe('VetPass / LearnCard escrow parity', () => {
     });
 
     // Option A: the enclave's emails say "LearnCard", so VetPass must show the in-app note.
-    // Resolves the real configs through the same helper the provider uses.
+    // Resolves the real configs through the same helper the provider uses, with the
+    // authority tenant the switch will set.
     it.each(STAGES)('vetpass %s names LearnCard as the escrow email sender', vetpassStage => {
         const vetpass = resolveTenant('vetpass', vetpassStage);
-        if (vetpass.auth.sss?.escrowEnclaveMode === 'off') return;
-        expect(getEscrowEmailSender(vetpass, vetpass.auth.sss!)).toEqual({
+        expect(getEscrowEmailSender(vetpass, { escrowAuthorityTenant: 'learncard' })).toEqual({
             sender: 'LearnCard',
             brand: 'VetPass',
         });
@@ -74,10 +95,5 @@ describe('VetPass / LearnCard escrow parity', () => {
     it.each(STAGES)('learncard %s shows no escrow email sender note', (_v, learncardStage) => {
         const learncard = resolveTenant('learncard', learncardStage);
         expect(getEscrowEmailSender(learncard, learncard.auth.sss ?? {})).toBeUndefined();
-    });
-
-    // The SSS switch PR turns production escrow on for both apps and removes this check.
-    it('leaves production VetPass escrow off until the SSS switch turns it on', () => {
-        expect(resolveTenant('vetpass').auth.sss?.escrowEnclaveMode).toBe('off');
     });
 });

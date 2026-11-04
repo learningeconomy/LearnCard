@@ -45,7 +45,7 @@ inventory; do not copy staging identifiers into production inputs.
 Launch approval must explicitly cover ScoutPass/VetPass mail coming from this
 LearnCard address, including rendered brand names. Domain selection is not approval
 of cross-brand copy; retain product/security sign-off and sample messages before
-enabling either tenant. VetPass uses this enclave with authority tenant `learncard`
+enabling either tenant. Once the SSS switch turns its escrow on, VetPass uses this enclave with authority tenant `learncard`
 (`auth.sss.escrowAuthorityTenant`; see [SECURITY.md](SECURITY.md) D20), so the code,
 recovery-started and release-warning emails it sends to VetPass users are branded
 **LearnCard**, not VetPass. The VetPass app tells users so on the recovery screens.
