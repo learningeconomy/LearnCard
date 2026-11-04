@@ -489,6 +489,9 @@ test.describe('campaign composer @mocked', () => {
             heroImageUrl: 'https://example.org/hero.png',
         });
         await page.reload();
+        await expect(page.getByRole('heading', { name: 'Edit campaign', exact: true })).toBeVisible(
+            { timeout: 30_000 }
+        );
         await expect(page.getByLabel('Email subject', { exact: true })).toHaveValue(
             'Synthetic email test'
         );
