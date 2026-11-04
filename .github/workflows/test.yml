@@ -29,7 +29,7 @@ jobs:
                   ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || github.event.inputs.branch }}
             - uses: actions/setup-node@v6
               with:
-                  node-version: '24.12.0'
+                  node-version-file: .nvmrc
             - name: Test recovery validation, manifest diagnostics, and registry retries
               run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs
 
