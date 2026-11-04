@@ -1079,18 +1079,33 @@ jobs:
                   VITE_WEB3AUTH_RPC_TARGET: ${{ secrets.VITE_WEB3AUTH_RPC_TARGET }}
                   GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
 
-            - name: Verify baked tenant
+            # Guards against the build re-baking the wrong tenant OR the wrong stage (the
+            # original bug was learncard/production baked on staging). The expected stage is
+            # the overlay's declared `stage` (named overlays like keycloak-staging declare
+            # staging), or production when STAGE is empty.
+            - name: Verify baked tenant and stage
               if: steps.vars.outputs.project_name == 'learn-card-app'
               working-directory: apps/learn-card-app
               env:
                   TENANT: ${{ vars.TENANT || 'learncard' }}
+                  STAGE: ${{ vars.STAGE || '' }}
               run: |
-                  BAKED=$(bun -e "console.log(require('./build/tenant-config.json').tenantId)")
-                  if [[ "$BAKED" != "$TENANT" ]]; then
-                    echo "::error::build/tenant-config.json is tenant '$BAKED', expected '$TENANT' — refusing to deploy."
-                    exit 1
-                  fi
-                  echo "Baked tenant: $BAKED"
+                  bun -e '
+                    import { readFileSync } from "fs";
+                    const { TENANT, STAGE } = process.env;
+                    const read = path => JSON.parse(readFileSync(path, "utf-8"));
+                    const baked = read("build/tenant-config.json");
+                    const expectedStage = STAGE
+                      ? read(`environments/${TENANT}/config.${STAGE}.json`).stage
+                      : "production";
+                    const actual = `${baked.tenantId}/${baked.stage}`;
+                    const expected = `${TENANT}/${expectedStage}`;
+                    if (actual !== expected) {
+                      console.log(`::error::build/tenant-config.json is ${actual}, expected ${expected}; refusing to deploy.`);
+                      process.exit(1);
+                    }
+                    console.log(`Baked tenant/stage: ${actual} (${baked.domain})`);
+                  '
 
             - name: Validate Netlify target
               run: |
@@ -1211,6 +1226,21 @@ jobs:
                     -b "$BUNDLE_VERSION" \
                     --self-assign \
                     ${{ steps.vars.outputs.capgo_id }}
+
+            # Tenant legs are continue-on-error, so their failure doesn't fail the run and the
+            # global failure notification never fires. Alert the same channel directly.
+            - name: Notify tenant deploy failure
+              if: failure() && matrix.tenant_leg == true && github.ref == 'refs/heads/main'
+              uses: rtCamp/action-slack-notify@v2
+              env:
+                  SLACK_USERNAME: GitHub Actions CI
+                  SLACK_TITLE: 'Tenant frontend deploy failed: ${{ matrix.name }}'
+                  SLACK_MESSAGE: |
+                      *${{ matrix.name }}* failed in Deploy run #${{ github.run_number }} (`${{ github.sha }}`). LearnCard deploys were not blocked.
+                      Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+                  SLACK_COLOR: 'danger'
+                  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
+                  MSG_MINIMAL: 'true'
 
     # ============================================================================
     # JIRA RELEASE TAGGING (production only, non-blocking)

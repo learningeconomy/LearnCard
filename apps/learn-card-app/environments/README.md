@@ -132,8 +132,8 @@ secret, so Environments inherit it.
 
 Tenant legs other than LearnCard set `"tenant_leg": true`, so a failed tenant deploy
 doesn't fail the job result that gates LearnCard native publishing. A failed tenant
-leg therefore doesn't fail the run or trigger the failure notification, so check the
-leg itself.
+leg doesn't fail the run; it posts its own alert to the deploy-errors Slack channel
+instead.
 
 To add a tenant:
 
