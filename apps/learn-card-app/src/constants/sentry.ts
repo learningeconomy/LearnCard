@@ -151,6 +151,8 @@ export const useSentryIdentify = (options: UseSentryIdentifyOptions = {}) => {
     const activeReplayIdentity = useRef<string | null>(null);
     const stoppingReplay = useRef<Promise<void>>(Promise.resolve());
     const [sampleReplaySession] = useState(() => Math.random() < 0.1);
+    // Revoke during render so an already-queued transport/recording callback
+    // cannot observe the old permission while layout-effect cleanup is pending.
     if (!optionalTelemetryAllowed || activeReplayIdentity.current !== identityKey) {
         setSentryOptionalTelemetryEnabled(false);
     }

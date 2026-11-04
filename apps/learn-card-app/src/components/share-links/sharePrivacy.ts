@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { configureLoggerContext } from 'learn-card-base/logging/logger';
-import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
+import { FirebaseProvider } from '../../analytics/providers/firebase';
 import userflow from 'userflow.js';
 import * as Sentry from '@sentry/react';
 
@@ -39,7 +39,7 @@ export const enterSharePrivacy = (): void => {
         userflow.setPageTrackingDisabled(true);
         userflow.reset();
     }
-    void FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => {});
+    void FirebaseProvider.disableCollectionIfStarted().catch(() => {});
     void Sentry.getReplay()?.stop();
 };
 

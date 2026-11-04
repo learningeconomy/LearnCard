@@ -33,9 +33,11 @@ applyNativeViewportRestrictions(Capacitor.isNativePlatform());
 installInsetSimulator();
 
 (async () => {
-    // Native Firebase Analytics can collect app lifecycle events independently
-    // of our React event provider, so begin disabled before Firebase auth setup.
-    await FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => undefined);
+    // Native analytics can collect independently of React. On web this call
+    // would itself initialize analytics through getAnalytics().
+    if (Capacitor.isNativePlatform()) {
+        await FirebaseAnalytics.setEnabled({ enabled: false }).catch(() => undefined);
+    }
     // Route external links through Capacitor's in-app browser when running natively.
     registerExternalUrlOpener();
 

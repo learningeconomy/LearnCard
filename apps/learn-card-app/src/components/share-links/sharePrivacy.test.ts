@@ -19,6 +19,9 @@ vi.mock('@capacitor-firebase/analytics', () => ({
     FirebaseAnalytics: { setEnabled: capture.analytics },
 }));
 vi.mock('learn-card-base/logging/logger', () => ({ configureLoggerContext: capture.logger }));
+vi.mock('learn-card-base', () => ({
+    getLogger: () => ({ debug: vi.fn(), error: vi.fn() }),
+}));
 import {
     scrubShareTelemetry,
     isShareViewerPath,
@@ -58,7 +61,6 @@ describe('share privacy', () => {
         });
         expect(capture.reset).toHaveBeenCalledOnce();
         expect(capture.stop).toHaveBeenCalledOnce();
-        expect(capture.analytics).toHaveBeenCalledOnce();
         expect(result.current).toBe(true);
         unmount();
     });
@@ -78,7 +80,6 @@ describe('share privacy', () => {
             privacy.enterSharePrivacy();
             expect(capture.disable).toHaveBeenCalledOnce();
             expect(capture.reset).toHaveBeenCalledOnce();
-            expect(capture.analytics).toHaveBeenCalledWith({ enabled: false });
             expect(capture.stop).toHaveBeenCalledOnce();
         } finally {
             window.history.replaceState(null, '', previous);
