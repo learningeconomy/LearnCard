@@ -144,6 +144,7 @@ jobs:
                   retention-days: 7
 
     sample:
+        name: Nx pilot / ${{ matrix.sample }} / ${{ matrix.mode }} / ${{ matrix.repeat }}
         needs: [plan, producer]
         if: always() && needs.plan.result == 'success' && (needs.producer.result == 'success' || needs.producer.result == 'skipped')
         runs-on: ubuntu-latest
