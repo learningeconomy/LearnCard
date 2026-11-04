@@ -19,6 +19,7 @@ on:
             - 'scripts/verify-web-sqlite-build.mjs'
             - 'scripts/verify-web-sqlite-build.test.mjs'
             - 'scripts/summarize-verification*.mjs'
+            - 'scripts/report-verification-preflight*.mjs'
             - 'scripts/profile-verification-traces.py'
             - 'scripts/test_profile_verification_traces.py'
             - 'tests/smoketests/**'
@@ -122,7 +123,7 @@ jobs:
 
             - name: Check sanitized timing summaries
               run: |
-                  node --test scripts/summarize-verification.test.mjs scripts/verification-shards.test.mjs
+                  node --test scripts/summarize-verification.test.mjs scripts/verification-shards.test.mjs scripts/report-verification-preflight.test.mjs
                   node scripts/verification-shards.mjs check
                   python3 -B -m unittest discover -s scripts -p test_profile_verification_traces.py
 
@@ -247,7 +248,15 @@ jobs:
                   bun run --cwd apps/learn-card-app lc verify prepare --dir "$STACK_DIR" > "$PRIVATE_LOG_DIR/prepare.log" 2>&1
 
             - name: Check local prerequisites
-              run: bun run --cwd apps/learn-card-app lc verify doctor --preflight > "$PRIVATE_LOG_DIR/preflight.log" 2>&1
+              run: |
+                  set +e
+                  bun run --cwd apps/learn-card-app lc verify doctor --preflight --json > "$PRIVATE_LOG_DIR/preflight.log" 2>&1
+                  preflight_status=$?
+                  set -e
+                  if [[ "$preflight_status" -ne 0 ]]; then
+                    node scripts/report-verification-preflight.mjs "$PRIVATE_LOG_DIR/preflight.log"
+                    exit "$preflight_status"
+                  fi
 
             - name: Validate shard assignment
               run: |
