@@ -500,8 +500,6 @@ const DashboardPage: React.FC = () => {
     const viewModel: DashboardViewModel = {
         brandName: brandingConfig.name,
         collection: {
-            total: totalCredentialCount,
-            skills: skillsCount,
             isError: collection.isError,
             isFetching: collection.isFetching,
             retry: collection.retry,
