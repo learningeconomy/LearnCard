@@ -4,118 +4,170 @@ import { describe, expect, it, vi } from 'vitest';
 import { PinSignInReviewSheet } from './PinSignInReviewSheet';
 
 vi.mock('learn-card-base', () => ({
-    Overlay: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Overlay: ({
+        children,
+        'aria-describedby': describedBy,
+    }: {
+        children: React.ReactNode;
+        'aria-describedby'?: string;
+    }) => (
+        <div role="dialog" aria-describedby={describedBy}>
+            {children}
+        </div>
+    ),
 }));
 
-const fine = () => screen.getByRole('button', { name: "No, everything's fine" });
-const secure = () => screen.getByRole('button', { name: 'Yes, secure my account' });
+const done = () => screen.getByRole('button', { name: 'Done' });
+const secureLink = () => screen.getByRole('button', { name: 'Lost a device? Secure your account' });
+const choose = () => screen.getByRole('button', { name: 'Choose a new PIN' });
+const notNow = () => screen.getByRole('button', { name: 'Not now' });
 const isPrimary = (el: HTMLElement) => el.className.includes('bg-grayscale-900');
 
 describe('PinSignInReviewSheet', () => {
-    it('asks once, defaulting to "everything is fine"', () => {
-        render(<PinSignInReviewSheet onFine={vi.fn()} onSecure={vi.fn()} />);
+    describe('normal (no wrong entries other than own typos)', () => {
+        it('confirms the sign-in with a green check and "Done"', () => {
+            render(<PinSignInReviewSheet onFine={vi.fn()} onSecure={vi.fn()} />);
 
-        expect(screen.getByRole('heading', { name: "You're in!" })).toBeInTheDocument();
-        expect(
-            screen.getByText('Did you lose a device, or think someone else knows your PIN?')
-        ).toBeInTheDocument();
-        expect(document.activeElement).toBe(fine());
-        expect(isPrimary(fine())).toBe(true);
-        expect(isPrimary(secure())).toBe(false);
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
+            expect(screen.getByRole('heading', { name: "You're signed in" })).toBeInTheDocument();
+            expect(screen.getByText('Your other devices stay signed in too.')).toBeInTheDocument();
+            expect(screen.getByTestId('pin-review-success-icon')).toBeInTheDocument();
+            expect(screen.queryByTestId('pin-review-warning-icon')).not.toBeInTheDocument();
+            expect(document.activeElement).toBe(done());
+            expect(isPrimary(done())).toBe(true);
+            expect(isPrimary(secureLink())).toBe(false);
+            // The old question, yes/no answers and footnote are gone.
+            expect(screen.queryByText(/Did you lose a device/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/everything's fine/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/do this later in Account Recovery/)).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: 'Not now' })).not.toBeInTheDocument();
+        });
 
-    it('treats an unknown or zero count as no warning', () => {
-        render(<PinSignInReviewSheet priorWrongAttempts={0} onFine={vi.fn()} onSecure={vi.fn()} />);
+        it('treats a zero count without a required new PIN as normal', () => {
+            render(
+                <PinSignInReviewSheet priorWrongAttempts={0} onFine={vi.fn()} onSecure={vi.fn()} />
+            );
 
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-        expect(isPrimary(secure())).toBe(false);
-    });
+            expect(screen.getByRole('heading', { name: "You're signed in" })).toBeInTheDocument();
+        });
 
-    it('warns about earlier wrong entries and promotes securing, without preselecting it', () => {
-        render(<PinSignInReviewSheet priorWrongAttempts={3} onFine={vi.fn()} onSecure={vi.fn()} />);
+        it('describes the dialog with its body', () => {
+            render(<PinSignInReviewSheet onFine={vi.fn()} onSecure={vi.fn()} />);
 
-        expect(screen.getByRole('alert').textContent).toBe(
-            "Your PIN was entered incorrectly 3 times before this sign-in. If that wasn't you, secure your account."
-        );
-        expect(isPrimary(secure())).toBe(true);
-        expect(isPrimary(fine())).toBe(false);
-        // The default answer is still "No, everything's fine".
-        expect(document.activeElement).toBe(fine());
-    });
+            expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
+                'Your other devices stay signed in too.'
+            );
+        });
 
-    it('uses the singular for a single earlier wrong entry', () => {
-        render(<PinSignInReviewSheet priorWrongAttempts={1} onFine={vi.fn()} onSecure={vi.fn()} />);
-
-        expect(screen.getByRole('alert').textContent).toMatch(/incorrectly once before/);
-    });
-
-    it('reports the answer', () => {
-        const onFine = vi.fn();
-        const onSecure = vi.fn();
-        render(<PinSignInReviewSheet onFine={onFine} onSecure={onSecure} />);
-
-        fireEvent.click(secure());
-        expect(onSecure).toHaveBeenCalledOnce();
-        fireEvent.click(fine());
-        expect(onFine).toHaveBeenCalledOnce();
-    });
-
-    describe('when a new PIN is required', () => {
-        const choose = () => screen.getByRole('button', { name: 'No, choose a new PIN' });
-        const notNow = () => screen.getByRole('button', { name: 'Not now' });
-
-        it('asks for a new PIN instead of "everything is fine"', () => {
+        it('reports "Done" and the secure link', () => {
             const onFine = vi.fn();
-            const onChooseNewPin = vi.fn();
+            const onSecure = vi.fn();
+            render(<PinSignInReviewSheet onFine={onFine} onSecure={onSecure} />);
+
+            fireEvent.click(secureLink());
+            expect(onSecure).toHaveBeenCalledOnce();
+            fireEvent.click(done());
+            expect(onFine).toHaveBeenCalledOnce();
+        });
+    });
+
+    describe('warning (wrong entries before this sign-in)', () => {
+        const renderWarning = (priorWrongAttempts?: number) => {
+            const handlers = { onFine: vi.fn(), onChooseNewPin: vi.fn(), onSecure: vi.fn() };
+            render(
+                <PinSignInReviewSheet
+                    priorWrongAttempts={priorWrongAttempts}
+                    newPinRequired
+                    {...handlers}
+                />
+            );
+            return handlers;
+        };
+
+        it('warns with an amber icon and leads with "Choose a new PIN"', () => {
+            const handlers = renderWarning(3);
+
+            expect(
+                screen.getByRole('heading', { name: 'Someone may have tried your PIN' })
+            ).toBeInTheDocument();
+            expect(
+                screen.getByText(
+                    'It was entered incorrectly 3 times before you signed in. Choose a new PIN to stay protected.'
+                )
+            ).toBeInTheDocument();
+            expect(screen.getByTestId('pin-review-warning-icon')).toBeInTheDocument();
+            expect(screen.queryByTestId('pin-review-success-icon')).not.toBeInTheDocument();
+            expect(isPrimary(choose())).toBe(true);
+            expect(isPrimary(secureLink())).toBe(false);
+            expect(isPrimary(notNow())).toBe(false);
+            // The revoke is never the default.
+            expect(document.activeElement).toBe(choose());
+            expect(screen.queryByRole('button', { name: 'Done' })).not.toBeInTheDocument();
+            expect(screen.queryByText(/do this later in Account Recovery/)).not.toBeInTheDocument();
+
+            fireEvent.click(choose());
+            expect(handlers.onChooseNewPin).toHaveBeenCalledOnce();
+            fireEvent.click(secureLink());
+            expect(handlers.onSecure).toHaveBeenCalledOnce();
+            fireEvent.click(notNow());
+            expect(handlers.onFine).toHaveBeenCalledOnce();
+        });
+
+        it('describes the dialog with the reason and the count', () => {
+            renderWarning(3);
+
+            // Screen readers hear why, not just the title and the focused button.
+            expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
+                'It was entered incorrectly 3 times before you signed in. Choose a new PIN to stay protected.'
+            );
+        });
+
+        it('uses a separate message for two (dual form in some languages)', () => {
+            renderWarning(2);
+
+            expect(
+                screen.getByText(
+                    'It was entered incorrectly 2 times before you signed in. Choose a new PIN to stay protected.'
+                )
+            ).toBeInTheDocument();
+        });
+
+        it('uses the singular for one earlier wrong entry', () => {
+            renderWarning(1);
+
+            expect(
+                screen.getByText(
+                    'It was entered incorrectly 1 time before you signed in. Choose a new PIN to stay protected.'
+                )
+            ).toBeInTheDocument();
+        });
+
+        it('falls back to count-free copy when the count is unknown or zero', () => {
+            renderWarning(undefined);
+            expect(
+                screen.getByText(/Your PIN may have been entered incorrectly before you signed in/)
+            ).toBeInTheDocument();
+            expect(screen.queryByText(/\d+ times?/)).not.toBeInTheDocument();
+        });
+
+        it('warns for a foreign entry during the flow (count 0, new PIN required)', () => {
+            renderWarning(0);
+            expect(
+                screen.getByRole('heading', { name: 'Someone may have tried your PIN' })
+            ).toBeInTheDocument();
+            expect(screen.queryByText(/0 times/)).not.toBeInTheDocument();
+        });
+
+        it('offers "Done" when no new-PIN handler is wired', () => {
             render(
                 <PinSignInReviewSheet
                     priorWrongAttempts={2}
                     newPinRequired
-                    onFine={onFine}
-                    onChooseNewPin={onChooseNewPin}
-                    onSecure={vi.fn()}
-                />
-            );
-
-            expect(
-                screen.queryByRole('button', { name: "No, everything's fine" })
-            ).not.toBeInTheDocument();
-            expect(
-                screen.getByText(/Choose a new PIN to keep your account protected/)
-            ).toBeInTheDocument();
-            // The prior-attempt warning and the secure option stay.
-            expect(screen.getByRole('alert').textContent).toMatch(/incorrectly 2 times/);
-            expect(isPrimary(secure())).toBe(true);
-            expect(document.activeElement).toBe(choose());
-
-            fireEvent.click(choose());
-            expect(onChooseNewPin).toHaveBeenCalledOnce();
-            expect(onFine).not.toHaveBeenCalled();
-
-            fireEvent.click(notNow());
-            expect(onFine).toHaveBeenCalledOnce();
-        });
-
-        it('leads with the new PIN when the count is unknown', () => {
-            render(
-                <PinSignInReviewSheet
-                    newPinRequired
                     onFine={vi.fn()}
-                    onChooseNewPin={vi.fn()}
                     onSecure={vi.fn()}
                 />
             );
 
-            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-            expect(isPrimary(choose())).toBe(true);
-            expect(isPrimary(secure())).toBe(false);
-        });
-
-        it('falls back to the plain review without a new-PIN handler', () => {
-            render(<PinSignInReviewSheet newPinRequired onFine={vi.fn()} onSecure={vi.fn()} />);
-
-            expect(fine()).toBeInTheDocument();
+            expect(done()).toBeInTheDocument();
             expect(screen.queryByRole('button', { name: 'Not now' })).not.toBeInTheDocument();
         });
     });

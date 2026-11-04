@@ -92,6 +92,10 @@ const isEscrowRecoveryMethod = (input: unknown): boolean =>
     'method' in input &&
     (input.method === 'escrow' || input.method === 'escrow-pin');
 
+/** A wrong-PIN response from the PIN release (matched by name across bundles). */
+const isPinMismatchError = (error: unknown): boolean =>
+    error instanceof Error && error.name === 'EscrowPinMismatchError';
+
 /** Narrows to a PIN-release input so `expectedDid` can be filled in from state. */
 const isEscrowPinInput = (
     input: unknown
@@ -200,11 +204,29 @@ export class AuthCoordinator {
     private endingSession = false;
     private destroyed = false;
     /**
-     * Wrong PIN entries as first reported for this account in this session, before any
-     * attempt here, keyed by account so later refreshes (which include this session's
-     * misses) never overwrite it. Cleared once consumed into `ready.pinSignIn`.
+     * The current PIN sign-in flow (own-typos rule, E). `wrongAttempts`: wrong PIN
+     * entries as first reported for this account in this session, before any attempt
+     * here, keyed by account so later refreshes (which include this session's misses)
+     * never overwrite it. `ownWrongAttempts`: wrong entries this client itself submitted
+     * since (mismatch responses). `pinSalt`: the PIN generation the counts belong to
+     * (a new PIN or a same-PIN re-set writes a new salt). Both counts start and end
+     * together, so a new flow (new session, app start, after any sign-in, or a new PIN
+     * generation) never mixes counts from another one. Cleared on reaching `ready` by
+     * any method (consumed into `ready.pinSignIn` by a PIN sign-in) and on logout.
      */
-    private pinAttemptBaseline?: { account: string; wrongAttempts?: number };
+    private pinAttemptBaseline?: {
+        account: string;
+        wrongAttempts?: number;
+        ownWrongAttempts: number;
+        pinSalt?: string;
+    };
+    /**
+     * Wrong entries a PIN sign-in excused as the user's own typing when its same-PIN
+     * re-set did not run, so `escrowPinChangeRequired` does not ask for a new PIN for
+     * them this session. In memory only: after a restart they count again (the device
+     * cannot prove whose they were). Any further entry, or a new PIN, drops it.
+     */
+    private excusedPinTypos?: { did: string; wrongAttempts: number };
     /**
      * Tag of the PIN used for a PIN sign-in whose PIN has recorded wrong entries, so
      * `setEscrowPin` / `secureAccount` can reject re-using it. Also persisted per DID
@@ -268,6 +290,9 @@ export class AuthCoordinator {
         const newState = this.withEscrowPinChangeFlag(nextState);
         if (newState.status === 'idle') this.recoveredEscrowAccount = undefined;
         this.capturePinAttemptBaseline(newState);
+        // Reaching `ready` (by any method) ends a PIN sign-in flow: its counts must never
+        // carry into a later flow, where own typos could excuse someone else's guesses.
+        if (newState.status === 'ready') this.pinAttemptBaseline = undefined;
         if (newState.status !== 'ready') this.escrowStatusGeneration++;
         const enteringReady =
             newState.status === 'ready' &&
@@ -608,21 +633,65 @@ export class AuthCoordinator {
                 : state.status === 'identity_recovery' && state.escrowPin
                   ? state.expectedDid
                   : undefined;
-        if (!account || this.pinAttemptBaseline?.account === account) return;
+        if (!account) return;
         const pin =
             state.status === 'needs_recovery' || state.status === 'identity_recovery'
                 ? state.escrowPin
                 : undefined;
+        const current = this.pinAttemptBaseline;
+        if (current?.account === account) {
+            // Same flow unless the status shows a different PIN generation (a new PIN, or
+            // a same-PIN re-set by another device): its counts start over from this read.
+            const salt = pin?.salt;
+            if (!salt || !current.pinSalt || salt === current.pinSalt) return;
+        }
         if (!pin) return;
-        this.pinAttemptBaseline = { account, wrongAttempts: pin.wrongAttempts };
+        this.pinAttemptBaseline = {
+            account,
+            wrongAttempts: pin.wrongAttempts,
+            ownWrongAttempts: 0,
+            ...(pin.salt ? { pinSalt: pin.salt } : {}),
+        };
+    }
+
+    /** The own-typos context for a PIN attempt on `account`, or undefined without a flow. */
+    private pinAttemptsFor(
+        account: string | undefined
+    ): { priorWrongAttempts?: number; ownWrongAttempts: number; pinSalt?: string } | undefined {
+        const baseline = this.pinAttemptBaseline;
+        if (!account || baseline?.account !== account) return undefined;
+        return {
+            ...(baseline.wrongAttempts !== undefined
+                ? { priorWrongAttempts: baseline.wrongAttempts }
+                : {}),
+            ownWrongAttempts: baseline.ownWrongAttempts,
+            // The strategy checks every status it reads against this generation.
+            ...(baseline.pinSalt ? { pinSalt: baseline.pinSalt } : {}),
+        };
+    }
+
+    /** Count a wrong PIN this client submitted in the current flow for `account`. */
+    private notePinAttemptError(account: string | undefined, error: unknown): void {
+        const baseline = this.pinAttemptBaseline;
+        if (!account || baseline?.account !== account || !isPinMismatchError(error)) return;
+        baseline.ownWrongAttempts++;
     }
 
     /** Build `ready.pinSignIn` from a strategy result, consuming the attempt baseline. */
     private takePinSignInInfo(did: string, result: RecoveryResult): PinSignInInfo | undefined {
-        if (!result.pinSignIn) return undefined;
         const baseline = this.pinAttemptBaseline;
+        // Any completed sign-in ends the flow, including one by another method.
         this.pinAttemptBaseline = undefined;
+        if (!result.pinSignIn) return undefined;
         const priorWrongAttempts = baseline?.account === did ? baseline.wrongAttempts : undefined;
+        const ownWrongAttempts = baseline?.account === did ? baseline.ownWrongAttempts : 0;
+        // Own typos were excused but the re-set did not run, so they stay on the record.
+        this.excusedPinTypos =
+            result.pinSignIn.newPinRequired === false &&
+            !result.pinSignIn.pinRefreshed &&
+            ownWrongAttempts > 0
+                ? { did, wrongAttempts: ownWrongAttempts }
+                : undefined;
         return {
             mode: result.pinSignIn.mode,
             pinRefreshed: result.pinSignIn.pinRefreshed,
@@ -649,17 +718,34 @@ export class AuthCoordinator {
             pin &&
             (pin.state === 'none' ||
                 (pin.enabled && pin.attemptsRemaining >= ESCROW_PIN_MAX_ATTEMPTS))
-        )
+        ) {
             this.forgetPinGuard(state.did);
+            if (this.excusedPinTypos?.did === state.did) this.excusedPinTypos = undefined;
+        }
+        const excused =
+            this.excusedPinTypos?.did === state.did ? this.excusedPinTypos.wrongAttempts : 0;
+        // Wrong entries on the current PIN beyond this session's excused own typing.
+        const attention = pin?.enabled === true && (pin.wrongAttempts ?? 0) > excused;
         const pinGuessed =
-            pin?.enabled === true &&
-            ((pin.wrongAttempts ?? 0) > 0 || this.readPinGuard(state.did) !== undefined);
+            attention || (pin?.enabled === true && this.readPinGuard(state.did) !== undefined);
         const required =
             this.escrowPinChangeDismissed !== state.did &&
             (state.pinSignIn?.newPinRequired === true || pinGuessed);
-        if (required === (state.escrowPinChangeRequired === true)) return state;
-        const { escrowPinChangeRequired: _previous, ...rest } = state;
-        return required ? { ...rest, escrowPinChangeRequired: true } : rest;
+        if (
+            required === (state.escrowPinChangeRequired === true) &&
+            attention === (state.escrowPinAttention === true)
+        )
+            return state;
+        const {
+            escrowPinChangeRequired: _previousRequired,
+            escrowPinAttention: _previousAttention,
+            ...rest
+        } = state;
+        return {
+            ...rest,
+            ...(required ? { escrowPinChangeRequired: true as const } : {}),
+            ...(attention ? { escrowPinAttention: true as const } : {}),
+        };
     }
 
     private readPinGuard(did: string): string | undefined {
@@ -741,12 +827,13 @@ export class AuthCoordinator {
     /** A new PIN was set (or the account secured): the change prompt is resolved. */
     private resolveEscrowPinChange(did?: string): void {
         this.forgetPinGuard(did);
+        this.excusedPinTypos = undefined;
         this.signInPinDigest = undefined;
         this.escrowPinChangeDismissed = undefined;
     }
 
     /**
-     * Dismiss the post-PIN-sign-in review ("No, everything's fine" / "Later"). Also
+     * Dismiss the post-PIN-sign-in review ("Done" / "Not now"). Also
      * hides the "choose a new PIN" prompt for this session; the PIN keeps its reduced
      * budget and the prompt returns on the next app start while wrong entries remain.
      */
@@ -1983,14 +2070,23 @@ export class AuthCoordinator {
 
             const { token, providerType } = await this.getAuthCredentials();
 
+            const pinAttempts = isEscrowPinInput(input)
+                ? this.pinAttemptsFor(expectedDid ?? authUser.id)
+                : undefined;
             const params = {
                 token,
                 providerType,
                 // PIN release has no persisted hold to carry its own binding, so
                 // fill in the DID independently known from this `needs_recovery`
                 // state (never from a server response) when the caller omits it.
+                // `pinAttempts` (own-typos rule, E) comes from this coordinator's own
+                // flow counts only, never from the caller.
                 input: isEscrowPinInput(input)
-                    ? { ...input, expectedDid: input.expectedDid ?? expectedDid }
+                    ? {
+                          ...input,
+                          expectedDid: input.expectedDid ?? expectedDid,
+                          pinAttempts,
+                      }
                     : input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
@@ -2036,6 +2132,7 @@ export class AuthCoordinator {
 
             return this.state;
         } catch (e) {
+            if (isEscrowPinInput(input)) this.notePinAttemptError(expectedDid ?? authUser.id, e);
             if (isEscrow) throw e;
             const errorMessage = e instanceof Error ? e.message : 'Recovery failed';
 
@@ -2077,6 +2174,7 @@ export class AuthCoordinator {
                     ...input,
                     expectedDid: input.expectedDid ?? identityState.expectedDid,
                     recoverySessionToken: identityState.recoverySessionToken,
+                    pinAttempts: this.pinAttemptsFor(identityState.expectedDid),
                 },
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
@@ -2097,6 +2195,7 @@ export class AuthCoordinator {
             });
             return this.state;
         } catch (error) {
+            this.notePinAttemptError(identityState.expectedDid, error);
             if (generation === this.recoveryGeneration && this.state === identityState) {
                 this.setState({
                     status: 'identity_recovery',
@@ -2439,6 +2538,7 @@ export class AuthCoordinator {
         log.info('Logout started', { logoutAttemptId });
         this.endingSession = true;
         this.pinAttemptBaseline = undefined;
+        this.excusedPinTypos = undefined;
         // An in-flight PIN sign-in is abandoned; a completed one's persisted guard stays.
         this.abandonSignInPin(this.signInPinDigest?.did);
         this.escrowPinChangeDismissed = undefined;

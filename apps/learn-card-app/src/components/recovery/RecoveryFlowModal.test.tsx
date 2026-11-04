@@ -484,23 +484,66 @@ describe('RecoveryFlowModal sign-in picker', () => {
             />
         );
 
-        expect(
-            screen.getByRole('heading', { name: 'Sign in with your recovery PIN' })
-        ).toBeTruthy();
-        expect(screen.getByText(/Your other devices stay signed in/)).toBeTruthy();
+        expect(screen.getByRole('heading', { name: "Confirm it's you" })).toBeTruthy();
+        expect(screen.getByText('Enter your 6-digit PIN to finish signing in.')).toBeTruthy();
         const pinInput = screen.getAllByLabelText(/PIN digit/)[0];
         const passkey = screen.getByRole('button', { name: /passkey/i });
         expect(
             pinInput.compareDocumentPosition(passkey) & Node.DOCUMENT_POSITION_FOLLOWING
         ).toBeTruthy();
-        expect(screen.getByText('Other ways to sign in')).toBeTruthy();
+        expect(screen.getByText('Other ways to confirm')).toBeTruthy();
+        expect(screen.queryByText('Other ways to sign in')).toBeNull();
         // Passkey is secondary now: its hero copy is not used.
         expect(screen.queryByText('Use your passkey')).toBeNull();
         expect(screen.queryByText('Sign you out on your other devices')).toBeNull();
         expect(screen.queryByText(/Turn off your other sign-in methods/)).toBeNull();
-        // The 7-day wait stays behind "Can't use any of these?".
-        expect(screen.getByText("Can't use any of these?")).toBeTruthy();
+        // The 7-day wait stays behind one quiet "Trouble signing in?" link.
+        expect(screen.getByRole('button', { name: 'Trouble signing in?' })).toBeTruthy();
+        expect(screen.queryByText("Can't use any of these?")).toBeNull();
+        expect(screen.queryByRole('button', { name: 'Get back into your account' })).toBeNull();
         expect(screen.queryByRole('button', { name: 'Start a 7-day recovery' })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
+    });
+
+    it('confirms with another device under the PIN, in calm PIN-screen copy', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                onRecoverWithDevice={vi.fn()}
+                escrowRecovery={withPin}
+            />
+        );
+
+        const device = screen.getByRole('button', { name: /Approve from another device/ });
+        expect(device.textContent).toContain("Scan a code with a device you're signed in on");
+        expect(screen.queryByText('Sign In from Another Device')).toBeNull();
+        expect(screen.queryByText('Scan a code from a signed-in device')).toBeNull();
+        // No tinted panel behind the PIN boxes.
+        const pinSection = screen.getByRole('region', { name: 'Recovery PIN' });
+        expect(pinSection.className).not.toMatch(/bg-emerald/);
+
+        // "Show N more" keeps the "Not set up" labels on the items inside.
+        const more = screen.getByRole('button', { name: 'Show 3 more' });
+        expect(screen.queryByText(/not set up/)).toBeNull();
+        fireEvent.click(more);
+        expect(more.textContent).toBe('Show less');
+        expect(screen.getAllByText('Not set up')).toHaveLength(3);
+    });
+
+    it('takes "Trouble signing in?" to the 7-day screen and back', () => {
+        render(
+            <RecoveryFlowModal
+                {...base}
+                availableMethods={methods('phrase', 'escrow')}
+                escrowRecovery={withPin}
+            />
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Trouble signing in?' }));
+        expect(screen.getByRole('heading', { name: 'Get back into your account' })).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: /Back/ }));
+        expect(screen.getByRole('heading', { name: "Confirm it's you" })).toBeTruthy();
     });
 
     it('signs in with the PIN', async () => {
@@ -529,7 +572,7 @@ describe('RecoveryFlowModal sign-in picker', () => {
             />
         );
 
-        fireEvent.click(screen.getByRole('button', { name: 'Get back into your account' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Trouble signing in?' }));
 
         expect(screen.getByRole('heading', { name: 'Get back into your account' })).toBeTruthy();
         expect(screen.getByText('Sign you out on your other devices')).toBeTruthy();
@@ -540,9 +583,7 @@ describe('RecoveryFlowModal sign-in picker', () => {
         expect(screen.queryAllByLabelText(/PIN digit/)).toHaveLength(0);
 
         fireEvent.click(screen.getByRole('button', { name: 'Use my recovery PIN instead' }));
-        expect(
-            screen.getByRole('heading', { name: 'Sign in with your recovery PIN' })
-        ).toBeTruthy();
+        expect(screen.getByRole('heading', { name: "Confirm it's you" })).toBeTruthy();
         expect(screen.getAllByLabelText(/PIN digit/)).toHaveLength(6);
     });
 
@@ -627,9 +668,7 @@ describe('RecoveryFlowModal sign-in picker', () => {
         };
         const { rerender } = render(<RecoveryFlowModal {...props} identityPhase="choose_method" />);
 
-        expect(
-            screen.getByRole('heading', { name: 'Sign in with your recovery PIN' })
-        ).toBeTruthy();
+        expect(screen.getByRole('heading', { name: "Confirm it's you" })).toBeTruthy();
         pastePin();
         await waitFor(() => expect(withPin.onRecover).toHaveBeenCalled());
 
@@ -666,7 +705,7 @@ describe('RecoveryFlowModal sign-in picker', () => {
         // The reviewer's sequence: submit the PIN, then switch to the phrase and submit.
         const phrase = screen.getByRole('button', { name: /phrase/i });
         expect(phrase).toHaveProperty('disabled', true);
-        for (const name of [/passkey/i, /backup/i, /^Can't|Get back into/i]) {
+        for (const name of [/passkey/i, /backup/i, /Trouble signing in/i]) {
             const button = screen.queryByRole('button', { name });
             if (button) expect(button).toHaveProperty('disabled', true);
         }
@@ -736,11 +775,9 @@ describe('RecoveryFlowModal sign-in picker', () => {
             />
         );
 
-        expect(
-            screen.getByRole('heading', { name: 'Sign in with your recovery PIN' })
-        ).toBeTruthy();
-        expect(screen.queryByText('Other ways to sign in')).toBeNull();
-        expect(screen.getByRole('button', { name: 'Get back into your account' })).toBeTruthy();
+        expect(screen.getByRole('heading', { name: "Confirm it's you" })).toBeTruthy();
+        expect(screen.queryByText('Other ways to confirm')).toBeNull();
+        expect(screen.getByRole('button', { name: 'Trouble signing in?' })).toBeTruthy();
     });
 
     it('moves the waiting period behind a clear last-resort screen without a PIN', async () => {

@@ -108,7 +108,12 @@ export type {
 } from './escrow-authority.types';
 export { verifyNitroAttestationDocument, NitroAttestationError } from './escrow-nitro-attestation';
 export type { NitroAttestationReason } from './escrow-nitro-attestation';
-export type { EscrowAttestationPolicy, EscrowHoldStatus, EscrowRecoveryStart } from './types';
+export type {
+    EscrowAttestationPolicy,
+    EscrowHoldStatus,
+    EscrowPinAttemptContext,
+    EscrowRecoveryStart,
+} from './types';
 export type {
     EscrowEnrollmentOptions,
     EscrowEnrollmentState,

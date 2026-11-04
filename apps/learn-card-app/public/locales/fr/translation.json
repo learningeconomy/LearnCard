@@ -1529,14 +1529,15 @@
             "whoAreYou": "Qui êtes-vous ? (Facultatif)",
             "explore": "Explorer {{brand}}",
             "pin": {
-                "title": "Ajouter un code PIN de récupération",
-                "body": "Si vous perdez cet appareil, un code PIN à 6 chiffres vous permettra de vous reconnecter en quelques secondes.",
+                "title": "Créez votre code PIN",
+                "body": "Vous l’utiliserez pour vous connecter sur de nouveaux appareils.",
                 "confirmTitle": "Confirmez votre code PIN",
                 "confirmBody": "Entrez à nouveau les 6 mêmes chiffres.",
                 "saving": "Enregistrement de votre code PIN…",
                 "success": "Vous êtes protégé",
                 "skip": "Ignorer pour le moment",
                 "startOver": "Recommencer",
+                "saveFailedSkip": "Impossible d'enregistrer votre PIN. Réessayez, ou ignorez cette étape pour le moment et configurez-le plus tard.",
                 "hint": "Vous pouvez le modifier ou le supprimer à tout moment dans les Paramètres."
             }
         }
@@ -2372,9 +2373,14 @@
         },
         "notFinished": "Non terminé",
         "pinHero": {
-            "title": "Connectez-vous avec votre PIN de récupération",
-            "description": "Saisissez le PIN à 6 chiffres que vous avez défini. Vos autres appareils restent connectés.",
-            "otherWays": "Autres moyens de vous connecter"
+            "title": "Confirmez qu'il s'agit bien de vous",
+            "description": "Saisissez votre PIN à 6 chiffres pour terminer la connexion.",
+            "otherWays": "Autres moyens de confirmer",
+            "device": "Approuver depuis un autre appareil",
+            "deviceDesc": "Scannez un code avec un appareil sur lequel vous êtes connecté",
+            "showMore": "Afficher {{count}} de plus",
+            "showLess": "Afficher moins",
+            "trouble": "Un problème pour vous connecter ?"
         },
         "pinSignIn": {
             "verifying": "Vérification de votre PIN...",
@@ -2384,15 +2390,15 @@
             "newCodeNeeded": "Pour votre sécurité, chaque essai de PIN nécessite un nouveau code par e-mail. Envoyez un nouveau code pour réessayer."
         },
         "pinSignInReview": {
-            "title": "Connexion réussie !",
-            "question": "Avez-vous perdu un appareil, ou pensez-vous que quelqu'un d'autre connaît votre PIN ?",
-            "fine": "Non, tout va bien",
-            "secure": "Oui, sécuriser mon compte",
-            "wrongAttemptsOne": "Votre PIN a été saisi incorrectement une fois avant cette connexion. Si ce n'était pas vous, sécurisez votre compte.",
-            "wrongAttempts": "Votre PIN a été saisi incorrectement {{count}} fois avant cette connexion. Si ce n'était pas vous, sécurisez votre compte.",
-            "later": "Vous pouvez aussi le faire plus tard dans Récupération du compte.",
-            "newPin": "Choisissez un nouveau PIN pour garder votre compte protégé. En attendant, votre PIN actuel continue de fonctionner avec moins d'essais.",
-            "choosePin": "Non, choisir un nouveau PIN",
+            "title": "Vous êtes connecté",
+            "body": "Vos autres appareils restent connectés eux aussi.",
+            "secureLink": "Appareil perdu ? Sécurisez votre compte",
+            "warnTitle": "Quelqu'un a peut-être essayé votre PIN",
+            "warnBodyOne": "Il a été saisi incorrectement 1 fois avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "warnBodyTwo": "Il a été saisi incorrectement 2 fois avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "warnBody": "Il a été saisi incorrectement {{count}} fois avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "warnBodyUnknown": "Votre PIN a peut-être été saisi incorrectement avant votre connexion. Choisissez un nouveau PIN pour rester protégé.",
+            "choosePin": "Choisir un nouveau PIN",
             "notNow": "Pas maintenant"
         },
         "secureAccount": {
@@ -2424,9 +2430,10 @@
             "pinDescNewPin": "Choisissez un nouveau PIN à 6 chiffres, différent de votre PIN actuel."
         },
         "signOutOtherDevices": {
-            "title": "Une connexion que vous ne reconnaissez pas ?",
-            "description": "Empêchez les autres appareils et identifiants de se reconnecter, et désactivez vos anciennes méthodes de récupération.",
-            "action": "Se déconnecter de tous les autres appareils"
+            "section": "Sécurité",
+            "label": "Se déconnecter des autres appareils",
+            "caption": "Appareil perdu ou activité inhabituelle ?",
+            "attention": "Votre PIN a été saisi incorrectement."
         },
         "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez."
     },

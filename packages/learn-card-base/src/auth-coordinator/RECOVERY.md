@@ -281,9 +281,9 @@ sequenceDiagram
     alt Correct PIN (login already bound)
         Server-->>AC: recovery share released (server emails "new device signed in with your PIN")
         AC->>AC: reconstruct, check DID, store the released share as this device's share at version N
-        alt No wrong entry recorded against the PIN
+        alt No wrong entry recorded against the PIN other than this flow's own typos
             AC->>Server: re-enroll at N with the same PIN (new salt, fresh 10 attempts)
-        else Wrong entries recorded (or count unknown)
+        else Earlier or foreign wrong entries recorded (or count unknown)
             AC-->>AC: no re-set; PIN keeps its reduced budget (newPinRequired)
         end
         AC-->>UI: state: ready + pinSignIn (review sheet; asks for a new PIN if required)
@@ -312,7 +312,7 @@ sequenceDiagram
 
 > **Security trade-off accepted (Accepted by Jackson Smith (CTO), 2026-11-03; SECURITY.md D19).** Login + PIN now signs a new device in without resetting
 > the account. Compensating controls: the server emails every verified address on each PIN
-> release, the app shows a one-time review sheet, and "Secure my account" / "Sign out of all
+> release, the app shows a one-time review sheet, and "Secure my account" / "Sign out of
 > other devices" run the old reset on demand.
 
 A successful PIN release **no longer re-splits the key or rebinds the account**:
@@ -320,8 +320,9 @@ A successful PIN release **no longer re-splits the key or rebinds the account**:
 - **Login already bound** (`needs_recovery`): the strategy stores the released recovery share as
   the device share at the released version N (same `shareVersion`). If, and only if, the
   server's PIN status read **before and after** the release both show **zero** wrong entries
-  against the current PIN (`escrowPin.wrongAttempts === 0`) and exactly one charge between
-  them (this release), it then re-sets the **same PIN** at N (new salt and verifier,
+  against the current PIN (`escrowPin.wrongAttempts === 0`), or only this flow's own typos
+  (see "Own typos" below), and exactly one charge between them (this release), it then
+  re-sets the **same PIN** at N (new salt and verifier,
   owner-signed `set` / Nitro `change`, fresh 10-attempt budget). The re-set carries
   `expectedPinCharges` (the post-release `attemptsRemaining` / `wrongAttempts`), and lca-api
   writes it only while the PIN still shows exactly those charges, in the write's own filter,
@@ -355,10 +356,39 @@ A successful PIN release **no longer re-splits the key or rebinds the account**:
   `escrowUpdating` (a PIN operation holds its lease) a mismatch is treated as in progress, not
   stale, and nothing is repaired that cycle.
 
+#### Own typos (approved: Jackson Smith, CTO, 2026-11-03; SECURITY.md D19)
+
+Wrong entries this device made during the **same** PIN sign-in flow are the user's own and
+never count toward the warning or block the same-PIN re-set. The coordinator keeps one flow
+per account per session (`pinAttemptBaseline`): `wrongAttempts` from the first PIN status it
+sees before any attempt (`priorWrongAttempts`), and `ownWrongAttempts`, incremented only for
+an `EscrowPinMismatchError` returned to this client. Each PIN attempt passes
+`input.pinAttempts = { priorWrongAttempts?, ownWrongAttempts }` to the strategy (always the
+coordinator's own counts; a caller-supplied value is overwritten). The strategy treats the
+sign-in as clean only when `priorWrongAttempts === 0` and every status read during the
+release shows exactly `ownWrongAttempts` wrong entries; the re-set then sends
+`expectedPinCharges.wrongAttempts = ownWrongAttempts`, which lca-api still enforces in the
+write, so a foreign entry landing at any point blocks it. A missing prior count (legacy record,
+failed read) blocks it; with no flow context (no status seen before the first attempt, or an
+older caller) the original rule applies (zero wrong entries). The lost-login path applies the
+same test to `newPinRequired` (the counts are kept with the pending identity until the new
+login is linked). A new session or app start begins a new flow, so earlier misses are then
+prior. Reaching `ready` by any method (PIN or not) also ends the flow, and the flow is bound to
+one PIN generation: the baseline keeps the status `salt` (`pinAttempts.pinSalt`), a later status
+with another salt (a new PIN, or a same-PIN re-set elsewhere) starts a new flow from that read,
+and the strategy ignores the counts (original rule) if any status it reads shows another salt.
+So own typos against one PIN can never excuse guesses against a later one. lca-api answers
+"Incorrect PIN." only when it actually recorded the wrong entry; if the record changed under the
+compare it returns CONFLICT ("Automatic recovery changed; please refresh."), which is not counted
+as own. When own typos were excused but the re-set did not run, `escrowPinChangeRequired`
+and `escrowPinAttention` ignore that many wrong entries for the session (memory only; any
+further entry, or a new PIN generation, ends it).
+
 #### New PIN after wrong entries
 
 A PIN that has seen wrong guesses never gets a fresh budget for the **same** PIN. When the
-status read before or after a successful release shows any wrong entry (`wrongAttempts > 0`),
+status read before or after a successful release shows any wrong entry other than this flow's
+own typos (`wrongAttempts > ownWrongAttempts`, or any entry recorded before the flow started),
 or cannot say (`wrongAttempts` missing: legacy record, older server, failed read), the strategy
 skips the
 same-PIN re-set and reports `pinSignIn: { pinRefreshed: false, newPinRequired: true }` (also for
@@ -408,9 +438,9 @@ current `share_version` (`services/escrow-enclave-app/src/authority/intent.rs`, 
 the same-PIN re-set at N gets a fresh budget. Checked by code reading, not a live enclave run.
 
 App (`apps/learn-card-app`): with `pinSignIn.newPinRequired` the post-sign-in review
-(`PinSignInReviewSheet`) replaces "No, everything's fine" with "No, choose a new PIN", keeps
-"Yes, secure my account" and the wrong-entry warning, and offers "Not now"
-(`acknowledgePinSignIn()`). On later starts `escrowPinChangeRequired` opens the same new-PIN
+(`PinSignInReviewSheet`) shows its warning variant ("Someone may have tried your PIN", amber
+icon) with "Choose a new PIN" as the primary action, the quiet "Lost a device? Secure your
+account" link, and "Not now" (`acknowledgePinSignIn()`). On later starts `escrowPinChangeRequired` opens the same new-PIN
 prompt directly (`RecoveryPinSetupOverlay` reason `new-pin-required`; "Skip for now" calls
 `dismissEscrowPinChange()`). `SecureAccountFlow` asks for a different PIN in that state and
 returns to the PIN step on `SameEscrowPinError`.
@@ -440,7 +470,7 @@ misses in this session never count; it is omitted when the server cannot say. A 
 recovery takes a new snapshot (which can over-report, never under-report). Clear it with
 `coordinator.acknowledgePinSignIn()`.
 
-`coordinator.secureAccount({ pin })` ("Secure my account", "Sign out of all other devices")
+`coordinator.secureAccount({ pin })` ("Secure my account", "Sign out of other devices")
 requires `ready` with a valid session and calls the strategy's `revokeOtherDevices`: one
 atomic `POST /keys/revoke-other-devices` re-splits, drops every older auth-share version and
 unlinks every login except the caller's (other devices and logins can no longer sign in; old
@@ -552,12 +582,16 @@ recovery (`identity_recovery` / `identity_recovery_success`).
 
 When the account has a usable PIN (`escrowRecovery.pinAvailable`: `needs_recovery`, or
 `identity_recovery` in `choose_method`, with `escrowPin.enabled`) and an escrow method, Screen 1
-leads with PIN entry (`EscrowPinSignIn`, titled "Sign in with your recovery PIN"). Approve from
-another device, passkey and the other methods follow under "Other ways to sign in" in secondary
-styling. The PIN path shows **no** "sign you out on your other devices / turn off your other
-sign-in methods" warning, because a PIN sign-in keeps the account as it is.
+leads with PIN entry (`EscrowPinSignIn`, titled "Confirm it's you": the user has already signed
+in with their login, so the PIN is a confirmation step, with no tinted panel behind the boxes).
+"Approve from another device" ("Scan a code with a device you're signed in on"), passkey and the
+other methods follow under "Other ways to confirm" in secondary styling; methods not set up sit
+behind "Show N more" (each still labelled "Not set up"). The PIN path shows **no** "sign you out
+on your other devices / turn off your other sign-in methods" warning, because a PIN sign-in keeps
+the account as it is. Accounts without a usable PIN keep the "Sign in on this device" copy.
 
-"Can't use any of these?" still leads to Screen 2, which is now the **7-day hold only** and keeps
+One quiet "Trouble signing in?" link (for accounts without a PIN: "Can't use any of these?" +
+"Get back into your account") leads to Screen 2, which is now the **7-day hold only** and keeps
 those warnings (the hold still resets the account). "Use my recovery PIN instead" returns to
 Screen 1. A locked or unavailable PIN hides the PIN entry for the rest of the flow and shows the
 reason; with nothing else to pick, the modal then opens on Screen 2. A hold already pending on
@@ -568,16 +602,27 @@ modal shows the PIN error there with a note that each try needs a new code.
 
 ### After a PIN sign-in
 
-`ready.pinSignIn` shows `PinSignInReviewSheet` once ("You're in! Did you lose a device, or think
-someone else knows your PIN?"). "No, everything's fine" is the default (focused) answer and calls
-`acknowledgePinSignIn()`. If `priorWrongAttempts > 0` the sheet warns "Your PIN was entered
-incorrectly N times before this sign-in…" and gives "Yes, secure my account" primary styling,
-but never preselects it. The review holds back every other PIN prompt
+`ready.pinSignIn` shows `PinSignInReviewSheet` once, in one of two variants:
+
+- **Normal** (no wrong entries other than this sign-in's own typos): green check, "You're signed
+  in", "Your other devices stay signed in too.", primary "Done" (focused; calls
+  `acknowledgePinSignIn()`), and a quiet "Lost a device? Secure your account" link.
+- **Warning** (`newPinRequired`, or `priorWrongAttempts > 0`): amber icon, "Someone may have
+  tried your PIN", "It was entered incorrectly N times before you signed in. Choose a new PIN to
+  stay protected." (singular for 1; count-free copy when the count is unknown or 0, e.g. a
+  foreign entry landed during the flow), primary "Choose a new PIN" (focused; the new-PIN flow
+  refuses the PIN just used), the same quiet link, and "Not now".
+
+The revoke is never the default action. The review holds back every other PIN prompt
 (`decidePinPromptAfterReady` → `pin-sign-in-review`).
 
-"Yes, secure my account" opens `SecureAccountFlow`, which is shared with the
-"Sign out of all other devices" section of `RecoverySetupModal` and the `/account/secure` link in
-the PIN sign-in email. It explains what will happen, asks for the PIN again (enter the current
+"Lost a device? Secure your account" opens `SecureAccountFlow`, which is shared with the quiet
+"Sign out of other devices" row under "Security" at the end of `RecoverySetupModal` (an amber dot
+marks it while wrong PIN entries are recorded against the current PIN other than this
+session's excused own typos, `ready.escrowPinAttention`; a dismissed new-PIN prompt does not
+hide it) and the `/account/secure` link in the PIN sign-in email. Its
+confirm screen explains what will happen and carries the red destructive button; it then asks
+for the PIN again (enter the current
 PIN to keep it, a new one to change it, or continue without one), calls
 `coordinator.secureAccount({ pin })`, and then leads into recovery setup, passkey first. The
 email link carries no token: the route is a `PrivateRoute`, and the flow re-checks the login
