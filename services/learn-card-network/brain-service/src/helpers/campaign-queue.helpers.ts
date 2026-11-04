@@ -80,7 +80,12 @@ export const processCampaignDispatchJob = async (rawJob: CampaignDispatchJob): P
             job.channel === 'email'
                 ? environment.CAMPAIGN_EMAIL_PAGE_SIZE
                 : environment.CAMPAIGN_DISPATCH_PAGE_SIZE;
-        const page = await pageCampaignAudience(job.campaignId, job.afterProfileId, pageSize);
+        const page = await pageCampaignAudience(
+            job.campaignId,
+            job.afterProfileId,
+            pageSize,
+            job.channel === 'email' ? 'email' : undefined
+        );
         for (const { profileId } of page.records) {
             if (job.channel === 'email') {
                 try {

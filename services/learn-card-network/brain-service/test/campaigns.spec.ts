@@ -1,4 +1,5 @@
 import { claimCampaignEmail, acknowledgeCampaignEmail } from '@accesslayer/campaign/email';
+import { pageCampaignAudience } from '@accesslayer/campaign/audience';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveTenantFromRequest } from '@learncard/email-templates';
 import {
@@ -900,7 +901,9 @@ describe('campaign notification delivery state', () => {
     });
 
     it('test delivery does not increment stats and only targets the authenticated administrator', async () => {
-        await admin.create(draft({ notification: { title: 'Test', body: 'Preview' } }));
+        await admin.create(
+            draft({ channels: ['notify'], notification: { title: 'Test', body: 'Preview' } })
+        );
         const queue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
         const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
             id: { did: () => 'did:web:brain.example' },
@@ -978,6 +981,34 @@ describe('campaign email database boundaries', () => {
         );
         return campaign;
     };
+    it('filters email opt-outs before pagination without hiding them from audience management', async () => {
+        const campaign = await setup();
+        await admin.addAudience(audience({ type: 'dids', dids: [did('other')] }));
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = true"
+        );
+        const page = await pageCampaignAudience(campaign.id, undefined, 1, 'email');
+        expect(page.records.map(row => row.profileId)).toEqual(['other']);
+        expect(page.hasMore).toBe(false);
+        expect((await pageCampaignAudience(campaign.id, 'other', 1, 'email')).records).toEqual([]);
+        expect((await pageCampaignAudience(campaign.id)).records.map(row => row.profileId)).toEqual(
+            ['learner', 'other']
+        );
+        // A preference change after paging must still be enforced by the locked claim.
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = false"
+        );
+        expect(
+            (await pageCampaignAudience(campaign.id, undefined, 1, 'email')).records[0]?.profileId
+        ).toBe('learner');
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = true"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+
     it('leaves a recipient claimable after local preparation fails', async () => {
         const campaign = await setup();
         await expect(

@@ -344,7 +344,7 @@ describe('email channel dispatch', () => {
             })),
         });
         await processCampaignDispatchJob({ ...job, channel: 'email' });
-        expect(mocks.pageAudience).toHaveBeenCalledWith(campaign.id, undefined, 500);
+        expect(mocks.pageAudience).toHaveBeenCalledWith(campaign.id, undefined, 500, 'email');
         expect(mocks.email).toHaveBeenCalledTimes(500);
         expect(mocks.enqueue).not.toHaveBeenCalled();
         expect(JSON.parse(mocks.sqs.mock.calls[0]![0].input.MessageBody)).toMatchObject({

@@ -326,6 +326,8 @@ use `CAMPAIGN_DISPATCH_DELAY_SECONDS` between waves.
 
 Email requires exactly one valid primary verified ContactMethod email, a known adult
 profile under the existing campaign adult policy, and no announcement email opt-out.
+Email waves filter adult eligibility and opt-outs before pagination, then recheck both
+under the profile lock before reserving a send. Audience management still lists opted-out members.
 Unknown ages, children, managed non-service profiles and minors fail closed even if
 `excludeMinors` is false. Parent age-policy sign-off is still outstanding: this does
 not authorize marketing to minors. Self-tests bypass audience/status only; they retain

@@ -61,7 +61,6 @@ export const sendCampaignEmail = async (
     preparedAdapter?: PostmarkAdapter
 ): Promise<boolean> => {
     const adapter = preparedAdapter ?? (await prepareCampaignEmailDelivery());
-    campaignEmailLinks(campaign, profileId);
     let deliver: (() => Promise<void>) | undefined;
     const recipient = await claimCampaignEmail(
         campaign.id,

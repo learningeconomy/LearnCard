@@ -170,6 +170,17 @@ describe('campaign email', () => {
     });
 });
 describe('unsubscribe tokens', () => {
+    it.each(['a', 'adult.name', 'élève.学習者'])(
+        'round-trips canonical UTF-8 tokens for %s',
+        profileId => {
+            const token = signCampaignUnsubscribeToken(profileId, campaign.id);
+            expect(verifyCampaignUnsubscribeToken(token)).toEqual({
+                profileId,
+                campaignId: campaign.id,
+            });
+            expect(() => verifyCampaignUnsubscribeToken(`${token}=`)).toThrow();
+        }
+    );
     it('round-trips dotted profile IDs and rejects tampering and malformed tokens', () => {
         const token = signCampaignUnsubscribeToken('adult.name', campaign.id);
         expect(verifyCampaignUnsubscribeToken(token)).toEqual({
