@@ -9,6 +9,7 @@ on:
         # failures propagate to their caller. Never subscribe to this notifier.
         # test-failure-notification.test.cjs catches additions and renames.
         workflows:
+            - AI Passport
             - Auth Integration (Keycloak)
             - CapGo PR Preview
             - CapGo SSS Pilot
@@ -33,6 +34,7 @@ on:
             - Maid-Service
             - Migrate Signing Authority Seeds
             - Mock E2E
+            - Nx cache experiment
             - OpenID4VC Interop Tests
             - PR Review Reminder
             - Full-Stack PR Preview
