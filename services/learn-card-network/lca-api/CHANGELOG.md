@@ -1,5 +1,23 @@
 # @welibraryos/lca-api-service
 
+## 1.6.3
+
+### Patch Changes
+
+- [#1923](https://github.com/learningeconomy/LearnCard/pull/1923) [`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6) Thanks [@Custard7](https://github.com/Custard7)! - PIN sign-in: wrong PIN entries made during the same sign-in on the same device are now treated as the user's own typos (own-typos rule, approved). They no longer trigger the "someone may have tried your PIN" warning, and they no longer block the same-PIN budget refresh. Only wrong entries recorded before the sign-in started, or entries from anywhere else during it, still count. The coordinator records the PIN status when the flow starts, counts its own mismatch responses, and passes both to the strategy (`input.pinAttempts`). The strategy refreshes the PIN only when nothing was recorded before the flow and every status read shows exactly the flow's own entries. lca-api now accepts a non-zero `expectedPinCharges.wrongAttempts`, but still writes only while the PIN shows exactly those charges, so a foreign entry that lands at any point still blocks the refresh. A flow is bound to one PIN generation and ends at any sign-in, and lca-api answers "Incorrect PIN." only for a wrong entry it actually recorded (otherwise CONFLICT). Sign-up now requires a recovery PIN ("Create your PIN": "You'll use it to sign in on new devices."), but it fails open. The step is skipped when escrow is not confirmed available in time. A save that errors or hangs (30s deadline) shows the error and allows a retry, and "Skip for now" appears from the second failed save (the announced error then says so, and focus returns to the PIN boxes); that skip writes no prompt flag, so the first-time PIN prompt asks again on a later start.
+
+    App copy and layout: the new-device PIN screen is now "Confirm it's you" ("Enter your 6-digit PIN to finish signing in."), without the tinted panel behind the PIN boxes, with "Other ways to confirm", "Approve from another device", "Show N more", and one quiet "Trouble signing in?" link to the 7-day path (accounts without a PIN keep their existing screen). The post-PIN-sign-in sheet replaces its yes/no question with "You're signed in" / "Done" plus a quiet "Lost a device? Secure your account" link, or, when wrong entries other than the user's own typos are recorded, an amber "Someone may have tried your PIN" warning leading with "Choose a new PIN" (with "Not now"). Account Recovery settings replace the boxed "Signed in somewhere you don't recognize?" card with a quiet "Sign out of other devices" row under "Security" at the end, marked with an amber dot while wrong PIN entries other than the user's excused own typos are recorded against the current PIN (`ready.escrowPinAttention`); the secure flow's confirm screen keeps the full explanation, now uses a red destructive button, and focuses Cancel first. Translated into es, fr and ar.
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/sss-key-manager@0.2.7
+    - @learncard/types@5.24.2
+    - @learncard/core@9.4.43
+    - @learncard/helpers@1.7.3
+    - @learncard/init@2.5.9
+    - @learncard/did-web-plugin@1.1.43
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/didkit-plugin-node@0.3.9
+
 ## 1.6.2
 
 ### Patch Changes
