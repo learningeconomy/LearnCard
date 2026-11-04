@@ -89,11 +89,36 @@ describe('networkCheck', () => {
 });
 
 describe('signingServiceCheck', () => {
-    it('skips when no LCA_API_URL is configured', async () => {
+    it('skips on a local network when no LCA_API_URL is configured', async () => {
         const fetch = vi.fn();
-        const result = await signingServiceCheck.run(createContext({ fetch }));
+        const result = await signingServiceCheck.run(
+            createContext({
+                fetch,
+                services: { ...services, network: 'http://localhost:4000/trpc' },
+            })
+        );
         expect(result.status).toBe('skip');
         expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('checks the production signing service on production without LCA_API_URL', async () => {
+        // setup-signing uses https://api.learncard.app on production, so doctor must too.
+        const fetch = vi.fn().mockResolvedValue(okResponse('Healthy'));
+        const result = await signingServiceCheck.run(
+            createContext({
+                fetch,
+                services: {
+                    ...services,
+                    network: 'https://network.learncard.com/trpc',
+                    lcaAPI: undefined,
+                },
+            })
+        );
+        expect(result.status).toBe('pass');
+        expect(fetch).toHaveBeenCalledWith(
+            'https://api.learncard.app/api/health-check',
+            expect.anything()
+        );
     });
 
     it('passes when the signing service health-check answers 2xx', async () => {

@@ -134,6 +134,12 @@ run "tier3_contract" {
     values = { arn = "arn:aws:secretsmanager:us-east-1:000000000000:secret:tier12" }
   }
   assert {
+    condition = alltrue([for v in concat(values(aws_secretsmanager_secret_version.placeholder), values(aws_secretsmanager_secret_version.hold_placeholder)) :
+      v.version_stages == toset(["PLACEHOLDER"])
+    ])
+    error_message = "A re-created placeholder must never take AWSCURRENT from a live, rotated secret."
+  }
+  assert {
     condition = alltrue([for role, fn in aws_lambda_function.tier3 :
       fn.runtime == "nodejs22.x" && one(fn.architectures) == "arm64" && fn.reserved_concurrent_executions == 1 &&
       fn.environment[0].variables.CANARY_TIER == "3" && fn.environment[0].variables.CANARY_ROLE == role

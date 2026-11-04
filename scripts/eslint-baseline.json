@@ -1,4 +1,32 @@
 {
+    "apps/ai-passport/src/components/ChatInterface.tsx": {
+        "50f069aaa5e14cef005971117d0b9075e7d4f85cb46e08b3138fed8d64a1b967": 1
+    },
+    "apps/ai-passport/src/components/ChatMessages.tsx": {
+        "1b7cbbe6ed534cf3a281b3360d733c734ac38ec6789dbe64c4f19ed8e474e06b": 1
+    },
+    "apps/ai-passport/src/components/ExampleChatColumn.tsx": {
+        "0f75394e04d1f7cdc0a9d3ccd643fdd528bebd4a2b3a5835712a35ab544b03a3": 1
+    },
+    "apps/ai-passport/src/components/FeedbackToast.tsx": {
+        "29b07019bfe0df8b54f79e4f097ee11588158ab1a4ca46178f29e6373b926b95": 1
+    },
+    "apps/ai-passport/src/components/LoginColumn.tsx": {
+        "4ccf2c37e9cef40cdb80af385ff1cf91a015291ff898f1a623495d47a6ba5a02": 1
+    },
+    "apps/ai-passport/src/components/MarkdownRenderer.tsx": {
+        "9ad03dafc79f4d443f0d81ef6739252271cc40aa4d53de308606d1176b6b55e0": 2
+    },
+    "apps/ai-passport/src/components/ProfilePicture.tsx": {
+        "4c9f2e21950df250e336c776aecc9d877195fa4cbf9f1be65cdc23bd1ff53c86": 1
+    },
+    "apps/ai-passport/src/hooks/useIsClient.ts": {
+        "c41a624b76a41d8d1df20fd97045a3f0bc7533ec83e53c35b5d5bf0c59c3555a": 1
+    },
+    "apps/ai-passport/src/stores/chatStore.ts": {
+        "771a5b07a0b904326ada12a16f9f0d819f64601bb96b9a1cf7d21fc43c47bf17": 1,
+        "e84276bd014678459f31b370438965b81a330117a7dd5d5ea9bbd2b682850f92": 1
+    },
     "apps/learn-card-app/src/Routes.tsx": {
         "0611cb41a438115a5cd0bbf91d666040f8cfd5337cebd0155fcbfd13404d909e": 1,
         "80ec18b41ed0243ba58c74130095acd24863c60b03c46ad7acc6ba2913a405c8": 1,
@@ -4918,6 +4946,287 @@
         "4a939d767db75f6b63756143851e0e1f4225ba74b26a38e8fb25744d5de4f6ea": 1,
         "61b2d546ad2bc705e969cc904c6b414ea76b493a2cd3155e1af2db8e1d1e8516": 1,
         "cbfe6e5da9556f64f4afa2a5fab681184c8947eddba61f38e5ef260d1c0a16fc": 1
+    },
+    "services/ai-passport-backend/admin-web/BatchControls.tsx": {
+        "10565065f47596f7b52ab13017544ab64fcdbbab10726b6e5642bb9d69864700": 1,
+        "18886236da1655575d5dd44454df9493053df22de50bbbd2702e45f86a32670e": 1,
+        "30188ed48c149183946401b66e161cbc2714d9ee12974b28b80f5c9dc2faf79b": 1,
+        "5033bd664dc4546f9cfbe266dbd161f781b9c84684e4ed27ddd618374d0d79d7": 1,
+        "5351e992a844c7588e316c81e5dc080bd2761f1c38e3e7448e12ef1079d5e9a8": 1
+    },
+    "services/ai-passport-backend/admin-web/MigrationCoverage.tsx": {
+        "6d2146879bf3ad0bb4dd5b411b5d81aecd03cab70c7e6d3464ae801488c2f859": 1
+    },
+    "services/ai-passport-backend/admin-web/WholeBackfill.tsx": {
+        "162abc95daf6c208911ee07ec6850ee4b51a6d582e449008b92eddb3846cb0ea": 1,
+        "27c441d6335242a735de642afc1f6c19998605f54100f773fd2121d160077325": 1,
+        "592c7ff876afee0c230d4092f35260eef3b7419a287f22e7a32f92e8ca2371c6": 1,
+        "bcaa4e678acc6a77b9d06a3db07c6ebe5fd951ecb10d26374a401b92ce18097c": 1,
+        "ca1786e8118c64ee16da3276923f25bcec3d45d166e26dc44bcded2598ff5c93": 1,
+        "eba57bace329fb3ae8ff9c3ecbd9c395aa5597e508af8bbd9788e5762f43d65a": 1,
+        "f0b61e7090f70a6a36c02f3704134ccdfd550dde13a73bce412ace277cb85f17": 3
+    },
+    "services/ai-passport-backend/admin-web/tests/admin-read.test.ts": {
+        "84c9233417840c6e7983553faf47fcb0bbf0ca5ca5ba16228d01c44a36b8ae31": 1
+    },
+    "services/ai-passport-backend/admin-web/tests/admin.spec.ts": {
+        "19179702ef1202f800648c23f48cbfe22005a5d5762cc23e32c4b123804e635b": 1,
+        "9a8aa2dc0157b70dd298f02d16662a660694b27f800a4f5d95224c4ab29114fe": 2,
+        "a87c056399c450d43fd515b897a618e37439f8f55d2e368331f687689e615a2a": 1
+    },
+    "services/ai-passport-backend/admin-web/tests/interruption-lifecycle.test.tsx": {
+        "a06717186f9bee9ecba007caf56a0ebba248365f12f9e86c2cb0836cda36d803": 2
+    },
+    "services/ai-passport-backend/admin-web/tests/whole-backfill.test.tsx": {
+        "83fac4e7c6d71936069af4f185ffed18ff97358986fccf895f1fbb69df4956e4": 1,
+        "96174233b543f9ec4bef5f6072588c9e90d650c916845ec07cccd42a5ef7c69d": 1,
+        "b02fadc286a2f15faf51669af7d08d2b9210e24fdd77730cdeac5be8e7b766d9": 1,
+        "cf14086971f76cc7226b301f2ec1da20dd84c80a2f7557f30c386c71c5ca07c7": 1
+    },
+    "services/ai-passport-backend/scripts/benchmark-session-start.ts": {
+        "afeddee70c64fae9f764eb62a84376d38e10afa7857769b73721d436824cbe46": 1
+    },
+    "services/ai-passport-backend/scripts/smoke-bedrock-privacy.ts": {
+        "08d384cb588c13274162a655790a62c8783657de513ca7c1457279f9a2ca093d": 1
+    },
+    "services/ai-passport-backend/src/admin/backfill-usage.test.ts": {
+        "27bd9caa790bc81c338f53cf9c7690b2b92a899be3753564fefdcdf0fb860763": 2,
+        "2dadd0e890acdfd1c80079faa111dadb5e0329db8602f7c8ff2903ddc475cb53": 1,
+        "37fa1b17c1e1bacd032a3ca9662e3be2daa5ca4a24625898fb8a79cae0b1b93a": 1,
+        "8e6053288f0a54fb8f2fe4d299e5da5e368b3a0e18b83b2dae9221f543b2227f": 1
+    },
+    "services/ai-passport-backend/src/admin/backfill.test.ts": {
+        "095ea7a1eac04480f0e98088954ffcf75e0d907ddfa783ad6d7d7188993056cb": 1,
+        "1e0a3265233982c0a1de8fa372c69a9054a75be48dd1144d8aebbf798e1dbe74": 1,
+        "2658829ee007c04e32c3c2730157259d46a250df0dd7a527c3f36c432dbcad31": 1,
+        "35678e4b9a6b23a1bc93a12d03a003061748f487399ad86aa814dfebad3e948f": 1,
+        "4653cc4b245012b9390eb89a0a7fa6350fcdddfd91dbe84be4447b7e83a28041": 1,
+        "64aa2a739b92ccb015cb3c5678a9554c517de4764a1a856d6e99b8fdad9a5f50": 1,
+        "67d4d942d5e83f8ff3d84f4a34ad2b4c12b8db64417d5f817527e833bf84f16d": 1,
+        "69319ef0d2965fd8fa76f83af70ac3cad0e312b7b1ae2af813fc0b47384144c4": 1,
+        "71a7ca7ee6188fb1a583d745dd6f080d3ac725aec390c36aa87d7e2bebb863c4": 1,
+        "757a2265b25470cead181aa6b8b2e3e52f6d015c8ff96ee384d88dc5ecc77c54": 1,
+        "9044cdc42ff451fcc628b0fdd74b7e44a04a653b672d8447977d333af3406323": 1,
+        "94f9b45de26f9e310e06772508703fc36b61b9b3ba51af5a1a8d824f8640ee2a": 1,
+        "a8ce657719585fb58657967a36b63ad88c4863aece59ab895872a05441e5c50e": 1,
+        "abd65e0e7354913b26975c83a605ad65a07076d6ca172ded6111b003fbcd6e15": 1,
+        "eb9d2aea4eacb6246af9b891d403dca71a612cc315c6278e57d40b181554c159": 1,
+        "ffb018f4266591935d24f1b1188a84bf9bc14a7fc545b3f004900ed10e64357d": 1
+    },
+    "services/ai-passport-backend/src/admin/batches.test.ts": {
+        "063f566e6270ed12a720345f790eacce4461351e3329ae9b164ac0eef86802bc": 1,
+        "c11f0cb1a188c44594ce575f9b26bc392f5b7f92b20a823ea9e926bc4e4fc086": 1,
+        "c450179b54bad1334987a6633136bc2460d93ba510cca8f275d1dd9bfe8357ee": 1
+    },
+    "services/ai-passport-backend/src/admin/batches.ts": {
+        "6eda7c19a9a026fbd592e409b3787d787e6744ca2f183bd6656d607325bfda8a": 1
+    },
+    "services/ai-passport-backend/src/admin/coverage-mongo.test.ts": {
+        "45da94d5341938eaa87cf43b2671ba21dd4337eafedc2c3c7652cfbbc3bbe14b": 1
+    },
+    "services/ai-passport-backend/src/admin/coverage-storage.test.ts": {
+        "45da94d5341938eaa87cf43b2671ba21dd4337eafedc2c3c7652cfbbc3bbe14b": 1,
+        "e357360bf83ff57c8ce7c7e9fd0220457ff9d794ce2779f507666bb6507c978d": 2
+    },
+    "services/ai-passport-backend/src/admin/dashboard-auth.test.ts": {
+        "6ddb1bc20e6711587dc6c47b002a92a0902997c379f284265a64d404238f2ed6": 2,
+        "ca36eaf585b2773754983958dabd6c7628d3228d06b86b3cea7dfd7edca62f74": 2
+    },
+    "services/ai-passport-backend/src/admin/generation-retry.test.ts": {
+        "6d823b6cc4f3798bd04071f6d9992a2b568aa62d419738e57836631eb1984364": 1
+    },
+    "services/ai-passport-backend/src/admin/legacy-repair-source.ts": {
+        "9b4737b3774211af352a8c08efc78ba316e3451d13d0fc6ef4bf3ba54337e057": 1
+    },
+    "services/ai-passport-backend/src/admin/legacy-repair.ts": {
+        "c199bf8ae11ae7fa216e1c5364ab0c81014330402203a6d60d568f7ec612ff09": 1
+    },
+    "services/ai-passport-backend/src/admin/routes.test.ts": {
+        "3c1c72c71bfb0cdccc8f845104746e40199515d2e3fc1187370ccc0099011417": 1,
+        "4257e1595679577e2c4bfc42de675697178576760789e7ceda7765d74b7086b9": 1,
+        "69d0c2efa29184bab83483a97de687c7af5db4098ebed081bb8cacab7a23ee9b": 1,
+        "74d43b0017afc45bc654ba48673a13103e9a2b3202bfe0a9fd836e318a0d0acb": 1,
+        "8868724c07bfb04fb4224171255d7d05ca964db1d9faee6f0775db0d40f45505": 1,
+        "e02c6b327c43a350f032245055e2169995d27d435c0ce93fad3fa60fb1332c22": 1,
+        "fcce15cfc1518451479d8ec635cfe21528603b7d3fb745cc23c2a891e48bec77": 1
+    },
+    "services/ai-passport-backend/src/admin/runs.test.ts": {
+        "27bd9caa790bc81c338f53cf9c7690b2b92a899be3753564fefdcdf0fb860763": 2,
+        "2dadd0e890acdfd1c80079faa111dadb5e0329db8602f7c8ff2903ddc475cb53": 1,
+        "37a86572ad852a0e610945dd6384bc0bc7ce57dacc8e9f4eef5c82ae92498d3f": 1,
+        "37fa1b17c1e1bacd032a3ca9662e3be2daa5ca4a24625898fb8a79cae0b1b93a": 1,
+        "58cc83aced2496799688ef1683be9d3b7660f75f1e3024631b4d2e1a1660aef7": 1,
+        "8e6053288f0a54fb8f2fe4d299e5da5e368b3a0e18b83b2dae9221f543b2227f": 1,
+        "cd90bd4b812e734e57fc7620beda69a71d7dd700e80f789385710560850e13ac": 1
+    },
+    "services/ai-passport-backend/src/admin/runs.ts": {
+        "304d966115b45c01fb282e60dcadc9202cb0f697174d033b42c84e534b6eb9ea": 1,
+        "92806c679099fcd78f789f899795a326e9f8c5e0037d22e4d96815125a0823d9": 1,
+        "a6c45ef1b4979b26dea04fa25130afe9a4c77888cf61de2694d163f428b7a4e4": 1,
+        "b151c2ffcb7dd5a36670fc6721a4a82eba6b6b07c576e3ee1cebb9e3b3a194a7": 1,
+        "ba3dae5ab1d1e09fc547ff82ad792ab9a25c3e117cf66dcbe273747fb4d53358": 1,
+        "e7146a8a0e1133785020545e92d5f85134df181b5fa42b8c0baa56a1b8fcac30": 1,
+        "f38eb7e07664ff356f08e66cd30263bf122bc97a3fb242097567ffac15818bd0": 1
+    },
+    "services/ai-passport-backend/src/ai/bedrock-insights.contract.test.ts": {
+        "3d27dd0d4397e5dc4fd6f60767902281d6d46959420f81830b4f1d348cfee26c": 1
+    },
+    "services/ai-passport-backend/src/ai/bedrock-insights.integration.test.ts": {
+        "19179702ef1202f800648c23f48cbfe22005a5d5762cc23e32c4b123804e635b": 1
+    },
+    "services/ai-passport-backend/src/ai/bedrock-responses.test.ts": {
+        "cc516216246742da078135f2dde602d453bb794455456dd1f6bc88f4ac83a49d": 2
+    },
+    "services/ai-passport-backend/src/credentials/insight-eligibility.test.ts": {
+        "083fef77e54c46d7599f0d69416717711e793bb1dc043d78ea9fdf369158e149": 1,
+        "63e7759eb32cc5ae50c906d1d07959d1644c7146215fe330d17250e8dc574162": 1,
+        "bec2070eb43d3cd8620958b98a340eeb7f3bfbe59daf2a65a6bc380a46a6d21e": 1
+    },
+    "services/ai-passport-backend/src/credentials/service.test.ts": {
+        "0c36e6125954b55d64257b98315d90615855bea840622c80beb0c0f8ece8a813": 6,
+        "3d73bd41954717111d0daed3796a8dcfeb17a08d03caaf9fa404556301b7f8df": 1,
+        "40c0a62fed54a01b7ff54620c627c83211103d64dbc80ffade314b2328fe9d07": 1,
+        "4b46adb9eccd4e7272a26574cc7ea98f4882c06349b296da3b4ef1358bb92924": 1,
+        "4b8cd27e34ddfe1eba30187b46417a58749131d6ecbf298e8cb64c77e04a29a5": 1,
+        "4d34738e8be09990ed9ce9c19a9e4f61fc39c1191ff0f091a4b00c9573f63fa1": 1,
+        "63e7759eb32cc5ae50c906d1d07959d1644c7146215fe330d17250e8dc574162": 2,
+        "7f81968c7b2b0b402e8c6d489c592eaf63252349d0240681c2e3b8e789560400": 1,
+        "898df90cc0fbbde25de9c4306b4e069463c91656a68e2a6f6db874f12a7309b6": 1,
+        "8c29fdfba6353be5c7ef118163263dfbec6d6cee9f5304f5daf56c30ba2a0d28": 1,
+        "8e28745299709536fdf30c25d2158fef1781cc8370ded8e8d31af2100c1a64d3": 1,
+        "974d9dd2d444d0507bf62c786f5f3101847e947c9cbf972006e7a560d41a6c22": 10,
+        "a696ee7b7b4994aa71cbd92f015f2d7775b08bff7f624fa4f99dae1f3cc08fc7": 2,
+        "a8fda41307cb3f1c4522b74feb49c49436b25d87559c2777029e40c4c9326d0d": 1,
+        "b033bdc5c1bb2de0a10b26fa545b05cee5f80a4b0425341dad22c3b8ece58181": 1,
+        "b12021dd19ca86f516227880e9a3ac72b077ce1d5c3bda86cc0d6ee70b8cf450": 2,
+        "b35bd2a13819fbde34bf97f3d97f0e4337c2a340d287e9772502b454045e1024": 1,
+        "b51c0af3a135d6befe13cbf82e9dd28495655640a084fb59e6653eb8247d1b7f": 1,
+        "bb5e7f0ce261e01b30134161f06efdc5cace51aabe0f6a9c79e355a80d012f36": 1,
+        "bc5859e196e5269616417b97619bc02d2689a530dba69b60a12049c38c91da19": 1,
+        "be8c1d676b8cf61df24612cc92eef4ee2c1f129ed1c646044acb1a94e7d325bd": 1,
+        "c6bc69b8dc06164806892b2598e32e7412e334d512da372021058dcf16dee68b": 1,
+        "c728cf8dc00719344296ab212b2c7a69867b57acbdce10aec5cbf3c3ea23c214": 1,
+        "cc20036e5ed51cd7e51aec361cb6d4361dfb24b5821b970ea20ad8867be8a3f7": 1,
+        "d37b391ef9de7fe42c738ce780cbd4f5c0f4d780b4fc8ab12e34944924b68e55": 1,
+        "d73e1aa887ac0dace6f389eb2376188725fceb53e7fd0d308187fe7d88da8740": 4,
+        "dbfe8d4a662d6476219d1175cdd64a67b1bb788a151cb6207da391126204d82f": 1,
+        "e16c95ade1900e5b60c5057a3db8d3a544d32f1368a5ceb4cd7a8b3a84ae7277": 1,
+        "e210faf2b275769848adc664a43e380f6665f911f6dbbc78f72e15823ad5e42c": 1,
+        "eafb3e6ad80a8047ad0e2247bb79c2ebc18e94fb7f0425fbec740e912a619e72": 1,
+        "f3b9fabf132bb079df500b9dc0218142018ab5ac08ccae9c29d023a368b76c25": 1,
+        "f92dcccfbb25985e9386f69e9f2edbcce9f38d66cbdd0493f9df3be0af6b84c5": 1,
+        "fae28c7d573dbc899565994f563f290b34f9bbc00ab54d7c9daef6fcd80f0df6": 1
+    },
+    "services/ai-passport-backend/src/db/index.ts": {
+        "fa0a9f14f1b05bd04655de482fb67e69b4b896c0cc12798b2200df4b2a2889e1": 1
+    },
+    "services/ai-passport-backend/src/db/ownership.test.ts": {
+        "02e4161b6f1ae3c77df08802e16484691c2198abe9db03fd31cde5c9dc67dbce": 5,
+        "a8fda41307cb3f1c4522b74feb49c49436b25d87559c2777029e40c4c9326d0d": 1,
+        "b6f74dcec3937b6ba4e92daa88dd9c7af45f5e8280f2c58503ff4173dcfd4ac2": 1
+    },
+    "services/ai-passport-backend/src/db/qdrant.privacy.test.ts": {
+        "14b2365a666b4cf0cbcd2645e04deae2c7ea6ffee9374485df4262b62872bae3": 1
+    },
+    "services/ai-passport-backend/src/db/vector-source-metadata.test.ts": {
+        "150bc97466adf618c19c219c88ea5cf6934ad0ffbb8a3be9b7c1ed87b1863575": 1,
+        "36d06cb2bc6718e9fa63876dd3cbe9ed9e4c31d252a6de0b0c5d6cefc46f93d3": 1,
+        "3bb1f87e42f1cf12d02d0f52f63470a6c8caf9e2af13a59001d1bf29a76105d0": 1,
+        "4abd60f8dc2c9ea136b99df4c4f0c07c4656f8990703ab2eb0b31a88b170a262": 1,
+        "534527d6c5c004e9ef2f46c8958fcde45a5e0c765d81f3b5b83ab1bcc2977ef5": 1,
+        "730cc80397b0345793647e888ddce21db6b689b85e1f0489a666f59d8141b5e7": 2,
+        "7ee97913289f1c307bc0244bec0152f573118817e51535507acb0ea1ec86ce48": 1,
+        "935f934485f7eb6ce4a80fe72bc71d2971ccabdbf5ad3e2ba6bf0c852d5a253a": 1,
+        "a38f6223938abbb4a2255d82e66c1c5056ada51bf933f4684f828b6958e57b27": 2,
+        "c02357ae8344e8e67343bde9609ddf313d12a87d261a920995aac3dcba941c29": 1,
+        "c623926a5fb40997a6f82cee8469aa3d11cba74602e15175ffd95dcf11ef1ebe": 1,
+        "c7fcf0e9b381bd02725577252c69a1ecab1f7e0478027d0104bdd10bc1acfa1d": 1,
+        "d7f42ff59a5ab47dffcf8ff2355b3991e8c762be93fd53553ddc0fa66f7ccdf9": 2
+    },
+    "services/ai-passport-backend/src/diagnostics/ai-insight.test.ts": {
+        "3744c97069b09d4cc947385b57059ae16afa8af08de2b4d76ee00828e60e7272": 1,
+        "63e7759eb32cc5ae50c906d1d07959d1644c7146215fe330d17250e8dc574162": 2
+    },
+    "services/ai-passport-backend/src/helpers/file.helpers.ts": {
+        "af5fbbdf1528b5a240fc85b1eb953481760317dedb9a96d4a1473158a1c9edb7": 1
+    },
+    "services/ai-passport-backend/src/helpers/transcript-clr.helpers.test.ts": {
+        "160fb95b6fdd836b539783995597aaecaceb40bc8553b46e8821fca5cb0a29ba": 1,
+        "208e0b04182bbff9bff9af217fadd239397dd9b81fef8a54219c8329cdbf3d79": 1,
+        "6b2204ee4a2eaa91e06b3fcbe918facb925f9896d31ceb90ccd170389ad18d1e": 1,
+        "86cebedf464d7126ae4b834e2ded0a387dc9563795d7d513011980a08fb1f176": 1,
+        "9cf725824c926f7df4f8053ce6f012586f6223cca7bdf1a8aa6f32f6d962d40c": 1,
+        "b708125d4b3169935c86f460ce2cea236ba5e35e5913828e075cb69f1684771c": 1,
+        "b7b18311ad8910ee9acc141032d59f236406b2a08e096cb159d17127e75c314c": 1,
+        "bf8498e1ce1a931376e565f0c57c07b6c3c7c96a180956b1fece3cd84efc12b2": 1,
+        "de1330a9f01962744d016543815eadfc5b4e654c28415f005e7af90a37db8057": 1,
+        "e92dbd5018c792eed3a8cff70df8b388e1791d60c02e8331b1817a6d5e3a5622": 1
+    },
+    "services/ai-passport-backend/src/http/server.ts": {
+        "065cdd74db1e1d178b4d60c769e4b8699de28dedfa75eac821a7247fc66d398e": 1,
+        "189ab0b100e0c3d6c076ddc771f865c1dd794919590b06f9de6d3a7df52bb2d6": 1,
+        "afeddee70c64fae9f764eb62a84376d38e10afa7857769b73721d436824cbe46": 1,
+        "ba7fc03c1960eb314b9ce70649baaaee0951c6802ccc3bf995adc4376db45373": 1,
+        "d828ef1b2509c6a228706d4d3912b2b9a1bd12458202c21214a0e2845a324790": 1,
+        "eafb3e6ad80a8047ad0e2247bb79c2ebc18e94fb7f0425fbec740e912a619e72": 1,
+        "f70688c9eff8fa0cf726923541f1bb95ec03e337dc8495338357372cf75acc7a": 1
+    },
+    "services/ai-passport-backend/src/logging.test.ts": {
+        "09661b2a035389851daefa3f9e6e5ac019af073bf8937570f448559e247d8abb": 1,
+        "63e7759eb32cc5ae50c906d1d07959d1644c7146215fe330d17250e8dc574162": 5,
+        "a8fda41307cb3f1c4522b74feb49c49436b25d87559c2777029e40c4c9326d0d": 3
+    },
+    "services/ai-passport-backend/src/mcp-server/oauth/backend-routes.ts": {
+        "ab3434473ae30fc8a4718a4c8d1fd49dcbaae3aca2b95d79f414c279d81d858e": 1
+    },
+    "services/ai-passport-backend/src/services/assessment.ts": {
+        "22b05e41ad1df5b907da17766bd6c4f03df6df99ff727fdb742aa68421a2c849": 1,
+        "91bf491cde0cb929fa9417ee30bb2d0870d1a12fda8e569a4aa0ad1fc0216d8c": 1,
+        "ca7455e8b42f21a6e7618fb0fbfe8960e9d33792396a3043546ebeb7cb63a4a5": 1
+    },
+    "services/ai-passport-backend/src/services/awarding.test.ts": {
+        "054947c8ba332cdf81f407a2c5ea64973408045395872d9b4590daec66cacb95": 1,
+        "ae5e433a4aedcff4596b7cda6176ab1be61b467e61364eaaf9a417cffe47969c": 1,
+        "f2f8fcfaee3bbded4a86038ef4e1891c6b5e13d8d94595c6d2dba7e979669da0": 1
+    },
+    "services/ai-passport-backend/src/services/awarding.ts": {
+        "3a5522132f570f56692c4bd9fadcfbb6d7c395cbfcdbf30204dc28d7384abb5c": 2
+    },
+    "services/ai-passport-backend/src/services/careerOneStop/careerOneStopConfig.ts": {
+        "17d073277ac79f0e2361c546002450614fffcf6534f3d935582d7e2ab5c0ecdb": 1
+    },
+    "services/ai-passport-backend/src/services/dataErasure.ts": {
+        "afeddee70c64fae9f764eb62a84376d38e10afa7857769b73721d436824cbe46": 1
+    },
+    "services/ai-passport-backend/src/services/openSyllabus/openSyllabus.ts": {
+        "026966064a3110cfe69b1c03ee3e6b0555f55f318da5de5cd6d20b7e0784efd6": 1,
+        "17729f0e6954d175c931561312873740d55416bd25064a7e21cbd97792b4bfd8": 1,
+        "b76c88563518776e0ec465fe03bbe37951346b51c85b63692195550efb9b6b3a": 1
+    },
+    "services/ai-passport-backend/src/services/openSyllabus/openSyllabusConfig.ts": {
+        "553606abf707c3ba090109c46dcbb81e43449dffbcf6d443f8d128982a6c3310": 1
+    },
+    "services/ai-passport-backend/src/services/youtube/youtubeConfig.ts": {
+        "3a8ef7891d580ac726ee97b55a9a3f876a1fa61bb7d7f01b71f60b0f112894a1": 1
+    },
+    "services/ai-passport-backend/src/utils/timing.ts": {
+        "afeddee70c64fae9f764eb62a84376d38e10afa7857769b73721d436824cbe46": 1
+    },
+    "services/ai-passport-backend/src/websocket/index.ts": {
+        "3a5522132f570f56692c4bd9fadcfbb6d7c395cbfcdbf30204dc28d7384abb5c": 1,
+        "c2035c1a78c25e82d21b11cc925392863eccdd1765dafeda5f1f7ecd0ecc6c1b": 1,
+        "ed293038c1ab4491888303908b6de8c5bc93df9e3073bae71f61dd489fa6724e": 1,
+        "f70688c9eff8fa0cf726923541f1bb95ec03e337dc8495338357372cf75acc7a": 1
+    },
+    "services/ai-passport-backend/src/workers/subscriptions.ts": {
+        "8e451c49c6b873440a8bf6f95f61589117f3921246bd61a00d36931b07b689aa": 1,
+        "c8e05a905af9b3163d3f388227a35a1c316cefe9744e3899e59acc151f271cf8": 1,
+        "dc20655472be2efddff9a1831c2fd803a9d015694e831982ee9ec5c760f68e00": 1,
+        "de1ed819537954718666b570434877d91f1513474d1ada8709c0832cdd508775": 1,
+        "f1b2a959919ab49a33fa885cf15e6f3f9d7d617fd26ebf2af893d986520a109f": 1
+    },
+    "services/ai-passport-backend/src/workers/types.ts": {
+        "684754260d5e24b485606403cb71c78573d34288fed83152af4b5157123bbb46": 1
     },
     "services/learn-card-network/brain-service/src/accesslayer/app-store-listing/create.ts": {
         "306af1becfadf857c187edb6604a46d101bec03cd6e0c2893cbbb6070a1d31cb": 1,

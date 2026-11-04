@@ -1,5 +1,54 @@
 # @welibraryos/lca-api-service
 
+## 1.6.3
+
+### Patch Changes
+
+- [#1923](https://github.com/learningeconomy/LearnCard/pull/1923) [`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6) Thanks [@Custard7](https://github.com/Custard7)! - PIN sign-in: wrong PIN entries made during the same sign-in on the same device are now treated as the user's own typos (own-typos rule, approved). They no longer trigger the "someone may have tried your PIN" warning, and they no longer block the same-PIN budget refresh. Only wrong entries recorded before the sign-in started, or entries from anywhere else during it, still count. The coordinator records the PIN status when the flow starts, counts its own mismatch responses, and passes both to the strategy (`input.pinAttempts`). The strategy refreshes the PIN only when nothing was recorded before the flow and every status read shows exactly the flow's own entries. lca-api now accepts a non-zero `expectedPinCharges.wrongAttempts`, but still writes only while the PIN shows exactly those charges, so a foreign entry that lands at any point still blocks the refresh. A flow is bound to one PIN generation and ends at any sign-in, and lca-api answers "Incorrect PIN." only for a wrong entry it actually recorded (otherwise CONFLICT). Sign-up now requires a recovery PIN ("Create your PIN": "You'll use it to sign in on new devices."), but it fails open. The step is skipped when escrow is not confirmed available in time. A save that errors or hangs (30s deadline) shows the error and allows a retry, and "Skip for now" appears from the second failed save (the announced error then says so, and focus returns to the PIN boxes); that skip writes no prompt flag, so the first-time PIN prompt asks again on a later start.
+
+    App copy and layout: the new-device PIN screen is now "Confirm it's you" ("Enter your 6-digit PIN to finish signing in."), without the tinted panel behind the PIN boxes, with "Other ways to confirm", "Approve from another device", "Show N more", and one quiet "Trouble signing in?" link to the 7-day path (accounts without a PIN keep their existing screen). The post-PIN-sign-in sheet replaces its yes/no question with "You're signed in" / "Done" plus a quiet "Lost a device? Secure your account" link, or, when wrong entries other than the user's own typos are recorded, an amber "Someone may have tried your PIN" warning leading with "Choose a new PIN" (with "Not now"). Account Recovery settings replace the boxed "Signed in somewhere you don't recognize?" card with a quiet "Sign out of other devices" row under "Security" at the end, marked with an amber dot while wrong PIN entries other than the user's excused own typos are recorded against the current PIN (`ready.escrowPinAttention`); the secure flow's confirm screen keeps the full explanation, now uses a red destructive button, and focuses Cancel first. Translated into es, fr and ar.
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/sss-key-manager@0.2.7
+    - @learncard/types@5.24.2
+    - @learncard/core@9.4.43
+    - @learncard/helpers@1.7.3
+    - @learncard/init@2.5.9
+    - @learncard/did-web-plugin@1.1.43
+    - @learncard/didkit-plugin@1.10.9
+    - @learncard/didkit-plugin-node@0.3.9
+
+## 1.6.2
+
+### Patch Changes
+
+- [#1905](https://github.com/learningeconomy/LearnCard/pull/1905) [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0) Thanks [@Custard7](https://github.com/Custard7)! - Make the recovery PIN the main way to sign in on a new device, without resetting the account. A PIN sign-in now keeps the account's shares, history, recovery methods and escrow: the device stores the released recovery piece at the current version and re-sets the same PIN for a fresh attempt budget only when no wrong entry is recorded against it; otherwise the PIN keeps its reduced budget and the app asks for a new, different PIN (refusing the PIN just used, also after a restart on that device, via a tag keyed by the account key), asking again on each app start until one is chosen; the same-PIN refresh is skipped when another charge landed during the release, and lca-api writes it only while the PIN still shows the charges the client saw (`expectedPinCharges`) (a lost login is linked with the new `POST /keys/recovery-session/pin-sign-in`, accepted only after a PIN release). The server emails the account's verified addresses on every PIN sign-in ("New device signed in with your PIN. Not you? Secure your account."), and the PIN status reports earlier wrong entries. The app leads its recovery screen with PIN entry (no sign-out warnings on that path; the 7-day hold keeps them), asks once after signing in whether a device was lost or the PIN is known to someone else (warning about earlier wrong entries), and adds "Secure my account" / "Sign out of all other devices" (`POST /keys/revoke-other-devices`), reachable from that question, Account Recovery settings and the email link `/account/secure`. That action re-splits the key, purges older versions and unlinks every login except the current one; it does not change the key itself, so a device that is already signed in may keep working until it signs out (the app says so). The revoke emails the account's contact and verified recovery addresses (new `account-secured` template, written for an owner who did not do it and may have lost their login: it says the recovery methods were reset and points to the tenant's support address, or to the organization when there is none). Every recovery token (recovery-email code, phrase, passkey, backup, waiting-period hold and PIN) is now bound to an account security epoch that every revoke and wiping rebind advances, so no token minted before one can rebind or re-link after it. Recovery is one-at-a-time: the coordinator rejects a second recovery while one is pending (`RecoveryInProgressError`; after a cancel, a new recovery-email code can be requested at once) and the app disables switching methods while a PIN sign-in is in flight. `@learncard/email-templates` omits an absent `locale` rather than passing `undefined` (`exactOptionalPropertyTypes`-safe) and exports each template from one declaration.
+
+- Updated dependencies [[`372c1431e78a9708454f9c4c2f2c99dd5486b8e9`](https://github.com/learningeconomy/LearnCard/commit/372c1431e78a9708454f9c4c2f2c99dd5486b8e9), [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/sss-key-manager@0.2.6
+    - @learncard/types@5.24.1
+    - @learncard/email-templates@1.2.2
+    - @learncard/core@9.4.42
+    - @learncard/helpers@1.7.2
+    - @learncard/init@2.5.8
+    - @learncard/did-web-plugin@1.1.42
+    - @learncard/didkit-plugin@1.10.8
+    - @learncard/didkit-plugin-node@0.3.8
+
+## 1.6.1
+
+### Patch Changes
+
+- [#1850](https://github.com/learningeconomy/LearnCard/pull/1850) [`578e831f41bc762ff12e5ad9be6ba765f2bed33d`](https://github.com/learningeconomy/LearnCard/commit/578e831f41bc762ff12e5ad9be6ba765f2bed33d) Thanks [@Custard7](https://github.com/Custard7)! - Keep provisional Web3Auth migrations that have a confirmed escrow enrollment out of the 30-day purge of abandoned migrations, so users who skip the recovery PIN don't lose escrow.
+
+- [#1859](https://github.com/learningeconomy/LearnCard/pull/1859) [`b20b375870032c22ea9109d2b102ddbc4a4f3248`](https://github.com/learningeconomy/LearnCard/commit/b20b375870032c22ea9109d2b102ddbc4a4f3248) Thanks [@goblincore](https://github.com/goblincore)! - Use a unique final sort key for escrow reminder, start-notification and cancellation queues so equal-priority records form predictable batches.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a), [`4ec92c41442b56341c1205e6ddd6ae784aecc990`](https://github.com/learningeconomy/LearnCard/commit/4ec92c41442b56341c1205e6ddd6ae784aecc990)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/didkit-plugin@1.10.7
+    - @learncard/init@2.5.7
+    - @learncard/didkit-plugin-node@0.3.7
+
 ## 1.6.0
 
 ### Minor Changes

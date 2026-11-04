@@ -87,6 +87,12 @@ export interface AuthCoordinatorContextValue {
     setEscrowPin: AuthCoordinator['setEscrowPin'];
     clearEscrowPin: AuthCoordinator['clearEscrowPin'];
     acknowledgeEscrowPinAutoClear: AuthCoordinator['acknowledgeEscrowPinAutoClear'];
+    /** Dismiss the one-time review shown after a PIN sign-in. */
+    acknowledgePinSignIn: AuthCoordinator['acknowledgePinSignIn'];
+    /** Hide the "choose a new PIN" prompt (`ready.escrowPinChangeRequired`) for this session. */
+    dismissEscrowPinChange: AuthCoordinator['dismissEscrowPinChange'];
+    /** "Secure my account" / "Sign out of all other devices"; see AuthCoordinator. */
+    secureAccount: AuthCoordinator['secureAccount'];
     getEscrowEnrollmentState: AuthCoordinator['getEscrowEnrollmentState'];
     beginIdentityRecovery: () => void;
     sendIdentityRecoveryCode: (email: string) => Promise<void>;
@@ -564,6 +570,16 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
     const acknowledgeEscrowPinAutoClear = useCallback(() => {
         coordinatorRef.current?.acknowledgeEscrowPinAutoClear();
     }, []);
+    const acknowledgePinSignIn = useCallback(() => {
+        coordinatorRef.current?.acknowledgePinSignIn();
+    }, []);
+    const dismissEscrowPinChange = useCallback(() => {
+        coordinatorRef.current?.dismissEscrowPinChange();
+    }, []);
+    const secureAccount = useCallback(async (params: { pin: string | null }) => {
+        if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
+        return coordinatorRef.current.secureAccount(params);
+    }, []);
     const getEscrowEnrollmentState = useCallback(async () => {
         if (!coordinatorRef.current) throw new Error('Auth coordinator is not initialized');
         return coordinatorRef.current.getEscrowEnrollmentState();
@@ -721,6 +737,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             setEscrowPin,
             clearEscrowPin,
             acknowledgeEscrowPinAutoClear,
+            acknowledgePinSignIn,
+            dismissEscrowPinChange,
+            secureAccount,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,
@@ -770,6 +789,9 @@ export const AuthCoordinatorProvider: React.FC<AuthCoordinatorProviderProps> = (
             setEscrowPin,
             clearEscrowPin,
             acknowledgeEscrowPinAutoClear,
+            acknowledgePinSignIn,
+            dismissEscrowPinChange,
+            secureAccount,
             getEscrowEnrollmentState,
             beginIdentityRecovery,
             sendIdentityRecoveryCode,

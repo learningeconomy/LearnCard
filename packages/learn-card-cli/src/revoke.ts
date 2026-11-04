@@ -1,4 +1,4 @@
-import { connect, ensureIdentity, loadProject, type ProjectOptions } from './project';
+import { connect, loadProject, requireIdentity, type ProjectOptions } from './project';
 import { out } from './out';
 
 export interface RevokeOptions extends ProjectOptions {
@@ -28,8 +28,9 @@ export const recipientOf = (records: Recipient[], credentialUri: string): string
 
 export const runRevoke = async (uri: string, options: RevokeOptions): Promise<void> => {
     const project = await loadProject(process.cwd());
-    await ensureIdentity(project, options);
-    const learnCard = await connect(project, options);
+    requireIdentity(project);
+    // Acts on an existing identity only: never provision one, never rewrite .env.
+    const learnCard = await connect(project, { ...options, readOnly: true });
     const credential =
         options.templateUri && options.recipient ? undefined : await learnCard.read.get(uri);
     const templateUri = templateUriOf(credential, options);
