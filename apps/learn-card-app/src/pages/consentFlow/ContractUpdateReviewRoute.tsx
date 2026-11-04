@@ -205,7 +205,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
             Object.keys(contract.contract.read.credentials.categories),
             currentUser
         );
-        if (latestUpdate.kind === 'expanded_optional') {
+        if (latestUpdate.kind === 'expanded_optional' || alreadyHandled) {
             const saveOptionalChoices = async () => {
                 try {
                     await updateTerms({ terms, shareAllCategories });

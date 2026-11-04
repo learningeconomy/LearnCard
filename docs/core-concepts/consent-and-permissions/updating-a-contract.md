@@ -146,6 +146,10 @@ Here `termsUri` and `selectedTerms` come from the user's existing consent record
 
 Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. Cancelling the parent PIN with its button, Escape, a backdrop, or a back gesture settles the pending action and leaves the review available to retry. Once a valid PIN submits the action, closing that PIN modal cannot cancel the submission. A version conflict reloads the latest request before another approval attempt.
 
+Saving optional choices on an already handled review records an `update`, not
+another `reconsent`. Omitting `oneTime` preserves the saved one-time setting;
+accepting a newer version does not silently turn a consumed connection live.
+
 If a request changes several times before a user reviews it, `getConsentedContracts()` includes a `cumulativeUpdate` from `lastReviewedVersion` to the current version. On older records without that marker, the accepted version is the fallback. Review and grant every required item in that cumulative change, not just the last published update, before accepting the current version.
 
 The web review, notification card, and history labels use the active app language (English, Spanish, French, or Arabic). Opening an update notification clears the modal stack so the review remains interactive even when Alerts was above another overlay. Navigation does not wait for the best-effort read receipt; dismissal errors stay visible with a retry action.

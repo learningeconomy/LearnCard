@@ -140,6 +140,8 @@ export const reconsentTerms = async (
             message: 'Only the latest contract version can be accepted',
         });
     }
+    const effectiveOneTime = oneTime ?? relationship.terms.oneTime ?? false;
+
     const transaction = {
         id: uuid(),
         action: 'reconsent',
@@ -184,7 +186,8 @@ export const reconsentTerms = async (
                                   }
                                 : {}),
                             updatedAt: transaction.date,
-                            status: oneTime ? 'consumed' : 'live',
+                            status: effectiveOneTime ? 'consumed' : 'live',
+
                             consentedVersion: version,
                             lastReviewedVersion: version,
                             reconsentDeadline: null,
@@ -296,7 +299,7 @@ export const reconsentTerms = async (
                             relationship.contract.id,
                             relationship.terms.id,
                             String(boost.dataValues.id),
-                            Boolean(oneTime)
+                            effectiveOneTime
                         )) ?? undefined;
                     if (!claimId) return;
                     // Get boost instance
@@ -339,7 +342,7 @@ export const reconsentTerms = async (
                         !(await isAutoBoostConsentCurrent(
                             relationship.contract.id,
                             relationship.terms.id,
-                            Boolean(oneTime)
+                            effectiveOneTime
                         ))
                     ) {
                         await releaseAutoBoostClaim(claimId);
@@ -355,13 +358,13 @@ export const reconsentTerms = async (
                         domain,
                         skipNotification: true,
                         autoAcceptCredential: false,
-                        allowConsumedOneTime: Boolean(oneTime),
+                        allowConsumedOneTime: effectiveOneTime,
                         contractTerms: {
                             ...relationship.terms,
                             terms,
                             oneTime: oneTime ?? relationship.terms.oneTime,
                             consentedVersion: version,
-                            status: oneTime ? 'consumed' : 'live',
+                            status: effectiveOneTime ? 'consumed' : 'live',
                         },
                         contractWriterProfileId: issuer.profileId,
                     });
@@ -426,6 +429,8 @@ export const updateTerms = async (
             message: 'User has not yet approved the latest version of this contract',
         });
     }
+    const effectiveOneTime = oneTime ?? relationship.terms.oneTime ?? false;
+
     const transaction = {
         id: uuid(),
         action: 'update',
@@ -455,7 +460,8 @@ export const updateTerms = async (
     const paramsForSet = {
         ...newFlatInner,
         updatedAt: transaction.date,
-        status: oneTime ? 'consumed' : 'live',
+        status: effectiveOneTime ? 'consumed' : 'live',
+
         lastReviewedVersion: Number(relationship.contract.currentVersion ?? 1),
         ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
         ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
@@ -574,7 +580,7 @@ export const updateTerms = async (
                             relationship.contract.id,
                             relationship.terms.id,
                             String(boost.target.id),
-                            Boolean(oneTime)
+                            effectiveOneTime
                         )) ?? undefined;
                     if (!claimId) return;
 
@@ -617,7 +623,7 @@ export const updateTerms = async (
                         !(await isAutoBoostConsentCurrent(
                             relationship.contract.id,
                             relationship.terms.id,
-                            Boolean(oneTime)
+                            effectiveOneTime
                         ))
                     ) {
                         await releaseAutoBoostClaim(claimId);
@@ -633,13 +639,13 @@ export const updateTerms = async (
                         domain,
                         skipNotification: true,
                         autoAcceptCredential: false,
-                        allowConsumedOneTime: Boolean(oneTime),
+                        allowConsumedOneTime: effectiveOneTime,
                         contractTerms: {
                             ...relationship.terms,
                             terms,
                             oneTime: oneTime ?? relationship.terms.oneTime,
                             consentedVersion: latestVersion,
-                            status: oneTime ? 'consumed' : 'live',
+                            status: effectiveOneTime ? 'consumed' : 'live',
                         },
                         contractWriterProfileId: issuer.profileId,
                     });

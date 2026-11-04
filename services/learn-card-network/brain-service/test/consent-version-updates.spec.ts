@@ -11,7 +11,7 @@ import type { ConsentFlowContractChanges } from '@learncard/types';
 import { migrateLegacyConsentFlowContracts } from '@helpers/consentflow-legacy-migration.helpers';
 import { seedLegacyAutoBoost } from './helpers/legacy-autoboost';
 
-const setup = async (expiresAt?: string) => {
+const setup = async (expiresAt?: string, oneTime = false) => {
     const suffix = randomBytes(5).toString('hex');
     const owner = await getUser(randomBytes(32).toString('hex'));
     const learner = await getUser(randomBytes(32).toString('hex'));
@@ -25,11 +25,94 @@ const setup = async (expiresAt?: string) => {
     const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
         contractUri: uri,
         terms: normalFullTerms,
+        oneTime,
     });
     return { owner, learner, uri, termsUri };
 };
 
 describe('safe live contract patches', () => {
+    it('saves choices for an already handled update as an update transaction', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: { credentials: { categories: { Gamma: { required: false } } } },
+                },
+            },
+        });
+        const terms = structuredClone(normalFullTerms);
+        terms.read.credentials.categories.Gamma = {
+            shareAll: false,
+            sharing: true,
+            shared: [],
+        };
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms,
+            acceptVersion: 2,
+        });
+        terms.read.credentials.categories.Gamma.sharing = false;
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms,
+        });
+
+        const saved = (await getContractTermsByUri(termsUri))!;
+        expect(saved.terms).toMatchObject({
+            consentedVersion: 2,
+            lastReviewedVersion: 2,
+            status: 'live',
+        });
+        expect(saved.terms.terms.read.credentials.categories.Gamma.sharing).toBe(false);
+        const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+            uri: termsUri,
+        });
+        expect(history.records.slice(0, 2).map(record => record.action)).toEqual([
+            'update',
+            'reconsent',
+        ]);
+    });
+
+    it('preserves consumed one-time consent when updates omit oneTime', async () => {
+        const { owner, learner, uri, termsUri } = await setup(undefined, true);
+        const terms = structuredClone(normalFullTerms);
+        terms.read.personal.name = 'Updated name';
+        await expect(
+            learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
+            oneTime: true,
+            status: 'consumed',
+        });
+        expect((await getContractTermsByUri(termsUri))!.terms.terms.read.personal.name).toBe(
+            normalFullTerms.read.personal.name
+        );
+
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: { personal: { name: { required: true } } },
+                },
+            },
+            reason: 'Require a name for the connected feature.',
+        });
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms,
+            acceptVersion: 2,
+        });
+        expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
+            oneTime: true,
+            status: 'consumed',
+            consentedVersion: 2,
+            lastReviewedVersion: 2,
+        });
+    });
     it('recovers old quiet-update review baselines and advances them only after explicit review', async () => {
         const { owner, learner, uri, termsUri } = await setup();
         for (const key of ['Alpha', 'Beta']) {
