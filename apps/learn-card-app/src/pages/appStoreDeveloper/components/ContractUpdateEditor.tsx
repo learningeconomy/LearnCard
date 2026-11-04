@@ -291,7 +291,7 @@ const LoadedContractUpdateEditor: React.FC<{
                     )}
                 </button>
             ) : (
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                     {hasChanges &&
                         draft.kind === 'requires_consent' &&
                         publishedVersion === undefined &&
