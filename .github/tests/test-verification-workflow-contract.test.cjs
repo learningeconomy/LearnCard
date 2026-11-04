@@ -88,6 +88,7 @@ const position = name => steps.findIndex(step => step.name === name);
 assert.ok(position('Prepare catalog runner disk space') < position('Setup Bun and dependencies'));
 assert.ok(position('Setup Bun and dependencies') < position('Measure disk after dependencies'));
 assert.ok(position('Install Chromium and Linux libraries') < position('Recheck catalog runner disk space'));
+assert.ok(position('Prepare clean checkout') < position('Recheck catalog runner disk space'));
 assert.ok(position('Recheck catalog runner disk space') < position('Check local prerequisites'));
 assert.match(named(source, 'Check sanitized timing summaries').run, /test-verification-runner-storage\.test\.sh/);
 assert.ok((workflow.on ?? workflow.true).pull_request.paths.includes('scripts/verification-runner-storage.sh'));
