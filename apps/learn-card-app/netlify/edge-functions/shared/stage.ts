@@ -17,7 +17,7 @@ export interface PinnedStage {
  * Derive the stage name from a hostname.
  *
  * Examples:
- *   "alpha.vetpass.app"   → "alpha"
+ *   "staging.vetpass.app" → "staging"
  *   "staging.learncard.ai" → "staging"
  *   "learncard.app"       → null  (production, no stage prefix)
  *   "localhost"            → "local"
