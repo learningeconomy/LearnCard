@@ -248,6 +248,15 @@ describe('ClassLink sign-in broker', () => {
             expect(firebase.createUser).not.toHaveBeenCalled();
         }
     );
+    it('logs only the api_fields names a district sends, never values', async () => {
+        const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+        await caller().exchangeCode(exchange);
+        expect(info).toHaveBeenCalledWith('classlink.api_fields', {
+            tenantId: 'tenant-test',
+            fieldNames: ['student_id'],
+        });
+        expect(JSON.stringify(info.mock.calls)).not.toContain('private-student-id');
+    });
     it('records this sign-in time, not an older ClassLink session auth_time', async () => {
         claims.auth_time = claims.iat - 3 * 86400;
         await caller().exchangeCode(exchange);

@@ -7,6 +7,8 @@ import { getPreferencesForDid } from '@accesslayer/preferences/read';
 import { updatePreferences } from '@accesslayer/preferences/update';
 
 import { ThemeEnum } from '../types/preferences';
+import { isClassLinkStudentDid } from '@helpers/classlinkContext.helpers';
+import { enforceMinorPreferences, MINOR_PREFERENCE_VALUES } from '../models/Preferences';
 
 const preferencesInputSchema = z.object({
     theme: z.enum([ThemeEnum.Colorful, ThemeEnum.Formal]).optional(),
@@ -47,6 +49,9 @@ export const preferencesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const success = await createPreferences(ctx.user.did, input.theme);
+            // ClassLink student accounts always get minor settings, whatever the client sends.
+            if (success && (await isClassLinkStudentDid(ctx.user.did)))
+                await enforceMinorPreferences(ctx.user.did);
 
             if (!success) {
                 throw new TRPCError({
@@ -71,7 +76,11 @@ export const preferencesRouter = t.router({
         .input(preferencesInputSchema)
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const success = await updatePreferences(ctx.user.did, input);
+            const isStudent = await isClassLinkStudentDid(ctx.user.did);
+            const success = await updatePreferences(
+                ctx.user.did,
+                isStudent ? { ...input, ...MINOR_PREFERENCE_VALUES } : input
+            );
 
             if (!success) {
                 throw new TRPCError({
@@ -96,6 +105,9 @@ export const preferencesRouter = t.router({
         .input(z.void())
         .output(preferencesOutputSchema)
         .query(async ({ ctx }) => {
+            // Repairs student accounts whose settings were saved before the rule applied.
+            if (await isClassLinkStudentDid(ctx.user.did))
+                await enforceMinorPreferences(ctx.user.did);
             const preferences = await getPreferencesForDid(ctx.user.did);
 
             return {

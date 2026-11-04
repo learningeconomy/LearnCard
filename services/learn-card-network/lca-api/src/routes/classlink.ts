@@ -80,6 +80,24 @@ const conflict = (tenantId: string): never => {
 const redirectUri = z.string().min(1).max(2048);
 const nonce = z.string().min(1).max(512);
 
+/**
+ * Log which api_fields names a district sends (never values) so admins can set the
+ * district's stateStudentIdField. Field names are configured by district admins.
+ */
+const logApiFieldNames = (tenantId: string, apiFields: unknown): void => {
+    let fields = apiFields;
+    if (typeof fields === 'string') {
+        try {
+            fields = JSON.parse(fields);
+        } catch {
+            fields = undefined;
+        }
+    }
+    const names =
+        fields && typeof fields === 'object' && !Array.isArray(fields) ? Object.keys(fields) : [];
+    console.info('classlink.api_fields', { tenantId, fieldNames: names.slice(0, 50) });
+};
+
 export const classlinkRouter = t.router({
     ...personalEmailProcedures,
     getAuthorizeUrl: openRoute
@@ -139,6 +157,7 @@ export const classlinkRouter = t.router({
                 const tenantId = claims.classLink_tenant_id;
                 const tenant = getClassLinkTenant(config, tenantId);
                 const identityKey = `classlink:${tenantId}:${claims.classLink_sourcedId}`;
+                logApiFieldNames(tenantId, claims.api_fields);
                 // Lookup before the verification guard so an unsafe existing-email join is CONFLICT.
                 const email = (claims.email?.trim() || claims.or_email?.trim())?.toLowerCase();
                 if (!email || !z.string().email().safeParse(email).success)

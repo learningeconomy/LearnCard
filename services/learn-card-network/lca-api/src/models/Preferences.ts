@@ -65,3 +65,32 @@ export const createMinorPreferencesIfAbsent = async (did: string): Promise<boole
     });
     return true;
 };
+
+/** Settings every ClassLink student account must have (AI, analytics, bug reports off). */
+export const MINOR_PREFERENCE_VALUES = Object.freeze({
+    aiEnabled: false,
+    aiAutoDisabled: true,
+    analyticsEnabled: false,
+    analyticsAutoDisabled: true,
+    bugReportsEnabled: false,
+    isMinor: true,
+});
+
+/** Force minor settings, creating the record if needed. Returns true when anything changed. */
+export const enforceMinorPreferences = async (did: string): Promise<boolean> => {
+    const collection = mongodb.collection<MongoPreferencesType>(PREFERENCES_COLLECTION);
+    const result = await collection.updateOne(
+        { did },
+        {
+            $set: { ...MINOR_PREFERENCE_VALUES, updatedAt: new Date() },
+            $setOnInsert: {
+                _id: randomUUID(),
+                did,
+                theme: ThemeEnum.Colorful,
+                createdAt: new Date(),
+            },
+        },
+        { upsert: true }
+    );
+    return result.upsertedCount > 0 || result.modifiedCount > 0;
+};
