@@ -44,6 +44,7 @@ on:
             - Smoketest
             - Service Health Check
             - Tailwind visual regression
+            - Nx cache experiment
             - Test Runner
             - Update DIDKit WASM
             - Validate Published Package Contracts
