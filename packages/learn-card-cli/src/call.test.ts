@@ -111,6 +111,8 @@ describe('classifyMethod', () => {
             expect(classifyMethod(name).effect, name).toBe('read');
         for (const name of [
             'sendBoost',
+            'campaignsSendTestToMe',
+            'campaignsDispatch',
             'createProfile',
             'deleteBoost',
             'updateProfile',
@@ -858,6 +860,21 @@ describe('registerCallCommand --chain', () => {
 });
 
 describe('call --describe', () => {
+    it.each(['campaignsSendTestToMe', 'campaignsDispatch'])(
+        'describes %s as a write without connecting',
+        async method => {
+            await runCall(method, { describe: true }, noIo);
+            expect(out.result).toMatchObject({
+                method,
+                effect: 'write',
+                plugin: 'learn-card-network',
+                needs: ['--write'],
+            });
+            expect(String(out.result.signature)).toContain(`${method}: (`);
+            expect(mocks.initLearnCard).not.toHaveBeenCalled();
+        }
+    );
+
     it('every catalogued method has a generated signature', () => {
         const missing = STATIC_INVOKE_METHODS.filter(name => !METHOD_SIGNATURES[name]);
         expect(missing).toEqual([]);
