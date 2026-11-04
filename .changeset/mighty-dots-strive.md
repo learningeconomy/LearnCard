@@ -59,3 +59,5 @@ Preserve existing delegated AutoBoost issuers when owners publish unchanged conf
 Keep saves from already handled reviews in ordinary sharing-update history, and preserve the saved one-time setting when update or reconsent inputs omit it.
 
 Use opaque timestamp-and-ID cursors for holder consent lists, between-profile data, transaction history, and holder exports as well as owner data pages. Preserve legacy timestamp fallbacks and reject malformed or pre-upgrade date-only cursors with `BAD_REQUEST`; restart pagination without a cursor after upgrading.
+
+Pin owned verification review links to the allocated app origin so real consent review URLs never escape to an unrelated localhost development server.
