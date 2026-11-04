@@ -2,9 +2,11 @@
 //! sender trait. Real sends go through `SesEmailClient` (authority/aws.rs,
 //! `kms`-gated); tests use an in-memory fake. Wording is measured-image
 //! content, never host input: callers pass only language + interpolated
-//! values (code/tenant/hours), never subject or body text.
+//! values (code/brand/hours), never subject or body text. The brand is either
+//! the owner-sealed `recoveryBrand` from the decrypted blob (D21, re-checked by
+//! `display_brand`) or, as a fallback, derived from the measured tenant label.
 use super::AuthorityError as Error;
-use crate::crypto::RECOVERY_LANGUAGES;
+use crate::crypto::{canonical_brand, RECOVERY_LANGUAGES};
 use std::{future::Future, pin::Pin};
 
 #[cfg(feature = "kms")]
@@ -20,13 +22,38 @@ use std::sync::Arc;
 /// Maps the measured `ESCROW_AUTHORITY_TENANT` label to a short display name
 /// for user-facing copy. Plain text only, never HTML. Unknown labels fall
 /// back to the label unchanged; the label's own character-set/length
-/// validation happens in `config.rs`, not here.
+/// validation happens in `config.rs`, not here. Since D21 this is only the
+/// fallback for blobs with no (valid) owner-sealed brand.
 fn brand_name(tenant: &str) -> &str {
     match tenant {
         "learncard" => "LearnCard",
         "scouts" => "ScoutPass",
         other => other,
     }
+}
+
+/// D21: the brand actually rendered. The sealed value is used only if it is
+/// already exactly canonical (normalize has run on every decrypt, so this is
+/// belt and braces against a future path that skips it); anything else falls
+/// back to the measured label's `brand_name`.
+fn display_brand<'a>(sealed: Option<&'a str>, tenant: &'a str) -> &'a str {
+    match sealed {
+        Some(s) if canonical_brand(s).as_deref() == Some(s) => s,
+        _ => brand_name(tenant),
+    }
+}
+
+/// SES `SendEmail` payload caps the real client enforces before sending
+/// (`SesEmailClient::send_email`): a non-empty subject of at most 256 bytes
+/// with no CR/LF, and a non-empty plain-text body of at most 16 KiB. Shared
+/// with the test fake so a template or sealed brand (D21) that would make the
+/// real send fail also fails in tests.
+pub(crate) fn ses_payload_ok(subject: &str, text: &str) -> bool {
+    !subject.is_empty()
+        && subject.len() <= 256
+        && !subject.contains(['\r', '\n'])
+        && !text.is_empty()
+        && text.len() <= 16_384
 }
 
 fn language_index(language: &str) -> Result<usize, Error> {
@@ -79,10 +106,9 @@ pub enum EmailMessage {
     ReleaseWarning { hours: u32 },
 }
 
-/// `tenant`: the measured `ESCROW_AUTHORITY_TENANT` label, mapped through
-/// `brand_name` for display; interpolated as plain text only, never HTML.
-fn subject(message: &EmailMessage, index: usize, tenant: &str) -> String {
-    let brand = brand_name(tenant);
+/// `brand`: already resolved by `display_brand`; interpolated as plain text
+/// only, never HTML.
+fn subject(message: &EmailMessage, index: usize, brand: &str) -> String {
     match (message, index) {
         (EmailMessage::OneTimeCode { .. }, 0) => format!("Your {brand} recovery code"),
         (EmailMessage::OneTimeCode { .. }, 1) => format!("Tu código de recuperación de {brand}"),
@@ -110,11 +136,10 @@ fn subject(message: &EmailMessage, index: usize, tenant: &str) -> String {
     }
 }
 
-/// `tenant`: the measured `ESCROW_AUTHORITY_TENANT` label (there is no richer
-/// enclave-side branding config); mapped through `brand_name` for display and
-/// interpolated as plain text only, never HTML.
-fn body(message: &EmailMessage, index: usize, tenant: &str) -> String {
-    let brand = brand_name(tenant);
+/// `brand`: already resolved by `display_brand` (owner-sealed D21 brand, or
+/// the measured tenant label's fallback); interpolated as plain text only,
+/// never HTML.
+fn body(message: &EmailMessage, index: usize, brand: &str) -> String {
     match (message, index) {
         (EmailMessage::OneTimeCode { code }, 0) => {
             format!("Your {brand} recovery code is: {code}\n\n{}", CODE_LINE[0])
@@ -170,14 +195,16 @@ fn body(message: &EmailMessage, index: usize, tenant: &str) -> String {
 pub type EmailFuture<'a> = Pin<Box<dyn Future<Output = Result<(), Error>> + Send + 'a>>;
 
 /// Dormant-credential-backed in production; swapped for an in-memory fake in
-/// tests. `recipient`/`language` are untrusted request-adjacent values (the
-/// language ultimately comes from the decrypted blob); `message` is always
-/// enclave-constructed, never host-supplied subject/body text.
+/// tests. `recipient`/`language`/`brand` are untrusted request-adjacent values
+/// (all come from the decrypted blob; `brand` is re-checked by
+/// `display_brand`); `message` is always enclave-constructed, never
+/// host-supplied subject/body text.
 pub trait EmailSender: Send + Sync {
     fn send<'a>(
         &'a self,
         recipient: &'a str,
         language: &'a str,
+        brand: Option<&'a str>,
         message: EmailMessage,
     ) -> EmailFuture<'a>;
 }
@@ -209,6 +236,7 @@ impl EmailSender for SesEmailSender {
         &'a self,
         recipient: &'a str,
         language: &'a str,
+        brand: Option<&'a str>,
         message: EmailMessage,
     ) -> EmailFuture<'a> {
         Box::pin(async move {
@@ -216,8 +244,9 @@ impl EmailSender for SesEmailSender {
             // stricter shape check when the enclave decrypted it; no second,
             // looser email-shape check is layered on here.
             let index = language_index(language)?;
-            let text = body(&message, index, &self.tenant);
-            let subj = subject(&message, index, &self.tenant);
+            let brand = display_brand(brand, &self.tenant);
+            let text = body(&message, index, brand);
+            let subj = subject(&message, index, brand);
             self.client.send_email(recipient, &subj, &text).await?;
             Ok(())
         })
@@ -234,6 +263,8 @@ pub mod fake {
         pub language: String,
         pub subject: String,
         pub body: String,
+        /// The brand actually rendered (after `display_brand`).
+        pub brand: String,
         /// Test-only introspection: the raw code, when this was `OneTimeCode`.
         /// Production code never extracts this back out of a sent message.
         pub code: Option<String>,
@@ -248,6 +279,8 @@ pub mod fake {
         pub sent: Mutex<Vec<Sent>>,
         pub unknown: std::sync::atomic::AtomicBool,
         pub reject: std::sync::atomic::AtomicBool,
+        /// The measured authority label, like `SesEmailSender::tenant`; `None` = `learncard`.
+        pub tenant: Option<String>,
     }
 
     impl EmailSender for FakeEmailSender {
@@ -255,9 +288,11 @@ pub mod fake {
             &'a self,
             recipient: &'a str,
             language: &'a str,
+            brand: Option<&'a str>,
             message: EmailMessage,
         ) -> EmailFuture<'a> {
             Box::pin(async move {
+                let brand = display_brand(brand, self.tenant.as_deref().unwrap_or("learncard"));
                 let index = language_index(language)?;
                 if self.unknown.load(std::sync::atomic::Ordering::SeqCst) {
                     return Err(Error::UnknownOutcome);
@@ -269,11 +304,19 @@ pub mod fake {
                     EmailMessage::OneTimeCode { code } => Some(code.clone()),
                     EmailMessage::RecoveryStarted | EmailMessage::ReleaseWarning { .. } => None,
                 };
+                let subject = subject(&message, index, brand);
+                let body = body(&message, index, brand);
+                // Same payload caps as the real SES client, so the fake
+                // cannot accept a send production would refuse.
+                if !ses_payload_ok(&subject, &body) {
+                    return Err(Error::InvalidRequest);
+                }
                 self.sent.lock().unwrap().push(Sent {
                     recipient: recipient.to_owned(),
                     language: language.to_owned(),
-                    subject: subject(&message, index, "learncard"),
-                    body: body(&message, index, "learncard"),
+                    subject,
+                    body,
+                    brand: brand.to_owned(),
                     code,
                 });
                 Ok(())

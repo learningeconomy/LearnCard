@@ -46,7 +46,7 @@ import {
     SocialLoginTypes,
     getAuthConfig,
     getSSSConfig,
-    getEscrowStrategyConfig,
+    getTenantEscrowStrategyConfig,
     getLogger,
     useToast,
     ToastTypeEnum,
@@ -262,24 +262,23 @@ const ScoutsDeviceLinkOverlay: React.FC<{
 
 registerKeyDerivationFactory('sss', () => {
     const sss = getSSSConfig();
-
     // Resolve the active tenant so the lca-api brands recovery / OTP emails for
     // ScoutPass (sent as `X-Tenant-Id`). The factory runs after
     // bootstrapTenantConfig() resolves; if it somehow hasn't, fall back to the
     // server's default tenant. Deliberately not a catch-all: a bare `catch {}`
     // here once hid a missing import and silently dropped the tenant.
-    const tenant = peekResolvedTenantConfig();
-    const tenantId = tenant?.tenantId;
-    const emailBranding = tenant?.email;
+    const tenant = peekResolvedTenantConfig() ?? undefined;
 
     return createSSSStrategy({
         serverUrl: sss.serverUrl,
-        tenantId,
+        tenantId: tenant?.tenantId,
         escrowRelayPublicKey: sss.escrowRelayPublicKey,
         escrowRelayKeyId: sss.escrowRelayKeyId,
-        escrow: getEscrowStrategyConfig(sss),
+        // D21: seals `branding.name` as the enclave email brand if the tenant ever turns on
+        // `auth.sss.escrowSealEmailBrand` (same wiring as learn-card-app).
+        escrow: getTenantEscrowStrategyConfig(sss, tenant),
         onEscrowError: err => log.warn('escrow.enrollment.failed', err),
-        emailBranding,
+        emailBranding: tenant?.email,
         // On native Capacitor (iOS/Android), use encrypted SQLite instead of
         // IndexedDB to avoid iOS WKWebView IndexedDB eviction issues.
         // On web, use adaptive storage that routes to sessionStorage when the

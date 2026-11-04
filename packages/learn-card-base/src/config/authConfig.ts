@@ -13,6 +13,10 @@ import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
 import { tenantKeycloakConfigSchema, type TenantKeycloakConfig } from './tenantConfigSchema';
 import type { SSSStrategyConfig, EscrowAttestationPolicy } from '@learncard/sss-key-manager';
+import {
+    canonicalEscrowEmailBrand,
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+} from '@learncard/sss-key-manager';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('auth-config');
@@ -76,6 +80,16 @@ export interface SSSConfig {
     escrowEnclaveMeasurements: EscrowMeasurementPin[];
     escrowEnclaveRootSha256?: string;
     escrowEnclaveMaxAgeMs?: number;
+    /** The enclave's authority tenant label; unset = the app tenant. See `getEscrowAuthorityTenant`. */
+    escrowAuthorityTenant?: string;
+    /** D21: seal the app brand into escrow blobs for enclave-sent emails. See `getEscrowStrategyConfig`. */
+    escrowSealEmailBrand?: boolean;
+    /**
+     * D21: display names of the OTHER apps that share this app's DIDs and seal their own brand
+     * (LearnCard lists `VetPass`). Only read while `escrowSealEmailBrand` is on, to warn that
+     * enclave emails may carry one of those brands. See `getEscrowEmailSender`.
+     */
+    escrowSharedEmailBrands?: string[];
     enableEmailBackupShare: boolean;
     requireEmailForPhoneUsers: boolean;
 }
@@ -199,6 +213,9 @@ export const getAuthConfig = (): AuthConfig => {
         escrowEnclaveMeasurements: sss.escrowEnclaveMeasurements ?? [],
         escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
         escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
+        escrowAuthorityTenant: sss.escrowAuthorityTenant as string | undefined,
+        escrowSealEmailBrand: (sss.escrowSealEmailBrand as boolean | undefined) ?? false,
+        escrowSharedEmailBrands: (sss.escrowSharedEmailBrands as string[] | undefined) ?? [],
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean | undefined) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean | undefined) ?? true,
     };
@@ -234,6 +251,11 @@ export const getSSSConfig = (): SSSConfig => {
             (sss.escrowEnclaveMeasurements as SSSConfig['escrowEnclaveMeasurements']) ?? [],
         escrowEnclaveRootSha256: sss.escrowEnclaveRootSha256 as string | undefined,
         escrowEnclaveMaxAgeMs: sss.escrowEnclaveMaxAgeMs as number | undefined,
+        ...(sss.escrowAuthorityTenant !== undefined
+            ? { escrowAuthorityTenant: sss.escrowAuthorityTenant as string }
+            : {}),
+        escrowSealEmailBrand: (sss.escrowSealEmailBrand as boolean | undefined) ?? false,
+        escrowSharedEmailBrands: (sss.escrowSharedEmailBrands as string[] | undefined) ?? [],
         enableEmailBackupShare: (sss.enableEmailBackupShare as boolean) ?? true,
         requireEmailForPhoneUsers: (sss.requireEmailForPhoneUsers as boolean) ?? true,
     };
@@ -252,6 +274,94 @@ export const shouldUseSSS = (): boolean => {
     return getAuthConfig().keyDerivation === 'sss';
 };
 
+// -----------------------------------------------------------------
+// Escrow authority tenant
+// -----------------------------------------------------------------
+
+/**
+ * The tenant label the escrow enclave signs and verifies: `escrowAuthorityTenant` when the
+ * tenant config sets it (VetPass shares LearnCard's single-tenant enclave, `"learncard"`),
+ * otherwise the app tenant, otherwise `"learncard"` (the strategy's own default).
+ */
+export const getEscrowAuthorityTenant = (
+    sss: Pick<SSSConfig, 'escrowAuthorityTenant'>,
+    tenantId: string | undefined = getAuthConfig().tenantId
+): string => sss.escrowAuthorityTenant ?? tenantId ?? 'learncard';
+
+/**
+ * The FALLBACK brand the enclave puts on the emails it sends itself (one-time code, recovery
+ * started, release warning) for blobs with no owner-sealed brand (D21: blobs enrolled before
+ * `escrowSealEmailBrand`, by the other app sharing the DID, or with sealing off). Mirrors
+ * `brand_name` in escrow-enclave-app/src/authority/email.rs, which brands from the measured
+ * authority label; both are pinned by sss-key-manager's escrow-authority-brand-names-v1.json.
+ */
+export const escrowAuthorityBrandName = (authorityTenant: string): string => {
+    if (authorityTenant === 'learncard') return 'LearnCard';
+    if (authorityTenant === 'scouts') return 'ScoutPass';
+    return authorityTenant;
+};
+
+/**
+ * The sender brand to name in the in-app "we'll email you from X" note, or `undefined`
+ * when the enclave's emails already carry this app's brand (no note needed).
+ */
+export const getEscrowEmailSenderBrand = (
+    appBrandName: string | undefined,
+    authorityTenant: string
+): string | undefined => {
+    const sender = escrowAuthorityBrandName(authorityTenant);
+    return appBrandName && sender !== appBrandName ? sender : undefined;
+};
+
+/**
+ * The in-app "who will email you" note for the escrow enclave's own emails:
+ *  - `sender`: the other brand the email may carry; `brand`: this app's `branding.name`.
+ *  - `mixed`: the email may carry either brand (D21: this app seals its own brand, but the
+ *    stored blob may predate that or have been written by another app on a shared DID).
+ *  - `shared`: `sender` is another app sharing the user's account (from
+ *    `escrowSharedEmailBrands`), not the service that secures this app's account.
+ */
+export interface EscrowEmailSenderNote {
+    sender: string;
+    brand: string;
+    mixed: boolean;
+    shared?: boolean;
+}
+
+/**
+ * Option A for apps sharing another tenant's escrow enclave (VetPass on LearnCard's): who the
+ * enclave-sent emails come from, or `undefined` when they can only carry this app's brand.
+ *
+ * D21: with `escrowSealEmailBrand` on (and a sealable brand name), new enrollments seal this
+ * app's brand, but the client cannot read which brand the stored blob carries (it is sealed,
+ * and may predate the flag or come from another app on a shared DID, "last writer wins"), so
+ * the note says the email may come from either (`mixed: true`). It is never hidden while such
+ * blobs can exist:
+ *  - an app whose authority brand differs (VetPass) names the authority brand (`LearnCard`);
+ *  - an app whose authority brand IS its own (LearnCard) names the co-tenant apps listed in
+ *    `escrowSharedEmailBrands` (`VetPass`), which may have sealed their brand on a shared DID.
+ */
+export const getEscrowEmailSender = (
+    tenant: { tenantId?: string; branding?: { name?: string } },
+    sss: Pick<
+        SSSConfig,
+        'escrowAuthorityTenant' | 'escrowSealEmailBrand' | 'escrowSharedEmailBrands'
+    >
+): EscrowEmailSenderNote | undefined => {
+    const brand = tenant.branding?.name;
+    if (!brand) return undefined;
+    const sealing = !!sss.escrowSealEmailBrand && canonicalEscrowEmailBrand(brand) !== undefined;
+    const sender = getEscrowEmailSenderBrand(brand, getEscrowAuthorityTenant(sss, tenant.tenantId));
+    if (sender) return { sender, brand, mixed: sealing };
+    if (!sealing) return undefined;
+    const others = [...new Set(sss.escrowSharedEmailBrands ?? [])].filter(
+        other => other.trim() !== '' && other !== brand
+    );
+    return others.length > 0
+        ? { sender: others.join(' / '), brand, mixed: true, shared: true }
+        : undefined;
+};
+
 /** Overrides for `getEscrowStrategyConfig`'s production guard — for tests only. */
 export interface EscrowProdGuardOptions {
     /** Defaults to `getAuthConfig().tenantId`. */
@@ -261,6 +371,12 @@ export interface EscrowProdGuardOptions {
      * (including an unrecognized string or omission) is treated as 'production' — fail-closed.
      */
     stage?: DeploymentStage;
+    /**
+     * D21: the app's display name (`branding.name`), sealed into escrow blobs as the enclave
+     * email brand when `sss.escrowSealEmailBrand` is on. An unsealable name logs and is
+     * omitted (emails keep the authority tenant's brand); it never disables escrow.
+     */
+    appBrandName?: string;
 }
 
 /**
@@ -275,6 +391,9 @@ export interface EscrowProdGuardOptions {
  *    so the guard keys on the deploy *stage*, not the Vite build mode (staging is also built in
  *    Vite "production" mode).
  * Both guards log via `log.error` so a misconfigured tenant is loud, not silent.
+ *
+ * D21: `emailBrand` is set from `options.appBrandName` only when `sss.escrowSealEmailBrand` is
+ * on and the name passes `canonicalEscrowEmailBrand`; otherwise it is omitted (logged).
  */
 export const getEscrowStrategyConfig = (
     sss: SSSConfig,
@@ -286,6 +405,28 @@ export const getEscrowStrategyConfig = (
     const stage = options.stage ?? getAuthConfig().stage;
     const isProductionDeploy = stage !== 'staging' && stage !== 'local';
 
+    if (
+        sss.escrowAuthorityTenant !== undefined &&
+        !ESCROW_AUTHORITY_TENANT_PATTERN.test(sss.escrowAuthorityTenant)
+    ) {
+        log.error('escrow.authority-tenant.invalid', { tenantId });
+        return undefined;
+    }
+    // Only an explicit setting is forwarded; unset keeps the strategy's app-tenant default.
+    // D21: the sealed email brand rides along with it (display text only, never a reason
+    // to disable escrow).
+    const emailBrand = sss.escrowSealEmailBrand
+        ? canonicalEscrowEmailBrand(options.appBrandName)
+        : undefined;
+    if (sss.escrowSealEmailBrand && emailBrand === undefined)
+        log.error('escrow.email-brand.invalid', { tenantId });
+    const authorityTenant = {
+        ...(sss.escrowAuthorityTenant !== undefined
+            ? { authorityTenant: sss.escrowAuthorityTenant }
+            : {}),
+        ...(emailBrand !== undefined ? { emailBrand } : {}),
+    };
+
     if (sss.escrowEnclaveMode === 'software') {
         if (isProductionDeploy && isProductionTenant(tenantId)) {
             log.error('escrow.software-mode.blocked-in-production', { tenantId, stage });
@@ -295,6 +436,7 @@ export const getEscrowStrategyConfig = (
         return {
             enabled: true,
             attestation: { mode: 'software', pinnedPublicKeys: sss.escrowEnclavePublicKeys },
+            ...authorityTenant,
         };
     }
 
@@ -313,6 +455,7 @@ export const getEscrowStrategyConfig = (
             rootCertificateSha256: sss.escrowEnclaveRootSha256,
             maxAgeMs: sss.escrowEnclaveMaxAgeMs,
         },
+        ...authorityTenant,
     };
 };
 
@@ -372,3 +515,16 @@ export default getAuthConfig;
 export const isEmailRelayConfigured = (sss: SSSConfig = getSSSConfig()): boolean =>
     sss.escrowRelayPublicKey.trim().length > 0 &&
     /^[A-Za-z0-9._-]{1,128}$/.test(sss.escrowRelayKeyId.trim());
+
+/**
+ * The escrow strategy config for the resolved tenant, as the apps' `sss` key-derivation
+ * factories build it: D21 seals the tenant's `branding.name` as the enclave email brand
+ * (when `sss.escrowSealEmailBrand` is on). `tenant` is `undefined` when the tenant config could
+ * not be resolved; nothing is sealed then. One shared helper so the wiring is tested once.
+ */
+export const getTenantEscrowStrategyConfig = (
+    sss: SSSConfig,
+    tenant: { branding?: { name?: string } } | undefined,
+    options: Omit<EscrowProdGuardOptions, 'appBrandName'> = {}
+): SSSStrategyConfig['escrow'] =>
+    getEscrowStrategyConfig(sss, { ...options, appBrandName: tenant?.branding?.name });

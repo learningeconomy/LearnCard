@@ -2723,7 +2723,15 @@
             "caption": "¿Perdiste un dispositivo o ves algo desconocido?",
             "attention": "Tu PIN se introdujo incorrectamente."
         },
-        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo."
+        "inProgress": "La recuperación ya está en curso. Espera a que termine y vuelve a intentarlo.",
+        "emailSender": {
+            "code": "Te enviaremos por correo un código de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "updates": "Algunos correos sobre esta solicitud llegan de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "codeMixed": "Tu código puede llegar de {{brand}} o de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "updatesMixed": "Algunos correos sobre esta solicitud pueden llegar de {{brand}} o de {{sender}}, el servicio que protege tu cuenta de {{brand}}.",
+            "codeShared": "Si también usas {{sender}} con esta cuenta, tu código puede llegar de {{sender}} en lugar de {{brand}}.",
+            "updatesShared": "Si también usas {{sender}} con esta cuenta, algunos correos sobre esta solicitud pueden llegar de {{sender}} en lugar de {{brand}}."
+        }
     },
     "alerts": {
         "title": "Alertas",

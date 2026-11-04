@@ -2720,7 +2720,15 @@
             "caption": "Appareil perdu ou activité inhabituelle ?",
             "attention": "Votre PIN a été saisi incorrectement."
         },
-        "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez."
+        "inProgress": "Une récupération est déjà en cours. Attendez qu'elle se termine, puis réessayez.",
+        "emailSender": {
+            "code": "Nous vous enverrons par e-mail un code de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "updates": "Certains e-mails concernant cette demande proviennent de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "codeMixed": "Votre code peut provenir de {{brand}} ou de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "updatesMixed": "Certains e-mails concernant cette demande peuvent provenir de {{brand}} ou de {{sender}}, le service qui sécurise votre compte {{brand}}.",
+            "codeShared": "Si vous utilisez aussi {{sender}} avec ce compte, votre code peut provenir de {{sender}} au lieu de {{brand}}.",
+            "updatesShared": "Si vous utilisez aussi {{sender}} avec ce compte, certains e-mails concernant cette demande peuvent provenir de {{sender}} au lieu de {{brand}}."
+        }
     },
     "alerts": {
         "title": "Alertes",
