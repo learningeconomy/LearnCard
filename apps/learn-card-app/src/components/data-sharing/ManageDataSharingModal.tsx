@@ -22,7 +22,7 @@ import {
     useModal,
     ModalTypes,
     useWithdrawConsent,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     contractCategoryNameToCategoryMetadata,
     useWallet,
 } from 'learn-card-base';
@@ -322,7 +322,7 @@ export const ContractDetailView: React.FC<ContractDetailViewProps> = ({ contract
         contract.uri
     );
     const [isOpening, setIsOpening] = useState(false);
-    const isLearnCardAiContract = contractUri === LEARNCARD_AI_PASSPORT_CONTRACT_URI;
+    const isLearnCardAiContract = isLearnCardAiPassportContractUri(contractUri);
 
     const name = contractDetails?.name ?? m['dataSharing.unknownApp']();
     const image = contractDetails?.image;

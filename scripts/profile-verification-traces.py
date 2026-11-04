@@ -16,7 +16,7 @@ import zipfile
 
 FEATURES = (
     "account", "language", "credentials", "sharing", "contacts", "app-store",
-    "sdk", "cli", "sdk-to-app", "consent-flow", "docs",
+    "sdk", "cli", "sdk-to-app", "consent-flow", "docs", "ai-sessions",
 )
 # Protocol class/method pairs from the repository-pinned Playwright 1.62.1.
 # Titles/apiName may contain user data; never use them as operation labels.
