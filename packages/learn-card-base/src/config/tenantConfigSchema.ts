@@ -11,6 +11,13 @@
 import { z, type ZodIssue } from 'zod';
 
 /**
+ * Same as `ESCROW_AUTHORITY_TENANT_PATTERN` in `@learncard/sss-key-manager`. Copied, not
+ * imported, so the Node config scripts that load this schema don't pull in the SDK;
+ * `tenantConfigSchema.test.ts` asserts the two stay identical.
+ */
+export const ESCROW_AUTHORITY_TENANT_LABEL = /^[A-Za-z0-9_-]{1,128}$/;
+
+/**
  * URL string that also accepts `TODO_*` sentinel placeholders.
  *
  * Tenant configs under development use `TODO_BRAIN_SERVICE_URL` etc. as
@@ -132,7 +139,7 @@ export const tenantSSSConfigSchema = z
          */
         escrowAuthorityTenant: z
             .string()
-            .regex(/^[A-Za-z0-9_-]{1,128}$/, 'Expected 1-128 letters, digits, "_" or "-"')
+            .regex(ESCROW_AUTHORITY_TENANT_LABEL, 'Expected 1-128 letters, digits, "_" or "-"')
             .optional(),
         /**
          * D21: seal this app's `branding.name` into the escrow blob so the enclave's own

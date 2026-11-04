@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getLogger } from 'learn-card-base';
+import { getLogger, type EscrowEmailSenderNote } from 'learn-card-base';
 import { IonIcon } from '@ionic/react';
 import {
     alertCircleOutline,
@@ -98,7 +98,7 @@ export interface EscrowRecoveryPanelProps {
      * come from the other app, so the email may come from either brand. `shared`: `sender`
      * is another app on the same account (LearnCard naming VetPass), not the securing service.
      */
-    emailSender?: { sender: string; brand: string; mixed?: boolean; shared?: boolean };
+    emailSender?: EscrowEmailSenderNote;
 }
 
 /** lca-api answers 403 when the code or resend was refused; anything else is transport/service. */

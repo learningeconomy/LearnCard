@@ -1374,6 +1374,13 @@ const AuthSessionManager: React.FC<{
         status === 'identity_recovery' ||
         status === 'identity_recovery_success';
 
+    // A stable note per open overlay: tenant config is fixed after bootstrap, so resolve it
+    // once when recovery opens instead of handing the modal a new object every render.
+    const escrowEmailSender = useMemo(
+        () => (showRecovery ? resolveEscrowEmailSender() : undefined),
+        [showRecovery]
+    );
+
     const showMigrationLoading = status === 'needs_migration' && !migrationStallVisible;
 
     const showStalledMigration =
@@ -1522,7 +1529,7 @@ const AuthSessionManager: React.FC<{
                                   ? coordinator.state.email
                                   : undefined,
                         ]),
-                        emailSender: resolveEscrowEmailSender(),
+                        emailSender: escrowEmailSender,
                         onStart: coordinator.startEscrowRecovery,
                         onStatus: coordinator.getEscrowRecoveryStatus,
                         onConfirmCode: coordinator.confirmEscrowRecovery,

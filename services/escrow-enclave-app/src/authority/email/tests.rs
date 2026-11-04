@@ -1,4 +1,4 @@
-use super::{fake::FakeEmailSender, EmailMessage, EmailSender};
+use super::{brand_name, fake::FakeEmailSender, EmailMessage, EmailSender};
 use crate::authority::AuthorityError;
 
 #[tokio::test]
@@ -258,5 +258,73 @@ async fn the_longest_allowed_sealed_brand_renders_within_ses_caps_everywhere() {
                 assert!(record.body.contains(&super::cancel_line(index, &brand)));
             }
         }
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct BrandNameCase {
+    label: String,
+    brand: String,
+}
+
+#[derive(serde::Deserialize)]
+struct BrandNameFixture {
+    cases: Vec<BrandNameCase>,
+}
+
+// Cross-language contract: learn-card-base's authConfig.test.ts loads the same
+// file for `escrowAuthorityBrandName`, which mirrors `brand_name`.
+#[test]
+fn brand_name_matches_the_shared_cross_language_fixture() {
+    let fixture: BrandNameFixture = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../packages/sss-key-manager/src/__fixtures__/escrow-authority-brand-names-v1.json"
+    )))
+    .unwrap();
+    assert!(!fixture.cases.is_empty());
+    for case in fixture.cases {
+        assert_eq!(
+            brand_name(&case.label),
+            case.brand,
+            "label {:?}",
+            case.label
+        );
+    }
+}
+
+#[tokio::test]
+async fn unsealed_brand_falls_back_to_the_configured_authority_label() {
+    for (tenant, expected) in [
+        (None, "LearnCard"),
+        (Some("scouts"), "ScoutPass"),
+        (Some("acme"), "acme"),
+    ] {
+        let sender = FakeEmailSender {
+            tenant: tenant.map(str::to_owned),
+            ..FakeEmailSender::default()
+        };
+        sender
+            .send(
+                "owner@example.com",
+                "en",
+                None,
+                EmailMessage::RecoveryStarted,
+            )
+            .await
+            .unwrap();
+        sender
+            .send(
+                "owner@example.com",
+                "en",
+                Some("bad\nbrand"),
+                EmailMessage::RecoveryStarted,
+            )
+            .await
+            .unwrap();
+        let sent = sender.sent.lock().unwrap();
+        assert!(
+            sent.iter().all(|s| s.brand == expected),
+            "tenant {tenant:?}"
+        );
     }
 }

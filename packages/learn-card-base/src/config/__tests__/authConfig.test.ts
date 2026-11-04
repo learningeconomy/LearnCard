@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import brandNames from '../../../../sss-key-manager/src/__fixtures__/escrow-authority-brand-names-v1.json';
+
 import {
     clearAuthConfigOverrides,
     getAuthConfig,
@@ -301,9 +303,11 @@ describe('authConfig', () => {
         });
 
         it('names the enclave email sender only when it differs from the app brand', () => {
-            expect(escrowAuthorityBrandName('learncard')).toBe('LearnCard');
-            expect(escrowAuthorityBrandName('scouts')).toBe('ScoutPass');
-            expect(escrowAuthorityBrandName('other')).toBe('other');
+            // Shared with the enclave's `brand_name` test (escrow-enclave-app authority/email/tests.rs).
+            expect(brandNames.cases.length).toBeGreaterThan(0);
+            for (const { label, brand } of brandNames.cases) {
+                expect(escrowAuthorityBrandName(label)).toBe(brand);
+            }
             expect(getEscrowEmailSenderBrand('VetPass', 'learncard')).toBe('LearnCard');
             expect(getEscrowEmailSenderBrand('LearnCard', 'learncard')).toBeUndefined();
             expect(getEscrowEmailSenderBrand(undefined, 'learncard')).toBeUndefined();

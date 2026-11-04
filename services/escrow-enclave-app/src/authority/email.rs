@@ -279,6 +279,8 @@ pub mod fake {
         pub sent: Mutex<Vec<Sent>>,
         pub unknown: std::sync::atomic::AtomicBool,
         pub reject: std::sync::atomic::AtomicBool,
+        /// The measured authority label, like `SesEmailSender::tenant`; `None` = `learncard`.
+        pub tenant: Option<String>,
     }
 
     impl EmailSender for FakeEmailSender {
@@ -290,7 +292,7 @@ pub mod fake {
             message: EmailMessage,
         ) -> EmailFuture<'a> {
             Box::pin(async move {
-                let brand = display_brand(brand, "learncard");
+                let brand = display_brand(brand, self.tenant.as_deref().unwrap_or("learncard"));
                 let index = language_index(language)?;
                 if self.unknown.load(std::sync::atomic::Ordering::SeqCst) {
                     return Err(Error::UnknownOutcome);

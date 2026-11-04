@@ -11,6 +11,12 @@ import {
     requiredEnvironmentString,
 } from '@learncard/helpers';
 
+/**
+ * Same as `ESCROW_AUTHORITY_TENANT_PATTERN` in `@learncard/sss-key-manager`; copied so loading
+ * the environment doesn't import the SDK. `environment.test.ts` asserts the two stay identical.
+ */
+export const ESCROW_AUTHORITY_TENANT_LABEL = /^[A-Za-z0-9_-]{1,128}$/;
+
 export const lcaApiEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LAMBDA_STAGE: optionalEnvironmentString,
@@ -81,7 +87,7 @@ export const lcaApiEnvironmentShape = {
      *  config.scouts.<stage>.json, or its escrow routes fail closed. */
     ESCROW_AUTHORITY_TENANT: optionalEnvironmentString
         .transform(value => value ?? 'learncard')
-        .pipe(z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)),
+        .pipe(z.string().regex(ESCROW_AUTHORITY_TENANT_LABEL)),
     /** Operator-flipped, manual-only kill switch (P7.1). When true, startRecovery/completeRecovery
      *  refuse with a friendly message; hold cancellation and notifications keep working. Never
      *  auto-flipped by the escrow-ledger-monitor — a compromised monitor must not be able to

@@ -74,7 +74,7 @@ describe('EscrowRecoveryPanel', () => {
     });
 
     describe('email sender note (app brand differs from the enclave brand)', () => {
-        const emailSender = { sender: 'LearnCard', brand: 'VetPass' };
+        const emailSender = { sender: 'LearnCard', brand: 'VetPass', mixed: false };
         const codeNote =
             "We'll email you a code from LearnCard, the service that secures your VetPass account.";
         const updatesNote =

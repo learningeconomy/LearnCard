@@ -13,7 +13,10 @@ import type { AuthProviderType } from '../auth-coordinator/types';
 import type { TenantConfig } from './tenantConfig';
 import { tenantKeycloakConfigSchema, type TenantKeycloakConfig } from './tenantConfigSchema';
 import type { SSSStrategyConfig, EscrowAttestationPolicy } from '@learncard/sss-key-manager';
-import { canonicalEscrowEmailBrand } from '@learncard/sss-key-manager';
+import {
+    canonicalEscrowEmailBrand,
+    ESCROW_AUTHORITY_TENANT_PATTERN,
+} from '@learncard/sss-key-manager';
 import { getLogger } from '../logging/logger';
 
 const log = getLogger('auth-config');
@@ -275,8 +278,6 @@ export const shouldUseSSS = (): boolean => {
 // Escrow authority tenant
 // -----------------------------------------------------------------
 
-const ESCROW_AUTHORITY_TENANT_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
-
 /**
  * The tenant label the escrow enclave signs and verifies: `escrowAuthorityTenant` when the
  * tenant config sets it (VetPass shares LearnCard's single-tenant enclave, `"learncard"`),
@@ -292,7 +293,7 @@ export const getEscrowAuthorityTenant = (
  * started, release warning) for blobs with no owner-sealed brand (D21: blobs enrolled before
  * `escrowSealEmailBrand`, by the other app sharing the DID, or with sealing off). Mirrors
  * `brand_name` in escrow-enclave-app/src/authority/email.rs, which brands from the measured
- * authority label — keep the two in sync.
+ * authority label; both are pinned by sss-key-manager's escrow-authority-brand-names-v1.json.
  */
 export const escrowAuthorityBrandName = (authorityTenant: string): string => {
     if (authorityTenant === 'learncard') return 'LearnCard';
