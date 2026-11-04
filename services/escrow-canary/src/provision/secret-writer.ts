@@ -36,6 +36,12 @@ export const PENDING = 'PROVISIONING_PENDING';
 export const CURRENT = 'AWSCURRENT';
 export const LEASE_MS = 15 * 60_000;
 export const RENEW_MS = 2 * 60_000;
+/**
+ * Backoff between `DescribeSecret` re-reads while its `VersionIdsToStages` may
+ * still lag a label move (DescribeSecret is eventually consistent). Bounded at
+ * 4 s in total.
+ */
+export const DESCRIBE_LAG_BACKOFF_MS: readonly number[] = [250, 500, 750, 1_000, 1_500];
 
 export interface SecretMetadata {
     arn: string;
@@ -152,19 +158,64 @@ export class ProvisioningVersion {
     private latest: AccountSecret | undefined;
     /** Local time taken before this run's latest put (never later than its CreatedDate). */
     private claimedAt: number | undefined;
+    /**
+     * Every version this run has held or created (the resumed version and each put).
+     * Decides only the exit code once reads have settled: a holder outside this set
+     * is another run's version (exit 3); absent or one of these is lag (exit 1).
+     */
+    private readonly known = new Set<string>();
     private readonly newToken: () => string;
     private readonly now: () => number;
+    private readonly sleep: (ms: number) => Promise<void>;
 
     constructor(
         private readonly store: StagedSecretStore,
         private readonly secretId: string,
         existing?: { versionId: string; secret: AccountSecret },
-        clock: { newToken?: () => string; now?: () => number } = {}
+        clock: {
+            newToken?: () => string;
+            now?: () => number;
+            sleep?: (ms: number) => Promise<void>;
+        } = {}
     ) {
         this.own = existing?.versionId;
+        if (existing) this.known.add(existing.versionId);
         this.latest = existing ? structuredClone(existing.secret) : undefined;
         this.newToken = clock.newToken ?? randomUUID;
         this.now = clock.now ?? Date.now;
+        this.sleep = clock.sleep ?? (ms => new Promise<void>(resolve => setTimeout(resolve, ms)));
+    }
+
+    /** A holder that is not absent and not a version this run created or resumed. */
+    private foreign(holder: string | undefined): boolean {
+        return holder !== undefined && !this.known.has(holder);
+    }
+
+    /**
+     * Reads the `PROVISIONING` holder until it is `expected` or the bounded backoff
+     * runs out, and returns the last holder read. Any other holder is re-read, even
+     * one this run never saw: a stale read can show the label absent, on this run's
+     * previous version, or where it was before this run started (e.g. a holder an
+     * operator or an earlier promote just detached). Proceeding still requires a
+     * read showing `expected`, so re-reading only delays a stop, never skips one.
+     */
+    private async settledHolder(
+        expected: string | undefined,
+        read: () => Promise<string | undefined>
+    ): Promise<string | undefined> {
+        for (let attempt = 0; ; attempt += 1) {
+            const holder = await read();
+            if (holder === expected || attempt >= DESCRIBE_LAG_BACKOFF_MS.length) return holder;
+            await this.sleep(DESCRIBE_LAG_BACKOFF_MS[attempt]);
+        }
+    }
+
+    /** Requires `PROVISIONING` on this run's current version (`this.own`, or none yet). */
+    private async requireOwnHolder(read: () => Promise<string | undefined>): Promise<void> {
+        const holder = await this.settledHolder(this.own, read);
+        if (holder === this.own) return;
+        if (this.foreign(holder)) throw needsHuman('secret', 'provisioning_label_moved');
+        throw new ProvisionError('secret', 'provisioning_label_lag');
     }
 
     get versionId(): string | undefined {
@@ -174,8 +225,9 @@ export class ProvisioningVersion {
     async write(secret: AccountSecret): Promise<string> {
         const value = JSON.stringify(secretSchema.parse(secret));
         // Early exit only (saves a version); the claim below is what is atomic.
-        const before = versionWith(await this.store.describe(this.secretId), PROVISIONING);
-        if (before !== this.own) throw needsHuman('secret', 'provisioning_label_moved');
+        await this.requireOwnHolder(async () =>
+            versionWith(await this.store.describe(this.secretId), PROVISIONING)
+        );
         const startedAt = this.now();
         let versionId: string;
         try {
@@ -184,6 +236,7 @@ export class ProvisioningVersion {
             if (error instanceof ProvisionError) throw error;
             throw new ProvisionError('secret', 'write');
         }
+        this.known.add(versionId);
         await this.claim(versionId);
         this.own = versionId;
         this.latest = structuredClone(secret);
@@ -204,13 +257,13 @@ export class ProvisioningVersion {
             await this.write(this.latest);
             return;
         }
-        let holder: string | undefined;
-        try {
-            holder = versionWith(await this.store.describe(this.secretId), PROVISIONING);
-        } catch {
-            throw new ProvisionError('secret', 'describe');
-        }
-        if (holder !== this.own) throw needsHuman('secret', 'provisioning_label_moved');
+        await this.requireOwnHolder(async () => {
+            try {
+                return versionWith(await this.store.describe(this.secretId), PROVISIONING);
+            } catch {
+                throw new ProvisionError('secret', 'describe');
+            }
+        });
     }
 
     /** Conditional move of `PROVISIONING` from this run's version (or nowhere) to `versionId`. */
@@ -222,15 +275,31 @@ export class ProvisioningVersion {
             // Fall through: decide from the label's actual position.
         }
         // `versionId` was just created and is known only to this run, so the label on
-        // it means our claim committed (response lost, SDK retry rejected).
-        const holder = await this.store
-            .describe(this.secretId)
-            .then(metadata => ({ read: true, version: versionWith(metadata, PROVISIONING) }))
-            .catch(() => ({ read: false, version: undefined }));
-        if (holder.read && holder.version === versionId) return;
-        // Still where this run left it: a transient failure, nothing changed. Re-run.
-        if (holder.read && holder.version === this.own) throw new ProvisionError('secret', 'claim');
-        throw needsHuman('secret', 'provisioning_label_moved');
+        // it means our claim committed (response lost, SDK retry rejected). Any other
+        // read may lag a committed claim, so it is re-read before concluding.
+        const last: { read: boolean; holder?: string } = { read: false };
+        let holder: string | undefined;
+        try {
+            holder = await this.settledHolder(versionId, async () => {
+                const seen = versionWith(await this.store.describe(this.secretId), PROVISIONING);
+                last.read = true;
+                last.holder = seen;
+                return seen;
+            });
+        } catch {
+            // A re-read failed. If an earlier read already showed the label absent or on
+            // this run's own version, nothing points at another run: retryable. With no
+            // successful read (as before the re-reads existed) or another run's version
+            // last seen, stop for a human.
+            if (last.read && !this.foreign(last.holder))
+                throw new ProvisionError('secret', 'claim');
+            throw needsHuman('secret', 'provisioning_label_moved');
+        }
+        if (holder === versionId) return;
+        if (this.foreign(holder)) throw needsHuman('secret', 'provisioning_label_moved');
+        // Still where this run left it (or still absent): a transient failure,
+        // nothing changed as far as this run can tell. Re-run.
+        throw new ProvisionError('secret', 'claim');
     }
 
     /** Read this run's version back and require it to equal what was written. */
@@ -275,12 +344,14 @@ export class ProvisioningVersion {
             // Already detached (lost response) or unreadable: harmless, the next run reports
             // a stale label. On ANOTHER version it means a run took over after the fence:
             // AWSCURRENT is this run's version, but that run may still be changing the server.
-            const holder = await this.store
-                .describe(this.secretId)
-                .then(metadata => versionWith(metadata, PROVISIONING))
-                .catch(() => undefined);
-            if (holder !== undefined && holder !== this.own)
-                throw needsHuman('promote', 'provisioning_label_moved');
+            // Re-read while it shows a holder: the read may lag the detach.
+            const holder = await this.settledHolder(undefined, () =>
+                this.store
+                    .describe(this.secretId)
+                    .then(metadata => versionWith(metadata, PROVISIONING))
+                    .catch(() => undefined)
+            );
+            if (this.foreign(holder)) throw needsHuman('promote', 'provisioning_label_moved');
         }
         try {
             await this.store.moveStage(this.secretId, PENDING, undefined, this.own);

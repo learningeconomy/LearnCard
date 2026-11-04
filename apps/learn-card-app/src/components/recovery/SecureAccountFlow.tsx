@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import { alertCircleOutline, checkmarkCircleOutline, shieldCheckmarkOutline } from 'ionicons/icons';
 import { Overlay, isSameEscrowPinError } from 'learn-card-base';
+import { focusOnMount } from './focusOnMount';
 import { validatePin } from '@learncard/sss-key-manager';
 import { RecoveryPinInput } from './RecoveryPinInput';
 import * as m from '../../paraglide/messages.js';
@@ -80,6 +81,10 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
         'w-full py-3 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed';
     const secondary =
         'w-full py-3 px-4 rounded-[20px] border border-grayscale-300 text-grayscale-700 font-medium text-sm hover:bg-grayscale-10 transition-colors';
+    // The confirm screen's action is the destructive one ("Sign out of other devices"
+    // in settings leads here and relies on this screen for the full explanation).
+    const destructive =
+        'w-full py-3 px-4 rounded-[20px] bg-red-600 text-white font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed';
     const link =
         'w-full py-2.5 min-h-[44px] text-sm text-grayscale-600 hover:text-grayscale-900 transition-colors';
 
@@ -170,7 +175,7 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
                     </p>
                     <div className="space-y-v3-3">
                         <button
-                            autoFocus
+                            ref={focusOnMount}
                             onClick={() =>
                                 onSetUpRecovery(passkeyAvailable ? 'passkey' : undefined)
                             }
@@ -298,11 +303,13 @@ export const SecureAccountFlow: React.FC<SecureAccountFlowProps> = ({
                             if (hasPin) setStep('pin');
                             else void run(null);
                         }}
-                        className={primary}
+                        className={destructive}
                     >
                         {error ? m['common.tryAgain']() : m['recovery.secureAccount.continue']()}
                     </button>
-                    <button onClick={onClose} className={secondary}>
+                    {/* Cancel takes initial focus so the destructive revoke is never the
+                        default action (one Enter from the settings row must not run it). */}
+                    <button ref={focusOnMount} onClick={onClose} className={secondary}>
                         {m['common.cancel']()}
                     </button>
                 </div>

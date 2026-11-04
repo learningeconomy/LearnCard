@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { IonIcon } from '@ionic/react';
 import {
     fingerPrint,
@@ -10,6 +10,7 @@ import {
     checkmarkOutline,
     mailOutline,
     closeOutline,
+    chevronForwardOutline,
 } from 'ionicons/icons';
 
 import { Capacitor } from '@capacitor/core';
@@ -49,10 +50,15 @@ interface RecoverySetupModalProps extends Partial<AutomaticRecoveryProps> {
     onClose: () => void;
     registerCloseRequest?: (fn: () => void) => void;
     /**
-     * "Sign out of all other devices": the same revoke as "Secure my account". The
-     * caller closes this modal and opens the secure flow.
+     * "Sign out of other devices": the same revoke as "Secure my account". The caller
+     * closes this modal and opens the secure flow, whose confirm screen explains it.
      */
     onSignOutOtherDevices?: () => void;
+    /**
+     * Shows a small amber dot on "Sign out of other devices". Driven only by signals
+     * that already exist: wrong PIN entries recorded against the current PIN.
+     */
+    signOutAttention?: boolean;
 }
 
 const isValidChallengeOptions = (
@@ -87,9 +93,12 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
     onSetEscrowPin,
     onClearEscrowPin,
     onSignOutOtherDevices,
+    signOutAttention = false,
 }) => {
     const webAuthnSupported = isWebAuthnSupported();
     const isNative = Capacitor.isNativePlatform();
+    // The security row's name is its label alone; the signal and caption describe it.
+    const signOutIds = useId();
 
     const hasExistingMethod = (type: string) => existingMethods.some(m => m.type === type);
 
@@ -1438,30 +1447,6 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                 </>
             )}
 
-            {onSignOutOtherDevices && (
-                <section
-                    aria-labelledby="sign-out-other-devices-title"
-                    className="mt-6 p-4 rounded-2xl border border-grayscale-200 bg-white"
-                >
-                    <h3
-                        id="sign-out-other-devices-title"
-                        className="text-sm font-medium text-grayscale-900"
-                    >
-                        {m['recovery.signOutOtherDevices.title']()}
-                    </h3>
-                    <p className="mt-1 text-xs text-grayscale-600 leading-relaxed">
-                        {m['recovery.signOutOtherDevices.description']()}
-                    </p>
-                    <button
-                        onClick={onSignOutOtherDevices}
-                        disabled={loading}
-                        className="mt-3 w-full py-2.5 px-4 rounded-[20px] border border-red-200 text-red-700 font-medium text-sm hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                        {m['recovery.signOutOtherDevices.action']()}
-                    </button>
-                </section>
-            )}
-
             {/* Bottom action */}
             {!isActivationPending && (
                 <div className="mt-6 pt-4 border-t border-grayscale-200">
@@ -1479,6 +1464,60 @@ export const RecoverySetupModal: React.FC<RecoverySetupModalProps> = ({
                         {anyConfigured ? m['common.done']() : m['common.skipForNow']()}
                     </button>
                 </div>
+            )}
+
+            {/* A quiet row, last: the secure flow's confirm screen carries the full
+                explanation and the destructive button. */}
+            {onSignOutOtherDevices && (
+                <section aria-labelledby="security-section-title" className="mt-6">
+                    <h3
+                        id="security-section-title"
+                        className="px-1 mb-1 text-xs font-medium uppercase tracking-wide text-grayscale-500"
+                    >
+                        {m['recovery.signOutOtherDevices.section']()}
+                    </h3>
+                    <button
+                        type="button"
+                        onClick={onSignOutOtherDevices}
+                        disabled={loading}
+                        aria-labelledby={`${signOutIds}-label`}
+                        aria-describedby={
+                            signOutAttention
+                                ? `${signOutIds}-attention ${signOutIds}-caption`
+                                : `${signOutIds}-caption`
+                        }
+                        className="w-full py-3 px-1 min-h-[44px] flex items-center gap-3 text-start rounded-xl hover:bg-grayscale-10 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <span className="flex-1 min-w-0">
+                            <span className="flex items-center gap-2 text-sm font-medium text-grayscale-900">
+                                <span id={`${signOutIds}-label`}>
+                                    {m['recovery.signOutOtherDevices.label']()}
+                                </span>
+                                {signOutAttention && (
+                                    <span
+                                        data-testid="sign-out-attention-dot"
+                                        className="w-2 h-2 rounded-full bg-amber-500 shrink-0"
+                                    >
+                                        <span id={`${signOutIds}-attention`} className="sr-only">
+                                            {m['recovery.signOutOtherDevices.attention']()}
+                                        </span>
+                                    </span>
+                                )}
+                            </span>
+                            <span
+                                id={`${signOutIds}-caption`}
+                                className="block mt-0.5 text-xs text-grayscale-500"
+                            >
+                                {m['recovery.signOutOtherDevices.caption']()}
+                            </span>
+                        </span>
+                        <IonIcon
+                            icon={chevronForwardOutline}
+                            aria-hidden="true"
+                            className="text-grayscale-400 text-base shrink-0 rtl:rotate-180"
+                        />
+                    </button>
+                </section>
             )}
         </div>
     );
