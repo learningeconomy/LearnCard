@@ -21,3 +21,19 @@ export const getClassLinkProfileDefaults = async (): Promise<
         return {};
     }
 };
+
+/**
+ * True when this session came from a ClassLink student sign-in. lca-api sets the
+ * `classlinkStudent` claim, and enforces the same settings on the server.
+ */
+export const isClassLinkStudentSession = async (): Promise<boolean> => {
+    try {
+        const user = auth().currentUser;
+        if (!user) return false;
+        const { claims } = await user.getIdTokenResult();
+        return claims.classlinkStudent === true;
+    } catch (error) {
+        log.warn('classlink.student.claim.unavailable', error);
+        return false;
+    }
+};

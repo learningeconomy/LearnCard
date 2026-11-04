@@ -119,6 +119,7 @@ const PublishSignInGate = lazyWithRetry(
     () => import('./pages/appStoreDeveloper/submit/PublishSignInGate')
 );
 const FamilyPage = lazyWithRetry(() => import('./pages/familyPage/FamilyPage'));
+const SchoolConnectPage = lazyWithRetry(() => import('./pages/schoolConnect/SchoolConnectPage'));
 const AuthHandoff = lazyWithRetry(() => import('./pages/auth/AuthHandoff'));
 const ClassLinkCallback = lazyWithRetry(() => import('./pages/auth/ClassLinkCallback'));
 const ClassLinkStart = lazyWithRetry(() => import('./pages/auth/ClassLinkStart'));
@@ -325,6 +326,7 @@ export const Routes: React.FC = () => {
                         <PrivateRoute exact path="/memberships" component={MembershipPage} />
                         <PrivateRoute exact path="/workhistory" component={WorkHistoryPage} />
                         <PrivateRoute exact path="/families" component={FamilyPage} />
+                        <PrivateRoute exact path="/school-connect" component={SchoolConnectPage} />
                         <PrivateRoute exact path="/skills" component={SkillsPage} />
                         <PrivateRoute exact path="/ai/insights" component={AiInsights} />
                         {learnCardAssistantEnabled && (
@@ -492,6 +494,7 @@ export const ROUTE_PRELOAD: Record<string, () => Promise<void>> = {
     '/accommodations': () => AccommodationsPage.preload(),
     '/workhistory': () => WorkHistoryPage.preload(),
     '/families': () => FamilyPage.preload(),
+    '/school-connect': () => SchoolConnectPage.preload(),
     '/ids': () => IdsPage.preload(),
     '/memberships': () => MembershipPage.preload(),
     '/currencies': () => CurrenciesPage.preload(),

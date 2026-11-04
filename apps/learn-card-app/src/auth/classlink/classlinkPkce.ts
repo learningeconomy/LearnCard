@@ -46,11 +46,16 @@ export interface ClassLinkAttempt {
     redirectUri: string;
     createdAt: number;
     redirectTo?: string;
+    /** 'connect' attaches the school account to the signed-in account instead of signing in. */
+    intent?: ClassLinkAttemptIntent;
 }
+
+export type ClassLinkAttemptIntent = 'signIn' | 'connect';
 
 export interface CreateClassLinkAttemptOptions {
     /** Where to send the user after the callback completes (UI navigation only, never credentials). */
     redirectTo?: string;
+    intent?: ClassLinkAttemptIntent;
 }
 
 export interface CreateClassLinkAttemptResult {
@@ -116,7 +121,11 @@ const isClassLinkAttempt = (value: unknown): value is ClassLinkAttempt =>
     typeof value.createdAt === 'number' &&
     (!('redirectTo' in value) ||
         value.redirectTo === undefined ||
-        typeof value.redirectTo === 'string');
+        typeof value.redirectTo === 'string') &&
+    (!('intent' in value) ||
+        value.intent === undefined ||
+        value.intent === 'signIn' ||
+        value.intent === 'connect');
 
 /** Start a new ClassLink sign-in attempt: generates + persists state, overwriting any prior pending attempt. */
 export const createClassLinkAttempt = async (
@@ -135,11 +144,22 @@ export const createClassLinkAttempt = async (
         redirectUri,
         createdAt: Date.now(),
         ...(options.redirectTo ? { redirectTo: options.redirectTo } : {}),
+        ...(options.intent === 'connect' ? { intent: 'connect' as const } : {}),
     };
 
     getStorage().setItem(STORAGE_KEY, JSON.stringify(attempt));
 
     return { state, nonce, codeVerifier, codeChallenge, redirectUri };
+};
+
+/** Reads the pending attempt's intent without consuming it (UI routing only). */
+export const peekClassLinkAttemptIntent = (): ClassLinkAttemptIntent => {
+    try {
+        const parsed: unknown = JSON.parse(getStorage().getItem(STORAGE_KEY) ?? 'null');
+        return isClassLinkAttempt(parsed) && parsed.intent === 'connect' ? 'connect' : 'signIn';
+    } catch {
+        return 'signIn';
+    }
 };
 
 /**

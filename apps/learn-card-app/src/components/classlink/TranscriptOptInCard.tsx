@@ -94,7 +94,8 @@ export const TranscriptOptInCard: React.FC = () => {
         const ok = await startClassLinkLogin(
             getClassLinkAuthorizeUrl,
             path => history.push(path),
-            window.location.pathname
+            window.location.pathname,
+            'connect'
         );
         if (!ok) {
             setReauthError(m['transcriptOptIn.error']());

@@ -78,7 +78,10 @@ import {
 } from '@analytics';
 
 import countries from '../../../constants/countries.json';
-import { getClassLinkProfileDefaults } from '../../../auth/classlink/classlinkProfileDefaults';
+import {
+    getClassLinkProfileDefaults,
+    isClassLinkStudentSession,
+} from '../../../auth/classlink/classlinkProfileDefaults';
 const COUNTRIES: Record<string, string> = countries as Record<string, string>;
 
 const log = getLogger('onboarding-flow-v2');
@@ -304,6 +307,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const [privacyPreferences, setPrivacyPreferences] =
         useState<OnboardingPrivacyPreferences | null>(null);
+    // ClassLink students cannot turn these on; lca-api enforces the same rule.
+    const [isSchoolLocked, setIsSchoolLocked] = useState(false);
+    useEffect(() => {
+        let cancelled = false;
+        void isClassLinkStudentSession().then(locked => {
+            if (!cancelled) setIsSchoolLocked(locked);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [authUser]);
     const [role, setRole] = useState<LearnCardRolesEnum>(LearnCardRolesEnum.learner);
 
     const [error, setError] = useState<string | null>(null);
@@ -596,8 +610,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                     }
                 }
 
-                const selectedPrivacyPreferences =
+                const chosenPrivacyPreferences =
                     privacyPreferences ?? getDefaultPrivacyPreferences(dob, country);
+                const selectedPrivacyPreferences = isSchoolLocked
+                    ? {
+                          ...chosenPrivacyPreferences,
+                          aiEnabled: false,
+                          analyticsEnabled: false,
+                          bugReportsEnabled: false,
+                          isMinor: true,
+                      }
+                    : chosenPrivacyPreferences;
                 const aiEnabled = selectedPrivacyPreferences.isMinor
                     ? false
                     : selectedPrivacyPreferences.aiEnabled;
@@ -1254,9 +1277,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     })}
                                                     checked={Boolean(
                                                         privacyPreferences?.aiEnabled &&
-                                                        !privacyPreferences?.isMinor
+                                                        !privacyPreferences?.isMinor &&
+                                                        !isSchoolLocked
                                                     )}
-                                                    disabled={privacyPreferences?.isMinor}
+                                                    disabled={
+                                                        isSchoolLocked ||
+                                                        privacyPreferences?.isMinor
+                                                    }
                                                     onChange={() =>
                                                         setPrivacyPreferences(prev =>
                                                             prev
@@ -1269,9 +1296,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                     }
                                                 />
                                             </div>
-                                            {privacyPreferences?.isMinor && (
+                                            {(isSchoolLocked || privacyPreferences?.isMinor) && (
                                                 <p className="text-xs text-amber-700 bg-amber-50/80 backdrop-blur-xs p-2.5 rounded-xl border border-amber-100/50">
-                                                    {m['onboarding.v2.aiMinorNote']()}
+                                                    {isSchoolLocked
+                                                        ? m['onboarding.v2.schoolLockedNote']()
+                                                        : m['onboarding.v2.aiMinorNote']()}
                                                 </p>
                                             )}
                                             <div className="flex items-center justify-between">
@@ -1281,8 +1310,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <Toggle
                                                     aria-label={m['onboarding.v2.analytics']()}
                                                     checked={Boolean(
-                                                        privacyPreferences?.analyticsEnabled
+                                                        privacyPreferences?.analyticsEnabled &&
+                                                        !isSchoolLocked
                                                     )}
+                                                    disabled={isSchoolLocked}
                                                     onChange={() =>
                                                         setPrivacyPreferences(prev =>
                                                             prev
@@ -1303,8 +1334,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                                 <Toggle
                                                     aria-label={m['onboarding.v2.bugReports']()}
                                                     checked={Boolean(
-                                                        privacyPreferences?.bugReportsEnabled
+                                                        privacyPreferences?.bugReportsEnabled &&
+                                                        !isSchoolLocked
                                                     )}
+                                                    disabled={isSchoolLocked}
                                                     onChange={() =>
                                                         setPrivacyPreferences(prev =>
                                                             prev

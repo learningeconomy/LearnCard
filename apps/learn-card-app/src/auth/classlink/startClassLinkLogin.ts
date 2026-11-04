@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { getLogger } from 'learn-card-base';
 
-import { createClassLinkAttempt } from './classlinkPkce';
+import { createClassLinkAttempt, type ClassLinkAttemptIntent } from './classlinkPkce';
 import { AuthSessionError } from '@learncard/types';
 import { openNativeAuthSession } from '../nativeAuthSession';
 import { CLASSLINK_CALLBACK_PATH } from './classlinkPkce';
@@ -37,10 +37,14 @@ export const toClassLinkCallbackPath = (callbackUrl: string): string => {
 export const startClassLinkLogin = async (
     getAuthorizeUrl: ClassLinkAuthorizeUrlFn,
     navigate: (path: string) => void,
-    redirectTo?: string
+    redirectTo?: string,
+    intent: ClassLinkAttemptIntent = 'signIn'
 ): Promise<boolean> => {
     try {
-        const attempt = await createClassLinkAttempt(redirectTo ? { redirectTo } : {});
+        const attempt = await createClassLinkAttempt({
+            ...(redirectTo ? { redirectTo } : {}),
+            intent,
+        });
         const { url } = await getAuthorizeUrl({
             redirectUri: attempt.redirectUri,
             codeChallenge: attempt.codeChallenge,

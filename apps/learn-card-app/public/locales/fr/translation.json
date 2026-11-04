@@ -24,9 +24,9 @@
         "requesting": "Demande en cours…",
         "requested": "Votre relevé de notes est en route. Nous vous préviendrons à son arrivée.",
         "noneYet": "Il n'y a pas encore de relevé de notes pour vous. Revenez plus tard.",
-        "reauthRequired": "Connectez-vous à nouveau avec ClassLink pour continuer",
-        "reauthButton": "Se Reconnecter",
-        "reauthing": "Connexion en cours…",
+        "reauthRequired": "Reconnectez votre compte scolaire pour continuer",
+        "reauthButton": "Reconnecter",
+        "reauthing": "Reconnexion…",
         "noStateId": "Nous n'avons pas trouvé votre dossier d'étudiant. Demandez à votre école de vérifier votre compte ClassLink.",
         "error": "Nous n'avons pas pu joindre les registres de votre école pour le moment. Veuillez réessayer plus tard.",
         "tryAgain": "Réessayer"
@@ -1584,6 +1584,7 @@
             "privacyDesc": "Modifiable à tout moment dans les Paramètres.",
             "brandAi": "{{brand}} IA",
             "aiMinorNote": "Les fonctionnalités d'IA sont désactivées pour les mineurs.",
+            "schoolLockedNote": "Votre école désactive les fonctionnalités d’IA, les statistiques d’utilisation et les rapports de bugs pour les comptes élèves.",
             "analytics": "Analytique",
             "bugReports": "Rapports de bogues",
             "createMy": "Créer mon {{brand}}",
@@ -8680,7 +8681,8 @@
         "manyResults": "{{count}} résultats pour \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Aperçus des compétences",
-            "boostAFriend": "Encourager un ami"
+            "boostAFriend": "Encourager un ami",
+            "schoolConnect": "Connexion Scolaire"
         }
     },
     "addToPassport": {
@@ -10075,5 +10077,33 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
+    },
+    "schoolConnect": {
+        "signInFirst": "Connectez-vous, puis reconnectez votre école.",
+        "connectFailed": "Nous n'avons pas pu connecter votre compte scolaire. Veuillez réessayer.",
+        "connectedToast": "Votre compte scolaire est connecté.",
+        "tryAgain": "Réessayer",
+        "notAvailable": "La Connexion Scolaire n'est pas encore disponible pour votre compte.",
+        "yourSchool": "Votre école",
+        "lastConnected": "Dernière connexion {{date}}",
+        "connected": "Connecté",
+        "refreshConnection": "Actualiser la connexion",
+        "connecting": "Connexion...",
+        "studentNote": "Les fonctionnalités d'IA, les analyses et les rapports de bugs sont désactivés, comme l'exige votre école.",
+        "warningTitle": "Avant de vous connecter",
+        "warningBody": "Si vous êtes étudiant, votre école n'autorise pas les fonctionnalités d'IA, les analyses ou les rapports de bugs pour les comptes étudiants, nous les désactiverons donc.",
+        "connectWithClassLink": "Se connecter avec ClassLink",
+        "notNow": "Pas maintenant",
+        "heroTitle": "Vos dossiers scolaires, entre vos mains",
+        "heroSubhead": "Connectez votre compte scolaire pour accéder à vos dossiers officiels.",
+        "benefit1": "Demandez votre relevé de notes officiel",
+        "benefit2": "Partagez-le avec les universités et les employeurs",
+        "benefit3": "Vous décidez qui le voit",
+        "chooseProvider": "Choisissez comment votre école se connecte",
+        "dontSeeSchool": "Vous ne voyez pas votre école ?",
+        "moreComingSoon": "D'autres écoles arriveront bientôt.",
+        "askToAdd": "Demandez-nous d'ajouter votre école",
+        "mailtoSubject": "Ajouter mon école à Connexion Scolaire",
+        "mailtoBody": "Nom de l'école :\nDistrict :\nÉtat :\n"
     }
 }

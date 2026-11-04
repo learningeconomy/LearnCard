@@ -5,7 +5,11 @@ import { useClassLinkExchangeCode } from 'learn-card-base/react-query/mutations/
 import { LoadingPageDumb } from '../loadingPage/LoadingPage';
 import { useFirebase } from '../../hooks/useFirebase';
 import { useAuthCoordinator } from '../../providers/AuthCoordinatorProvider';
-import { consumeClassLinkAttempt } from '../../auth/classlink/classlinkPkce';
+import {
+    consumeClassLinkAttempt,
+    peekClassLinkAttemptIntent,
+} from '../../auth/classlink/classlinkPkce';
+import ClassLinkConnectCallback from './ClassLinkConnectCallback';
 import { getLogger } from 'learn-card-base';
 import * as m from '../../paraglide/messages.js';
 
@@ -26,7 +30,7 @@ const shouldRestartLaunch = (code: string | null): boolean => {
     return true;
 };
 
-const ClassLinkCallback: React.FC = () => {
+const ClassLinkSignInCallback: React.FC = () => {
     const query = usePathQuery();
     const history = useHistory();
     const { logout: coordinatorLogout } = useAuthCoordinator();
@@ -142,6 +146,11 @@ const ClassLinkCallback: React.FC = () => {
     ]);
 
     return <LoadingPageDumb />;
+};
+
+const ClassLinkCallback: React.FC = () => {
+    const [intent] = React.useState(peekClassLinkAttemptIntent);
+    return intent === 'connect' ? <ClassLinkConnectCallback /> : <ClassLinkSignInCallback />;
 };
 
 export default ClassLinkCallback;

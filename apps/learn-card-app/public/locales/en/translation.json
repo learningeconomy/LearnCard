@@ -24,9 +24,9 @@
         "requesting": "Requesting…",
         "requested": "Your transcript is on its way. We'll let you know when it arrives.",
         "noneYet": "There's no transcript for you yet. Check back later.",
-        "reauthRequired": "Sign in with ClassLink again to continue",
-        "reauthButton": "Sign In Again",
-        "reauthing": "Signing In…",
+        "reauthRequired": "Reconnect your school account to continue",
+        "reauthButton": "Reconnect",
+        "reauthing": "Reconnecting…",
         "noStateId": "We couldn't find your student record. Ask your school to check your ClassLink account.",
         "error": "We couldn't reach your school records right now. Please try again later.",
         "tryAgain": "Try Again"
@@ -127,7 +127,7 @@
         "description": "Stay in touch and recognize what comes next.",
         "connect": "Connect",
         "skipForNow": "Skip for Now",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "skipping": "Skipping...",
         "error": "Something went wrong. Please try again.",
         "connected": "Connected",
@@ -1584,6 +1584,7 @@
             "privacyDesc": "Change anytime in Settings.",
             "brandAi": "{{brand}} AI",
             "aiMinorNote": "AI features are disabled for minors.",
+            "schoolLockedNote": "Your school turns off AI features, analytics, and bug reports for student accounts.",
             "analytics": "Analytics",
             "bugReports": "Bug Reports",
             "createMy": "Create my {{brand}}",
@@ -2795,7 +2796,7 @@
             "step2": "Your credential arrives safely",
             "step3": "It's yours to keep, forever",
             "privacy": "Your identity is only shared to complete this exchange. You're always in control of your data.",
-            "connecting": "Connecting...",
+            "connecting": "Connecting…",
             "claimButton": "Claim my credential",
             "decline": "No thanks, take me home",
             "loginRequired": "Please log in to continue."
@@ -2958,7 +2959,7 @@
             "cancelled": "Request cancelled. Return to the issuing website.",
             "connectTitle": "Connecting your account",
             "connectDescription": "Preparing this website’s request.",
-            "connecting": "Connecting...",
+            "connecting": "Connecting…",
             "savedBeforeCancel": "Credentials already saved remain in your Passport ({{saved}})."
         }
     },
@@ -4537,7 +4538,7 @@
         "activityCount": "Showing {{count}} activities from this app",
         "editAccess": "Edit access",
         "dataAccess": "Data access",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "disconnecting": "Disconnecting...",
         "connected": "Connected",
         "disconnected": "Successfully Disconnected",
@@ -4616,7 +4617,7 @@
         "unableToLoadPermissions": "Unable to load data permissions for this app.",
         "uninstallNote": "You can uninstall this app at any time from your installed apps.",
         "previewOnly": "Preview Only",
-        "connecting": "Connecting...",
+        "connecting": "Connecting…",
         "install": "Install",
         "permission": {
             "requestIdentity": {
@@ -8725,7 +8726,8 @@
         "manyResults": "{{count}} results for \"{{query}}\"",
         "shortcuts": {
             "skillInsights": "Skill Insights",
-            "boostAFriend": "Boost a Friend"
+            "boostAFriend": "Boost a Friend",
+            "schoolConnect": "School Connect"
         }
     },
     "addToPassport": {
@@ -10120,5 +10122,33 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
+    },
+    "schoolConnect": {
+        "signInFirst": "Sign in, then connect your school again.",
+        "connectFailed": "We couldn't connect your school account. Please try again.",
+        "connectedToast": "Your school account is connected.",
+        "tryAgain": "Try Again",
+        "notAvailable": "School Connect isn't available for your account yet.",
+        "yourSchool": "Your school",
+        "lastConnected": "Last connected {{date}}",
+        "connected": "Connected",
+        "refreshConnection": "Refresh Connection",
+        "connecting": "Connecting…",
+        "studentNote": "AI features, analytics, and bug reports are off, as your school requires.",
+        "warningTitle": "Before you connect",
+        "warningBody": "If you're a student, your school doesn't allow AI features, analytics, or bug reports for student accounts, so we'll turn them off.",
+        "connectWithClassLink": "Connect with ClassLink",
+        "notNow": "Not Now",
+        "heroTitle": "Your school records, in your hands",
+        "heroSubhead": "Connect your school account to access your official records.",
+        "benefit1": "Request your official transcript",
+        "benefit2": "Share it with colleges and employers",
+        "benefit3": "You decide who sees it",
+        "chooseProvider": "Choose how your school connects",
+        "dontSeeSchool": "Don't see your school?",
+        "moreComingSoon": "More schools are coming soon.",
+        "askToAdd": "Ask us to add your school",
+        "mailtoSubject": "Add my school to School Connect",
+        "mailtoBody": "School name:\nDistrict:\nState:\n"
     }
 }
