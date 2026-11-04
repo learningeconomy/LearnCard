@@ -29,7 +29,7 @@ vi.mock('@accesslayer/boost/relationships/create', () => ({
 }));
 vi.mock('@accesslayer/credential/relationships/create', () => ({
     createSentCredentialRelationship: mocks.sent,
-    createCredentialIssuedViaContractRelationship: mocks.contract,
+    createContractCredentialRelationships: mocks.contract,
     createListingSentCredentialRelationship: mocks.listing,
 }));
 vi.mock('./credential.helpers', () => ({
@@ -137,41 +137,13 @@ describe('boost payload storage', () => {
             ),
         ],
     ] as const)(
-        'stores %s payload unchanged and preserves graph, claim, and notification behavior',
+        'preserves %s bytes without decrypting or replacing the issuer signature',
         async (_kind, credential) => {
             const uri = await sendBoost({ ...options, credential });
             expect(uri).toBe('lc:network:network.example/credential:stored');
             expect(mocks.store.mock.calls[0]?.[0]).toBe(credential);
             expect(mocks.decrypt).not.toHaveBeenCalled();
             expect(mocks.issue).not.toHaveBeenCalled();
-            expect(mocks.instanceOf).toHaveBeenCalledExactlyOnceWith(
-                { id: 'stored' },
-                options.boost
-            );
-            expect(mocks.sent).toHaveBeenCalledExactlyOnceWith(
-                options.from,
-                options.to,
-                { id: 'stored' },
-                options.metadata,
-                'activity',
-                'integration'
-            );
-            expect(mocks.contract).toHaveBeenCalledExactlyOnceWith(
-                { id: 'stored' },
-                options.contractTerms
-            );
-            expect(mocks.listing).toHaveBeenCalledExactlyOnceWith(
-                'listing',
-                options.to,
-                { id: 'stored' },
-                options.metadata,
-                'activity',
-                'integration'
-            );
-            expect(mocks.accept).toHaveBeenCalledExactlyOnceWith(options.to, uri, {
-                skipNotification: false,
-            });
-            expect(mocks.notify).toHaveBeenCalledOnce();
         }
     );
 
@@ -179,12 +151,10 @@ describe('boost payload storage', () => {
         const first = deferred();
         const sent = deferred();
         const listing = deferred();
-        const contract = deferred();
         mocks.instanceOf.mockReturnValueOnce(first.promise);
         mocks.sent.mockReturnValueOnce(sent.promise);
         mocks.listing.mockReturnValueOnce(listing.promise);
-        mocks.contract.mockReturnValueOnce(contract.promise);
-        const result = sendBoost(options);
+        const result = sendBoost({ ...options, contractTerms: undefined });
         await vi.waitFor(() => expect(mocks.instanceOf).toHaveBeenCalledOnce());
         expect(mocks.sent).not.toHaveBeenCalled();
         first.resolve();
@@ -194,19 +164,26 @@ describe('boost payload storage', () => {
         await vi.waitFor(() => expect(mocks.listing).toHaveBeenCalledOnce());
         expect(mocks.contract).not.toHaveBeenCalled();
         listing.resolve();
-        await vi.waitFor(() => expect(mocks.contract).toHaveBeenCalledOnce());
-        expect(mocks.accept).not.toHaveBeenCalled();
-        expect(mocks.notify).not.toHaveBeenCalled();
-        contract.resolve();
         await expect(result).resolves.toBe('lc:network:network.example/credential:stored');
+        expect(mocks.contract).not.toHaveBeenCalled();
     });
 
     it.each(['instanceOf', 'sent', 'listing', 'contract'] as const)(
-        'stops after a failed %s relationship without acceptance or notification',
+        'stops after a failed %s graph write without acceptance or notification',
         async failed => {
             const error = new Error('graph write failed');
             mocks[failed].mockRejectedValueOnce(error);
-            await expect(sendBoost(options)).rejects.toBe(error);
+            await expect(
+                sendBoost({
+                    ...options,
+                    contractTerms: failed === 'contract' ? options.contractTerms : undefined,
+                })
+            ).rejects.toBe(error);
+            if (failed === 'contract') {
+                expect(mocks.instanceOf).not.toHaveBeenCalled();
+                expect(mocks.sent).not.toHaveBeenCalled();
+                expect(mocks.listing).not.toHaveBeenCalled();
+            }
             const order = ['instanceOf', 'sent', 'listing', 'contract'] as const;
             for (const later of order.slice(order.indexOf(failed) + 1)) {
                 expect(mocks[later]).not.toHaveBeenCalled();
@@ -224,7 +201,7 @@ describe('boost payload storage', () => {
                 listing: { listing_id: 'listing' },
                 ownerProfile: { profileId: 'org' },
             } as Parameters<typeof sendBoost>[0]['from'];
-            await sendBoost({ ...options, from, listingId });
+            await sendBoost({ ...options, from, listingId, contractTerms: undefined });
             expect(mocks.sent).toHaveBeenCalledOnce();
             expect(mocks.listing).toHaveBeenCalledTimes(listingId === 'another-listing' ? 1 : 0);
         }

@@ -333,7 +333,7 @@ describe('API Key LearnCard Method Permissions', () => {
         expect(grant?.name).toBe('test-grant');
         expect(grant?.scope).toBe('profiles:read');
     });
-    test('addAutoBoostsToContract requires contracts:write and autoboosts:write', async () => {
+    test('updating autoboosts requires contracts:write', async () => {
         seedA = await getLearnCardForUser('a');
 
         // Create a boost to auto-issue and a signing authority
@@ -353,20 +353,31 @@ describe('API Key LearnCard Method Permissions', () => {
             contract: normalContract,
         });
 
-        // Implementation treats space-separated scopes as OR.
-        // contracts:write alone -> allowed
-        apiLc = await getApiKeyLearnCardForUser('a', 'profiles:read contracts:write');
-        const okContractsOnly = await apiLc.invoke.addAutoBoostsToContract(contractId, [
-            { boostUri, signingAuthority: { endpoint: sa.endpoint!, name: sa.name } },
-        ]);
-        expect(okContractsOnly).toBe(true);
-
-        // autoboosts:write alone -> allowed
         apiLc = await getApiKeyLearnCardForUser('a', 'profiles:read autoboosts:write');
-        const okAutoboostsOnly = await apiLc.invoke.addAutoBoostsToContract(contractId, [
-            { boostUri, signingAuthority: { endpoint: sa.endpoint!, name: sa.name } },
-        ]);
-        expect(okAutoboostsOnly).toBe(true);
+        await expect(
+            apiLc.invoke.updateContract(
+                contractId,
+                {
+                    autoboosts: [
+                        { boostUri, signingAuthority: { endpoint: sa.endpoint!, name: sa.name } },
+                    ],
+                },
+                { reason: 'Add the completion achievement.' }
+            )
+        ).rejects.toThrow();
+
+        apiLc = await getApiKeyLearnCardForUser('a', 'profiles:read contracts:write');
+        const result = await apiLc.invoke.updateContract(
+            contractId,
+            {
+                autoboosts: [
+                    { boostUri, signingAuthority: { endpoint: sa.endpoint!, name: sa.name } },
+                ],
+            },
+            { reason: 'Add the completion achievement.' }
+        );
+        expect(result.kind).toBe('requires_consent');
+        expect((await seedA.invoke.getContract(contractId)).autoBoosts).toEqual([boostUri]);
     });
     test('addBoostAdmin requires boosts:write', async () => {
         seedA = await getLearnCardForUser('a');
@@ -1067,8 +1078,7 @@ describe('API Key LearnCard Method Permissions', () => {
         const result = await apiLc.invoke.deleteContract(contractId);
         expect(result).toBe(true);
 
-        // Verify the contract was deleted (open route should now 404)
-        await expect(seedA.invoke.getContract(contractId)).rejects.toThrow();
+        expect((await seedA.invoke.getContract(contractId)).status).toBe('retired');
     });
     test('deleteCredential requires credentials:delete', async () => {
         seedA = await getLearnCardForUser('a');
@@ -1962,7 +1972,7 @@ describe('API Key LearnCard Method Permissions', () => {
         expect(registered).toBeDefined();
         expect(registered?.signingAuthority.endpoint).toBe(sa.endpoint);
     });
-    test('removeAutoBoostsFromContract requires contracts:write and autoboosts:write', async () => {
+    test('removing autoboosts requires contracts:write', async () => {
         seedA = await getLearnCardForUser('a');
         const boostUri = await seedA.invoke.createBoost(testUnsignedBoost, {
             name: 'autoboost-remove',
@@ -1977,35 +1987,34 @@ describe('API Key LearnCard Method Permissions', () => {
             description: 'autoboost remove',
             contract: normalContract,
         });
-        // Add autoboosts first using allowed scopes
-        apiLc = await getApiKeyLearnCardForUser('a', 'contracts:write autoboosts:write');
-        const added = await apiLc.invoke.addAutoBoostsToContract(contractId, [
-            { boostUri, signingAuthority: { endpoint: sa.endpoint!, name: sa.name } },
-        ]);
-        expect(added).toBe(true);
-
-        // Implementation treats space-separated scopes as OR.
-        // contracts:write alone -> allowed
-        const apiContractsOnly = await getApiKeyLearnCardForUser(
-            'a',
-            'profiles:read contracts:write'
-        );
-        const okContractsOnly = await apiContractsOnly.invoke.removeAutoBoostsFromContract(
+        await seedA.invoke.updateContract(
             contractId,
-            [boostUri]
+            {
+                autoboosts: [
+                    { boostUri, signingAuthority: { endpoint: sa.endpoint!, name: sa.name } },
+                ],
+            },
+            { reason: 'Add the completion achievement.' }
         );
-        expect(okContractsOnly).toBe(true);
 
-        // autoboosts:write alone -> allowed as well
         const apiAutoboostsOnly = await getApiKeyLearnCardForUser(
             'a',
             'profiles:read autoboosts:write'
         );
-        const okAutoboostsOnly = await apiAutoboostsOnly.invoke.removeAutoBoostsFromContract(
-            contractId,
-            [boostUri]
+        await expect(
+            apiAutoboostsOnly.invoke.updateContract(contractId, {
+                autoboosts: [],
+            })
+        ).rejects.toThrow();
+        expect((await seedA.invoke.getContract(contractId)).autoBoosts).toEqual([boostUri]);
+
+        const apiContractsOnly = await getApiKeyLearnCardForUser(
+            'a',
+            'profiles:read contracts:write'
         );
-        expect(okAutoboostsOnly).toBe(true);
+        const result = await apiContractsOnly.invoke.updateContract(contractId, { autoboosts: [] });
+        expect(result.kind).toBe('relaxed');
+        expect((await seedA.invoke.getContract(contractId)).autoBoosts ?? []).toEqual([]);
     });
     test('removeBoostAdmin requires boosts:write', async () => {
         seedA = await getLearnCardForUser('a');

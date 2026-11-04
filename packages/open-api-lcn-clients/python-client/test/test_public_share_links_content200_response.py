@@ -37,7 +37,7 @@ class TestPublicShareLinksContent200Response(unittest.TestCase):
             return PublicShareLinksContent200Response(
                 id = '',
                 content_version = 1,
-                envelope = openapi_client.models.share_links_update_request_envelope.shareLinks_update_request_envelope(
+                envelope = openapi_client.models.share_links_create_request_envelope.shareLinks_create_request_envelope(
                     v = 1, 
                     alg = 'A256GCM', 
                     iv = '', 
@@ -49,7 +49,7 @@ class TestPublicShareLinksContent200Response(unittest.TestCase):
             return PublicShareLinksContent200Response(
                 id = '',
                 content_version = 1,
-                envelope = openapi_client.models.share_links_update_request_envelope.shareLinks_update_request_envelope(
+                envelope = openapi_client.models.share_links_create_request_envelope.shareLinks_create_request_envelope(
                     v = 1, 
                     alg = 'A256GCM', 
                     iv = '', 

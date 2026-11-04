@@ -4,7 +4,7 @@
 
 | Name                       | Type                                                                                                                                                                | Description | Notes      |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **context**                | [**List[BoostSendRequestTemplateCredentialAnyOfContextInner]**](BoostSendRequestTemplateCredentialAnyOfContextInner.md)                                             |             | [optional] |
+| **context**                | [**List[BoostSendBoostRequestCredentialAnyOfContextInner]**](BoostSendBoostRequestCredentialAnyOfContextInner.md)                                                   |             | [optional] |
 | **id**                     | **str**                                                                                                                                                             |             |
 | **type**                   | **str**                                                                                                                                                             |             |
 | **controller**             | **str**                                                                                                                                                             |             |

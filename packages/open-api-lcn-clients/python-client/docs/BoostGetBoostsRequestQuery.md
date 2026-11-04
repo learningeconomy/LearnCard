@@ -2,16 +2,16 @@
 
 ## Properties
 
-| Name                        | Type                                                                                                                                                         | Description | Notes      |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- | ---------- |
-| **var_or**                  | [**List[BoostGetBoostsRequestQueryAnyOfOrInner]**](BoostGetBoostsRequestQueryAnyOfOrInner.md)                                                                |             |
-| **uri**                     | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md)            |             | [optional] |
-| **name**                    | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md)            |             | [optional] |
-| **type**                    | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md)            |             | [optional] |
-| **category**                | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md)            |             | [optional] |
-| **meta**                    | [**Dict[str, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerStatement.md) |             | [optional] |
-| **status**                  | [**BoostGetBoostsRequestQueryAnyOfOrInnerStatus**](BoostGetBoostsRequestQueryAnyOfOrInnerStatus.md)                                                          |             | [optional] |
-| **auto_connect_recipients** | **bool**                                                                                                                                                     |             | [optional] |
+| Name                        | Type                                                                                                                                           | Description | Notes      |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **var_or**                  | [**List[BoostGetBoostsRequestQueryAnyOfOrInner]**](BoostGetBoostsRequestQueryAnyOfOrInner.md)                                                  |             |
+| **uri**                     | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md)            |             | [optional] |
+| **name**                    | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md)            |             | [optional] |
+| **type**                    | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md)            |             | [optional] |
+| **category**                | [**BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md)            |             | [optional] |
+| **meta**                    | [**Dict[str, BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId]**](BoostSearchSkillsAvailableForBoostRequestQueryAnyOfOrInnerId.md) |             | [optional] |
+| **status**                  | [**BoostGetBoostsRequestQueryAnyOfOrInnerStatus**](BoostGetBoostsRequestQueryAnyOfOrInnerStatus.md)                                            |             | [optional] |
+| **auto_connect_recipients** | **bool**                                                                                                                                       |             | [optional] |
 
 ## Example
 

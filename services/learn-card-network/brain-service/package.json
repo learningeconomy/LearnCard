@@ -23,6 +23,7 @@
         "test:boost-recipients": "vitest run --config vitest.boost-recipients-neo4j.config.ts",
         "seed:dev-app": "bun scripts/seed-dev-app.ts",
         "seed:demo-persona": "bun --conditions=development scripts/seed-demo-persona.ts",
+        "migrate:consent-flow-versions": "bun --conditions=development scripts/migrate-consent-flow-versions.ts",
         "skill-frameworks": "bun scripts/skill-frameworks.ts",
         "skill-embeddings:backfill": "bun --conditions=development scripts/skill-embeddings-backfill.ts",
         "backfill:profile-search": "bun scripts/backfill-profile-search.ts",

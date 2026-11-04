@@ -62,6 +62,58 @@ describe('Notifications', () => {
                 ],
             });
         });
+        it.each([
+            ['relaxed', true, false],
+            ['expanded_optional', true, false],
+            ['requires_consent', false, true],
+        ] as const)(
+            'stores %s contract updates with the right feed and push policy',
+            async (kind, read, shouldPush) => {
+                const pushSpy = vi
+                    .spyOn(PushNotifications, 'sendPushNotification')
+                    .mockResolvedValue({ failureCount: 0, successCount: 0, failedTokens: [] });
+                const notification = getTestNotification(
+                    userA.learnCard.id.did(),
+                    userB.learnCard.id.did(),
+                    LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_CONTRACT_UPDATED,
+                    undefined,
+                    {
+                        contractUri: 'lc:network:contract:policy-test',
+                        fromVersion: 1,
+                        toVersion: 2,
+                        kind,
+                        diff: { added: [], removed: [], changed: [] },
+                        reviewUrl:
+                            'https://learncard.app/consent-flow/review?uri=lc%3Anetwork%3Acontract%3Apolicy-test',
+                    }
+                );
+
+                try {
+                    await expect(
+                        userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                    ).resolves.toBe(true);
+                    await expect(
+                        userA.clients.authorizedDidAuth.notifications.sendNotification(notification)
+                    ).resolves.toBe(true);
+
+                    expect(
+                        await Notifications.findOne({
+                            type: LCNNotificationTypeEnumValidator.enum
+                                .CONSENT_FLOW_CONTRACT_UPDATED,
+                        })
+                    ).toMatchObject({ read });
+                    await expect(
+                        Notifications.countDocuments({
+                            type: LCNNotificationTypeEnumValidator.enum
+                                .CONSENT_FLOW_CONTRACT_UPDATED,
+                        })
+                    ).resolves.toBe(1);
+                    expect(pushSpy).toHaveBeenCalledTimes(shouldPush ? 1 : 0);
+                } finally {
+                    pushSpy.mockRestore();
+                }
+            }
+        );
         it('should prevent an unauthorized service to send a notification to a user', async () => {
             await expect(
                 userA.clients.fullAuth.notifications.sendNotification(

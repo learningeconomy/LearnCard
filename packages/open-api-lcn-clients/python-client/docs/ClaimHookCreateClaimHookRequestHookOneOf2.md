@@ -5,7 +5,7 @@
 | Name     | Type                                                                                                  | Description | Notes |
 | -------- | ----------------------------------------------------------------------------------------------------- | ----------- | ----- |
 | **type** | **str**                                                                                               |             |
-| **data** | [**ClaimHookCreateClaimHookRequestHookOneOf2Data**](ClaimHookCreateClaimHookRequestHookOneOf2Data.md) |             |
+| **data** | [**ClaimHookCreateClaimHookRequestHookOneOf1Data**](ClaimHookCreateClaimHookRequestHookOneOf1Data.md) |             |
 
 ## Example
 

@@ -2,10 +2,10 @@
 
 ## Properties
 
-| Name           | Type                                                                                                                  | Description | Notes |
-| -------------- | --------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **parent_uri** | **str**                                                                                                               |             |
-| **profile**    | [**ProfileManagerCreateChildProfileManagerRequestProfile**](ProfileManagerCreateChildProfileManagerRequestProfile.md) |             |
+| Name           | Type                                                                                          | Description | Notes |
+| -------------- | --------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **parent_uri** | **str**                                                                                       |             |
+| **profile**    | [**ProfileManagerCreateProfileManagerRequest**](ProfileManagerCreateProfileManagerRequest.md) |             |
 
 ## Example
 

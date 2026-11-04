@@ -28,7 +28,7 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
     """
     WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
     """ # noqa: E501
-    type: Optional[StrictStr]
+    type: StrictStr
     credential_query: Optional[List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner]] = Field(default=None, alias="credentialQuery")
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["type", "credentialQuery"]
@@ -60,9 +60,8 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -84,11 +83,6 @@ class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQuer
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
 
         return _dict
 

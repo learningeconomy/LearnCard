@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import type { ConsentFlowDataQuery, ConsentFlowTermsInput } from '@learncard/types';
-import { ConsentFlowTerms, ConsentFlowContract } from '@models';
+import { ConsentFlowTerms, ConsentFlowTransaction } from '@models';
+import { neogma } from '@instance';
+import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
+import { encodeConsentedDataCursor } from '@accesslayer/consentflowcontract/relationships/read';
 import { getUser } from './helpers/getClient';
 import { minimalContract, minimalTerms, normalContract, normalFullTerms } from './helpers/contract';
 
@@ -48,6 +51,27 @@ describe('consented data boundaries', () => {
             oneTime,
         });
         return { contractUri, termsUri };
+    };
+
+    const seedLegacyExpiry = async (
+        kind: 'terms' | 'contract',
+        contractUri: string,
+        termsUri: string,
+        expiresAt: string
+    ) => {
+        if (kind === 'terms') {
+            await ConsentFlowTerms.update(
+                { expiresAt },
+                { where: { id: termsUri.split(':').at(-1)! } }
+            );
+            return;
+        }
+        // Legacy fixtures seed the accepted snapshot as well as the current request.
+        await neogma.queryRunner.run(
+            `MATCH (contract:ConsentFlowContract {id:$id})-[:HAS_VERSION]->(version:ConsentFlowContractVersion {version:1})
+             SET contract.expiresAt = $expiresAt, version.expiresAt = $expiresAt`,
+            { id: contractUri.split(':').at(-1)!, expiresAt }
+        );
     };
 
     const readAll = async (
@@ -148,9 +172,7 @@ describe('consented data boundaries', () => {
         'allows locked sync when %s expiry contains only whitespace',
         async kind => {
             const { contractUri, termsUri } = await consent();
-            const model = kind === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
-            const uri = kind === 'terms' ? termsUri : contractUri;
-            await model.update({ expiresAt: '   ' }, { where: { id: uri.split(':').at(-1)! } });
+            await seedLegacyExpiry(kind, contractUri, termsUri, '   ');
             await expect(
                 learner.clients.fullAuth.contracts.syncCredentialsToContract({
                     termsUri,
@@ -170,22 +192,18 @@ describe('consented data boundaries', () => {
 
     it.each(['terms', 'contract'] as const)('excludes expired %s on every route', async kind => {
         const past = '2000-01-01T00:00:00.000Z';
-        const { contractUri } = await consent({
+        const { contractUri, termsUri } = await consent({
             expiresAt: kind === 'terms' ? past : undefined,
         });
         // Seed an existing consent that subsequently expires, rather than consent to an expired contract.
-        if (kind === 'contract')
-            await ConsentFlowContract.update(
-                { expiresAt: past },
-                { where: { id: contractUri.split(':').at(-1)! } }
-            );
+        if (kind === 'contract') await seedLegacyExpiry(kind, contractUri, termsUri, past);
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
     });
 
     it('preserves one-time snapshots without permitting ongoing sync, then honors withdrawal', async () => {
         const { contractUri, termsUri } = await consent({ oneTime: true });
         const history = await learner.clients.fullAuth.contracts.getConsentedContracts();
-        expect(history.records.find(record => record.uri === termsUri)?.status).toBe('stale');
+        expect(history.records.find(record => record.uri === termsUri)?.status).toBe('consumed');
         for (const response of await readAll(contractUri)) {
             expect(response.records).toHaveLength(1);
             expect(JSON.stringify(response)).toContain('achievement1');
@@ -200,10 +218,28 @@ describe('consented data boundaries', () => {
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
     });
 
-    it('excludes stale consent without the explicit one-time flag', async () => {
+    it('persists suspension when a re-consent deadline has passed', async () => {
+        const { termsUri } = await consent();
+        const termsId = termsUri.split(':').at(-1)!;
+        await ConsentFlowTerms.update(
+            { status: 'needs_reconsent', reconsentDeadline: '2026-10-14T00:00:00.000Z' },
+            { where: { id: termsId } }
+        );
+
+        await expect(suspendExpiredConsentFlowTerms('2026-10-15T00:00:00.000Z')).resolves.toEqual({
+            suspended: 1,
+        });
+        const terms = await ConsentFlowTerms.findOne({ where: { id: termsId } });
+        expect(terms?.dataValues.status).toBe('suspended');
+        expect(terms?.dataValues.updatedAt).toBe('2026-10-15T00:00:00.000Z');
+        await expect(suspendExpiredConsentFlowTerms('2026-10-15T00:00:00.000Z')).resolves.toEqual({
+            suspended: 0,
+        });
+    });
+    it('excludes consumed access without the explicit one-time flag', async () => {
         const { contractUri, termsUri } = await consent();
         await ConsentFlowTerms.update(
-            { status: 'stale' },
+            { status: 'consumed' },
             { where: { id: termsUri.split(':').at(-1)! } }
         );
         for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
@@ -278,11 +314,7 @@ describe('consented data boundaries', () => {
         'excludes malformed legacy %s expiry without failing the query',
         async kind => {
             const { contractUri, termsUri } = await consent();
-            const model = kind === 'terms' ? ConsentFlowTerms : ConsentFlowContract;
-            await model.update(
-                { expiresAt: 'invalid-legacy-date' },
-                { where: { id: (kind === 'terms' ? termsUri : contractUri).split(':').at(-1)! } }
-            );
+            await seedLegacyExpiry(kind, contractUri, termsUri, 'invalid-legacy-date');
             for (const response of await readAll(contractUri)) expect(response.records).toEqual([]);
         }
     );
@@ -297,7 +329,63 @@ describe('consented data boundaries', () => {
         }
     });
 
-    it('applies eligibility before pagination and accepts a cursor on every route', async () => {
+    it('keeps accepted snapshots isolated across consenters, contracts, and versions', async () => {
+        const first = await consent({
+            terms: {
+                ...structuredClone(normalFullTerms),
+                read: { ...normalFullTerms.read, personal: { name: 'first-grant' } },
+            },
+        });
+        const changed = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: first.contractUri,
+            changes: { contract: { read: { personal: { email: { required: true } } } } },
+            reason: 'Verify enrolled learners',
+        });
+        const secondLearner = await getUser(randomBytes(32).toString('hex'));
+        await secondLearner.clients.fullAuth.profile.createProfile({
+            profileId: `boundary-third-${randomBytes(5).toString('hex')}`,
+        });
+        await secondLearner.clients.fullAuth.contracts.consentToContract({
+            contractUri: first.contractUri,
+            terms: {
+                ...structuredClone(normalFullTerms),
+                read: {
+                    ...normalFullTerms.read,
+                    personal: { name: 'second-grant', email: 'second@example.test' },
+                },
+            },
+        });
+        const otherContract = await consent({
+            terms: {
+                ...structuredClone(normalFullTerms),
+                read: { ...normalFullTerms.read, personal: { name: 'other-contract' } },
+            },
+        });
+
+        const response = await owner.clients.fullAuth.contracts.getConsentedData({ limit: 10 });
+        const names = response.records.map(record => record.personal?.name).sort();
+        expect(names).toEqual(['first-grant', 'other-contract', 'second-grant']);
+        expect(response.records).toHaveLength(3);
+
+        const firstContract = await owner.clients.fullAuth.contracts.getConsentedDataForContract({
+            uri: first.contractUri,
+            limit: 10,
+        });
+        expect(firstContract.records.map(record => record.personal?.name).sort()).toEqual([
+            'first-grant',
+            'second-grant',
+        ]);
+        expect(
+            firstContract.records.find(record => record.personal?.name === 'first-grant')?.personal
+        ).toEqual({ name: 'first-grant' });
+        expect(
+            firstContract.records.find(record => record.personal?.name === 'second-grant')?.personal
+        ).toEqual({ name: 'second-grant', email: 'second@example.test' });
+        expect(changed.version).toBe(2);
+        expect(otherContract.contractUri).not.toBe(first.contractUri);
+    });
+
+    it('filters expired terms and accepts opaque contract/profile cursors', async () => {
         const { contractUri, termsUri } = await consent();
         const secondLearner = await getUser(randomBytes(32).toString('hex'));
         await secondLearner.clients.fullAuth.profile.createProfile({
@@ -319,12 +407,19 @@ describe('consented data boundaries', () => {
             expect(response.records).toHaveLength(1);
             expect(response.hasMore).toBe(false);
         }
-        for (const response of await readAll(
-            contractUri,
-            {},
-            { cursor: '2001-01-01T00:00:00Z', limit: 1 }
-        )) {
-            expect(response.records).toEqual([]);
+        const cursor = encodeConsentedDataCursor(
+            '2001-01-01T00:00:00Z',
+            termsUri.split(':').at(-1)!
+        );
+        for (const page of await Promise.all([
+            owner.clients.fullAuth.contracts.getConsentedDataForContract({
+                uri: contractUri,
+                cursor,
+                limit: 1,
+            }),
+            owner.clients.fullAuth.contracts.getConsentedData({ cursor, limit: 1 }),
+        ])) {
+            expect(page.records).toEqual([]);
         }
     });
 
@@ -341,12 +436,213 @@ describe('consented data boundaries', () => {
         });
         expect(response.records).toHaveLength(1);
         expect(response.hasMore).toBe(false);
-        expect(response.cursor).toBe('2001-01-01T00:00:00Z');
         const next = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
             did: learnerDid,
             limit: 1,
             cursor: response.cursor,
         });
         expect(next.records).toEqual([]);
+    });
+    it('keyset-paginates tied timestamps and advances over expired scanned terms', async () => {
+        const contractUri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Tied-page regression',
+            contract: normalContract,
+        });
+        const termIds: string[] = [];
+        for (let index = 0; index < 51; index++) {
+            const holder = await getUser(randomBytes(32).toString('hex'));
+            await holder.clients.fullAuth.profile.createProfile({
+                profileId: `tied-holder-${randomBytes(5).toString('hex')}`,
+            });
+            const { termsUri } = await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    ...normalFullTerms,
+                    read: {
+                        ...normalFullTerms.read,
+                        personal: { name: `Holder ${index}` },
+                    },
+                },
+            });
+            termIds.push(termsUri.split(':').at(-1)!);
+        }
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri: contractUri,
+            changes: { subtitle: 'One publication updates the entire cohort' },
+        });
+        const expired = await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms) WHERE terms.id IN $ids
+             WITH terms ORDER BY terms.id SKIP 24 LIMIT 1
+             SET terms.expiresAt='2000-01-01T00:00:00Z'
+             RETURN terms['terms.read.personal.name'] AS name`,
+            { ids: termIds }
+        );
+        const expiredName = String(expired.records[0].get('name'));
+        const expectedNames = new Set(
+            Array.from({ length: 51 }, (_, index) => `Holder ${index}`).filter(
+                name => name !== expiredName
+            )
+        );
+        const readers = [
+            (cursor?: string) =>
+                owner.clients.fullAuth.contracts.getConsentedDataForContract({
+                    uri: contractUri,
+                    limit: 25,
+                    cursor,
+                }),
+            (cursor?: string) =>
+                owner.clients.fullAuth.contracts.getConsentedData({
+                    limit: 25,
+                    cursor,
+                }),
+        ];
+        for (const read of readers) {
+            const seenNames = new Set<string>();
+            let cursor: string | undefined;
+            do {
+                const page = await read(cursor);
+                for (const record of page.records) {
+                    const name = record.personal.name;
+                    expect(seenNames.has(name)).toBe(false);
+                    seenNames.add(name);
+                }
+                if (!page.hasMore) break;
+                expect(page.cursor).toBeDefined();
+                expect(page.cursor).not.toBe(cursor);
+                cursor = page.cursor;
+            } while (cursor);
+            expect(seenNames).toEqual(expectedNames);
+        }
+    });
+    it('rejects malformed and obsolete date-only cursors with BAD_REQUEST', async () => {
+        const { contractUri, termsUri } = await consent();
+        const requests = [
+            () =>
+                owner.clients.fullAuth.contracts.getConsentedDataForContract({
+                    uri: contractUri,
+                    limit: 1,
+                    cursor: '2025-01-01T00:00:00Z',
+                }),
+            () =>
+                owner.clients.fullAuth.contracts.getConsentedData({
+                    limit: 1,
+                    cursor: 'not-a-cursor',
+                }),
+            () =>
+                owner.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: learnerDid,
+                    limit: 1,
+                    cursor: '2025-01-01T00:00:00Z',
+                }),
+            () =>
+                learner.clients.fullAuth.contracts.getConsentedContracts({
+                    limit: 1,
+                    cursor: '2025-01-01T00:00:00Z',
+                }),
+            () =>
+                learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+                    uri: termsUri,
+                    limit: 1,
+                    cursor: 'not-a-cursor',
+                }),
+        ];
+        for (const request of requests) {
+            await expect(request()).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        }
+    });
+
+    it('paginates tied holder-list, export, and between-profile cohorts with null update dates', async () => {
+        const termsIds: string[] = [];
+        for (let index = 0; index < 101; index++) {
+            const { termsUri } = await consent();
+            termsIds.push(termsUri.split(':').at(-1)!);
+        }
+        await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms) WHERE terms.id IN $ids
+             SET terms.updatedAt = '2020-01-01T00:00:00Z'`,
+            { ids: termsIds }
+        );
+        const nullTimestampId = termsIds.at(-1)!;
+        await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms {id:$id}) REMOVE terms.updatedAt`,
+            { id: nullTimestampId }
+        );
+
+        const seenTerms = new Set<string>();
+        let cursor: string | undefined;
+        do {
+            const page = await learner.clients.fullAuth.contracts.getConsentedContracts({
+                limit: 25,
+                cursor,
+            });
+            for (const record of page.records) {
+                expect(seenTerms.has(record.uri)).toBe(false);
+                seenTerms.add(record.uri);
+            }
+            if (!page.hasMore) break;
+            expect(page.cursor).toBeDefined();
+            cursor = page.cursor;
+        } while (cursor);
+        expect(seenTerms.size).toBe(101);
+
+        const exported = await learner.clients.fullAuth.credential.getHolderExportMetadata();
+        expect(new Set(exported.consentRecords.map(record => record.termsUri))).toEqual(seenTerms);
+
+        const betweenTerms = new Set<string>();
+        cursor = undefined;
+        do {
+            const page = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: learnerDid,
+                limit: 25,
+                cursor,
+            });
+            for (const record of page.records) {
+                expect(betweenTerms.has(record.termsUri)).toBe(false);
+                betweenTerms.add(record.termsUri);
+            }
+            if (!page.hasMore) break;
+            expect(page.cursor).toBeDefined();
+            cursor = page.cursor;
+        } while (cursor);
+        expect(betweenTerms.size).toBe(101);
+    });
+
+    it('keeps tied transaction history complete in public pages and holder exports', async () => {
+        const { termsUri } = await consent();
+        const terms = structuredClone(normalFullTerms);
+        for (let index = 0; index < 101; index++) {
+            terms.read.personal.name = `Saved choice ${index}`;
+            await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+            });
+        }
+        const tied = await neogma.queryRunner.run(
+            `MATCH (transaction:ConsentFlowTransaction)-[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(:ConsentFlowTerms {id:$id})
+             SET transaction.date='2020-01-01T00:00:00Z'
+             RETURN transaction.id AS id`,
+            { id: termsUri.split(':').at(-1)! }
+        );
+        const expected = new Set(tied.records.map(record => String(record.get('id'))));
+        expect(expected.size).toBe(102);
+        const seen = new Set<string>();
+        let cursor: string | undefined;
+        do {
+            const page = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+                limit: 25,
+                cursor,
+            });
+            for (const record of page.records) {
+                expect(seen.has(record.id)).toBe(false);
+                seen.add(record.id);
+            }
+            cursor = page.hasMore ? page.cursor : undefined;
+        } while (cursor);
+        expect(seen).toEqual(expected);
+        const exported = await learner.clients.fullAuth.credential.getHolderExportMetadata();
+        const record = exported.consentRecords.find(record => record.termsUri === termsUri);
+        expect(record?.transactions).toHaveLength(expected.size);
+        expect(new Set(record!.transactions.map(transaction => transaction.id))).toEqual(expected);
     });
 });
