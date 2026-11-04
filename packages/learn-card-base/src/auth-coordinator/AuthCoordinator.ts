@@ -17,8 +17,9 @@ let logoutAttempt = 0;
  * to the KeyDerivationStrategy, keeping itself a pure state machine.
  */
 
-import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
+import { withDeadline, withDeadlineOr } from '../helpers/withDeadline';
 import { withNetworkFault } from '../helpers/networkFault';
+import { isNetworkError } from '../helpers/networkError';
 import {
     ESCROW_PIN_MAX_ATTEMPTS,
     IdentityRecoverySessionConsumedError,
@@ -37,35 +38,6 @@ export const MIGRATION_IDENTITY_MISMATCH_MESSAGE =
     "We couldn't safely upgrade your account because the sign-in key didn't match it. " +
     'Nothing was changed. Please contact support (MIGRATION_IDENTITY_MISMATCH).';
 const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
-
-/**
- * Whether a thrown error is a transient connectivity failure rather than a real
- * fault. Offline boot must treat these as "no session yet" (→ idle) instead of
- * a hard `error`, which would otherwise surface an error overlay and drive a
- * re-init loop while the device is offline. Covers Firebase's
- * `auth/network-request-failed`, our own deadline timeouts, and common fetch
- * failure messages across browsers/webviews.
- */
-const isNetworkError = (e: unknown): boolean => {
-    if (isDeadlineError(e)) return true;
-
-    if (typeof (e as { code?: unknown })?.code === 'string') {
-        const code = (e as { code: string }).code.toLowerCase();
-        if (code.includes('network-request-failed') || code.includes('network_error')) return true;
-    }
-
-    const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
-
-    return (
-        msg.includes('network-request-failed') ||
-        msg.includes('network request failed') ||
-        msg.includes('failed to fetch') ||
-        msg.includes('networkerror') ||
-        msg.includes('network error') ||
-        msg.includes('err_internet_disconnected') ||
-        msg.includes('load failed')
-    );
-};
 
 import type {
     AuthProvider,
