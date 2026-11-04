@@ -18,7 +18,7 @@
         "postmark": "^4.0.5"
     },
     "devDependencies": {
-        "@types/aws-lambda": "^8.10.106",
+        "@types/aws-lambda": "^8.10.164",
         "@types/node": "^18.19.68",
         "serverless": "3.40.0",
         "serverless-esbuild": "1.55.0",
