@@ -4,6 +4,52 @@ The `E2E` workflow runs the browser job and three service-test shards concurrent
 Each job owns its Docker stack. Within the browser job, functional tests run before
 accessibility tests so legacy database resets cannot interrupt another suite.
 
+## Required checks without a summary runner
+
+The workflow reports the browser and each service shard directly. There is no
+final `E2E` job that waits for all suites and requests another runner just to
+combine their results. The three service jobs have explicit names and share the
+same steps through a YAML anchor. Their names therefore remain present when
+eligibility skips execution; job-level conditions run before matrix expansion.
+
+The intended required-check set on `main` is:
+
+- `Test` (unchanged)
+- `Determine E2E eligibility`
+- `Playwright E2E`
+- `tests/e2e (1)`
+- `tests/e2e (2)`
+- `tests/e2e (3)`
+
+Eligibility is required too: a failed dependency can skip its children, and
+GitHub accepts skipped job checks. The eligibility job validates its decision
+before reporting success. Only draft PRs and documentation-only changes skip
+the suites; manual dispatch always runs them. Other PRs and merge groups still
+run the browser suite and all three service shards. Failed or cancelled required
+jobs, and absent required check names, block merging.
+
+### Coordinated settings rollout
+
+This workflow change does **not** update repository protection. At draft
+publication, `main` still requires `Test` and the old aggregate `E2E`; the draft
+will intentionally wait for that removed status until a reviewed cutover.
+
+Before merging, validate the exact new names on a PR and their skipped states,
+plus a full manual suite run. Then drain the existing merge queue so old
+candidates are not left waiting for new check names. Replace the old `E2E`
+requirement with **all five** E2E checks listed above in one coordinated settings
+update, preserving `Test`, the merge queue and every other protection. Enqueue
+the approved workflow change normally and verify the new required checks on its
+actual `merge_group` revision. Do not remove the old requirement on its own.
+
+Restoring only the old `E2E` requirement after its job is gone would block future
+merges. A rollback must restore the aggregate workflow job and its matching
+required-check settings together.
+
+Trigger-policy changes, such as deferring automatic full suites to the merge
+queue, are independent of this change and must retain eligibility validation and
+all concrete check names when integrated.
+
 ## Browser workers
 
 The default three specs use `playwright.parallel.config.ts`: two Firefox workers,
