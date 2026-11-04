@@ -33,6 +33,8 @@ const { env, entries } = vi.hoisted(() => ({
             },
         }),
         CLASSLINK_MAX_AUTH_AGE_SECONDS: 86400,
+        LAMBDA_STAGE: undefined as string | undefined,
+        NODE_ENV: 'test',
     },
     entries: new Map<string, { value: string; expires: number }>(),
 }));
@@ -279,6 +281,52 @@ describe('email and state student ID', () => {
                 stateStudentIdField: 'alternate',
             })
         ).toBe('00123');
+    });
+    describe('test state IDs', () => {
+        const testTenant = { ...tenant, testStateStudentIds: true };
+        const noStateId = claims({ api_fields: {} });
+        afterEach(() => {
+            env.LAMBDA_STAGE = undefined;
+            env.NODE_ENV = 'test';
+        });
+        it('gives each student a stable TEST ID only when the district sends none', async () => {
+            env.LAMBDA_STAGE = 'dev';
+            const info = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+            const first = await resolveStateStudentId(noStateId, testTenant);
+            expect(first).toMatch(/^TEST\d{10}$/);
+            expect(await resolveStateStudentId(noStateId, testTenant)).toBe(first);
+            expect(
+                await resolveStateStudentId(
+                    claims({ api_fields: {}, classLink_sourcedId: 'other' }),
+                    testTenant
+                )
+            ).not.toBe(first);
+            expect(
+                await resolveStateStudentId(
+                    claims({ api_fields: { student_id: 'XX1234567890' } }),
+                    testTenant
+                )
+            ).toBe('XX1234567890');
+            expect(info).toHaveBeenCalledWith('classlink.test_state_ids.used', {
+                tenantId: 'tenant-test',
+            });
+        });
+        it.each([
+            { LAMBDA_STAGE: 'prod', NODE_ENV: 'development' },
+            { LAMBDA_STAGE: 'production', NODE_ENV: 'development' },
+            { LAMBDA_STAGE: undefined, NODE_ENV: 'production' },
+        ])('is ignored outside test stages: %j', async stage => {
+            Object.assign(env, stage);
+            const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+            expect(await resolveStateStudentId(noStateId, testTenant)).toBeNull();
+            expect(error).toHaveBeenCalledWith('classlink.test_state_ids.ignored', {
+                tenantId: 'tenant-test',
+            });
+        });
+        it('is off unless the district sets it', async () => {
+            env.LAMBDA_STAGE = 'dev';
+            expect(await resolveStateStudentId(noStateId, tenant)).toBeNull();
+        });
     });
 });
 
