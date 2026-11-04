@@ -206,7 +206,10 @@ export const classlinkRouter = t.router({
                     state: tenant.state,
                     firebaseUid: uid,
                     subject,
-                    lastAuthTime: new Date((claims.auth_time ?? claims.iat) * 1000),
+                    // Time of this verified sign-in. ClassLink's auth_time is the start of the
+                    // ClassLink session and does not move on later sign-ins, so it cannot prove
+                    // freshness; iat is checked to be within five minutes of now.
+                    lastAuthTime: new Date(claims.iat * 1000),
                     // Preferences require a DID; apply this hint when the account first binds one.
                     isMinorHint:
                         existing?.isMinorHint === true ||

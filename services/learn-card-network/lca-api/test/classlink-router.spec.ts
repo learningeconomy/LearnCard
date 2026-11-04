@@ -175,7 +175,7 @@ describe('ClassLink sign-in broker', () => {
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
             subject: first?.subject,
             firebaseUid: uid,
-            lastAuthTime: new Date(claims.auth_time! * 1000),
+            lastAuthTime: new Date(claims.iat * 1000),
             stateStudentId: 'private-student-id',
             isMinorHint: true,
         });
@@ -248,6 +248,13 @@ describe('ClassLink sign-in broker', () => {
             expect(firebase.createUser).not.toHaveBeenCalled();
         }
     );
+    it('records this sign-in time, not an older ClassLink session auth_time', async () => {
+        claims.auth_time = claims.iat - 3 * 86400;
+        await caller().exchangeCode(exchange);
+        expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+            lastAuthTime: new Date(claims.iat * 1000),
+        });
+    });
     it('signs in a district without an override using safe defaults', async () => {
         config.tenants = {};
         expect(await caller().exchangeCode(exchange)).toEqual({ token: `custom-${uid}` });
@@ -263,7 +270,7 @@ describe('ClassLink sign-in broker', () => {
         await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({ code: 'CONFLICT' });
         expect(await findClassLinkIdentityByIdentityKey(identityKey)).toBeNull();
     });
-    it('allows a missing state ID, uses iat fallback, and does not mark staff as minors', async () => {
+    it('allows a missing state ID, records iat as the sign-in time, and does not mark staff as minors', async () => {
         delete claims.api_fields;
         delete claims.auth_time;
         claims.classLink_role = 'teacher';
