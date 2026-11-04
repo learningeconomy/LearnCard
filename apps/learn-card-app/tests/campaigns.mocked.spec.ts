@@ -514,7 +514,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByRole('button', { name: 'Confirm live' }).click();
         await page.getByRole('button', { name: 'Send campaign', exact: true }).click();
         await expect(page.getByRole('dialog', { name: 'Send campaign?' })).toBeVisible();
-        await expect(page.getByText('0 inbox notifications · 1 emails')).toBeVisible();
+        await expect(page.getByText('0 inbox notifications · 1 email')).toBeVisible();
         await page.screenshot({ path: 'test-results/campaign-email-dispatch-desktop.png' });
         await page.setViewportSize({ width: 390, height: 844 });
         await expect(page.getByRole('button', { name: 'Confirm campaign send' })).toBeInViewport({

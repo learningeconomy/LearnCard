@@ -26,7 +26,8 @@ export const CampaignDispatchConfirmation: React.FC<CampaignDispatchConfirmation
             </p>
             <p className="text-sm text-grayscale-700">
                 {preview.notificationRecipientCount ?? preview.recipientCount} inbox notifications ·{' '}
-                {preview.emailRecipientCount ?? 0} emails
+                {preview.emailRecipientCount ?? 0}{' '}
+                {preview.emailRecipientCount === 1 ? 'email' : 'emails'}
             </p>
             <p className="text-xs leading-relaxed text-grayscale-600">
                 {preview.audienceCount.toLocaleString()} stored members ·{' '}
