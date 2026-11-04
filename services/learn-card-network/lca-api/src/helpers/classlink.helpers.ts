@@ -21,6 +21,37 @@ const tokenResponseValidator = z.object({
     expires_in: z.number().nonnegative().optional(),
 });
 const nonblank = z.string().refine(value => value.trim().length > 0);
+// ClassLink sends some identifiers (e.g. classLink_tenant_id) as numbers; normalize to strings.
+const identifier = z
+    .union([nonblank, z.number().int().nonnegative()])
+    .transform(value => String(value));
+
+/**
+ * ClassLink's discovery document advertises `https://launchpad.classlink.com`, but its
+ * id_tokens are issued by `tokens-public.apis.classlink.com` (per ClassLink's docs).
+ */
+const CLASSLINK_TOKEN_ISSUERS = [
+    'tokens-public.apis.classlink.com',
+    'https://tokens-public.apis.classlink.com',
+];
+
+/** Log only a failure category and claim/field names; never token or claim values. */
+const logVerifyFailure = (stage: string, error: unknown): void => {
+    const detail: Record<string, unknown> = { stage };
+    if (error instanceof z.ZodError)
+        detail.fields = error.issues.map(issue => issue.path.join('.'));
+    else if (error && typeof error === 'object') {
+        if ('code' in error && typeof error.code === 'string') detail.reason = error.code;
+        if ('claim' in error && typeof error.claim === 'string') detail.claim = error.claim;
+        if ('response' in error && error.response && typeof error.response === 'object') {
+            const response = error.response as { status?: unknown; data?: unknown };
+            if (typeof response.status === 'number') detail.httpStatus = response.status;
+            const data = response.data as { error?: unknown } | undefined;
+            if (data && typeof data.error === 'string') detail.oauthError = data.error;
+        }
+    }
+    console.warn('classlink.verify.failed', detail);
+};
 const claimsValidator = z
     .object({
         iss: nonblank,
@@ -29,8 +60,8 @@ const claimsValidator = z
         exp: z.number().finite(),
         iat: z.number().finite(),
         nonce: nonblank,
-        classLink_tenant_id: nonblank,
-        classLink_sourcedId: nonblank,
+        classLink_tenant_id: identifier,
+        classLink_sourcedId: identifier,
         classLink_role: z.string().optional(),
         auth_time: z.number().finite().optional(),
         email: z.string().optional(),
@@ -92,7 +123,8 @@ export const exchangeClassLinkCode = async ({
             maxRedirects: 0,
         });
         return tokenResponseValidator.parse(data);
-    } catch {
+    } catch (error) {
+        logVerifyFailure('exchange', error);
         // Axios errors can retain the secret-bearing form body; never propagate their cause.
         throw new ClassLinkTokenInvalid();
     }
@@ -118,7 +150,7 @@ export const verifyClassLinkIdToken = async (
             };
         }
         const { payload } = await jwtVerify(idToken, remoteKeys.resolve, {
-            issuer: discovery.issuer,
+            issuer: [discovery.issuer, ...CLASSLINK_TOKEN_ISSUERS],
             audience: config.clientId,
             algorithms: ['RS256'],
             requiredClaims: ['exp', 'iat', 'sub'],
@@ -129,10 +161,14 @@ export const verifyClassLinkIdToken = async (
             claims.nonce !== nonce ||
             Math.abs(Math.floor(Date.now() / 1000) - claims.iat) > 300
         ) {
+            logVerifyFailure('binding', {
+                code: !nonce || claims.nonce !== nonce ? 'nonce' : 'iat_skew',
+            });
             throw new ClassLinkTokenInvalid();
         }
         return claims;
     } catch (error) {
+        if (!(error instanceof ClassLinkTokenInvalid)) logVerifyFailure('verify', error);
         // Validation and JOSE errors may carry raw claims. Do not log or retain them.
         throw new ClassLinkTokenInvalid();
     }

@@ -133,6 +133,31 @@ describe('ClassLink token verification', () => {
     it('returns verified typed claims', async () => {
         expect(await verify(await sign())).toMatchObject(claims());
     });
+    it.each(['tokens-public.apis.classlink.com', 'https://tokens-public.apis.classlink.com'])(
+        'accepts the documented ClassLink token issuer %s alongside discovery',
+        async iss => {
+            expect(await verify(await sign({ iss }))).toMatchObject({ iss });
+        }
+    );
+    it('normalizes numeric ClassLink tenant and sourced IDs to strings', async () => {
+        const result = await verify(
+            await sign({ classLink_tenant_id: 123456, classLink_sourcedId: 789 })
+        );
+        expect(result.classLink_tenant_id).toBe('123456');
+        expect(result.classLink_sourcedId).toBe('789');
+    });
+    it('logs only the failure stage, reason and claim name', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        await expect(verify(await sign({ iss: 'https://other.test' }))).rejects.toBeInstanceOf(
+            ClassLinkTokenInvalid
+        );
+        expect(warn).toHaveBeenCalledWith('classlink.verify.failed', {
+            stage: 'verify',
+            reason: 'ERR_JWT_CLAIM_VALIDATION_FAILED',
+            claim: 'iss',
+        });
+        expect(JSON.stringify(warn.mock.calls)).not.toContain('other.test');
+    });
     it.each([
         ['issuer', { iss: 'https://other.test' }],
         ['audience', { aud: 'other-client' }],
