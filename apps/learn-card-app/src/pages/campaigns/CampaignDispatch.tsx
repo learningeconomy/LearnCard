@@ -10,11 +10,13 @@ import { Busy, Notice, primaryClass } from './ui';
 
 const reasons: Record<NonNullable<CampaignDispatchPreview['blockedReason']>, string> = {
     not_live: 'Go live before sending audience notifications.',
-    notify_disabled: 'Enable Inbox / push notification and save before sending.',
+    email_confirmation_required:
+        'Email delivery requires a separate recipient review that is not available in this composer yet.',
+    notify_disabled: 'Enable email or inbox / push notifications and save before sending.',
     not_started: 'This campaign has not started yet. Check its start date.',
     ended: 'This campaign has ended. Update its end date and save to send notifications.',
     no_recipients:
-        'No eligible members remain to notify. They may already have been notified or may not meet the campaign eligibility rules.',
+        'No eligible recipients remain. They may already have been sent this campaign or may not meet its eligibility rules.',
 };
 const errorCode = (error: unknown): unknown => {
     if (!error || typeof error !== 'object') return undefined;
@@ -54,7 +56,10 @@ export const CampaignDispatch: React.FC<{
         ? 'Save changes and finish other actions before sending.'
         : campaign.status !== 'live'
           ? reasons.not_live
-          : !campaign.channels.includes('notify') || !campaign.notification
+          : !(
+                  (campaign.channels.includes('notify') && campaign.notification) ||
+                  (campaign.channels.includes('email') && campaign.email)
+              )
             ? reasons.notify_disabled
             : campaign.startsAt && campaign.startsAt > now
               ? reasons.not_started
@@ -76,9 +81,7 @@ export const CampaignDispatch: React.FC<{
             setConflict('');
             try {
                 await api.campaignsDispatch(campaign.id, { expectedPreviewToken: token });
-                action.setSuccess(
-                    'Notification delivery started. Stats update as inbox notifications are stored.'
-                );
+                action.setSuccess('Delivery started. Stats update as messages are processed.');
             } catch (error) {
                 if (errorCode(error) === 'CONFLICT' || errorCode(error) === 'BAD_REQUEST') {
                     setConflict(
@@ -130,7 +133,13 @@ export const CampaignDispatch: React.FC<{
                 disabled={Boolean(unavailable) || Boolean(action.busy)}
                 onClick={loadPreview}
             >
-                {action.busy ? <Busy>{action.busy}</Busy> : 'Send Notifications'}
+                {action.busy ? (
+                    <Busy>{action.busy}</Busy>
+                ) : campaign.channels.includes('email') ? (
+                    'Send campaign'
+                ) : (
+                    'Send Notifications'
+                )}
             </button>
             <p className="text-xs leading-relaxed text-grayscale-600">
                 {unavailable ?? 'Review eligible recipients before sending to the stored audience.'}

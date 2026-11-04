@@ -13,7 +13,9 @@ export const CampaignDispatchConfirmation: React.FC<CampaignDispatchConfirmation
         <div className="flex items-start gap-3">
             <CampaignMark />
             <div className="min-w-0">
-                <h2 className="text-xl font-semibold">Send notifications?</h2>
+                <h2 className="text-xl font-semibold">
+                    {preview.emailRecipientCount ? 'Send campaign?' : 'Send notifications?'}
+                </h2>
                 <p className="mt-1 break-words text-sm text-grayscale-600">{campaignName}</p>
             </div>
         </div>
@@ -22,6 +24,10 @@ export const CampaignDispatchConfirmation: React.FC<CampaignDispatchConfirmation
                 {preview.recipientCount.toLocaleString()} eligible{' '}
                 {preview.recipientCount === 1 ? 'recipient' : 'recipients'}
             </p>
+            <p className="text-sm text-grayscale-700">
+                {preview.notificationRecipientCount ?? preview.recipientCount} inbox notifications ·{' '}
+                {preview.emailRecipientCount ?? 0} emails
+            </p>
             <p className="text-xs leading-relaxed text-grayscale-600">
                 {preview.audienceCount.toLocaleString()} stored members ·{' '}
                 {preview.alreadyNotifiedCount.toLocaleString()} already notified
@@ -29,7 +35,7 @@ export const CampaignDispatchConfirmation: React.FC<CampaignDispatchConfirmation
         </div>
         <p className="text-sm leading-relaxed text-grayscale-600">
             {blockedReason ??
-                'Send an inbox notification to these members and attempt push? Eligibility is checked again during delivery.'}
+                'Send the messages shown above? Inbox notifications also attempt push. Eligibility is checked again during delivery; counts do not guarantee receipt.'}
         </p>
         <div className="flex flex-col gap-3 border-t border-grayscale-200 pt-5 sm:flex-row">
             <button type="button" className={buttonClass} onClick={onCancel}>
@@ -41,7 +47,9 @@ export const CampaignDispatchConfirmation: React.FC<CampaignDispatchConfirmation
                 disabled={Boolean(blockedReason) || preview.recipientCount === 0}
                 onClick={onConfirm}
             >
-                Confirm notification send
+                {preview.emailRecipientCount
+                    ? 'Confirm campaign send'
+                    : 'Confirm notification send'}
             </button>
         </div>
     </div>

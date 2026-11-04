@@ -20,6 +20,7 @@ const metrics = [
     ['audience', 'Stored members'],
     ['shown', 'Shown'],
     ['clicked', 'Clicked'],
+    ['emailed', 'Emailed'],
     ['notified', 'Notified (inbox)'],
 ] as const;
 

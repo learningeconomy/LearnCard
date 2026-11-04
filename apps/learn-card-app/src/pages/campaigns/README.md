@@ -21,13 +21,15 @@ Status changes remain explicit confirmed actions.
 - Network member search plus Fields/JSON controls for email addresses, account identifiers, boost recipients, credentialsSentBy (sender/listing/metadata/since), and inboxClaims source contracts. Email matching identifies existing accounts and is separate from email delivery.
 - Preview/add eligible-match counts, paged stored membership, and `campaignsGetStats` polling every 30 seconds while mounted/visible. Polling stops on route exit; stats errors identify potentially stale values.
 
+- Audience results return `{count, added, notFound}`: eligible matches, profiles newly enrolled in this request, and input DIDs with no matching profile. Preview never adds members. Age exclusions are not reported as missing profiles; existing matches may include aliases across batches.
+
 ## Audience notification sending
 
 For a saved live campaign with notification content and an active schedule, **Send Notifications**
-loads `campaignsPreviewDispatch`. It counts stored audience members who satisfy the current
+loads `campaignsPreviewDispatch`. Email campaigns use **Send campaign**. Review shows separate email and inbox counts, with a distinct-profile total. It counts stored audience members who satisfy the current
 age policy and have no `notifiedAt`, using the delivery worker's eligibility predicate. The
 confirmation modal shows eligible inbox recipients, total stored membership, and already-notified
-members. Push is an attempt through the existing notification system; email is not included.
+members. Push is an attempt through the existing notification system. Email counts require adults with exactly one valid verified primary email, email announcements enabled, and no previous email claim or acceptance. The review digest includes email addresses so changing a primary address requires a fresh review.
 
 Confirm calls `campaignsDispatch(id, { expectedPreviewToken })`. The server rechecks the
 campaign definition and eligible recipient identities under the campaign lock and consumes
@@ -46,12 +48,23 @@ Dispatch targets the entire stored eligible audience, not just the currently sel
 
 ## Unsupported / deferred
 
-- Bulk email recipient review and dispatch remain unavailable; campaigns containing `email` cannot use Send Notifications. Email authoring and caller-only tests are supported. Inbox recipient counts do not guarantee push receipt; `notified` acknowledges inbox storage, not delivery to a device.
-- Newly added counts and per-row `notFound` CSV results. Preview/add return `{count}` of eligible matches, including existing members. DID aliases can resolve to the same profile, so totals across chunks must not be called unique recipients.
-- Notification tap routing: LC-2267. Native push receipt and email integration need separate device/service verification.
+- Inbox recipient counts do not guarantee push receipt; `notified` acknowledges inbox storage, not delivery to a device. `emailed` means provider acceptance, not inbox receipt.
+- Native push receipt and email integration need separate device/service verification. Campaign notification routing is supplied by the LC-2267 parent layer.
 - The existing audience minor/DOB policy is preserved. Admin-only private tests bypass audience/status/schedule eligibility, while normal campaign delivery is unchanged. lca-api enum/dedupe must deploy before brain as documented by #1839; this implementation does not deploy anything.
 
 ## Verification
+
+### Deployed email configuration
+
+Manage `POSTMARK_BROADCAST_STREAM` (default `broadcast`) and
+`CAMPAIGN_UNSUBSCRIBE_SECRET` (stable random secret, at least 32 bytes) in the
+**LearnCard Runtime** Infisical project, `/learncard/brain-service/runtime`, for
+`staging` and `prod`. The existing sync and `RUNTIME_SECRETS_ID` load them into
+Brain's API, email worker and unsubscribe handler. No new GitHub environment
+mapping is needed in bundle mode. Confirm sync, then recycle/redeploy Brain to
+reload warm functions. Rotating the signing secret invalidates old unsubscribe links.
+See [campaign email runtime settings](../../../../../environment-variables.md#campaign-email-runtime-settings-brain-service)
+for tenant paths, precedence and the separate local `.env` source.
 
 ### Local Docker email test
 
@@ -93,3 +106,13 @@ an untouched draft. The same shared schema still blocks invalid saves.
 Desktop layout uses explicit 1200px/1440px variants because this app does not define `lg`/`xl`.
 Secondary buttons declare solid borders to preserve them through Ionic's reset. The synthetic
 browser suite checks these properties and captures desktop/mobile list and editor screenshots.
+
+## Stack integration
+
+The composer sits above LC-2267, which sits above LC-2266 delivery. The app supplies
+both the ordinary campaign source and private test delivery to the same
+`InAppMessageHost`. Ordinary campaign fetching excludes entries with `testId`;
+those snapshots stay in the account-bound private test path and cannot enroll
+or report ordinary engagement. LaunchDarkly messages continue through the shared
+selector. Announcement cards retain their authored copy and read/archive/restore
+controls, while **View** marks the card read and enters the shared `/m/:id` route.

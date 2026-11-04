@@ -23,6 +23,7 @@ export const CampaignAudience: React.FC<{
     const [includePending, setIncludePending] = useState(false);
     const [actionSource, setActionSource] = useState('');
     const [progress, setProgress] = useState({ done: 0, total: 0, matches: 0 });
+    const [notFound, setNotFound] = useState<string[]>([]);
     const [cancelling, setCancelling] = useState(false);
     const cancel = useRef(false);
     const fileVersion = useRef(0);
@@ -54,6 +55,9 @@ export const CampaignAudience: React.FC<{
             cancel.current = false;
             setCancelling(false);
             let matches = 0;
+            let added = 0;
+            const missing = new Set<string>();
+            setNotFound([]);
             setProgress({ done: 0, total: sources.length, matches });
             try {
                 for (let i = 0; i < sources.length && !cancel.current; i++) {
@@ -61,10 +65,13 @@ export const CampaignAudience: React.FC<{
                         preview ? api.campaignsPreviewAudience : api.campaignsAddAudience
                     )({ campaignId: id, source: sources[i] });
                     matches += result.count;
+                    added += result.added ?? 0;
+                    for (const did of result.notFound ?? []) missing.add(did);
+                    setNotFound([...missing]);
                     setProgress({ done: i + 1, total: sources.length, matches });
                 }
                 action.setSuccess(
-                    `${cancel.current ? 'Stopped after the current request. ' : ''}${matches.toLocaleString()} eligible matches processed${preview ? ' in preview; no members added' : '; existing members may be included'}.`
+                    `${cancel.current ? 'Stopped after the current request. ' : ''}${preview ? `${matches.toLocaleString()} eligible matches in preview; no members added` : `${added.toLocaleString()} new members added; ${(matches - added).toLocaleString()} existing matches`}. ${missing.size.toLocaleString()} identifiers not found.`
                 );
             } finally {
                 if (!preview) {
@@ -327,9 +334,24 @@ export const CampaignAudience: React.FC<{
             )}
             {action.error && <Notice error>{action.error}</Notice>}
             {action.success && <Notice>{action.success}</Notice>}
+            {notFound.length > 0 && (
+                <details className="text-sm text-grayscale-700">
+                    <summary>{notFound.length} identifiers not found</summary>
+                    <ul className="max-h-64 overflow-auto break-all">
+                        {notFound.map(did => (
+                            <li key={did}>
+                                {did}
+                                {actionSource.startsWith(':') && csv?.rowsByDid?.[did]
+                                    ? ` — CSV rows ${csv.rowsByDid[did].join(', ')}`
+                                    : ''}
+                            </li>
+                        ))}
+                    </ul>
+                </details>
+            )}
             <p className="py-4 text-xs leading-relaxed text-grayscale-600">
-                Counts include eligible existing members. They do not represent newly added people
-                or an exact send count.
+                Eligible matches include existing members. Added counts include only new members.
+                Review recipients before sending; audience counts are not send counts.
             </p>
             <button
                 type="button"

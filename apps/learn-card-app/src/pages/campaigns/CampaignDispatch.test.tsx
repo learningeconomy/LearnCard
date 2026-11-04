@@ -72,6 +72,35 @@ const review = async () => {
 };
 
 describe('audience notification dispatch', () => {
+    it('reviews email-only and mixed sends before dispatch', async () => {
+        for (const notify of [false, true]) {
+            const api = mockApi();
+            api.campaignsPreviewDispatch.mockResolvedValue({
+                ...preview,
+                notificationRecipientCount: notify ? 3 : 0,
+                emailRecipientCount: 2,
+            });
+            mount(api, {
+                ...live(),
+                channels: notify ? ['notify', 'email'] : ['email'],
+                email: { subject: 'News', title: 'News', body: 'News', ctaLabel: 'View' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: 'Send campaign' }));
+            await screen.findByRole('heading', { name: 'Send campaign?' });
+            expect(
+                screen.getByText(`${notify ? 3 : 0} inbox notifications · 2 emails`)
+            ).toBeVisible();
+            expect(api.campaignsDispatch).not.toHaveBeenCalled();
+            fireEvent.click(screen.getByRole('button', { name: 'Confirm campaign send' }));
+            await waitFor(() =>
+                expect(api.campaignsDispatch).toHaveBeenCalledWith('test-send', {
+                    expectedPreviewToken: preview.previewToken,
+                })
+            );
+            cleanup();
+        }
+    });
+
     it('reviews actual eligible counts before sending and supports cancellation', async () => {
         const { api } = mount();
         await review();
@@ -106,7 +135,7 @@ describe('audience notification dispatch', () => {
         ).toBeDisabled();
         expect(onBusy).toHaveBeenLastCalledWith(true);
         await act(async () => resolve({ dispatchId: 'accepted' }));
-        expect(await screen.findByText(/Notification delivery started/)).toBeVisible();
+        expect(await screen.findByText(/Delivery started/)).toBeVisible();
         expect(invalidate).toHaveBeenCalledWith({ queryKey: ['campaign-stats', 'test-send'] });
         expect(onBusy).toHaveBeenLastCalledWith(false);
     });

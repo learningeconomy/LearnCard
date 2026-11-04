@@ -65,8 +65,8 @@ const apiMock = () =>
             .fn()
             .mockImplementation(async (_id, status) => ({ ...campaign(), status })),
         campaignsSendTestToMe: vi.fn().mockResolvedValue(true),
-        campaignsPreviewAudience: vi.fn().mockResolvedValue({ count: 4 }),
-        campaignsAddAudience: vi.fn().mockResolvedValue({ count: 4 }),
+        campaignsPreviewAudience: vi.fn().mockResolvedValue({ count: 4, added: 4, notFound: [] }),
+        campaignsAddAudience: vi.fn().mockResolvedValue({ count: 4, added: 4, notFound: [] }),
         campaignsPageAudience: vi.fn().mockResolvedValue({ records: [], hasMore: false }),
         campaignsGetStats: vi.fn().mockResolvedValue(stats),
     }) satisfies CampaignApi;
@@ -564,7 +564,7 @@ describe('audience batches', () => {
         });
         expect(api.campaignsAddAudience).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Preview source audience' }));
-        await screen.findByText(/eligible matches processed in preview/);
+        await screen.findByText(/eligible matches in preview/);
         const input = {
             campaignId: 'test-campaign',
             source: { type: 'emails', emails: ['first@example.com', 'second@example.com'] },
@@ -573,7 +573,7 @@ describe('audience batches', () => {
         expect(api.campaignsAddAudience).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Add source audience' }));
         await waitFor(() => expect(api.campaignsAddAudience).toHaveBeenCalledWith(input));
-        await screen.findByText(/existing members may be included/);
+        await screen.findByText(/4 new members added/);
         fireEvent.change(screen.getByLabelText('Email addresses'), {
             target: { value: 'invalid' },
         });
@@ -604,11 +604,11 @@ describe('audience batches', () => {
                 source: { type: 'dids', dids: ['did:key:member'] },
             })
         );
-        await screen.findByText(/existing members may be included/);
+        await screen.findByText(/4 new members added/);
     });
-    it('stops after the in-flight batch, preserves progress, and never labels matches as additions', async () => {
+    it('stops after the in-flight batch, preserves progress, and reports actual additions separately', async () => {
         const api = apiMock();
-        const batch = deferred<{ count: number }>();
+        const batch = deferred<{ count: number; added: number; notFound: string[] }>();
         api.campaignsAddAudience.mockReturnValue(batch.promise);
         mount(
             api,
@@ -627,10 +627,12 @@ describe('audience batches', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Add CSV audience' }));
         expect(api.campaignsAddAudience).toHaveBeenCalledTimes(1);
         fireEvent.click(screen.getByRole('button', { name: 'Stop after current request' }));
-        await act(async () => batch.resolve({ count: 800 }));
+        await act(async () => batch.resolve({ count: 800, added: 600, notFound: ['did:key:900'] }));
         expect(
-            await screen.findByText(/Stopped after the current request.*800 eligible matches/)
+            await screen.findByText(/Stopped after the current request.*600 new members added/)
         ).toBeVisible();
+        expect(screen.getByText(/200 existing matches/)).toBeVisible();
+        expect(screen.getByText('did:key:900 — CSV rows 902')).toBeInTheDocument();
         expect(api.campaignsAddAudience).toHaveBeenCalledTimes(1);
         expect(api.campaignsAddAudience.mock.calls[0][0].source).toMatchObject({
             type: 'dids',
@@ -647,7 +649,7 @@ describe('audience batches', () => {
         fireEvent.change(screen.getByLabelText('Boost URI'), { target: { value: 'lc:boost:one' } });
         fireEvent.click(screen.getByLabelText('Include pending boost recipients'));
         fireEvent.click(screen.getByRole('button', { name: 'Preview boost audience' }));
-        await screen.findByText(/4 eligible matches processed in preview/);
+        await screen.findByText(/4 eligible matches in preview/);
         expect(api.campaignsPreviewAudience).toHaveBeenCalledWith({
             campaignId: 'test-campaign',
             source: { type: 'boostRecipients', boostUri: 'lc:boost:one', includePending: true },

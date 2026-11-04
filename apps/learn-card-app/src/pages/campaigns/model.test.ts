@@ -174,7 +174,12 @@ describe('DID CSV', () => {
             parseAudienceCsv(
                 '\uFEFFname,did\r\n"Doe, Jane",did:key:one\r\nOther,did:key:one\r\nNew, did:key:two '
             )
-        ).toEqual({ dids: ['did:key:one', 'did:key:two'], duplicates: 1, errors: [] });
+        ).toMatchObject({
+            dids: ['did:key:one', 'did:key:two'],
+            duplicates: 1,
+            errors: [],
+            rowsByDid: { 'did:key:one': [2, 3], 'did:key:two': [4] },
+        });
     });
     it('accepts a headerless one-column CSV and rejects malformed rows atomically', () => {
         expect(parseAudienceCsv('did:key:one\ndid:web:two').errors).toEqual([]);

@@ -1,3 +1,4 @@
+import type { CampaignAudienceResult } from '@learncard/types';
 import type {
     Campaign,
     LCNVisibleProfile,
@@ -38,8 +39,8 @@ export interface CampaignApi {
     campaignsList(input?: ListCampaignsInput): Promise<PaginatedCampaigns>;
     campaignsSetStatus(id: string, status: CampaignStatus): Promise<Campaign>;
     campaignsSendTestToMe(id: string): Promise<boolean>;
-    campaignsPreviewAudience(input: CampaignAudienceInput): Promise<{ count: number }>;
-    campaignsAddAudience(input: CampaignAudienceInput): Promise<{ count: number }>;
+    campaignsPreviewAudience(input: CampaignAudienceInput): Promise<CampaignAudienceResult>;
+    campaignsAddAudience(input: CampaignAudienceInput): Promise<CampaignAudienceResult>;
     campaignsPageAudience(input: PageCampaignAudienceInput): Promise<PaginatedCampaignAudience>;
     campaignsGetStats(id: string): Promise<CampaignStats>;
 }

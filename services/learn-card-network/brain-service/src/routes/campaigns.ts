@@ -1,3 +1,4 @@
+import { CampaignAudienceResultValidator, type CampaignAudienceResult } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
@@ -172,19 +173,19 @@ export const campaignsRouter = t.router({
         ),
     previewAudience: campaignAdminRoute
         .input(CampaignAudienceInputValidator)
-        .output(z.object({ count: z.number() }))
-        .query(async ({ input, ctx }): Promise<{ count: number }> =>
-            trace('route', 'campaigns:previewAudience', async () => ({
-                count: await previewCampaignAudience(input.campaignId, input.source, ctx.domain),
-            }))
+        .output(CampaignAudienceResultValidator)
+        .query(async ({ input, ctx }): Promise<CampaignAudienceResult> =>
+            trace('route', 'campaigns:previewAudience', () =>
+                previewCampaignAudience(input.campaignId, input.source, ctx.domain)
+            )
         ),
     addAudience: campaignAdminRoute
         .input(CampaignAudienceInputValidator)
-        .output(z.object({ count: z.number() }))
-        .mutation(async ({ input, ctx }): Promise<{ count: number }> =>
-            trace('route', 'campaigns:addAudience', async () => ({
-                count: await addCampaignAudience(input.campaignId, input.source, ctx.domain),
-            }))
+        .output(CampaignAudienceResultValidator)
+        .mutation(async ({ input, ctx }): Promise<CampaignAudienceResult> =>
+            trace('route', 'campaigns:addAudience', () =>
+                addCampaignAudience(input.campaignId, input.source, ctx.domain)
+            )
         ),
     pageAudience: campaignAdminRoute
         .input(PageCampaignAudienceInputValidator)

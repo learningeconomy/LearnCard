@@ -153,7 +153,12 @@ export const hasEmailDestination = (form: CampaignForm): boolean => {
 /** DID-only CSV: named column or one column, RFC CSV quoting, stable deduplication. */
 export const parseAudienceCsv = (
     text: string
-): { dids: string[]; duplicates: number; errors: string[] } => {
+): {
+    dids: string[];
+    duplicates: number;
+    errors: string[];
+    rowsByDid?: Record<string, number[]>;
+} => {
     const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ''), {
         skipEmptyLines: 'greedy',
         delimiter: ',',
@@ -169,9 +174,11 @@ export const parseAudienceCsv = (
         errors.push('Use a named did column or a single column.');
     const data = didColumn >= 0 ? rows.slice(1) : rows;
     const dids = new Set<string>();
+    const rowsByDid: Record<string, number[]> = Object.create(null);
     let duplicates = 0;
     data.forEach((row, index) => {
         const value = row[didColumn >= 0 ? didColumn : 0]?.trim() ?? '';
+        (rowsByDid[value] ??= []).push(index + (didColumn >= 0 ? 2 : 1));
         if (
             !value.startsWith('did:') ||
             value.length <= 4 ||
@@ -185,7 +192,7 @@ export const parseAudienceCsv = (
         else dids.add(value);
     });
     if (!data.length) errors.push('The CSV has no audience rows.');
-    return { dids: [...dids], duplicates, errors };
+    return { dids: [...dids], duplicates, errors, rowsByDid };
 };
 
 export const audienceChunks = (dids: string[]): string[][] => {

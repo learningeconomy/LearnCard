@@ -1,3 +1,4 @@
+import type { CampaignAudienceResult } from '@learncard/types';
 import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import type {
@@ -1188,8 +1189,8 @@ export type LearnCardNetworkPluginMethods = {
     campaignsList: (input?: ListCampaignsInput) => Promise<PaginatedCampaigns>;
     campaignsDelete: (campaignId: string) => Promise<boolean>;
     campaignsSetStatus: (campaignId: string, status: CampaignStatus) => Promise<Campaign>;
-    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
-    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
+    campaignsPreviewAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
+    campaignsAddAudience: (input: CampaignAudienceInput) => Promise<CampaignAudienceResult>;
     campaignsPageAudience: (input: PageCampaignAudienceInput) => Promise<PaginatedCampaignAudience>;
     campaignsGetStats: (campaignId: string) => Promise<CampaignStats>;
     /** Test selected channels only for the signed-in administrator, regardless of campaign status. */

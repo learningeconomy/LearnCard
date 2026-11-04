@@ -161,7 +161,7 @@ test.describe('campaign composer @mocked', () => {
         });
         mock.on('campaigns.previewAudience', value => {
             audiencePreviews.push(value as CampaignAudienceInput);
-            return { count: 12 };
+            return { count: 12, added: 12, notFound: [] };
         });
         mock.on('campaigns.addAudience', value => {
             audienceAdds.push(value as CampaignAudienceInput);
@@ -169,9 +169,9 @@ test.describe('campaign composer @mocked', () => {
             if (source.type === 'dids') {
                 batches.push(source.dids.length);
                 source.dids.forEach(did => members.add(did));
-                return { count: source.dids.length };
+                return { count: source.dids.length, added: source.dids.length, notFound: [] };
             }
-            return { count: 12 };
+            return { count: 12, added: 12, notFound: [] };
         });
         mock.on('campaigns.sendTestToMe', () => {
             testSends++;
@@ -311,7 +311,7 @@ test.describe('campaign composer @mocked', () => {
             ),
         });
         await page.getByRole('button', { name: 'Add CSV audience' }).click();
-        await expect(page.getByText(/10,000 eligible matches processed/)).toBeVisible({
+        await expect(page.getByText(/10,000 new members added/)).toBeVisible({
             timeout: 30_000,
         });
         expect(batches).toEqual(Array(10).fill(1000));
@@ -319,16 +319,14 @@ test.describe('campaign composer @mocked', () => {
             .getByLabel('Email addresses', { exact: true })
             .fill(' ADMIN@example.com;admin@example.com,member@example.com');
         await page.getByRole('button', { name: 'Preview source audience' }).click();
-        await expect(page.getByText(/12 eligible matches processed in preview/)).toBeVisible();
+        await expect(page.getByText(/12 eligible matches in preview/)).toBeVisible();
         expect(audiencePreviews.at(-1)?.source).toEqual({
             type: 'emails',
             emails: ['admin@example.com', 'member@example.com'],
         });
         expect(audienceAdds).toHaveLength(10);
         await page.getByRole('button', { name: 'Add source audience' }).click();
-        await expect(
-            page.getByText(/12 eligible matches processed; existing members may be included/)
-        ).toBeVisible();
+        await expect(page.getByText(/12 new members added/)).toBeVisible();
         expect(audienceAdds.at(-1)?.source).toEqual(audiencePreviews.at(-1)?.source);
         const audienceTabs = page.getByRole('tablist', { name: 'Audience source editing mode' });
         await audienceTabs.getByRole('tab', { name: 'JSON', exact: true }).click();
@@ -339,7 +337,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByLabel('Audience source', { exact: true }).selectOption('dids');
         await page.getByLabel('Account identifiers', { exact: true }).fill('did:key:field-member');
         await page.getByRole('button', { name: 'Preview source audience' }).click();
-        await expect(page.getByText(/12 eligible matches processed in preview/)).toBeVisible();
+        await expect(page.getByText(/12 eligible matches in preview/)).toBeVisible();
         expect(audiencePreviews.at(-1)?.source).toEqual({
             type: 'dids',
             dids: ['did:key:field-member'],
@@ -365,9 +363,7 @@ test.describe('campaign composer @mocked', () => {
         });
         expect(members.has('did:key:search-member')).toBe(false);
         await page.getByRole('button', { name: 'Add selected members' }).click();
-        await expect(
-            page.getByText(/1 eligible matches processed; existing members may be included/)
-        ).toBeVisible();
+        await expect(page.getByText(/1 new members added/)).toBeVisible();
         expect(members.has('did:key:search-member')).toBe(true);
         await expect(
             page.getByRole('checkbox', { name: 'Select Synthetic member (@search-member)' })
@@ -384,7 +380,7 @@ test.describe('campaign composer @mocked', () => {
         await page.getByLabel('Boost URI').fill('lc:boost:synthetic');
         await page.getByLabel('Include pending boost recipients').check();
         await page.getByRole('button', { name: 'Preview boost audience' }).click();
-        await expect(page.getByText(/12 eligible matches processed in preview/)).toBeVisible();
+        await expect(page.getByText(/12 eligible matches in preview/)).toBeVisible();
         await page.getByRole('button', { name: 'Send Test to Me' }).click();
         await page.getByRole('button', { name: 'Cancel', exact: true }).click();
         expect(testSends).toBe(0);
