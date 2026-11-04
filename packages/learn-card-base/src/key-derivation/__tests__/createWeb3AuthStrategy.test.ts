@@ -13,12 +13,19 @@ const sdk = vi.hoisted(() => ({
     warn: vi.fn(),
     error: vi.fn(),
     connected: false,
+    options: [] as Record<string, unknown>[],
+    native: false,
 }));
+vi.mock('@capacitor/core', () => ({ Capacitor: { isNativePlatform: () => sdk.native } }));
 vi.mock('../../logging/logger', () => ({ getLogger: () => sdk }));
 vi.mock('@web3auth/base', () => ({ CHAIN_NAMESPACES: { EIP155: 'eip155' } }));
 vi.mock('@web3auth/ethereum-provider', () => ({ EthereumPrivateKeyProvider: class {} }));
 vi.mock('@web3auth/single-factor-auth', () => ({
+    SDK_MODE: { WEB: 'web', NODE: 'node' },
     Web3Auth: class {
+        constructor(options: Record<string, unknown>) {
+            sdk.options.push(options);
+        }
         connected = sdk.connected;
         provider = { request: sdk.request };
         init = sdk.init;
@@ -43,6 +50,8 @@ describe('Web3Auth account setup coordination', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         sdk.connected = false;
+        sdk.native = false;
+        sdk.options = [];
         sdk.init.mockResolvedValue(undefined);
         sdk.connect.mockResolvedValue(undefined);
         sdk.logout.mockResolvedValue(undefined);
@@ -294,6 +303,20 @@ describe('Web3Auth account setup coordination', () => {
         );
         expect(await derive(strategy)).toBe('synthetic-private-key');
     });
+
+    it('keeps the web SDK session on web and skips the session server on native', async () => {
+        const web = createWeb3AuthStrategy(config);
+        await credentials(web);
+        await derive(web);
+        expect(sdk.options[0]).not.toHaveProperty('mode');
+
+        sdk.native = true;
+        const native = createWeb3AuthStrategy(config);
+        await credentials(native);
+        expect(await derive(native)).toBe('synthetic-private-key');
+        expect(sdk.options[1]).toMatchObject({ mode: 'node' });
+    });
+
     it('reports the failing SDK step and a redacted error without exposing credentials', async () => {
         const failure = Object.assign(
             new Error(

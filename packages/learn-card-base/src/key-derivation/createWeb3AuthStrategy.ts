@@ -15,7 +15,8 @@
  * exposed through the KeyDerivationStrategy recovery interface.
  */
 
-import { Web3Auth } from '@web3auth/single-factor-auth';
+import { Capacitor } from '@capacitor/core';
+import { SDK_MODE, Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
@@ -233,6 +234,11 @@ export const createWeb3AuthStrategy = (
             >[0]['web3AuthNetwork'],
             privateKeyProvider,
             usePnPKey: config.usePnPKey ?? true,
+            // session.web3auth.io rejects CORS from Capacitor's localhost origins,
+            // so web-mode connect() fails after the key is derived. Native never
+            // restores that session anyway (the read is blocked too); node mode
+            // skips the session server and keeps derivation identical.
+            ...(Capacitor.isNativePlatform() ? { mode: SDK_MODE.NODE } : {}),
         });
 
         progress.stage = 'init';
