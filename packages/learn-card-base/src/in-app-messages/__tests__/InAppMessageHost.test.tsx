@@ -661,6 +661,35 @@ describe('campaign presentation in the shared host', () => {
         state.flagDeliveryReady = true;
     });
     afterEach(cleanup);
+    it('keeps a private snapshot out of real engagement even when its ID matches a live campaign', async () => {
+        state.gate = true;
+        const campaigns = source();
+        const testDelivery = {
+            accountDid: 'alice',
+            message: inAppMessageValidator.parse({
+                id: 'server-campaign',
+                title: 'Private snapshot',
+            }),
+            onShown: vi.fn(),
+            onClose: vi.fn(),
+        };
+        const onEvent = vi.fn();
+        render(
+            <InAppMessageHost
+                campaignSource={campaigns}
+                testDelivery={testDelivery}
+                onEvent={onEvent}
+            />
+        );
+        fireEvent.click(await screen.findByText('Private snapshot'));
+        expect(testDelivery.onShown).toHaveBeenCalledOnce();
+        expect(testDelivery.onClose).toHaveBeenCalledOnce();
+        expect(campaigns.record).not.toHaveBeenCalled();
+        expect(
+            onEvent.mock.calls.every(([event]) => event.source === 'test' && !event.campaignId)
+        ).toBe(true);
+        expect(getMessageLastSeen('server-campaign', 'alice')).toBeFalsy();
+    });
     it('reports one server impression across diagnostics and campaign source refreshes', async () => {
         let campaigns = source();
         const record = vi.fn();

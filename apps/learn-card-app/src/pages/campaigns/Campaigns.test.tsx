@@ -20,6 +20,7 @@ vi.mock('learn-card-base/in-app-messages/debugOverrideStore', () => ({
 const stats = {
     audience: 17,
     notified: 4,
+    emailed: 0,
     shown: 3,
     clicked: 2,
     dismissed: 1,

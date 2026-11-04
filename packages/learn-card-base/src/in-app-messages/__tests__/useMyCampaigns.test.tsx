@@ -231,6 +231,27 @@ it('refreshes a fresh cache on every explicit entry before declaring an ID unkno
     expect(result.current.campaigns[0].campaign.id).toBe('new-campaign');
 });
 
+it('excludes private admin snapshots from the ordinary campaign source', async () => {
+    state.fetch.mockResolvedValue([{ ...item('private-only'), testId: 'test-snapshot' }, item()]);
+    const { result } = renderHook(useMyCampaigns, { wrapper });
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    expect(result.current.campaigns.map(entry => entry.campaign.id)).toEqual(['test-campaign']);
+    expect(await result.current.enroll('private-only')).toBe(false);
+    result.current.record(
+        {
+            type: 'shown',
+            messageId: 'test-campaign',
+            campaignId: 'test-campaign',
+            presentation: 'modal',
+            source: 'test',
+        },
+        true
+    );
+    await act(async () => {});
+    expect(state.record).not.toHaveBeenCalled();
+    expect(state.enroll).not.toHaveBeenCalled();
+});
+
 it('fetches after the network profile becomes ready with a fresh wallet callback each render', async () => {
     const original = state.init;
     state.lcn = false;
