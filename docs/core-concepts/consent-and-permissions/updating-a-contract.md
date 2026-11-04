@@ -103,6 +103,19 @@ Unknown AutoBoost IDs and writer profiles are rejected as invalid input before c
 
 Use `getContractVersions(uri)` to list saved versions, their timestamps, change kinds, and reasons. Deleting a contract retires it and withdraws access; it does not erase users' terms or transactions from their holder export. Do not delete and recreate a connection to change requested access.
 
+## Pagination and exports
+
+Consent-list, consented-data, and transaction-history APIs return opaque cursors.
+Pass the returned cursor unchanged to the same endpoint while `hasMore` is true;
+do not interpret it as a date. Timestamp ties use a stable record-ID boundary,
+including legacy terms whose update date falls back to their creation date.
+Holder exports use the same boundaries so a bulk update or deadline sweep does
+not truncate tied records.
+
+This major release no longer accepts old date-only cursors. They and malformed
+tokens return `BAD_REQUEST`, not a server error. Restart a pagination session
+without a cursor after upgrading rather than carrying a pre-upgrade date forward.
+
 ## Partner rollout and legacy AutoBoost callers
 
 This is a major SDK/API release, not a behavior-preserving replacement. The deprecated HTTP AutoBoost add/remove routes remain available for one compatibility release, but only the contract owner may use them; delegated writers cannot change the request for every holder. They use the versioned publication rules. Adding an AutoBoost through the old add route publishes `requires_consent`: every existing live connection becomes `needs_reconsent`, and writes, automatic delivery and synchronization pause until that person approves.

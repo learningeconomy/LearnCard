@@ -58,6 +58,7 @@ import {
     getAutoBoostsForContract,
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    encodeConsentedDataCursor,
     getConsentedDataBetweenProfiles,
     getConsentedDataForContract,
     getConsentedDataForProfile,
@@ -764,17 +765,14 @@ export const contractsRouter = t.router({
             const results = await getConsentedDataBetweenProfiles(
                 profile.profileId,
                 otherProfile.profileId,
-                { query, limit: limit + 1, cursor, domain: ctx.domain }
+                { query, limit, cursor, domain: ctx.domain }
             );
 
-            const data = results.slice(0, limit);
-
-            const hasMore = results.length > limit;
-            const nextCursor = data.at(-1)?.date;
+            const data = results.records;
 
             return {
-                hasMore,
-                cursor: nextCursor,
+                hasMore: results.hasMore,
+                cursor: results.nextCursor,
                 records: data,
             };
         }),
@@ -1380,12 +1378,16 @@ export const contractsRouter = t.router({
 
             const contracts = results.slice(0, limit);
 
-            const hasMore = results.length > limit;
-            const nextCursor = contracts.at(-1)?.terms.updatedAt;
-
             return {
-                hasMore,
-                cursor: nextCursor,
+                hasMore: results.length > limit,
+                cursor: contracts.length
+                    ? encodeConsentedDataCursor(
+                          contracts.at(-1)!.terms.updatedAt ??
+                              contracts.at(-1)!.terms.createdAt ??
+                              '',
+                          contracts.at(-1)!.terms.id
+                      )
+                    : undefined,
                 records: contracts.map(record => ({
                     contract: {
                         contract: record.contract.contract,
@@ -1614,7 +1616,15 @@ export const contractsRouter = t.router({
                 const contracts = results.slice(0, pageSize);
                 allContracts.push(...contracts);
 
-                cursor = results.length > pageSize ? contracts.at(-1)?.terms.updatedAt : undefined;
+                cursor =
+                    results.length > pageSize && contracts.length
+                        ? encodeConsentedDataCursor(
+                              contracts.at(-1)!.terms.updatedAt ??
+                                  contracts.at(-1)!.terms.createdAt ??
+                                  '',
+                              contracts.at(-1)!.terms.id
+                          )
+                        : undefined;
             } while (cursor);
 
             for (const contract of allContracts) {
@@ -1730,8 +1740,10 @@ export const contractsRouter = t.router({
             const transactions = results.slice(0, limit);
 
             const hasMore = results.length > limit;
-            const nextCursor = transactions.at(-1)?.date;
-
+            const lastTransaction = transactions.at(-1);
+            const nextCursor = lastTransaction
+                ? encodeConsentedDataCursor(lastTransaction.date, lastTransaction.id)
+                : undefined;
             return {
                 hasMore,
                 cursor: nextCursor,

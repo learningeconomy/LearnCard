@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server';
 import {
     getConsentFlowContractVersionRecords,
     getCumulativeContractUpdateById,
@@ -322,8 +323,13 @@ export const getConsentedContractsForProfile = async (
         cumulativeUpdate?: ConsentFlowContractDetails['latestUpdate'];
     }[]
 > => {
+    const decodedCursor = decodeConsentedDataCursor(cursor);
     let query = new QueryBuilder(
-        new BindParam({ params: flattenObject({ terms: matchQuery }), cursor })
+        new BindParam({
+            params: flattenObject({ terms: matchQuery }),
+            cursorDate: decodedCursor?.updatedAt,
+            cursorId: decodedCursor?.id,
+        })
     )
         .match({
             related: [
@@ -338,7 +344,11 @@ export const getConsentedContractsForProfile = async (
         })
         .where('all(key IN keys($params) WHERE terms[key] = $params[key])');
 
-    query = cursor ? query.raw('AND terms.updatedAt > $cursor') : query;
+    query = decodedCursor
+        ? query.raw(
+              "AND (coalesce(terms.updatedAt, terms.createdAt, '') > $cursorDate OR (coalesce(terms.updatedAt, terms.createdAt, '') = $cursorDate AND terms.id > $cursorId))"
+          )
+        : query;
 
     query = query.with('contract, owner, terms').match({
         optional: true,
@@ -367,7 +377,7 @@ export const getConsentedContractsForProfile = async (
                 ],
             })
             .return('contract, owner, terms, boost, COLLECT(DISTINCT recipient) as recipients')
-            .orderBy('terms.updatedAt')
+            .orderBy("coalesce(terms.updatedAt, terms.createdAt, '') ASC, terms.id ASC")
             .limit(limit)
             .run()
     );
@@ -470,8 +480,11 @@ export const getHolderExportMetadataForProfile = async (
                 );
 
                 transactionCursor =
-                    transactionResults.length > transactionLimit
-                        ? transactionPage.at(-1)?.date
+                    transactionResults.length > transactionLimit && transactionPage.length
+                        ? encodeConsentedDataCursor(
+                              transactionPage.at(-1)!.date,
+                              transactionPage.at(-1)!.id
+                          )
                         : undefined;
 
                 if (!transactionCursor) break;
@@ -529,7 +542,13 @@ export const getHolderExportMetadataForProfile = async (
             });
         }
 
-        cursor = records.length > pageLimit ? page.at(-1)?.terms.updatedAt : undefined;
+        cursor =
+            records.length > pageLimit && page.length
+                ? encodeConsentedDataCursor(
+                      page.at(-1)!.terms.updatedAt ?? page.at(-1)!.terms.createdAt ?? '',
+                      page.at(-1)!.terms.id
+                  )
+                : undefined;
 
         if (!cursor) break;
     }
@@ -576,7 +595,7 @@ const projectConsentedData = (
     query: ConsentFlowDataQuery,
     now: number
 ): ConsentFlowContractData => ({
-    date: term.updatedAt!,
+    date: term.updatedAt ?? term.createdAt ?? '',
     credentials: {
         categories: mapValues(term.terms.read.credentials?.categories ?? {}, (category, name) =>
             term.terms.read.credentials.sharing !== false &&
@@ -596,7 +615,6 @@ const projectConsentedData = (
  */
 const CONSENT_DATA_CURSOR_PREFIX = 'v1.';
 
-/** Opaque keyset cursor for the public consent-data ordering. */
 const decodeConsentedDataCursor = (
     cursor?: string
 ): { updatedAt: string; id: string } | undefined => {
@@ -610,14 +628,14 @@ const decodeConsentedDataCursor = (
             decoded.length !== 2 ||
             typeof decoded[0] !== 'string' ||
             typeof decoded[1] !== 'string' ||
-            !Number.isFinite(Date.parse(decoded[0])) ||
+            (!Number.isFinite(Date.parse(decoded[0])) && decoded[0] !== '') ||
             !decoded[1] ||
             Buffer.from(JSON.stringify(decoded), 'utf8').toString('base64url') !== encoded
         )
             throw new Error('Invalid cursor');
         return { updatedAt: decoded[0], id: decoded[1] };
     } catch {
-        throw new Error('Invalid consent data cursor');
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid consent cursor' });
     }
 };
 
@@ -678,7 +696,7 @@ const getPermittedContractData = async (
                 "(coalesce(contract.status, 'active') <> 'retired') AND " +
                     "(terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))" +
                     (decodedCursor
-                        ? ' AND (terms.updatedAt < $cursorDate OR (terms.updatedAt = $cursorDate AND terms.id > $cursorId))'
+                        ? " AND (coalesce(terms.updatedAt, terms.createdAt, '') < $cursorDate OR (coalesce(terms.updatedAt, terms.createdAt, '') = $cursorDate AND terms.id > $cursorId))"
                         : '') +
                     ' AND all(filter IN $personalFilters WHERE filter.required = (terms[filter.key] IS NOT NULL))' +
                     ' AND (size($sharedCategories) = 0 OR coalesce(terms.`terms.read.credentials.sharing`, true) = true)' +
@@ -691,7 +709,7 @@ const getPermittedContractData = async (
         }>(
             await dbQuery
                 .return('DISTINCT terms, contract')
-                .orderBy('terms.updatedAt DESC, terms.id ASC')
+                .orderBy("coalesce(terms.updatedAt, terms.createdAt, '') DESC, terms.id ASC")
                 .skip(offset)
                 .limit(batchSize)
                 .run()
@@ -737,8 +755,13 @@ const getPermittedContractData = async (
                 return {
                     records,
                     hasMore,
-                    ...(hasMore
-                        ? { nextCursor: encodeConsentedDataCursor(scanned.updatedAt!, scanned.id) }
+                    ...(records.length
+                        ? {
+                              nextCursor: encodeConsentedDataCursor(
+                                  scanned.updatedAt ?? scanned.createdAt ?? '',
+                                  scanned.id
+                              ),
+                          }
                         : {}),
                 };
             }
@@ -767,6 +790,12 @@ const isConsentExpiryActive = (expiresAt: string | undefined, now: number): bool
     return Number.isFinite(expiry) && expiry > now;
 };
 
+export type ConsentedDataForDidPage = {
+    records: ConsentFlowContractDataForDid[];
+    hasMore: boolean;
+    nextCursor?: string;
+};
+
 export const getConsentedDataBetweenProfiles = async (
     ownerProfileId: string,
     consenterProfileId: string,
@@ -776,7 +805,8 @@ export const getConsentedDataBetweenProfiles = async (
         cursor,
         domain,
     }: { query?: ConsentFlowDataForDidQuery; limit: number; cursor?: string; domain: string }
-): Promise<ConsentFlowContractDataForDid[]> => {
+): Promise<ConsentedDataForDidPage> => {
+    const decodedCursor = decodeConsentedDataCursor(cursor);
     const { id, ...params } = query;
     const convertedContractQuery = id ? convertObjectRegExpToNeo4j({ id }) : {};
     const { whereClause: contractWhereClause, params: contractQueryParams } =
@@ -802,7 +832,8 @@ export const getConsentedDataBetweenProfiles = async (
     while (records.length < limit) {
         const _dbQuery = new QueryBuilder(
             new BindParam({
-                cursor,
+                cursorDate: decodedCursor?.updatedAt,
+                cursorId: decodedCursor?.id,
                 ...contractQueryParams,
             })
         ).match({
@@ -815,10 +846,6 @@ export const getConsentedDataBetweenProfiles = async (
                 '-[:CREATED_BY|SHARES_DATA_WITH]->',
                 { model: Profile, where: { profileId: ownerProfileId } },
             ],
-            // The following is custom Cypher logic that has the following behavior:
-            // If query key is true, ensure all resulting terms have that key
-            // If query key is false, ensure no resulting terms have that key
-            // If query key is not present, return all terms whether they have it or not
         }).where(`
 (coalesce(contract.status, 'active') <> 'retired') AND
 (terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))
@@ -834,10 +861,11 @@ AND ${contractWhereClause}
             ],
         }).with(`terms, contract,
             coalesce(terms.createdAt, min(CASE WHEN transaction.action = 'consent' THEN transaction.date END)) AS createdAt,
-            coalesce(terms.updatedAt, max(transaction.date), terms.createdAt) AS date,
+            coalesce(terms.updatedAt, max(transaction.date), terms.createdAt, '') AS date,
             count(transaction.\`guardianApproval.guardianProfileId\`) > 0 AS hadGuardianApproval`);
 
-        if (cursor) dbQuery.where('date < $cursor');
+        if (decodedCursor)
+            dbQuery.where('(date < $cursorDate OR (date = $cursorDate AND terms.id > $cursorId))');
 
         const results = convertQueryResultToPropertiesObjectArray<{
             terms: FlatDbTermsType;
@@ -875,7 +903,8 @@ AND ${contractWhereClause}
                 version: Number(term.consentedVersion ?? 1),
             }))
         );
-        for (const { result, term, contract } of validResults) {
+        for (let resultIndex = 0; resultIndex < validResults.length; resultIndex++) {
+            const { result, term, contract } = validResults[resultIndex]!;
             const acceptedVersion = acceptedVersions.get(
                 `${contract.id}:${Number(term.consentedVersion ?? 1)}`
             );
@@ -949,13 +978,23 @@ AND ${contractWhereClause}
                 ),
                 personal: term.terms.read.personal,
             });
-            if (records.length >= limit) return records;
+            if (records.length >= limit) {
+                const hasMore =
+                    resultIndex + 1 < validResults.length || results.length === batchSize;
+                return {
+                    records,
+                    hasMore,
+                    ...(records.length
+                        ? { nextCursor: encodeConsentedDataCursor(result.date, term.id) }
+                        : {}),
+                };
+            }
         }
         if (results.length < batchSize) break;
         offset += batchSize;
     }
 
-    return records;
+    return { records, hasMore: false };
 };
 
 export const getTransactionsForTerms = async (
@@ -972,7 +1011,14 @@ export const getTransactionsForTerms = async (
         convertedQuery as any
     );
 
-    const query = new QueryBuilder(new BindParam({ cursor, ...transactionQueryParams }))
+    const decodedCursor = decodeConsentedDataCursor(cursor);
+    const query = new QueryBuilder(
+        new BindParam({
+            cursorDate: decodedCursor?.updatedAt,
+            cursorId: decodedCursor?.id,
+            ...transactionQueryParams,
+        })
+    )
         .match({
             related: [
                 { identifier: 'transaction', model: ConsentFlowTransaction },
@@ -980,7 +1026,13 @@ export const getTransactionsForTerms = async (
                 { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
-        .where(`${whereClause}${cursor ? ' AND transaction.date < $cursor' : ''}`)
+        .where(
+            `${whereClause}${
+                decodedCursor
+                    ? ' AND (transaction.date < $cursorDate OR (transaction.date = $cursorDate AND transaction.id < $cursorId))'
+                    : ''
+            }`
+        )
         .with('transaction')
         .match({
             optional: true,
@@ -998,7 +1050,7 @@ export const getTransactionsForTerms = async (
     }>(
         await query
             .return('DISTINCT transaction, [node in credentials | properties(node)] AS credentials')
-            .orderBy('transaction.date DESC')
+            .orderBy('transaction.date DESC, transaction.id DESC')
             .limit(limit)
             .run()
     );

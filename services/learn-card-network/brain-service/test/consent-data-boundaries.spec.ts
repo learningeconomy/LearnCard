@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import type { ConsentFlowDataQuery, ConsentFlowTermsInput } from '@learncard/types';
-import { ConsentFlowTerms } from '@models';
+import { ConsentFlowTerms, ConsentFlowTransaction } from '@models';
 import { neogma } from '@instance';
 import { suspendExpiredConsentFlowTerms } from '@helpers/consentflow-deadline.helpers';
 import { encodeConsentedDataCursor } from '@accesslayer/consentflowcontract/relationships/read';
@@ -436,7 +436,6 @@ describe('consented data boundaries', () => {
         });
         expect(response.records).toHaveLength(1);
         expect(response.hasMore).toBe(false);
-        expect(response.cursor).toBe('2001-01-01T00:00:00Z');
         const next = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
             did: learnerDid,
             limit: 1,
@@ -514,5 +513,136 @@ describe('consented data boundaries', () => {
             } while (cursor);
             expect(seenNames).toEqual(expectedNames);
         }
+    });
+    it('rejects malformed and obsolete date-only cursors with BAD_REQUEST', async () => {
+        const { contractUri, termsUri } = await consent();
+        const requests = [
+            () =>
+                owner.clients.fullAuth.contracts.getConsentedDataForContract({
+                    uri: contractUri,
+                    limit: 1,
+                    cursor: '2025-01-01T00:00:00Z',
+                }),
+            () =>
+                owner.clients.fullAuth.contracts.getConsentedData({
+                    limit: 1,
+                    cursor: 'not-a-cursor',
+                }),
+            () =>
+                owner.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: learnerDid,
+                    limit: 1,
+                    cursor: '2025-01-01T00:00:00Z',
+                }),
+            () =>
+                learner.clients.fullAuth.contracts.getConsentedContracts({
+                    limit: 1,
+                    cursor: '2025-01-01T00:00:00Z',
+                }),
+            () =>
+                learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+                    uri: termsUri,
+                    limit: 1,
+                    cursor: 'not-a-cursor',
+                }),
+        ];
+        for (const request of requests) {
+            await expect(request()).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        }
+    });
+
+    it('paginates tied holder-list, export, and between-profile cohorts with null update dates', async () => {
+        const termsIds: string[] = [];
+        for (let index = 0; index < 101; index++) {
+            const { termsUri } = await consent();
+            termsIds.push(termsUri.split(':').at(-1)!);
+        }
+        await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms) WHERE terms.id IN $ids
+             SET terms.updatedAt = '2020-01-01T00:00:00Z'`,
+            { ids: termsIds }
+        );
+        const nullTimestampId = termsIds.at(-1)!;
+        await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms {id:$id}) REMOVE terms.updatedAt`,
+            { id: nullTimestampId }
+        );
+
+        const seenTerms = new Set<string>();
+        let cursor: string | undefined;
+        do {
+            const page = await learner.clients.fullAuth.contracts.getConsentedContracts({
+                limit: 25,
+                cursor,
+            });
+            for (const record of page.records) {
+                expect(seenTerms.has(record.uri)).toBe(false);
+                seenTerms.add(record.uri);
+            }
+            if (!page.hasMore) break;
+            expect(page.cursor).toBeDefined();
+            cursor = page.cursor;
+        } while (cursor);
+        expect(seenTerms.size).toBe(101);
+
+        const exported = await learner.clients.fullAuth.credential.getHolderExportMetadata();
+        expect(new Set(exported.consentRecords.map(record => record.termsUri))).toEqual(seenTerms);
+
+        const betweenTerms = new Set<string>();
+        cursor = undefined;
+        do {
+            const page = await owner.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: learnerDid,
+                limit: 25,
+                cursor,
+            });
+            for (const record of page.records) {
+                expect(betweenTerms.has(record.termsUri)).toBe(false);
+                betweenTerms.add(record.termsUri);
+            }
+            if (!page.hasMore) break;
+            expect(page.cursor).toBeDefined();
+            cursor = page.cursor;
+        } while (cursor);
+        expect(betweenTerms.size).toBe(101);
+    });
+
+    it('keeps tied transaction history complete in public pages and holder exports', async () => {
+        const { termsUri } = await consent();
+        const terms = structuredClone(normalFullTerms);
+        for (let index = 0; index < 101; index++) {
+            terms.read.personal.name = `Saved choice ${index}`;
+            await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms,
+            });
+        }
+        const tied = await neogma.queryRunner.run(
+            `MATCH (transaction:ConsentFlowTransaction)-[:${ConsentFlowTransaction.getRelationshipByAlias('isFor').name}]->(:ConsentFlowTerms {id:$id})
+             SET transaction.date='2020-01-01T00:00:00Z'
+             RETURN transaction.id AS id`,
+            { id: termsUri.split(':').at(-1)! }
+        );
+        const expected = new Set(tied.records.map(record => String(record.get('id'))));
+        expect(expected.size).toBe(102);
+        const seen = new Set<string>();
+        let cursor: string | undefined;
+        do {
+            const page = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+                limit: 25,
+                cursor,
+            });
+            for (const record of page.records) {
+                expect(seen.has(record.id)).toBe(false);
+                seen.add(record.id);
+            }
+            cursor = page.hasMore ? page.cursor : undefined;
+        } while (cursor);
+        expect(seen).toEqual(expected);
+        const exported = await learner.clients.fullAuth.credential.getHolderExportMetadata();
+        const record = exported.consentRecords.find(record => record.termsUri === termsUri);
+        expect(record?.transactions).toHaveLength(expected.size);
+        expect(new Set(record!.transactions.map(transaction => transaction.id))).toEqual(expected);
     });
 });
