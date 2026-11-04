@@ -1,3 +1,4 @@
+import { trimTrailingSlashes } from './url';
 import type { Server } from 'node:http';
 
 import express from 'express';
@@ -95,7 +96,7 @@ export const createMcpApp = (options: CreateMcpAppOptions): express.Express => {
             verifier: auth.provider,
             requiredScopes: auth.requiredScopes ?? [],
             // Clients discover this server's OAuth configuration from here.
-            resourceMetadataUrl: `${auth.baseUrl.replace(/\/+$/, '')}${metadataPath}`,
+            resourceMetadataUrl: `${trimTrailingSlashes(auth.baseUrl)}${metadataPath}`,
         }),
         async (req, res) => {
             try {

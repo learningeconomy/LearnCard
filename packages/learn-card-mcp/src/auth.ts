@@ -1,3 +1,4 @@
+import { trimTrailingSlashes } from './url';
 import { ProxyOAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
@@ -26,7 +27,7 @@ export type OAuthProxyOptions = {
 
 /** Builds the SDK's proxy provider from a host's endpoints and auth adapters. */
 export const createOAuthProxyProvider = (options: OAuthProxyOptions): ProxyOAuthServerProvider => {
-    const base = options.authorizationServerUrl.replace(/\/+$/, '');
+    const base = trimTrailingSlashes(options.authorizationServerUrl);
 
     return new ProxyOAuthServerProvider({
         endpoints: {
