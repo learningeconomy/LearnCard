@@ -197,6 +197,7 @@ describe('guardian approval at the consent submission boundary', () => {
         state.updateTerms.mockResolvedValue(true);
         state.upload.mockResolvedValue('lc:shared');
         state.initWallet.mockResolvedValue({
+            id: { did: () => 'did:example:learner' },
             invoke: {
                 getContract: vi.fn().mockResolvedValue(contract),
                 getConsentedContracts: vi.fn().mockResolvedValue({

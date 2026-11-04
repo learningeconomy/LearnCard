@@ -98,6 +98,7 @@ export const useAddCredentialToWallet = () => {
                     uri,
                     id: _id,
                     didOverride,
+                    readerDid: wallet.id.did(),
                     eventSource: input.eventSource,
                     eventBoostUri: input.eventBoostUri,
                 };
@@ -107,7 +108,8 @@ export const useAddCredentialToWallet = () => {
             }
         },
         onSuccess: async data => {
-            const { category, vc, uri, id, didOverride, eventSource, eventBoostUri } = data;
+            const { category, vc, uri, id, didOverride, readerDid, eventSource, eventBoostUri } =
+                data;
 
             await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
 
@@ -150,11 +152,15 @@ export const useAddCredentialToWallet = () => {
             });
 
             // Update cache
-            insertItem(queryClient, ['useGetCredentialList', didForListsAndCounts, category], {
-                id,
-                category,
-                uri,
-            });
+            insertItem(
+                queryClient,
+                ['useGetCredentialList', didForListsAndCounts, category, readerDid],
+                {
+                    id,
+                    category,
+                    uri,
+                }
+            );
 
             // Keep resume-builder selectors and wallet credential views in sync after any issuance.
             // Intentionally don't await these to keep this mutation fast.
