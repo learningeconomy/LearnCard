@@ -1858,7 +1858,7 @@ jobs:
                   platforms: linux/arm64
                   build-args: GIT_SHA=${{ github.sha }}
                   # No GHA layer cache: `COPY . .` invalidates every expensive layer
-                  # on each commit, so the mode=max export (~5 min, ~5 GiB) never
+                  # on each commit, so the mode=max export (~5 min, >1 GB) never
                   # hit, and it evicted the repo's other caches (cargo, bun, ...).
                   tags: ${{ vars.AI_AGENT_ECR_REPOSITORY_URL }}:sha-${{ github.sha }}
 
