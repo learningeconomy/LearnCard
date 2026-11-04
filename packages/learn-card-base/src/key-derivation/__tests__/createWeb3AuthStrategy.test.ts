@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthSessionError } from '@learncard/types';
 import { createWeb3AuthStrategy, deriveWeb3AuthKey } from '../createWeb3AuthStrategy';
+import { isNetworkError } from '../../helpers/networkError';
 
 const sdk = vi.hoisted(() => ({
     init: vi.fn(),
@@ -292,5 +293,120 @@ describe('Web3Auth account setup coordination', () => {
             expect.objectContaining({ replayedCredential: true })
         );
         expect(await derive(strategy)).toBe('synthetic-private-key');
+    });
+    it('reports the failing SDK step and a redacted error without exposing credentials', async () => {
+        const failure = Object.assign(
+            new Error(
+                `Could not get lookup for test-user with ${token()} and eyJhbGc.eyJzdWIiOiJ4In0.sig`
+            ),
+            { code: 'TORUS_LOOKUP' }
+        );
+        failure.name = 'WalletLoginError';
+        sdk.connect.mockRejectedValueOnce(failure);
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await expect(derive(strategy)).rejects.toThrow(
+            'We couldn’t finish signing you in. Please try again.'
+        );
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({
+                failureStage: 'connect',
+                errorType: 'WalletLoginError',
+                errorCode: 'TORUS_LOOKUP',
+                networkFailure: false,
+                failureMessage: expect.stringContaining('Could not get lookup for [uid] with'),
+            })
+        );
+        const logged = JSON.stringify(sdk.error.mock.calls);
+        expect(logged).not.toContain(token());
+        expect(logged).not.toContain(token().split('.')[1]);
+        expect(logged).not.toContain('eyJzdWIiOiJ4In0');
+        expect(logged).not.toContain('test-user');
+    });
+
+    it.each([
+        ['init', () => sdk.init.mockRejectedValueOnce(new Error('init exploded'))],
+        ['identity_check', () => sdk.getUserInfo.mockRejectedValueOnce(new Error('no user info'))],
+        ['private_key', () => sdk.request.mockRejectedValueOnce(new Error('no key'))],
+    ])('reports %s as the failing step', async (stage, arrange) => {
+        arrange();
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await expect(derive(strategy)).rejects.toThrow('We couldn’t finish signing you in.');
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({ failureStage: stage })
+        );
+    });
+
+    it('keeps network failures network-class so the coordinator retries instead of erroring', async () => {
+        sdk.connect.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        const error = await derive(strategy).catch((e: unknown) => e);
+        expect(error).toBeInstanceOf(Error);
+        expect((error as { code?: string }).code).toBe('network_error');
+        expect(isNetworkError(error)).toBe(true);
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({ failureStage: 'connect', networkFailure: true })
+        );
+        expect(await derive(strategy)).toBe('synthetic-private-key');
+    });
+
+    it('does not treat ordinary SDK failures as network failures', async () => {
+        sdk.connect.mockRejectedValueOnce(new Error('Verifier not supported'));
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        const error = await derive(strategy).catch((e: unknown) => e);
+        expect(isNetworkError(error)).toBe(false);
+    });
+    it.each([
+        ['string', () => `token rejected for test-user: ${token()}`],
+        [
+            'object',
+            () => ({ code: 'TORUS_LOOKUP', message: `lookup failed for test-user ${token()}` }),
+        ],
+        ['object', () => ({ code: 'NO_MESSAGE', detail: `test-user ${token()}` })],
+    ])('describes a non-Error %s rejection with redacted detail', async (type, rejection) => {
+        sdk.connect.mockRejectedValueOnce(rejection());
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await expect(derive(strategy)).rejects.toThrow('We couldn’t finish signing you in.');
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({
+                failureStage: 'connect',
+                errorType: type,
+                failureMessage: expect.stringContaining('[uid]'),
+            })
+        );
+        const logged = JSON.stringify(sdk.error.mock.calls);
+        expect(logged).not.toContain(token().split('.')[1]);
+        expect(logged).not.toContain('test-user');
+    });
+
+    it('classifies a network failure rejected as a plain object', async () => {
+        sdk.connect.mockRejectedValueOnce({ message: 'Failed to fetch' });
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        const error = await derive(strategy).catch((e: unknown) => e);
+        expect(isNetworkError(error)).toBe(true);
+    });
+
+    it('keeps endpoint hostnames in the failure message', async () => {
+        sdk.connect.mockRejectedValueOnce(
+            new Error('Request to https://api.web3auth.io/signer-service failed with 500')
+        );
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await expect(derive(strategy)).rejects.toThrow('We couldn’t finish signing you in.');
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({
+                failureMessage: expect.stringContaining('api.web3auth.io/signer-service'),
+            })
+        );
     });
 });
