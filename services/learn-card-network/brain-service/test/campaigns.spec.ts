@@ -1,5 +1,9 @@
 import { claimCampaignEmail, acknowledgeCampaignEmail } from '@accesslayer/campaign/email';
 import { pageCampaignAudience } from '@accesslayer/campaign/audience';
+import { getAnnouncementPreferences } from '@accesslayer/campaign/preferences';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { updateProfile } from '@accesslayer/profile/update';
+import { signCampaignUnsubscribeToken } from '@helpers/campaign-unsubscribe.helpers';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveTenantFromRequest } from '@learncard/email-templates';
 import {
@@ -981,6 +985,61 @@ describe('campaign email database boundaries', () => {
         );
         return campaign;
     };
+    it('keeps old links bound to the original recipient after renames and name reuse', async () => {
+        const campaign = await setup();
+        const recipient = await claimCampaignEmail(
+            campaign.id,
+            campaign.createdAt,
+            'learner',
+            true
+        );
+        const token = signCampaignUnsubscribeToken(recipient!.unsubscribeId, campaign.id);
+        await updateProfile((await getProfileByProfileId('learner'))!, {
+            profileId: 'renamed-learner',
+        });
+        const anonymous = campaignsRouter.createCaller({ domain });
+        await anonymous.unsubscribe({ token });
+        expect((await getAnnouncementPreferences('renamed-learner')).announcementEmailOptOut).toBe(
+            true
+        );
+
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'renamed-learner'}) SET p.announcementEmailOptOut = false"
+        );
+        await updateProfile((await getProfileByProfileId('other'))!, { profileId: 'learner' });
+        await anonymous.unsubscribe({ token });
+        expect((await getAnnouncementPreferences('renamed-learner')).announcementEmailOptOut).toBe(
+            true
+        );
+        expect((await getAnnouncementPreferences('learner')).announcementEmailOptOut).toBe(false);
+    });
+
+    it('does not transfer an old link to a new holder after recipient deletion', async () => {
+        const campaign = await setup();
+        const recipient = await claimCampaignEmail(
+            campaign.id,
+            campaign.createdAt,
+            'learner',
+            true
+        );
+        const token = signCampaignUnsubscribeToken(recipient!.unsubscribeId, campaign.id);
+        await neogma.queryRunner.run("MATCH (p:Profile {profileId:'learner'}) DETACH DELETE p");
+        await updateProfile((await getProfileByProfileId('other'))!, { profileId: 'learner' });
+        await campaignsRouter.createCaller({ domain }).unsubscribe({ token });
+        expect((await getAnnouncementPreferences('learner')).announcementEmailOptOut).toBe(false);
+    });
+
+    it('allocates one durable unsubscribe identity across concurrent self-tests', async () => {
+        const campaign = await setup();
+        const recipients = await Promise.all(
+            Array.from({ length: 8 }, () =>
+                claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+            )
+        );
+        expect(new Set(recipients.map(recipient => recipient!.unsubscribeId)).size).toBe(1);
+        expect(recipients[0]!.unsubscribeId).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
     it('filters email opt-outs before pagination without hiding them from audience management', async () => {
         const campaign = await setup();
         await admin.addAudience(audience({ type: 'dids', dids: [did('other')] }));

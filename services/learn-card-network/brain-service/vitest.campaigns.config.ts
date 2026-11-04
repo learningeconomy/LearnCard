@@ -14,6 +14,7 @@ export default createVitestConfig(serviceIntegrationPreset, {
             DOMAIN_NAME: 'localhost%3A3000',
             SEED: 'a'.repeat(64),
             CAMPAIGN_ADMIN_PROFILE_IDS: 'campaign-admin',
+            CAMPAIGN_UNSUBSCRIBE_SECRET: 'campaign-test-only-secret-at-least-32-bytes',
             TRACE_CONSOLE: 'false',
             NEO4J_SKIP_INDICES: 'true',
         },

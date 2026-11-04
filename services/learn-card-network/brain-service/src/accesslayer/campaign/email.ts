@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Campaign } from '@learncard/types';
+import { ensureCampaignConstraints } from '../../models/campaign-constraints';
 import {
     adultProfilePredicate,
     campaignTimeParams,
@@ -8,7 +9,12 @@ import {
     withCampaignTransaction,
 } from './shared';
 
-export type CampaignEmailRecipient = { campaign: Campaign; email: string; locale?: string };
+export type CampaignEmailRecipient = {
+    campaign: Campaign;
+    email: string;
+    unsubscribeId: string;
+    locale?: string;
+};
 
 /** Reserve before external I/O. A lost acknowledgement remains reserved and is never retried automatically. */
 export const claimCampaignEmail = async (
@@ -17,12 +23,14 @@ export const claimCampaignEmail = async (
     profileId: string,
     test = false,
     prepare?: (recipient: CampaignEmailRecipient) => Promise<void>
-): Promise<CampaignEmailRecipient | undefined> =>
-    withCampaignTransaction('campaign:claimEmail', async transaction => {
+): Promise<CampaignEmailRecipient | undefined> => {
+    await ensureCampaignConstraints();
+    return withCampaignTransaction('campaign:claimEmail', async transaction => {
         const params = { campaignId, campaignCreatedAt, profileId, ...campaignTimeParams() };
         await transaction.run(
             `MATCH (p:Profile {profileId: $profileId})
-            SET p.campaignStateLock = coalesce(p.campaignStateLock, 0) + 1`,
+            SET p.campaignStateLock = coalesce(p.campaignStateLock, 0) + 1,
+                p.campaignUnsubscribeId = coalesce(p.campaignUnsubscribeId, randomUUID())`,
             params
         );
         const result = await transaction.run(
@@ -36,7 +44,8 @@ export const claimCampaignEmail = async (
              WITH p, c, email, state
              ${test ? '' : 'WHERE state.emailClaimedAt IS NULL AND state.emailedAt IS NULL'}
              WITH p, c, email ORDER BY email.id LIMIT 2
-             RETURN c.definition AS definition, email.value AS email, p.locale AS locale`,
+             RETURN c.definition AS definition, email.value AS email, p.locale AS locale,
+                    p.campaignUnsubscribeId AS unsubscribeId`,
             params
         );
         // Ambiguous primary contacts fail closed, as do malformed legacy addresses.
@@ -46,7 +55,12 @@ export const claimCampaignEmail = async (
         const email = z.email().safeParse(row.get('email'));
         if (!email.success || !campaign.channels.includes('email') || !campaign.email)
             return undefined;
-        const recipient = { campaign, email: email.data, locale: row.get('locale') ?? undefined };
+        const recipient = {
+            campaign,
+            email: email.data,
+            unsubscribeId: row.get('unsubscribeId') as string,
+            locale: row.get('locale') ?? undefined,
+        };
         // Local preparation only: no provider send inside a retriable transaction.
         // A render failure aborts before writing the durable claim.
         await prepare?.(recipient);
@@ -58,6 +72,7 @@ export const claimCampaignEmail = async (
             );
         return recipient;
     });
+};
 
 /** Provider acceptance only; a claim alone is not an emailed statistic. */
 export const acknowledgeCampaignEmail = async (

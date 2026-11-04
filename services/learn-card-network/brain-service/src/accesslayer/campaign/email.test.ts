@@ -12,6 +12,9 @@ vi.mock('./shared', () => ({
     withCampaignTransaction: async (_name: string, work: (tx: unknown) => Promise<unknown>) =>
         work({ run: mocks.run }),
 }));
+vi.mock('../../models/campaign-constraints', () => ({
+    ensureCampaignConstraints: vi.fn().mockResolvedValue(undefined),
+}));
 import { claimCampaignEmail } from './email';
 
 beforeEach(() => {
@@ -26,6 +29,7 @@ beforeEach(() => {
                                   definition: '{}',
                                   email: 'adult@example.com',
                                   locale: 'es',
+                                  unsubscribeId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
                               }) as Record<string, string>
                           )[key],
                   },
@@ -43,6 +47,7 @@ it('does not write a reservation when preparation fails', async () => {
         campaign: mocks.campaign,
         email: 'adult@example.com',
         locale: 'es',
+        unsubscribeId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     });
     expect(mocks.run.mock.calls.some(([query]) => query.includes('SET state.emailClaimedAt'))).toBe(
         false

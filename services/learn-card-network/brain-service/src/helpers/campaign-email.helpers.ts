@@ -12,17 +12,17 @@ export const assertCampaignEmailConfigured = (): void => {
     const stream = environment.POSTMARK_BROADCAST_STREAM;
     if (!stream || stream.toLowerCase() === 'outbound')
         throw new Error('Campaign email requires a broadcast stream');
-    signCampaignUnsubscribeToken('configuration-check', 'configuration-check');
+    signCampaignUnsubscribeToken('00000000-0000-4000-8000-000000000000', 'configuration-check');
 };
 
 export const campaignEmailLinks = (
     campaign: Campaign,
-    profileId: string
+    unsubscribeId: string
 ): { ctaUrl?: string; unsubscribeUrl: string; oneClickUrl: string } => {
     const branding = resolveBranding(
         resolveTenantFromRequest({ 'x-tenant-id': campaign.tenantId }).emailBranding
     );
-    const token = signCampaignUnsubscribeToken(profileId, campaign.id);
+    const token = signCampaignUnsubscribeToken(unsubscribeId, campaign.id);
     const cta = new URL(`/m/${campaign.id}`, branding.appUrl);
     cta.searchParams.set('utm_source', 'email');
     cta.searchParams.set('utm_campaign', campaign.id);
@@ -69,7 +69,7 @@ export const sendCampaignEmail = async (
         test,
         async current => {
             try {
-                const links = campaignEmailLinks(current.campaign, profileId);
+                const links = campaignEmailLinks(current.campaign, current.unsubscribeId);
                 deliver = await adapter.prepareCampaignEmail({
                     contactMethod: { type: 'email', value: current.email },
                     templateId: 'campaign-announcement',

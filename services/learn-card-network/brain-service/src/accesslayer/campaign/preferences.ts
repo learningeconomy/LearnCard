@@ -3,6 +3,17 @@ import type { AnnouncementPreferences } from '@learncard/types';
 import { neogma } from '@instance';
 import { traceDb } from '@tracing';
 
+/** Resolve the durable recipient directly so renames and reused names cannot redirect opt-outs. */
+export const unsubscribeCampaignRecipient = async (unsubscribeId: string): Promise<void> => {
+    await traceDb('campaign:unsubscribeRecipient', () =>
+        neogma.queryRunner.run(
+            `MATCH (p:Profile {campaignUnsubscribeId: $unsubscribeId})
+             SET p.announcementEmailOptOut = true`,
+            { unsubscribeId }
+        )
+    );
+};
+
 /** Private preferences are read from the graph, never a cached public profile. */
 export const getAnnouncementPreferences = async (
     profileId: string

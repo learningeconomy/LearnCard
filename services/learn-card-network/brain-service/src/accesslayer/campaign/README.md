@@ -349,6 +349,11 @@ Browser unsubscribe links use the tenant `/unsubscribe?token=...` page. The
 `application/x-www-form-urlencoded` POST `List-Unsubscribe=One-Click`, without login,
 cookies, redirects or JavaScript. GET does not mutate. Both paths verify the same
 purpose-separated HMAC token, then idempotently set the profile's email opt-out.
+Version 2 tokens bind to a unique, durable `campaignUnsubscribeId` allocated under
+the recipient lock before sending. Renaming a profile preserves its links; reusing
+or deleting a profile name never transfers those links to another account. Legacy
+name-based tokens are rejected because their original recipient cannot be resolved
+safely after a rename. Generate a new test email to replace an old test link.
 Links remain valid after campaign archive/deletion; rotating the secret invalidates
 old links. Tokens are bearer authority for opt-out only, not authentication. Do not
 log token URLs or capture them in analytics; ingress/proxy access-log redaction for

@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Campaign } from '@learncard/types';
 const mocks = vi.hoisted(() => ({
@@ -21,7 +22,7 @@ vi.mock('@accesslayer/campaign/email', () => ({
     acknowledgeCampaignEmail: mocks.acknowledge,
 }));
 vi.mock('@accesslayer/campaign/preferences', () => ({
-    updateAnnouncementPreferences: mocks.update,
+    unsubscribeCampaignRecipient: mocks.update,
 }));
 vi.mock('../src/services/delivery/adapters/postmark.adapter', () => ({
     PostmarkAdapter: class {
@@ -35,6 +36,7 @@ import {
     verifyCampaignUnsubscribeToken,
     unsubscribeFromCampaignEmails,
 } from '../src/helpers/campaign-unsubscribe.helpers';
+const unsubscribeId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const campaign = {
     id: 'new-programs',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -52,7 +54,7 @@ beforeEach(() => {
     vi.clearAllMocks();
     mocks.environment.POSTMARK_BROADCAST_STREAM = 'broadcast';
     mocks.environment.POSTMARK_API_KEY = 'test-only';
-    mocks.recipient = { campaign, email: 'adult@example.com' };
+    mocks.recipient = { campaign, email: 'adult@example.com', unsubscribeId };
     mocks.claim.mockImplementation(async (_id, _createdAt, _profileId, _test, prepare) => {
         if (!mocks.recipient) return undefined;
         await prepare(mocks.recipient);
@@ -90,7 +92,7 @@ describe('campaign email', () => {
             })
         );
         expect(mocks.acknowledge).toHaveBeenCalledOnce();
-        const links = campaignEmailLinks(campaign, 'adult');
+        const links = campaignEmailLinks(campaign, unsubscribeId);
         expect(links.ctaUrl).toBe(
             'https://vetpass.app/m/new-programs?utm_source=email&utm_campaign=new-programs'
         );
@@ -102,9 +104,9 @@ describe('campaign email', () => {
         { channels: ['inApp', 'email'], message: undefined },
     ])('omits the campaign destination without enabled in-app content: %j', async variant => {
         const stored = { ...campaign, ...variant } as Campaign;
-        mocks.recipient = { campaign: stored, email: 'adult@example.com' };
+        mocks.recipient = { campaign: stored, email: 'adult@example.com', unsubscribeId };
         await sendCampaignEmail(stored, 'adult', true);
-        expect(campaignEmailLinks(stored, 'adult').ctaUrl).toBeUndefined();
+        expect(campaignEmailLinks(stored, unsubscribeId).ctaUrl).toBeUndefined();
         const model = mocks.prepare.mock.calls[0][0].templateModel;
         expect(model.ctaUrl).toBeUndefined();
         expect(model.body).toBe(campaign.email!.body);
@@ -170,34 +172,34 @@ describe('campaign email', () => {
     });
 });
 describe('unsubscribe tokens', () => {
-    it.each(['a', 'adult.name', 'élève.学習者'])(
-        'round-trips canonical UTF-8 tokens for %s',
-        profileId => {
-            const token = signCampaignUnsubscribeToken(profileId, campaign.id);
-            expect(verifyCampaignUnsubscribeToken(token)).toEqual({
-                profileId,
-                campaignId: campaign.id,
-            });
-            expect(() => verifyCampaignUnsubscribeToken(`${token}=`)).toThrow();
-        }
-    );
-    it('round-trips dotted profile IDs and rejects tampering and malformed tokens', () => {
-        const token = signCampaignUnsubscribeToken('adult.name', campaign.id);
+    it('round-trips a versioned durable recipient and rejects tampering', () => {
+        const token = signCampaignUnsubscribeToken(unsubscribeId, campaign.id);
         expect(verifyCampaignUnsubscribeToken(token)).toEqual({
-            profileId: 'adult.name',
+            unsubscribeId,
             campaignId: campaign.id,
         });
         const altered = Buffer.from(
-            Buffer.from(token, 'base64url').toString().replace('adult', 'other')
+            Buffer.from(token, 'base64url').toString().replace('new-programs', 'other-programs')
         ).toString('base64url');
-        for (const invalid of ['', '%%%', altered, token + '.', 'a'.repeat(2049)])
+        for (const invalid of ['', '%%%', altered, token + '.', token + '=', 'a'.repeat(2049)])
             expect(() => verifyCampaignUnsubscribeToken(invalid)).toThrow();
     });
-    it('repeated unsubscribe requests only set the email choice to true', async () => {
-        const token = signCampaignUnsubscribeToken('adult', campaign.id);
+    it('rejects signed legacy name tokens without changing preferences', async () => {
+        const payload = `alice.${campaign.id}`;
+        const signature = createHmac('sha256', mocks.environment.CAMPAIGN_UNSUBSCRIBE_SECRET)
+            .update(`campaign-unsubscribe:${payload}`)
+            .digest('base64url');
+        const token = Buffer.from(`${payload}.${signature}`).toString('base64url');
+        await expect(unsubscribeFromCampaignEmails(token)).rejects.toThrow(
+            'Invalid unsubscribe link'
+        );
+        expect(mocks.update).not.toHaveBeenCalled();
+    });
+    it('repeated unsubscribe requests resolve only the durable recipient', async () => {
+        const token = signCampaignUnsubscribeToken(unsubscribeId, campaign.id);
         await unsubscribeFromCampaignEmails(token);
         await unsubscribeFromCampaignEmails(token);
         expect(mocks.update).toHaveBeenCalledTimes(2);
-        expect(mocks.update).toHaveBeenLastCalledWith('adult', { announcementEmailOptOut: true });
+        expect(mocks.update).toHaveBeenLastCalledWith(unsubscribeId);
     });
 });
