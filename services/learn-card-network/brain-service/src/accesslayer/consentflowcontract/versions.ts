@@ -26,6 +26,8 @@ import { TRPCError } from '@trpc/server';
 import { v4 as uuid } from 'uuid';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import { getBoostById } from '@accesslayer/boost/read';
+import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
 import { tryDispatchContractEvent } from '@helpers/contract-events.helpers';
 
 export type StoredContractVersion = {
@@ -450,9 +452,27 @@ export const updateConsentFlowContractVersion = async (
                 existing &&
                 existing.signingAuthorityEndpoint === config.signingAuthorityEndpoint &&
                 existing.signingAuthorityName === config.signingAuthorityName;
+            if (existing?.issuer && existing.issuer !== actorProfileId && !unchanged) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message:
+                        'Existing delegated delivery cannot change signers; remove it before configuring owner delivery',
+                });
+            }
             const issuer = unchanged ? (existing.issuer ?? actorProfileId) : actorProfileId;
             if (!unchanged) {
                 const issuerProfile = await getProfileByProfileId(issuer);
+                const boost = await getBoostById(config.id);
+                if (
+                    !issuerProfile ||
+                    !boost ||
+                    !(await canProfileIssueBoost(issuerProfile, boost))
+                ) {
+                    throw new TRPCError({
+                        code: 'UNAUTHORIZED',
+                        message: 'The contract owner cannot issue this AutoBoost',
+                    });
+                }
                 const signingAuthority =
                     issuerProfile &&
                     (await getSigningAuthorityForUserByName(

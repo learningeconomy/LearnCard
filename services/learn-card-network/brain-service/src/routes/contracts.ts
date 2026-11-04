@@ -487,12 +487,6 @@ export const contractsRouter = t.router({
                                 message: `Could not find boost: ${config.boostUri}`,
                             });
                         }
-                        if (!(await canProfileIssueBoost(ctx.user.profile, boost))) {
-                            throw new TRPCError({
-                                code: 'UNAUTHORIZED',
-                                message: `Profile does not have permissions to issue boost: ${config.boostUri}`,
-                            });
-                        }
                         if (isDraftBoost(boost)) {
                             throw new TRPCError({
                                 code: 'FORBIDDEN',
@@ -501,17 +495,6 @@ export const contractsRouter = t.router({
                             });
                         }
                         const name = config.signingAuthority.name.toLowerCase();
-                        const authority = await getSigningAuthorityForUserByName(
-                            ctx.user.profile,
-                            config.signingAuthority.endpoint,
-                            name
-                        );
-                        if (!authority) {
-                            throw new TRPCError({
-                                code: 'BAD_REQUEST',
-                                message: `Signing authority "${name}" at endpoint "${config.signingAuthority.endpoint}" not found for this profile`,
-                            });
-                        }
                         return {
                             id: boost.id,
                             signingAuthorityEndpoint: config.signingAuthority.endpoint,

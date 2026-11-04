@@ -37,6 +37,7 @@ import {
     SigningAuthority,
 } from '@models';
 import { testUnsignedBoost } from './helpers/send';
+import { seedLegacyAutoBoost } from './helpers/legacy-autoboost';
 import { BindParam, QueryBuilder } from 'neogma';
 import {
     getContractTermsByUri,
@@ -52,7 +53,6 @@ import {
 import { neogma } from '@instance';
 import { migrateLegacyConsentFlowContracts } from '../src/helpers/consentflow-legacy-migration.helpers';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
-import * as signingAuthorityHelpers from '../src/helpers/signingAuthority.helpers';
 import type { ConsentFlowTerms as ConsentFlowTermsType } from '@learncard/types';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -160,14 +160,13 @@ describe('Consent Flow Contracts', () => {
             const signingGate = new Promise<void>(resolve => {
                 releaseSigning = resolve;
             });
-            const issueCredential = signingAuthorityHelpers.issueCredentialWithSigningAuthority;
-            const issueSpy = vi
-                .spyOn(signingAuthorityHelpers, 'issueCredentialWithSigningAuthority')
-                .mockImplementation(async (...args) => {
-                    announceStarted();
-                    await signingGate;
-                    return issueCredential(...args);
-                });
+            const issueCredential = signingAuthorityMocks.issueCredential.getMockImplementation();
+            if (!issueCredential) throw new Error('Real signer was not initialized');
+            signingAuthorityMocks.issueCredential.mockImplementation(async (...args) => {
+                announceStarted();
+                await signingGate;
+                return issueCredential(...args);
+            });
 
             try {
                 const write =
@@ -199,7 +198,6 @@ describe('Consent Flow Contracts', () => {
                 releaseSigning();
                 await expect(write).rejects.toMatchObject({
                     code: 'FORBIDDEN',
-                    message: 'User has not yet approved the latest version of this contract',
                 });
                 const terms = await getContractTermsByUri(termsUri);
                 expect(terms).toBeDefined();
@@ -215,7 +213,7 @@ describe('Consent Flow Contracts', () => {
                 expect(deliveries.records).toEqual([]);
             } finally {
                 releaseSigning();
-                issueSpy.mockRestore();
+                signingAuthorityMocks.issueCredential.mockImplementation(issueCredential);
             }
         });
     });
@@ -2944,15 +2942,11 @@ describe('Consent Flow Contracts', () => {
                 autoboosts: [{ boostUri, signingAuthority }],
             });
 
-            await expect(
-                userC.clients.fullAuth.contracts.addAutoBoostsToContract({
-                    contractUri,
-                    autoboosts: [{ boostUri: boostUri2, signingAuthority: signingAuthority2 }],
-                })
-            ).resolves.toBe(true);
-            expect(
-                await userA.clients.fullAuth.contracts.getContractVersions({ uri: contractUri })
-            ).toHaveLength(2);
+            await seedLegacyAutoBoost(contractUri, {
+                boostUri: boostUri2,
+                signingAuthority: signingAuthority2,
+                issuerProfileId: 'userc',
+            });
 
             // Consent to the contract
             const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
@@ -2982,7 +2976,7 @@ describe('Consent Flow Contracts', () => {
             expect(hasAutoBoostTx).toBeTruthy();
         });
 
-        it('allows a writer legacy autoboost update through a new required version', async () => {
+        it('retains legacy delegated deliveries across withdrawal and reconsent', async () => {
             // Setup: userA (owner) and userC (writer) can issue boosts
             // User A's SA
             await userA.clients.fullAuth.profile.registerSigningAuthority({
@@ -3033,45 +3027,22 @@ describe('Consent Flow Contracts', () => {
                     },
                 ],
             });
+            await seedLegacyAutoBoost(contractUri, {
+                boostUri: boostC_Uri,
+                signingAuthority: {
+                    endpoint: saC_Details.signingAuthority.endpoint,
+                    name: saC_Details.relationship.name,
+                },
+                issuerProfileId: 'userc',
+            });
             const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: normalFullTerms,
             });
-            await expect(
-                userC.clients.fullAuth.contracts.addAutoBoostsToContract({
-                    contractUri,
-                    autoboosts: [
-                        {
-                            boostUri: boostC_Uri,
-                            signingAuthority: {
-                                endpoint: saC_Details.signingAuthority.endpoint,
-                                name: saC_Details.relationship.name,
-                            },
-                        },
-                    ],
-                })
-            ).resolves.toBe(true);
-            expect(
-                await userA.clients.fullAuth.contracts.getContractVersions({ uri: contractUri })
-            ).toHaveLength(2);
-
-            const status = await userB.clients.fullAuth.contracts.getConsentStatus({
-                uri: contractUri,
-                profileId: 'userb',
-            });
-            expect(status.status).toBe('needs_reconsent');
-            expect(status.currentVersion).toBe(2);
-            await expect(
-                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
-                    uri: termsUri,
-                    terms: normalFullTerms,
-                    acceptVersion: 2,
-                })
-            ).resolves.toBe(true);
-            const credentialsAfterUpdate =
+            const credentialsAfterInitialConsent =
                 await userB.clients.fullAuth.contracts.getCredentialsForContract({ termsUri });
             expect(
-                credentialsAfterUpdate.records.map(credential => credential.boostUri).sort()
+                credentialsAfterInitialConsent.records.map(credential => credential.boostUri).sort()
             ).toEqual([boostA_Uri, boostC_Uri].sort());
 
             await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
@@ -3146,23 +3117,14 @@ describe('Consent Flow Contracts', () => {
                     },
                 ],
             });
-            await expect(
-                userC.clients.fullAuth.contracts.addAutoBoostsToContract({
-                    contractUri,
-                    autoboosts: [
-                        {
-                            boostUri: boostC_Uri,
-                            signingAuthority: {
-                                endpoint: saC_Details.signingAuthority.endpoint,
-                                name: saC_Details.relationship.name,
-                            },
-                        },
-                    ],
-                })
-            ).resolves.toBe(true);
-            expect(
-                await userA.clients.fullAuth.contracts.getContractVersions({ uri: contractUri })
-            ).toHaveLength(2);
+            await seedLegacyAutoBoost(contractUri, {
+                boostUri: boostC_Uri,
+                signingAuthority: {
+                    endpoint: saC_Details.signingAuthority.endpoint,
+                    name: saC_Details.relationship.name,
+                },
+                issuerProfileId: 'userc',
+            });
 
             // 1. Initial consent by userB (no denied writers)
             const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({

@@ -12,6 +12,7 @@ import {
 } from './helpers/contract.helpers';
 import { VC } from '@learncard/types';
 import { updateTutorialContract } from '../../../docs/snippets/consentflow/update-contract.mjs';
+import { seedLegacyAutoBoost } from './helpers/legacy-autoboost.helpers';
 
 let a: LearnCard;
 let b: LearnCard;
@@ -718,9 +719,10 @@ describe('ConsentFlow E2E Tests', () => {
                     },
                 ],
             });
-            await c.invoke.getLCNClient().contracts.addAutoBoostsToContract.mutate({
-                contractUri,
-                autoboosts: [{ boostUri: boostC_Uri, signingAuthority: saC_Details }],
+            await seedLegacyAutoBoost(contractUri, {
+                boostUri: boostC_Uri,
+                issuerProfileId: USERS.c.profileId,
+                signingAuthority: saC_Details,
             });
 
             // 1. Initial consent by User B (no denied writers)
@@ -827,9 +829,10 @@ describe('ConsentFlow E2E Tests', () => {
                     },
                 ],
             });
-            await c.invoke.getLCNClient().contracts.addAutoBoostsToContract.mutate({
-                contractUri,
-                autoboosts: [{ boostUri: boostC_Uri, signingAuthority: saC_Details }],
+            await seedLegacyAutoBoost(contractUri, {
+                boostUri: boostC_Uri,
+                issuerProfileId: USERS.c.profileId,
+                signingAuthority: saC_Details,
             });
 
             // 1. Initial consent by User B (no denied writers)

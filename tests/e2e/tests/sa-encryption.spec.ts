@@ -7,6 +7,7 @@ import { getBitstringStatusListEntries, getBitstringStatusListBit } from '@learn
 import { getLearnCard, getLearnCardForUser, type LearnCard } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 import { normalContract, normalFullTerms } from './helpers/contract.helpers';
+import { seedLegacyAutoBoost } from './helpers/legacy-autoboost.helpers';
 
 test('legacy signed wrappers still verify and reject tampered inner credentials', async () => {
     const issuer = await initLearnCard({ seed: 'e'.repeat(64) });
@@ -52,9 +53,10 @@ test('delegated AutoBoosts remain readable by the contract owner across consent 
         name: 'Delegated AutoBoost encryption',
         writers: ['testc'],
     });
-    await writer.invoke.getLCNClient().contracts.addAutoBoostsToContract.mutate({
-        contractUri,
-        autoboosts: [{ boostUri, signingAuthority: { endpoint: sa.endpoint, name: sa.name } }],
+    await seedLegacyAutoBoost(contractUri, {
+        boostUri,
+        issuerProfileId: 'testc',
+        signingAuthority: { endpoint: sa.endpoint, name: sa.name },
     });
     const { termsUri } = await student.invoke.consentToContract(contractUri, {
         terms: normalFullTerms,

@@ -53,3 +53,5 @@ Track each holder's last explicit review, backfill that baseline from transactio
 Show material metadata, writer, and automatic-delivery changes alongside scope updates. Refresh holder terms before enabling review edits, populate newly enabled personal fields from the holder profile, and use a structured approval-required reason instead of matching error text.
 
 Regenerate the Python API client from the current router graph, including all consent lifecycle states, versioned updates, and review metadata. Preserve explicit null inputs during regeneration rather than silently converting them to omitted fields.
+
+Preserve existing delegated AutoBoost issuers when owners publish unchanged configurations, while keeping new configurations owner-issued and rejecting changes to an existing delegated signer. Defer new cross-account setup until an explicit issuer-authorization flow is available. Use pre-upgrade persisted fixtures for legacy-delegation regressions without reopening writer publication, and fix the signer mock's recursive self-call in consent regressions.

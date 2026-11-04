@@ -9,6 +9,7 @@ import { normalContract, normalFullTerms } from './helpers/contract';
 import { testUnsignedBoost } from './helpers/send';
 import type { ConsentFlowContractChanges } from '@learncard/types';
 import { migrateLegacyConsentFlowContracts } from '@helpers/consentflow-legacy-migration.helpers';
+import { seedLegacyAutoBoost } from './helpers/legacy-autoboost';
 
 const setup = async (expiresAt?: string) => {
     const suffix = randomBytes(5).toString('hex');
@@ -185,10 +186,17 @@ describe('safe live contract patches', () => {
         });
     });
 
-    it('does not let a delegated writer publish through either legacy AutoBoost operation', async () => {
-        const { owner, learner, uri, termsUri } = await setup();
+    it('preserves existing delegated issuers without authorizing new delegated setups', async () => {
+        const suffix = randomBytes(5).toString('hex');
+        const owner = await getUser(randomBytes(32).toString('hex'));
+        const learner = await getUser(randomBytes(32).toString('hex'));
         const writer = await getUser(randomBytes(32).toString('hex'));
-        const writerId = `version-writer-${randomBytes(5).toString('hex')}`;
+        const ownerId = `legacy-owner-${suffix}`;
+        const writerId = `legacy-writer-${suffix}`;
+        await owner.clients.fullAuth.profile.createProfile({ profileId: ownerId });
+        await learner.clients.fullAuth.profile.createProfile({
+            profileId: `legacy-holder-${suffix}`,
+        });
         await writer.clients.fullAuth.profile.createProfile({ profileId: writerId });
         await writer.clients.fullAuth.profile.registerSigningAuthority({
             endpoint: 'http://localhost:5000/api',
@@ -198,30 +206,26 @@ describe('safe live contract patches', () => {
         const boostUri = await writer.clients.fullAuth.boost.createBoost({
             credential: testUnsignedBoost,
             category: 'Achievement',
-            name: 'Writer-owned credential',
+            name: 'Existing writer delivery',
         });
-        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
-            uri,
-            changes: { writers: [writerId] },
-            reason: 'Allow a delegated issuer.',
+        const config = {
+            boostUri,
+            signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'writer-sa' },
+        };
+        const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Existing delegated request',
+            contract: normalContract,
+            writers: [writerId],
         });
-        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
-            uri: termsUri,
-            terms: normalFullTerms,
-            acceptVersion: 2,
+        await seedLegacyAutoBoost(uri, { ...config, issuerProfileId: writerId });
+        const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
+            contractUri: uri,
+            terms: { ...normalFullTerms, deniedWriters: [writerId] },
         });
         await expect(
             writer.clients.fullAuth.contracts.addAutoBoostsToContract({
                 contractUri: uri,
-                autoboosts: [
-                    {
-                        boostUri,
-                        signingAuthority: {
-                            endpoint: 'http://localhost:5000/api',
-                            name: 'writer-sa',
-                        },
-                    },
-                ],
+                autoboosts: [config],
             })
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         await expect(
@@ -230,15 +234,85 @@ describe('safe live contract patches', () => {
                 boostUris: [boostUri],
             })
         ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { subtitle: 'Updated description', autoboosts: [config] },
+                expectedVersion: 1,
+            })
+        ).resolves.toMatchObject({ version: 2, kind: 'relaxed' });
+        expect(
+            (await getConsentFlowContractVersionRecord(getIdFromUri(uri), 2))?.autoboosts
+        ).toMatchObject([{ issuer: writerId, signingAuthorityName: 'writer-sa' }]);
         expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
             status: 'live',
             consentedVersion: 2,
         });
+        await owner.clients.fullAuth.profile.registerSigningAuthority({
+            endpoint: 'http://localhost:5000/api',
+            name: 'owner-sa',
+            did: owner.learnCard.id.did(),
+        });
+        await expect(
+            owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: {
+                    autoboosts: [
+                        {
+                            ...config,
+                            signingAuthority: {
+                                endpoint: 'http://localhost:5000/api',
+                                name: 'owner-sa',
+                            },
+                        },
+                    ],
+                },
+                reason: 'Change delivery signer.',
+            })
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         expect(
             (await owner.clients.fullAuth.contracts.getContractVersions({ uri })).map(
                 v => v.version
             )
         ).toEqual([2, 1]);
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { autoboosts: [] },
+        });
+        await expect(
+            owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { autoboosts: [config] },
+                reason: 'Add a new delivery.',
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        const ownerBoost = await owner.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            category: 'Achievement',
+            name: 'Owner delivery',
+        });
+        await expect(
+            owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: {
+                    autoboosts: [
+                        {
+                            boostUri: ownerBoost,
+                            signingAuthority: {
+                                endpoint: 'http://localhost:5000/api',
+                                name: 'owner-sa',
+                            },
+                        },
+                    ],
+                },
+                reason: 'Add owner delivery.',
+                expectedVersion: 3,
+            })
+        ).resolves.toMatchObject({ version: 4, kind: 'requires_consent' });
+        expect(
+            (await getConsentFlowContractVersionRecord(getIdFromUri(uri), 4))?.autoboosts
+        ).toMatchObject([{ issuer: ownerId }]);
+        expect((await getContractTermsByUri(termsUri))!.terms.status).toBe('needs_reconsent');
     });
 
     it('merges every scope map and preserves existing grants unless explicitly removed', async () => {

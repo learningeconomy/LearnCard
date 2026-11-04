@@ -107,6 +107,12 @@ Use `getContractVersions(uri)` to list saved versions, their timestamps, change 
 
 This is a major SDK/API release, not a behavior-preserving replacement. The deprecated HTTP AutoBoost add/remove routes remain available for one compatibility release, but only the contract owner may use them; delegated writers cannot change the request for every holder. They use the versioned publication rules. Adding an AutoBoost through the old add route publishes `requires_consent`: every existing live connection becomes `needs_reconsent`, and writes, automatic delivery and synchronization pause until that person approves.
 
+New automatic deliveries use the contract owner's signer. Existing pre-upgrade deliveries configured by a delegated writer retain that original issuer when the owner submits the same Boost and signer configuration, including in a complete replacement array. The owner does not need access to the writer's signing key to preserve that existing setup.
+
+An owner cannot change an existing delegated delivery's signer in place. Remove it before configuring a replacement using the owner's signer and Boost issuance permissions. Being listed as a writer does not authorize another account to use that writer's signer.
+
+New cross-account automatic-delivery setup is deferred from this release. A follow-up ticket should define an authenticated issuer-authorization flow, bound to the contract, Boost, and signer, before an owner can preview and publish it. This is a partner-integration step, not an additional learner prompt.
+
 Before enabling these publications:
 
 1. Upgrade partner integrations to `updateContract`. Send the complete desired AutoBoost configuration and a reason, and preview the change before saving.
