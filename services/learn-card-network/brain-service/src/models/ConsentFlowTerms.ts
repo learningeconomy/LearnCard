@@ -34,6 +34,7 @@ export const ConsentFlowTerms = ModelFactory<FlatDbTermsType, ConsentFlowTermsRe
             updatedAt: { type: 'string', required: false },
             mutationVersion: { type: 'number', required: false },
             consentedVersion: { type: 'number', required: false },
+            lastReviewedVersion: { type: 'number', required: false },
             reconsentDeadline: { type: 'string', required: false },
             newOptionsUntil: { type: 'string', required: false },
             expiresAt: { type: 'string', required: false },

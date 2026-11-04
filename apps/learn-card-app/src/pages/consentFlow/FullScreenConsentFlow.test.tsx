@@ -259,10 +259,9 @@ describe('guardian approval at the consent submission boundary', () => {
     it('opens update review for the server approval-required error without reporting success', async () => {
         state.child = false;
         state.consent.mockRejectedValue(
-            Object.assign(
-                new Error('User has not yet approved the latest version of this contract'),
-                { data: { code: 'FORBIDDEN' } }
-            )
+            Object.assign(new Error('The contract changed; please review it'), {
+                data: { code: 'FORBIDDEN', reason: 'CONTRACT_APPROVAL_REQUIRED' },
+            })
         );
         const success = vi.fn();
         showFlow({ successCallback: success });

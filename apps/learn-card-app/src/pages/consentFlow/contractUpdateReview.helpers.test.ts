@@ -198,7 +198,29 @@ describe('contract update scope choices', () => {
         expect(materialize).toEqual(['Transcript']);
     });
 
-    it('preserves an enabled personal field with an empty stored value when reopened', () => {
+    it('treats empty Name placeholders as ungranted but preserves a saved Name', () => {
+        const terms = createTerms();
+        const nameScope: ConsentFlowContractScope = {
+            area: 'read',
+            type: 'personal',
+            key: 'Name',
+            required: false,
+        };
+        terms.read.personal.Name = '';
+        expect(isContractUpdateScopeEnabled(terms, nameScope)).toBe(false);
+        terms.read.anonymize = false;
+        applyContractUpdateScopeChoice(terms, nameScope, true, { name: 'Ada Lovelace' } as never);
+        expect(terms.read.personal.Name).toBe('Ada Lovelace');
+        expect(isContractUpdateScopeEnabled(terms, nameScope)).toBe(true);
+        const lowerCaseName: ConsentFlowContractScope = { ...nameScope, key: 'name' };
+        terms.read.personal.name = '';
+        expect(isContractUpdateScopeEnabled(terms, lowerCaseName)).toBe(false);
+        applyContractUpdateScopeChoice(terms, lowerCaseName, true, {
+            name: 'Ada Lovelace',
+        } as never);
+        expect(terms.read.personal.name).toBe('Ada Lovelace');
+    });
+    it('treats every blank read-personal value as ungranted', () => {
         const terms = createTerms();
         terms.read.personal.Email = '';
         expect(
@@ -208,7 +230,7 @@ describe('contract update scope choices', () => {
                 key: 'Email',
                 required: false,
             })
-        ).toBe(true);
+        ).toBe(false);
     });
     it('lists only unchanged scopes the holder currently grants', () => {
         const terms = createTerms();

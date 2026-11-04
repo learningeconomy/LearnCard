@@ -69,6 +69,12 @@ const cases: Array<[string, Snapshot, Snapshot, string]> = [
         'relaxed',
     ],
     ['scope removed', snapshot({ contract: withRead('x', true) }), snapshot(), 'relaxed'],
+    [
+        'redirect changed without new access',
+        snapshot({ redirectUrl: 'https://example.com/before' }),
+        snapshot({ redirectUrl: 'https://example.com/after' }),
+        'relaxed',
+    ],
     ['name changed', snapshot(), snapshot({ name: 'Acme 2' }), 'requires_consent'],
     [
         'reason changed',
@@ -144,15 +150,19 @@ describe('classifyContractChange', () => {
     });
 
     it.each([
-        ['read', 'credential'],
-        ['write', 'credential'],
-        ['read', 'personal'],
-        ['write', 'personal'],
-    ] as const)('requires review when a required %s %s purpose changes', (area, type) => {
+        ['read', 'credential', true],
+        ['write', 'credential', true],
+        ['read', 'personal', true],
+        ['write', 'personal', true],
+        ['read', 'credential', false],
+        ['write', 'credential', false],
+        ['read', 'personal', false],
+        ['write', 'personal', false],
+    ] as const)('keeps a %s %s reason-only change quiet (required=%s)', (area, type, required) => {
         const previous = structuredClone(empty);
         const current = structuredClone(empty);
-        const oldConfig = { required: true, reason: 'Verify enrollment' };
-        const newConfig = { required: true, reason: 'Share with partners' };
+        const oldConfig = { required, reason: 'Verify enrollment' };
+        const newConfig = { required, reason: 'Explain enrollment verification' };
         if (type === 'credential') {
             previous[area].credentials.categories.Transcript = oldConfig;
             current[area].credentials.categories.Transcript = newConfig;
@@ -165,7 +175,7 @@ describe('classifyContractChange', () => {
                 snapshot({ contract: previous }),
                 snapshot({ contract: current })
             )
-        ).toBe('requires_consent');
+        ).toBe('relaxed');
         expect(
             classifyContractChange(
                 snapshot({ contract: previous }),
@@ -176,6 +186,51 @@ describe('classifyContractChange', () => {
 });
 
 describe('diffContractChange', () => {
+    it('keeps material non-scope changes alongside scope changes', () => {
+        const diff = diffContractChange(
+            snapshot({
+                name: 'Original request',
+                reasonForAccessing: 'Track progress',
+                writers: ['alice'],
+                autoboosts: [{ id: 'first-credential' }],
+            }),
+            snapshot({
+                name: 'Updated request',
+                reasonForAccessing: 'Recognize achievements',
+                writers: ['bob', 'alice'],
+                autoboosts: [{ id: 'second-credential' }],
+                contract: withRead('Transcript', true),
+            })
+        );
+        expect(diff.added).toEqual([
+            { area: 'read', type: 'credential', key: 'Transcript', required: true },
+        ]);
+        expect(diff.details).toEqual(
+            expect.arrayContaining([
+                { field: 'name', before: 'Original request', after: 'Updated request' },
+                {
+                    field: 'reasonForAccessing',
+                    before: 'Track progress',
+                    after: 'Recognize achievements',
+                },
+                { field: 'writers', before: ['alice'], after: ['alice', 'bob'] },
+                { field: 'autoboosts', before: ['first-credential'], after: ['second-credential'] },
+            ])
+        );
+    });
+
+    it('does not describe ordering, duplicate identities, or absent guardian defaults as changes', () => {
+        const diff = diffContractChange(
+            snapshot({ writers: ['alice', 'bob'], autoboosts: ['boost:a', 'boost:b'] }),
+            snapshot({
+                needsGuardianConsent: false,
+                writers: ['bob', 'alice', 'alice'],
+                autoboosts: [{ id: 'boost:b' }, { uri: 'boost:a' }],
+            })
+        );
+        expect(diff).toEqual({ added: [], removed: [], changed: [] });
+    });
+
     it('returns stable scope changes across read and write kinds', () => {
         const prev = snapshot({
             contract: {

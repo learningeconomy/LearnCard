@@ -212,11 +212,14 @@ export const getContractTermsById = async (
     if (!result.length) return null;
     const terms = DbTermsValidator.parse(inflateObject(result[0]!.terms));
     const contract = DbContractValidator.parse(inflateObject(result[0]!.contract));
+    const acceptedVersion = Number(terms.lastReviewedVersion ?? terms.consentedVersion ?? 1);
+    const currentVersion = Number(contract.currentVersion ?? 1);
     const cumulativeUpdate =
-        terms.status === 'needs_reconsent' || terms.status === 'suspended'
+        ['live', 'needs_reconsent', 'suspended'].includes(terms.status) &&
+        acceptedVersion < currentVersion
             ? await getCumulativeContractUpdateById(
                   contract.id,
-                  Number(terms.consentedVersion ?? 1),
+                  acceptedVersion,
                   terms.status,
                   terms.reconsentDeadline
               )
@@ -375,19 +378,26 @@ export const getConsentedContractsForProfile = async (
         terms: DbTermsValidator.parse(inflateObject(result.terms)),
     }));
     const updates = await getCumulativeContractUpdates(
-        parsedResults.flatMap(({ details, terms }, index) =>
-            terms.status === 'needs_reconsent' || terms.status === 'suspended'
-                ? [
-                      {
-                          key: String(index),
-                          contractId: details.id,
-                          acceptedVersion: Number(terms.consentedVersion ?? 1),
-                          status: terms.status,
-                          reconsentDeadline: terms.reconsentDeadline,
-                      },
-                  ]
-                : []
-        )
+        parsedResults.flatMap(({ details, terms }, index) => {
+            const acceptedVersion = Number(
+                terms.lastReviewedVersion ?? terms.consentedVersion ?? 1
+            );
+            const currentVersion = Number(details.currentVersion ?? 1);
+            if (
+                !['live', 'needs_reconsent', 'suspended'].includes(terms.status) ||
+                acceptedVersion >= currentVersion
+            )
+                return [];
+            return [
+                {
+                    key: String(index),
+                    contractId: details.id,
+                    acceptedVersion,
+                    status: terms.status,
+                    reconsentDeadline: terms.reconsentDeadline,
+                },
+            ];
+        })
     );
 
     return parsedResults.map(({ result, details, terms }, index) => {
@@ -584,11 +594,50 @@ const projectConsentedData = (
  * Do not cap scanned candidates: doing so would silently hide valid matches later in a page.
  * Expiry and negative category filters still require the authoritative JS permission check.
  */
+const CONSENT_DATA_CURSOR_PREFIX = 'v1.';
+
+/** Opaque keyset cursor for the public consent-data ordering. */
+const decodeConsentedDataCursor = (
+    cursor?: string
+): { updatedAt: string; id: string } | undefined => {
+    if (!cursor) return undefined;
+    try {
+        if (!cursor.startsWith(CONSENT_DATA_CURSOR_PREFIX)) throw new Error('Invalid cursor');
+        const encoded = cursor.slice(CONSENT_DATA_CURSOR_PREFIX.length);
+        const decoded = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+        if (
+            !Array.isArray(decoded) ||
+            decoded.length !== 2 ||
+            typeof decoded[0] !== 'string' ||
+            typeof decoded[1] !== 'string' ||
+            !Number.isFinite(Date.parse(decoded[0])) ||
+            !decoded[1] ||
+            Buffer.from(JSON.stringify(decoded), 'utf8').toString('base64url') !== encoded
+        )
+            throw new Error('Invalid cursor');
+        return { updatedAt: decoded[0], id: decoded[1] };
+    } catch {
+        throw new Error('Invalid consent data cursor');
+    }
+};
+
+export const encodeConsentedDataCursor = (updatedAt: string, id: string): string =>
+    `${CONSENT_DATA_CURSOR_PREFIX}${Buffer.from(JSON.stringify([updatedAt, id]), 'utf8').toString(
+        'base64url'
+    )}`;
+
+type ConsentedDataPage = {
+    records: ConsentFlowContractData[];
+    hasMore: boolean;
+    nextCursor?: string;
+};
+
 const getPermittedContractData = async (
     viewerProfileId: string,
     { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string },
     contractId?: string
-): Promise<ConsentFlowContractData[]> => {
+): Promise<ConsentedDataPage> => {
+    const decodedCursor = decodeConsentedDataCursor(cursor);
     const now = Date.now();
     const records: ConsentFlowContractData[] = [];
     const personalFilters = Object.entries(query.personal ?? {}).map(([name, required]) => ({
@@ -605,7 +654,12 @@ const getPermittedContractData = async (
     let offset = 0;
     while (records.length < limit) {
         const dbQuery = new QueryBuilder(
-            new BindParam({ cursor, personalFilters, sharedCategories })
+            new BindParam({
+                cursorDate: decodedCursor?.updatedAt,
+                cursorId: decodedCursor?.id,
+                personalFilters,
+                sharedCategories,
+            })
         )
             .match({
                 related: [
@@ -623,7 +677,9 @@ const getPermittedContractData = async (
             .where(
                 "(coalesce(contract.status, 'active') <> 'retired') AND " +
                     "(terms.status IN ['live', 'needs_reconsent', 'suspended'] OR (terms.status = 'consumed' AND terms.oneTime = true))" +
-                    (cursor ? ' AND terms.updatedAt < $cursor' : '') +
+                    (decodedCursor
+                        ? ' AND (terms.updatedAt < $cursorDate OR (terms.updatedAt = $cursorDate AND terms.id > $cursorId))'
+                        : '') +
                     ' AND all(filter IN $personalFilters WHERE filter.required = (terms[filter.key] IS NOT NULL))' +
                     ' AND (size($sharedCategories) = 0 OR coalesce(terms.`terms.read.credentials.sharing`, true) = true)' +
                     ' AND all(category IN $sharedCategories WHERE terms[category.sharingKey] = true AND' +
@@ -640,7 +696,7 @@ const getPermittedContractData = async (
                 .limit(batchSize)
                 .run()
         );
-        const validResults = results.flatMap(result => {
+        const validResults = results.flatMap((result, index) => {
             const term = DbTermsValidator.safeParse(inflateObject(result.terms));
             const contract = DbContractValidator.safeParse(inflateObject(result.contract));
             if (
@@ -650,7 +706,7 @@ const getPermittedContractData = async (
                 !matchesConsentedDataQuery(term.data, query, now)
             )
                 return [];
-            return [{ term: term.data, contract: contract.data }];
+            return [{ term: term.data, contract: contract.data, index }];
         });
         const acceptedVersions = await getConsentFlowContractVersionRecords(
             validResults.map(({ term, contract }) => ({
@@ -658,35 +714,51 @@ const getPermittedContractData = async (
                 version: Number(term.consentedVersion ?? 1),
             }))
         );
-        for (const { term, contract } of validResults) {
-            const acceptedVersion = acceptedVersions.get(
-                `${contract.id}:${Number(term.consentedVersion ?? 1)}`
-            );
-            if (
-                !acceptedVersion ||
-                !isConsentExpiryActive(acceptedVersion.expiresAt, now) ||
-                !areTermsValid(term.terms, acceptedVersion.contract)
-            )
-                continue;
-            records.push(projectConsentedData(term, query, now));
-            if (records.length >= limit) return records;
+        const validByIndex = new Map(validResults.map(result => [result.index, result]));
+        for (let index = 0; index < results.length; index++) {
+            const raw = results[index]!;
+            const scanned = inflateObject(raw.terms) as FlatDbTermsType;
+            const candidate = validByIndex.get(index);
+            if (candidate) {
+                const { term, contract } = candidate;
+                const acceptedVersion = acceptedVersions.get(
+                    `${contract.id}:${Number(term.consentedVersion ?? 1)}`
+                );
+                if (
+                    acceptedVersion &&
+                    isConsentExpiryActive(acceptedVersion.expiresAt, now) &&
+                    areTermsValid(term.terms, acceptedVersion.contract)
+                )
+                    records.push(projectConsentedData(term, query, now));
+            }
+            if (records.length >= limit) {
+                const moreInBatch = index + 1 < results.length;
+                const hasMore = moreInBatch || results.length === batchSize;
+                return {
+                    records,
+                    hasMore,
+                    ...(hasMore
+                        ? { nextCursor: encodeConsentedDataCursor(scanned.updatedAt!, scanned.id) }
+                        : {}),
+                };
+            }
         }
         if (results.length < batchSize) break;
         offset += batchSize;
     }
-    return records;
+    return { records, hasMore: false };
 };
 
 export const getConsentedDataForProfile = async (
     profileId: string,
     options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
-): Promise<ConsentFlowContractData[]> => getPermittedContractData(profileId, options);
+): Promise<ConsentedDataPage> => getPermittedContractData(profileId, options);
 
 export const getConsentedDataForContract = async (
     id: string,
     viewerProfileId: string,
     options: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
-): Promise<ConsentFlowContractData[]> => getPermittedContractData(viewerProfileId, options, id);
+): Promise<ConsentedDataPage> => getPermittedContractData(viewerProfileId, options, id);
 
 // Empty expiry values historically mean no expiry. Invalid nonempty values never authorize access.
 const isConsentExpiryActive = (expiresAt: string | undefined, now: number): boolean => {

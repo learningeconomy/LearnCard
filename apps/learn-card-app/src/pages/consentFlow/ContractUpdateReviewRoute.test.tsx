@@ -149,10 +149,39 @@ beforeEach(() => {
     state.walletReady = true;
     state.status = { status: 'live', consentedVersion: 0, currentVersion: 2 };
     state.mutateAsync.mockReset().mockResolvedValue(true);
-    state.refetch.mockReset().mockImplementation(async () => ({ data: state.records }));
+    state.refetch.mockReset().mockImplementation(async () => ({
+        status: 'success',
+        data: state.records,
+    }));
 });
 
 describe('ContractUpdateReviewRoute', () => {
+    it('keeps stale cached review controls unavailable until fresh consent data arrives', async () => {
+        let finishRefetch!: (result: { status: string; data: RouteRecord[] }) => void;
+        state.refetch.mockImplementation(
+            () =>
+                new Promise(resolve => {
+                    finishRefetch = resolve;
+                })
+        );
+        showRoute();
+        expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+        expect(state.mutateAsync).not.toHaveBeenCalled();
+
+        state.records = [makeRecord(2)];
+        finishRefetch({ status: 'success', data: state.records });
+        await waitFor(() => expect(screen.getByRole('button', { name: 'Accept' })).toBeVisible());
+        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
+        await waitFor(() => expect(state.mutateAsync).toHaveBeenCalledOnce());
+    });
+
+    it('keeps stale review controls blocked and exposes retry after refetch failure', async () => {
+        state.refetch.mockRejectedValue(new Error('network unavailable'));
+        showRoute();
+        expect(await screen.findByRole('button', { name: 'Try again' })).toBeVisible();
+        expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+        expect(state.mutateAsync).not.toHaveBeenCalled();
+    });
     it('waits for wallet profile prerequisites instead of flashing unavailable on cold start', () => {
         state.profile = null;
         state.profileLoading = true;
@@ -169,14 +198,5 @@ describe('ContractUpdateReviewRoute', () => {
         showRoute();
         expect(screen.getByRole('main').querySelector('ion-spinner')).not.toBeNull();
         expect(screen.queryByText('This update is no longer available.')).toBeNull();
-    });
-
-    it('restores a handled version from its consent record even when the status cache is behind', async () => {
-        state.records = [{ ...makeRecord(2, true), consentedVersion: 2 }];
-        state.status = { status: 'live', consentedVersion: 1, currentVersion: 2 };
-        showRoute();
-        fireEvent.click(screen.getByRole('button', { name: 'Accept' }));
-        await waitFor(() => expect(state.mutateAsync).toHaveBeenCalledOnce());
-        expect(state.mutateAsync.mock.calls[0][0]).not.toHaveProperty('acceptVersion');
     });
 });

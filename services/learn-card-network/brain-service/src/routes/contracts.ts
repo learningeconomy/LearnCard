@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { t, profileRoute, openRoute, guardianGatedRoute } from '@routes';
 
 import {
+    CONTRACT_APPROVAL_REQUIRED,
     ConsentFlowContractValidator,
     ConsentFlowContractDetailsValidator,
     ConsentFlowContractQueryValidator,
@@ -154,7 +155,11 @@ const assertLatestContractApproval = (
             terms.consentedVersion !== undefined &&
             terms.consentedVersion < currentVersion)
     ) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: LATEST_CONTRACT_APPROVAL_REQUIRED });
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: LATEST_CONTRACT_APPROVAL_REQUIRED,
+            cause: { code: CONTRACT_APPROVAL_REQUIRED },
+        });
     }
 };
 
@@ -448,6 +453,7 @@ export const contractsRouter = t.router({
                 reason: z.string().max(140).optional(),
                 reconsentDeadline: z.string().datetime().optional(),
                 dryRun: z.boolean().optional(),
+                expectedVersion: z.number().int().positive().optional(),
             })
         )
         .output(ConsentFlowContractUpdateResultValidator)
@@ -724,21 +730,16 @@ export const contractsRouter = t.router({
 
             const contractId = getIdFromUri(uri);
 
-            const results = await getConsentedDataForContract(contractId, profile.profileId, {
+            const page = await getConsentedDataForContract(contractId, profile.profileId, {
                 query,
-                limit: limit + 1,
+                limit,
                 cursor,
             });
 
-            const data = results.slice(0, limit);
-
-            const hasMore = results.length > limit;
-            const nextCursor = data.at(-1)?.date;
-
             return {
-                hasMore,
-                cursor: nextCursor,
-                records: data,
+                hasMore: page.hasMore,
+                cursor: page.nextCursor,
+                records: page.records,
             };
         }),
 
@@ -820,21 +821,16 @@ export const contractsRouter = t.router({
 
             const { query, limit, cursor } = input;
 
-            const results = await getConsentedDataForProfile(profile.profileId, {
+            const page = await getConsentedDataForProfile(profile.profileId, {
                 query,
-                limit: limit + 1,
+                limit,
                 cursor,
             });
 
-            const data = results.slice(0, limit);
-
-            const hasMore = results.length > limit;
-            const nextCursor = data.at(-1)?.date;
-
             return {
-                hasMore,
-                cursor: nextCursor,
-                records: data,
+                hasMore: page.hasMore,
+                cursor: page.nextCursor,
+                records: page.records,
             };
         }),
 
@@ -1442,6 +1438,9 @@ export const contractsRouter = t.router({
                     consenter: updateDidForProfile(ctx.domain, profile),
                     status: record.terms.status,
                     consentedVersion: Number(record.terms.consentedVersion ?? 1),
+                    lastReviewedVersion: Number(
+                        record.terms.lastReviewedVersion ?? record.terms.consentedVersion ?? 1
+                    ),
                     ...(record.cumulativeUpdate
                         ? { cumulativeUpdate: record.cumulativeUpdate }
                         : {}),
@@ -2051,7 +2050,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Deprecated: add autoboosts to a contract',
                 description:
-                    'Deprecated compatibility route. The owner or a designated writer can add autoboosts through a versioned update; new required writes require reapproval.',
+                    'Deprecated compatibility route. Only the contract owner can add autoboosts through a versioned update; additions require reapproval.',
             },
             requiredScope: 'contracts:write autoboosts:write',
         })
@@ -2070,8 +2069,7 @@ export const contractsRouter = t.router({
             if (!contract)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
 
-            const contractWriters = await getWritersForContract(contract);
-            if (!contractWriters.some(writer => writer.profileId === profile.profileId)) {
+            if (!(await isProfileConsentFlowContractAdmin(profile, contract))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not have permission to modify autoboosts for this contract.',
@@ -2138,9 +2136,7 @@ export const contractsRouter = t.router({
                     reason: 'The contract added automatic credential delivery options.',
                 },
                 profile.profileId,
-                ctx.domain,
-                undefined,
-                { legacyAutoBoostMutation: true }
+                ctx.domain
             );
 
             return true;
@@ -2155,7 +2151,7 @@ export const contractsRouter = t.router({
                 tags: ['Contracts'],
                 summary: 'Remove autoboosts from a contract',
                 description:
-                    'Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.',
+                    'Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. Only the contract owner may change this configuration.',
             },
             requiredScope: 'contracts:write autoboosts:write',
         })
@@ -2176,8 +2172,7 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
             }
 
-            const contractWriters = await getWritersForContract(contract);
-            if (!contractWriters.some(writer => writer.profileId === profile.profileId)) {
+            if (!(await isProfileConsentFlowContractAdmin(profile, contract))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'You do not have permission to modify autoboosts for this contract.',
@@ -2201,9 +2196,7 @@ export const contractsRouter = t.router({
                     },
                 },
                 profile.profileId,
-                ctx.domain,
-                undefined,
-                { legacyAutoBoostMutation: true }
+                ctx.domain
             );
             return true;
         }),

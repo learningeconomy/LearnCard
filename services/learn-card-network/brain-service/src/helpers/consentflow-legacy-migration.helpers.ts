@@ -3,6 +3,40 @@ import { inflateObject } from '@helpers/objects.helpers';
 import { v4 as uuid } from 'uuid';
 import { ConsentFlowContractValidator } from '@learncard/types';
 import type { ConsentFlowContract } from '@learncard/types';
+
+/** Recovers explicit review baselines without mistaking quiet publications or syncs for approval. */
+const backfillConsentReviewBaselines = async (): Promise<void> => {
+    const marker = await neogma.queryRunner.run(`
+        MATCH (migration:ConsentFlowContractMigration {id:'holder-review-v1'})
+        WHERE migration.completedAt IS NOT NULL
+        RETURN migration.completedAt AS completedAt
+    `);
+    if (marker.records.length) return;
+    await neogma.queryRunner.run(`
+        MERGE (migration:ConsentFlowContractMigration {id:'holder-review-v1'})
+        SET migration._reviewLock=coalesce(migration._reviewLock,0)+1
+        WITH migration
+        CALL {
+            WITH migration
+            MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract:ConsentFlowContract)
+            WHERE migration.completedAt IS NULL AND terms.lastReviewedVersion IS NULL
+            OPTIONAL MATCH (transaction:ConsentFlowTransaction)-[:IS_FOR]->(terms)
+            WHERE transaction.action IN ['consent','reconsent']
+                OR (transaction.action='update' AND transaction.status IS NOT NULL)
+            WITH terms, contract, max(transaction.date) AS reviewedAt
+            OPTIONAL MATCH (contract)-[:HAS_VERSION]->(version:ConsentFlowContractVersion)
+            WHERE version.version <= coalesce(terms.consentedVersion,1)
+                AND version.createdAt <= coalesce(reviewedAt,terms.createdAt,version.createdAt)
+            WITH terms, max(version.version) AS reviewedVersion
+            SET terms.lastReviewedVersion=coalesce(terms.lastReviewedVersion,reviewedVersion,1)
+            RETURN count(terms) AS initialized
+        }
+        SET migration.completedAt=coalesce(migration.completedAt,toString(datetime()))
+        REMOVE migration._reviewLock
+        RETURN initialized
+    `);
+};
+
 /** Backfills v1 snapshots and legacy consent markers idempotently. */
 export const migrateLegacyConsentFlowContracts = async (contractId?: string): Promise<void> => {
     const scoped = contractId !== undefined;
@@ -12,7 +46,10 @@ export const migrateLegacyConsentFlowContracts = async (contractId?: string): Pr
              WHERE migration.completedAt IS NOT NULL
              RETURN migration.completedAt AS completedAt`
         );
-        if (marker.records.length > 0) return;
+        if (marker.records.length > 0) {
+            await backfillConsentReviewBaselines();
+            return;
+        }
     }
     const legacy = await neogma.queryRunner.run(
         `
@@ -79,6 +116,7 @@ export const migrateLegacyConsentFlowContracts = async (contractId?: string): Pr
              WITH contract
              MATCH (terms:ConsentFlowTerms)-[:CONSENTS_TO]->(contract)
              SET terms.consentedVersion=coalesce(terms.consentedVersion,1),
+                 terms.lastReviewedVersion=coalesce(terms.lastReviewedVersion,terms.consentedVersion,1),
                  terms.status=CASE WHEN terms.status='stale' THEN 'consumed' ELSE terms.status END`,
             {
                 id: String(properties.id),
@@ -86,7 +124,9 @@ export const migrateLegacyConsentFlowContracts = async (contractId?: string): Pr
                 contractSnapshot: JSON.stringify(contract),
                 autoboostSnapshot: JSON.stringify(autoboosts),
                 writerSnapshot: JSON.stringify(writers),
-                createdAt: String(properties.createdAt ?? new Date().toISOString()),
+                createdAt: String(
+                    properties.updatedAt ?? properties.createdAt ?? new Date().toISOString()
+                ),
                 name: properties.name,
                 subtitle: properties.subtitle ?? null,
                 description: properties.description ?? null,
@@ -115,6 +155,7 @@ export const migrateLegacyConsentFlowContracts = async (contractId?: string): Pr
             WHERE terms.status='stale'
             SET terms.status='consumed'
         `);
+        await backfillConsentReviewBaselines();
     }
     if (skippedCount) {
         console.warn('Skipped malformed legacy ConsentFlow contracts', {

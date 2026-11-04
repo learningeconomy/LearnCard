@@ -6,6 +6,19 @@
             "after": "بعد التحديث",
             "notRequested": "غير مطلوب"
         },
+        "details": {
+            "frontDoorBoostUri": "بيانات اعتماد الدخول المباشر",
+            "frontDoorCurrent": "بيانات الاعتماد الحالية",
+            "frontDoorUpdated": "بيانات الاعتماد المحدّثة",
+            "expiresAt": "انتهاء صلاحية الوصول",
+            "writers": "الأشخاص الذين يمكنهم الكتابة",
+            "autoboosts": "عمليات التسليم التلقائية لبيانات الاعتماد",
+            "personCountOne": "{{count}} شخص",
+            "peopleCount": "{{count}} أشخاص",
+            "credentialCountOne": "{{count}} بيانات اعتماد",
+            "credentialsCount": "{{count}} بيانات اعتماد",
+            "set": "مُعيّن"
+        },
         "editor": {
             "accessSettings": "إعدادات {{label}}",
             "title": "تحديث الطلب",

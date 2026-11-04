@@ -693,6 +693,7 @@ export type LearnCardNetworkPluginMethods = {
      * Updates a live request at the same URI, or previews it without saving.
      * Scope maps merge with the current request. Set an entry to null to remove it;
      * expiresAt: null clears expiry. AutoBoost and writer arrays replace their lists.
+     * Pass expectedVersion from the original draft to reject intervening publications.
      * @example
      * await learnCard.invoke.updateContract(uri, {
      *     read: { credentials: { categories: {
@@ -703,7 +704,12 @@ export type LearnCardNetworkPluginMethods = {
     updateContract: (
         uri: string,
         changes: ConsentFlowContractChanges & NonNullable<ConsentFlowContractChanges['contract']>,
-        options?: { reason?: string; reconsentDeadline?: string; dryRun?: boolean }
+        options?: {
+            reason?: string;
+            reconsentDeadline?: string;
+            dryRun?: boolean;
+            expectedVersion?: number;
+        }
     ) => Promise<ConsentFlowContractUpdateResult>;
     addContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;
     removeContractRecipient: (contractUri: string, recipient: string) => Promise<boolean>;

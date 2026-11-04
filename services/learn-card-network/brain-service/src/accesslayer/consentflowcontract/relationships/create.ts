@@ -224,6 +224,7 @@ export const consentToContract = async (
                                 id: termsId,
                                 status: oneTime ? 'consumed' : 'live',
                                 consentedVersion: contract.currentVersion ?? 1,
+                                lastReviewedVersion: contract.currentVersion ?? 1,
                                 createdAt: transaction.date,
                                 updatedAt: transaction.date,
                                 ...(expiresAt ? { expiresAt } : {}),
@@ -280,6 +281,7 @@ export const consentToContract = async (
         await Promise.all(
             autoBoosts.map(async boost => {
                 let claimId: string | undefined;
+                let sendStarted = false;
                 try {
                     const config = configuredAutoBoosts.get(boost.target.id)!;
                     const signingAuthorityEndpoint = config.signingAuthorityEndpoint || 'default';
@@ -373,6 +375,7 @@ export const consentToContract = async (
                         claimId = undefined;
                         return;
                     }
+                    sendStarted = true;
                     await sendBoost({
                         from: { type: 'profile', profile: contractOwner },
                         to: consenter,
@@ -388,8 +391,16 @@ export const consentToContract = async (
                     await completeAutoBoostTransaction(claimId, termsId, String(boost.target.id));
                     claimId = undefined;
                 } catch (error) {
-                    if (claimId) await releaseAutoBoostClaim(claimId);
-                    console.error('Error processing auto-boost:', error);
+                    if (claimId && sendStarted) {
+                        console.error(
+                            'Auto-boost claim send failed; delivery may be ambiguous',
+                            { claimId, termsId, boostId: String(boost.target.id) },
+                            error
+                        );
+                    } else {
+                        console.error('Error processing auto-boost:', error);
+                    }
+                    if (claimId && !sendStarted) await releaseAutoBoostClaim(claimId);
                 }
             })
         );

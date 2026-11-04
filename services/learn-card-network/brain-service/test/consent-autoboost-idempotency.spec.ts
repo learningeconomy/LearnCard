@@ -14,14 +14,74 @@ import {
     updateConsentFlowContractVersion,
 } from '@accesslayer/consentflowcontract/versions';
 import { getIdFromUri } from '@helpers/uri.helpers';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { neogma } from '@instance';
+import * as boostHelpers from '@helpers/boost.helpers';
 import {
     claimAutoBoostTransaction,
     completeAutoBoostTransaction,
 } from '@accesslayer/consentflowcontract/relationships/update';
 describe('consent autoboost transaction claims', () => {
+    it('retains an initial delivery claim after sending begins and the outcome is unknown', async () => {
+        const owner = await getUser(randomBytes(32).toString('hex'));
+        const learner = await getUser(randomBytes(32).toString('hex'));
+        const ownerId = `ambiguous-owner-${randomBytes(5).toString('hex')}`;
+        const learnerId = `ambiguous-user-${randomBytes(5).toString('hex')}`;
+        profileIds.push(ownerId, learnerId);
+        await owner.clients.fullAuth.profile.createProfile({ profileId: ownerId });
+        await learner.clients.fullAuth.profile.createProfile({ profileId: learnerId });
+        await owner.clients.fullAuth.profile.registerSigningAuthority({
+            endpoint: 'http://localhost:5000/api',
+            name: 'mysa',
+            did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+        });
+        const boostUri = await owner.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            category: 'Achievement',
+            name: 'Ambiguous delivery',
+        });
+        const boostId = getIdFromUri(boostUri);
+        boostIds.push(boostId);
+        const uri = await owner.clients.fullAuth.contracts.createConsentFlowContract({
+            name: 'Initial delivery claim',
+            contract: normalContract,
+            autoboosts: [
+                {
+                    boostUri,
+                    signingAuthority: { endpoint: 'http://localhost:5000/api', name: 'mysa' },
+                },
+            ],
+        });
+        const contractId = getIdFromUri(uri);
+        contractIds.push(contractId);
+        const sending = vi
+            .spyOn(boostHelpers, 'sendBoost')
+            .mockRejectedValueOnce(new Error('Delivery response was lost'));
+        try {
+            const { termsUri } = await learner.clients.fullAuth.contracts.consentToContract({
+                contractUri: uri,
+                terms: normalFullTerms,
+            });
+            const termsId = getIdFromUri(termsUri);
+            termsIds.push(termsId);
+            const claims = await neogma.queryRunner.run(
+                `MATCH (claim:ConsentFlowAutoBoostClaim {termsId:$termsId,boostId:$boostId})
+                 RETURN claim.id AS id`,
+                { termsId, boostId }
+            );
+            expect(claims.records.map(record => record.get('id'))).toEqual([expect.any(String)]);
+            expect(await claimAutoBoostTransaction(contractId, termsId, boostId)).toBeNull();
+            expect(
+                (await getTransactionsForTerms(termsId, { limit: 25 })).filter(
+                    tx => tx.action === 'write'
+                )
+            ).toEqual([]);
+        } finally {
+            sending.mockRestore();
+        }
+    });
+
     const fixtureMarkers: string[] = [];
     const contractIds: string[] = [];
     const profileIds: string[] = [];

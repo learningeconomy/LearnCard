@@ -15,9 +15,11 @@ export const isContractUpdateScopeEnabled = (
     scope: ConsentFlowContractScope
 ) => {
     if (scope.type === 'personal') {
-        return scope.area === 'read'
-            ? terms.read.personal[scope.key] !== undefined
-            : Boolean(terms.write.personal[scope.key]);
+        if (scope.area === 'read') {
+            const value = terms.read.personal[scope.key];
+            return typeof value === 'string' ? value.length > 0 : value !== undefined;
+        }
+        return Boolean(terms.write.personal[scope.key]);
     }
     if (scope.area === 'write') return Boolean(terms.write.credentials.categories[scope.key]);
     const credentials = terms.read.credentials;

@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject } from '@helpers/objects.helpers';
 import {
@@ -351,17 +352,18 @@ export const updateConsentFlowContractVersion = async (
         reason,
         reconsentDeadline,
         dryRun,
+        expectedVersion,
     }: {
         uri: string;
         changes: ContractChanges;
         reason?: string;
         reconsentDeadline?: string;
         dryRun?: boolean;
+        expectedVersion?: number;
     },
     actorProfileId: string,
     domain: string,
-    appBaseUrl?: string,
-    options?: { legacyAutoBoostMutation?: boolean }
+    appBaseUrl?: string
 ): Promise<ConsentFlowContractUpdateResult> => {
     const contractId = getIdFromUri(uri);
     const storedResult = await neogma.queryRunner.run(
@@ -375,21 +377,10 @@ export const updateConsentFlowContractVersion = async (
     );
     const stored = storedResult.records[0];
     if (!stored) throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
-    const isOwner = Boolean(stored.get('owner'));
-    if (!isOwner && !(options?.legacyAutoBoostMutation && stored.get('writer'))) {
+    if (!stored.get('owner')) {
         throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'Only the contract owner can update it',
-        });
-    }
-    if (
-        options?.legacyAutoBoostMutation &&
-        !isOwner &&
-        Object.entries(changes).some(([key, value]) => key !== 'autoboosts' && value !== undefined)
-    ) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Legacy writer updates may only change autoboosts',
         });
     }
     if (stored.get('contractStatus') === 'retired') {
@@ -402,6 +393,12 @@ export const updateConsentFlowContractVersion = async (
         });
     }
     const currentVersion = Number(stored.get('currentVersion') ?? 1);
+    if (expectedVersion !== undefined && expectedVersion !== currentVersion) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Contract changed since this draft was opened; reload before publishing',
+        });
+    }
     const current = await getConsentFlowContractVersionRecord(contractId, currentVersion);
     if (!current)
         throw new TRPCError({
@@ -514,10 +511,14 @@ export const updateConsentFlowContractVersion = async (
     if (next.expiresAt && !z.iso.datetime().safeParse(next.expiresAt).success) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'expiresAt must be a valid ISO date' });
     }
-    if (reconsentDeadline && !z.iso.datetime().safeParse(reconsentDeadline).success) {
+    if (
+        reconsentDeadline &&
+        (!z.iso.datetime().safeParse(reconsentDeadline).success ||
+            Date.parse(reconsentDeadline) <= Date.now())
+    ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'reconsentDeadline must be a valid ISO date',
+            message: 'reconsentDeadline must be a future ISO date',
         });
     }
     const effectiveDeadline =
@@ -529,6 +530,24 @@ export const updateConsentFlowContractVersion = async (
     const contractOwnerProfileId = stored.get('ownerProfileId');
     if (typeof contractOwnerProfileId !== 'string') {
         throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Contract owner is missing' });
+    }
+    const currentAutoBoosts = new Map(current.autoboosts.map(config => [config.id, config]));
+    const autoBoostsUnchanged =
+        autoboosts.length === currentAutoBoosts.size &&
+        autoboosts.every(config => {
+            const previous = currentAutoBoosts.get(config.id);
+            return (
+                previous?.signingAuthorityEndpoint === config.signingAuthorityEndpoint &&
+                previous.signingAuthorityName === config.signingAuthorityName &&
+                (previous.issuer ?? contractOwnerProfileId) === config.issuer
+            );
+        });
+    if (
+        isDeepStrictEqual(current.contract, next.contract) &&
+        !diff.details?.length &&
+        autoBoostsUnchanged
+    ) {
+        return { version: currentVersion, kind, affectedUsers: 0, preview };
     }
     const affectedUsers = await neogma.queryRunner
         .run(
@@ -563,7 +582,7 @@ export const updateConsentFlowContractVersion = async (
         .flatMap<{ key: string; value: boolean | string | string[] }>(scope => {
             const prefix = `terms.${scope.area}.${scope.type === 'credential' ? 'credentials.categories' : 'personal'}.${scope.key}`;
             if (scope.area === 'write') return [{ key: prefix, value: false }];
-            if (scope.type === 'personal') return [{ key: prefix, value: '' }];
+            if (scope.type === 'personal') return [];
             return [
                 { key: `${prefix}.sharing`, value: false },
                 { key: `${prefix}.shared`, value: [] as string[] },
@@ -615,8 +634,7 @@ export const updateConsentFlowContractVersion = async (
         `MATCH (c:ConsentFlowContract {id:$id})
          SET c._contractVersionLock=coalesce(c._contractVersionLock,0)+1
          WITH c,
-             (EXISTS { MATCH (c)-[:CREATED_BY]->(:Profile {profileId:$actor}) }
-                 OR ($legacyAutoBoostMutation AND EXISTS { MATCH (c)-[:CAN_WRITE]->(:Profile {profileId:$actor}) })) AS authorized,
+             EXISTS { MATCH (c)-[:CREATED_BY]->(:Profile {profileId:$actor}) } AS authorized,
              coalesce(c.currentVersion,1) = $expectedVersion AS currentMatches,
              coalesce(c.status,'active') <> 'retired' AS active
          FOREACH (_ IN CASE WHEN authorized AND currentMatches AND active THEN [] ELSE [1] END |
@@ -663,6 +681,7 @@ export const updateConsentFlowContractVersion = async (
          REMOVE c._contractVersionLock
          FOREACH (term IN terms |
              FOREACH (_ IN CASE WHEN term.status IN ['live','needs_reconsent','suspended'] THEN [1] ELSE [] END |
+                 SET term.lastReviewedVersion=coalesce(term.lastReviewedVersion,term.consentedVersion,1)
                  SET term.mutationVersion=coalesce(term.mutationVersion,0)+1
                  CREATE (transaction:ConsentFlowTransaction {
                      id:randomUUID(), action:'update', date:$createdAt, version:$nextVersion, kind:$kind
@@ -694,8 +713,7 @@ export const updateConsentFlowContractVersion = async (
         {
             id: contractId,
             actor: actorProfileId,
-            legacyAutoBoostMutation: options?.legacyAutoBoostMutation ?? false,
-            expectedVersion: currentVersion,
+            expectedVersion: expectedVersion ?? currentVersion,
             nextVersion: currentVersion + 1,
             versionId,
             createdAt,

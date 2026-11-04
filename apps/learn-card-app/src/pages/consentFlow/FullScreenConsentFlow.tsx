@@ -25,7 +25,12 @@ import ConsentFlowConfirmation from './ConsentFlowConfirmation';
 import ConsentFlowGetAnAdultPrompt from './ConsentFlowGetAnAdult';
 import AiPassportAppProfileConnectedView from '../../components/ai-passport-apps/AiPassportAppProfileConnectedView/AiPassportAppProfileConnectedView';
 
-import { ConsentFlowContractDetails, ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import {
+    CONTRACT_APPROVAL_REQUIRED,
+    type ConsentFlowContractDetails,
+    type ConsentFlowTerms,
+    type LCNProfile,
+} from '@learncard/types';
 import * as m from '../../paraglide/messages.js';
 import {
     AiPassportReauthenticationRequired,
@@ -294,7 +299,8 @@ const FullScreenConsentFlow: React.FC<FullScreenConsentFlowProps> = ({
                 typeof data === 'object' &&
                 'code' in data &&
                 data.code === 'FORBIDDEN' &&
-                message === 'User has not yet approved the latest version of this contract';
+                'reason' in data &&
+                data.reason === CONTRACT_APPROVAL_REQUIRED;
             if (isApprovalUpdateRequired && contractDetails?.uri) {
                 closeAllModals();
                 history.push(`/consent-flow/review?uri=${encodeURIComponent(contractDetails.uri)}`);

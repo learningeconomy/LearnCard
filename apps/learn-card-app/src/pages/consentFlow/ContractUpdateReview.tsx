@@ -4,6 +4,7 @@ import { IonSpinner } from '@ionic/react';
 import type {
     ConsentFlowContractDetails,
     ConsentFlowContractUpdatePreview,
+    ConsentFlowContractDetailChange,
 } from '@learncard/types';
 import AppModal from 'learn-card-base/components/modals/surfaces/AppModal';
 import { useBrandingConfig } from 'learn-card-base/config/TenantConfigProvider';
@@ -18,6 +19,7 @@ export type ContractUpdateReviewProps = {
     reason?: string;
     deadline?: string;
     preview: ConsentFlowContractUpdatePreview;
+    details?: ConsentFlowContractDetailChange[];
     needsGuardianConsent?: boolean;
     guardianContract?: ConsentFlowContractDetails;
     unchangedRows: { area: 'read' | 'write'; label: string }[];
@@ -31,12 +33,69 @@ export type ContractUpdateReviewProps = {
     onClose: () => void;
 };
 
+const detailLabels: Record<ConsentFlowContractDetailChange['field'], string> = {
+    name: 'developerPortal.components.createConsentContractModal.contractName',
+    subtitle: 'developerPortal.components.createConsentContractModal.subtitle',
+    description: 'developerPortal.components.createConsentContractModal.description',
+    reasonForAccessing: 'developerPortal.components.createConsentContractModal.reasonForAccessing',
+    image: 'consentUpdate.editor.image',
+    needsGuardianConsent:
+        'developerPortal.components.createConsentContractModal.guardianConsentFlow',
+    redirectUrl: 'developerPortal.components.createConsentContractModal.redirectUrl',
+    frontDoorBoostUri: 'consentUpdate.details.frontDoorBoostUri',
+    expiresAt: 'consentUpdate.details.expiresAt',
+    writers: 'consentUpdate.details.writers',
+    autoboosts: 'consentUpdate.details.autoboosts',
+};
+
+const safeIdentity = (value: string) =>
+    !/^(did:|urn:|https?:|lc:)|^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value);
+
+const detailValue = (
+    field: ConsentFlowContractDetailChange['field'],
+    value: ConsentFlowContractDetailChange['before'],
+    after: boolean
+) => {
+    if (value === undefined || value === '') return mDynamic('consentUpdate.editor.notSet');
+    if (Array.isArray(value)) {
+        const countKey =
+            field === 'writers'
+                ? value.length === 1
+                    ? 'consentUpdate.details.personCountOne'
+                    : 'consentUpdate.details.peopleCount'
+                : value.length === 1
+                  ? 'consentUpdate.details.credentialCountOne'
+                  : 'consentUpdate.details.credentialsCount';
+        const count = mDynamic(countKey, { count: value.length });
+        const identities = value.filter(safeIdentity);
+        return `${count}${identities.length ? `: ${identities.join(', ')}` : ''}`;
+    }
+    if (typeof value === 'boolean')
+        return mDynamic(value ? 'consentUpdate.editor.enabled' : 'consentUpdate.editor.disabled');
+    if (field === 'frontDoorBoostUri')
+        return mDynamic(
+            after
+                ? 'consentUpdate.details.frontDoorUpdated'
+                : 'consentUpdate.details.frontDoorCurrent'
+        );
+    if (field === 'image') return mDynamic('consentUpdate.details.set');
+    if (field === 'redirectUrl') {
+        try {
+            const destination = new URL(value);
+            return `${destination.host}${destination.pathname}`;
+        } catch {
+            return value;
+        }
+    }
+    return value;
+};
 /** Shared review content, hosted either by its route surface or the developer modal stack. */
 export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProps, 'open'>> = ({
     name,
     image,
     reason,
     deadline,
+    details = [],
     preview,
     needsGuardianConsent = false,
     guardianContract,
@@ -190,6 +249,68 @@ export const ContractUpdateReviewContent: React.FC<Omit<ContractUpdateReviewProp
                             aria-label={mDynamic('consentUpdate.ui.changes')}
                             className="contract-update-changes mt-5 rounded-2xl border border-grayscale-200 divide-y divide-grayscale-100"
                         >
+                            {details.length > 0 && (
+                                <div
+                                    className="divide-y divide-grayscale-100 border-b border-grayscale-100"
+                                    aria-label={mDynamic('consentUpdate.summary.requestDetails')}
+                                >
+                                    {details.map((detail, index) => (
+                                        <div key={`${detail.field}-${index}`} className="p-4">
+                                            <p className="font-medium text-grayscale-900">
+                                                {detailLabels[detail.field].includes('.')
+                                                    ? mDynamic(detailLabels[detail.field])
+                                                    : detailLabels[detail.field]}
+                                            </p>
+                                            <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+                                                <p className="break-words text-grayscale-600">
+                                                    <span className="block text-xs text-grayscale-500">
+                                                        {mDynamic('consentUpdate.summary.before')}
+                                                    </span>
+                                                    {detail.field === 'image' &&
+                                                    typeof detail.before === 'string' &&
+                                                    detail.before ? (
+                                                        <img
+                                                            src={detail.before}
+                                                            alt={mDynamic(
+                                                                'consentUpdate.summary.before'
+                                                            )}
+                                                            className="mt-1 h-14 w-14 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        detailValue(
+                                                            detail.field,
+                                                            detail.before,
+                                                            false
+                                                        )
+                                                    )}
+                                                </p>
+                                                <p className="break-words text-grayscale-800">
+                                                    <span className="block text-xs text-grayscale-500">
+                                                        {mDynamic('consentUpdate.summary.after')}
+                                                    </span>
+                                                    {detail.field === 'image' &&
+                                                    typeof detail.after === 'string' &&
+                                                    detail.after ? (
+                                                        <img
+                                                            src={detail.after}
+                                                            alt={mDynamic(
+                                                                'consentUpdate.summary.after'
+                                                            )}
+                                                            className="mt-1 h-14 w-14 rounded-lg object-cover"
+                                                        />
+                                                    ) : (
+                                                        detailValue(
+                                                            detail.field,
+                                                            detail.after,
+                                                            true
+                                                        )
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             {preview.rows.map((row, index) => {
                                 const optional = row.change === 'added' && !row.scope.required;
                                 const scopeKey = `${row.scope.area}|${row.scope.type}|${row.scope.key}`;

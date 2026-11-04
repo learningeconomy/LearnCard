@@ -1,6 +1,7 @@
 import type {
     ConsentFlowContract,
     ConsentFlowContractChangeKind,
+    ConsentFlowContractDetailChange,
     ConsentFlowContractDiff,
     ConsentFlowContractScope,
     ConsentFlowContractUpdatePreview,
@@ -78,10 +79,43 @@ const diffScopes = (
     return { added: sort(added), removed: sort(removed), changed: sort(changed) };
 };
 
+const DETAIL_FIELDS = [
+    'name',
+    'subtitle',
+    'description',
+    'reasonForAccessing',
+    'image',
+    'needsGuardianConsent',
+    'redirectUrl',
+    'frontDoorBoostUri',
+    'expiresAt',
+] as const;
+
 export const diffContractChange = (
     prev: ConsentFlowContractSnapshot,
     next: ConsentFlowContractSnapshot
-): ConsentFlowContractDiff => diffScopes(scopes(prev.contract), scopes(next.contract));
+): ConsentFlowContractDiff => {
+    const details: ConsentFlowContractDetailChange[] = [];
+    for (const field of DETAIL_FIELDS) {
+        const before = field === 'needsGuardianConsent' ? !!prev[field] : prev[field];
+        const after = field === 'needsGuardianConsent' ? !!next[field] : next[field];
+        if (before !== after) details.push({ field, before, after });
+    }
+    for (const field of ['writers', 'autoboosts'] as const) {
+        const before = [...set(prev[field])].sort();
+        const after = [...set(next[field])].sort();
+        if (
+            before.length !== after.length ||
+            before.some((value, index) => value !== after[index])
+        ) {
+            details.push({ field, before, after });
+        }
+    }
+    return {
+        ...diffScopes(scopes(prev.contract), scopes(next.contract)),
+        ...(details.length ? { details } : {}),
+    };
+};
 
 const expiryIsStricter = (previous?: string, next?: string): boolean => {
     if (!next) return false;
@@ -128,8 +162,7 @@ export const classifyContractChange = (
     }
     for (const scope of diff.changed) {
         const previous = before.get(scopeKey(scope));
-        if (scope.required && (!previous?.required || previous.reason !== scope.reason))
-            requiresConsent = true;
+        if (scope.required && !previous?.required) requiresConsent = true;
     }
     const oldBoosts = set(prev.autoboosts);
     if ([...set(next.autoboosts)].some(boost => !oldBoosts.has(boost))) requiresConsent = true;
@@ -379,7 +412,7 @@ export const buildContractUpdatePreview = ({
         headline = text('headline.paused', `${name}'s access is paused`, { name });
         subhead = text('subhead.reconnect', 'Approve the update to reconnect.');
         primaryLabel = text('action.reconnect', 'Reconnect');
-    } else if (kind === 'requires_consent' && consentChangeCount === 1) {
+    } else if (kind === 'requires_consent' && consentChangeCount === 1 && !diff.details?.length) {
         const scope = consentChanges[0]!;
         const values = { name, label: label(scope) };
         headline =
@@ -392,7 +425,7 @@ export const buildContractUpdatePreview = ({
                   );
         subhead = '';
         primaryLabel = text('action.allow', 'Allow');
-    } else if (kind === 'requires_consent' && consentChangeCount > 1) {
+    } else if (kind === 'requires_consent' && consentChangeCount > 1 && !diff.details?.length) {
         headline = text('headline.multiple', `${name} is asking for more access`, { name });
         subhead = text('subhead.newItems', `${consentChangeCount} new items`, {
             count: consentChangeCount,

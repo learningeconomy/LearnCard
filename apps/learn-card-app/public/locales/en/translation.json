@@ -6,6 +6,19 @@
             "after": "After update",
             "notRequested": "Not requested"
         },
+        "details": {
+            "frontDoorCurrent": "Current credential",
+            "frontDoorUpdated": "Updated credential",
+            "frontDoorBoostUri": "Front door credential",
+            "expiresAt": "Access expiration",
+            "writers": "People who can write",
+            "autoboosts": "Automatic credential deliveries",
+            "personCountOne": "{{count}} person",
+            "peopleCount": "{{count}} people",
+            "credentialCountOne": "{{count}} credential",
+            "credentialsCount": "{{count}} credentials",
+            "set": "Set"
+        },
         "editor": {
             "accessSettings": "Settings for {{label}}",
             "title": "Update contract",

@@ -1,7 +1,10 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ConsentFlowContractUpdatePreview } from '@learncard/types';
+import type {
+    ConsentFlowContractDetailChange,
+    ConsentFlowContractUpdatePreview,
+} from '@learncard/types';
 import ContractUpdateReview from './ContractUpdateReview';
 import { TenantConfigProvider } from 'learn-card-base/config/TenantConfigProvider';
 import { DEFAULT_LEARNCARD_TENANT_CONFIG } from 'learn-card-base/config/tenantDefaults';
@@ -67,6 +70,35 @@ const renderReview = (
 
 describe('ContractUpdateReview', () => {
     beforeEach(() => setLocale('en', { reload: false }));
+    it('renders detail-only changes without exposing raw identifiers or URL queries', () => {
+        const details: ConsentFlowContractDetailChange[] = [
+            { field: 'reasonForAccessing', before: 'Old purpose', after: 'New purpose' },
+            { field: 'writers', before: [], after: ['550e8400-e29b-41d4-a716-446655440000'] },
+            { field: 'autoboosts', before: [], after: ['lc:boost:private-id'] },
+            {
+                field: 'redirectUrl',
+                before: 'https://old.example/old-path?private=before',
+                after: 'https://new.example/new-path?private=after',
+            },
+        ];
+        renderReview({ details, preview: { ...preview, rows: [] } });
+        expect(screen.getByText('New purpose')).toBeVisible();
+        expect(screen.getByText('1 person')).toBeVisible();
+        expect(screen.getByText('1 credential')).toBeVisible();
+        expect(screen.getByText('old.example/old-path')).toBeVisible();
+        expect(screen.getByText('new.example/new-path')).toBeVisible();
+        expect(screen.queryByText(/550e8400|lc:boost|private=/)).toBeNull();
+    });
+
+    it('shows material details alongside scope changes', () => {
+        renderReview({
+            details: [
+                { field: 'description', before: 'Old description', after: 'New description' },
+            ],
+        });
+        expect(screen.getByText('New description')).toBeVisible();
+        expect(screen.getByText('Certificates')).toBeVisible();
+    });
     it('expands structured existing access without mixing it into the change rows', () => {
         renderReview({
             unchangedRows: [

@@ -657,6 +657,9 @@ export const ConsentFlowTermsStatusValidator = z.enum([
 ]);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
 
+/** Stable machine-readable reason for an explicit contract-update approval handoff. */
+export const CONTRACT_APPROVAL_REQUIRED = 'CONTRACT_APPROVAL_REQUIRED';
+
 export const ConsentFlowContractChangeKindValidator = z.enum([
     'relaxed',
     'expanded_optional',
@@ -673,10 +676,38 @@ export const ConsentFlowContractScopeValidator = z.object({
 });
 export type ConsentFlowContractScope = z.infer<typeof ConsentFlowContractScopeValidator>;
 
+const ConsentFlowContractDetailValueValidator = z.union([
+    z.string(),
+    z.boolean(),
+    z.string().array(),
+]);
+
+export const ConsentFlowContractDetailChangeValidator = z.object({
+    field: z.enum([
+        'name',
+        'subtitle',
+        'description',
+        'reasonForAccessing',
+        'image',
+        'needsGuardianConsent',
+        'redirectUrl',
+        'frontDoorBoostUri',
+        'expiresAt',
+        'writers',
+        'autoboosts',
+    ]),
+    before: ConsentFlowContractDetailValueValidator.optional(),
+    after: ConsentFlowContractDetailValueValidator.optional(),
+});
+export type ConsentFlowContractDetailChange = z.infer<
+    typeof ConsentFlowContractDetailChangeValidator
+>;
+
 export const ConsentFlowContractDiffValidator = z.object({
     added: ConsentFlowContractScopeValidator.array(),
     removed: ConsentFlowContractScopeValidator.array(),
     changed: ConsentFlowContractScopeValidator.array(),
+    details: ConsentFlowContractDetailChangeValidator.array().optional(),
 });
 export type ConsentFlowContractDiff = z.infer<typeof ConsentFlowContractDiffValidator>;
 
@@ -1033,6 +1064,7 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
             consenter: LCNProfileValidator,
             status: ConsentFlowTermsStatusValidator,
             consentedVersion: z.number().int().positive(),
+            lastReviewedVersion: z.number().int().positive().optional(),
             reconsentDeadline: z.string().optional(),
             newOptionsUntil: z.string().optional(),
             cumulativeUpdate: ConsentFlowContractDetailsValidator.shape.latestUpdate,

@@ -3,7 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useImmer } from 'use-immer';
 import { Eye, Loader2, Upload } from 'lucide-react';
 import type { ConsentFlowContractDetails } from '@learncard/types';
-import { buildContractUpdatePreview, classifyContractChange } from '@learncard/helpers';
+import {
+    buildContractUpdatePreview,
+    classifyContractChange,
+    diffContractChange,
+} from '@learncard/helpers';
 import {
     getLogger,
     isConsentConflict,
@@ -132,14 +136,10 @@ const LoadedContractUpdateEditor: React.FC<{
             const result = await wallet.invoke.updateContract(uri, draft.changes, {
                 reason: reason.trim() || undefined,
                 dryRun: action === 'preview',
+                expectedVersion: baseline.version,
             });
             if (action === 'preview') {
-                const rows = result.preview.rows;
-                const diff = {
-                    added: rows.filter(row => row.change === 'added').map(row => row.scope),
-                    removed: rows.filter(row => row.change === 'removed').map(row => row.scope),
-                    changed: rows.filter(row => row.change === 'changed').map(row => row.scope),
-                };
+                const diff = diffContractChange(contractToFormValue(baseline), value);
                 const preview = buildContractUpdatePreview({
                     name: value.name,
                     kind: result.kind,
@@ -153,6 +153,7 @@ const LoadedContractUpdateEditor: React.FC<{
                         image={value.image}
                         reason={reason.trim() || undefined}
                         preview={preview}
+                        details={diff.details}
                         initialEnabledOptionalKeys={getDefaultEnabledOptionalUpdateScopeKeys(
                             value.contract,
                             preview.rows

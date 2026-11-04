@@ -81,6 +81,24 @@ const recoveryFixture = async () => {
 };
 
 describe('legacy contract startup migration', () => {
+    it('dates the captured legacy revision from its last modification, not its original creation', async () => {
+        const fixture = await recoveryFixture();
+        const updatedAt = '2026-02-01T00:00:00.000Z';
+        try {
+            await neogma.queryRunner.run(
+                `MATCH (contract:ConsentFlowContract {id:$id})
+                 SET contract.createdAt='2020-01-01T00:00:00.000Z', contract.updatedAt=$updatedAt`,
+                { id: fixture.id, updatedAt }
+            );
+            const snapshot = await getConsentFlowContractVersionRecord(fixture.id, 1);
+            expect(snapshot?.createdAt).toBe(updatedAt);
+            expect(snapshot?.contract).toEqual(normalContract);
+            await fixture.assertUnrelatedUnchanged();
+        } finally {
+            await fixture.cleanup();
+        }
+    });
+
     it('backfills healthy data once while isolating malformed historical contracts', async () => {
         const suffix = randomBytes(5).toString('hex');
         const owner = await getUser(randomBytes(32).toString('hex'));

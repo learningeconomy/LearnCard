@@ -111,6 +111,7 @@ export const DbTermsValidator = z.object({
     id: z.string(),
     status: ConsentFlowTermsStatusValidator,
     consentedVersion: z.coerce.number().int().positive().optional(),
+    lastReviewedVersion: z.coerce.number().int().positive().optional(),
     reconsentDeadline: z.string().optional(),
     newOptionsUntil: z.string().optional(),
     // Neo4j has no properties to store for entirely empty permission objects.

@@ -4,7 +4,7 @@ description: Evolve requested access without replacing the connection or silentl
 
 # Updating a ConsentFlow Contract
 
-The owner can update a live contract at its existing URI. Each saved update creates an immutable version; `getContract(uri)` returns the current request with its `version`. Existing users keep their consent records and transaction history.
+The owner can update a live contract at its existing URI. Each meaningful saved update creates an immutable version; `getContract(uri)` returns the current request with its `version`. Empty or equivalent updates leave the version, users' terms, history, and notifications unchanged.
 
 When creating the initial request, **Preview Contract** shows the current unsaved draft. It does not require a saved URI or connect the account. Close the preview to keep editing, then select **Create Contract** to save.
 
@@ -12,11 +12,11 @@ When creating the initial request, **Preview Contract** shows the current unsave
 
 Mixed updates use the strongest change kind in this table, from bottom to top.
 
-| Kind                | Examples                                                                                                                                                                                      | Existing access                                                                                         | What users see                                                                                |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `relaxed`           | Remove a category, make an item optional, extend expiry, remove an AutoBoost, or edit presentation text                                                                                       | Live terms move to the new version; removed grants are dropped                                          | A quiet history/feed entry; no push or unread badge                                           |
-| `expanded_optional` | Add an optional read **or write** category or personal field                                                                                                                                  | Live terms move forward with the new option **off**, even when `defaultEnabled` is `true`               | A quiet feed entry and a new-option card subtitle for 14 days; users can review and enable it |
-| `requires_consent`  | Add a required item, make an item required, change a required item's reason, add an AutoBoost or writer, shorten expiry, change the app name or access rationale, or begin requiring a parent | Existing live terms become `needs_reconsent`; their previously accepted version and grants are retained | One push notification, an unread feed entry, and “Needs your review” on the connected app     |
+| Kind                | Examples                                                                                                                                                             | Existing access                                                                                         | What users see                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `relaxed`           | Remove a category, make an item optional, extend expiry, remove an AutoBoost, edit presentation or per-item reason text, or change the redirect                      | Live terms move to the new version; removed grants are dropped                                          | A quiet history/feed entry; no push or unread badge                                           |
+| `expanded_optional` | Add an optional read **or write** category or personal field                                                                                                         | Live terms move forward with the new option **off**, even when `defaultEnabled` is `true`               | A quiet feed entry and a new-option card subtitle for 14 days; users can review and enable it |
+| `requires_consent`  | Add a required item, make an item required, add an AutoBoost or writer, shorten expiry, change the app name or overall access rationale, or begin requiring a parent | Existing live terms become `needs_reconsent`; their previously accepted version and grants are retained | One push notification, an unread feed entry, and “Needs your review” on the connected app     |
 
 Optional additions never enable themselves. An update also does not reactivate a withdrawn connection or a consumed one-time request.
 
@@ -24,7 +24,7 @@ In the review, a new **Opt-out** option starts checked and a new **Opt-in** opti
 
 The optional proposal window lasts 14 days. After it expires, reopening uses saved permissions instead of proposed Opt-out defaults. Saving sharing settings acknowledges the current optional proposal window even when the edit concerned another field; unselected options stay off.
 
-Quiet optional updates advance the accepted version immediately. Their dedicated review shows the latest publication, not a cumulative queue of optional additions from earlier publications. Earlier options remain at their saved values and are still editable in **Data Sharing**. Required updates continue to accumulate every unaccepted required change.
+Quiet optional updates advance the accepted version immediately, but do not acknowledge the user's review. `lastReviewedVersion` tracks the last explicit consent or sharing-settings save. Review accumulates every change since that version, so adding Alpha, then Beta, then editing a subtitle still shows both unreviewed options. A per-item reason-only edit—including a required item's reason—or a redirect-only edit does not pause access or ask for approval.
 
 ## Preview, then save
 
@@ -71,6 +71,8 @@ Run `node --env-file=.env update-contract.mjs` to preview. The result contains `
 
 Changed rows use shared canonical category labels and descriptions, not tenant-specific branding. The API returns canonical English preview text and structured scopes; clients can localize the same headline, rows, and actions from that structure. A developer-authored per-item `reason` stays verbatim and takes precedence over the shared description.
 
+Saved updates also expose non-scope changes in `latestUpdate.diff.details`, including request metadata, writers, and automatic deliveries. Review shows current and next values alongside category changes instead of hiding a material update behind an empty scope list.
+
 Update notifications identify the connected app using the request's public `contractName`, not the owner's profile name.
 
 ### Update from the developer dashboard
@@ -97,13 +99,13 @@ To save with the SDK instead, set `APPLY_UPDATE=true` in your private `.env` and
 
 Set `expiresAt: null` to clear expiry. Extending or clearing expiry follows the ticket's quiet-update policy: this can extend how long an app can access existing data without another approval prompt.
 
-Unknown AutoBoost IDs and writer profiles are rejected as invalid input before committing a version. A concurrency conflict means the saved request changed while the update was being applied, not that the referenced items were missing.
+Unknown AutoBoost IDs and writer profiles are rejected as invalid input before committing a version. Pass `expectedVersion` from the request originally loaded into your draft to both preview and publication; a mismatch returns `CONFLICT` without applying the draft. Do not replace it with a freshly fetched version while keeping an older draft. The publication also checks its version atomically, protecting against changes made after preflight.
 
 Use `getContractVersions(uri)` to list saved versions, their timestamps, change kinds, and reasons. Deleting a contract retires it and withdraws access; it does not erase users' terms or transactions from their holder export. Do not delete and recreate a connection to change requested access.
 
 ## Partner rollout and legacy AutoBoost callers
 
-This is a major SDK/API release, not a behavior-preserving replacement. The deprecated HTTP AutoBoost add/remove routes remain available for one compatibility release, but they use the versioned publication rules. Adding an AutoBoost through the old add route intentionally publishes `requires_consent`: every existing live connection becomes `needs_reconsent`, and writes, automatic delivery and synchronization pause until that person approves. Keeping the old endpoint does not preserve its old consent behavior.
+This is a major SDK/API release, not a behavior-preserving replacement. The deprecated HTTP AutoBoost add/remove routes remain available for one compatibility release, but only the contract owner may use them; delegated writers cannot change the request for every holder. They use the versioned publication rules. Adding an AutoBoost through the old add route publishes `requires_consent`: every existing live connection becomes `needs_reconsent`, and writes, automatic delivery and synchronization pause until that person approves.
 
 Before enabling these publications:
 
@@ -122,6 +124,8 @@ When `needsReconsent` is true, offer a link to the returned `reviewUrl` from the
 
 In the current LearnCard app, opening the ordinary consent screen for a pending or suspended connection goes to update review instead of showing an already-connected form. If a required update arrives while an ordinary consent dialog is open, its approval-required response closes the modal stack and opens that same review. This handoff does not accept the update or run the connection's success callback. Other authorization errors, including missing guardian approval, retain their own recovery path.
 
+The ordinary consent response identifies this case with `FORBIDDEN` and `data.reason: 'CONTRACT_APPROVAL_REQUIRED'`. Clients should use that structured reason, not match the human-readable message.
+
 The user accepts with their own LearnCard:
 
 ```javascript
@@ -136,15 +140,15 @@ Here `termsUri` and `selectedTerms` come from the user's existing consent record
 
 Reopening a handled update shows **Done** instead of submitting approval again; users can still stop sharing. If that update added optional choices, users can change those choices without accepting the same version again. Cancelling the parent PIN with its button, Escape, a backdrop, or a back gesture settles the pending action and leaves the review available to retry. Once a valid PIN submits the action, closing that PIN modal cannot cancel the submission. A version conflict reloads the latest request before another approval attempt.
 
-If a request changes several times before a user reviews it, `getConsentedContracts()` includes a `cumulativeUpdate` from their accepted version to the current version. Review and grant every required item in that cumulative change, not just the last published update, before accepting the current version.
+If a request changes several times before a user reviews it, `getConsentedContracts()` includes a `cumulativeUpdate` from `lastReviewedVersion` to the current version. On older records without that marker, the accepted version is the fallback. Review and grant every required item in that cumulative change, not just the last published update, before accepting the current version.
 
 The web review, notification card, and history labels use the active app language (English, Spanish, French, or Arabic). Opening an update notification clears the modal stack so the review remains interactive even when Alerts was above another overlay. Navigation does not wait for the best-effort read receipt; dismissal errors stay visible with a retry action.
 
-An update requiring approval defaults to a deadline 30 days after it is saved. Pass an ISO `reconsentDeadline` in `updateContract` options to choose another date. When the deadline passes, the scheduled job moves unanswered requests to `suspended`. The user can still review and approve the latest request to reconnect.
+An update requiring approval defaults to a deadline 30 days after it is saved. Pass an ISO `reconsentDeadline` strictly later than publication time to choose another date; past dates and the current instant are rejected. When the deadline passes, the scheduled job moves unanswered requests to `suspended`. The user can still review and approve the latest request to reconnect.
 
 ## Rolling out versioned access
 
-Docker startup and Lambda handlers await the same idempotent backfill before serving version-aware requests. It creates version 1 for legacy requests, records the accepted version on existing connections, and renames consumed one-time connections. A failed Lambda migration is retried by the next request; concurrent requests share one migration attempt. Application import failures retain the bootstrap's separate memoization policy.
+Docker startup and Lambda handlers await the same idempotent backfill before serving version-aware requests. It creates version 1 for legacy requests, records the accepted version on existing connections, and renames consumed one-time connections. A legacy snapshot uses the saved request's `updatedAt` (falling back to `createdAt`), not an invented reconstruction of its original content. A failed Lambda migration is retried by the next request; concurrent requests share one migration attempt. Application import failures retain the bootstrap's separate memoization policy.
 
 The scheduled deadline Lambda also loads its runtime secrets before importing environment validation or database clients. A deployment using only `RUNTIME_SECRETS_ID` does not need to copy those secrets into the function environment. If startup leaves less than two seconds for the invocation, the worker skips suspension work until the next run.
 
@@ -156,7 +160,9 @@ A successful, complete backfill records `ConsentFlowContractMigration { id: 'leg
 
 This repair runs only through single-version lookups used by consent creation and terms changes, contract updates and retirement, and the legacy AutoBoost endpoints. Batched consent-list reads and credential writes do not initialize missing snapshots; they remain fail-closed when history is missing.
 
-After restoring legacy data, or rolling back to an older writer and then rolling forward, clear only this migration marker before rerunning the full idempotent backfill—never delete snapshots or consent history. Scoped recovery is a safety net, not a substitute for draining old writers during cutover.
+After restoring legacy data, or rolling back to an older writer and then rolling forward, clear only the `legacy-v1` migration marker before rerunning the full idempotent backfill—never delete snapshots or consent history. Scoped recovery is a safety net, not a substitute for draining old writers during cutover.
+
+A separate `holder-review-v1` marker upgrades existing versioned connections once. It reconstructs their last explicit review from consent, re-consent, and user settings transactions, rather than treating quiet automatic version advances as review. Existing immutable snapshots are not rewritten.
 
 ## One-time delivery and interrupted sends
 

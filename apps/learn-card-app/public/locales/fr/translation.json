@@ -6,6 +6,19 @@
             "after": "Après la mise à jour",
             "notRequested": "Non demandé"
         },
+        "details": {
+            "frontDoorBoostUri": "Identifiant de la porte d’entrée",
+            "frontDoorCurrent": "Identifiant actuel",
+            "frontDoorUpdated": "Identifiant mis à jour",
+            "expiresAt": "Expiration de l’accès",
+            "writers": "Personnes autorisées à écrire",
+            "autoboosts": "Envois automatiques d’identifiants",
+            "personCountOne": "{{count}} personne",
+            "peopleCount": "{{count}} personnes",
+            "credentialCountOne": "{{count}} identifiant",
+            "credentialsCount": "{{count}} identifiants",
+            "set": "Défini"
+        },
         "editor": {
             "accessSettings": "Paramètres de {{label}}",
             "title": "Mettre à jour la demande",

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import { IonSpinner } from '@ionic/react';
 import { useQuery } from '@tanstack/react-query';
@@ -33,10 +33,28 @@ const ContractUpdateReviewRoute: React.FC = () => {
     const walletReady = Boolean(readerDid);
     const waitingForWallet = Boolean(uri) && !walletReady;
     const { data: records, isLoading, refetch } = useConsentedContracts();
+    const freshnessKey = `${uri}:${readerDid ?? ''}`;
+    const [freshRecordKey, setFreshRecordKey] = useState('');
+    const [freshRecordError, setFreshRecordError] = useState(false);
     useEffect(() => {
-        // A restored cache can still contain pre-save defaults when a review is reopened.
-        if (uri && readerDid) void refetch();
-    }, [uri, readerDid, refetch]);
+        setFreshRecordKey('');
+        setFreshRecordError(false);
+        if (!uri || !readerDid) return;
+        let cancelled = false;
+        void refetch().then(
+            result => {
+                if (cancelled) return;
+                if (result.status === 'success') setFreshRecordKey(freshnessKey);
+                else setFreshRecordError(true);
+            },
+            () => {
+                if (!cancelled) setFreshRecordError(true);
+            }
+        );
+        return () => {
+            cancelled = true;
+        };
+    }, [uri, readerDid, refetch, freshnessKey]);
     const currentUser = useCurrentUser();
     const { currentLCNUser, currentLCNUserLoading } = useGetCurrentLCNUser();
     const { initWallet } = useWallet();
@@ -95,6 +113,32 @@ const ContractUpdateReviewRoute: React.FC = () => {
         );
     }, [contract, record?.terms, latestUpdate]);
 
+    if (freshRecordError && freshRecordKey !== freshnessKey) {
+        return (
+            <main
+                className="flex min-h-screen flex-col items-center justify-center gap-3 bg-white"
+                role="alert"
+            >
+                <p className="text-grayscale-700">{mDynamic('consentUpdate.ui.loadError')}</p>
+                <button
+                    type="button"
+                    onClick={() => {
+                        setFreshRecordError(false);
+                        void refetch().then(
+                            result => {
+                                if (result.status === 'success') setFreshRecordKey(freshnessKey);
+                                else setFreshRecordError(true);
+                            },
+                            () => setFreshRecordError(true)
+                        );
+                    }}
+                    className="rounded-full bg-grayscale-900 px-4 py-2 text-white"
+                >
+                    {mDynamic('consentUpdate.ui.tryAgain')}
+                </button>
+            </main>
+        );
+    }
     if (statusQuery.isError && !waitingForWallet) {
         return (
             <main
@@ -114,6 +158,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
     }
     if (
         waitingForWallet ||
+        freshRecordKey !== freshnessKey ||
         isLoading ||
         currentLCNUserLoading ||
         statusQuery.isLoading ||
@@ -127,7 +172,11 @@ const ContractUpdateReviewRoute: React.FC = () => {
                 className="flex min-h-screen items-center justify-center bg-white"
                 aria-live="polite"
             >
-                {waitingForWallet || isLoading || currentLCNUserLoading || statusQuery.isLoading ? (
+                {waitingForWallet ||
+                freshRecordKey !== freshnessKey ||
+                isLoading ||
+                currentLCNUserLoading ||
+                statusQuery.isLoading ? (
                     <IonSpinner name="crescent" />
                 ) : (
                     <p className="text-grayscale-700">
@@ -178,7 +227,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
             try {
                 const result = await updateTerms({
                     terms,
-                    ...(alreadyHandled ? {} : { acceptVersion: latestUpdate.toVersion }),
+                    acceptVersion: latestUpdate.toVersion,
                     shareAllCategories,
                 });
                 if (!result) throw new Error('Could not save your choice. Please try again.');
@@ -207,6 +256,7 @@ const ContractUpdateReviewRoute: React.FC = () => {
             reason={latestUpdate.reason}
             deadline={record.reconsentDeadline ?? latestUpdate.reconsentDeadline}
             preview={preview}
+            details={latestUpdate.diff.details}
             guardianContract={contract}
             needsGuardianConsent={isChildProfile}
             alreadyHandled={alreadyHandled}

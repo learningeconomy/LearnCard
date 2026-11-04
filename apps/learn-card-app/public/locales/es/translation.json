@@ -6,6 +6,19 @@
             "after": "Después de la actualización",
             "notRequested": "No solicitado"
         },
+        "details": {
+            "frontDoorBoostUri": "Credencial de acceso directo",
+            "frontDoorCurrent": "Credencial actual",
+            "frontDoorUpdated": "Credencial actualizada",
+            "expiresAt": "Caducidad del acceso",
+            "writers": "Personas que pueden escribir",
+            "autoboosts": "Entregas automáticas de credenciales",
+            "personCountOne": "{{count}} persona",
+            "peopleCount": "{{count}} personas",
+            "credentialCountOne": "{{count}} credencial",
+            "credentialsCount": "{{count}} credenciales",
+            "set": "Configurado"
+        },
         "editor": {
             "accessSettings": "Ajustes de {{label}}",
             "title": "Actualizar solicitud",

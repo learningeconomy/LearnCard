@@ -18,7 +18,7 @@ vi.mock('learn-card-base', () => ({
     ModalTypes: { FullScreen: 'full-screen' },
     contractCategoryNameToCategoryMetadata: (key: string) => ({ title: key }),
     getLogger: () => ({ error: vi.fn() }),
-    isConsentConflict: () => false,
+    isConsentConflict: (error: { data?: { code?: string } }) => error.data?.code === 'CONFLICT',
 }));
 vi.mock('../../../i18n', () => ({ useLocale: () => 'en' }));
 vi.mock('../../../helpers/contract.helpers', () => ({ CONTRACT_CATEGORIES: [] }));
@@ -162,6 +162,40 @@ describe('contract update authoring', () => {
             )
         );
         expect(screen.getByRole('button', { name: 'Publish Update' })).toBeDisabled();
+    });
+    it('keeps the draft instead of overwriting a publication that arrives after the preflight read', async () => {
+        let savedSubtitle = initial.subtitle;
+        let savedVersion = 1;
+        state.updateContract.mockImplementation(
+            async (
+                _uri: string,
+                changes: { subtitle?: string },
+                options?: { expectedVersion?: number }
+            ) => {
+                savedVersion = 2;
+                savedSubtitle = 'An intervening publication';
+                if (
+                    options?.expectedVersion !== undefined &&
+                    options.expectedVersion !== savedVersion
+                ) {
+                    throw Object.assign(new Error('The draft is obsolete'), {
+                        data: { code: 'CONFLICT' },
+                    });
+                }
+                savedSubtitle = changes.subtitle;
+                return { version: 3, kind: 'relaxed', affectedUsers: 1, preview: { rows: [] } };
+            }
+        );
+        await showEditor();
+        fireEvent.change(screen.getByRole('textbox', { name: /Subtitle/ }), {
+            target: { value: 'Older local draft' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Publish Update' }));
+        await screen.findByRole('alert');
+        expect(savedSubtitle).toBe('An intervening publication');
+        expect(screen.getByRole('textbox', { name: /Subtitle/ })).toHaveValue('Older local draft');
+        expect(screen.getByRole('button', { name: 'Reload current request' })).toBeEnabled();
+        expect(screen.queryByText(/Update published/)).toBeNull();
     });
     it('does not offer to publish again when saving succeeds but reloading fails', async () => {
         state.getContract

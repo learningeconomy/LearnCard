@@ -6,6 +6,9 @@ import { getConsentFlowContractVersionRecord } from '@accesslayer/consentflowcon
 import { getContractTermsByUri } from '@accesslayer/consentflowcontract/relationships/read';
 import { getUser } from './helpers/getClient';
 import { normalContract, normalFullTerms } from './helpers/contract';
+import { testUnsignedBoost } from './helpers/send';
+import type { ConsentFlowContractChanges } from '@learncard/types';
+import { migrateLegacyConsentFlowContracts } from '@helpers/consentflow-legacy-migration.helpers';
 
 const setup = async (expiresAt?: string) => {
     const suffix = randomBytes(5).toString('hex');
@@ -26,6 +29,218 @@ const setup = async (expiresAt?: string) => {
 };
 
 describe('safe live contract patches', () => {
+    it('recovers old quiet-update review baselines and advances them only after explicit review', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        for (const key of ['Alpha', 'Beta']) {
+            await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: {
+                    contract: {
+                        read: {
+                            credentials: {
+                                categories: {
+                                    [key]: { required: false },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        }
+        await neogma.queryRunner.run(
+            `MATCH (terms:ConsentFlowTerms {id:$id}) REMOVE terms.lastReviewedVersion`,
+            { id: getIdFromUri(termsUri) }
+        );
+        await neogma.queryRunner.run(
+            `MATCH (migration:ConsentFlowContractMigration {id:'holder-review-v1'}) DELETE migration`
+        );
+        await migrateLegacyConsentFlowContracts();
+        const recovered = (await getContractTermsByUri(termsUri))!;
+        expect(recovered.terms).toMatchObject({
+            consentedVersion: 3,
+            lastReviewedVersion: 1,
+            status: 'live',
+        });
+        expect(recovered.cumulativeUpdate?.diff.added.map(scope => scope.key)).toEqual([
+            'Alpha',
+            'Beta',
+        ]);
+        const selected = structuredClone(recovered.terms.terms);
+        selected.read.credentials.categories.Alpha = { sharing: true, shareAll: true, shared: [] };
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: selected,
+            acceptVersion: 3,
+        });
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: {
+                contract: {
+                    read: {
+                        credentials: {
+                            categories: {
+                                Gamma: { required: false },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        const next = (await getContractTermsByUri(termsUri))!;
+        expect(next.terms).toMatchObject({ consentedVersion: 4, lastReviewedVersion: 3 });
+        expect(next.cumulativeUpdate?.diff.added.map(scope => scope.key)).toEqual(['Gamma']);
+        expect(next.terms.terms.read.credentials.categories.Alpha.sharing).toBe(true);
+        expect(next.terms.terms.read.credentials.categories.Gamma.sharing).toBe(false);
+    });
+
+    it('does not publish or mutate holders for an unchanged resulting request', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        const before = (await getContractTermsByUri(termsUri))!.terms;
+        const history = await learner.clients.fullAuth.contracts.getTermsTransactionHistory({
+            uri: termsUri,
+        });
+        const unchanged: ConsentFlowContractChanges[] = [
+            {},
+            { name: 'Version QA' },
+            { contract: { read: { personal: {} } } },
+        ];
+        for (const changes of unchanged) {
+            const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes,
+                expectedVersion: 1,
+            });
+            expect(result).toMatchObject({ version: 1, affectedUsers: 0 });
+        }
+        expect((await getContractTermsByUri(termsUri))!.terms).toEqual(before);
+        expect(
+            await learner.clients.fullAuth.contracts.getTermsTransactionHistory({ uri: termsUri })
+        ).toEqual(history);
+        expect(
+            (await owner.clients.fullAuth.contracts.getContractVersions({ uri })).map(
+                v => v.version
+            )
+        ).toEqual([1]);
+        expect(
+            (await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri })).latestUpdate
+        ).toBeUndefined();
+    });
+
+    it.each([false, true])('rejects an obsolete draft version (dryRun=%s)', async dryRun => {
+        const { owner, uri } = await setup();
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { subtitle: 'Intervening publication' },
+            expectedVersion: 1,
+        });
+        await expect(
+            owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: { subtitle: 'Older draft' },
+                expectedVersion: 1,
+                dryRun,
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(
+            await owner.clients.fullAuth.contracts.getConsentFlowContract({ uri })
+        ).toMatchObject({ version: 2, subtitle: 'Intervening publication' });
+    });
+
+    it.each(['2000-01-01T00:00:00.000Z', 'now'])(
+        'rejects a deadline at or before publication time: %s',
+        async deadline => {
+            const { owner, uri, termsUri } = await setup();
+            await expect(
+                owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                    uri,
+                    changes: { name: 'New request identity' },
+                    reason: 'Review the new request identity.',
+                    reconsentDeadline: deadline === 'now' ? new Date().toISOString() : deadline,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
+                status: 'live',
+                consentedVersion: 1,
+            });
+            expect(
+                (await owner.clients.fullAuth.contracts.getContractVersions({ uri })).map(
+                    v => v.version
+                )
+            ).toEqual([1]);
+        }
+    );
+
+    it('keeps a valid future approval deadline', async () => {
+        const { owner, uri, termsUri } = await setup();
+        const deadline = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { name: 'New request identity' },
+            reason: 'Review the new request identity.',
+            reconsentDeadline: deadline,
+        });
+        expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
+            status: 'needs_reconsent',
+            reconsentDeadline: deadline,
+        });
+    });
+
+    it('does not let a delegated writer publish through either legacy AutoBoost operation', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        const writer = await getUser(randomBytes(32).toString('hex'));
+        const writerId = `version-writer-${randomBytes(5).toString('hex')}`;
+        await writer.clients.fullAuth.profile.createProfile({ profileId: writerId });
+        await writer.clients.fullAuth.profile.registerSigningAuthority({
+            endpoint: 'http://localhost:5000/api',
+            name: 'writer-sa',
+            did: writer.learnCard.id.did(),
+        });
+        const boostUri = await writer.clients.fullAuth.boost.createBoost({
+            credential: testUnsignedBoost,
+            category: 'Achievement',
+            name: 'Writer-owned credential',
+        });
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { writers: [writerId] },
+            reason: 'Allow a delegated issuer.',
+        });
+        await learner.clients.fullAuth.contracts.updateConsentedContractTerms({
+            uri: termsUri,
+            terms: normalFullTerms,
+            acceptVersion: 2,
+        });
+        await expect(
+            writer.clients.fullAuth.contracts.addAutoBoostsToContract({
+                contractUri: uri,
+                autoboosts: [
+                    {
+                        boostUri,
+                        signingAuthority: {
+                            endpoint: 'http://localhost:5000/api',
+                            name: 'writer-sa',
+                        },
+                    },
+                ],
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        await expect(
+            writer.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                contractUri: uri,
+                boostUris: [boostUri],
+            })
+        ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        expect((await getContractTermsByUri(termsUri))!.terms).toMatchObject({
+            status: 'live',
+            consentedVersion: 2,
+        });
+        expect(
+            (await owner.clients.fullAuth.contracts.getContractVersions({ uri })).map(
+                v => v.version
+            )
+        ).toEqual([2, 1]);
+    });
+
     it('merges every scope map and preserves existing grants unless explicitly removed', async () => {
         const { owner, uri, termsUri } = await setup();
         const result = await owner.clients.fullAuth.contracts.updateConsentFlowContract({
@@ -149,6 +364,37 @@ describe('safe live contract patches', () => {
         const terms = (await getContractTermsByUri(termsUri))!.terms;
         expect(terms.status).toBe('live');
         expect(terms.terms.write.credentials.categories).toEqual({});
+    });
+
+    it('keeps cumulative optional additions visible after later quiet publications', async () => {
+        const { owner, learner, uri, termsUri } = await setup();
+        for (const name of ['Alpha', 'Beta']) {
+            await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri,
+                changes: {
+                    contract: {
+                        read: { credentials: { categories: { [name]: { required: false } } } },
+                    },
+                },
+            });
+        }
+        await owner.clients.fullAuth.contracts.updateConsentFlowContract({
+            uri,
+            changes: { subtitle: 'Updated description' },
+        });
+
+        const listed = await learner.clients.fullAuth.contracts.getConsentedContracts({});
+        const record = listed.records.find(item => item.uri === termsUri)!;
+        expect(record.cumulativeUpdate).toMatchObject({
+            fromVersion: 1,
+            toVersion: 4,
+            diff: {
+                added: expect.arrayContaining([
+                    expect.objectContaining({ key: 'Alpha', required: false }),
+                    expect.objectContaining({ key: 'Beta', required: false }),
+                ]),
+            },
+        });
     });
 
     it('accepts every required change across multiple unreviewed versions', async () => {
