@@ -362,4 +362,51 @@ describe('Web3Auth account setup coordination', () => {
         const error = await derive(strategy).catch((e: unknown) => e);
         expect(isNetworkError(error)).toBe(false);
     });
+    it.each([
+        ['string', () => `token rejected for test-user: ${token()}`],
+        [
+            'object',
+            () => ({ code: 'TORUS_LOOKUP', message: `lookup failed for test-user ${token()}` }),
+        ],
+        ['object', () => ({ code: 'NO_MESSAGE', detail: `test-user ${token()}` })],
+    ])('describes a non-Error %s rejection with redacted detail', async (type, rejection) => {
+        sdk.connect.mockRejectedValueOnce(rejection());
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await expect(derive(strategy)).rejects.toThrow('We couldn’t finish signing you in.');
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({
+                failureStage: 'connect',
+                errorType: type,
+                failureMessage: expect.stringContaining('[uid]'),
+            })
+        );
+        const logged = JSON.stringify(sdk.error.mock.calls);
+        expect(logged).not.toContain(token().split('.')[1]);
+        expect(logged).not.toContain('test-user');
+    });
+
+    it('classifies a network failure rejected as a plain object', async () => {
+        sdk.connect.mockRejectedValueOnce({ message: 'Failed to fetch' });
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        const error = await derive(strategy).catch((e: unknown) => e);
+        expect(isNetworkError(error)).toBe(true);
+    });
+
+    it('keeps endpoint hostnames in the failure message', async () => {
+        sdk.connect.mockRejectedValueOnce(
+            new Error('Request to https://api.web3auth.io/signer-service failed with 500')
+        );
+        const strategy = createWeb3AuthStrategy(config);
+        await credentials(strategy);
+        await expect(derive(strategy)).rejects.toThrow('We couldn’t finish signing you in.');
+        expect(sdk.error).toHaveBeenCalledWith(
+            'Web3Auth account setup failed',
+            expect.objectContaining({
+                failureMessage: expect.stringContaining('api.web3auth.io/signer-service'),
+            })
+        );
+    });
 });

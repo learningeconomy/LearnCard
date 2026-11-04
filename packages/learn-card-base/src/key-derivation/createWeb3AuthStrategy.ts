@@ -59,31 +59,54 @@ class Web3AuthNetworkError extends Error {
     }
 }
 
-/** Three dot-separated base64url segments: the shape of a JWT. */
-const JWT_SHAPE_RE = /[A-Za-z0-9_-]{2,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{2,}/g;
+/**
+ * The shape of a JWT: a base64url JSON header (`{"` encodes to `eyJ`) followed
+ * by two more dot-separated segments. Anchored on `eyJ` so hostnames such as
+ * `api.web3auth.io` survive in diagnostics.
+ */
+const JWT_SHAPE_RE = /eyJ[A-Za-z0-9_-]{2,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*/g;
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** Best-effort readable text for whatever the SDK rejected with. */
+const rawFailureText = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object' && error !== null) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === 'string') return message;
+        try {
+            return JSON.stringify(error) ?? String(error);
+        } catch {
+            return String(error);
+        }
+    }
+    return String(error);
+};
+
 /**
- * Describe an SDK failure for diagnostics without leaking credentials. Torus
- * errors can embed the OAuth JWT, so the known token (and each of its
- * segments), the account uid, and any JWT-shaped string are removed here; the
- * logger additionally redacts bearer, long-hex and long-base64 shapes. Keys
- * deliberately avoid the logger's scrubbed substrings (`name`, `token`, ...).
+ * Describe an SDK failure for diagnostics without leaking credentials. Handles
+ * `Error`s, strings and plain objects (the SDK and Torus do not always reject
+ * with an `Error`). Torus errors can embed the OAuth JWT, so the known token
+ * (and each of its segments), the account uid, and any JWT-shaped string are
+ * removed here before truncation; the logger additionally redacts bearer,
+ * long-hex and long-base64 shapes. Keys deliberately avoid the logger's
+ * scrubbed substrings (`name`, `token`, ...).
  */
 const describeFailure = (
     error: unknown,
     secrets: { idToken: string; uid: string }
 ): Record<string, unknown> => {
-    if (!(error instanceof Error)) return { errorType: typeof error };
-
-    const code = (error as { code?: unknown }).code;
+    const code =
+        typeof error === 'object' && error !== null
+            ? (error as { code?: unknown }).code
+            : undefined;
     const known: Array<[string, string]> = [secrets.idToken, ...secrets.idToken.split('.')]
         .filter(part => part.length >= 8)
         .map(part => [part, '[redacted]']);
     if (secrets.uid) known.push([secrets.uid, '[uid]']);
 
-    let failureMessage = error.message;
+    let failureMessage = rawFailureText(error);
     for (const [value, replacement] of known) {
         failureMessage = failureMessage.replace(new RegExp(escapeRegExp(value), 'g'), replacement);
     }
@@ -92,7 +115,7 @@ const describeFailure = (
         .slice(0, MAX_FAILURE_MESSAGE_LENGTH);
 
     return {
-        errorType: error.name || 'Error',
+        errorType: error instanceof Error ? error.name || 'Error' : typeof error,
         ...(typeof code === 'string' || typeof code === 'number' ? { errorCode: code } : {}),
         failureMessage,
     };
@@ -339,9 +362,10 @@ export const createWeb3AuthStrategy = (
                     log.info('Web3Auth account setup cancelled', { setupAttemptId });
                     throw error;
                 }
-                const message = error instanceof Error ? error.message : '';
+                const message = rawFailureText(error);
                 const tokenAlreadyUsed = /token is used|duplicate token/i.test(message);
-                const networkFailure = !lockWaitTimedOut && isNetworkError(error);
+                const networkFailure =
+                    !lockWaitTimedOut && (isNetworkError(error) || isNetworkError(message));
                 log.error('Web3Auth account setup failed', {
                     setupAttemptId,
                     failureStage: progress.stage,
