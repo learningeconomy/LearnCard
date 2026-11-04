@@ -518,7 +518,14 @@ in that file. The production **tenant config** pins live at
 `auth.sss.escrowEnclaveMeasurements`; copy only verified production tuples there
 and select `auth.sss.escrowEnclaveMode=nitro` only after approval. Keep automatic
 rollout at zero. The internal URL (`https://escrow-enclave.production.internal:8443`)
-and bearer token belong in the runtime secrets bundle, not checked-in stage JSON. Explicit environment overrides
+and bearer token belong in the runtime secrets bundle, not checked-in stage JSON. Set them in Infisical
+(project **LearnCard Runtime**, folder `/learncard/lca-api/runtime`, environment `prod`; `staging` for dev),
+never directly on the AWS secret: the auto-sync rewrites the whole bundle from that folder, so a value
+written only in AWS disappears on the next sync ([environment-variables.md](../../environment-variables.md)).
+On 2026-11-04 that dropped both keys from production and every escrow call answered 412 until they were
+restored; lca-api now logs `[escrow] ESCROW_ENCLAVE_MODE=remote but ... missing` once per container and emits
+`LearnCard/Escrow EnclaveFailure` with `Reason=remote_config_missing`, and the deploy smoketest probes
+`/api/keys/escrow/attestation`. Explicit environment overrides
 win over stage config; inspect the effective deployment without printing secrets.
 
 ```sh

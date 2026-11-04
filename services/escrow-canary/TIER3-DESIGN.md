@@ -125,8 +125,9 @@ Every refresh-token exchange persists a rotated token before any other I/O
   Else `Confirmed=0` `deadline_mismatch`. Success: RUN → `waiting`, and for daily
   runs create `Warning` due `confirmedAt + warningDeadlineMs(hold)`, where
   `warningDeadlineMs(hold) = max(0, hold − 24 h) + 2 h`: lca-api's hourly job warns once
-  at most 24 h remain (6 d + 2 h for the production 7-day hold; 2 h for staging's
-  10-minute hold, which is warned on the first hourly run).
+  at most 24 h remain (6 d + 2 h for the 7-day hold; holds of 24 h or less are warned on
+  the first hourly run). Both environments use 7 days: the Nitro enclave's hold is a
+  compile-time constant, so a shorter staging value only fails `deadline_mismatch`.
 
 ### 3.4 Warning (daily runs)
 

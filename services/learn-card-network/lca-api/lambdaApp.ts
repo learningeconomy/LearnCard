@@ -18,6 +18,9 @@ import { toServerlessApplication } from './src/helpers/serverlessApplication';
 import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
 import { runEscrowHoldReminders } from './src/jobs/escrowHoldReminders';
 import { runEscrowBlobRewrap } from './src/jobs/escrowBlobRewrap';
+import { checkEscrowRemoteConfig } from './src/services/escrow-enclave';
+
+checkEscrowRemoteConfig();
 
 const startupPromise = Promise.all([
     getEmptyLearnCard(), // Load WASM in for better cold starts

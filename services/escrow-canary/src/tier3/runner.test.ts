@@ -153,7 +153,7 @@ describe('tier 3 daily run (fake clock)', () => {
     });
 
     it.each([
-        ['staging 10-minute hold', 10 * MINUTE],
+        ['10-minute (software enclave) hold', 10 * MINUTE],
         ['2-day hold', 2 * DAY],
     ])(
         'derives warning timing from the hold duration (%s): warns, releases, no false pages',
