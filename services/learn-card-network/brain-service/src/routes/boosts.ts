@@ -198,6 +198,7 @@ import {
     extractManagedRefreshHandoff,
     getBoundRefreshBoostId,
     getCredentialRefreshServiceUrl,
+    getHolderEncryptionRecipientKeyIds,
     peekCredentialRefreshInitialBinding,
     sendRefreshableCredential,
 } from '@helpers/credential-refresh.helpers';
@@ -467,11 +468,14 @@ const prepareManagedRefreshSend = async (params: {
     templateData?: Record<string, unknown>;
     integrationId?: string;
     idempotencyKey?: string;
+    /** `'holder'` requests student-only encryption (LC-2345); default `'network'`. */
+    encryption?: 'network' | 'holder';
 }): Promise<PrepareRefreshableSendResult & { intent?: RefreshSendIntent }> => {
     const { profile, targetProfile, domain, templateUri, template, contractUri } = params;
     // Local recipients authenticate refresh requests as their network profile DID,
     // including when the caller addressed them by their controller did:key.
     const holderDid = getDidWeb(domain, targetProfile.profileId);
+    const holderMode = params.encryption === 'holder';
 
     let intent: RefreshSendIntent | undefined;
 
@@ -488,6 +492,7 @@ const prepareManagedRefreshSend = async (params: {
                 integrationId: params.integrationId,
                 credentialId: params.credentialId,
                 statusPurposes: params.statusPurposes,
+                encryption: params.encryption,
             }),
         });
 
@@ -504,6 +509,11 @@ const prepareManagedRefreshSend = async (params: {
                 refreshId: intent.refreshId!,
                 refreshService: managedRefreshServiceFor(intent.refreshId!, domain),
                 holderDid: intent.holderDid!,
+                // Recomputed fresh (never cached on the intent): a manager change
+                // between prepare calls must be reflected immediately.
+                ...(refresh?.encryptionMode === 'holder'
+                    ? { recipientKeyIds: await getHolderEncryptionRecipientKeyIds(targetProfile) }
+                    : {}),
                 intent,
             };
             const completed =
@@ -573,6 +583,7 @@ const prepareManagedRefreshSend = async (params: {
                 holderDid,
                 credentialId,
                 domain,
+                ...(holderMode ? { encryptionMode: 'holder' as const } : {}),
             })
         );
 
@@ -602,6 +613,10 @@ const prepareManagedRefreshSend = async (params: {
         refreshId,
         refreshService: managedRefreshServiceFor(refreshId, domain),
         holderDid,
+        // Recomputed every call (never persisted): see getHolderEncryptionRecipientKeyIds.
+        ...(holderMode
+            ? { recipientKeyIds: await getHolderEncryptionRecipientKeyIds(targetProfile) }
+            : {}),
         ...(intent ? { intent } : {}),
     };
 };
@@ -1274,6 +1289,18 @@ export const boostsRouter = t.router({
                             : undefined;
 
                     if (keyedPrepared?.completed) return keyedPrepared.completed;
+
+                    // boost.send only ever builds a plaintext credential (signedCredential
+                    // input or a server/signing-authority-signed one below); a holder-mode
+                    // prepare (recipientKeyIds present) must deliver its encrypted handoff
+                    // through credentialRefresh.sendHolderEncryptedRefreshable instead.
+                    if (keyedPrepared?.recipientKeyIds) {
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message:
+                                'This credential refresh uses holder-mode encryption; send the encrypted handoff via credentialRefresh.sendHolderEncryptedRefreshable instead.',
+                        });
+                    }
 
                     // Check if recipient is email/phone (routes to Universal Inbox)
                     const inboxRecipient = isInboxRecipient(input.recipient);

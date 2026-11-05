@@ -51,6 +51,8 @@ export const computeRefreshSendRequestDigest = (request: {
     display?: import('@learncard/types').CredentialDisplay;
     contractUri?: string;
     integrationId?: string;
+    /** Included so an idempotencyKey can never silently replay across modes. */
+    encryption?: 'network' | 'holder';
 }): string =>
     'v1:' +
     createHmac('sha256', getCredentialRefreshDigestSecret())
@@ -65,6 +67,7 @@ export const computeRefreshSendRequestDigest = (request: {
                 integrationId: request.integrationId ?? null,
                 refresh: true,
                 credentialId: request.credentialId ?? null,
+                encryption: request.encryption ?? 'network',
                 ...(request.statusPurposes?.includes('suspension')
                     ? { suspensionRequested: true }
                     : {}),

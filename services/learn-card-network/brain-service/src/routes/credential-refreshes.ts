@@ -4,10 +4,14 @@ import {
     AllocateCredentialRefreshInputValidator,
     AttachCredentialRefreshStatusEntriesInputValidator,
     AllocateCredentialRefreshResultValidator,
+    EncryptionRecipientsResultValidator,
     GetCredentialRefreshHistoryInputValidator,
     GetCredentialRefreshHistoryResultValidator,
+    GetEncryptionRecipientsInputValidator,
     PublishCredentialRefreshInputValidator,
     PublishCredentialRefreshResultValidator,
+    PublishHolderEncryptedRefreshInputValidator,
+    SendHolderEncryptedRefreshableInputValidator,
     VCValidator,
     GetCredentialRefreshReceiptInputValidator,
     CredentialRefreshReceiptValidator,
@@ -24,7 +28,10 @@ import {
 } from '@accesslayer/credential-refresh';
 import {
     allocateCredentialRefresh,
+    getCurrentEncryptionRecipients,
     publishCredentialRefresh,
+    publishHolderEncryptedRefreshableCredential,
+    sendHolderEncryptedRefreshableCredential,
     sendRefreshableCredential,
 } from '@helpers/credential-refresh.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -245,6 +252,68 @@ export const credentialRefreshesRouter = t.router({
             return uri;
         }),
 
+    /**
+     * Holder-mode counterpart of `sendRefreshableCredential` (LC-2345): a separate
+     * route rather than a branch of `send`/`sendRefreshableCredential`, so the
+     * ciphertext-only input shape (`HolderEncryptedHandoffValidator`) never has to
+     * share a validator with the plaintext `credential`/`signedCredential` paths.
+     */
+    sendHolderEncryptedRefreshable: credentialRefreshRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/credential-refresh/send-holder-encrypted',
+                tags: ['Credential Refresh'],
+                summary: 'Send a holder-mode (student-only encrypted) refreshable credential',
+                description:
+                    'Binds an already-encrypted handoff to its allocated refresh aggregate. The server never decrypts or processes the credential.',
+            },
+            requiredScope: 'credentials:write',
+        })
+        .input(SendHolderEncryptedRefreshableInputValidator)
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = await sendHolderEncryptedRefreshableCredential({
+                issuerProfile: profile,
+                handoff: input.handoff,
+                boostUri: input.boostUri,
+                skipNotification: input.skipNotification,
+                domain: ctx.domain,
+            });
+
+            return uri;
+        }),
+
+    /** Issuer-only: the current recipient set a holder-mode handoff must encrypt to. */
+    getEncryptionRecipients: credentialRefreshRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credential-refresh/encryption-recipients',
+                tags: ['Credential Refresh'],
+                summary: 'Get the current holder-mode encryption recipients',
+                description:
+                    'Returns the current key-agreement verification-method ids (holder + managers) a holder-mode handoff must encrypt to. Used after a RECIPIENTS_CHANGED conflict.',
+            },
+            requiredScope: 'credentials:read',
+        })
+        .input(GetEncryptionRecipientsInputValidator)
+        .output(EncryptionRecipientsResultValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const recipientKeyIds = await getCurrentEncryptionRecipients({
+                issuerProfile: profile,
+                refreshId: input.refreshId,
+            });
+
+            return { recipientKeyIds };
+        }),
+
     publishCredentialRefresh: credentialRefreshRoute
         .meta({
             openapi: {
@@ -266,6 +335,38 @@ export const credentialRefreshesRouter = t.router({
             return publishCredentialRefresh({
                 issuerProfile: profile,
                 input: input as PublishCredentialRefreshInput,
+                domain: ctx.domain,
+                branding: ctx.tenant?.emailBranding,
+            });
+        }),
+
+    /**
+     * Holder-mode counterpart of `publishCredentialRefresh`: a separate route, for the
+     * same reason as `sendHolderEncryptedRefreshable`. `PublishCredentialRefreshInputValidator`
+     * has no signing-authority equivalent for a handoff — a holder aggregate rejects
+     * signing-authority publication outright (`publishCredentialRefresh` enforces this).
+     */
+    publishHolderEncryptedRefreshable: credentialRefreshRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/credential-refresh/publish-holder-encrypted',
+                tags: ['Credential Refresh'],
+                summary: 'Publish a holder-mode (student-only encrypted) refresh version',
+                description:
+                    'Publishes a new immutable version from an already-encrypted handoff and atomically advances the refresh head. `notify` replaces server-inferred materiality.',
+            },
+            requiredScope: 'credentials:write',
+        })
+        .input(PublishHolderEncryptedRefreshInputValidator)
+        .output(PublishCredentialRefreshResultValidator)
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            return publishHolderEncryptedRefreshableCredential({
+                issuerProfile: profile,
+                input,
                 domain: ctx.domain,
                 branding: ctx.tenant?.emailBranding,
             });

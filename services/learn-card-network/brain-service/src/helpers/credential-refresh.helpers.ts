@@ -5,14 +5,21 @@ import { z } from 'zod';
 import {
     VC,
     type AllocateCredentialRefreshResult,
+    type BitstringStatusListEntry,
     type CredentialRefreshSigningMode,
+    type CredentialRefreshUpdateReason,
+    type CredentialStatus,
+    type HolderEncryptedHandoff,
+    type JWE,
     type ManagedCredentialRefreshReceipt,
     type ManagedCredentialRefreshService,
     type PublishCredentialRefreshInput,
     type PublishCredentialRefreshNotification,
     type PublishCredentialRefreshResult,
+    type PublishHolderEncryptedRefreshInput,
 } from '@learncard/types';
 import {
+    assertExactJweRecipients,
     getCredentialEffectiveTime,
     getBitstringStatusListEntries,
     getCredentialIssuerId,
@@ -50,7 +57,7 @@ import { BindParam, QueryBuilder } from 'neogma';
 import { runAudienceMutation } from '@accesslayer/consentflowcontract/relationships/recipients';
 import { termsReferralSnapshotCypher } from './consent-referral.helpers';
 
-import { createDagJweForRecipients, getLearnCard } from './learnCard.helpers';
+import { createDagJweForRecipients, getKeyAgreementKeyId, getLearnCard } from './learnCard.helpers';
 import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import {
@@ -101,6 +108,8 @@ export type AllocateCredentialRefreshParams = {
     holderDid: string;
     credentialId: string;
     domain: string;
+    /** Pins the aggregate to student-only encryption (LC-2345). Omit for network mode. */
+    encryptionMode?: 'holder';
 };
 
 /**
@@ -111,7 +120,8 @@ export type AllocateCredentialRefreshParams = {
 export const allocateCredentialRefresh = async (
     params: AllocateCredentialRefreshParams
 ): Promise<AllocateCredentialRefreshResult> => {
-    const { issuerProfile, holderProfile, holderDid, credentialId, domain } = params;
+    const { issuerProfile, holderProfile, holderDid, credentialId, domain, encryptionMode } =
+        params;
 
     const refreshId = generateRefreshId();
     const now = new Date().toISOString();
@@ -133,6 +143,7 @@ export const allocateCredentialRefresh = async (
         currentVersion: 1,
         createdAt: now,
         updatedAt: now,
+        ...(encryptionMode ? { encryptionMode } : {}),
     };
 
     await neogma.queryRunner.run(
@@ -531,97 +542,83 @@ const getHolderEncryptionRecipients = async (holderProfile: ProfileType): Promis
 };
 
 /**
- * Binds the signed original credential to a previously allocated refresh aggregate.
- *
- * The plaintext VC is handled only within this request: its proof is verified and
- * its invariants are checked against the allocation, then it is encrypted to the
- * intended holder and only the resulting JWE is persisted. Creates the normal
- * CREDENTIAL_SENT relationship plus ROOT/HEAD bindings and records version 1.
+ * Current key-agreement verification-method ids (LC-2345 holder mode): the same
+ * holder + managers as {@link getHolderEncryptionRecipients}, resolved to the exact
+ * `kid`s a DAG-JWE must carry. Recomputed on every call so a manager change is
+ * reflected immediately — callers compare this against a handoff's JWE recipients
+ * (`assertExactJweRecipients`) rather than trusting a previously-prepared set.
  */
-export const sendRefreshableCredential = async (
-    params: SendRefreshableCredentialParams
-): Promise<SendRefreshableCredentialResult> => {
+export const getHolderEncryptionRecipientKeyIds = async (
+    holderProfile: ProfileType
+): Promise<string[]> => {
+    const dids = await getHolderEncryptionRecipients(holderProfile);
+
+    return Promise.all(dids.map(did => getKeyAgreementKeyId(did)));
+};
+
+/**
+ * True when `issuerDid` is an identity `issuerProfile` controls: either its internal
+ * controller did:key or its public network did:web. Both are legitimate on version 1
+ * of a managed credential (see {@link sendRefreshableCredential}); later versions must
+ * match whichever one version 1 actually used.
+ */
+export const isControlledIssuerDid = (
+    issuerDid: string,
+    issuerProfile: ProfileType,
+    domain: string
+): boolean => [issuerProfile.did, getDidWeb(domain, issuerProfile.profileId)].includes(issuerDid);
+
+/**
+ * Shared delivery tail for version 1 of a managed credential, common to network mode
+ * (plaintext checked and encrypted in {@link sendRefreshableCredential}) and holder
+ * mode (already-encrypted handoff checked in {@link sendHolderEncryptedRefreshableCredential}):
+ * binds the public status entries, stores the JWE as the Credential, creates the
+ * ROOT/HEAD/CREDENTIAL_SENT bindings (and any consent-flow transaction) in one
+ * transaction, resolves initial-send races, and sends the (generic-copy) initial
+ * notification exactly once.
+ */
+const deliverManagedRefreshVersion1Credential = async (params: {
+    refreshId: string;
+    issuerProfile: ProfileType;
+    holderProfile: ProfileType;
+    aggregate: CredentialRefreshRecord;
+    credentialIssuerDid: string;
+    statusEntries: BitstringStatusListEntry[];
+    credentialStatus: CredentialStatus | CredentialStatus[] | undefined;
+    jwe: JWE;
+    materialDigest: string;
+    credentialStatusDigest: string;
+    credentialSubjectDigest: string | null;
+    boostUri?: string;
+    skipNotification: boolean;
+    activityId?: string;
+    integrationId?: string;
+    contractTerms?: DbTermsType;
+    domain: string;
+}): Promise<SendRefreshableCredentialResult> => {
     const {
-        issuerProfile,
         refreshId,
-        credential,
+        issuerProfile,
+        holderProfile,
+        aggregate,
+        credentialIssuerDid,
+        statusEntries,
+        credentialStatus,
+        jwe,
+        materialDigest: rootMaterialDigest,
+        credentialStatusDigest,
+        credentialSubjectDigest,
         boostUri,
-        skipNotification = false,
+        skipNotification,
         activityId,
         integrationId,
         contractTerms,
         domain,
     } = params;
 
-    const aggregate = await getCredentialRefresh(refreshId);
-
-    if (!aggregate) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
-    }
-
-    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
-        throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'Profile did not allocate this credential refresh',
-        });
-    }
-
-    if (
-        !aggregate.holderDid ||
-        aggregate.state === 'pending_holder' ||
-        aggregate.inboxCredentialId
-    ) {
-        throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'Inbox refresh must be bound through its verified claim flow',
-        });
-    }
-
-    if (credential.id !== aggregate.credentialId) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential ID does not match the allocated refresh',
-        });
-    }
-
-    const credentialIssuerDid = getCredentialIssuerId(credential);
-    const publicIssuerDid = getDidWeb(domain, issuerProfile.profileId);
-
-    // A profile controls both its internal controller did:key and its public network
-    // did:web. The network plugin normally issues with did:web, while lower-level
-    // callers may legitimately issue with the controller DID. Bind the aggregate to
-    // whichever controlled identity appears on version 1; later versions must match
-    // that exact normalized issuer.
-    if (
-        !credentialIssuerDid ||
-        ![issuerProfile.did, publicIssuerDid].includes(credentialIssuerDid)
-    ) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential issuer does not match the allocated refresh',
-        });
-    }
-
-    if (
-        !aggregate.holderDid ||
-        !getCredentialSubjectIds(credential).includes(aggregate.holderDid)
-    ) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential subject does not match the intended holder',
-        });
-    }
-
-    if (!hasAllocatedRefreshService(credential, refreshId, domain)) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Credential does not contain the allocated refresh service',
-        });
-    }
-
-    // Metadata-only issuance receipt (LC-2198 decision 2): populated from the actual
-    // signed credential and the validated allocation. It deliberately excludes all
-    // credential claims, subject bodies, plaintext VC content, and JWE payloads.
+    // Metadata-only issuance receipt (LC-2198 decision 2): populated from the
+    // validated allocation. It deliberately excludes all credential claims, subject
+    // bodies, plaintext VC content, and JWE payloads.
     const buildReceipt = (): ManagedCredentialRefreshReceipt => ({
         refreshId,
         refreshService: {
@@ -632,18 +629,10 @@ export const sendRefreshableCredential = async (
         credentialId: aggregate.credentialId,
         issuerDid: credentialIssuerDid,
         holderDid: aggregate.holderDid!,
-        ...(credential.credentialStatus !== undefined && credential.credentialStatus !== null
-            ? { credentialStatus: credential.credentialStatus }
+        ...(credentialStatus !== undefined && credentialStatus !== null
+            ? { credentialStatus }
             : {}),
     });
-
-    const holderProfile = aggregate.holderProfileId
-        ? await getProfileByProfileId(aggregate.holderProfileId)
-        : null;
-
-    if (!holderProfile) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
-    }
 
     if (await isRelationshipBlocked(issuerProfile, holderProfile)) {
         throw new TRPCError({
@@ -668,30 +657,16 @@ export const sendRefreshableCredential = async (
         });
     }
 
-    await verifyManagedRefreshProof((await getLearnCard()).invoke, credential, publicIssuerDid);
-
-    const rootMaterialDigest = computeCredentialMaterialDigest(
-        credential as unknown as Record<string, unknown>
-    );
-    const credentialStatusDigest = computeCredentialStatusDigest(
-        (credential as unknown as Record<string, unknown>).credentialStatus
-    );
-
     const existingRoot = await getInitialRefreshRoot(refreshId);
 
     if (existingRoot) {
         assertInitialCredentialMatches(
             existingRoot,
             rootMaterialDigest,
-            credential.credentialStatus,
+            credentialStatus,
             boost?.id
         );
-        await bindRefreshStatusEntries(
-            refreshId,
-            getBitstringStatusListEntries(credential),
-            issuerProfile.profileId,
-            domain
-        );
+        await bindRefreshStatusEntries(refreshId, statusEntries, issuerProfile.profileId, domain);
         const rootId = await ensureInitialRefreshRelationships({
             refreshId,
             issuerProfileId: issuerProfile.profileId,
@@ -724,19 +699,7 @@ export const sendRefreshableCredential = async (
         return { uri, receipt: buildReceipt() };
     }
 
-    await bindRefreshStatusEntries(
-        refreshId,
-        getBitstringStatusListEntries(credential),
-        issuerProfile.profileId,
-        domain
-    );
-
-    // Holder-side encryption only (never the brain DID): the holder's did:key plus its
-    // managers' did:keys — see getHolderEncryptionRecipients.
-    const jwe = await createDagJweForRecipients(
-        credential,
-        await getHolderEncryptionRecipients(holderProfile)
-    );
+    await bindRefreshStatusEntries(refreshId, statusEntries, issuerProfile.profileId, domain);
 
     const credentialInstance = await storeCredential(jwe);
 
@@ -758,9 +721,9 @@ export const sendRefreshableCredential = async (
             now,
             credentialIssuerDid,
             materialDigest: rootMaterialDigest,
-            credentialSubjectDigest: computeCredentialSubjectDigest(credential.credentialSubject),
+            credentialSubjectDigest,
             credentialStatusDigest,
-            credentialStatusBinding: JSON.stringify(credential.credentialStatus ?? null),
+            credentialStatusBinding: JSON.stringify(credentialStatus ?? null),
             initialNotificationSuppressed: skipNotification,
         };
         const bindQuery = contractTerms
@@ -879,7 +842,7 @@ export const sendRefreshableCredential = async (
         assertInitialCredentialMatches(
             concurrentlyBoundRoot,
             rootMaterialDigest,
-            credential.credentialStatus,
+            credentialStatus,
             boost?.id
         );
 
@@ -931,6 +894,266 @@ export const sendRefreshableCredential = async (
     });
 
     return { uri, receipt: buildReceipt() };
+};
+
+/**
+ * Binds the signed original credential to a previously allocated refresh aggregate.
+ *
+ * The plaintext VC is handled only within this request: its proof is verified and
+ * its invariants are checked against the allocation, then it is encrypted to the
+ * intended holder and only the resulting JWE is persisted via the shared delivery
+ * tail (also used by holder-mode sends, which never see plaintext).
+ */
+export const sendRefreshableCredential = async (
+    params: SendRefreshableCredentialParams
+): Promise<SendRefreshableCredentialResult> => {
+    const {
+        issuerProfile,
+        refreshId,
+        credential,
+        boostUri,
+        skipNotification = false,
+        activityId,
+        integrationId,
+        contractTerms,
+        domain,
+    } = params;
+
+    const aggregate = await getCredentialRefresh(refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    // A holder-mode aggregate (LC-2345) never accepts a plaintext credential: it was
+    // prepared for an encrypted handoff and its recipient set was published instead
+    // of being used here to encrypt.
+    if (aggregate.encryptionMode === 'holder') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'This credential refresh uses holder-mode encryption; send the encrypted handoff via credentialRefresh.sendHolderEncryptedRefreshable instead.',
+        });
+    }
+
+    if (
+        !aggregate.holderDid ||
+        aggregate.state === 'pending_holder' ||
+        aggregate.inboxCredentialId
+    ) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Inbox refresh must be bound through its verified claim flow',
+        });
+    }
+
+    if (credential.id !== aggregate.credentialId) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential ID does not match the allocated refresh',
+        });
+    }
+
+    const credentialIssuerDid = getCredentialIssuerId(credential);
+    const publicIssuerDid = getDidWeb(domain, issuerProfile.profileId);
+
+    // A profile controls both its internal controller did:key and its public network
+    // did:web. The network plugin normally issues with did:web, while lower-level
+    // callers may legitimately issue with the controller DID. Bind the aggregate to
+    // whichever controlled identity appears on version 1; later versions must match
+    // that exact normalized issuer.
+    if (
+        !credentialIssuerDid ||
+        !isControlledIssuerDid(credentialIssuerDid, issuerProfile, domain)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential issuer does not match the allocated refresh',
+        });
+    }
+
+    if (
+        !aggregate.holderDid ||
+        !getCredentialSubjectIds(credential).includes(aggregate.holderDid)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    if (!hasAllocatedRefreshService(credential, refreshId, domain)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential does not contain the allocated refresh service',
+        });
+    }
+
+    const holderProfile = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    if (!holderProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+    }
+
+    await verifyManagedRefreshProof((await getLearnCard()).invoke, credential, publicIssuerDid);
+
+    const rootMaterialDigest = computeCredentialMaterialDigest(
+        credential as unknown as Record<string, unknown>
+    );
+    const credentialStatusDigest = computeCredentialStatusDigest(
+        (credential as unknown as Record<string, unknown>).credentialStatus
+    );
+
+    // Holder-side encryption only (never the brain DID): the holder's did:key plus its
+    // managers' did:keys — see getHolderEncryptionRecipients.
+    const jwe = await createDagJweForRecipients(
+        credential,
+        await getHolderEncryptionRecipients(holderProfile)
+    );
+
+    return deliverManagedRefreshVersion1Credential({
+        refreshId,
+        issuerProfile,
+        holderProfile,
+        aggregate,
+        credentialIssuerDid,
+        statusEntries: getBitstringStatusListEntries(credential),
+        credentialStatus: credential.credentialStatus,
+        jwe,
+        materialDigest: rootMaterialDigest,
+        credentialStatusDigest,
+        credentialSubjectDigest: computeCredentialSubjectDigest(credential.credentialSubject),
+        boostUri,
+        skipNotification,
+        activityId,
+        integrationId,
+        contractTerms,
+        domain,
+    });
+};
+
+export type SendHolderEncryptedRefreshableCredentialParams = {
+    issuerProfile: ProfileType;
+    handoff: HolderEncryptedHandoff;
+    boostUri?: string;
+    skipNotification?: boolean;
+    domain: string;
+};
+
+/**
+ * Holder-mode counterpart of {@link sendRefreshableCredential} (LC-2345): the
+ * credential never reaches this process in plaintext. Every invariant that would
+ * normally be read off the signed VC is instead checked against the public fields of
+ * the handoff and the allocation; the JWE's recipient `kid`s must exactly equal the
+ * holder's current encryption recipients (see `getHolderEncryptionRecipientKeyIds`).
+ * Proof and refreshService verification are the receiving device's responsibility
+ * (`ingestManagedCredential`) — they are exactly what the server cannot check here.
+ */
+export const sendHolderEncryptedRefreshableCredential = async (
+    params: SendHolderEncryptedRefreshableCredentialParams
+): Promise<SendRefreshableCredentialResult> => {
+    const { issuerProfile, handoff, boostUri, skipNotification = false, domain } = params;
+
+    const aggregate = await getCredentialRefresh(handoff.refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    if (aggregate.encryptionMode !== 'holder') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'This credential refresh was not prepared for holder-mode encryption; use credentialRefresh.sendRefreshableCredential instead.',
+        });
+    }
+
+    if (
+        !aggregate.holderDid ||
+        aggregate.state === 'pending_holder' ||
+        aggregate.inboxCredentialId
+    ) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Inbox refresh must be bound through its verified claim flow',
+        });
+    }
+
+    if (handoff.credentialId !== aggregate.credentialId) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential ID does not match the allocated refresh',
+        });
+    }
+
+    if (handoff.holderDid !== aggregate.holderDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    if (!isControlledIssuerDid(handoff.issuerDid, issuerProfile, domain)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential issuer does not match the allocated refresh',
+        });
+    }
+
+    const holderProfile = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    if (!holderProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+    }
+
+    try {
+        assertExactJweRecipients(
+            handoff.jwe,
+            await getHolderEncryptionRecipientKeyIds(holderProfile)
+        );
+    } catch {
+        // A stale prepared set (a manager was added or removed since prepare) and a
+        // structurally wrong recipient set are indistinguishable to the server; both
+        // require the caller to refetch via `credentialRefresh.getEncryptionRecipients`.
+        throw new TRPCError({ code: 'CONFLICT', message: 'RECIPIENTS_CHANGED' });
+    }
+
+    return deliverManagedRefreshVersion1Credential({
+        refreshId: handoff.refreshId,
+        issuerProfile,
+        holderProfile,
+        aggregate,
+        credentialIssuerDid: handoff.issuerDid,
+        statusEntries: getBitstringStatusListEntries({
+            credentialStatus: handoff.credentialStatus,
+        }),
+        credentialStatus: handoff.credentialStatus,
+        jwe: handoff.jwe,
+        materialDigest: computeRefreshEtag(JSON.stringify(handoff.jwe)),
+        credentialStatusDigest: computeCredentialStatusDigest(handoff.credentialStatus),
+        credentialSubjectDigest: null,
+        boostUri,
+        skipNotification,
+        domain,
+    });
 };
 
 // --- Publication (LC-2135) -----------------------------------------------------
@@ -1162,6 +1385,135 @@ export type PublishCredentialRefreshParams = {
  * The version chain is advanced through the single-writer compare-and-advance in
  * the access layer; losers of a concurrent race receive CONFLICT and may retry.
  */
+/**
+ * Shared publish tail, common to network mode ({@link publishCredentialRefresh}) and
+ * holder mode ({@link publishHolderEncryptedRefreshableCredential}): advances the
+ * aggregate head through the single-writer compare-and-advance, resolves
+ * conflict/replay, and delivers the notification decision the caller already made
+ * (server-inferred materiality for network mode, the issuer's explicit `notify` for
+ * holder mode, which cannot compare encrypted content across versions).
+ */
+const advanceManagedRefreshVersion = async (params: {
+    refreshId: string;
+    issuerProfile: ProfileType;
+    aggregate: CredentialRefreshRecord;
+    encryptedCredential: string;
+    signingMode: CredentialRefreshSigningMode;
+    idempotencyKey?: string;
+    etag: string;
+    materialDigest?: string;
+    updateSummary?: string;
+    updateReason?: CredentialRefreshUpdateReason;
+    credentialDisplayName?: string;
+    effectiveAt?: string;
+    notification: PublishCredentialRefreshNotification;
+    notificationPendingAfterClaim: boolean;
+    holderProfile: ProfileType | null;
+    branding?: Partial<TenantBranding>;
+}): Promise<PublishCredentialRefreshResult> => {
+    const {
+        refreshId,
+        issuerProfile,
+        aggregate,
+        encryptedCredential,
+        signingMode,
+        idempotencyKey,
+        etag,
+        materialDigest,
+        updateSummary,
+        updateReason,
+        credentialDisplayName,
+        effectiveAt,
+        notification,
+        notificationPendingAfterClaim,
+        holderProfile,
+        branding,
+    } = params;
+
+    const notificationEvent = holderProfile
+        ? buildCredentialRefreshedNotification({
+              holderProfile,
+              issuerProfile,
+              refreshId,
+              version: aggregate.currentVersion + 1,
+          })
+        : undefined;
+
+    const advance = await advanceCredentialRefreshHead({
+        refreshId,
+        expectedVersion: aggregate.currentVersion,
+        expectedState: aggregate.state,
+        encryptedCredential,
+        signingMode,
+        idempotencyKey,
+        etag,
+        materialDigest,
+        updateSummary,
+        updateReason,
+        credentialDisplayName,
+        effectiveAt,
+        notificationOutcome: notification,
+        notificationId: notificationEvent?.notificationId,
+        notificationDeliveryKey: notificationEvent?.deliveryKey,
+        notificationCreatedAt: notificationEvent?.notifiedAt,
+        notificationPendingAfterClaim,
+    });
+
+    if (advance.status === 'conflict') {
+        // A concurrent publication advanced the head first; nothing was written.
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh was updated concurrently; retry the publication',
+        });
+    }
+
+    if (advance.status === 'replay') {
+        const replayed = await getCredentialRefreshVersion(refreshId, advance.version);
+
+        if (!replayed) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Credential refresh replay could not be resolved; retry the publication',
+            });
+        }
+
+        return {
+            refreshId,
+            version: replayed.version,
+            publishedAt: replayed.publishedAt,
+            notification: await resolveCredentialRefreshReplayNotification({
+                version: replayed,
+                aggregate,
+                issuerProfile,
+                branding,
+            }),
+        };
+    }
+
+    let deliveredNotification = notification;
+
+    if (notification === 'queued') {
+        const persistedVersion = await getCredentialRefreshVersion(refreshId, advance.version);
+
+        deliveredNotification =
+            persistedVersion && holderProfile
+                ? await deliverCredentialRefreshNotification({
+                      version: persistedVersion,
+                      issuerProfile,
+                      holderProfile,
+                      branding,
+                  })
+                : 'delivery-failed';
+    }
+
+    return {
+        refreshId,
+        version: advance.version,
+        publishedAt: advance.publishedAt ?? new Date().toISOString(),
+        notification: deliveredNotification,
+    };
+};
+
 export const publishCredentialRefresh = async (
     params: PublishCredentialRefreshParams
 ): Promise<PublishCredentialRefreshResult> => {
@@ -1179,6 +1531,16 @@ export const publishCredentialRefresh = async (
         throw new TRPCError({
             code: 'UNAUTHORIZED',
             message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    // A holder-mode aggregate never accepts a plaintext or signing-authority
+    // publication (LC-2345): both would require the server to process plaintext.
+    if (aggregate.encryptionMode === 'holder') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'This credential refresh uses holder-mode encryption; publish the encrypted handoff via credentialRefresh.publishHolderEncryptedRefreshable instead.',
         });
     }
 
@@ -1356,14 +1718,6 @@ export const publishCredentialRefresh = async (
                 ? await getProfileByProfileId(aggregate.holderProfileId)
                 : null
             : null;
-    const notificationEvent = holderProfile
-        ? buildCredentialRefreshedNotification({
-              holderProfile,
-              issuerProfile,
-              refreshId,
-              version: aggregate.currentVersion + 1,
-          })
-        : undefined;
 
     const holderProfileForEncryption = aggregate.holderProfileId
         ? await getProfileByProfileId(aggregate.holderProfileId)
@@ -1377,80 +1731,245 @@ export const publishCredentialRefresh = async (
             : [aggregate.holderDid!]
     );
     const encryptedCredential = JSON.stringify(jwe);
-    const etag = computeRefreshEtag(encryptedCredential);
 
-    const advance = await advanceCredentialRefreshHead({
+    return advanceManagedRefreshVersion({
         refreshId,
-        expectedVersion: aggregate.currentVersion,
-        expectedState: aggregate.state,
+        issuerProfile,
+        aggregate,
         encryptedCredential,
         signingMode,
         idempotencyKey,
-        etag,
+        etag: computeRefreshEtag(encryptedCredential),
         materialDigest: nextDigest,
         updateSummary,
         updateReason,
         credentialDisplayName,
         effectiveAt:
             effectiveTime !== undefined ? new Date(effectiveTime).toISOString() : undefined,
-        notificationOutcome: notification,
-        notificationId: notificationEvent?.notificationId,
-        notificationDeliveryKey: notificationEvent?.deliveryKey,
-        notificationCreatedAt: notificationEvent?.notifiedAt,
+        notification,
         notificationPendingAfterClaim,
+        holderProfile,
+        branding,
     });
+};
 
-    if (advance.status === 'conflict') {
-        // A concurrent publication advanced the head first; nothing was written.
+export type PublishHolderEncryptedRefreshParams = {
+    issuerProfile: ProfileType;
+    input: PublishHolderEncryptedRefreshInput;
+    domain: string;
+    /** Optional tenant branding for the update email; defaults to LearnCard. */
+    branding?: Partial<TenantBranding>;
+};
+
+/**
+ * Holder-mode counterpart of {@link publishCredentialRefresh} (LC-2345): a handoff
+ * replaces the signed/unsigned credential, the issuer must equal version 1's exactly
+ * (no signing-authority publication is possible for holder aggregates — it would
+ * require the server to process plaintext), and `notify` replaces server-inferred
+ * materiality, which requires comparing decrypted content across versions.
+ */
+export const publishHolderEncryptedRefreshableCredential = async (
+    params: PublishHolderEncryptedRefreshParams
+): Promise<PublishCredentialRefreshResult> => {
+    const { issuerProfile, input, domain, branding } = params;
+    const { handoff, notify, updateSummary, updateReason, idempotencyKey } = input;
+    const refreshId = handoff.refreshId;
+
+    const aggregate = await getCredentialRefresh(refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
         throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'Credential refresh was updated concurrently; retry the publication',
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
         });
     }
 
-    if (advance.status === 'replay') {
-        const replayed = await getCredentialRefreshVersion(refreshId, advance.version);
+    if (aggregate.encryptionMode !== 'holder') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+                'This credential refresh was not prepared for holder-mode encryption; use credentialRefresh.publishCredentialRefresh instead.',
+        });
+    }
 
-        if (!replayed) {
-            throw new TRPCError({
-                code: 'CONFLICT',
-                message: 'Credential refresh replay could not be resolved; retry the publication',
-            });
-        }
+    if (aggregate.inboxCredentialId) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Inbox refresh must be bound through its verified claim flow',
+        });
+    }
 
-        return {
+    const displayBoost = aggregate.boostId ? await getBoostById(aggregate.boostId) : null;
+    const credentialDisplayName = extractBoundedCredentialDisplayTitle(
+        getPublicBoostDisplayName(displayBoost)
+    );
+
+    if (aggregate.state === 'revoked') {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Credential refresh has been revoked' });
+    }
+
+    const canonicalLifecycle = await getCredentialRefreshCanonicalLifecycle(refreshId);
+
+    if (canonicalLifecycle?.revoked) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'Credential refresh has been revoked' });
+    }
+
+    if (idempotencyKey) {
+        const replayed = await getCredentialRefreshVersionByIdempotencyKey(
             refreshId,
-            version: replayed.version,
-            publishedAt: replayed.publishedAt,
-            notification: await resolveCredentialRefreshReplayNotification({
-                version: replayed,
-                aggregate,
-                issuerProfile,
-                branding,
-            }),
-        };
+            idempotencyKey
+        );
+
+        if (replayed) {
+            return {
+                refreshId,
+                version: replayed.version,
+                publishedAt: replayed.publishedAt,
+                notification: await resolveCredentialRefreshReplayNotification({
+                    version: replayed,
+                    aggregate,
+                    issuerProfile,
+                    branding,
+                }),
+            };
+        }
     }
 
-    let deliveredNotification = notification;
+    const head = await getCredentialRefreshHead(refreshId);
 
-    if (notification === 'queued') {
-        const persistedVersion = await getCredentialRefreshVersion(refreshId, advance.version);
-
-        deliveredNotification =
-            persistedVersion && holderProfile
-                ? await deliverCredentialRefreshNotification({
-                      version: persistedVersion,
-                      issuerProfile,
-                      holderProfile,
-                      branding,
-                  })
-                : 'delivery-failed';
+    if (!head) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'Credential refresh is not bound to a credential yet',
+        });
     }
 
-    return {
+    if (handoff.credentialId !== aggregate.credentialId) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential ID does not match the allocated refresh',
+        });
+    }
+
+    if (handoff.holderDid !== aggregate.holderDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential subject does not match the intended holder',
+        });
+    }
+
+    // Later versions must match the exact issuer identity version 1 bound — the same
+    // invariant assertRefreshVersionInvariants enforces for network mode.
+    if (handoff.issuerDid !== aggregate.issuerDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential issuer does not match the allocated refresh',
+        });
+    }
+
+    if (
+        !matchesCredentialStatusDigest(handoff.credentialStatus, aggregate.credentialStatusDigest)
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential status does not match the original credential',
+        });
+    }
+
+    await bindRefreshStatusEntries(
         refreshId,
-        version: advance.version,
-        publishedAt: advance.publishedAt ?? new Date().toISOString(),
-        notification: deliveredNotification,
-    };
+        getBitstringStatusListEntries({ credentialStatus: handoff.credentialStatus }),
+        aggregate.issuerProfileId,
+        domain
+    );
+
+    const holderProfile = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    if (!holderProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+    }
+
+    try {
+        assertExactJweRecipients(
+            handoff.jwe,
+            await getHolderEncryptionRecipientKeyIds(holderProfile)
+        );
+    } catch {
+        throw new TRPCError({ code: 'CONFLICT', message: 'RECIPIENTS_CHANGED' });
+    }
+
+    const notification: PublishCredentialRefreshNotification =
+        aggregate.state === 'active' ? (notify ? 'queued' : 'suppressed') : 'not-applicable';
+    const notificationPendingAfterClaim =
+        aggregate.state === 'awaiting_claim' &&
+        (head.notificationPendingAfterClaim === true || notify === true);
+    const notifiedHolderProfile =
+        notification === 'queued' || notificationPendingAfterClaim ? holderProfile : null;
+
+    const encryptedCredential = JSON.stringify(handoff.jwe);
+
+    return advanceManagedRefreshVersion({
+        refreshId,
+        issuerProfile,
+        aggregate,
+        encryptedCredential,
+        signingMode: 'issuer-signed',
+        idempotencyKey,
+        etag: computeRefreshEtag(encryptedCredential),
+        updateSummary,
+        updateReason,
+        credentialDisplayName,
+        notification,
+        notificationPendingAfterClaim,
+        holderProfile: notifiedHolderProfile,
+        branding,
+    });
+};
+
+export type GetCurrentEncryptionRecipientsParams = {
+    issuerProfile: ProfileType;
+    refreshId: string;
+};
+
+/** Issuer-only lookup backing `credentialRefresh.getEncryptionRecipients` (LC-2345). */
+export const getCurrentEncryptionRecipients = async (
+    params: GetCurrentEncryptionRecipientsParams
+): Promise<string[]> => {
+    const { issuerProfile, refreshId } = params;
+
+    const aggregate = await getCredentialRefresh(refreshId);
+
+    if (!aggregate) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
+    }
+
+    if (aggregate.issuerProfileId !== issuerProfile.profileId) {
+        throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Profile did not allocate this credential refresh',
+        });
+    }
+
+    if (aggregate.encryptionMode !== 'holder') {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'This credential refresh does not use holder-mode encryption',
+        });
+    }
+
+    const holderProfile = aggregate.holderProfileId
+        ? await getProfileByProfileId(aggregate.holderProfileId)
+        : null;
+
+    if (!holderProfile) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+    }
+
+    return getHolderEncryptionRecipientKeyIds(holderProfile);
 };

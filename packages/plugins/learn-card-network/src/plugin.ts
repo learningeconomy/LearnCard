@@ -15,6 +15,7 @@ import {
     VC,
     BitstringCredentialStatusEntry,
     BitstringStatusListEntry,
+    BitstringStatusListEntryValidator,
     BitstringCredentialStatusPurpose,
     AllocateCredentialRefreshResult,
     ManagedCredentialRefreshReceipt,
@@ -23,6 +24,13 @@ import {
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
     ACT_AS_HEADER,
+    HolderEncryptedHandoffValidator,
+    HolderEncryptedHandoff,
+    SendHolderEncryptedRefreshableInput,
+    PublishHolderEncryptedRefreshInput,
+    GetEncryptionRecipientsInput,
+    EncryptionRecipientsResult,
+    PublishCredentialRefreshResult,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -35,6 +43,8 @@ import {
     materializeCredentialFields,
     isEncrypted,
     resolveStorageReadResult,
+    assertExactJweRecipients,
+    assertManagedCredentialBinding,
 } from '@learncard/helpers';
 import Mustache from 'mustache';
 
@@ -43,6 +53,8 @@ import {
     LearnCardNetworkPlugin,
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
+    SendBoostInputWithEncryption,
+    PublishHolderEncryptedRefreshableOptions,
 } from './types';
 
 /**
@@ -534,6 +546,120 @@ const buildManagedRefreshReceipt = (
               }
             : {}),
     };
+};
+
+/**
+ * Narrow local view of the LC-2345 holder-mode credential-refresh routes, typed
+ * directly from the committed `@learncard/types` wire contracts. Kept separate from
+ * the generated `LCNClient` type so this plugin compiles against the contract
+ * regardless of router rollout order.
+ */
+type HolderEncryptionClient = {
+    sendHolderEncryptedRefreshable: {
+        mutate: (input: SendHolderEncryptedRefreshableInput) => Promise<string>;
+    };
+    publishHolderEncryptedRefreshable: {
+        mutate: (
+            input: PublishHolderEncryptedRefreshInput
+        ) => Promise<PublishCredentialRefreshResult>;
+    };
+    getEncryptionRecipients: {
+        query: (input: GetEncryptionRecipientsInput) => Promise<EncryptionRecipientsResult>;
+    };
+};
+
+/** Thrown when `encryption: 'holder'` was requested but the server prepare response has no `recipientKeyIds`. */
+const HOLDER_MODE_PREPARE_UNSUPPORTED =
+    'Server does not support holder-mode encryption (missing recipientKeyIds from prepareRefreshableSend); refusing to fall back to network-mode plaintext delivery.';
+
+/**
+ * Reads `recipientKeyIds` off a `prepareRefreshableSend` result through a local type
+ * widening: the wire contract (`@learncard/types`) already carries this field (A3
+ * step 6), but a given resolved build of the generated brain client may not yet
+ * reflect it.
+ */
+const getPreparedRecipientKeyIds = (prepared: unknown): string[] | undefined =>
+    (prepared as { recipientKeyIds?: string[] }).recipientKeyIds;
+
+/**
+ * True only for the server's holder-mode manager-set conflict (`CONFLICT` paired
+ * with the literal `RECIPIENTS_CHANGED` message the send/publish/recipients routes
+ * throw when the manager set changed since prepare).
+ */
+const isRecipientsChangedError = (error: unknown): boolean => {
+    const code = (error as { data?: { code?: string } } | undefined)?.data?.code;
+    const message = (error as { message?: unknown } | undefined)?.message;
+
+    return code === 'CONFLICT' && message === 'RECIPIENTS_CHANGED';
+};
+
+/** Extracts the DID from a key-agreement verification-method id (`did:...#fragment`). */
+const didFromRecipientKeyId = (keyId: string): string => {
+    const [did] = keyId.split('#');
+
+    if (!did) throw new Error(`Invalid recipient key id: ${keyId}`);
+
+    return did;
+};
+
+/**
+ * Encrypts an already-signed managed-refresh credential exactly to `recipientKeyIds`
+ * and returns the ciphertext-only handoff. Carries no credential content,
+ * templateData, or display-derived claim value outside the JWE itself — only the
+ * public bindings `HolderEncryptedHandoffValidator` allows.
+ */
+type HolderEncryptedHandoffBindings = {
+    refreshId: string;
+    credentialId: string;
+    holderDid: string;
+    issuerDid: string;
+    credentialStatus: BitstringStatusListEntry | BitstringStatusListEntry[];
+};
+
+const buildHolderEncryptedHandoff = async (
+    learnCard: { invoke: Pick<LearnCardNetworkPluginDependentMethods, 'createDagJweExact'> },
+    signedCredential: VC,
+    bindings: HolderEncryptedHandoffBindings,
+    recipientKeyIds: string[]
+): Promise<HolderEncryptedHandoff> => {
+    const recipientDids = recipientKeyIds.map(didFromRecipientKeyId);
+    const jwe = await learnCard.invoke.createDagJweExact?.(signedCredential, recipientDids);
+
+    if (!jwe) {
+        throw new Error(
+            'encryption: "holder" requires the Encryption plugin (createDagJweExact), which this wallet does not have.'
+        );
+    }
+
+    assertExactJweRecipients(jwe, recipientKeyIds);
+
+    return HolderEncryptedHandoffValidator.parse({ ...bindings, jwe });
+};
+
+/**
+ * Delivers a holder-encrypted handoff, retrying exactly once with a freshly fetched
+ * recipient set on `RECIPIENTS_CHANGED`. Any other failure, or a second
+ * `RECIPIENTS_CHANGED`, propagates without a further retry.
+ */
+const deliverHolderEncryptedHandoff = async <T>(
+    holderClient: HolderEncryptionClient,
+    refreshId: string,
+    recipientKeyIds: string[],
+    buildHandoff: (recipientKeyIds: string[]) => Promise<HolderEncryptedHandoff>,
+    deliver: (handoff: HolderEncryptedHandoff) => Promise<T>
+): Promise<T> => {
+    const handoff = await buildHandoff(recipientKeyIds);
+
+    try {
+        return await deliver(handoff);
+    } catch (error) {
+        if (!isRecipientsChangedError(error)) throw error;
+
+        const fresh = await holderClient.getEncryptionRecipients.query({ refreshId });
+        const retryHandoff = await buildHandoff(fresh.recipientKeyIds);
+
+        return deliver(retryHandoff);
+    }
 };
 
 export * from './types';
@@ -1804,6 +1930,138 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
                 return client.credentialRefresh.getReceipt.query(input);
             },
+            publishHolderEncryptedRefreshable: async (_learnCard, receipt, credential, options) => {
+                await ensureUser();
+
+                if (!('issueCredential' in _learnCard.invoke)) {
+                    throw new Error(
+                        'Holder-mode publishing requires local signing capability, which this wallet does not have.'
+                    );
+                }
+
+                if (!('createDagJweExact' in _learnCard.invoke)) {
+                    throw new Error(
+                        'Holder-mode publishing requires the Encryption plugin (createDagJweExact), which this wallet does not have.'
+                    );
+                }
+
+                if (receipt.credentialStatus === undefined) {
+                    throw new Error(
+                        "Holder-mode publishing requires the original send receipt's credentialStatus binding."
+                    );
+                }
+
+                // Publishing reuses version 1's exact status entries (A1): no new
+                // allocation. Narrowed via the validator so the signing step below gets a
+                // real `BitstringStatusListEntry[]`, not the looser generic `CredentialStatus`.
+                const boundCredentialStatus = BitstringStatusListEntryValidator.array().parse(
+                    Array.isArray(receipt.credentialStatus)
+                        ? receipt.credentialStatus
+                        : [receipt.credentialStatus]
+                );
+
+                // Clone before preparation so template rendering never mutates the
+                // caller's claims.
+                let boost: UnsignedVC = JSON.parse(JSON.stringify(credential));
+                const boostString = JSON.stringify(boost);
+                const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
+
+                if (options.templateData && Object.keys(options.templateData).length > 0) {
+                    try {
+                        const rendered = renderTemplateJson(boostString, options.templateData);
+                        boost = JSON.parse(rendered);
+                        boost = appendTemplateEvidence(
+                            boost,
+                            options.templateData,
+                            allowAutoAppendEvidence
+                        );
+                    } catch (error) {
+                        throw new Error(
+                            `Failed to apply template data: ${
+                                error instanceof Error ? error.message : 'Unknown error'
+                            }`,
+                            { cause: error }
+                        );
+                    }
+                }
+
+                if (isVC2Format(boost)) {
+                    boost.validFrom = new Date().toISOString();
+                } else {
+                    boost.issuanceDate = new Date().toISOString();
+                }
+
+                boost.issuer = receipt.issuerDid;
+                boost.id = receipt.credentialId;
+
+                if (Array.isArray(boost.credentialSubject)) {
+                    boost.credentialSubject = boost.credentialSubject.map(subject => ({
+                        ...subject,
+                        id: receipt.holderDid,
+                    }));
+                } else {
+                    boost.credentialSubject = { ...boost.credentialSubject, id: receipt.holderDid };
+                }
+
+                boost = injectManagedRefreshService(boost, receipt.refreshService);
+
+                const signedCredential = await issueCredentialWithNetworkStatus(
+                    _learnCard,
+                    client,
+                    boost,
+                    undefined,
+                    boundCredentialStatus
+                );
+
+                const holderBindings: HolderEncryptedHandoffBindings = {
+                    refreshId: receipt.refreshId,
+                    credentialId: receipt.credentialId,
+                    holderDid: receipt.holderDid,
+                    issuerDid: receipt.issuerDid,
+                    credentialStatus:
+                        boundCredentialStatus.length === 1
+                            ? boundCredentialStatus[0]
+                            : boundCredentialStatus,
+                };
+
+                assertManagedCredentialBinding(signedCredential, {
+                    ...holderBindings,
+                    refreshService: receipt.refreshService,
+                    encryptionMode: 'holder',
+                });
+
+                const holderClient = client.credentialRefresh as unknown as HolderEncryptionClient;
+                const { recipientKeyIds } = await holderClient.getEncryptionRecipients.query({
+                    refreshId: receipt.refreshId,
+                });
+
+                return deliverHolderEncryptedHandoff(
+                    holderClient,
+                    receipt.refreshId,
+                    recipientKeyIds,
+                    keyIds =>
+                        buildHolderEncryptedHandoff(
+                            _learnCard,
+                            signedCredential,
+                            holderBindings,
+                            keyIds
+                        ),
+                    handoff =>
+                        holderClient.publishHolderEncryptedRefreshable.mutate({
+                            handoff,
+                            notify: options.notify,
+                            ...(options.updateSummary !== undefined
+                                ? { updateSummary: options.updateSummary }
+                                : {}),
+                            ...(options.updateReason !== undefined
+                                ? { updateReason: options.updateReason }
+                                : {}),
+                            ...(options.idempotencyKey !== undefined
+                                ? { idempotencyKey: options.idempotencyKey }
+                                : {}),
+                        })
+                );
+            },
             revokeBoostRecipient: async (
                 _learnCard,
                 boostUri,
@@ -2063,6 +2321,16 @@ export async function getLearnCardNetworkPlugin(
             send: async (_learnCard, input) => {
                 await ensureUser();
 
+                if (
+                    input.type === 'boost' &&
+                    input.encryption === 'holder' &&
+                    input.refresh !== true
+                ) {
+                    throw new Error(
+                        'encryption: "holder" requires refresh: true; holder-mode encryption is only defined for managed refresh sends.'
+                    );
+                }
+
                 if (input.type === 'boost' && input.refresh === true) {
                     // LC-2198: dedicated managed-refresh branch — evaluated BEFORE the
                     // ordinary local-signing / remote-DID / federation shortcuts so a
@@ -2070,6 +2338,25 @@ export async function getLearnCardNetworkPlugin(
                     // Inbox credentials stay unsigned until a verified claimant binds their DID.
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(input.recipient.replace(/[\s-]/g, ''));
+                    // LC-2345: holder (student-only) encryption is rejected client-side for
+                    // the two cases the server also rejects, so neither case ever reaches
+                    // the network — an inbox claimant isn't known yet to encrypt to, and a
+                    // caller-supplied signedCredential bypasses the local signing this mode
+                    // requires.
+                    const isHolderEncryption = input.encryption === 'holder';
+
+                    if (isHolderEncryption && (isEmail || isPhone)) {
+                        throw new Error(
+                            'encryption: "holder" does not support inbox (email or phone) recipients; use a profile ID or DID recipient instead.'
+                        );
+                    }
+
+                    if (isHolderEncryption && input.signedCredential) {
+                        throw new Error(
+                            'encryption: "holder" does not support signedCredential; the SDK must sign locally so the server never receives plaintext.'
+                        );
+                    }
+
                     const request = {
                         type: 'boost' as const,
                         recipient: input.recipient,
@@ -2087,6 +2374,18 @@ export async function getLearnCardNetworkPlugin(
                     if (isEmail || isPhone) return client.boost.send.mutate(request);
 
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
+
+                    if (isHolderEncryption && !canIssueLocally) {
+                        throw new Error(
+                            'encryption: "holder" requires local signing capability, which this wallet does not have.'
+                        );
+                    }
+
+                    if (isHolderEncryption && !('createDagJweExact' in _learnCard.invoke)) {
+                        throw new Error(
+                            'encryption: "holder" requires the Encryption plugin (createDagJweExact), which this wallet does not have.'
+                        );
+                    }
 
                     if (
                         canIssueLocally &&
@@ -2138,9 +2437,14 @@ export async function getLearnCardNetworkPlugin(
                             ...(input.idempotencyKey
                                 ? { idempotencyKey: input.idempotencyKey }
                                 : {}),
+                            ...(isHolderEncryption ? { encryption: 'holder' as const } : {}),
                         });
 
                         if (prepared.completed) return prepared.completed;
+
+                        if (isHolderEncryption && !getPreparedRecipientKeyIds(prepared)) {
+                            throw new Error(HOLDER_MODE_PREPARE_UNSUPPORTED);
+                        }
 
                         const boostString = JSON.stringify(boost);
                         const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
@@ -2213,20 +2517,89 @@ export async function getLearnCardNetworkPlugin(
                             prepared.statusEntries
                         );
 
-                        // Validated handoff: the server re-derives the refresh ID from the
-                        // signed service, re-validates ownership/holder/proof, records the
-                        // idempotency intent, and returns the canonical receipt.
-                        return client.boost.send.mutate({
-                            type: 'boost',
-                            recipient: input.recipient,
-                            display: input.display,
-                            contractUri: input.contractUri,
-                            integrationId: input.integrationId,
-                            idempotencyKey: input.idempotencyKey,
-                            templateUri: prepared.boostUri,
-                            signedCredential,
-                            refresh: true,
+                        if (!isHolderEncryption) {
+                            // Validated handoff: the server re-derives the refresh ID from
+                            // the signed service, re-validates ownership/holder/proof,
+                            // records the idempotency intent, and returns the canonical
+                            // receipt.
+                            return client.boost.send.mutate({
+                                type: 'boost',
+                                recipient: input.recipient,
+                                display: input.display,
+                                contractUri: input.contractUri,
+                                integrationId: input.integrationId,
+                                idempotencyKey: input.idempotencyKey,
+                                templateUri: prepared.boostUri,
+                                signedCredential,
+                                refresh: true,
+                            });
+                        }
+
+                        // LC-2345 holder mode: the signed credential never leaves this
+                        // process in plaintext from here on. Only its ciphertext (exactly
+                        // to the current holder + managers) and the public bindings already
+                        // disclosed by `prepared` cross the wire.
+                        //
+                        // `recipientKeyIds` is captured into a local immediately after the
+                        // guard (rather than re-reading `prepared.recipientKeyIds` below) so
+                        // the non-optional type holds across the later `await` calls.
+                        const initialRecipientKeyIds = getPreparedRecipientKeyIds(prepared);
+
+                        if (!initialRecipientKeyIds) {
+                            throw new Error(HOLDER_MODE_PREPARE_UNSUPPORTED);
+                        }
+
+                        if (!prepared.statusEntries || prepared.statusEntries.length === 0) {
+                            throw new Error(
+                                'Server did not bind status entries for this holder-mode send; refusing to send a managed credential without a public status binding.'
+                            );
+                        }
+
+                        const boundCredentialStatus =
+                            prepared.statusEntries.length === 1
+                                ? prepared.statusEntries[0]
+                                : prepared.statusEntries;
+                        const holderBindings = {
+                            refreshId: prepared.refreshId,
+                            credentialId: prepared.credentialId,
+                            holderDid: prepared.holderDid,
+                            issuerDid: _learnCard.id.did(),
+                            credentialStatus: boundCredentialStatus,
+                        };
+
+                        assertManagedCredentialBinding(signedCredential, {
+                            ...holderBindings,
+                            refreshService: prepared.refreshService,
+                            encryptionMode: 'holder',
                         });
+
+                        const holderClient =
+                            client.credentialRefresh as unknown as HolderEncryptionClient;
+                        const credentialUri = await deliverHolderEncryptedHandoff(
+                            holderClient,
+                            prepared.refreshId,
+                            initialRecipientKeyIds,
+                            recipientKeyIds =>
+                                buildHolderEncryptedHandoff(
+                                    _learnCard,
+                                    signedCredential,
+                                    holderBindings,
+                                    recipientKeyIds
+                                ),
+                            handoff =>
+                                holderClient.sendHolderEncryptedRefreshable.mutate({
+                                    handoff,
+                                    boostUri: prepared.boostUri,
+                                })
+                        );
+
+                        return {
+                            type: 'boost' as const,
+                            uri: prepared.boostUri,
+                            credentialUri,
+                            activityId: '',
+                            refresh: { ...holderBindings, refreshService: prepared.refreshService },
+                        };
                     }
 
                     // No local signing capability (or caller-supplied signedCredential,

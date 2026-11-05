@@ -132,6 +132,25 @@ export const HolderEncryptedHandoffValidator = z
     .strict();
 export type HolderEncryptedHandoff = z.infer<typeof HolderEncryptedHandoffValidator>;
 
+/** Delivers version 1 of a holder-mode (student-only encrypted) managed refresh. */
+export const SendHolderEncryptedRefreshableInputValidator = z.object({
+    handoff: HolderEncryptedHandoffValidator,
+    boostUri: z.string().optional(),
+    skipNotification: z.boolean().optional(),
+});
+export type SendHolderEncryptedRefreshableInput = z.infer<
+    typeof SendHolderEncryptedRefreshableInputValidator
+>;
+
+export const GetEncryptionRecipientsInputValidator = z.object({ refreshId: z.string().min(1) });
+export type GetEncryptionRecipientsInput = z.infer<typeof GetEncryptionRecipientsInputValidator>;
+
+/** Current key-agreement verification-method ids a holder-mode handoff must encrypt to. */
+export const EncryptionRecipientsResultValidator = z.object({
+    recipientKeyIds: z.array(z.string()),
+});
+export type EncryptionRecipientsResult = z.infer<typeof EncryptionRecipientsResultValidator>;
+
 /** Allocation metadata for deferred Inbox issuance. No holder is invented before claim. */
 export const InboxCredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.omit(
     { holderDid: true }
@@ -271,6 +290,31 @@ export const PublishCredentialRefreshResultValidator = z.object({
     publishedAt: z.string().min(1),
     notification: PublishCredentialRefreshNotificationValidator,
 });
+
+/**
+ * Publishes a version of a holder-mode aggregate: a handoff replaces the signed/unsigned
+ * credential, and `notify` replaces server-inferred materiality (the server cannot
+ * compare encrypted content across versions). Signing-authority publication is not
+ * supported for holder aggregates.
+ */
+export const PublishHolderEncryptedRefreshInputValidator = z.object({
+    handoff: HolderEncryptedHandoffValidator,
+    notify: z.boolean(),
+    updateSummary: z
+        .string()
+        .max(280)
+        .optional()
+        .describe(
+            'Public legacy update summary. Do not include private claims; prefer updateReason.'
+        ),
+    updateReason: CredentialRefreshUpdateReasonValidator.optional().describe(
+        'Public reason for this update'
+    ),
+    idempotencyKey: z.string().optional(),
+});
+export type PublishHolderEncryptedRefreshInput = z.infer<
+    typeof PublishHolderEncryptedRefreshInputValidator
+>;
 export type PublishCredentialRefreshResult = z.infer<
     typeof PublishCredentialRefreshResultValidator
 >;
