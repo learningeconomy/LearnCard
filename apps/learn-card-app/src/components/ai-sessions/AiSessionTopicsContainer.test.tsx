@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
     resetStore: vi.fn(),
     clearNewCreds: vi.fn(),
     replace: vi.fn(),
+    search: '',
     chatBotSelected: 'newTopic' as string | null,
     topicsLoading: false,
     existingTopics: [] as { uri: string }[],
@@ -18,7 +19,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('react-router-dom', () => ({
     useHistory: () => ({ replace: mocks.replace }),
-    useLocation: () => ({ search: '' }),
+    useLocation: () => ({ search: mocks.search }),
 }));
 
 vi.mock('../../paraglide/messages.js', () => ({ m: {} }));
@@ -75,6 +76,7 @@ vi.mock('../../stores/chatBotStore', () => ({
 describe('AiSessionTopicsContainer', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.search = '';
         mocks.chatBotSelected = 'newTopic';
         mocks.topicsLoading = false;
         mocks.existingTopics = [];
@@ -84,6 +86,19 @@ describe('AiSessionTopicsContainer', () => {
         render(<AiSessionTopicsContainer />);
 
         await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
+    });
+
+    it('opens the URL selector instead of a persisted previous session step', async () => {
+        mocks.search = '?shortCircuitStep=aiAppSelector';
+        mocks.chatBotSelected = 'newTopic';
+
+        render(<AiSessionTopicsContainer />);
+
+        await waitFor(() => expect(mocks.newModal).toHaveBeenCalledTimes(1));
+        const modal = mocks.newModal.mock.calls[0]![0] as ReactElement<{
+            shortCircuitStep: string;
+        }>;
+        expect(modal.props.shortCircuitStep).toBe('aiAppSelector');
     });
 
     it('waits for existing topics before opening the modal', async () => {
