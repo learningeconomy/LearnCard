@@ -8,6 +8,7 @@ import type { EscrowBlobStaleReason } from '@learncard/types';
 import { SoftwareEnclave } from './softwareEnclave';
 import { createRemoteEnclave } from './remoteEnclave';
 import { pinnedEnclaveCa } from './enclaveTrustAnchors';
+import { emitEnclaveFailureMetric } from './logFailure';
 import { EscrowUnavailableError, type EscrowEnclave } from './types';
 
 export * from './types';
@@ -17,6 +18,27 @@ export * from './notifications';
 
 let enclave: EscrowEnclave | undefined;
 let config: LcaApiEnvironment = environment;
+let remoteConfigMissingReported = false;
+
+/**
+ * Once per container: 'remote' mode without URL/token silently disables escrow
+ * (every escrow call answers 412). On 2026-11-04 a runtime-secrets sync dropped
+ * both keys and nothing said so; this makes it visible in logs and as
+ * `LearnCard/Escrow EnclaveFailure` with `Reason=remote_config_missing`.
+ * Never logs the values, only whether each is present.
+ */
+const reportRemoteConfigMissing = (): void => {
+    if (remoteConfigMissingReported) return;
+    remoteConfigMissingReported = true;
+    console.error(
+        '[escrow] ESCROW_ENCLAVE_MODE=remote but ESCROW_ENCLAVE_REMOTE_URL/TOKEN missing: escrow disabled',
+        {
+            hasUrl: Boolean(config.ESCROW_ENCLAVE_REMOTE_URL),
+            hasToken: Boolean(config.ESCROW_ENCLAVE_REMOTE_TOKEN),
+        }
+    );
+    emitEnclaveFailureMetric('remote_config_missing');
+};
 
 // 'software' config validity is enforced at environment-parse time (see
 // config/environment.ts), so reaching that branch always means it's ready.
@@ -34,15 +56,29 @@ export const isEscrowEnabled = (): boolean => {
         return allowed;
     }
     if (config.ESCROW_ENCLAVE_MODE === 'remote') {
-        return Boolean(config.ESCROW_ENCLAVE_REMOTE_URL && config.ESCROW_ENCLAVE_REMOTE_TOKEN);
+        const ready = Boolean(
+            config.ESCROW_ENCLAVE_REMOTE_URL && config.ESCROW_ENCLAVE_REMOTE_TOKEN
+        );
+        if (!ready) reportRemoteConfigMissing();
+        return ready;
     }
     return false;
+};
+/** Cold-start check so a missing remote config is reported before the first escrow request. */
+export const checkEscrowRemoteConfig = (): void => {
+    if (isEscrowRemoteMode()) isEscrowEnabled();
 };
 export const isEscrowRemoteMode = (): boolean => config.ESCROW_ENCLAVE_MODE === 'remote';
 // The client-facing attestation mode implied by the server's active backend
 // ('remote' mode always attests as 'nitro' — see remoteEnclave.ts).
 export const activeEscrowClientMode = (): 'software' | 'nitro' =>
     isEscrowRemoteMode() ? 'nitro' : 'software';
+/**
+ * The tenant label the (single-tenant) remote enclave signs and requires: server config,
+ * never the request's X-Tenant-Id. App-tenant concerns (hold `tenantId`, email branding,
+ * links) keep using `ctx.tenant`.
+ */
+export const getEscrowAuthorityTenant = (): string => config.ESCROW_AUTHORITY_TENANT;
 export const getEscrowHoldDurationMs = (): number => config.ESCROW_HOLD_DURATION_MS;
 export const getEscrowHoldRestartMinAgeMs = (): number => config.ESCROW_HOLD_RESTART_MIN_AGE_MS;
 export const getEscrowEnclave = (): EscrowEnclave => {
@@ -160,6 +196,7 @@ export const __setEscrowEnclaveForTests = (replacement: EscrowEnclave | undefine
     if (environment.NODE_ENV !== 'test') throw new EscrowUnavailableError();
     config = parseLcaApiEnvironment(process.env);
     enclave = replacement;
+    remoteConfigMissingReported = false;
     attestationCache = undefined;
     attestationRefreshInFlight = undefined;
 };

@@ -234,5 +234,31 @@ switch already does without disrupting existing users.
   and redeploy is required for every stage advance or rollback.
 - Bucketing hashes `${tenantId}:${userDid}`, so the same user can be in the
   rollout for one tenant and not another — stage each tenant independently.
+- **VetPass shares LearnCard's enclave and accounts.** VetPass runs on the
+  LearnCard enclave with `auth.sss.escrowAuthorityTenant: "learncard"`
+  ([SECURITY.md](SECURITY.md) D20). A VetPass user and a LearnCard user with the
+  same sign-in are one account: enrollment, PIN and opt-out are shared, and an
+  account enrolled from either app is enrolled for both. Keep VetPass on the same
+  key derivation, `escrowEnclaveMode` and enclave pins as LearnCard at every stage
+  (enforced by `apps/learn-card-app/src/config/escrowTenantParity.test.ts`); an SSS
+  client with escrow off can leave the shared escrow copy stale. VetPass staging and
+  production deploy separately (#1942): VetPass staging runs SSS with escrow on the
+  staging enclave (`escrowAuthorityTenant: "learncard"`, LearnCard staging's pins),
+  while VetPass production and the `sss-pilot` overlay stay off until the SSS switch
+  turns them on together with LearnCard production; that PR must set VetPass's mode,
+  pins and `escrowAuthorityTenant` in the same change. Update both
+  tenants' pins on every image roll.
+- **Sealed email brand (D21).** `auth.sss.escrowSealEmailBrand` makes the client
+  seal the app's `branding.name` into the escrow blob so enclave-sent emails carry
+  that brand. Keep it off until every live host (staging, then production) runs the
+  brand-aware image, because an older image drops the field whenever it re-encrypts
+  a blob. Then turn it on for LearnCard and VetPass in one config PR, which also sets
+  LearnCard's `auth.sss.escrowSharedEmailBrands: ["VetPass"]` (parity and the list are
+  enforced by `escrowTenantParity.test.ts`). Existing blobs keep the LearnCard brand
+  until their next enroll/replace, so the VetPass in-app note stays on, worded as
+  "may come from VetPass or from LearnCard". A shared DID last written by VetPass
+  sends VetPass-branded emails even when recovery starts in LearnCard, so LearnCard
+  shows "If you also use VetPass with this account, your code may come from VetPass". Rolling back the image reverts sealed
+  brands to "LearnCard"; it does not break recovery.
 - Never put a raw DID or email in a PR, ticket, or this document — only the
   SHA-256 hash described above.

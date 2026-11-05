@@ -10,7 +10,7 @@
 | **idempotency_key**   | **str**                                                                                                                                                 |             | [optional] |
 | **mode**              | **str**                                                                                                                                                 |             |
 | **signed_credential** | [**BoostSendRequestTemplateCredentialAnyOf**](BoostSendRequestTemplateCredentialAnyOf.md)                                                               |             |
-| **credential**        | [**BoostCreateBoostRequestCredentialAnyOf**](BoostCreateBoostRequestCredentialAnyOf.md)                                                                 |             |
+| **credential**        | [**BoostSendRequestTemplateCredentialAnyOf1**](BoostSendRequestTemplateCredentialAnyOf1.md)                                                             |             |
 | **signing_authority** | [**CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority**](CredentialRefreshPublishCredentialRefreshRequestOneOf1SigningAuthority.md) |             |
 
 ## Example

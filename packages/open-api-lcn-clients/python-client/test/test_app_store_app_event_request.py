@@ -36,12 +36,12 @@ class TestAppStoreAppEventRequest(unittest.TestCase):
         if include_optional:
             return AppStoreAppEventRequest(
                 listing_id = '',
-                event = openapi_client.models.app_store_app_event_request_event.appStore_appEvent_request_event()
+                event = None
             )
         else:
             return AppStoreAppEventRequest(
                 listing_id = '',
-                event = openapi_client.models.app_store_app_event_request_event.appStore_appEvent_request_event(),
+                event = None,
         )
         """
 

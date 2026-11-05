@@ -15,7 +15,7 @@ All URIs are relative to _/api_
 
 # **contact_methods_add_contact_method**
 
-> ContactMethodsAddContactMethod200Response contact_methods_add_contact_method(contact_methods_add_contact_method_request)
+> ContactMethodsAddContactMethod200Response contact_methods_add_contact_method(contact_methods_create_contact_method_session_request_contact_method)
 
 Add Contact Method
 
@@ -28,7 +28,7 @@ Add a new contact method to the profile (requires verification)
 ```python
 import openapi_client
 from openapi_client.models.contact_methods_add_contact_method200_response import ContactMethodsAddContactMethod200Response
-from openapi_client.models.contact_methods_add_contact_method_request import ContactMethodsAddContactMethodRequest
+from openapi_client.models.contact_methods_create_contact_method_session_request_contact_method import ContactMethodsCreateContactMethodSessionRequestContactMethod
 from openapi_client.rest import ApiException
 from pprint import pprint
 
@@ -52,11 +52,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_add_contact_method_request = openapi_client.ContactMethodsAddContactMethodRequest() # ContactMethodsAddContactMethodRequest |
+    contact_methods_create_contact_method_session_request_contact_method = openapi_client.ContactMethodsCreateContactMethodSessionRequestContactMethod() # ContactMethodsCreateContactMethodSessionRequestContactMethod |
 
     try:
         # Add Contact Method
-        api_response = api_instance.contact_methods_add_contact_method(contact_methods_add_contact_method_request)
+        api_response = api_instance.contact_methods_add_contact_method(contact_methods_create_contact_method_session_request_contact_method)
         print("The response of ContactMethodsApi->contact_methods_add_contact_method:\n")
         pprint(api_response)
     except Exception as e:
@@ -65,9 +65,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                           | Type                                                                                  | Description | Notes |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------- | ----------- | ----- |
-| **contact_methods_add_contact_method_request** | [**ContactMethodsAddContactMethodRequest**](ContactMethodsAddContactMethodRequest.md) |             |
+| Name                                                                     | Type                                                                                                                                | Description | Notes |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----- |
+| **contact_methods_create_contact_method_session_request_contact_method** | [**ContactMethodsCreateContactMethodSessionRequestContactMethod**](ContactMethodsCreateContactMethodSessionRequestContactMethod.md) |             |
 
 ### Return type
 
@@ -240,7 +240,7 @@ This endpoint does not need any parameter.
 
 # **contact_methods_remove_contact_method**
 
-> ContactMethodsSendChallenge200Response contact_methods_remove_contact_method(contact_methods_remove_contact_method_request)
+> ContactMethodsSendChallenge200Response contact_methods_remove_contact_method(claim_hook_delete_claim_hook_request)
 
 Remove Contact Method
 
@@ -252,7 +252,7 @@ Remove a contact method from the profile
 
 ```python
 import openapi_client
-from openapi_client.models.contact_methods_remove_contact_method_request import ContactMethodsRemoveContactMethodRequest
+from openapi_client.models.claim_hook_delete_claim_hook_request import ClaimHookDeleteClaimHookRequest
 from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
 from openapi_client.rest import ApiException
 from pprint import pprint
@@ -277,11 +277,11 @@ configuration = openapi_client.Configuration(
 with openapi_client.ApiClient(configuration) as api_client:
     # Create an instance of the API class
     api_instance = openapi_client.ContactMethodsApi(api_client)
-    contact_methods_remove_contact_method_request = openapi_client.ContactMethodsRemoveContactMethodRequest() # ContactMethodsRemoveContactMethodRequest |
+    claim_hook_delete_claim_hook_request = openapi_client.ClaimHookDeleteClaimHookRequest() # ClaimHookDeleteClaimHookRequest |
 
     try:
         # Remove Contact Method
-        api_response = api_instance.contact_methods_remove_contact_method(contact_methods_remove_contact_method_request)
+        api_response = api_instance.contact_methods_remove_contact_method(claim_hook_delete_claim_hook_request)
         print("The response of ContactMethodsApi->contact_methods_remove_contact_method:\n")
         pprint(api_response)
     except Exception as e:
@@ -290,9 +290,9 @@ with openapi_client.ApiClient(configuration) as api_client:
 
 ### Parameters
 
-| Name                                              | Type                                                                                        | Description | Notes |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------- | ----- |
-| **contact_methods_remove_contact_method_request** | [**ContactMethodsRemoveContactMethodRequest**](ContactMethodsRemoveContactMethodRequest.md) |             |
+| Name                                     | Type                                                                      | Description | Notes |
+| ---------------------------------------- | ------------------------------------------------------------------------- | ----------- | ----- |
+| **claim_hook_delete_claim_hook_request** | [**ClaimHookDeleteClaimHookRequest**](ClaimHookDeleteClaimHookRequest.md) |             |
 
 ### Return type
 

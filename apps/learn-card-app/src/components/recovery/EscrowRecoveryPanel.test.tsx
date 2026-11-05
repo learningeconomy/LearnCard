@@ -73,6 +73,117 @@ describe('EscrowRecoveryPanel', () => {
         expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
     });
 
+    describe('email sender note (app brand differs from the enclave brand)', () => {
+        const emailSender = { sender: 'LearnCard', brand: 'VetPass', mixed: false };
+        const codeNote =
+            "We'll email you a code from LearnCard, the service that secures your VetPass account.";
+        const updatesNote =
+            'Some emails about this request come from LearnCard, the service that secures your VetPass account.';
+        const pendingHold = (confirmed: boolean) => {
+            const releaseAfter = new Date(Date.now() + 86400000).toISOString();
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: 'hold-confirm-1',
+                resumeToken: 'token',
+                clientEphemeralPrivateKey: 'key',
+                releaseAfter,
+                requiresConfirmation: true,
+                expectations: {
+                    tenant: 'learncard',
+                    did: 'did:key:z6Mkexample',
+                    holdId: 'hold-confirm-1',
+                    clientEphemeralPublicKey: 'ephemeral-pub',
+                    blobHash: 'blob-hash',
+                    authorityGeneration: 'generation-1',
+                    holdDigest: 'hold-digest',
+                    ledgerPublicKey: 'ledger-pub',
+                    keyId: 'key-1',
+                },
+            });
+            return vi.fn().mockResolvedValue({ status: 'pending', confirmed, releaseAfter });
+        };
+        const panel = (props: Partial<React.ComponentProps<typeof EscrowRecoveryPanel>> = {}) => (
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+                {...props}
+            />
+        );
+
+        it('names the sender before a 7-day recovery starts', async () => {
+            render(panel({ emailSender }));
+            expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(screen.getByText(codeNote)).toBeInTheDocument();
+        });
+
+        it('shows nothing when the brands match (no emailSender)', async () => {
+            render(panel());
+            expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(screen.queryByText(/the service that secures your/)).not.toBeInTheDocument();
+        });
+
+        it('names the sender on the confirm-code step', async () => {
+            render(panel({ view: 'status', emailSender, onStatus: pendingHold(false) }));
+            expect(await screen.findByText('Check your email')).toBeInTheDocument();
+            expect(screen.getByText(codeNote)).toBeInTheDocument();
+        });
+
+        it('names the sender of hold updates while the 7 days run', async () => {
+            render(panel({ view: 'status', emailSender, onStatus: pendingHold(true) }));
+            expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+            expect(screen.getByText(updatesNote)).toBeInTheDocument();
+        });
+
+        // D21: with the app brand sealed, the stored blob may still carry either brand.
+        describe('when this app seals its own brand (mixed)', () => {
+            const mixed = { ...emailSender, mixed: true };
+            const codeMixed =
+                'Your code may come from VetPass or from LearnCard, the service that secures your VetPass account.';
+            const updatesMixed =
+                'Some emails about this request may come from VetPass or from LearnCard, the service that secures your VetPass account.';
+
+            it('says the code may come from either brand', async () => {
+                render(panel({ emailSender: mixed }));
+                expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+                expect(screen.getByText(codeMixed)).toBeInTheDocument();
+                expect(screen.queryByText(codeNote)).not.toBeInTheDocument();
+            });
+
+            it('says hold updates may come from either brand', async () => {
+                render(panel({ view: 'status', emailSender: mixed, onStatus: pendingHold(true) }));
+                expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+                expect(screen.getByText(updatesMixed)).toBeInTheDocument();
+            });
+        });
+
+        // D21: LearnCard (its own authority brand) names a co-tenant app that may have sealed
+        // its brand on a shared DID.
+        describe('when another app on the account may have sealed its brand (shared)', () => {
+            const shared = { sender: 'VetPass', brand: 'LearnCard', mixed: true, shared: true };
+            const codeShared =
+                'If you also use VetPass with this account, your code may come from VetPass instead of LearnCard.';
+            const updatesShared =
+                'If you also use VetPass with this account, some emails about this request may come from VetPass instead of LearnCard.';
+
+            it('says the code may come from the other app', async () => {
+                render(panel({ emailSender: shared }));
+                expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+                expect(screen.getByText(codeShared)).toBeInTheDocument();
+                expect(screen.queryByText(/the service that secures your/)).not.toBeInTheDocument();
+            });
+
+            it('says hold updates may come from the other app', async () => {
+                render(panel({ view: 'status', emailSender: shared, onStatus: pendingHold(true) }));
+                expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+                expect(screen.getByText(updatesShared)).toBeInTheDocument();
+            });
+        });
+    });
+
     const mockOnStart = vi.fn();
     const mockOnStatus = vi.fn();
     const mockOnRecover = vi.fn();

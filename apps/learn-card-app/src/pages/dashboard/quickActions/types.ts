@@ -8,8 +8,8 @@ export type QuickActionIcon = React.FC<{ className?: string; shadeColor?: string
 
 export type DashboardState = {
     brandName: string;
-    credentialsCount: number;
-    skillsCount: number;
+    credentialsCount: number | null;
+    skillsCount: number | null;
     hasGoal: boolean;
     hasSkillProfile: boolean;
     nextNodeTitle?: string;

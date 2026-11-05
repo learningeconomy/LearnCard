@@ -24,6 +24,8 @@ export interface LoginMailPolicy {
     sender: string;
     dkimDomain: string;
     requireDmarc: boolean;
+    /** `--allow-login-spam-fail`: SES scores some Postmark pools as spam (production, 2026-11-04). */
+    allowSpamFail: boolean;
 }
 
 export const loginTrustPolicy = (policy: LoginMailPolicy, email: string): TrustPolicy => ({
@@ -31,6 +33,7 @@ export const loginTrustPolicy = (policy: LoginMailPolicy, email: string): TrustP
     expectedDkimDomain: policy.dkimDomain.toLowerCase(),
     requireDmarc: policy.requireDmarc,
     recoveryEmail: email,
+    allowSpamFail: policy.allowSpamFail,
 });
 
 export interface LoginCode {

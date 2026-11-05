@@ -22,6 +22,7 @@ export const loginMail = {
     sender: LOGIN_SENDER,
     dkimDomain: LOGIN_DKIM_DOMAIN,
     requireDmarc: true,
+    allowSpamFail: false,
 };
 
 /** The rendered `login-verification-code` text part (en), with a synthetic code. */

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { getLogger } from 'learn-card-base';
+import { getLogger, type EscrowEmailSenderNote } from 'learn-card-base';
 import { IonIcon } from '@ionic/react';
 import {
     alertCircleOutline,
@@ -29,7 +29,13 @@ const log = getLogger('recovery-request');
 const logRecoveryError = (event: string, cause: unknown): void => {
     const errorType =
         cause instanceof Error &&
-        ['EscrowEvidenceError', 'EscrowRequestError', 'TypeError'].includes(cause.name)
+        [
+            'EscrowEvidenceError',
+            // Deployment misconfiguration (wrong escrowAuthorityTenant); the name is safe to log.
+            'EscrowAuthorityTenantMismatchError',
+            'EscrowRequestError',
+            'TypeError',
+        ].includes(cause.name)
             ? cause.name
             : 'Error';
     log.error(event, { errorType });
@@ -85,6 +91,14 @@ export interface EscrowRecoveryPanelProps {
         expectations?: EscrowRecoveryExpectations;
     }) => Promise<{ success: true; releaseAfter?: string }>;
     onResendCode: (params: { holdId: string; resumeToken: string }) => Promise<{ success: true }>;
+    /**
+     * Set when the escrow enclave's own emails carry another brand than this app (VetPass
+     * shares LearnCard's enclave): `sender` is the email brand, `brand` this app's name.
+     * `mixed` (D21): this app seals its own brand, but the stored blob may predate that or
+     * come from the other app, so the email may come from either brand. `shared`: `sender`
+     * is another app on the same account (LearnCard naming VetPass), not the securing service.
+     */
+    emailSender?: EscrowEmailSenderNote;
 }
 
 /** lca-api answers 403 when the code or resend was refused; anything else is transport/service. */
@@ -105,7 +119,24 @@ export const EscrowRecoveryPanel = ({
     onResendCode,
     canResumeCompleted,
     view,
+    emailSender,
 }: EscrowRecoveryPanelProps) => {
+    const emailSenderNote = (kind: 'code' | 'updates') =>
+        emailSender && (
+            <p className="text-xs text-grayscale-500 leading-relaxed">
+                {kind === 'code'
+                    ? emailSender.shared
+                        ? m['recovery.emailSender.codeShared'](emailSender)
+                        : emailSender.mixed
+                          ? m['recovery.emailSender.codeMixed'](emailSender)
+                          : m['recovery.emailSender.code'](emailSender)
+                    : emailSender.shared
+                      ? m['recovery.emailSender.updatesShared'](emailSender)
+                      : emailSender.mixed
+                        ? m['recovery.emailSender.updatesMixed'](emailSender)
+                        : m['recovery.emailSender.updates'](emailSender)}
+            </p>
+        );
     const active = useRef(true);
     const [pending, setPending] = useState<PendingEscrowRecovery>();
     // [P2] Status reads (mount effect, checkStatus, and the confirmation
@@ -676,6 +707,8 @@ export const EscrowRecoveryPanel = ({
                                           </div>
                                       </div>
 
+                                      {emailSenderNote('code')}
+
                                       <div className="flex justify-center py-2">
                                           <RecoveryPinInput
                                               length={8}
@@ -916,6 +949,11 @@ export const EscrowRecoveryPanel = ({
                                   Come back to this browser to finish. To cancel, use a device where
                                   you're already signed in.
                               </p>
+                              {emailSender && (
+                                  <div className="text-center px-4">
+                                      {emailSenderNote('updates')}
+                                  </div>
+                              )}
                           </div>
                       );
                   })()
@@ -928,9 +966,13 @@ export const EscrowRecoveryPanel = ({
                                   icon={shieldCheckmarkOutline}
                                   className="text-grayscale-900 text-xl mt-0.5 shrink-0"
                               />
-                              <p className="text-sm text-grayscale-700 leading-relaxed">
-                                  Wait 7 days, then return to this browser to restore your account.
-                              </p>
+                              <div className="space-y-v3-2">
+                                  <p className="text-sm text-grayscale-700 leading-relaxed">
+                                      Wait 7 days, then return to this browser to restore your
+                                      account.
+                                  </p>
+                                  {emailSenderNote('code')}
+                              </div>
                           </div>
                           <button
                               className={button}

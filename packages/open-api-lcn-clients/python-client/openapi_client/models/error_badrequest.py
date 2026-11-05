@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.error_badrequest_issues_inner import ErrorBADREQUESTIssuesInner
+from openapi_client.models.contact_methods_send_challenge200_response import ContactMethodsSendChallenge200Response
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,7 +30,7 @@ class ErrorBADREQUEST(BaseModel):
     """ # noqa: E501
     message: StrictStr = Field(description="The error message", json_schema_extra={"examples": ["Invalid input data"]})
     code: StrictStr = Field(description="The error code", json_schema_extra={"examples": ["BAD_REQUEST"]})
-    issues: Optional[List[ErrorBADREQUESTIssuesInner]] = Field(default=None, description="An array of issues that were responsible for the error", json_schema_extra={"examples": [[]]})
+    issues: Optional[List[ContactMethodsSendChallenge200Response]] = Field(default=None, description="An array of issues that were responsible for the error", json_schema_extra={"examples": [[]]})
     additional_properties: Dict[str, Any] = {}
     __properties: ClassVar[List[str]] = ["message", "code", "issues"]
 
@@ -61,9 +61,8 @@ class ErrorBADREQUEST(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -100,7 +99,7 @@ class ErrorBADREQUEST(BaseModel):
         _values = {
             "message": obj.get("message"),
             "code": obj.get("code"),
-            "issues": [ErrorBADREQUESTIssuesInner.from_dict(_item) for _item in obj["issues"]] if obj.get("issues") is not None else None
+            "issues": [ContactMethodsSendChallenge200Response.from_dict(_item) for _item in obj["issues"]] if obj.get("issues") is not None else None
         }
         # Missing properties must remain unset; explicit nulls still participate in validation.
         _obj = cls.model_validate({key: value for key, value in _values.items() if key in obj})

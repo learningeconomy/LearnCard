@@ -29,7 +29,7 @@ export interface RecoveryBannerProps {
     recoverySupported: boolean;
     recoveryMethodCount: number | null;
     activationPending?: boolean;
-    totalCredentialCount: number;
+    totalCredentialCount: number | null;
     escrowEnrolled?: boolean;
     pinEnabled?: boolean | null;
     onSetupPin?: () => void;
@@ -94,7 +94,7 @@ export const RecoveryBanner: React.FC<RecoveryBannerProps> = ({
             } else if (pinEnabled === true && !isSnoozed && backupSnoozeCount < 2) {
                 activeTier = 'backup';
             }
-        } else if (totalCredentialCount > 0 && !isSnoozed) {
+        } else if (totalCredentialCount !== null && totalCredentialCount > 0 && !isSnoozed) {
             activeTier = 'standard';
         }
     }
