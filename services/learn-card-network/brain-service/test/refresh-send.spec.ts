@@ -1355,6 +1355,30 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(storedTemplate.name).toBe('Credential');
             expect(storedTemplate.credentialSubject).toEqual({ id: 'did:example:123' });
         });
+
+        it('rejects reusing a display-only anchor via templateUri without a template, instead of a server error', async () => {
+            const { signed } = await buildHandoff();
+            const created = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                signedCredential: signed,
+                refresh: true,
+            })) as SendResult;
+
+            await expect(
+                issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    templateUri: created.uri,
+                    refresh: true,
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining(
+                    'Display-only anchors require an issuance credential'
+                ),
+            });
+        });
     });
 
     describe('normal sends are unchanged', () => {
@@ -1389,6 +1413,53 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                 expect(signedInput.name).toBe(testUnsignedBoost.name);
             }
         );
+
+        it.each([undefined, 'omit-display-fallback-key'])(
+            'ignores the inline template name and category when display is omitted (%s)',
+            async idempotencyKey => {
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: {
+                        credential: testUnsignedBoost,
+                        name: 'Private Template Name',
+                        category: 'PrivateCategory',
+                    },
+                    refresh: true,
+                    idempotencyKey,
+                });
+                const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
+                expect(stored.name).toBe('Credential');
+                expect(stored.category).toBeUndefined();
+                expect(stored.boost).toEqual({
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    type: ['VerifiableCredential'],
+                    issuer: getDidWeb(DOMAIN, ISSUER_PROFILE_ID),
+                    credentialSubject: { id: 'did:example:123' },
+                    name: 'Credential',
+                    display: {},
+                });
+                expect(JSON.stringify(stored)).not.toContain('Private Template Name');
+                expect(JSON.stringify(stored)).not.toContain('PrivateCategory');
+            }
+        );
+
+        it('allocates a suspension status entry for a delegated signing-authority send', async () => {
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                template: { credential: testUnsignedBoost },
+                refresh: true,
+                statusPurposes: ['suspension'],
+            })) as SendResult;
+
+            expect(result.refresh!.credentialStatus).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ statusPurpose: 'revocation' }),
+                    expect.objectContaining({ statusPurpose: 'suspension' }),
+                ])
+            );
+        });
 
         it('returns no refresh receipt when refresh is omitted', async () => {
             const boostUri = await issuer.clients.fullAuth.boost.createBoost({

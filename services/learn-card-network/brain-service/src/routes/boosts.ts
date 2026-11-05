@@ -1313,12 +1313,7 @@ export const boostsRouter = t.router({
                     } else if (input.template) {
                         boost =
                             input.refresh || input.signedCredential
-                                ? await createDisplayOnlyBoost(
-                                      input.display,
-                                      profile,
-                                      domain,
-                                      input.template
-                                  )
+                                ? await createDisplayOnlyBoost(input.display, profile, domain)
                                 : await createInlineBoostForSend(input.template, profile, domain);
 
                         boostUri = getBoostUri(boost.id, domain);
@@ -1365,12 +1360,7 @@ export const boostsRouter = t.router({
                             boost = preparedBoost;
                             boostUri = preparedBoostUri;
                         } else {
-                            boost = await createDisplayOnlyBoost(
-                                input.display,
-                                profile,
-                                domain,
-                                input.template
-                            );
+                            boost = await createDisplayOnlyBoost(input.display, profile, domain);
 
                             boostUri = getBoostUri(boost.id, domain);
                             boostCreated = true;
@@ -1557,7 +1547,9 @@ export const boostsRouter = t.router({
                                                 recipientName: targetProfile.displayName,
                                             })
                                     );
-                                } catch {
+                                } catch (error) {
+                                    if (error instanceof TRPCError && error.code === 'BAD_REQUEST')
+                                        throw error;
                                     console.error('CREDENTIAL_PREPARATION_FAILED');
                                     throw new TRPCError({
                                         code: 'INTERNAL_SERVER_ERROR',
@@ -1762,7 +1754,9 @@ export const boostsRouter = t.router({
                                             recipientName: inboxRecipientName,
                                         })
                                 );
-                            } catch {
+                            } catch (error) {
+                                if (error instanceof TRPCError && error.code === 'BAD_REQUEST')
+                                    throw error;
                                 console.error('INBOX_CREDENTIAL_PREPARATION_FAILED');
                                 throw new TRPCError({
                                     code: 'INTERNAL_SERVER_ERROR',

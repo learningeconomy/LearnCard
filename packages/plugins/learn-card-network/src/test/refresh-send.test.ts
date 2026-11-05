@@ -326,7 +326,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
             recipient: 'userb',
             templateUri: undefined,
-            display: { name: 'Inline Refreshable Badge' },
+            display: undefined,
             contractUri: 'contract:1',
             credentialId: 'urn:uuid:inline-credential-id',
         });
@@ -516,6 +516,25 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.boost.send.mutate).toHaveBeenCalledWith(input);
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.issueCredential).toBeUndefined();
+    });
+
+    it('forwards statusPurposes to the server signing-authority path when local signing is unavailable', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        delete learnCard.invoke.issueCredential;
+        const plugin = await getPlugin(learnCard, client);
+
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+            statusPurposes: ['suspension'],
+        });
+
+        expect(client.boost.send.mutate).toHaveBeenCalledWith(
+            expect.objectContaining({ statusPurposes: ['suspension'] })
+        );
     });
 
     it.each([

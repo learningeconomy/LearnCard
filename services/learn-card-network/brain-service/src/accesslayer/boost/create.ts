@@ -79,28 +79,17 @@ export const createBoost = async (
     return boost;
 };
 
-/** The caller's explicit Boost name and category are public metadata; credential content is not. */
-export const getPublicDisplay = (
-    display: CredentialDisplay | undefined,
-    template?: { name?: string | null; category?: string | null }
-): CredentialDisplay => {
-    if (display) return CredentialDisplayValidator.parse(display);
-    const name = template?.name?.trim().slice(0, 280);
-    const category = template?.category?.slice(0, 280);
-    return CredentialDisplayValidator.parse({
-        ...(name ? { name } : {}),
-        ...(category ? { category } : {}),
-    });
-};
+/** The caller's explicit `display` is the only public Boost metadata; credential and template content are never used. */
+export const getPublicDisplay = (display: CredentialDisplay | undefined): CredentialDisplay =>
+    CredentialDisplayValidator.parse(display ?? {});
 
-/** Display-only anchors never receive credential content. */
+/** Display-only anchors never receive credential content or inline template metadata. */
 export const createDisplayOnlyBoost = (
     display: CredentialDisplay | undefined,
     creator: ProfileType,
-    domain: string,
-    template?: { name?: string | null; category?: string | null }
+    domain: string
 ): Promise<BoostInstance> => {
-    const publicDisplay = getPublicDisplay(display, template);
+    const publicDisplay = getPublicDisplay(display);
     return createBoost(
         null,
         creator,
