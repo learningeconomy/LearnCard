@@ -14,6 +14,7 @@ import {
     getCredentialEffectiveTime,
     getCredentialIssuerId,
     getSupportedRefreshService,
+    isVC2Format,
 } from '@learncard/helpers';
 
 import { fetchWithPinnedAddress, type PinnedAddress } from './refreshCredential.fetch';
@@ -934,9 +935,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
         if (service.type === 'LearnCardCredentialRefresh2026') {
             const managedEffectiveTime = (vc: VC): number | undefined =>
                 getCredentialEffectiveTime({
-                    validFrom: vc['@context'].includes('https://www.w3.org/ns/credentials/v2')
-                        ? vc.validFrom
-                        : vc.issuanceDate,
+                    validFrom: isVC2Format(vc) ? vc.validFrom : vc.issuanceDate,
                 });
             const currentEffectiveTime = managedEffectiveTime(credential);
             const candidateEffectiveTime = managedEffectiveTime(candidate);
