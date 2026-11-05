@@ -619,6 +619,8 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        /** Opt in to signing the server-bound statusEntries; omission preserves client allocation. */
+        statusBinding: z.literal('server').optional(),
         statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),

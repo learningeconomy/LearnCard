@@ -271,6 +271,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         // The server runs every guard, creates/reuses the boost and allocates the
         // refresh in one call; the SDK never allocates client-side.
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            statusBinding: 'server',
             recipient: 'userb',
             templateUri: 'did:web:network.example:boost:1',
             templateData: { name: 'Refreshable Badge' },
@@ -324,6 +325,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         const forwarded = client.boost.send.mutate.mock.calls[0]?.[0] as any;
 
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            statusBinding: 'server',
             recipient: 'userb',
             template,
             contractUri: 'contract:1',

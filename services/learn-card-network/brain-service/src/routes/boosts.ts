@@ -454,6 +454,9 @@ const managedRefreshServiceFor = (refreshId: string, domain: string) => ({
  * retried call reuses the same boost/allocation, or returns the completed result.
  */
 const prepareManagedRefreshSend = async (params: {
+    statusBinding?: 'server';
+    /** Internal signing already owns allocation; preserve its existing request digest. */
+    serverSigning?: boolean;
     statusPurposes?: ('revocation' | 'suspension')[];
     profile: ProfileType;
     /** Returned by validateRefreshSendRecipient in this request, before any mutation. */
@@ -468,6 +471,7 @@ const prepareManagedRefreshSend = async (params: {
     idempotencyKey?: string;
 }): Promise<PrepareRefreshableSendResult & { intent?: RefreshSendIntent }> => {
     const { profile, targetProfile, domain, templateUri, template, contractUri } = params;
+    const preallocateStatus = params.serverSigning || params.statusBinding === 'server';
     // Local recipients authenticate refresh requests as their network profile DID,
     // including when the caller addressed them by their controller did:key.
     const holderDid = getDidWeb(domain, targetProfile.profileId);
@@ -488,6 +492,7 @@ const prepareManagedRefreshSend = async (params: {
                 integrationId: params.integrationId,
                 credentialId: params.credentialId,
                 statusPurposes: params.statusPurposes,
+                statusBinding: params.statusBinding,
             }),
         });
 
@@ -496,7 +501,7 @@ const prepareManagedRefreshSend = async (params: {
         if (claim.kind !== 'owned') {
             const refresh = await getCredentialRefresh(intent.refreshId!);
             const prepared = {
-                ...(refresh?.statusEntries
+                ...(preallocateStatus && refresh?.statusEntries
                     ? { statusEntries: JSON.parse(refresh.statusEntries) }
                     : {}),
                 boostUri: intent.boostUri!,
@@ -579,12 +584,16 @@ const prepareManagedRefreshSend = async (params: {
         refreshId = allocation.refreshId;
     }
 
-    const statusEntries = await prepareRefreshStatusEntries(
-        refreshId,
-        profile.profileId,
-        domain,
-        params.statusPurposes
-    );
+    // Older clients allocate their own coordinates after preparation. Bind those
+    // only at the signed handoff, where ownership and index reuse are validated.
+    const statusEntries = preallocateStatus
+        ? await prepareRefreshStatusEntries(
+              refreshId,
+              profile.profileId,
+              domain,
+              params.statusPurposes
+          )
+        : undefined;
     if (intent) {
         intent = await recordRefreshSendIntent(intent, {
             boostUri,
@@ -597,7 +606,7 @@ const prepareManagedRefreshSend = async (params: {
 
     return {
         boostUri,
-        statusEntries,
+        ...(statusEntries ? { statusEntries } : {}),
         credentialId,
         refreshId,
         refreshService: managedRefreshServiceFor(refreshId, domain),
@@ -1252,6 +1261,7 @@ export const boostsRouter = t.router({
                     const keyedPrepared =
                         refreshRequested && input.idempotencyKey && !input.signedCredential
                             ? await prepareManagedRefreshSend({
+                                  serverSigning: true,
                                   profile,
                                   targetProfile: refreshTargetProfile!,
                                   domain,
