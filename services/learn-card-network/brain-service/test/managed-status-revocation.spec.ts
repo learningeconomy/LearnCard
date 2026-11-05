@@ -11,7 +11,10 @@ import * as statusLists from '@helpers/status-list.helpers';
 import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
 import { mutateCredentialStatus } from '@helpers/credential-status-mutation.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
-import { getCredentialUri } from '@helpers/credential.helpers';
+import { getCredentialUri, sendCredential } from '@helpers/credential.helpers';
+import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import * as credentialRelationships from '@accesslayer/credential/relationships/create';
 import {
     computeCredentialStatusDigest,
     matchesCredentialStatusDigest,
@@ -48,6 +51,7 @@ const send = async (arrayShape = false) => {
         validFrom: '2026-01-01T00:00:00Z',
     };
     const allocation = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+        statusBinding: 'server',
         recipient: 'status-holder',
         template: { credential: template },
         credentialId: 'urn:uuid:managed-status-test',
@@ -143,6 +147,219 @@ describe('Managed public status', () => {
                 uri: getCredentialUri('unknown-root', 'localhost%3A3000'),
             })
         ).rejects.toThrow();
+    });
+
+    it.each([false, true])(
+        'preserves client allocation unless server binding is requested (server=%s)',
+        async serverBinding => {
+            const template: UnsignedVC = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                type: ['VerifiableCredential'],
+                issuer: issuer.learnCard.id.did(),
+                credentialSubject: { id: holder.learnCard.id.did() },
+            };
+            const input = {
+                recipient: 'status-holder',
+                template: { credential: template },
+                idempotencyKey: 'status-binding-compatibility',
+                ...(serverBinding ? { statusBinding: 'server' as const } : {}),
+            };
+            const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+            const aggregate = await neogma.queryRunner.run(
+                'MATCH (r:CredentialRefresh {refreshId: $refreshId}) RETURN r.statusEntries AS entries',
+                { refreshId: prepared.refreshId }
+            );
+            if (serverBinding) {
+                expect(prepared.statusEntries).toHaveLength(1);
+                expect(JSON.parse(aggregate.records[0]!.get('entries'))).toEqual(
+                    prepared.statusEntries
+                );
+            } else {
+                expect(prepared.statusEntries).toBeUndefined();
+                expect(aggregate.records[0]!.get('entries')).toBeNull();
+                const bindings = await neogma.queryRunner.run(
+                    'MATCH (b:CredentialStatusBinding) RETURN b'
+                );
+                expect(bindings.records).toHaveLength(0);
+            }
+            expect(await issuer.clients.fullAuth.boost.prepareRefreshableSend(input)).toEqual(
+                prepared
+            );
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    ...input,
+                    statusBinding: serverBinding ? undefined : 'server',
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            // Previous SDKs independently allocate through this route after preparation.
+            const clientEntries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+                statusPurposes: ['revocation'],
+            });
+            const handoff = async (entries: BitstringStatusListEntry[]) => {
+                const signedCredential = await issuer.learnCard.invoke.issueCredential(
+                    injectManagedRefreshService(
+                        {
+                            ...template,
+                            id: prepared.credentialId,
+                            credentialSubject: { id: prepared.holderDid },
+                            credentialStatus: entries,
+                        },
+                        prepared.refreshService
+                    )
+                );
+                return issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: input.recipient,
+                    templateUri: prepared.boostUri,
+                    idempotencyKey: input.idempotencyKey,
+                    refresh: true,
+                    signedCredential,
+                });
+            };
+            if (serverBinding) {
+                await expect(handoff(clientEntries)).rejects.toThrow(
+                    'Credential status does not match allocated entries'
+                );
+            }
+            const entries = prepared.statusEntries ?? clientEntries;
+            const result = await handoff(entries);
+            expect(result.refresh?.refreshId).toBe(prepared.refreshId);
+            expect(await bit(entries[0]!)).toBe(false);
+            await issuer.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri: prepared.boostUri,
+                recipientProfileId: input.recipient,
+                credentialUri: result.credentialUri,
+            });
+            expect(await bit(entries[0]!)).toBe(true);
+            const retry = await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+            expect(retry.completed).toEqual(result);
+            expect(retry.statusEntries).toEqual(prepared.statusEntries);
+        }
+    );
+
+    it('unsuspends legacy revocation-only deliveries and supports new suspension and revocation', async () => {
+        const { root, entries } = await send();
+        await neogma.queryRunner.run(
+            'MATCH ()-[sent:CREDENTIAL_SENT]->(:Credential {id: $root}) SET sent.status = $status',
+            { root, status: 'suspended' }
+        );
+        expect(await mutateCredentialStatus(root, 'status-holder', 'suspension', false)).toBe(true);
+        expect(await mutateCredentialStatus(root, 'status-holder', 'suspension', true)).toBe(true);
+        expect(await bit(entries[0]!)).toBe(false);
+        expect(await mutateCredentialStatus(root, 'status-holder', 'revocation', true)).toBe(true);
+        expect(await bit(entries[0]!)).toBe(true);
+    });
+
+    it('uses the stored status owner when the delivery sender differs', async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const stored = await storeCredential(credential, undefined, 'status-issuer');
+        await neogma.queryRunner.run(
+            'MATCH (sender:Profile {profileId: $sender}), (c:Credential {id: $id}) CREATE (sender)-[:CREDENTIAL_SENT {to: $recipient}]->(c)',
+            { sender: 'status-holder', recipient: 'status-holder', id: stored.id }
+        );
+        expect(await mutateCredentialStatus(stored.id, 'status-holder', 'revocation', true)).toBe(
+            true
+        );
+        expect(await bit(entries[0]!)).toBe(true);
+    });
+
+    it('rolls back a failed ordinary send and retries the same signed status index', async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const from = await getProfileByProfileId('status-issuer');
+        const to = await getProfileByProfileId('status-holder');
+        if (!from || !to) throw new Error('Missing test profiles');
+        const failure = vi
+            .spyOn(credentialRelationships, 'createSentCredentialRelationship')
+            .mockRejectedValueOnce(new Error('forced relationship failure'));
+        try {
+            await expect(sendCredential(from, to, credential, domain)).rejects.toThrow(
+                'forced relationship failure'
+            );
+        } finally {
+            failure.mockRestore();
+        }
+        await expect(sendCredential(from, to, credential, domain)).resolves.toEqual(
+            expect.any(String)
+        );
+        const rows = await neogma.queryRunner.run(
+            'MATCH (binding:CredentialStatusBinding) RETURN binding'
+        );
+        expect(rows.records).toHaveLength(1);
+    });
+
+    it('releases unlinked reservations but preserves linked credentials', async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const first = await storeCredential(credential, undefined, 'status-issuer');
+        await releaseUnlinkedCredential(first.id);
+        const second = await storeCredential(credential, undefined, 'status-issuer');
+        await neogma.queryRunner.run(
+            'MATCH (p:Profile {profileId: $profile}), (c:Credential {id: $id}) CREATE (p)-[:CREDENTIAL_SENT {to: $recipient}]->(c)',
+            { profile: 'status-issuer', recipient: 'status-holder', id: second.id }
+        );
+        await releaseUnlinkedCredential(second.id);
+        await expect(storeCredential(credential, undefined, 'status-issuer')).rejects.toThrow(
+            'already bound'
+        );
+    });
+
+    it('does not create orphan credentials for status-free inbox claims without a boost', async () => {
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+        });
+        const inbox = await issuer.clients.fullAuth.inbox.issue({
+            credential,
+            recipient: { type: 'email', value: 'holder@example.com' },
+        });
+        const localExchangeId = new URL(inbox.claimUrl!).pathname.split('/').pop()!;
+        const start = await holder.clients.fullAuth.workflows.participateInExchange({
+            localWorkflowId: 'inbox-claim',
+            localExchangeId,
+        });
+        const presentation = VPValidator.parse(
+            await holder.learnCard.invoke.getDidAuthVp({
+                challenge: start.verifiablePresentationRequest?.challenge,
+                domain: start.verifiablePresentationRequest?.domain,
+            })
+        );
+        const response = await holder.clients.fullAuth.workflows.participateInExchange({
+            localWorkflowId: 'inbox-claim',
+            localExchangeId,
+            verifiablePresentation: presentation,
+        });
+        expect(response.inboxDeliveries).toHaveLength(1);
+        const nodes = await neogma.queryRunner.run('MATCH (c:Credential) RETURN c');
+        expect(nodes.records).toHaveLength(0);
     });
 
     it('keeps inbox escrow pending when a workflow claim reuses a managed index', async () => {

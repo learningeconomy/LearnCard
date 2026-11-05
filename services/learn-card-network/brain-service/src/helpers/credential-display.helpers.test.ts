@@ -10,7 +10,7 @@ describe('public credential display', () => {
     it('never infers an anchor title from private claims or the generic list label', () => {
         const name = getPublicBoostDisplayName({
             name: 'Credential',
-            boost: JSON.stringify({ display: {}, name: 'PRIVATE CLAIM' }),
+            boost: JSON.stringify({ displayOnlyAnchor: true, display: {}, name: 'PRIVATE CLAIM' }),
         });
         expect(name).toBeUndefined();
         expect(
@@ -24,15 +24,30 @@ describe('public credential display', () => {
             claims: 'PRIVATE',
         });
         expect(display).toEqual({ name: 'Public label' });
-        expect(getPublicBoostDisplayName({ boost: JSON.stringify({ display }) })).toBe(
-            'Public label'
-        );
+        expect(
+            getPublicBoostDisplayName({
+                boost: JSON.stringify({ displayOnlyAnchor: true, display }),
+            })
+        ).toBe('Public label');
     });
 
     it('leaves reusable Boost metadata unchanged', () => {
         expect(getPublicBoostDisplayName({ name: 'Public template', boost: '{}' })).toBe(
             'Public template'
         );
+    });
+
+    it("does not mistake an ordinary Boost's own display object (e.g. app appearance fields) for a display-only anchor", () => {
+        // Real app-created BoostCredentials have their own top-level `display` object
+        // (backgroundImage, backgroundColor, displayType) — `'display' in boost` alone
+        // is not a safe anchor marker, unlike `displayOnlyAnchor`.
+        const name = getPublicBoostDisplayName({
+            name: 'Real Boost Name',
+            boost: JSON.stringify({
+                display: { backgroundColor: '#fff', backgroundImage: '', displayType: 'card' },
+            }),
+        });
+        expect(name).toBe('Real Boost Name');
     });
 
     it('bounds public summaries and rejects arbitrary update reasons', () => {

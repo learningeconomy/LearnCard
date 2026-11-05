@@ -134,7 +134,11 @@ import {
     buildObv3AlignmentsForBoost,
     normalizeCredentialAlignments,
 } from '@services/skills-provider/inject';
-import { createBoost, createDisplayOnlyBoost } from '@accesslayer/boost/create';
+import {
+    createBoost,
+    createDisplayOnlyBoost,
+    normalizePublicDisplay,
+} from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -394,6 +398,9 @@ const managedRefreshServiceFor = (refreshId: string, domain: string) => ({
  * retried call reuses the same boost/allocation, or returns the completed result.
  */
 const prepareManagedRefreshSend = async (params: {
+    statusBinding?: 'server';
+    /** Internal signing already owns allocation; preserve its existing request digest. */
+    serverSigning?: boolean;
     statusPurposes?: ('revocation' | 'suspension')[];
     profile: ProfileType;
     /** Returned by validateRefreshSendRecipient in this request, before any mutation. */
@@ -415,6 +422,13 @@ const prepareManagedRefreshSend = async (params: {
     // including when the caller addressed them by their controller did:key.
     const holderDid = getDidWeb(domain, targetProfile.profileId);
     const holderMode = params.encryption === 'holder';
+    // Holder mode is new, so every client using it signs the server-bound entries.
+    const preallocateStatus =
+        params.serverSigning || params.statusBinding === 'server' || holderMode;
+    // Computed once and reused for both the request digest and anchor creation below,
+    // so a retried/keyed request can never digest a different display than the one
+    // actually stored on the anchor.
+    const normalizedDisplay = normalizePublicDisplay(params.display, template);
 
     let intent: RefreshSendIntent | undefined;
 
@@ -426,12 +440,13 @@ const prepareManagedRefreshSend = async (params: {
                 recipientProfileId: targetProfile.profileId,
                 holderDid,
                 templateUri,
-                display: params.display,
+                display: normalizedDisplay,
                 contractUri,
                 integrationId: params.integrationId,
                 credentialId: params.credentialId,
                 statusPurposes: params.statusPurposes,
                 encryption: params.encryption,
+                statusBinding: params.statusBinding,
             }),
         });
 
@@ -440,7 +455,7 @@ const prepareManagedRefreshSend = async (params: {
         if (claim.kind !== 'owned') {
             const refresh = await getCredentialRefresh(intent.refreshId!);
             const prepared = {
-                ...(refresh?.statusEntries
+                ...(preallocateStatus && refresh?.statusEntries
                     ? { statusEntries: JSON.parse(refresh.statusEntries) }
                     : {}),
                 boostUri: intent.boostUri!,
@@ -479,7 +494,7 @@ const prepareManagedRefreshSend = async (params: {
 
         if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
     } else {
-        boost = await createDisplayOnlyBoost(params.display, profile, domain);
+        boost = await createDisplayOnlyBoost(normalizedDisplay, profile, domain);
         boostUri = getBoostUri(boost.id, domain);
 
         if (intent) intent = await recordRefreshSendIntent(intent, { boostUri });
@@ -529,12 +544,16 @@ const prepareManagedRefreshSend = async (params: {
         refreshId = allocation.refreshId;
     }
 
-    const statusEntries = await prepareRefreshStatusEntries(
-        refreshId,
-        profile.profileId,
-        domain,
-        params.statusPurposes
-    );
+    // Older clients allocate their own coordinates after preparation. Bind those
+    // only at the signed handoff, where ownership and index reuse are validated.
+    const statusEntries = preallocateStatus
+        ? await prepareRefreshStatusEntries(
+              refreshId,
+              profile.profileId,
+              domain,
+              params.statusPurposes
+          )
+        : undefined;
     if (intent) {
         intent = await recordRefreshSendIntent(intent, {
             boostUri,
@@ -549,7 +568,7 @@ const prepareManagedRefreshSend = async (params: {
 
     return {
         boostUri,
-        statusEntries,
+        ...(statusEntries ? { statusEntries } : {}),
         credentialId,
         refreshId,
         refreshService: managedRefreshServiceFor(refreshId, domain),
@@ -1215,6 +1234,7 @@ export const boostsRouter = t.router({
                     const keyedPrepared =
                         refreshRequested && input.idempotencyKey && !input.signedCredential
                             ? await prepareManagedRefreshSend({
+                                  serverSigning: true,
                                   profile,
                                   targetProfile: refreshTargetProfile!,
                                   domain,
@@ -1525,7 +1545,9 @@ export const boostsRouter = t.router({
                                                 recipientName: targetProfile.displayName,
                                             })
                                     );
-                                } catch {
+                                } catch (error) {
+                                    if (error instanceof TRPCError && error.code === 'BAD_REQUEST')
+                                        throw error;
                                     console.error('CREDENTIAL_PREPARATION_FAILED');
                                     throw new TRPCError({
                                         code: 'INTERNAL_SERVER_ERROR',
@@ -1733,7 +1755,9 @@ export const boostsRouter = t.router({
                                             recipientName: inboxRecipientName,
                                         })
                                 );
-                            } catch {
+                            } catch (error) {
+                                if (error instanceof TRPCError && error.code === 'BAD_REQUEST')
+                                    throw error;
                                 console.error('INBOX_CREDENTIAL_PREPARATION_FAILED');
                                 throw new TRPCError({
                                     code: 'INTERNAL_SERVER_ERROR',

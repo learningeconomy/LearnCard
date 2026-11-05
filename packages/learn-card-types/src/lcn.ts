@@ -485,7 +485,12 @@ export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 export const CredentialDisplayValidator = z.object({
     name: z.string().trim().min(1).max(280).optional(),
     category: z.string().max(280).optional(),
-    image: z.string().url().optional(),
+    image: z
+        .string()
+        .max(2048)
+        .url()
+        .refine(url => url.startsWith('https://'), { message: 'Image URL must use https' })
+        .optional(),
 });
 export type CredentialDisplay = z.infer<typeof CredentialDisplayValidator>;
 
@@ -557,7 +562,7 @@ export const SendBoostInputValidator = z
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
         display: CredentialDisplayValidator.optional().describe(
-            'Public display metadata for managed and signed-only sends. Nothing is inferred from credential content; omitted names use generic copy.'
+            "Public display metadata for managed and signed-only sends. Nothing is inferred from credential content; omitted names use generic copy. The exception is category: when display.category is omitted for an inline template, the template's category is copied, since consent-flow write authorization is keyed on it."
         ),
         statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         options: SendOptionsValidator.optional().describe(
@@ -630,6 +635,8 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        /** Opt in to signing the server-bound statusEntries; omission preserves client allocation. */
+        statusBinding: z.literal('server').optional(),
         statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),

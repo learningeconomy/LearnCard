@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+    computeCredentialMaterialDigest,
+    matchesCredentialMaterialDigest,
+    matchesCredentialSubjectDigest,
+    getCredentialRefreshDigestCandidateSecrets,
+    decideCredentialRefreshNotification,
     computeCredentialSubjectDigest,
     computeCredentialStatusDigest,
     matchesCredentialStatusDigest,
@@ -38,6 +43,91 @@ describe('versioned status fingerprints', () => {
         expect(matchesCredentialStatusDigest({ type: 'example' }, digest.split(':')[1])).toBe(true);
         vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
         expect(matchesCredentialStatusDigest({ type: 'example' }, digest)).toBe(false);
+    });
+});
+
+describe('subject and material digest key rotation', () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it.each([false, true])('matches retained old keys (version prefix: %s)', prefixed => {
+        const subject = { id: 'holder' };
+        const credential = { credentialSubject: subject, name: 'Original' };
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'old-test-key');
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v1');
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+        const prefix = prefixed ? 'v1:' : '';
+        const subjectDigest = prefix + computeCredentialSubjectDigest(subject);
+        const materialDigest = prefix + computeCredentialMaterialDigest(credential);
+
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'new-test-key');
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+        vi.stubEnv(
+            'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+            JSON.stringify({ v1: 'old-test-key' })
+        );
+        expect(getCredentialRefreshDigestCandidateSecrets()).toEqual([
+            'new-test-key',
+            'old-test-key',
+        ]);
+        expect(matchesCredentialSubjectDigest(subject, subjectDigest)).toBe(true);
+        expect(matchesCredentialMaterialDigest(credential, materialDigest)).toBe(true);
+        expect(matchesCredentialSubjectDigest({ id: 'other' }, subjectDigest)).toBe(false);
+        expect(
+            matchesCredentialMaterialDigest({ ...credential, name: 'Changed' }, materialDigest)
+        ).toBe(false);
+        expect(matchesCredentialSubjectDigest(subject, `unknown:${subjectDigest}`)).toBe(false);
+        expect(matchesCredentialMaterialDigest(credential, `unknown:${materialDigest}`)).toBe(
+            false
+        );
+        const nextDigest = computeCredentialMaterialDigest(credential);
+        expect(nextDigest).toBe(computeCredentialMaterialDigest(credential, 'new-test-key'));
+        expect(computeCredentialSubjectDigest(subject)).toBe(
+            computeCredentialSubjectDigest(subject, 'new-test-key')
+        );
+        expect(
+            decideCredentialRefreshNotification({
+                state: 'active',
+                previousDigest: matchesCredentialMaterialDigest(credential, materialDigest)
+                    ? nextDigest
+                    : materialDigest,
+                nextDigest,
+            })
+        ).toBe('suppressed');
+
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+        expect(matchesCredentialSubjectDigest(subject, subjectDigest)).toBe(false);
+        expect(matchesCredentialMaterialDigest(credential, materialDigest)).toBe(false);
+    });
+
+    it('rejects missing digests and mismatched version prefixes', () => {
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'current-test-key');
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+        vi.stubEnv(
+            'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+            JSON.stringify({ v1: 'old-test-key' })
+        );
+        const subject = { id: 'holder' };
+        const credential = { credentialSubject: subject };
+        expect(matchesCredentialSubjectDigest(subject)).toBe(false);
+        expect(matchesCredentialMaterialDigest(credential, '')).toBe(false);
+        expect(
+            matchesCredentialSubjectDigest(subject, `v1:${computeCredentialSubjectDigest(subject)}`)
+        ).toBe(false);
+        expect(
+            matchesCredentialMaterialDigest(
+                credential,
+                `v1:${computeCredentialMaterialDigest(credential)}`
+            )
+        ).toBe(false);
+        expect(
+            matchesCredentialSubjectDigest(subject, `v2:${computeCredentialSubjectDigest(subject)}`)
+        ).toBe(true);
+        expect(
+            matchesCredentialMaterialDigest(
+                credential,
+                `v2:${computeCredentialMaterialDigest(credential)}`
+            )
+        ).toBe(true);
     });
 });
 

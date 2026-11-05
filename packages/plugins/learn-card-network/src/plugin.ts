@@ -40,6 +40,7 @@ import {
     getCredentialStatusArray,
     injectManagedRefreshService as injectSharedManagedRefreshService,
     prepareManagedRefreshContext,
+    isDisplayOnlyAnchorTemplate,
     isVC2Format,
     materializeCredentialFields,
     isEncrypted,
@@ -706,16 +707,21 @@ export interface LearnCardNetworkPluginOptions extends FederationConfig {
     actAs?: string;
 }
 
-/** The caller's explicit Boost name and category are public metadata; credential content is not. */
-const getPublicDisplay = (input: {
+/**
+ * Mirrors the server's `normalizePublicDisplay` (accesslayer/boost/create.ts) so wire
+ * payloads already carry the category explicitly; the server still normalizes
+ * independently since direct API/REST callers bypass the SDK entirely. Only
+ * `category` may fall back to the inline template — consent-flow authorization keys
+ * off it, and a dropped category reads as unrestricted. `name`/`image` are never
+ * inferred from the template.
+ */
+const normalizePublicDisplay = (input: {
     display?: { name?: string; category?: string; image?: string };
-    template?: { name?: string | null; category?: string | null };
+    template?: { category?: string | null };
 }): { name?: string; category?: string; image?: string } | undefined => {
-    if (input.display) return input.display;
-    const name = input.template?.name?.trim().slice(0, 280);
-    const category = input.template?.category?.slice(0, 280);
-    if (!name && !category) return undefined;
-    return { ...(name ? { name } : {}), ...(category ? { category } : {}) };
+    const category = input.display?.category ?? input.template?.category?.slice(0, 280);
+    if (!input.display && !category) return undefined;
+    return { ...input.display, ...(category ? { category } : {}) };
 };
 
 export async function getLearnCardNetworkPlugin(
@@ -859,6 +865,24 @@ export async function getLearnCardNetworkPlugin(
                 error
             );
             return _learnCard.invoke.resolveFromLCN(boostUri);
+        }
+    };
+
+    /**
+     * Display-only anchors (created by a prior managed/signed-only send that had no
+     * explicit credential) store a minimal placeholder VC — valid-looking, but with
+     * no real claims — marked via `isDisplayOnlyAnchorTemplate` (the same marker the
+     * server's `prepareCredentialFromBoost` guard checks for; a plain top-level
+     * `display` key is NOT a safe marker, since ordinary Boosts commonly have their
+     * own `display` object too). Reusing such an anchor's uri as a template would
+     * sign and deliver that empty placeholder instead of real content, bypassing the
+     * equivalent server-side guard, since a locally-signed credential never reaches it.
+     */
+    const assertIssuableBoostTemplate = (boost: unknown): void => {
+        if (isDisplayOnlyAnchorTemplate(boost)) {
+            throw new Error(
+                'This Boost is a display-only anchor and has no issuance credential. Pass `template` or `signedCredential` instead of reusing its uri as a templateUri.'
+            );
         }
     };
 
@@ -2127,6 +2151,7 @@ export async function getLearnCardNetworkPlugin(
                 await ensureUser();
 
                 const result = await getBoostTemplateForIssuance(_learnCard, boostUri);
+                assertIssuableBoostTemplate(result);
                 const data = await UnsignedVCValidator.spa(result);
 
                 if (!data.success) throw new Error('Did not get a valid boost from URI');
@@ -2375,7 +2400,8 @@ export async function getLearnCardNetworkPlugin(
                         templateUri: input.templateUri,
                         template: input.template,
                         signedCredential: input.signedCredential,
-                        display: getPublicDisplay(input),
+                        display: normalizePublicDisplay(input),
+                        statusPurposes: input.statusPurposes,
                         contractUri: input.contractUri,
                         templateData: input.templateData,
                         integrationId: input.integrationId,
@@ -2422,6 +2448,7 @@ export async function getLearnCardNetworkPlugin(
                                 _learnCard,
                                 input.templateUri
                             );
+                            assertIssuableBoostTemplate(result);
                             const data = await UnsignedVCValidator.spa(result);
 
                             if (!data.success)
@@ -2437,12 +2464,13 @@ export async function getLearnCardNetworkPlugin(
                         }
 
                         const prepared = await client.boost.prepareRefreshableSend.mutate({
+                            statusBinding: 'server',
                             ...(input.statusPurposes
                                 ? { statusPurposes: input.statusPurposes }
                                 : {}),
                             recipient: input.recipient,
                             templateUri: input.templateUri,
-                            display: getPublicDisplay(input),
+                            display: normalizePublicDisplay(input),
                             ...(input.contractUri ? { contractUri: input.contractUri } : {}),
                             ...(input.integrationId ? { integrationId: input.integrationId } : {}),
                             ...(boost.id ? { credentialId: boost.id } : {}),
@@ -2537,7 +2565,8 @@ export async function getLearnCardNetworkPlugin(
                             return client.boost.send.mutate({
                                 type: 'boost',
                                 recipient: input.recipient,
-                                display: getPublicDisplay(input),
+                                display: normalizePublicDisplay(input),
+                                statusPurposes: input.statusPurposes,
                                 contractUri: input.contractUri,
                                 integrationId: input.integrationId,
                                 idempotencyKey: input.idempotencyKey,
@@ -2640,6 +2669,7 @@ export async function getLearnCardNetworkPlugin(
 
                     if (isRemoteDidWebRecipient && input.templateUri) {
                         const boostRecord = await _learnCard.invoke.getBoost(input.templateUri);
+                        assertIssuableBoostTemplate(boostRecord.boost);
                         let boost = boostRecord.boost;
                         const boostString = JSON.stringify(boost);
                         const allowAutoAppendEvidence = !hasDynamicEvidenceTemplate(boostString);
@@ -2709,6 +2739,7 @@ export async function getLearnCardNetworkPlugin(
                             _learnCard,
                             input.templateUri
                         );
+                        assertIssuableBoostTemplate(result);
                         const data = await UnsignedVCValidator.spa(result);
 
                         if (data.success) {

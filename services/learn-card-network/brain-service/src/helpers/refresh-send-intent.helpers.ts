@@ -45,6 +45,7 @@ const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =
 
 /** Versioned, domain-separated public-metadata digest. Legacy unkeyed intents fail closed. */
 export const computeRefreshSendRequestDigest = (request: {
+    statusBinding?: 'server';
     statusPurposes?: ('revocation' | 'suspension')[];
     recipientProfileId: string;
     holderDid: string;
@@ -70,6 +71,7 @@ export const computeRefreshSendRequestDigest = (request: {
                 refresh: true,
                 credentialId: request.credentialId ?? null,
                 encryption: request.encryption ?? 'network',
+                ...(request.statusBinding ? { statusBinding: request.statusBinding } : {}),
                 ...(request.statusPurposes?.includes('suspension')
                     ? { suspensionRequested: true }
                     : {}),

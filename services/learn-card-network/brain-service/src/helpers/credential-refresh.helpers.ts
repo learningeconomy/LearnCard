@@ -65,6 +65,8 @@ import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers'
 import { logCredentialSent } from './activity.helpers';
 import {
     computeCredentialMaterialDigest,
+    matchesCredentialMaterialDigest,
+    matchesCredentialSubjectDigest,
     computeCredentialStatusDigest,
     matchesCredentialStatusDigest,
     computeCredentialSubjectDigest,
@@ -265,7 +267,11 @@ export const peekCredentialRefreshInitialBinding = async (params: {
 
     assertInitialCredentialMatches(
         root,
-        computeCredentialMaterialDigest(credential as unknown as Record<string, unknown>),
+        stored =>
+            matchesCredentialMaterialDigest(
+                credential as unknown as Record<string, unknown>,
+                stored
+            ),
         credential.credentialStatus,
         boostId
     );
@@ -383,14 +389,14 @@ export const getBoundRefreshBoostId = async (refreshId: string): Promise<string 
 
 const assertInitialCredentialMatches = (
     root: InitialRefreshRoot,
-    materialDigest: string,
+    matchesMaterialDigest: (stored: string) => boolean,
     credentialStatus: unknown,
     boostId?: string
 ): void => {
     if (
         !root.materialDigest ||
         !root.credentialStatusDigest ||
-        root.materialDigest !== materialDigest ||
+        !matchesMaterialDigest(root.materialDigest) ||
         !matchesCredentialStatusDigest(credentialStatus, root.credentialStatusDigest)
     ) {
         throw new TRPCError({
@@ -599,6 +605,11 @@ const deliverManagedRefreshVersion1Credential = async (params: {
     refreshService: ManagedCredentialRefreshReceipt['refreshService'];
     jwe: JWE;
     materialDigest: string;
+    /**
+     * Compares a stored root material digest with this delivery. Network sends match
+     * under any retained digest key; holder handoffs (ciphertext digests) match exactly.
+     */
+    matchesMaterialDigest?: (stored: string) => boolean;
     credentialStatusDigest: string;
     credentialSubjectDigest: string | null;
     boostUri?: string;
@@ -628,6 +639,8 @@ const deliverManagedRefreshVersion1Credential = async (params: {
         contractTerms,
         domain,
     } = params;
+    const matchesMaterialDigest =
+        params.matchesMaterialDigest ?? ((stored: string) => stored === rootMaterialDigest);
 
     // Metadata-only issuance receipt (LC-2198 decision 2): populated from the
     // validated allocation. It deliberately excludes all credential claims, subject
@@ -671,7 +684,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
     if (existingRoot) {
         assertInitialCredentialMatches(
             existingRoot,
-            rootMaterialDigest,
+            matchesMaterialDigest,
             credentialStatus,
             boost?.id
         );
@@ -853,7 +866,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
         }
         assertInitialCredentialMatches(
             concurrentlyBoundRoot,
-            rootMaterialDigest,
+            matchesMaterialDigest,
             credentialStatus,
             boost?.id
         );
@@ -1043,6 +1056,11 @@ export const sendRefreshableCredential = async (
         refreshService: ManagedCredentialRefreshBindingValidator.parse(credential.refreshService),
         jwe,
         materialDigest: rootMaterialDigest,
+        matchesMaterialDigest: stored =>
+            matchesCredentialMaterialDigest(
+                credential as unknown as Record<string, unknown>,
+                stored
+            ),
         credentialStatusDigest,
         credentialSubjectDigest: computeCredentialSubjectDigest(credential.credentialSubject),
         boostUri,
@@ -1439,8 +1457,10 @@ const assertRefreshVersionInvariants = async (
 
     if (
         !aggregate.credentialSubjectDigest ||
-        computeCredentialSubjectDigest(credential.credentialSubject) !==
+        !matchesCredentialSubjectDigest(
+            credential.credentialSubject,
             aggregate.credentialSubjectDigest
+        )
     ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -1820,7 +1840,12 @@ export const publishCredentialRefresh = async (
     const activeNotification = decideCredentialRefreshNotification({
         state: 'active',
         notifyHolder,
-        previousDigest: aggregate.materialDigest,
+        previousDigest: matchesCredentialMaterialDigest(
+            signedCredential as unknown as Record<string, unknown>,
+            aggregate.materialDigest
+        )
+            ? nextDigest
+            : aggregate.materialDigest,
         nextDigest,
     });
     const notification: PublishCredentialRefreshNotification =

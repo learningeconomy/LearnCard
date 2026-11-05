@@ -271,6 +271,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         // The server runs every guard, creates/reuses the boost and allocates the
         // refresh in one call; the SDK never allocates client-side.
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            statusBinding: 'server',
             recipient: 'userb',
             templateUri: 'did:web:network.example:boost:1',
             display: undefined,
@@ -301,6 +302,47 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
     });
 
+    it('throws instead of signing when templateUri points at a display-only anchor', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ displayOnlyAnchor: true, display: {} }),
+        });
+        const plugin = await getPlugin(learnCard, client);
+
+        await expect(
+            plugin.methods?.send(learnCard, {
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: 'did:web:network.example:boost:1',
+                refresh: true,
+            })
+        ).rejects.toThrow('display-only anchor');
+
+        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(client.boost.prepareRefreshableSend.mutate).not.toHaveBeenCalled();
+    });
+
+    it('signs normally from templateUri when the Boost has its own display object (not a display-only anchor)', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({
+                display: { backgroundColor: '#fff', backgroundImage: '', displayType: 'card' },
+            }),
+        });
+        const plugin = await getPlugin(learnCard, client);
+
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+        });
+
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalled();
+    });
+
     it('prepares the inline boost before signing and reuses its prepared URI for delivery', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();
@@ -324,9 +366,10 @@ describe('unified send with refresh: true (managed branch)', () => {
         const forwarded = client.boost.send.mutate.mock.calls[0]?.[0] as any;
 
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
+            statusBinding: 'server',
             recipient: 'userb',
             templateUri: undefined,
-            display: { name: 'Inline Refreshable Badge' },
+            display: undefined,
             contractUri: 'contract:1',
             credentialId: 'urn:uuid:inline-credential-id',
         });
@@ -516,6 +559,25 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.boost.send.mutate).toHaveBeenCalledWith(input);
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
         expect(learnCard.invoke.issueCredential).toBeUndefined();
+    });
+
+    it('forwards statusPurposes to the server signing-authority path when local signing is unavailable', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        delete learnCard.invoke.issueCredential;
+        const plugin = await getPlugin(learnCard, client);
+
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+            statusPurposes: ['suspension'],
+        });
+
+        expect(client.boost.send.mutate).toHaveBeenCalledWith(
+            expect.objectContaining({ statusPurposes: ['suspension'] })
+        );
     });
 
     it.each([
