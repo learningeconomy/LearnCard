@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthSessionError } from '@learncard/types';
-import { createWeb3AuthStrategy, deriveWeb3AuthKey } from '../createWeb3AuthStrategy';
+import {
+    AccountUsesNewerSignInError,
+    createWeb3AuthStrategy,
+    deriveWeb3AuthKey,
+} from '../createWeb3AuthStrategy';
 import { isNetworkError } from '../../helpers/networkError';
 
 const sdk = vi.hoisted(() => ({
@@ -431,5 +435,115 @@ describe('Web3Auth account setup coordination', () => {
                 failureMessage: expect.stringContaining('api.web3auth.io/signer-service'),
             })
         );
+    });
+});
+
+describe('Web3Auth sign-in account lookup', () => {
+    const lookupConfig = {
+        ...config,
+        accountLookup: { serverUrl: 'https://lca.test/api', tenantId: 'vetpass' },
+    };
+    const respond = (status: number, body?: unknown): Response =>
+        new Response(body === undefined ? null : JSON.stringify(body), { status });
+    let fetchMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        sdk.connected = false;
+        sdk.native = false;
+        sdk.init.mockResolvedValue(undefined);
+        sdk.connect.mockResolvedValue(undefined);
+        sdk.getUserInfo.mockResolvedValue({ verifierId: 'test-user', verifier: 'test-verifier' });
+        sdk.request.mockResolvedValue('synthetic-private-key');
+        fetchMock = vi.fn();
+        vi.stubGlobal('navigator', {});
+        vi.stubGlobal('fetch', fetchMock);
+    });
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('asks lca-api for the account with the sign-in token and tenant', async () => {
+        fetchMock.mockResolvedValueOnce(respond(404));
+        await createWeb3AuthStrategy(lookupConfig).fetchServerKeyStatus(token(), 'firebase');
+
+        const [url, init] = fetchMock.mock.calls[0]!;
+        expect(url).toBe('https://lca.test/api/keys/auth-share');
+        expect(init.method).toBe('POST');
+        expect(init.headers).toEqual({
+            'Content-Type': 'application/json',
+            'X-Tenant-Id': 'vetpass',
+        });
+        expect(JSON.parse(init.body)).toEqual({ authToken: token(), providerType: 'firebase' });
+    });
+
+    it.each([
+        ['no record (404)', () => respond(404)],
+        ['no record (null)', () => respond(200, null)],
+        ['a legacy or mid-migration record', () => respond(200, { keyProvider: 'web3auth' })],
+    ])('derives the Web3Auth key for %s', async (_label, response) => {
+        fetchMock.mockResolvedValueOnce(response());
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+        await strategy.fetchServerKeyStatus(token(), 'firebase');
+
+        await expect(derive(strategy)).resolves.toBe('synthetic-private-key');
+    });
+
+    it('stops before Web3Auth when the account already uses SSS', async () => {
+        fetchMock.mockResolvedValueOnce(
+            respond(200, { keyProvider: 'sss', primaryDid: 'did:key:sss-account' })
+        );
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+
+        const error = await strategy
+            .fetchServerKeyStatus(token(), 'firebase')
+            .catch((e: unknown) => e);
+
+        expect(error).toBeInstanceOf(AccountUsesNewerSignInError);
+        expect((error as AccountUsesNewerSignInError).code).toBe('account_uses_newer_sign_in');
+        expect(isNetworkError(error)).toBe(false);
+        await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+        expect(sdk.init).not.toHaveBeenCalled();
+    });
+
+    it('does not keep an earlier account usable after a stopped sign-in', async () => {
+        fetchMock
+            .mockResolvedValueOnce(respond(404))
+            .mockResolvedValueOnce(respond(200, { keyProvider: 'sss' }));
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+        await strategy.fetchServerKeyStatus(token('earlier-user'), 'firebase');
+        await strategy.fetchServerKeyStatus(token(), 'firebase').catch(() => undefined);
+
+        await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+    });
+
+    it('retries quietly when lca-api is unreachable', async () => {
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+
+        const error = await strategy
+            .fetchServerKeyStatus(token(), 'firebase')
+            .catch((e: unknown) => e);
+
+        expect(isNetworkError(error)).toBe(true);
+        await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+    });
+
+    it.each([
+        ['a server error', () => respond(500)],
+        ['an unreadable body', () => new Response('not json', { status: 200 })],
+    ])('fails closed on %s', async (_label, response) => {
+        fetchMock.mockResolvedValueOnce(response());
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+
+        await expect(strategy.fetchServerKeyStatus(token(), 'firebase')).rejects.toThrow(
+            'We couldn’t finish signing you in.'
+        );
+        await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+    });
+
+    it('does not look the account up without accountLookup (legacy key extraction)', async () => {
+        await expect(deriveWeb3AuthKey(config, token())).resolves.toBe('synthetic-private-key');
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 });

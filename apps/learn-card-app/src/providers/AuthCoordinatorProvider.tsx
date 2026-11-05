@@ -339,11 +339,22 @@ registerKeyDerivationFactory('web3auth', () => {
     const { providerConfig } = getAuthConfig();
     const w3a = providerConfig.web3Auth ?? {};
 
+    let tenant: ReturnType<typeof getResolvedTenantConfig> | undefined;
+
+    try {
+        tenant = getResolvedTenantConfig();
+    } catch {
+        tenant = undefined;
+    }
+
     return createWeb3AuthStrategy({
         clientId: (w3a.clientId as string) ?? '',
         web3AuthNetwork: (w3a.network as string) ?? '',
         verifier: (w3a.verifierId as string) ?? '',
         chainConfig: w3a.rpcTarget ? { rpcTarget: w3a.rpcTarget as string } : undefined,
+        // An account that already signs in with SSS must never get a Web3Auth key:
+        // this build may predate the switch, or the config may have been rolled back.
+        accountLookup: { serverUrl: getSSSConfig().serverUrl, tenantId: tenant?.tenantId },
         isSessionCurrent: async uid => {
             const provider = resolveAuthProvider(getAuthConfig());
             if (!provider) return false;

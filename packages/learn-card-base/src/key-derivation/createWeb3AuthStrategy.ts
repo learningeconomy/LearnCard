@@ -61,6 +61,71 @@ class Web3AuthNetworkError extends Error {
 }
 
 /**
+ * The account already signs in with SSS. Deriving a Web3Auth key for it would
+ * produce a different, empty identity, so sign-in stops instead.
+ */
+export class AccountUsesNewerSignInError extends Error {
+    readonly code = 'account_uses_newer_sign_in';
+
+    constructor() {
+        super(
+            'This account uses a newer way to sign in. Please update to the latest version of the app and sign in again.'
+        );
+        this.name = 'AccountUsesNewerSignInError';
+    }
+}
+
+const ACCOUNT_LOOKUP_TIMEOUT_MS = 30_000;
+
+/**
+ * Whether lca-api already has an SSS key record for the signed-in account.
+ * A missing record (404 or null) and a `web3auth` record (legacy or mid-migration)
+ * both keep Web3Auth, which derives the account's existing key. Anything that
+ * cannot be read fails closed: a network error retries quietly, others surface.
+ */
+const accountUsesSss = async (
+    lookup: NonNullable<Web3AuthStrategyConfig['accountLookup']>,
+    token: string,
+    providerType: string
+): Promise<boolean> => {
+    let response: Response;
+    try {
+        response = await fetch(`${lookup.serverUrl}/keys/auth-share`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(lookup.tenantId ? { 'X-Tenant-Id': lookup.tenantId } : {}),
+            },
+            signal:
+                typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+                    ? AbortSignal.timeout(ACCOUNT_LOOKUP_TIMEOUT_MS)
+                    : undefined,
+            body: JSON.stringify({ authToken: token, providerType }),
+        });
+    } catch (error) {
+        log.warn('Web3Auth account lookup failed', { networkFailure: isNetworkError(error) });
+        if (isNetworkError(error)) throw new Web3AuthNetworkError();
+        throw new Error('We couldn’t finish signing you in. Please try again.', { cause: error });
+    }
+
+    if (response.status === 404) return false;
+    if (!response.ok) {
+        log.warn('Web3Auth account lookup refused', { httpStatus: response.status });
+        throw new Error('We couldn’t finish signing you in. Please try again.');
+    }
+
+    // The body includes the SSS auth share; only the provider is read.
+    const data = (await response.json().catch(() => undefined)) as
+        { keyProvider?: unknown } | null | undefined;
+    if (data === undefined) {
+        log.warn('Web3Auth account lookup unreadable');
+        throw new Error('We couldn’t finish signing you in. Please try again.');
+    }
+
+    return data?.keyProvider === 'sss';
+};
+
+/**
  * The shape of a JWT: a base64url JSON header (`{"` encodes to `eyJ`) followed
  * by two more dot-separated segments. Anchored on `eyJ` so hostnames such as
  * `api.web3auth.io` survive in diagnostics.
@@ -144,6 +209,18 @@ export interface Web3AuthStrategyConfig {
 
     /** Recheck live auth after waiting for another tab, and before returning its key. */
     isSessionCurrent?: (uid: string) => Promise<boolean>;
+
+    /**
+     * Before deriving, ask lca-api which method this account signs in with and
+     * stop if it is already SSS (see `AccountUsesNewerSignInError`). Set for
+     * sign-in, so a stale build or a config rollback cannot split an SSS
+     * account; omit for legacy-key extraction during migration.
+     */
+    accountLookup?: {
+        /** lca-api base URL (`auth.sss.serverUrl`). */
+        serverUrl: string;
+        tenantId?: string;
+    };
 
     /** Optional Ethereum chain config overrides */
     chainConfig?: {
@@ -454,11 +531,24 @@ export const createWeb3AuthStrategy = (
 
         fetchServerKeyStatus: async (
             token: string,
-            _providerType: string
+            providerType: string
         ): Promise<ServerKeyStatus> => {
-            // Cache the token and decode the uid for use in reconstructKey
+            // Forget any earlier account before the lookup can stop sign-in.
+            cachedToken = null;
+            cachedUid = null;
+            const uid = decodeJwtSub(token);
+
+            if (
+                config.accountLookup &&
+                (await accountUsesSss(config.accountLookup, token, providerType))
+            ) {
+                log.warn('Web3Auth sign-in stopped: account already uses SSS');
+                throw new AccountUsesNewerSignInError();
+            }
+
+            // Cache the token and uid for use in reconstructKey
             cachedToken = token;
-            cachedUid = decodeJwtSub(token);
+            cachedUid = uid;
 
             // Web3Auth always has a key for any authenticated user —
             // the key is derived deterministically from token + verifier.
