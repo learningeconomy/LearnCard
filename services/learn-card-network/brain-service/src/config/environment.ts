@@ -47,6 +47,7 @@ export const brainServiceEnvironmentShape = {
     CAMPAIGN_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     CAMPAIGN_QUEUE_URL: optionalEnvironmentUrl,
     CAMPAIGN_UNSUBSCRIBE_SECRET: optionalEnvironmentString,
+    CAMPAIGN_APP_ORIGINS: optionalEnvironmentString,
     POSTMARK_BROADCAST_STREAM: z.string().trim().min(1).default('broadcast'),
     CAMPAIGN_EMAIL_PAGE_SIZE: z.preprocess(
         value => (value === '' ? undefined : value),

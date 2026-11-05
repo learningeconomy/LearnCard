@@ -314,6 +314,13 @@ copy is plain text, escaped by React. Keep announcement copy free of private lea
 or credential data. Create records capture the request's resolved tenant; queued
 waves use that stored tenant for branding and `/m/<id>?utm_source=email&utm_campaign=<id>`.
 Legacy records without a tenant use the configured default tenant.
+The CTA origin comes from the deployment-owned `CAMPAIGN_APP_ORIGINS` JSON map.
+Stage configs map LearnCard staging to `staging.learncard.ai`, VetPass staging to
+`staging.vetpass.app`, and ScoutPass staging to `staging.pass.scout.org`. Production
+configs supply their corresponding production origins. Queued sends do not use
+request headers to choose an app origin. Custom deployments must configure a map;
+missing, malformed, credential-bearing or non-origin URLs fail preparation before
+the durable email claim. HTTP is allowed only for loopback development origins.
 
 Email dispatch requires `POSTMARK_API_KEY`, `DOMAIN_NAME` (the public Brain host),
 `POSTMARK_BROADCAST_STREAM` (default `broadcast`) and `CAMPAIGN_UNSUBSCRIBE_SECRET`
@@ -343,11 +350,15 @@ future recovery design permits another send. Never clear claims blindly. Provide
 acceptance is not proof of inbox delivery. Archive/pause, generation, membership,
 age, contact and opt-out state are checked at the reservation boundary.
 
-Browser unsubscribe links use the tenant `/unsubscribe?token=...` page. The
-`List-Unsubscribe` header deliberately uses the Brain HTTPS
-`/campaigns/unsubscribe?token=...` endpoint instead: it accepts the actual RFC 8058
+Browser unsubscribe links use the sending Brain service's anonymous
+`/campaigns/unsubscribe/browser?token=...` confirmation page, including ScoutPass.
+GET renders a form; POST applies the opt-out and renders confirmation. This page
+uses no external assets or analytics, sends no-store/no-referrer/CSP headers, and
+supports English, Spanish, French and Arabic using the browser language.
+The `List-Unsubscribe` header uses the Brain HTTPS
+`/campaigns/unsubscribe?token=...` endpoint: it accepts the actual RFC 8058
 `application/x-www-form-urlencoded` POST `List-Unsubscribe=One-Click`, without login,
-cookies, redirects or JavaScript. GET does not mutate. Both paths verify the same
+cookies, redirects or JavaScript. GET does not mutate. Both POST paths verify the same
 purpose-separated HMAC token, then idempotently set the profile's email opt-out.
 Version 2 tokens bind to a unique, durable `campaignUnsubscribeId` allocated under
 the recipient lock before sending. Renaming a profile preserves its links; reusing

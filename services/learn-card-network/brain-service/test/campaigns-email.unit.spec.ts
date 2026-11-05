@@ -1,3 +1,7 @@
+import devConfig from '../config/config.dev.json';
+import productionConfig from '../config/config.production.json';
+import scoutsDevConfig from '../config/config.scouts.dev.json';
+import scoutsProductionConfig from '../config/config.scouts.production.json';
 import { createHmac } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Campaign } from '@learncard/types';
@@ -12,6 +16,7 @@ const mocks = vi.hoisted(() => ({
     environment: {
         POSTMARK_API_KEY: 'test-only',
         DOMAIN_NAME: 'brain.example',
+        CAMPAIGN_APP_ORIGINS: undefined as string | undefined,
         POSTMARK_BROADCAST_STREAM: 'broadcast',
         CAMPAIGN_UNSUBSCRIBE_SECRET: 'test-only-secret-at-least-32-bytes-long',
     },
@@ -52,6 +57,8 @@ const campaign = {
 } as Campaign;
 beforeEach(() => {
     vi.clearAllMocks();
+    mocks.environment.DOMAIN_NAME = 'brain.example';
+    mocks.environment.CAMPAIGN_APP_ORIGINS = JSON.stringify({ vetpass: 'https://vetpass.app' });
     mocks.environment.POSTMARK_BROADCAST_STREAM = 'broadcast';
     mocks.environment.POSTMARK_API_KEY = 'test-only';
     mocks.recipient = { campaign, email: 'adult@example.com', unsubscribeId };
@@ -65,6 +72,58 @@ beforeEach(() => {
     mocks.send.mockResolvedValue(undefined);
 });
 describe('campaign email', () => {
+    it('uses the configured default tenant for legacy records without a stored tenant', () => {
+        vi.stubEnv('DEFAULT_TENANT_ID', 'vetpass');
+        try {
+            const links = campaignEmailLinks({ ...campaign, tenantId: undefined }, unsubscribeId);
+            expect(new URL(links.ctaUrl!).origin).toBe('https://vetpass.app');
+        } finally {
+            vi.unstubAllEnvs();
+        }
+    });
+
+    it.each([
+        ['vetpass', devConfig, 'https://staging.vetpass.app'],
+        ['learncard', devConfig, 'https://staging.learncard.ai'],
+        ['scoutpass', scoutsDevConfig, 'https://staging.pass.scout.org'],
+        ['vetpass', productionConfig, 'https://vetpass.app'],
+        ['learncard', productionConfig, 'https://learncard.app'],
+        ['scoutpass', scoutsProductionConfig, 'https://pass.scout.org'],
+    ] as const)('uses deployment origins for %s (%s)', (tenantId, config, expectedOrigin) => {
+        mocks.environment.DOMAIN_NAME = config.DOMAIN_NAME;
+        mocks.environment.CAMPAIGN_APP_ORIGINS = config.CAMPAIGN_APP_ORIGINS;
+        const links = campaignEmailLinks({ ...campaign, tenantId }, unsubscribeId);
+        expect(new URL(links.ctaUrl!).origin).toBe(expectedOrigin);
+        expect(new URL(links.unsubscribeUrl).origin).toBe(`https://${config.DOMAIN_NAME}`);
+        expect(new URL(links.unsubscribeUrl).pathname).toBe('/campaigns/unsubscribe/browser');
+        expect(new URL(links.oneClickUrl).pathname).toBe('/campaigns/unsubscribe');
+        expect(
+            verifyCampaignUnsubscribeToken(new URL(links.unsubscribeUrl).searchParams.get('token')!)
+        ).toEqual({ unsubscribeId, campaignId: campaign.id });
+    });
+
+    it.each([
+        undefined,
+        '{}',
+        'invalid',
+        '[]',
+        '{"vetpass":"http://vetpass.app"}',
+        '{"vetpass":"https://user:password@vetpass.app"}',
+        '{"vetpass":"https://vetpass.app/path"}',
+        '{"vetpass":"https://vetpass.app?redirect=elsewhere"}',
+    ])('rejects absent or unsafe deployment origins (%s)', origins => {
+        mocks.environment.CAMPAIGN_APP_ORIGINS = origins;
+        expect(() => campaignEmailLinks(campaign, unsubscribeId)).toThrow('Campaign app origin');
+    });
+
+    it('supports explicitly configured local app and Brain origins', () => {
+        mocks.environment.DOMAIN_NAME = 'localhost%3A4000/trpc';
+        mocks.environment.CAMPAIGN_APP_ORIGINS = '{"vetpass":"http://localhost:3000"}';
+        const links = campaignEmailLinks(campaign, unsubscribeId);
+        expect(new URL(links.ctaUrl!).origin).toBe('http://localhost:3000');
+        expect(new URL(links.unsubscribeUrl).origin).toBe('http://localhost:4000');
+    });
+
     it('uses stored tenant, broadcast stream, authored subject and RFC 8058 headers', async () => {
         await sendCampaignEmail(campaign, 'adult');
         expect(mocks.claim).toHaveBeenCalledWith(
@@ -96,7 +155,9 @@ describe('campaign email', () => {
         expect(links.ctaUrl).toBe(
             'https://vetpass.app/m/new-programs?utm_source=email&utm_campaign=new-programs'
         );
-        expect(links.unsubscribeUrl).toMatch(/^https:\/\/vetpass.app\/unsubscribe\?token=/);
+        expect(links.unsubscribeUrl).toMatch(
+            /^https:\/\/brain.example\/campaigns\/unsubscribe\/browser\?token=/
+        );
     });
     it.each([
         { channels: ['email'], message: campaign.message },
@@ -110,7 +171,9 @@ describe('campaign email', () => {
         const model = mocks.prepare.mock.calls[0][0].templateModel;
         expect(model.ctaUrl).toBeUndefined();
         expect(model.body).toBe(campaign.email!.body);
-        expect(model.unsubscribeUrl).toMatch(/^https:\/\/vetpass.app\/unsubscribe\?token=/);
+        expect(model.unsubscribeUrl).toMatch(
+            /^https:\/\/brain.example\/campaigns\/unsubscribe\/browser\?token=/
+        );
     });
     it('fails stream preflight before attempting a claim', async () => {
         mocks.stream.mockRejectedValueOnce(new Error('Invalid stream'));

@@ -25,5 +25,6 @@
     "SKILL_EMBEDDING_BEDROCK_READ_ENABLED": "false",
     "SKILL_EMBEDDING_BEDROCK_REGION": "us-east-1",
     "SKILL_EMBEDDING_DIMENSION": "1024",
-    "SKILL_EMBEDDING_GOOGLE_MODEL": "gemini-embedding-001"
+    "SKILL_EMBEDDING_GOOGLE_MODEL": "gemini-embedding-001",
+    "CAMPAIGN_APP_ORIGINS": "{\"scoutpass\":\"https://pass.scout.org\"}"
 }

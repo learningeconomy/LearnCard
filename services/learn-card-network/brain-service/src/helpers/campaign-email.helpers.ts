@@ -1,9 +1,10 @@
 import type { Campaign } from '@learncard/types';
-import { resolveBranding, resolveTenantFromRequest } from '@learncard/email-templates';
+import { resolveTenantFromRequest } from '@learncard/email-templates';
 import { environment } from '@environment';
 import { claimCampaignEmail, acknowledgeCampaignEmail } from '@accesslayer/campaign/email';
 import { PostmarkAdapter } from '../services/delivery/adapters/postmark.adapter';
 import { signCampaignUnsubscribeToken } from './campaign-unsubscribe.helpers';
+import { getCampaignAppOrigin } from './campaign-app-origin.helpers';
 
 /** Campaign delivery must never fall through to a logging or transactional adapter. */
 export const assertCampaignEmailConfigured = (): void => {
@@ -19,26 +20,27 @@ export const campaignEmailLinks = (
     campaign: Campaign,
     unsubscribeId: string
 ): { ctaUrl?: string; unsubscribeUrl: string; oneClickUrl: string } => {
-    const branding = resolveBranding(
-        resolveTenantFromRequest({ 'x-tenant-id': campaign.tenantId }).emailBranding
-    );
     const token = signCampaignUnsubscribeToken(unsubscribeId, campaign.id);
-    const cta = new URL(`/m/${campaign.id}`, branding.appUrl);
-    cta.searchParams.set('utm_source', 'email');
-    cta.searchParams.set('utm_campaign', campaign.id);
-    const unsubscribe = new URL('/unsubscribe', branding.appUrl);
-    unsubscribe.searchParams.set('token', token);
+    let ctaUrl: string | undefined;
+    if (campaign.channels.includes('inApp') && campaign.message?.enabled) {
+        const tenantId = campaign.tenantId ?? resolveTenantFromRequest({}).id;
+        const cta = new URL(`/m/${campaign.id}`, getCampaignAppOrigin(tenantId));
+        cta.searchParams.set('utm_source', 'email');
+        cta.searchParams.set('utm_campaign', campaign.id);
+        ctaUrl = cta.toString();
+    }
     const domain = environment.DOMAIN_NAME?.replace(/%3A/gi, ':').replace(/\/trpc\/?$/, '');
     if (!domain) throw new Error('Campaign unsubscribe endpoint is not configured');
     const api = new URL(`https://${domain}`);
     if (api.username || api.password || api.pathname !== '/' || api.search || api.hash)
         throw new Error('Invalid Brain domain');
+    if (['localhost', '127.0.0.1', '[::1]'].includes(api.hostname)) api.protocol = 'http:';
+    const unsubscribe = new URL('/campaigns/unsubscribe/browser', api);
+    unsubscribe.searchParams.set('token', token);
     const oneClick = new URL('/campaigns/unsubscribe', api);
     oneClick.searchParams.set('token', token);
     return {
-        ...(campaign.channels.includes('inApp') && campaign.message?.enabled
-            ? { ctaUrl: cta.toString() }
-            : {}),
+        ...(ctaUrl ? { ctaUrl } : {}),
         unsubscribeUrl: unsubscribe.toString(),
         oneClickUrl: oneClick.toString(),
     };
