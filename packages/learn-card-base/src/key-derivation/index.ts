@@ -10,6 +10,7 @@
  */
 
 export {
+    ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS,
     AccountUsesNewerSignInError,
     createWeb3AuthStrategy,
     deriveWeb3AuthKey,

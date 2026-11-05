@@ -74,7 +74,23 @@ export class AccountUsesNewerSignInError extends Error {
     }
 }
 
-const ACCOUNT_LOOKUP_TIMEOUT_MS = 30_000;
+/**
+ * Per-attempt lookup deadlines. Each failed attempt (e.g. a cold lca-api that
+ * missed the first deadline) gets the next, longer one when the user retries;
+ * a successful lookup starts over. Kept under the coordinator's status deadline
+ * (`ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS`), so a slow lookup ends in a visible
+ * retryable error rather than the coordinator's silent return to idle.
+ */
+const ACCOUNT_LOOKUP_TIMEOUTS_MS = [3_500, 7_000, 14_000, 28_000] as const;
+
+/**
+ * Coordinator `serverStatusTimeoutMs` for strategies that set `accountLookup`:
+ * the longest lookup deadline plus headroom.
+ */
+export const ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS =
+    ACCOUNT_LOOKUP_TIMEOUTS_MS[ACCOUNT_LOOKUP_TIMEOUTS_MS.length - 1] + 2_000;
+
+const LOOKUP_FAILED_MESSAGE = 'We couldn’t finish signing you in. Please try again.';
 
 /** Linear, unlike a `/\/+$/` replace on configured input. */
 const trimTrailingSlashes = (url: string): string => {
@@ -87,48 +103,67 @@ const trimTrailingSlashes = (url: string): string => {
  * Whether lca-api already has an SSS key record for the signed-in account.
  * A missing record (a `null` body) and a `web3auth` record (legacy or mid-migration)
  * both keep Web3Auth, which derives the account's existing key. lca-api answers a
- * missing record with `null`, never 404, so a 404 means a wrong URL and fails closed. Anything that
- * cannot be read fails closed: a network error retries quietly, others surface.
+ * missing record with `null`, never 404, so a 404 means a wrong URL.
+ *
+ * Anything that cannot be read fails closed. A device the browser reports as
+ * offline gets a network error (the offline UI owns it); a timeout or an
+ * unreachable server on an online device gets a visible, retryable error, since
+ * a network error would return a signed-in user to the login page silently.
  */
 const accountUsesSss = async (
     lookup: NonNullable<Web3AuthStrategyConfig['accountLookup']>,
     token: string,
-    providerType: string
+    providerType: string,
+    timeoutMs: number
 ): Promise<boolean> => {
-    let response: Response;
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, timeoutMs);
+
     try {
-        response = await fetch(`${trimTrailingSlashes(lookup.serverUrl)}/keys/auth-share`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(lookup.tenantId ? { 'X-Tenant-Id': lookup.tenantId } : {}),
-            },
-            signal:
-                typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
-                    ? AbortSignal.timeout(ACCOUNT_LOOKUP_TIMEOUT_MS)
-                    : undefined,
-            body: JSON.stringify({ authToken: token, providerType }),
-        });
-    } catch (error) {
-        log.warn('Web3Auth account lookup failed', { networkFailure: isNetworkError(error) });
-        if (isNetworkError(error)) throw new Web3AuthNetworkError();
-        throw new Error('We couldn’t finish signing you in. Please try again.', { cause: error });
-    }
+        let response: Response;
+        try {
+            response = await fetch(`${trimTrailingSlashes(lookup.serverUrl)}/keys/auth-share`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(lookup.tenantId ? { 'X-Tenant-Id': lookup.tenantId } : {}),
+                },
+                signal: controller.signal,
+                body: JSON.stringify({ authToken: token, providerType }),
+            });
+        } catch (error) {
+            const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+            log.warn('Web3Auth account lookup failed', {
+                timedOut,
+                timeoutMs,
+                offline,
+                networkFailure: isNetworkError(error),
+            });
+            if (offline) throw new Web3AuthNetworkError();
+            throw new Error(LOOKUP_FAILED_MESSAGE, { cause: error });
+        }
 
-    if (!response.ok) {
-        log.warn('Web3Auth account lookup refused', { httpStatus: response.status });
-        throw new Error('We couldn’t finish signing you in. Please try again.');
-    }
+        if (!response.ok) {
+            log.warn('Web3Auth account lookup refused', { httpStatus: response.status });
+            throw new Error(LOOKUP_FAILED_MESSAGE);
+        }
 
-    // The body includes the SSS auth share; only the provider is read.
-    const data = (await response.json().catch(() => undefined)) as
-        { keyProvider?: unknown } | null | undefined;
-    if (data === undefined) {
-        log.warn('Web3Auth account lookup unreadable');
-        throw new Error('We couldn’t finish signing you in. Please try again.');
-    }
+        // The body includes the SSS auth share; only the provider is read.
+        const data = (await response.json().catch(() => undefined)) as
+            { keyProvider?: unknown } | null | undefined;
+        if (data === undefined) {
+            log.warn('Web3Auth account lookup unreadable', { timedOut, timeoutMs });
+            throw new Error(LOOKUP_FAILED_MESSAGE);
+        }
 
-    return data?.keyProvider === 'sss';
+        return data?.keyProvider === 'sss';
+    } finally {
+        clearTimeout(timer);
+    }
 };
 
 /**
@@ -291,6 +326,8 @@ export const createWeb3AuthStrategy = (
     // Cached credentials from fetchServerKeyStatus → used by reconstructKey
     let cachedToken: string | null = null;
     let cachedUid: string | null = null;
+    // Consecutive failed account lookups; picks the next lookup deadline.
+    let lookupFailures = 0;
 
     /**
      * Connect to Web3Auth SFA and extract the Ethereum private key.
@@ -544,12 +581,28 @@ export const createWeb3AuthStrategy = (
             cachedUid = null;
             const uid = decodeJwtSub(token);
 
-            if (
-                config.accountLookup &&
-                (await accountUsesSss(config.accountLookup, token, providerType))
-            ) {
-                log.warn('Web3Auth sign-in stopped: account already uses SSS');
-                throw new AccountUsesNewerSignInError();
+            if (config.accountLookup) {
+                const timeoutMs =
+                    ACCOUNT_LOOKUP_TIMEOUTS_MS[
+                        Math.min(lookupFailures, ACCOUNT_LOOKUP_TIMEOUTS_MS.length - 1)
+                    ]!;
+                let usesSss: boolean;
+                try {
+                    usesSss = await accountUsesSss(
+                        config.accountLookup,
+                        token,
+                        providerType,
+                        timeoutMs
+                    );
+                } catch (error) {
+                    lookupFailures++;
+                    throw error;
+                }
+                lookupFailures = 0;
+                if (usesSss) {
+                    log.warn('Web3Auth sign-in stopped: account already uses SSS');
+                    throw new AccountUsesNewerSignInError();
+                }
             }
 
             // Cache the token and uid for use in reconstructKey

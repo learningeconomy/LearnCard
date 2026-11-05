@@ -36,6 +36,7 @@ import {
     useAuthCoordinator as useBaseAuthCoordinator,
     useAuthCoordinatorAutoSetup,
     useIdleAuthCleanup,
+    ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS,
     createWeb3AuthStrategy,
     registerKeyDerivationFactory,
     resolveKeyDerivation,
@@ -2472,6 +2473,13 @@ const AuthCoordinatorSessionProvider: React.FC<AppAuthCoordinatorProviderProps> 
             clearPendingEscrowRecovery={clearAllPendingEscrowRecovery}
             onDebugEvent={handleDebugEvent}
             legacyAccountThresholdMs={5 * 60 * 1000}
+            // The Web3Auth account lookup runs its own escalating deadlines and must
+            // fail visibly (retryable) rather than hit the coordinator's default.
+            serverStatusTimeoutMs={
+                authConfig.keyDerivation === 'web3auth'
+                    ? ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS
+                    : undefined
+            }
             verifyMigrationIdentity={verifyMigrationIdentity}
             // The coordinator is always enabled. To switch key derivation
             // backends, set VITE_KEY_DERIVATION=web3auth or VITE_KEY_DERIVATION=sss.

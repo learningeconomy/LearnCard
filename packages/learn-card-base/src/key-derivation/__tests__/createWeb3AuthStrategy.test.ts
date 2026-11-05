@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthSessionError } from '@learncard/types';
 import {
+    ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS,
     AccountUsesNewerSignInError,
     createWeb3AuthStrategy,
     deriveWeb3AuthKey,
@@ -461,6 +462,7 @@ describe('Web3Auth sign-in account lookup', () => {
         vi.stubGlobal('fetch', fetchMock);
     });
     afterEach(() => {
+        vi.useRealTimers();
         vi.unstubAllGlobals();
     });
 
@@ -517,7 +519,8 @@ describe('Web3Auth sign-in account lookup', () => {
         await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
     });
 
-    it('retries quietly when lca-api is unreachable', async () => {
+    it('leaves an offline device to the offline UI (network error)', async () => {
+        vi.stubGlobal('navigator', { onLine: false });
         fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
         const strategy = createWeb3AuthStrategy(lookupConfig);
 
@@ -527,6 +530,63 @@ describe('Web3Auth sign-in account lookup', () => {
 
         expect(isNetworkError(error)).toBe(true);
         await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+    });
+
+    it('shows a retryable error, not a silent network error, when lca-api is unreachable online', async () => {
+        vi.stubGlobal('navigator', { onLine: true });
+        fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+
+        const error = await strategy
+            .fetchServerKeyStatus(token(), 'firebase')
+            .catch((e: unknown) => e);
+
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe(
+            'We couldn’t finish signing you in. Please try again.'
+        );
+        expect(isNetworkError(error)).toBe(false);
+        await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+    });
+
+    it('gives each retry a longer deadline and starts over after a success', async () => {
+        vi.useFakeTimers();
+        // A lookup that never answers until its deadline aborts it.
+        const hang = (_url: string, init: RequestInit): Promise<Response> =>
+            new Promise((_resolve, reject) => {
+                init.signal?.addEventListener('abort', () =>
+                    reject(new DOMException('The operation was aborted.', 'AbortError'))
+                );
+            });
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+        const attempt = async (): Promise<number> => {
+            const startedAt = Date.now();
+            const pending = strategy
+                .fetchServerKeyStatus(token(), 'firebase')
+                .catch((e: unknown) => e);
+            await vi.runAllTimersAsync();
+            const error = await pending;
+            expect(isNetworkError(error)).toBe(false);
+            return Date.now() - startedAt;
+        };
+
+        fetchMock.mockImplementation(hang);
+        expect(await attempt()).toBe(3_500);
+        expect(await attempt()).toBe(7_000);
+        expect(await attempt()).toBe(14_000);
+        expect(await attempt()).toBe(28_000);
+        expect(await attempt()).toBe(28_000);
+
+        fetchMock.mockReset();
+        fetchMock.mockResolvedValueOnce(respond(200, null));
+        await strategy.fetchServerKeyStatus(token(), 'firebase');
+
+        fetchMock.mockImplementation(hang);
+        expect(await attempt()).toBe(3_500);
+    });
+
+    it('keeps the longest lookup deadline under the coordinator status deadline', () => {
+        expect(ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS).toBeGreaterThan(28_000);
     });
 
     it.each([
