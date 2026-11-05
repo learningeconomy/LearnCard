@@ -88,11 +88,36 @@ describe('credential lifecycle status mutations', () => {
         'fails before relationship writes when advertised %s bit fails',
         async purpose => {
             mocks.entries.mockResolvedValue([{ ...entry, statusPurpose: purpose }]);
+            mocks.run
+                .mockResolvedValueOnce({
+                    records: [
+                        record({
+                            rootId: 'root',
+                            owner: 'status-owner',
+                            storedOwner: null,
+                            managed: false,
+                        }),
+                    ],
+                })
+                .mockResolvedValueOnce({ records: [record({ owner: 'status-owner' })] });
             mocks.setBit.mockResolvedValue(false);
             await expect(
                 mutateCredentialStatus('version', 'recipient', purpose, true)
             ).rejects.toThrow('Public credential status could not be updated');
-            expect(mocks.run).toHaveBeenCalledTimes(1);
+            expect(mocks.run).toHaveBeenCalledTimes(2);
+            expect(mocks.run.mock.calls[1]).toEqual([
+                'MATCH (list:BitstringStatusList {statusListCredential: $url}) RETURN list.ownerProfileId AS owner',
+                { url: entry.statusListCredential },
+            ]);
+            expect(mocks.setBit).toHaveBeenCalledWith(
+                { ...entry, statusPurpose: purpose },
+                true,
+                'status-owner',
+                tx
+            );
+            for (const [query] of mocks.run.mock.calls) {
+                expect(query).not.toMatch(/SET sent\.|SET refresh\.state/);
+            }
         }
     );
     it('reconciles using the stored status owner', async () => {
