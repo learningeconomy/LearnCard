@@ -19,7 +19,7 @@
     "transcriptOptIn": {
         "title": "Obtén tu expediente académico de {{state}}",
         "body": "Le pediremos a los registros escolares que envíen tu expediente académico aquí.",
-        "consent": "Acepto compartir mi identificación de estudiante con los registros escolares de {{state}}.",
+        "consent": "Acepto compartir mi identificación de estudiante con los registros escolares de {{state}}, y agregar mi expediente académico a mi cuenta cuando llegue.",
         "submit": "Obtener Mi Expediente",
         "requesting": "Solicitando…",
         "requested": "Tu expediente académico está en camino. Te avisaremos cuando llegue.",
@@ -29,7 +29,16 @@
         "reauthing": "Conectando…",
         "noStateId": "No pudimos encontrar tu registro de estudiante. Pide a tu escuela que revise tu cuenta de ClassLink.",
         "error": "No pudimos comunicarnos con los registros de tu escuela en este momento. Inténtalo de nuevo más tarde.",
-        "tryAgain": "Intentar de Nuevo"
+        "tryAgain": "Intentar de Nuevo",
+        "requestingFrom": "Solicitando a los registros escolares de {{state}}…",
+        "takingAWhile": "Esto puede tardar un poco. Te avisaremos cuando esté aquí.",
+        "addedToAccount": "Agregado a tu cuenta",
+        "updated": "Actualizado el {{date}}",
+        "viewTranscript": "Ver Expediente",
+        "arrivedTitle": "Tu expediente académico llegó",
+        "transcript": "Expediente Académico",
+        "gradYear": "Generación {{year}}",
+        "gpa": "Promedio: {{gpa}}"
     },
     "consentUpdate": {
         "summary": {
@@ -227,12 +236,18 @@
                 "label": "Familia",
                 "description": "Perfiles familiares conectados mediante experiencias de aprendizaje compartidas."
             },
-            "name": { "label": "Nombre", "description": "Tu nombre." },
+            "name": {
+                "label": "Nombre",
+                "description": "Tu nombre."
+            },
             "email": {
                 "label": "Correo electrónico",
                 "description": "Tu dirección de correo electrónico."
             },
-            "profilePhoto": { "label": "Foto de perfil", "description": "Tu foto de perfil." },
+            "profilePhoto": {
+                "label": "Foto de perfil",
+                "description": "Tu foto de perfil."
+            },
             "qualifications": {
                 "label": "Cualificaciones",
                 "description": "Estudios, formación y cualificaciones profesionales."
@@ -1866,6 +1881,13 @@
                 "saveFailedSkip": "No se pudo guardar tu PIN. Inténtalo de nuevo u omítelo por ahora y configúralo más tarde.",
                 "hint": "Puedes cambiarlo o eliminarlo en cualquier momento en Configuración."
             }
+        },
+        "transcript": {
+            "title": "Tu expediente académico oficial, en tu bolsillo.",
+            "desc": "Recibe tus registros escolares directamente en tu cuenta.",
+            "get": "Obtener Mi Expediente",
+            "notNow": "Ahora No",
+            "onItsWay": "Tu expediente académico está en camino."
         }
     },
     "profile": {

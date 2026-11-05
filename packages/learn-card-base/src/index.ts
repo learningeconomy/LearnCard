@@ -326,3 +326,4 @@ export * from './logging/logger';
 export * from './logging/diagnosticLogBuffer';
 
 export { isAlreadyConsentedError, isConsentConflict } from './helpers/consentErrors';
+export * from './helpers/claimIncomingCredential';

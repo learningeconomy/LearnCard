@@ -46,6 +46,7 @@ vi.mock('learn-card-base', () => ({
     getLogger: () => ({ error: vi.fn(), warn: vi.fn() }),
     Toggle: () => null,
     getSSSConfig: () => ({ escrowEnclaveMode: 'off' }),
+    useRequestTranscript: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock('learn-card-base/hooks/useGetCurrentUser', () => ({
     default: () => ({ uid: 'user-1', privateKey: 'test-key', name: mocks.localName }),

@@ -192,7 +192,7 @@ const WalletPage: React.FC = () => {
                 >
                     <div className="px-[20px] pt-[16px] pb-[32px] md:pt-[24px] md:pb-[48px]">
                         <PersonalEmailPrompt />
-                        <TranscriptOptInCard />
+                        <TranscriptOptInCard source="wallet" />
                         <div className="flex flex-col max-w-[840px] mx-auto">
                             <IonRow>
                                 <div className="flex flex-wrap justify-between items-center w-full gap-[10px]">

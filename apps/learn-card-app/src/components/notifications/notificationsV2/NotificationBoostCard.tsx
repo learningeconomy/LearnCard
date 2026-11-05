@@ -32,6 +32,7 @@ import {
     getBoostMetadata,
     useGetCredentialWithEdits,
     useGetBoost,
+    useWallet,
     contractCategoryNameToCategoryMetadata,
 } from 'learn-card-base';
 
@@ -46,6 +47,9 @@ import { NOTIFICATION_TYPES } from './NotificationCardContainer';
 import { useGetVCInfo } from 'learn-card-base';
 import * as m from '../../../paraglide/messages.js';
 import { getNotificationDuplicateLookup } from './notificationDuplicateLookup';
+import { isMatchingTranscript } from '../../../hooks/useTranscriptArrival';
+import { useTranscriptStatus, claimIncomingCredential } from 'learn-card-base';
+import { useQueryClient } from '@tanstack/react-query';
 
 type NotificationBoostCardProps = {
     notification: NotificationType;
@@ -207,47 +211,124 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
         setIsClaimed(true);
     };
 
+    const { data: transcriptStatus } = useTranscriptStatus();
+    const queryClient = useQueryClient();
+    const { addVCtoWallet, initWallet } = useWallet();
+
     useEffect(() => {
-        if (_uri === credentialUri && _claim && !claimModalOpen && !isClaimed) {
-            setClaimModalOpen(true);
-            const claimModalEl = document.querySelector('.notification-claim-boost-modal-open');
-            if (!claimModalEl) {
-                newModal(
-                    <BoostClaimCard
-                        credential={unwrappedCred}
-                        credentialUri={credentialUri}
-                        duplicateLookup={duplicateLookup}
-                        showFooter={false}
-                        showBoostFooter={true}
-                        handleClaimBoostCredential={handleClaimOnClick}
-                        isLoading={isLoading}
-                        acceptCredentialLoading={acceptCredentialLoading}
-                        acceptCredentialCompleted={isClaimed}
-                        successCallback={async () => {
-                            await handleSuccess();
-                            setClaimModalOpen(false);
-                            history.replace('/notifications');
-                        }}
-                        onDismiss={async () => {
-                            handleReadStatus();
-                            setClaimModalOpen(false);
-                            history.replace('/notifications');
-                        }}
-                        notification={notification}
-                        hideEndorsementRequestCard
-                    />,
-                    {
-                        className: 'notification-claim-boost-modal-open',
-                        backgroundImage:
-                            isCertDisplayType || isID || isAwardDisplayType || isFamily
-                                ? unwrappedCred?.display?.backgroundImage
-                                : undefined,
-                    },
-                    modalDisplayType
-                );
-            }
+        if (_uri === credentialUri && _claim && !claimModalOpen) {
+            const checkTranscript = async () => {
+                const issuerDid = transcriptStatus?.issuerDid;
+                const latest = transcriptStatus?.latest;
+
+                if (
+                    issuerDid &&
+                    latest?.requestId &&
+                    latest?.requestedAt &&
+                    unwrappedCred &&
+                    !Array.isArray(unwrappedCred)
+                ) {
+                    const wallet = await initWallet();
+                    const senderDid = notification.from.did || notification.from.profileId;
+                    const isMatch = await isMatchingTranscript(
+                        unwrappedCred,
+                        senderDid,
+                        issuerDid,
+                        wallet.id.did(),
+                        latest.requestedAt,
+                        wallet
+                    );
+
+                    if (isMatch) {
+                        if (!isClaimed) {
+                            await claimIncomingCredential({
+                                uri: credentialUri,
+                                wallet,
+                                addVCtoWallet,
+                                queryClient,
+                            });
+                            await wallet.invoke.transcriptsMarkReceived({
+                                requestId: latest.requestId,
+                            });
+                            await queryClient.invalidateQueries({
+                                queryKey: ['incomingCredentials'],
+                            });
+                            await queryClient.invalidateQueries({ queryKey: ['transcriptStatus'] });
+                            setIsClaimed(true);
+                        }
+                        history.replace('/school-connect?view=transcript');
+                        return;
+                    }
+                }
+
+                if (!isClaimed) {
+                    setClaimModalOpen(true);
+                    const claimModalEl = document.querySelector(
+                        '.notification-claim-boost-modal-open'
+                    );
+                    if (!claimModalEl) {
+                        newModal(
+                            <BoostClaimCard
+                                credential={unwrappedCred}
+                                credentialUri={credentialUri}
+                                duplicateLookup={duplicateLookup}
+                                showFooter={false}
+                                showBoostFooter={true}
+                                handleClaimBoostCredential={handleClaimOnClick}
+                                isLoading={isLoading}
+                                acceptCredentialLoading={acceptCredentialLoading}
+                                acceptCredentialCompleted={isClaimed}
+                                successCallback={async () => {
+                                    await handleSuccess();
+                                    setClaimModalOpen(false);
+                                    history.replace('/notifications');
+                                }}
+                                onDismiss={async () => {
+                                    handleReadStatus();
+                                    setClaimModalOpen(false);
+                                    history.replace('/notifications');
+                                }}
+                                notification={notification}
+                                hideEndorsementRequestCard
+                            />,
+                            {
+                                className: 'notification-claim-boost-modal-open',
+                                backgroundImage:
+                                    isCertDisplayType || isID || isAwardDisplayType || isFamily
+                                        ? unwrappedCred?.display?.backgroundImage
+                                        : undefined,
+                            },
+                            modalDisplayType
+                        );
+                    }
+                }
+            };
+            checkTranscript();
         }
-    }, []);
+    }, [
+        _uri,
+        credentialUri,
+        _claim,
+        claimModalOpen,
+        isClaimed,
+        transcriptStatus,
+        unwrappedCred,
+        initWallet,
+        addVCtoWallet,
+        queryClient,
+        history,
+        newModal,
+        duplicateLookup,
+        handleClaimOnClick,
+        isLoading,
+        acceptCredentialLoading,
+        notification,
+        isCertDisplayType,
+        isID,
+        isAwardDisplayType,
+        isFamily,
+        modalDisplayType,
+    ]);
 
     let buttonText: string = '';
 

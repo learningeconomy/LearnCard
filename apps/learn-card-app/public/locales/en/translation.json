@@ -19,7 +19,7 @@
     "transcriptOptIn": {
         "title": "Get your {{state}} transcript",
         "body": "We'll ask your school records to send your transcript here.",
-        "consent": "I agree to share my student ID with {{state}} school records.",
+        "consent": "I agree to share my student ID with {{state}} school records, and to add my transcript to my account when it arrives.",
         "submit": "Get My Transcript",
         "requesting": "Requesting…",
         "requested": "Your transcript is on its way. We'll let you know when it arrives.",
@@ -29,7 +29,16 @@
         "reauthing": "Reconnecting…",
         "noStateId": "We couldn't find your student record. Ask your school to check your ClassLink account.",
         "error": "We couldn't reach your school records right now. Please try again later.",
-        "tryAgain": "Try Again"
+        "tryAgain": "Try Again",
+        "requestingFrom": "Requesting from {{state}} school records…",
+        "takingAWhile": "This can take a while. We'll let you know when it's here.",
+        "addedToAccount": "Added to your account",
+        "updated": "Updated {{date}}",
+        "viewTranscript": "View Transcript",
+        "arrivedTitle": "Your transcript arrived",
+        "transcript": "Transcript",
+        "gradYear": "Class of {{year}}",
+        "gpa": "GPA: {{gpa}}"
     },
     "consentUpdate": {
         "summary": {
@@ -199,12 +208,18 @@
                 "label": "Learning History",
                 "description": "Structured programs of learning."
             },
-            "ids": { "label": "IDs", "description": "Credentials used to verify identity." },
+            "ids": {
+                "label": "IDs",
+                "description": "Credentials used to verify identity."
+            },
             "socialBadges": {
                 "label": "Social Badges",
                 "description": "Digital labels recognizing participation or group membership."
             },
-            "memberships": { "label": "Memberships", "description": "Records of memberships." },
+            "memberships": {
+                "label": "Memberships",
+                "description": "Records of memberships."
+            },
             "accomplishments": {
                 "label": "Accomplishments",
                 "description": "Collections of work that showcase skills and experience."
@@ -221,9 +236,18 @@
                 "label": "Family",
                 "description": "Family profiles connected through shared learning journeys."
             },
-            "name": { "label": "Name", "description": "Your name." },
-            "email": { "label": "Email", "description": "Your email address." },
-            "profilePhoto": { "label": "Profile photo", "description": "Your profile photo." },
+            "name": {
+                "label": "Name",
+                "description": "Your name."
+            },
+            "email": {
+                "label": "Email",
+                "description": "Your email address."
+            },
+            "profilePhoto": {
+                "label": "Profile photo",
+                "description": "Your profile photo."
+            },
             "qualifications": {
                 "label": "Qualifications",
                 "description": "Education, training, and professional qualifications."
@@ -1857,6 +1881,13 @@
                 "saveFailedSkip": "Couldn't save your PIN. Try again, or skip for now and set it up later.",
                 "hint": "You can change or remove it anytime in Settings."
             }
+        },
+        "transcript": {
+            "title": "Your official transcript, in your pocket.",
+            "desc": "Get your school records delivered directly to your account.",
+            "get": "Get My Transcript",
+            "notNow": "Not Now",
+            "onItsWay": "Your transcript is on its way."
         }
     },
     "profile": {

@@ -19,7 +19,7 @@
     "transcriptOptIn": {
         "title": "Obtenez votre relevé de notes de {{state}}",
         "body": "Nous demanderons aux registres scolaires d'envoyer votre relevé de notes ici.",
-        "consent": "J'accepte de partager mon numéro d'identification étudiant avec les registres scolaires de {{state}}.",
+        "consent": "J'accepte de partager mon numéro d'identification étudiant avec les registres scolaires de {{state}}, et d'ajouter mon relevé de notes à mon compte à son arrivée.",
         "submit": "Obtenir Mon Relevé",
         "requesting": "Demande en cours…",
         "requested": "Votre relevé de notes est en route. Nous vous préviendrons à son arrivée.",
@@ -29,7 +29,16 @@
         "reauthing": "Reconnexion…",
         "noStateId": "Nous n'avons pas trouvé votre dossier d'étudiant. Demandez à votre école de vérifier votre compte ClassLink.",
         "error": "Nous n'avons pas pu joindre les registres de votre école pour le moment. Veuillez réessayer plus tard.",
-        "tryAgain": "Réessayer"
+        "tryAgain": "Réessayer",
+        "requestingFrom": "Demande en cours auprès des registres scolaires de {{state}}…",
+        "takingAWhile": "Cela peut prendre un certain temps. Nous vous préviendrons dès qu'il sera là.",
+        "addedToAccount": "Ajouté à votre compte",
+        "updated": "Mis à jour le {{date}}",
+        "viewTranscript": "Voir le Relevé",
+        "arrivedTitle": "Votre relevé de notes est arrivé",
+        "transcript": "Relevé de Notes",
+        "gradYear": "Promotion {{year}}",
+        "gpa": "Moyenne : {{gpa}}"
     },
     "consentUpdate": {
         "summary": {
@@ -227,9 +236,18 @@
                 "label": "Famille",
                 "description": "Profils familiaux liés par des parcours d’apprentissage partagés."
             },
-            "name": { "label": "Nom", "description": "Votre nom." },
-            "email": { "label": "Adresse e-mail", "description": "Votre adresse e-mail." },
-            "profilePhoto": { "label": "Photo de profil", "description": "Votre photo de profil." },
+            "name": {
+                "label": "Nom",
+                "description": "Votre nom."
+            },
+            "email": {
+                "label": "Adresse e-mail",
+                "description": "Votre adresse e-mail."
+            },
+            "profilePhoto": {
+                "label": "Photo de profil",
+                "description": "Votre photo de profil."
+            },
             "qualifications": {
                 "label": "Qualifications",
                 "description": "Études, formations et qualifications professionnelles."
@@ -1863,6 +1881,13 @@
                 "saveFailedSkip": "Impossible d'enregistrer votre PIN. Réessayez, ou ignorez cette étape pour le moment et configurez-le plus tard.",
                 "hint": "Vous pouvez le modifier ou le supprimer à tout moment dans les Paramètres."
             }
+        },
+        "transcript": {
+            "title": "Votre relevé de notes officiel, dans votre poche.",
+            "desc": "Recevez vos registres scolaires directement dans votre compte.",
+            "get": "Obtenir Mon Relevé",
+            "notNow": "Pas Maintenant",
+            "onItsWay": "Votre relevé de notes est en route."
         }
     },
     "profile": {

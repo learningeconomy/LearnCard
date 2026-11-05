@@ -11,9 +11,9 @@ import {
     ToastTypeEnum,
     BoostPageViewMode,
     BoostCategoryOptionsEnum,
-    connectionPromptKeys,
 } from 'learn-card-base';
 import { getDefaultCategoryForCredential } from 'learn-card-base/helpers/credentialHelpers';
+import { claimIncomingCredential } from 'learn-card-base/helpers/claimIncomingCredential';
 
 import { VC, VP } from '@learncard/types';
 
@@ -174,68 +174,17 @@ export const CredentialClaimModal: React.FC<CredentialClaimModalProps> = ({
                 if (wallet) setWalletReady(true);
             }
 
-            // LC-1644 Phase 2 perf: parallelize the local wallet write with the server-side
-            // accept + notification query. All three are independent:
-            //   - addVCtoWallet → local IndexedDB / wallet write
-            //   - acceptCredential → server-side state update via tRPC
-            //   - queryNotifications → server-side read for the matching notification record
-            // Previously these ran sequentially, costing ~500–1500ms per JIRA estimates. Running
-            // in parallel cuts the claim phase to roughly the slowest individual call.
-            //
-            // We use Promise.allSettled so a server-side hiccup on accept/query doesn't fail
-            // the whole claim — we already treated those as best-effort below.
-            const wallet = walletRef.current;
-
-            const [addResult, acceptResult, queryResult] = await Promise.allSettled([
-                addVCtoWallet({ uri: credentialUri }),
-                wallet ? wallet.invoke.acceptCredential(credentialUri) : Promise.resolve(),
-                wallet
-                    ? wallet.invoke.queryNotifications(
-                          { 'data.vcUris': credentialUri, archived: false },
-                          { limit: 1 }
-                      )
-                    : Promise.resolve(undefined),
-            ]);
-
-            // The local wallet write is the user-perceived "credential claimed" event — if it
-            // fails we have to surface the error. Server-side issues we just log.
-            if (addResult.status === 'rejected') throw addResult.reason;
-
-            if (acceptResult.status === 'rejected') {
-                log.warn('Failed to accept credential server-side:', acceptResult.reason);
-            } else if (
-                wallet &&
-                addResult.status === 'fulfilled' &&
-                addResult.value === true &&
-                acceptResult.value === true
-            ) {
-                // Prompt visibility depends on both the network acceptance and the
-                // credential being present locally. Invalidate only after both have
-                // succeeded so a fast local write cannot dismiss the prompt early.
-                await queryClient.invalidateQueries({ queryKey: connectionPromptKeys.all });
-            }
-
-            // Fire-and-forget the notification metadata update. The user already sees claim
-            // success — bookkeeping shouldn't block the UI.
-            if (
-                wallet &&
-                queryResult.status === 'fulfilled' &&
-                queryResult.value &&
-                typeof queryResult.value !== 'boolean' &&
-                queryResult.value.notifications?.[0]?._id
-            ) {
-                const notifId = queryResult.value.notifications[0]._id;
-                void wallet.invoke
-                    .updateNotificationMeta(notifId, {
-                        actionStatus: 'COMPLETED',
-                        read: true,
-                    })
-                    .catch((notifErr: unknown) => {
-                        log.warn('Failed to update notification:', notifErr);
-                    });
-            } else if (queryResult.status === 'rejected') {
-                log.warn('Failed to query notification:', queryResult.reason);
-            }
+            // LC-1644 Phase 2 perf: `claimIncomingCredential` parallelizes the local
+            // wallet write with the server-side accept + notification query, so the
+            // claim phase costs roughly the slowest individual call rather than their
+            // sum. Shared with guarded auto-accept flows (e.g. transcript arrival) so
+            // behaviour cannot drift between them.
+            await claimIncomingCredential({
+                uri: credentialUri,
+                wallet: walletRef.current,
+                addVCtoWallet,
+                queryClient,
+            });
 
             setClaimed(true);
             void markClaimCompleted();

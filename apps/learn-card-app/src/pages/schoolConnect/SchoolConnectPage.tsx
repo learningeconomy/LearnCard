@@ -77,7 +77,7 @@ const SchoolConnectPage: React.FC = () => {
                         onConnect={() => void handleConnect()}
                         onRetry={() => void refetch()}
                         formatDate={formatDate}
-                        transcriptSlot={<TranscriptOptInCard />}
+                        transcriptSlot={<TranscriptOptInCard source="school_connect" />}
                     />
                 </div>
             </IonContent>
