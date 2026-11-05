@@ -119,6 +119,19 @@ export const CredentialRefreshReceiptValidator = ManagedCredentialRefreshReceipt
 });
 export type CredentialRefreshReceipt = z.infer<typeof CredentialRefreshReceiptValidator>;
 
+/** Ciphertext-only issuer handoff. No claims, templates, or content-derived digests. */
+export const HolderEncryptedHandoffValidator = z
+    .object({
+        refreshId: z.string().min(1),
+        credentialId: z.string().min(1),
+        holderDid: z.string().min(1),
+        issuerDid: z.string().min(1),
+        credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()),
+        jwe: JWEValidator,
+    })
+    .strict();
+export type HolderEncryptedHandoff = z.infer<typeof HolderEncryptedHandoffValidator>;
+
 /** Allocation metadata for deferred Inbox issuance. No holder is invented before claim. */
 export const InboxCredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.omit(
     { holderDid: true }

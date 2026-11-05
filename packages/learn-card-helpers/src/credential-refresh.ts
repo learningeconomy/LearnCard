@@ -4,6 +4,7 @@ import {
     type ManagedCredentialRefreshService,
     type SupportedCredentialRefreshService,
     type CredentialRefreshReceipt,
+    type JWE,
 } from '@learncard/types';
 import { getBitstringStatusListEntries } from './bitstring-status-list';
 
@@ -125,6 +126,22 @@ export const canonicalizeCredentialContent = <T>(value: T): T => {
 /** Serializes a value to a deterministic canonical JSON string */
 export const canonicalizeCredentialJson = (value: unknown): string =>
     JSON.stringify(canonicalizeCredentialContent(value));
+
+/** Structural recipient check only; decryption and credential verification remain mandatory. */
+export const assertExactJweRecipients = (jwe: JWE, recipientKeyIds: string[]): void => {
+    const expected = new Set(recipientKeyIds);
+    const recipients = jwe.recipients ?? [];
+    const actual = recipients.map(recipient => recipient.header.kid);
+    if (
+        expected.size === 0 ||
+        expected.size !== recipientKeyIds.length ||
+        actual.length !== expected.size ||
+        new Set(actual).size !== actual.length ||
+        actual.some(kid => !kid || !expected.has(kid))
+    ) {
+        throw new Error('ENCRYPTION_RECIPIENTS_MISMATCH');
+    }
+};
 
 /** Compares exact public bindings while ignoring JSON object-key order, never array order. */
 export const credentialRefreshBindingsEqual = (
