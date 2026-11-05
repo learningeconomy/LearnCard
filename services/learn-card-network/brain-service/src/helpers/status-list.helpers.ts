@@ -25,6 +25,14 @@ import { neogma } from '@instance';
 import type { StatusListPurpose, StatusListType } from '@models';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 
+/** Resolve original deliveries and versions through anchored refresh lookups. */
+export const CREDENTIAL_STATUS_ROOT_QUERY = `MATCH (credential:Credential {id: $credentialId})
+    OPTIONAL MATCH (rootRefresh:CredentialRefresh)-[:ROOT]->(credential)
+    OPTIONAL MATCH (versionRefresh:CredentialRefresh {refreshId: credential.refreshId})
+    WITH credential, coalesce(rootRefresh, versionRefresh) AS refresh
+    OPTIONAL MATCH (refresh)-[:ROOT]->(managedRoot:Credential)
+    WITH credential, refresh, coalesce(managedRoot, credential) AS root`;
+
 const hasToNumber = (value: unknown): value is { toNumber: () => number } =>
     !!value &&
     typeof value === 'object' &&
@@ -515,10 +523,7 @@ export const setCredentialBitstringStatus = async (
 
     const owner = (
         await neogma.queryRunner.run(
-            `MATCH (credential:Credential {id: $credentialId})
-         OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(root:Credential)
-         WHERE credential.refreshId = refresh.refreshId OR credential = root
-         WITH coalesce(root, credential) AS root, refresh
+            `${CREDENTIAL_STATUS_ROOT_QUERY}
          OPTIONAL MATCH (issuer:Profile)-[:CREDENTIAL_SENT]->(root)
          RETURN coalesce(refresh.issuerProfileId, root.statusOwnerProfileId, issuer.profileId) AS owner LIMIT 1`,
             { credentialId }
@@ -539,9 +544,7 @@ export const getStatusEntriesForCredential = async (
     credentialId: string,
     transaction?: Transaction
 ): Promise<BitstringStatusListEntry[]> => {
-    const query = `MATCH (credential:Credential {id: $credentialId})
-         OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(root:Credential)
-         WHERE credential = root OR credential.refreshId = refresh.refreshId
+    const query = `${CREDENTIAL_STATUS_ROOT_QUERY}
          RETURN credential.statusEntries AS direct, credential.credential AS body,
                 refresh.statusEntries AS entries LIMIT 1`;
     const result = transaction
@@ -568,10 +571,8 @@ export const getStatusEntriesForCredential = async (
 /** Resolve lifecycle requests for any immutable version to its original delivery. */
 export const getCredentialStatusRootId = async (credentialId: string): Promise<string> => {
     const result = await neogma.queryRunner.run(
-        `MATCH (credential:Credential {id: $credentialId})
-         OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(root:Credential)
-         WHERE credential = root OR credential.refreshId = refresh.refreshId
-         RETURN coalesce(root.id, credential.id) AS id LIMIT 1`,
+        `${CREDENTIAL_STATUS_ROOT_QUERY}
+         RETURN root.id AS id LIMIT 1`,
         { credentialId }
     );
     return String(result.records[0]?.get('id') ?? credentialId);

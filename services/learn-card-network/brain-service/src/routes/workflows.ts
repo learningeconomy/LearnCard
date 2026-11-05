@@ -27,7 +27,7 @@ import {
     isClaimLinkAlreadySetForBoost,
     getClaimLinkSAInfoForBoost,
     getClaimLinkGeneratorProfileId,
-    useClaimLinkForBoost,
+    useClaimLinkForBoost as claimLinkForBoost,
 } from '@cache/claim-links';
 
 import { validateInboxClaimToken } from '@helpers/contact-method.helpers';
@@ -429,7 +429,7 @@ async function handlePresentationForClaim(
         ).credential as VC;
 
         // Mark the challenge as used
-        await useClaimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
+        await claimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
 
         const vp = await issueResponsePresentationWithVcs([vc]);
 
@@ -725,6 +725,7 @@ async function handleInboxClaimPresentation(
                 // Reservation is part of delivery, not best-effort indexing. A conflict
                 // must leave escrow pending and must never return the reused credential.
                 const delivery = encryptedDelivery;
+                const statusEntries = getBitstringStatusListEntries(finalCredential);
                 await neogma.getTransaction(null, async tx => {
                     const finalized = await finalizeAndWipeInboxCredential(
                         inboxCredential.id,
@@ -736,15 +737,18 @@ async function handleInboxClaimPresentation(
                         tx
                     );
                     if (!finalized) throw new Error('Inbox credential is no longer pending');
-                    const credentialInstance = await storeCredential(
-                        {
-                            kind: 'issued-credential',
-                            credential: delivery,
-                            statusEntries: getBitstringStatusListEntries(finalCredential),
-                        },
-                        tx,
-                        issuerProfile.profileId
-                    );
+                    const credentialInstance =
+                        statusEntries.length > 0 || (holderProfile && boost)
+                            ? await storeCredential(
+                                  {
+                                      kind: 'issued-credential',
+                                      credential: delivery,
+                                      statusEntries,
+                                  },
+                                  tx,
+                                  issuerProfile.profileId
+                              )
+                            : undefined;
                     if (holderProfile) {
                         await createClaimedRelationship(
                             holderProfile.profileId,
@@ -752,7 +756,7 @@ async function handleInboxClaimPresentation(
                             claimToken,
                             tx
                         );
-                        if (boost) {
+                        if (boost && credentialInstance) {
                             await createBoostInstanceOfRelationship(credentialInstance, boost, tx);
                             await createSentCredentialRelationship(
                                 { type: 'profile', profile: issuerProfile },
@@ -816,11 +820,11 @@ async function handleInboxClaimPresentation(
             // Trigger webhook if configured
             if (inboxCredential.webhookUrl) {
                 try {
-                    const learnCard = await getLearnCard();
+                    const webhookLearnCard = await getLearnCard();
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
-                        from: { did: learnCard.id.did() },
+                        from: { did: webhookLearnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: getNotificationMessage(
                             'issuanceClaimed',
@@ -882,7 +886,7 @@ async function handleInboxClaimPresentation(
             try {
                 // Trigger webhook for error if configured
                 if (inboxCredential.webhookUrl) {
-                    const learnCard = await getLearnCard();
+                    const webhookLearnCard = await getLearnCard();
                     const issuanceErrorMsg = getNotificationMessage(
                         'issuanceError',
                         // failedIssuerProfile is the issuer (the webhook recipient),
@@ -894,7 +898,7 @@ async function handleInboxClaimPresentation(
                     await addNotificationToQueue({
                         webhookUrl: inboxCredential.webhookUrl,
                         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
-                        from: { did: learnCard.id.did() },
+                        from: { did: webhookLearnCard.id.did() },
                         to: { did: inboxCredential.issuerDid },
                         message: {
                             title: issuanceErrorMsg.title,

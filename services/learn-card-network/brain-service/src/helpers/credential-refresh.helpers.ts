@@ -55,6 +55,8 @@ import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import {
     computeCredentialMaterialDigest,
+    matchesCredentialMaterialDigest,
+    matchesCredentialSubjectDigest,
     computeCredentialStatusDigest,
     matchesCredentialStatusDigest,
     computeCredentialSubjectDigest,
@@ -242,7 +244,7 @@ export const peekCredentialRefreshInitialBinding = async (params: {
 
     assertInitialCredentialMatches(
         root,
-        computeCredentialMaterialDigest(credential as unknown as Record<string, unknown>),
+        credential as unknown as Record<string, unknown>,
         credential.credentialStatus,
         boostId
     );
@@ -360,14 +362,14 @@ export const getBoundRefreshBoostId = async (refreshId: string): Promise<string 
 
 const assertInitialCredentialMatches = (
     root: InitialRefreshRoot,
-    materialDigest: string,
+    credential: Record<string, unknown>,
     credentialStatus: unknown,
     boostId?: string
 ): void => {
     if (
         !root.materialDigest ||
         !root.credentialStatusDigest ||
-        root.materialDigest !== materialDigest ||
+        !matchesCredentialMaterialDigest(credential, root.materialDigest) ||
         !matchesCredentialStatusDigest(credentialStatus, root.credentialStatusDigest)
     ) {
         throw new TRPCError({
@@ -681,7 +683,7 @@ export const sendRefreshableCredential = async (
     if (existingRoot) {
         assertInitialCredentialMatches(
             existingRoot,
-            rootMaterialDigest,
+            credential as unknown as Record<string, unknown>,
             credential.credentialStatus,
             boost?.id
         );
@@ -874,7 +876,7 @@ export const sendRefreshableCredential = async (
         }
         assertInitialCredentialMatches(
             concurrentlyBoundRoot,
-            rootMaterialDigest,
+            credential as unknown as Record<string, unknown>,
             credential.credentialStatus,
             boost?.id
         );
@@ -1103,8 +1105,10 @@ const assertRefreshVersionInvariants = async (
 
     if (
         !aggregate.credentialSubjectDigest ||
-        computeCredentialSubjectDigest(credential.credentialSubject) !==
+        !matchesCredentialSubjectDigest(
+            credential.credentialSubject,
             aggregate.credentialSubjectDigest
+        )
     ) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -1339,7 +1343,12 @@ export const publishCredentialRefresh = async (
     const activeNotification = decideCredentialRefreshNotification({
         state: 'active',
         notifyHolder,
-        previousDigest: aggregate.materialDigest,
+        previousDigest: matchesCredentialMaterialDigest(
+            signedCredential as unknown as Record<string, unknown>,
+            aggregate.materialDigest
+        )
+            ? nextDigest
+            : aggregate.materialDigest,
         nextDigest,
     });
     const notification: PublishCredentialRefreshNotification =

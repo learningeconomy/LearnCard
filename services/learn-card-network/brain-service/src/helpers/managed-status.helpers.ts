@@ -22,7 +22,9 @@ export const prepareRefreshStatusEntries = async (
             allocateStatusListEntry(ownerProfileId, domain, purpose)
         )
     );
-    await bindRefreshStatusEntries(refreshId, entries, ownerProfileId, domain);
+    await bindRefreshStatusEntries(refreshId, entries, ownerProfileId, domain, undefined, {
+        freshlyAllocated: true,
+    });
     return entries;
 };
 
@@ -39,7 +41,8 @@ export const bindRefreshStatusEntries = async (
     entries: BitstringStatusListEntry[],
     ownerProfileId: string,
     domain: string,
-    transaction?: Transaction
+    transaction?: Transaction,
+    options: { freshlyAllocated?: boolean } = {}
 ): Promise<void> => {
     await validateStatusEntries(entries, ownerProfileId, domain);
     await neogma.getTransaction(transaction ?? null, async tx => {
@@ -57,15 +60,17 @@ export const bindRefreshStatusEntries = async (
         if (!row)
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential refresh not found' });
         const stored: unknown = row.get('entries');
-        if (
-            typeof stored === 'string' &&
-            coordinates(BitstringStatusListEntryValidator.array().parse(JSON.parse(stored))) !==
+        if (typeof stored === 'string') {
+            if (
+                coordinates(BitstringStatusListEntryValidator.array().parse(JSON.parse(stored))) !==
                 coordinates(entries)
-        ) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Credential status does not match allocated entries',
-            });
+            ) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Credential status does not match allocated entries',
+                });
+            }
+            return;
         }
         // A stable order prevents deadlocks when a credential has multiple lists.
         for (const entry of [...entries].sort((a, b) =>
@@ -89,16 +94,18 @@ export const bindRefreshStatusEntries = async (
             }
             // Legacy ordinary deliveries predate index bindings. Do not let a repair
             // or low-level managed send take over one of their signed coordinates.
-            const legacy = await tx.run(
-                `MATCH (:Profile {profileId: $ownerProfileId})-[:CREDENTIAL_SENT]->(credential:Credential)
+            const legacy = options.freshlyAllocated
+                ? { records: [] }
+                : await tx.run(
+                      `MATCH (:Profile {profileId: $ownerProfileId})-[:CREDENTIAL_SENT]->(credential:Credential)
                  WHERE coalesce(credential.refreshId, '') <> $refreshId
                    AND (credential.statusEntries CONTAINS $url OR credential.credential CONTAINS $url)
                  RETURN credential.statusEntries AS entries, credential.credential AS body`,
-                { ownerProfileId, refreshId, url: entry.statusListCredential }
-            );
-            for (const row of legacy.records) {
-                const rawEntries: unknown = row.get('entries');
-                const body: unknown = row.get('body');
+                      { ownerProfileId, refreshId, url: entry.statusListCredential }
+                  );
+            for (const legacyRow of legacy.records) {
+                const rawEntries: unknown = legacyRow.get('entries');
+                const body: unknown = legacyRow.get('body');
                 const existing: BitstringStatusListEntry[] =
                     typeof rawEntries === 'string'
                         ? BitstringStatusListEntryValidator.array().parse(JSON.parse(rawEntries))

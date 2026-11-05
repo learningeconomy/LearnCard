@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { storeCredential } from '@accesslayer/credential/create';
+import { neogma } from '@instance';
 import type { IssuedCredential } from 'types/credential';
 import {
     createReceivedCredentialRelationship,
@@ -46,16 +47,19 @@ export const sendCredential = async (
     /** Local profile that owns any local status lists; defaults to the sender. */
     statusOwnerProfileId: string = from.profileId
 ): Promise<string> => {
-    const credentialInstance = await storeCredential(credential, undefined, statusOwnerProfileId);
-
-    await createSentCredentialRelationship(
-        { type: 'profile', profile: from },
-        to,
-        credentialInstance,
-        metadata,
-        activityId,
-        integrationId
-    );
+    const credentialInstance = await neogma.getTransaction(null, async tx => {
+        const instance = await storeCredential(credential, tx, statusOwnerProfileId);
+        await createSentCredentialRelationship(
+            { type: 'profile', profile: from },
+            to,
+            instance,
+            metadata,
+            activityId,
+            integrationId,
+            tx
+        );
+        return instance;
+    });
 
     const uri = getCredentialUri(credentialInstance.id, domain);
 
