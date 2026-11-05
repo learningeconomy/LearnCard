@@ -26,7 +26,7 @@ Use focused unit/mock tests in the edit loop. When you need real-stack feedback,
 | AI session app pickers or the AI apps catalog                 | `run ai-sessions` (starting a session is not covered: no AI service)                                                                       |
 | `docs/` code or snippets                                      | `run docs` (it also runs `scripts/check-docs-snippets.mjs`)                                                                                |
 | Partner Connect SDK or `examples/app-store-apps`              | `run app-store`                                                                                                                            |
-| `apps/ai-passport` or `services/ai-passport-backend`          | Not served by this stack. Run the AI Passport gates instead (see the feature map's "Not covered yet").                                     |
+| `services/ai-passport-backend`                                | Not served by this stack. Run the AI Passport gates instead (see the feature map's "Not covered yet").                                     |
 | Anything not in the catalog                                   | `script` (below). Never stretch a nearby journey to stand in for it.                                                                       |
 
 `run all` runs catalog features **serially**: previous runs took about 13–15 minutes, plus several minutes for a cold Docker build. These are observations, not a timing guarantee. Do not parallelize stateful journeys within one harness or add a fictional `--serial` switch.
