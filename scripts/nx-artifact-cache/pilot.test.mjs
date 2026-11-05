@@ -13,7 +13,7 @@ const { eligible, lookupRequest, selectProducer } = require('./select-producer.c
 const headSha = 'a'.repeat(40);
 const baseSha = 'b'.repeat(40);
 
-test('lookup aborts a stalled fetch at its remaining deadline', async t => {
+test('lookup aborts a stalled fetch at its remaining deadline', { timeout: 2_000 }, async t => {
     const server = createServer(() => {});
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     t.after(() => {
