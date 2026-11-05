@@ -60,7 +60,7 @@ resource "aws_cloudwatch_metric_alarm" "authority_repeated_pin_clear" {
   statistic           = "Sum"
   period              = 3600
   evaluation_periods  = 1
-  threshold           = 0
+  threshold           = var.authority_repeated_pin_clear_threshold
   comparison_operator = "GreaterThanThreshold"
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.monitor.arn]

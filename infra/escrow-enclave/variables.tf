@@ -436,3 +436,13 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "authority_repeated_pin_clear_threshold" {
+  description = "AuthorityRepeatedPinClear alarms when its hourly Sum exceeds this. The metric only has a Tenant dimension and the monitor emits 1 per affected account per sweep (4 sweeps/hour), so while one known account is inside its 30-day window, 4 keeps a second account visible. Default 0; reset to 0 once the known episode ages out."
+  type        = number
+  default     = 0
+  validation {
+    condition     = var.authority_repeated_pin_clear_threshold >= 0 && floor(var.authority_repeated_pin_clear_threshold) == var.authority_repeated_pin_clear_threshold
+    error_message = "Use a non-negative whole number (multiples of 4 = one account per hour of sweeps)."
+  }
+}
