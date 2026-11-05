@@ -537,6 +537,7 @@ describe('P0-1 provisional SSS activation', () => {
             expect(stored?.sssActivationState).toBe('provisional');
             expect(stored?.migratedFromWeb3Auth).toBe(false);
             expect(stored?.provisionalCreatedAt).toBeInstanceOf(Date);
+            expect(stored?.web3AuthLogin).toEqual({ type: 'firebase', id: uid });
 
             // Simulate abandoning recovery confirmation for more than 30 days.
             const expiredAt = new Date(Date.now() - PROVISIONAL_MIGRATION_TTL_MS - 1_000);
@@ -562,6 +563,7 @@ describe('P0-1 provisional SSS activation', () => {
             expect(purged?.sssActivationState).toBeUndefined();
             expect(purged?.provisionalCreatedAt).toBeUndefined();
             expect(purged?.recoveryMethods).toEqual([]);
+            expect(purged?.web3AuthLogin).toBeUndefined();
             expect(purged?.previousAuthShares).toEqual([]);
         } finally {
             await collection.deleteMany({ 'contactMethod.value': email });
@@ -858,4 +860,115 @@ describe('P0-6 fresh DID authorization', () => {
             }
         }
     );
+});
+
+describe('Web3Auth migration login', () => {
+    it('confirms only the login an account was migrated through', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `web3auth-login-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const otherUid = `other-${suffix}`;
+        const token = makeMockToken(email, uid);
+        const { learnCard } = await getUser('5'.repeat(64));
+        const collection = getUserKeysCollection();
+        const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+
+        try {
+            await caller.keys.storeAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+                primaryDid: learnCard.id.did(),
+                authShare: { encryptedData: 'share', encryptedDek: '', iv: '' },
+            });
+            await caller.keys.markMigrated({ authToken: token, providerType: 'firebase' });
+
+            const migrating = await collection.findOne({
+                authProviders: { $elemMatch: { type: 'firebase', id: uid } },
+            });
+            expect(migrating?.web3AuthLogin).toEqual({ type: 'firebase', id: uid });
+
+            // Activate through the route so activation is shown to keep the login.
+            await collection.updateOne(
+                { _id: migrating!._id },
+                {
+                    $set: {
+                        recoveryMethods: [
+                            {
+                                type: 'backup',
+                                createdAt: new Date(),
+                                confirmationStatus: 'confirmed',
+                                confirmedAt: new Date(),
+                                shareVersion: migrating!.shareVersion ?? 1,
+                            },
+                        ],
+                    },
+                }
+            );
+            await caller.keys.activate({ authToken: token, providerType: 'firebase' });
+
+            const migrated = await getClient().keys.getAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+            });
+            expect(migrated?.keyProvider).toBe('sss');
+            expect(migrated?.isWeb3AuthLogin).toBe(true);
+
+            // A second login (e.g. added by PIN sign-in) derives a different Web3Auth key.
+            await collection.updateOne(
+                { _id: migrating!._id },
+                { $addToSet: { authProviders: { type: 'firebase', id: otherUid } } }
+            );
+            const viaOtherLogin = await getClient().keys.getAuthShare({
+                authToken: makeMockToken(email, otherUid),
+                providerType: 'firebase',
+            });
+            expect(viaOtherLogin?.keyProvider).toBe('sss');
+            expect(viaOtherLogin?.isWeb3AuthLogin).toBe(false);
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+
+    it('never confirms an account created with SSS', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `sss-native-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const { learnCard } = await getUser('4'.repeat(64));
+        const collection = getUserKeysCollection();
+
+        await collection.insertOne(makeUserKey(email, uid, learnCard.id.did()));
+
+        try {
+            const result = await getClient().keys.getAuthShare({
+                authToken: makeMockToken(email, uid),
+                providerType: 'firebase',
+            });
+            expect(result?.keyProvider).toBe('sss');
+            expect(result?.isWeb3AuthLogin).toBe(false);
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+
+    it('requires the migration flag as well as the login', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `login-without-flag-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const { learnCard } = await getUser('3'.repeat(64));
+        const collection = getUserKeysCollection();
+        const key = makeUserKey(email, uid, learnCard.id.did());
+
+        key.web3AuthLogin = { type: 'firebase', id: uid };
+        await collection.insertOne(key);
+
+        try {
+            const result = await getClient().keys.getAuthShare({
+                authToken: makeMockToken(email, uid),
+                providerType: 'firebase',
+            });
+            expect(result?.isWeb3AuthLogin).toBe(false);
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
 });

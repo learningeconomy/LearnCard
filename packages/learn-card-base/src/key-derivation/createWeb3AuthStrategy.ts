@@ -100,17 +100,20 @@ const trimTrailingSlashes = (url: string): string => {
 };
 
 /**
- * Whether lca-api already has an SSS key record for the signed-in account.
- * A missing record (a `null` body) and a `web3auth` record (legacy or mid-migration)
- * both keep Web3Auth, which derives the account's existing key. lca-api answers a
- * missing record with `null`, never 404, so a 404 means a wrong URL.
+ * Whether Web3Auth would derive a different key than the signed-in account's:
+ * lca-api has an SSS record for it and does not confirm (`isWeb3AuthLogin`) that
+ * this login is the one the account was migrated from Web3Auth through.
+ * A missing record (a `null` body), a `web3auth` record (legacy or mid-migration)
+ * and a migration login all keep Web3Auth, which derives the account's existing
+ * key. lca-api answers a missing record with `null`, never 404, so a 404 means a
+ * wrong URL.
  *
  * Anything that cannot be read fails closed. A device the browser reports as
  * offline gets a network error (the offline UI owns it); a timeout or an
  * unreachable server on an online device gets a visible, retryable error, since
  * a network error would return a signed-in user to the login page silently.
  */
-const accountUsesSss = async (
+const web3AuthWouldSplitAccount = async (
     lookup: NonNullable<Web3AuthStrategyConfig['accountLookup']>,
     token: string,
     providerType: string,
@@ -152,15 +155,16 @@ const accountUsesSss = async (
             throw new Error(LOOKUP_FAILED_MESSAGE);
         }
 
-        // The body includes the SSS auth share; only the provider is read.
+        // The body includes the SSS auth share; only these two fields are read.
         const data = (await response.json().catch(() => undefined)) as
-            { keyProvider?: unknown } | null | undefined;
+            { keyProvider?: unknown; isWeb3AuthLogin?: unknown } | null | undefined;
         if (data === undefined) {
             log.warn('Web3Auth account lookup unreadable', { timedOut, timeoutMs });
             throw new Error(LOOKUP_FAILED_MESSAGE);
         }
 
-        return data?.keyProvider === 'sss';
+        // An older lca-api omits `isWeb3AuthLogin`: every SSS record then stops.
+        return data?.keyProvider === 'sss' && data.isWeb3AuthLogin !== true;
     } finally {
         clearTimeout(timer);
     }
@@ -586,9 +590,9 @@ export const createWeb3AuthStrategy = (
                     ACCOUNT_LOOKUP_TIMEOUTS_MS[
                         Math.min(lookupFailures, ACCOUNT_LOOKUP_TIMEOUTS_MS.length - 1)
                     ]!;
-                let usesSss: boolean;
+                let wouldSplit: boolean;
                 try {
-                    usesSss = await accountUsesSss(
+                    wouldSplit = await web3AuthWouldSplitAccount(
                         config.accountLookup,
                         token,
                         providerType,
@@ -599,8 +603,8 @@ export const createWeb3AuthStrategy = (
                     throw error;
                 }
                 lookupFailures = 0;
-                if (usesSss) {
-                    log.warn('Web3Auth sign-in stopped: account already uses SSS');
+                if (wouldSplit) {
+                    log.warn('Web3Auth sign-in stopped: SSS account outside its migration login');
                     throw new AccountUsesNewerSignInError();
                 }
             }

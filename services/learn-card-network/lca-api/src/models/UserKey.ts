@@ -241,6 +241,14 @@ const MongoUserKeyBaseValidator = z.object({
 
     migratedFromWeb3Auth: z.boolean().default(false),
     migratedAt: z.date().optional(),
+    /**
+     * The login whose Web3Auth key this account was migrated from (recorded by
+     * `/keys/migrate`, which that login calls). Web3Auth derives a key from the
+     * login alone, so only this login still derives the account's key: a
+     * Web3Auth-mode client may sign in an SSS account only through it (see
+     * `isWeb3AuthLogin`). Absent means no login is known to be safe.
+     */
+    web3AuthLogin: AuthProviderMappingValidator.optional(),
 
     sssActivationState: z.enum(['provisional', 'active']).optional(),
     provisionalCreatedAt: z.date().optional(),
@@ -818,6 +826,20 @@ export const addRecoveryMethodToUserKey = async (
 const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoUserKeyType> => ({
     authProviders: { $elemMatch: authProvider },
 });
+
+/**
+ * Whether Web3Auth, signing in through `authProvider`, derives this account's key:
+ * the account was migrated from Web3Auth and `authProvider` is the login it was
+ * migrated through. Any other login (added by PIN sign-in, recovery or a revoke)
+ * derives a different Web3Auth key, i.e. a different, empty identity.
+ */
+export const isWeb3AuthLogin = (
+    userKey: Pick<MongoUserKeyType, 'migratedFromWeb3Auth' | 'web3AuthLogin'>,
+    authProvider: AuthProviderMapping
+): boolean =>
+    userKey.migratedFromWeb3Auth === true &&
+    userKey.web3AuthLogin?.type === authProvider.type &&
+    userKey.web3AuthLogin?.id === authProvider.id;
 
 /** The account's security epoch; a legacy record without the field is at epoch 0. */
 export const getSecurityEpoch = (userKey: Pick<MongoUserKeyType, 'securityEpoch'>): number =>
@@ -1554,6 +1576,7 @@ export const markUserKeyMigratedByAuthProvider = async (
             migratedFromWeb3Auth: true,
             migratedAt: new Date(),
             keyProvider: 'sss',
+            web3AuthLogin: authProvider,
             updatedAt: new Date(),
         },
     });
@@ -1577,6 +1600,8 @@ export const markUserKeyMigrationProvisionalByAuthProvider = async (
                 keyProvider: 'web3auth',
                 sssActivationState: 'provisional',
                 provisionalCreatedAt,
+                // The caller's login derived the legacy key being migrated.
+                web3AuthLogin: authProvider,
                 updatedAt: new Date(),
             },
         }
@@ -1661,6 +1686,7 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
                 shareUpdatedAt: '',
                 sssActivationState: '',
                 provisionalCreatedAt: '',
+                web3AuthLogin: '',
             },
         }
     );

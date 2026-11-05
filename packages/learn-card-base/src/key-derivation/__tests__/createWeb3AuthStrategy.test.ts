@@ -483,12 +483,30 @@ describe('Web3Auth sign-in account lookup', () => {
     it.each([
         ['no record', () => respond(200, null)],
         ['a legacy or mid-migration record', () => respond(200, { keyProvider: 'web3auth' })],
+        [
+            'an SSS account signing in through its migration login',
+            () => respond(200, { keyProvider: 'sss', isWeb3AuthLogin: true }),
+        ],
     ])('derives the Web3Auth key for %s', async (_label, response) => {
         fetchMock.mockResolvedValueOnce(response());
         const strategy = createWeb3AuthStrategy(lookupConfig);
         await strategy.fetchServerKeyStatus(token(), 'firebase');
 
         await expect(derive(strategy)).resolves.toBe('synthetic-private-key');
+    });
+
+    it.each([
+        ['another login (isWeb3AuthLogin: false)', { keyProvider: 'sss', isWeb3AuthLogin: false }],
+        ['an older lca-api (no isWeb3AuthLogin)', { keyProvider: 'sss' }],
+        ['a non-boolean isWeb3AuthLogin', { keyProvider: 'sss', isWeb3AuthLogin: 'true' }],
+    ])('stops an SSS account for %s', async (_label, body) => {
+        fetchMock.mockResolvedValueOnce(respond(200, body));
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+
+        await expect(strategy.fetchServerKeyStatus(token(), 'firebase')).rejects.toBeInstanceOf(
+            AccountUsesNewerSignInError
+        );
+        expect(sdk.init).not.toHaveBeenCalled();
     });
 
     it('stops before Web3Auth when the account already uses SSS', async () => {
