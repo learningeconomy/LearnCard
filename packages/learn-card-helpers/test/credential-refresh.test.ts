@@ -34,6 +34,30 @@ const vcdm2Credential = {
 };
 
 describe('managed VC v1 public status context', () => {
+    it.each([
+        'https://www.w3.org/ns/credentials/v2',
+        'https://www.w3.org/ns/credentials/v2.evil.example',
+        'https://example.com/?context=https://www.w3.org/ns/credentials/v2',
+    ])('recognizes the VC v2 context by exact equality: %s', context => {
+        const credential = injectManagedRefreshService(
+            {
+                ...vcdm11Credential,
+                '@context': [context],
+                credentialStatus: {
+                    type: 'BitstringStatusListEntry',
+                    statusPurpose: 'revocation',
+                    statusListCredential: 'https://example.com/status-lists/1',
+                    statusListIndex: '0',
+                },
+            },
+            { id: 'https://example.com/refresh/1', type: 'LearnCardCredentialRefresh2026' }
+        );
+        const scopedStatus = credential['@context'].some(
+            entry => typeof entry === 'object' && 'BitstringStatusListEntry' in entry
+        );
+        expect(scopedStatus).toBe(context !== 'https://www.w3.org/ns/credentials/v2');
+    });
+
     it('adds scoped status terms without changing status shape and is idempotent', () => {
         const status = {
             id: 'https://example.com/status-lists/1#0',

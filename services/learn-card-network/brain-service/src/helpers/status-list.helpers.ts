@@ -520,7 +520,7 @@ export const setCredentialBitstringStatus = async (
          WHERE credential.refreshId = refresh.refreshId OR credential = root
          WITH coalesce(root, credential) AS root, refresh
          OPTIONAL MATCH (issuer:Profile)-[:CREDENTIAL_SENT]->(root)
-         RETURN coalesce(refresh.issuerProfileId, issuer.profileId) AS owner LIMIT 1`,
+         RETURN coalesce(refresh.issuerProfileId, issuer.profileId, root.statusOwnerProfileId) AS owner LIMIT 1`,
             { credentialId }
         )
     ).records[0]?.get('owner');

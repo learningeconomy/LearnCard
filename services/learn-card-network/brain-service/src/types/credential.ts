@@ -12,5 +12,6 @@ export const CredentialValidator = z.object({
     id: z.string(),
     credential: z.string(),
     statusEntries: z.string().optional(),
+    statusOwnerProfileId: z.string().optional(),
 });
 export type CredentialType = z.infer<typeof CredentialValidator>;
