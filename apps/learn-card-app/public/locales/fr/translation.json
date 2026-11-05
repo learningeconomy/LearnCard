@@ -2837,6 +2837,8 @@
     "error": {
         "generic": "Une erreur est survenue. Veuillez réessayer.",
         "network": "Problème de connexion. Veuillez vérifier votre connexion internet et réessayer.",
+        "updateRequired": "Votre compte utilise une méthode de connexion plus récente. Veuillez mettre à jour l’application vers la dernière version (il suffit souvent de la fermer et de la rouvrir), puis reconnectez-vous.",
+        "updateRequiredTitle": "Mise à jour requise",
         "notFound": "Page non trouvée.",
         "unauthorized": "Vous n'avez pas la permission d'effectuer cette action.",
         "sessionExpired": "Votre session a expiré. Veuillez vous reconnecter.",
