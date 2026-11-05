@@ -52,13 +52,12 @@ describe('managed VC v1 public status context', () => {
             },
             { id: 'https://example.com/refresh/1', type: 'LearnCardCredentialRefresh2026' }
         );
-        const scopedStatus = credential['@context'].some(
-            entry => typeof entry === 'object' && 'BitstringStatusListEntry' in entry
+        expect(credential['@context'].includes('https://www.w3.org/ns/credentials/status/v1')).toBe(
+            context !== 'https://www.w3.org/ns/credentials/v2'
         );
-        expect(scopedStatus).toBe(context !== 'https://www.w3.org/ns/credentials/v2');
     });
 
-    it('adds scoped status terms without changing status shape and is idempotent', () => {
+    it('adds the status list context without changing status shape and is idempotent', () => {
         const status = {
             id: 'https://example.com/status-lists/1#0',
             type: 'BitstringStatusListEntry',
@@ -75,12 +74,12 @@ describe('managed VC v1 public status context', () => {
                 }
             );
             expect(credential.credentialStatus).toEqual(credentialStatus);
-            expect(credential['@context']).toContainEqual(
-                expect.objectContaining({
-                    BitstringStatusListEntry: expect.objectContaining({
-                        '@id': 'https://www.w3.org/ns/credentials/status#BitstringStatusListEntry',
-                    }),
-                })
+            const context = credential['@context'];
+            expect(
+                context.filter(entry => entry === 'https://www.w3.org/ns/credentials/status/v1')
+            ).toHaveLength(1);
+            expect(context.indexOf('https://www.w3.org/ns/credentials/status/v1')).toBeLessThan(
+                context.findIndex(entry => typeof entry === 'object')
             );
             expect(prepareManagedRefreshContext(credential)).toBe(credential);
         }
