@@ -2,14 +2,14 @@
 
 ## Properties
 
-| Name                  | Type                                                                                                                | Description | Notes      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
-| **refresh_id**        | **str**                                                                                                             |             |
-| **refresh_service**   | [**BoostSend200ResponseInboxRefreshRefreshService**](BoostSend200ResponseInboxRefreshRefreshService.md)             |             |
-| **credential_id**     | **str**                                                                                                             |             |
-| **issuer_did**        | **str**                                                                                                             |             |
-| **credential_status** | [**BoostSendBoostRequestCredentialAnyOfCredentialStatus**](BoostSendBoostRequestCredentialAnyOfCredentialStatus.md) |             | [optional] |
-| **holder_did**        | **str**                                                                                                             |             | [optional] |
+| Name                  | Type                                                                                                            | Description | Notes      |
+| --------------------- | --------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **refresh_id**        | **str**                                                                                                         |             |
+| **refresh_service**   | [**BoostSend200ResponseInboxRefreshRefreshService**](BoostSend200ResponseInboxRefreshRefreshService.md)         |             |
+| **credential_id**     | **str**                                                                                                         |             |
+| **issuer_did**        | **str**                                                                                                         |             |
+| **credential_status** | [**BoostSendBoostRequestCredentialAnyOfRefreshService**](BoostSendBoostRequestCredentialAnyOfRefreshService.md) |             | [optional] |
+| **holder_did**        | **str**                                                                                                         |             | [optional] |
 
 ## Example
 

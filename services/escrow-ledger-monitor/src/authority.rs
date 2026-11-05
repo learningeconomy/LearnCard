@@ -183,6 +183,8 @@ impl<B: AuthorityBackend> Monitor<B> {
         if partitions.len() > MAX_PARTITIONS {
             return Err(Error::Unavailable);
         }
+        let now = now_ms();
+        let mut repeated_pin_clear_accounts: u64 = 0;
         for pk in partitions.into_iter().collect::<BTreeSet<_>>() {
             // A Query/Scan is NOT a snapshot. Every legitimate write increments
             // the account revision. A changed fence yields retry, not tampering.
@@ -203,9 +205,11 @@ impl<B: AuthorityBackend> Monitor<B> {
                         != after.as_ref()
                     {
                         self.alarm(Metric::AuthorityIntegrityFailure).await?;
-                    } else if audit.repeated_pin_clear(now_ms()) {
-                        // Metric only: the CloudWatch alarm notifies once per episode
-                        // instead of an SNS message on every sweep inside the window.
+                    } else if audit.repeated_pin_clear(now) {
+                        repeated_pin_clear_accounts += 1;
+                        // Deprecated per-account datum (no longer alarmed on), kept for one
+                        // release so dashboards keep working during the switch to
+                        // AuthorityRepeatedPinClearAccounts. Remove next release.
                         self.backend
                             .metric(Metric::AuthorityRepeatedPinClear)
                             .await?;
@@ -213,6 +217,17 @@ impl<B: AuthorityBackend> Monitor<B> {
                 }
             }
         }
+        // Metric only (no SNS): the CloudWatch alarm compares this account count
+        // with an operator threshold, so a new account is visible while a known
+        // one is still inside its window. Emitted (including 0) only after every
+        // partition was read, immediately before the completion heartbeat: an
+        // incomplete sweep returns early above and never reports a misleading 0.
+        self.backend
+            .gauge(
+                Metric::AuthorityRepeatedPinClearAccounts,
+                repeated_pin_clear_accounts,
+            )
+            .await?;
         self.backend.metric(Metric::AuthoritySweepCompleted).await
     }
 }

@@ -4,6 +4,7 @@ import { webcrypto } from 'node:crypto';
 import { getCredentialPayloadRecordId } from '../helpers/credentialStorageIdentity';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import type { VC } from '@learncard/types';
+import type { QueryClient as QueryClientType } from '@tanstack/react-query';
 
 const mocks = vi.hoisted(() => ({
     get: vi.fn(),
@@ -11,8 +12,11 @@ const mocks = vi.hoisted(() => ({
     upload: vi.fn(),
     read: vi.fn(),
     getConsentedContracts: vi.fn(),
+    getBespoke: vi.fn(),
     logError: vi.fn(),
     saveFact: vi.fn(),
+    queryClient: null as QueryClientType | null,
+    wallet: null as unknown,
 }));
 vi.mock('localforage', () => ({
     default: {
@@ -35,17 +39,13 @@ vi.mock('learn-card-base/stores/currentUserStore', () => ({ useIsLoggedIn: () =>
 vi.mock('learn-card-base/stores/walletStore', () => ({
     switchedProfileStore: { get: { switchedDid: () => undefined } },
     walletStore: {
-        get: {
-            wallet: () => ({
-                id: { did: () => 'did:example:claiming-account' },
-                store: { LearnCloud: { uploadEncrypted: mocks.upload } },
-                index: { LearnCloud: { get: mocks.get, add: mocks.add } },
-                read: { get: mocks.read },
-            }),
-        },
+        get: { wallet: () => mocks.wallet },
+        set: { wallet: (wallet: unknown) => (mocks.wallet = wallet) },
     },
 }));
-vi.mock('learn-card-base/helpers/walletHelpers', () => ({ getBespokeLearnCard: vi.fn() }));
+vi.mock('learn-card-base/helpers/walletHelpers', () => ({
+    getBespokeLearnCard: mocks.getBespoke,
+}));
 vi.mock('learn-card-base/helpers/privateKeyHelpers', () => ({
     getCurrentUserPrivateKey: vi.fn(),
     requireCurrentUserPrivateKey: vi.fn(),
@@ -56,13 +56,10 @@ vi.mock('learn-card-base/helpers/credentialHelpers', () => ({
     isBoostCredential: () => false,
     unwrapBoostCredential: () => undefined,
 }));
-vi.mock('@tanstack/react-query', () => ({
-    useQueryClient: () => ({
-        cancelQueries: vi.fn(),
-        setQueryData: vi.fn(),
-        refetchQueries: vi.fn(),
-    }),
-}));
+vi.mock('@tanstack/react-query', async importOriginal => {
+    const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+    return { ...actual, useQueryClient: () => mocks.queryClient! };
+});
 vi.mock('./useSharedUrisInTerms', () => ({ getOrCreateSharedUriForWallet: vi.fn() }));
 vi.mock('./useConsentedContracts', () => ({
     getOrFetchConsentedContracts: mocks.getConsentedContracts,
@@ -73,6 +70,7 @@ vi.mock('learn-card-base/react-query/mutations/ai-passport', () => ({
 vi.mock('learn-card-base/constants/aiPassport', () => ({
     isLearnCardAiPassportContractUri: () => false,
 }));
+import { InfiniteQueryObserver, QueryClient, QueryObserver } from '@tanstack/react-query';
 import { useWallet } from './useWallet';
 import {
     addCredentialSummary,
@@ -104,6 +102,16 @@ beforeEach(async () => {
     await clearCredentialFacts();
     vi.stubGlobal('crypto', webcrypto);
     records = [];
+    mocks.queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, gcTime: Infinity } },
+    });
+    mocks.wallet = {
+        id: { did: () => 'did:example:claiming-account' },
+        store: { LearnCloud: { uploadEncrypted: mocks.upload } },
+        index: { LearnCloud: { get: mocks.get, add: mocks.add } },
+        read: { get: mocks.read },
+    };
+    mocks.getBespoke.mockResolvedValue(mocks.wallet);
     mocks.saveFact.mockReset();
     mocks.saveFact.mockResolvedValue(undefined);
     mocks.getConsentedContracts.mockReset().mockResolvedValue([]);
@@ -453,4 +461,202 @@ it('defers facts and claim events until staged acceptance is finalized', async (
             credential: expect.objectContaining({ uri: 'pending-uri' }),
         }),
     ]);
+});
+it.each([
+    ['storeAndAddVCToWallet', () => useWallet().storeAndAddVCToWallet(credential), false],
+    ['addVCtoWallet', () => useWallet().addVCtoWallet({ uri: 'existing-uri' }), false],
+    [
+        'storeAndAddManyVCsToWallet',
+        () => useWallet().storeAndAddManyVCsToWallet([credential]),
+        false,
+    ],
+    [
+        'a claim whose background scan fails',
+        () => useWallet().storeAndAddVCToWallet(credential),
+        true,
+    ],
+] as const)('%s finishes before a complete-list rescan settles', async (_name, claim, failScan) => {
+    const client = mocks.queryClient!;
+    const reader = 'did:example:claiming-account';
+    const scanStarted = Promise.withResolvers<void>();
+    const scan = Promise.withResolvers<void>();
+    const pages: unknown[] = [];
+    const observer = new InfiniteQueryObserver(client, {
+        queryKey: ['useGetCredentialList', '', '', reader],
+        initialPageParam: undefined as string | undefined,
+        initialData: {
+            pages: [
+                { records: [{ uri: 'old-one' }], cursor: 'second', hasMore: true },
+                { records: [{ uri: 'old-two' }], cursor: undefined, hasMore: false },
+            ],
+            pageParams: [undefined, 'second'],
+        },
+        staleTime: Infinity,
+        getNextPageParam: page => page.cursor,
+        queryFn: async ({ pageParam }) => {
+            pages.push(pageParam);
+            scanStarted.resolve();
+            await scan.promise;
+            return pageParam
+                ? { records: [{ uri: 'old-two' }], cursor: undefined, hasMore: false }
+                : {
+                      records: [{ uri: 'old-one' }],
+                      cursor: 'second',
+                      hasMore: true,
+                  };
+        },
+    });
+    const unsubscribe = observer.subscribe(() => undefined);
+    let completed = false;
+    const saving = claim().then(() => {
+        completed = true;
+    });
+    try {
+        await scanStarted.promise;
+        await vi.waitFor(() => expect(completed).toBe(true));
+        expect(observer.getCurrentResult().isFetching).toBe(true);
+        expect(pages).toEqual([undefined]);
+        expect(mocks.getConsentedContracts).toHaveBeenCalled();
+        expect(client.getQueryData(['useGetCredentialCount', '', 'Achievement', reader])).toBe(1);
+        expect(
+            client.getQueryData(['useGetCredentialList', '', 'Achievement', reader])
+        ).toMatchObject({
+            pages: [{ records: [expect.objectContaining({ category: 'Achievement' })] }],
+        });
+        expect(records).toEqual([expect.objectContaining({ category: 'Achievement' })]);
+    } finally {
+        if (failScan) scan.reject(new Error('list temporarily unavailable'));
+        else scan.resolve();
+        await saving;
+        await vi.waitFor(() => expect(observer.getCurrentResult().isFetching).toBe(false));
+        unsubscribe();
+    }
+    if (failScan) {
+        expect(observer.getCurrentResult().isError).toBe(true);
+        expect(observer.getCurrentResult().data?.pages[0].records).toEqual([{ uri: 'old-one' }]);
+    } else {
+        expect(pages).toEqual([undefined, 'second']);
+    }
+});
+
+it('refreshes only the originating reader scope and batches successful bulk refreshes', async () => {
+    const client = mocks.queryClient!;
+    const calls = new Map<string, number>();
+    const subscriptions: (() => void)[] = [];
+    const observe = (key: readonly unknown[], name: string) => {
+        const observer = new QueryObserver(client, {
+            queryKey: key,
+            queryFn: async () => {
+                calls.set(name, (calls.get(name) ?? 0) + 1);
+                return key[0] === 'useGetCredentialList'
+                    ? { pages: [{ hasMore: false, records: [] }], pageParams: [undefined] }
+                    : 0;
+            },
+        });
+        subscriptions.push(observer.subscribe(() => undefined));
+        return observer.refetch();
+    };
+
+    await Promise.all([
+        observe(
+            ['useGetCredentialList', '', 'Achievement', 'did:example:claiming-account'],
+            'category'
+        ),
+        observe(['useGetCredentialList', '', '', 'did:example:claiming-account'], 'global'),
+        observe(
+            ['useGetCredentialList', '', 'Study', 'did:example:claiming-account'],
+            'other-category'
+        ),
+        observe(
+            ['useGetCredentialList', '', 'Achievement', 'did:example:other-account'],
+            'other-reader'
+        ),
+        observe(
+            ['useGetCredentialCount', '', 'Achievement', 'did:example:claiming-account'],
+            'count'
+        ),
+        observe(
+            ['useGetCredentialCount', '', 'Achievement', 'did:example:other-account'],
+            'other-count'
+        ),
+    ]);
+    calls.clear();
+
+    await useWallet().storeAndAddVCToWallet(credential);
+    expect(calls.get('category')).toBe(1);
+    expect(calls.get('global')).toBe(1);
+    expect(calls.has('other-category')).toBe(false);
+    expect(calls.has('other-reader')).toBe(false);
+    expect(calls.has('other-count')).toBe(false);
+    expect(calls.get('count')).toBe(1);
+
+    calls.clear();
+    mocks.upload
+        .mockResolvedValueOnce('bulk-one')
+        .mockRejectedValueOnce(new Error('upload failed'))
+        .mockResolvedValueOnce('bulk-three');
+    await expect(
+        useWallet().storeAndAddManyVCsToWallet([
+            { ...credential, id: 'urn:bulk:one' },
+            { ...credential, id: 'urn:bulk:failed' },
+            { ...credential, id: 'urn:bulk:three' },
+        ])
+    ).rejects.toThrow('upload failed');
+    expect(calls.get('category')).toBe(1);
+    expect(calls.get('global')).toBe(1);
+    expect(calls.has('other-count')).toBe(false);
+    expect(calls.get('count')).toBe(1);
+    expect(records.map(record => record.uri).filter(uri => uri === 'encrypted-uri')).toHaveLength(
+        1
+    );
+    expect(records.map(record => record.uri)).toContain('bulk-one');
+    expect(records.map(record => record.uri)).toContain('bulk-three');
+    subscriptions.forEach(unsubscribe => unsubscribe());
+});
+it('refreshes persisted bulk writes when contract sync fails and the reader initializes lazily', async () => {
+    const wallet = mocks.wallet;
+    mocks.wallet = null;
+    mocks.getBespoke.mockResolvedValueOnce(wallet);
+    const client = mocks.queryClient!;
+    const calls = new Map<string, number>();
+    const subscriptions: (() => void)[] = [];
+    const observe = (key: readonly unknown[], name: string) => {
+        const observer = new QueryObserver(client, {
+            queryKey: key,
+            queryFn: async () => {
+                calls.set(name, (calls.get(name) ?? 0) + 1);
+                return key[0] === 'useGetCredentialList'
+                    ? { pages: [{ hasMore: false, records: [] }], pageParams: [undefined] }
+                    : 0;
+            },
+        });
+        subscriptions.push(observer.subscribe(() => undefined));
+        return observer.refetch();
+    };
+    await Promise.all([
+        observe(
+            ['useGetCredentialList', '', 'Achievement', 'did:example:claiming-account'],
+            'category'
+        ),
+        observe(['useGetCredentialList', '', '', 'did:example:claiming-account'], 'global'),
+        observe(
+            ['useGetCredentialCount', '', 'Achievement', 'did:example:claiming-account'],
+            'count'
+        ),
+    ]);
+    calls.clear();
+    mocks.getConsentedContracts.mockRejectedValueOnce(new Error('contract sync failed'));
+
+    await expect(
+        useWallet().storeAndAddManyVCsToWallet([
+            { ...credential, id: 'urn:sync-failure:one' },
+            { ...credential, id: 'urn:sync-failure:two' },
+        ])
+    ).rejects.toThrow('contract sync failed');
+
+    expect(records).toHaveLength(2);
+    expect(calls.get('category')).toBe(1);
+    expect(calls.get('global')).toBe(1);
+    expect(calls.get('count')).toBe(1);
+    subscriptions.forEach(unsubscribe => unsubscribe());
 });

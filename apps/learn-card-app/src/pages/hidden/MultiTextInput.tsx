@@ -4,10 +4,11 @@ import { produce } from 'immer';
 import TrashBin from '../../components/svgs/TrashBin';
 import Plus from 'learn-card-base/svgs/Plus';
 import { IonInput, IonCheckbox } from '@ionic/react';
+import type { ConsentFlowContract } from '@learncard/types';
 
 type MultiTextInputProps = {
-    values: Record<string, { required?: boolean }>;
-    onChange: (value: Record<string, { required?: boolean }>) => void;
+    values: ConsentFlowContract['read']['personal'];
+    onChange: (value: ConsentFlowContract['read']['personal']) => void;
     label?: string;
     buttonText?: string;
     className?: string;

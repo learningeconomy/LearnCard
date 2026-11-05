@@ -27,8 +27,8 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf(BaseModel):
     """
     BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf
     """ # noqa: E501
-    id: Optional[StrictStr]
-    type: Optional[StrictStr]
+    id: StrictStr
+    type: StrictStr
     caption: Optional[StrictStr] = None
     __properties: ClassVar[List[str]] = ["id", "type", "caption"]
 
@@ -59,9 +59,8 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -71,21 +70,6 @@ class BoostSendBoostRequestCredentialAnyOfIssuerAnyOfImageAnyOf(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
-
-        # set to None if type (nullable) is None
-        # and model_fields_set contains the field
-        if self.type is None and "type" in self.model_fields_set:
-            _dict['type'] = None
-
-        # set to None if caption (nullable) is None
-        # and model_fields_set contains the field
-        if self.caption is None and "caption" in self.model_fields_set:
-            _dict['caption'] = None
-
         return _dict
 
     @classmethod

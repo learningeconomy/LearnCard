@@ -151,9 +151,13 @@ variable "tier3_start_hour_utc" {
   }
 }
 variable "tier3_hold_duration_ms" {
-  description = "Must equal lca-api's configured hold duration (asserted against the signed hold record)."
+  description = "Signed hold duration the runner asserts. The Nitro enclave's is a compile-time 7 days (policy.rs HOLD_DURATION_MS) in every environment; lca-api's ESCROW_HOLD_DURATION_MS only affects the software enclave."
   type        = number
   default     = 604800000
+  validation {
+    condition     = var.tier3_hold_duration_ms == 604800000
+    error_message = "Use 604800000 (7 days): the Nitro enclave signs every hold with a compile-time 7-day duration, so any other value fails every run with deadline_mismatch."
+  }
 }
 variable "tier3_cancel_cooldown_hours" {
   type    = number

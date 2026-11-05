@@ -2,11 +2,11 @@
 
 ## Properties
 
-| Name               | Type                                                                                | Description | Notes      |
-| ------------------ | ----------------------------------------------------------------------------------- | ----------- | ---------- |
-| **read**           | [**StorageResolve200ResponseAnyOf1Read**](StorageResolve200ResponseAnyOf1Read.md)   |             |
-| **write**          | [**StorageResolve200ResponseAnyOf1Write**](StorageResolve200ResponseAnyOf1Write.md) |             |
-| **denied_writers** | **List[str]**                                                                       |             | [optional] |
+| Name               | Type                                                                                                                                                                                          | Description | Notes      |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
+| **read**           | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransactionsInnerTermsRead.md) |             |
+| **write**          | [**StorageResolve200ResponseAnyOf1Write**](StorageResolve200ResponseAnyOf1Write.md)                                                                                                           |             |
+| **denied_writers** | **List[str]**                                                                                                                                                                                 |             | [optional] |
 
 ## Example
 

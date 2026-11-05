@@ -6,7 +6,7 @@
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- |
 | **anonymize**   | **bool**                                                                                                                                                                          |             | [optional] |
 | **credentials** | [**CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials**](CredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTermsReadCredentials.md) |             |
-| **personal**    | **Dict[str, Optional[str]]**                                                                                                                                                      |             |
+| **personal**    | **Dict[str, str]**                                                                                                                                                                |             |
 
 ## Example
 

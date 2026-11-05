@@ -266,13 +266,18 @@ impl Backend for Aws {
     }
 
     async fn metric(&self, metric: Metric) -> Result<()> {
+        self.gauge(metric, 1).await
+    }
+
+    async fn gauge(&self, metric: Metric, value: u64) -> Result<()> {
         self.cw
             .put_metric_data()
             .namespace(NAMESPACE)
             .metric_data(
                 MetricDatum::builder()
                     .metric_name(metric.name())
-                    .value(1.0)
+                    // Counts are bounded by MAX_PARTITIONS, exact in f64.
+                    .value(value as f64)
                     .unit(StandardUnit::Count)
                     .dimensions(
                         Dimension::builder()

@@ -52,8 +52,8 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransac
                     personal = {
                         'key' : ''
                         }, ),
-                write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_write(
-                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_write_credentials(
+                write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_write(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_write_credentials(
                         categories = {
                             'key' : True
                             }, ), 
@@ -83,8 +83,8 @@ class TestCredentialGetHolderExportMetadata200ResponseConsentRecordsInnerTransac
                     personal = {
                         'key' : ''
                         }, ),
-                write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_write(
-                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_transactions_inner_terms_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_transactions_inner_terms_write_credentials(
+                write = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_write.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_write(
+                    credentials = openapi_client.models.credential_get_holder_export_metadata_200_response_consent_records_inner_terms_write_credentials.credential_getHolderExportMetadata_200_response_consentRecords_inner_terms_write_credentials(
                         categories = {
                             'key' : True
                             }, ), 
