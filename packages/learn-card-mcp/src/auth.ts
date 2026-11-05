@@ -1,4 +1,5 @@
 import { trimTrailingSlashes } from './url';
+import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import { ProxyOAuthServerProvider } from '@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
@@ -40,7 +41,15 @@ export const createOAuthProxyProvider = (options: OAuthProxyOptions): ProxyOAuth
                 ? { registrationUrl: `${base}${options.registrationPath}` }
                 : {}),
         },
-        verifyAccessToken: options.verifyAccessToken,
+        // The SDK's bearer middleware only maps InvalidTokenError to 401; anything else is a 500.
+        verifyAccessToken: async token => {
+            try {
+                return await options.verifyAccessToken(token);
+            } catch (error) {
+                if (error instanceof InvalidTokenError) throw error;
+                throw new InvalidTokenError('Invalid access token');
+            }
+        },
         getClient: options.getClient,
     });
 };

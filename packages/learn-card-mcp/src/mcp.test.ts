@@ -144,6 +144,16 @@ describe('createMcpApp', () => {
         );
     });
 
+    it('rejects a wrong bearer token with 401 and the same challenge as a missing one', async () => {
+        const response = await rpc('not-a-real-token', 1, 'tools/list');
+        expect(response.status).toBe(401);
+        const challenge = response.headers.get('www-authenticate');
+        expect(challenge).toContain('error="invalid_token"');
+        expect(challenge).toContain(
+            'https://mcp.example.test/.well-known/oauth-protected-resource'
+        );
+    });
+
     it('serves OAuth metadata naming the authorization server', async () => {
         const resource = await readJson(
             await fetch(`${baseUrl}/.well-known/oauth-protected-resource`)
