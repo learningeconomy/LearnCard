@@ -33,12 +33,13 @@ export const storeCredential = async (
             { credentialId: id }
         );
     }
-    const create = (session?: Transaction) =>
+    const create = (session?: Transaction, validatedOwner?: string) =>
         Credential.createOne(
             {
                 id,
                 credential: JSON.stringify(credential),
                 ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
+                ...(validatedOwner ? { statusOwnerProfileId: validatedOwner } : {}),
             },
             session ? { session } : undefined
         );
@@ -46,6 +47,7 @@ export const storeCredential = async (
     if (!statusOwnerProfileId || entries.length === 0) return create(transaction);
     return neogma.getTransaction(transaction ?? null, async tx => {
         await reserveCredentialStatusEntries(entries, statusOwnerProfileId, id, tx);
-        return create(tx);
+        // Inbox deliveries need a validated owner even without a CREDENTIAL_SENT edge.
+        return create(tx, statusOwnerProfileId);
     });
 };

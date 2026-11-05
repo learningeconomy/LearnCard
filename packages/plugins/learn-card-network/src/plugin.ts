@@ -14,7 +14,7 @@ import {
     UnsignedVC,
     VC,
     BitstringCredentialStatusEntry,
-    BitstringStatusListEntry,
+    type BitstringStatusListEntry,
     BitstringStatusListEntryValidator,
     BitstringCredentialStatusPurpose,
     AllocateCredentialRefreshResult,
@@ -3319,7 +3319,13 @@ export async function getLearnCardNetworkPlugin(
                     );
                     return [];
                 });
-                return { ...result, records, failed: results.length - records.length };
+                const { cursor, ...page } = result;
+                return {
+                    ...page,
+                    ...(cursor === undefined ? {} : { cursor }),
+                    records,
+                    failed: results.length - records.length,
+                };
             },
             sendGuardianApprovalEmail: async (_learnCard, options) => {
                 await ensureUser();

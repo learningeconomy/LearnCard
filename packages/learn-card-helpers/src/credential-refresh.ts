@@ -316,7 +316,7 @@ export const prepareManagedRefreshContext = <T>(credential: T): T => {
     const fragment: Record<string, unknown> = {};
 
     if (
-        !contextList.includes('https://www.w3.org/ns/credentials/v2') &&
+        !contextList.some(context => context === 'https://www.w3.org/ns/credentials/v2') &&
         getBitstringStatusListEntries(credential).length > 0
     ) {
         const definition = findTopLevelDefinition(inlineObjects, 'BitstringStatusListEntry');
