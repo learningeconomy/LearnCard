@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseMutationResult } from '@tanstack/react-query';
 
@@ -44,7 +44,7 @@ const usePreferencesMutation = (
 ): UseMutationResult<boolean, Error, PreferencesType, PreferencesMutationContext> => {
     const { initWallet } = useWallet();
     const initWalletRef = useRef(initWallet);
-    useEffect(() => {
+    useLayoutEffect(() => {
         initWalletRef.current = initWallet;
     }, [initWallet]);
     const queryClient = useQueryClient();

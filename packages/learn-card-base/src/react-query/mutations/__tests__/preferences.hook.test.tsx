@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import React from 'react';
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import React, { useEffect } from 'react';
+import { act, cleanup, render, renderHook, waitFor } from '@testing-library/react';
 import { MutationCache, QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -28,7 +28,7 @@ vi.mock('../../../hooks/useWallet', () => ({
         };
     },
 }));
-import { useUpdatePreferences } from '../preferences';
+import { useUpdatePreferences, type PreferencesType } from '../preferences';
 
 const key = ['useGetPreferencesForDid', 'did:key:adult'];
 const otherKey = ['useGetPreferencesForDid', 'did:key:child'];
@@ -143,6 +143,49 @@ describe('preference authorization cache transitions', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(saved.get('did:key:child')).toEqual({ analyticsEnabled: false });
         expect(saved.has('did:key:adult')).toBe(false);
+    });
+
+    it('uses the new account when a child effect writes during the wallet-switch commit', async () => {
+        const saved = new Map<string, unknown>();
+        host.update.mockImplementation(async (did: string, preferences: unknown) => {
+            saved.set(did, preferences);
+            return true;
+        });
+        const client = new QueryClient({
+            defaultOptions: { mutations: { retry: false }, queries: { retry: false } },
+        });
+        const Child = ({
+            did,
+            mutate,
+        }: {
+            did: string;
+            mutate: (preferences: PreferencesType) => void;
+        }) => {
+            useEffect(() => {
+                if (did === 'did:key:child') mutate({ analyticsEnabled: false });
+            }, [did, mutate]);
+            return null;
+        };
+        const Parent = ({ did }: { did: string }) => {
+            const { mutate } = useUpdatePreferences();
+            return <Child did={did} mutate={mutate} />;
+        };
+        const view = render(
+            <QueryClientProvider client={client}>
+                <Parent did={host.activeDid} />
+            </QueryClientProvider>
+        );
+        host.activeDid = 'did:key:child';
+        view.rerender(
+            <QueryClientProvider client={client}>
+                <Parent did={host.activeDid} />
+            </QueryClientProvider>
+        );
+        await waitFor(() =>
+            expect(saved.get('did:key:child')).toEqual({ analyticsEnabled: false })
+        );
+        expect(saved.has('did:key:adult')).toBe(false);
+        client.clear();
     });
 
     it('owns a rejected wallet promise even when a global mutation hook cancels first', async () => {
