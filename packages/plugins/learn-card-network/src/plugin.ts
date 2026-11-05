@@ -606,6 +606,12 @@ const didFromRecipientKeyId = (keyId: string): string => {
  * templateData, or display-derived claim value outside the JWE itself — only the
  * public bindings `HolderEncryptedHandoffValidator` allows.
  */
+/** One bound status entry is sent as an object, several as an array (the original shape). */
+const toBoundCredentialStatus = <T>(entries: T[]): T | T[] => {
+    const [only] = entries;
+    return entries.length === 1 && only !== undefined ? only : entries;
+};
+
 /** The public bindings of a holder handoff; validated with the JWE by HolderEncryptedHandoffValidator. */
 type HolderEncryptedHandoffBindings = Omit<HolderEncryptedHandoff, 'jwe'>;
 
@@ -2011,10 +2017,7 @@ export async function getLearnCardNetworkPlugin(
                     credentialId: receipt.credentialId,
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,
-                    credentialStatus:
-                        boundCredentialStatus.length === 1
-                            ? boundCredentialStatus[0]
-                            : boundCredentialStatus,
+                    credentialStatus: toBoundCredentialStatus(boundCredentialStatus),
                 };
 
                 assertManagedCredentialBinding(signedCredential, {
@@ -2548,10 +2551,9 @@ export async function getLearnCardNetworkPlugin(
                             );
                         }
 
-                        const boundCredentialStatus =
-                            prepared.statusEntries.length === 1
-                                ? prepared.statusEntries[0]
-                                : prepared.statusEntries;
+                        const boundCredentialStatus = toBoundCredentialStatus(
+                            prepared.statusEntries
+                        );
                         const holderBindings = {
                             refreshId: prepared.refreshId,
                             credentialId: prepared.credentialId,
