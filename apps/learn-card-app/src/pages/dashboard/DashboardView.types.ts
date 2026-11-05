@@ -158,6 +158,8 @@ export type DashboardViewModel = {
     primaryButtonClass?: string;
     slots: DashboardSlots;
     recoveryPrompt: DashboardRecoveryPromptViewModel;
+    /** When true, the guardian approval banner replaces the recovery banner. */
+    pendingGuardianApproval?: boolean;
     dataTrust: DashboardDataTrustViewModel;
     activity: DashboardActivityViewModel;
     learningProfile: DashboardLearningProfileViewModel;
