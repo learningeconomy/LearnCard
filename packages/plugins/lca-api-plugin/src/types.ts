@@ -377,14 +377,18 @@ export type LCAPluginMethods = {
     }) => Promise<{ isStudent: boolean; schoolName?: string }>;
     transcriptsGetStatus: () => Promise<{
         eligible: boolean;
+        issuerDid?: string;
         reason?: 'no_state_id' | 'reauth_required' | 'not_enabled';
         stateDisplayName: string;
         latest?: {
+            requestId: string;
+            receivedAt?: string;
             status: 'requested' | 'none_yet' | 'failed';
             /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */
             requestedAt: string;
         };
     }>;
+    transcriptsMarkReceived: (args: { requestId: string }) => Promise<{ success: true }>;
     transcriptsRequest: (args: { consent: true }) => Promise<{
         status: 'requested' | 'none_yet' | 'failed';
         /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */

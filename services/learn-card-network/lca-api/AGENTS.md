@@ -309,6 +309,8 @@ sequenceDiagram
 
 ### School Connect (connect a school account to an existing account)
 
+`transcripts.getStatus` exposes the optional `TRANSCRIPT_ISSUER_DID` (runtime secrets bundle / `PROVIDER_SECRETS`, alongside `TRANSCRIPT_ISSUER_AUDIENCE`), overridden by the district's optional `transcriptIssuerDid`. Its latest request includes `requestId` (stored `jti`) and optional ISO `receivedAt`. DID-auth `transcripts.markReceived({ requestId })` acknowledges only the caller DID's `requested` records. Unknown, other-owner, `none_yet`, and `failed` requests return `NOT_FOUND`. The first timestamp is preserved atomically on retries; this client-reported marker stores no credential data and is not server verification of delivery.
+
 - `classlink.getConnection` and `classlink.connect` are DID-auth routes in `src/routes/classlinkConnect.ts`. `connect` runs the same server-side code exchange and id_token checks as sign-in (`src/helpers/classlinkExchange.helpers.ts`), then attaches the ClassLink identity to the caller's account instead of signing in. It never creates a Firebase user or custom token, so the session does not change.
 - The caller's account is the one bound to the authenticated DID (UserKey → its Firebase uid). Accounts without a Firebase sign-in get `PRECONDITION_FAILED` for now.
 - Refuses with `CONFLICT` when the ClassLink identity already belongs to another account, or when the account is already connected to a different ClassLink identity. Accounts are never merged.

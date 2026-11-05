@@ -47,6 +47,20 @@ beforeEach(() => {
 });
 
 describe('ClassLink configuration', () => {
+    it('validates the optional district transcript issuer identity', () => {
+        const tenant = validTenants['tenant-test'];
+        const tenants = {
+            'tenant-test': { ...tenant, transcriptIssuerDid: 'did:web:issuer.example' },
+        };
+        expect(ClassLinkTenantsValidator.parse(tenants)).toEqual(tenants);
+        for (const transcriptIssuerDid of ['', '   ', false, 42]) {
+            expect(
+                ClassLinkTenantsValidator.safeParse({
+                    'tenant-test': { ...tenant, transcriptIssuerDid },
+                }).success
+            ).toBe(false);
+        }
+    });
     it('parses valid tenant configuration and redirect URIs', () => {
         expect(ClassLinkTenantsValidator.parse(validTenants)).toEqual(validTenants);
         expect(getClassLinkConfig()).toMatchObject({

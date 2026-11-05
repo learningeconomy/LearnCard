@@ -69,6 +69,7 @@ export const lcaApiEnvironmentShape = {
         .pipe(z.number().int().positive()),
     TRANSCRIPT_ISSUER_ENDPOINT: optionalEnvironmentString,
     TRANSCRIPT_ISSUER_AUDIENCE: optionalEnvironmentString,
+    TRANSCRIPT_ISSUER_DID: optionalEnvironmentString,
     KEYCLOAK_ISSUERS: optionalEnvironmentString,
     KEYCLOAK_AUDIENCES: optionalEnvironmentString,
     KEYCLOAK_JWKS_URL_OVERRIDES: optionalEnvironmentString,

@@ -7,6 +7,7 @@ export const ClassLinkTenantConfigValidator = z.object({
     stateStudentIdField: z.string().min(1),
     allowedEmailDomains: z.array(z.string().min(1)),
     transcriptEnabled: z.boolean(),
+    transcriptIssuerDid: z.string().trim().min(1).optional(),
     /**
      * Test stages only: when the district sends no state ID, use a stable fake `TEST…` ID
      * per student so the transcript flow can be tested end to end. Ignored in production.

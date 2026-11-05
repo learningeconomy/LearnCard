@@ -460,6 +460,11 @@ export const getLCAPlugin = async (
                     await updateLearnCard(_learnCard);
                     return client.transcripts.request.mutate(args);
                 },
+                transcriptsMarkReceived: async (_learnCard, args) => {
+                    await initialized;
+                    await updateLearnCard(_learnCard);
+                    return client.transcripts.markReceived.mutate(args);
+                },
                 getProofOfLoginVp: async (_learnCard, token) => {
                     await initialized;
                     await updateLearnCard(_learnCard);
@@ -763,6 +768,9 @@ export const getLCAPlugin = async (
                 transcriptsRequest: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');
                     return { status: 'failed', requestedAt: new Date().toISOString() };
+                },
+                transcriptsMarkReceived: async () => {
+                    throw new Error('Unable to connect to LCA API.');
                 },
                 getProofOfLoginVp: async () => {
                     console.error('Unable to connect to LCA API. Plugin must be re-added.');

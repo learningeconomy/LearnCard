@@ -12,6 +12,7 @@ export interface MongoTranscriptRequestType {
     state: string;
     consentAt: Date;
     requestedAt: Date;
+    receivedAt?: Date;
     status: TranscriptRequestStatus;
     issuerHttpStatus?: number;
     issuerResponseCode?: string;
@@ -74,3 +75,18 @@ export const updateTranscriptRequest = async (
 
 export const deleteTranscriptRequestsByFirebaseUid = async (firebaseUid: string): Promise<number> =>
     (await getTranscriptRequestsCollection().deleteMany({ firebaseUid })).deletedCount;
+
+/** Only accepted requests can be acknowledged; concurrent retries preserve the first timestamp. */
+export const markTranscriptRequestReceived = async (
+    jti: string,
+    did: string
+): Promise<MongoTranscriptRequestType | null> => {
+    const collection = getTranscriptRequestsCollection();
+    const filter = { jti, did, status: 'requested' as const };
+    const updated = await collection.findOneAndUpdate(
+        { ...filter, receivedAt: { $exists: false } },
+        { $set: { receivedAt: new Date() } },
+        { returnDocument: 'after' }
+    );
+    return updated ?? collection.findOne(filter);
+};

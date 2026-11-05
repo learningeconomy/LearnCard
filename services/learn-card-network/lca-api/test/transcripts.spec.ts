@@ -3,6 +3,7 @@ import { exportJWK, generateKeyPair, jwtVerify } from 'jose';
 import axios from 'axios';
 import mongodb from '@mongo';
 import cache from '@cache';
+import { environment } from '@environment';
 import { transcriptsRouter } from '../src/routes/transcripts';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '../src/helpers/classlink.config';
 import {
@@ -48,6 +49,7 @@ beforeAll(async () => {
     mocks.keypair.mockReturnValue(await exportJWK(pair.privateKey));
 });
 beforeEach(async () => {
+    environment.TRANSCRIPT_ISSUER_DID = 'did:web:issuer.example';
     vi.mocked(axios.post).mockReset();
     await cache.node.flushall();
     await mongodb.collection('userkeys').deleteMany({});
@@ -100,6 +102,70 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('transcript requests', () => {
+    it('exposes issuer identity and the stored request jti without a received marker', async () => {
+        await caller().request({ consent: true });
+        const stored = await getTranscriptRequestsCollection().findOne({});
+        const status = await caller().getStatus();
+        expect(status.issuerDid).toBe('did:web:issuer.example');
+        expect(status.latest?.requestId).toBe(stored?.jti);
+        expect(status.latest?.receivedAt).toBeUndefined();
+    });
+    it('prefers the district issuer override', async () => {
+        config.tenants['tenant-test']!.transcriptIssuerDid = 'did:web:district.example';
+        expect((await caller().getStatus()).issuerDid).toBe('did:web:district.example');
+    });
+    it('leaves issuer identity unset when no default or override is configured', async () => {
+        environment.TRANSCRIPT_ISSUER_DID = undefined;
+        expect((await caller().getStatus()).issuerDid).toBeUndefined();
+    });
+    it('marks an owned request received with an ISO timestamp', async () => {
+        await caller().request({ consent: true });
+        const { latest } = await caller().getStatus();
+        expect(await caller().markReceived({ requestId: latest!.requestId })).toEqual({
+            success: true,
+        });
+        const receivedAt = (await caller().getStatus()).latest?.receivedAt;
+        expect(new Date(receivedAt!).toISOString()).toBe(receivedAt);
+        expect((await getTranscriptRequestsCollection().findOne({}))?.receivedAt).toBeInstanceOf(
+            Date
+        );
+    });
+    it('preserves the first received timestamp across sequential and concurrent retries', async () => {
+        await caller().request({ consent: true });
+        const { latest } = await caller().getStatus();
+        const input = { requestId: latest!.requestId };
+        await Promise.all(Array.from({ length: 8 }, () => caller().markReceived(input)));
+        const first = (await caller().getStatus()).latest?.receivedAt;
+        await caller().markReceived(input);
+        expect((await caller().getStatus()).latest?.receivedAt).toBe(first);
+    });
+    it('hides other owners requests and leaves their marker absent', async () => {
+        await caller().request({ consent: true });
+        const { latest } = await caller().getStatus();
+        await expect(
+            caller({ did: 'did:key:other', isChallengeValid: true }).markReceived({
+                requestId: latest!.requestId,
+            })
+        ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        expect((await getTranscriptRequestsCollection().findOne({}))?.receivedAt).toBeUndefined();
+    });
+    it('returns NOT_FOUND for an unknown request', async () => {
+        await expect(caller().markReceived({ requestId: 'unknown' })).rejects.toMatchObject({
+            code: 'NOT_FOUND',
+        });
+    });
+    it.each(['none_yet', 'failed'] as const)('does not mark %s requests received', async status => {
+        await caller().request({ consent: true });
+        const { latest } = await caller().getStatus();
+        await getTranscriptRequestsCollection().updateOne(
+            { jti: latest!.requestId },
+            { $set: { status } }
+        );
+        await expect(caller().markReceived({ requestId: latest!.requestId })).rejects.toMatchObject(
+            { code: 'NOT_FOUND' }
+        );
+        expect((await getTranscriptRequestsCollection().findOne({}))?.receivedAt).toBeUndefined();
+    });
     it.each([200, 202])(
         'signs a verifiable assertion and persists consent before HTTP %s',
         async httpStatus => {
@@ -292,7 +358,7 @@ describe('transcript requests', () => {
         });
         expect(axios.post).not.toHaveBeenCalled();
     });
-    it('requires DID authentication and a fresh challenge for both procedures', async () => {
+    it('requires DID authentication and a fresh challenge for all procedures', async () => {
         for (const user of [undefined, { did, isChallengeValid: false }]) {
             const client = transcriptsRouter.createCaller({
                 user,
@@ -300,6 +366,9 @@ describe('transcript requests', () => {
                 tenant: { id: 'learncard', emailBranding: {}, resolvedVia: 'default' },
             });
             await expect(client.getStatus()).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(client.markReceived({ requestId: 'unknown' })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
             await expect(client.request({ consent: true })).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });

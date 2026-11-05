@@ -3,6 +3,7 @@ import axios from 'axios';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import cache from '@cache';
+import { environment } from '@environment';
 import { t, didAndChallengeRoute } from '@routes';
 import { getClassLinkConfig, getTranscriptIssuerConfig } from '@helpers/classlink.config';
 import { resolveClassLinkContext, type ClassLinkContext } from '@helpers/classlinkContext.helpers';
@@ -12,6 +13,7 @@ import {
     createTranscriptRequest,
     findLatestTranscriptRequest,
     updateTranscriptRequest,
+    markTranscriptRequestReceived,
     type MongoTranscriptRequestType,
 } from '../models/TranscriptRequest';
 import { createMinorPreferencesIfAbsent } from '../models/Preferences';
@@ -56,6 +58,22 @@ const eligibility = ({ tenant, identity }: ClassLinkContext) => {
 export const transcriptsRouter = t.router({
     getStatus: didAndChallengeRoute
         .input(z.object({}).strict().optional())
+        .output(
+            z.object({
+                eligible: z.boolean(),
+                reason: z.enum(['no_state_id', 'reauth_required', 'not_enabled']).optional(),
+                stateDisplayName: z.string(),
+                issuerDid: z.string().optional(),
+                latest: z
+                    .object({
+                        status: z.enum(['requested', 'none_yet', 'failed']),
+                        requestedAt: z.date(),
+                        requestId: z.string(),
+                        receivedAt: z.string().datetime().optional(),
+                    })
+                    .optional(),
+            })
+        )
         .query(async ({ ctx }) => {
             try {
                 const context = await resolveClassLinkContext(ctx.user.did);
@@ -70,8 +88,33 @@ export const transcriptsRouter = t.router({
                     eligible: !reason,
                     reason,
                     stateDisplayName: context.tenant?.displayName ?? '',
-                    latest: latest ? project(latest) : undefined,
+                    issuerDid:
+                        context.tenant?.transcriptIssuerDid ?? environment.TRANSCRIPT_ISSUER_DID,
+                    latest: latest
+                        ? {
+                              ...project(latest),
+                              requestId: latest.jti,
+                              receivedAt: latest.receivedAt?.toISOString(),
+                          }
+                        : undefined,
                 };
+            } catch (error) {
+                if (error instanceof TRPCError) throw error;
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: FAILURE });
+            }
+        }),
+    markReceived: didAndChallengeRoute
+        .input(z.object({ requestId: z.string().min(1) }).strict())
+        .output(z.object({ success: z.literal(true) }))
+        .mutation(async ({ ctx, input }) => {
+            try {
+                const record = await markTranscriptRequestReceived(input.requestId, ctx.user.did);
+                if (!record)
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: 'Transcript request not found.',
+                    });
+                return { success: true as const };
             } catch (error) {
                 if (error instanceof TRPCError) throw error;
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: FAILURE });
