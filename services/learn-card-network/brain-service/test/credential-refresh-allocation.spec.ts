@@ -7,7 +7,14 @@ import {
     UnsignedVC,
 } from '@learncard/types';
 
-import { Profile, Credential, Boost } from '@models';
+import {
+    Profile,
+    Credential,
+    Boost,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    ConsentFlowTransaction,
+} from '@models';
 import { neogma } from '@instance';
 
 import { getClient, getUser } from './helpers/getClient';
@@ -18,6 +25,12 @@ import { getCredentialByUri } from '@accesslayer/credential/read';
 import { getCredentialRefresh, getCredentialRefreshHead } from '@accesslayer/credential-refresh';
 import { getDidWeb } from '@helpers/did.helpers';
 import { testUnsignedBoost } from './helpers/send';
+import { normalContract, normalFullTerms } from './helpers/contract';
+import {
+    getContractDetailsByUri,
+    getContractTermsForProfile,
+} from '@accesslayer/consentflowcontract/relationships/read';
+import { sendRefreshableCredential } from '@helpers/credential-refresh.helpers';
 
 const noAuthClient = getClient();
 
@@ -136,6 +149,9 @@ describe('Credential Refresh Allocation', () => {
     });
 
     beforeEach(async () => {
+        await ConsentFlowTransaction.delete({ detach: true, where: {} });
+        await ConsentFlowTerms.delete({ detach: true, where: {} });
+        await ConsentFlowContract.delete({ detach: true, where: {} });
         await runQuery('MATCH (r:CredentialRefresh) DETACH DELETE r');
         await runQuery('MATCH (c:Credential) DETACH DELETE c');
         await Boost.delete({ detach: true, where: {} });
@@ -341,6 +357,67 @@ describe('Credential Refresh Allocation', () => {
 
             expect(await countCredentialNodes()).toEqual(0);
             expect(await countSentRelationships()).toEqual(0);
+        });
+        it('rejects a captured consent snapshot when the contract becomes pending before root binding', async () => {
+            const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Refresh consent contract',
+            });
+            await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+            const holderProfile = await holder.clients.fullAuth.profile.getProfile();
+            const issuerProfile = await issuer.clients.fullAuth.profile.getProfile();
+            const contract = await getContractDetailsByUri(contractUri);
+            const capturedTerms = await getContractTermsForProfile(
+                holderProfile!,
+                contract!.contract
+            );
+            expect(capturedTerms).toBeDefined();
+
+            const { allocation, credential } = await allocateAndSign();
+            const changedContract = {
+                ...normalContract,
+                read: {
+                    ...normalContract.read,
+                    credentials: {
+                        ...normalContract.read.credentials,
+                        categories: {
+                            ...normalContract.read.credentials.categories,
+                            Transcript: { required: true },
+                        },
+                    },
+                },
+            };
+            await issuer.clients.fullAuth.contracts.updateConsentFlowContract({
+                uri: contractUri,
+                changes: { contract: changedContract },
+                reason: 'We need transcripts to personalize your progress report.',
+            });
+
+            await expect(
+                sendRefreshableCredential({
+                    issuerProfile: { ...issuerProfile!, did: issuer.learnCard.id.did() },
+                    refreshId: allocation.refreshId,
+                    credential,
+                    contractTerms: capturedTerms!,
+                    domain: DOMAIN,
+                })
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'User has not yet approved the latest version of this contract',
+            });
+            expect(await countCredentialNodes()).toBe(0);
+            expect(await countSentRelationships()).toBe(0);
+            expect(
+                (
+                    await holder.clients.fullAuth.contracts.getConsentStatus({
+                        uri: contractUri,
+                        profileId: HOLDER_PROFILE_ID,
+                    })
+                ).status
+            ).toBe('needs_reconsent');
         });
 
         it('stores only the holder-encrypted JWE and binds version 1', async () => {
@@ -642,24 +719,91 @@ describe('Credential Refresh Allocation', () => {
             expect(associations.records[0]?.get('boostIds')).toHaveLength(1);
         });
 
-        it('removes the losing encrypted node from concurrent identical initial sends', async () => {
+        const synchronizeInitialRootReads = () => {
+            const originalRun = neogma.queryRunner.run.bind(neogma.queryRunner);
+            let arrivals = 0;
+            let release!: () => void;
+            const bothReadsReady = new Promise<void>(resolve => {
+                release = resolve;
+            });
+
+            return vi.spyOn(neogma.queryRunner, 'run').mockImplementation(async (query, params) => {
+                const isInitialRootRead =
+                    params !== undefined &&
+                    Object.keys(params).length === 1 &&
+                    'refreshId' in params;
+                const result = await originalRun(query, params);
+
+                if (isInitialRootRead && result.records.length === 0 && arrivals < 2) {
+                    arrivals += 1;
+                    if (arrivals === 2) release();
+                    await bothReadsReady;
+                }
+
+                return result;
+            });
+        };
+
+        it('returns the shared result for concurrent identical initial sends', async () => {
             const { allocation, credential } = await allocateAndSign();
+            const queryRunnerSpy = synchronizeInitialRootReads();
 
-            const uris = await Promise.all([
-                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
-                    refreshId: allocation.refreshId,
-                    credential,
-                }),
-                issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
-                    refreshId: allocation.refreshId,
-                    credential,
-                }),
-            ]);
+            try {
+                const results = await Promise.all([
+                    issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                        refreshId: allocation.refreshId,
+                        credential,
+                    }),
+                    issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                        refreshId: allocation.refreshId,
+                        credential,
+                    }),
+                ]);
 
-            expect(new Set(uris).size).toEqual(1);
-            expect(await countCredentialNodes()).toEqual(1);
+                expect(results[0]).toEqual(results[1]);
+                expect(await countCredentialNodes()).toEqual(1);
+                expect(await countSentRelationships()).toEqual(1);
+                expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(1);
+            } finally {
+                queryRunnerSpy.mockRestore();
+            }
         });
 
+        it('rejects concurrent initial sends with different credential material', async () => {
+            const allocation = await allocate();
+            const [credential, differentCredential] = await Promise.all([
+                signAs(issuer, buildUnsignedCredential(allocation)),
+                signAs(
+                    issuer,
+                    buildUnsignedCredential(allocation, { name: 'Different Transcript' })
+                ),
+            ]);
+            const queryRunnerSpy = synchronizeInitialRootReads();
+
+            try {
+                const results = await Promise.allSettled([
+                    issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                        refreshId: allocation.refreshId,
+                        credential,
+                    }),
+                    issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                        refreshId: allocation.refreshId,
+                        credential: differentCredential,
+                    }),
+                ]);
+
+                expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+                expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
+                expect(results.find(result => result.status === 'rejected')).toMatchObject({
+                    reason: { code: 'CONFLICT' },
+                });
+                expect(await countCredentialNodes()).toEqual(1);
+                expect(await countSentRelationships()).toEqual(1);
+                expect(addNotificationToQueueSpy).toHaveBeenCalledTimes(1);
+            } finally {
+                queryRunnerSpy.mockRestore();
+            }
+        });
         it('rejects an initial-send retry whose credential material differs', async () => {
             const { allocation, credential } = await allocateAndSign();
 

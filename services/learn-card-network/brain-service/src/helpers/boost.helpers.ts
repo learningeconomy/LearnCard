@@ -19,6 +19,7 @@ import {
     getIssuerDisplayName,
     getIssuerOwnerProfile,
     getIssuerProfileId,
+    isAppStoreListingIssuer,
 } from '../types/issuer';
 import { trace, traceDb } from '@tracing';
 import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
@@ -36,7 +37,7 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createCredentialIssuedViaContractRelationship,
+    createContractCredentialRelationships,
     createListingSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
@@ -137,6 +138,8 @@ export const sendBoost = async ({
     skipNotification = false,
     autoAcceptCredential = false,
     contractTerms,
+    contractWriterProfileId,
+    allowConsumedOneTime = false,
     metadata,
     activityId,
     integrationId,
@@ -150,6 +153,8 @@ export const sendBoost = async ({
     skipNotification?: boolean;
     autoAcceptCredential?: boolean;
     contractTerms?: DbTermsType;
+    contractWriterProfileId?: string;
+    allowConsumedOneTime?: boolean;
     metadata?: Record<string, unknown>;
     activityId?: string;
     integrationId?: string;
@@ -182,39 +187,53 @@ export const sendBoost = async ({
                 storeCredential(credential)
             );
 
-            const tasks = [
-                createBoostInstanceOfRelationship(credentialInstance, boost),
-                createSentCredentialRelationship(
-                    from,
-                    to,
-                    credentialInstance,
-                    metadata,
-                    activityId,
-                    integrationId
-                ),
-            ];
-
-            if (listingId) {
-                tasks.push(
-                    createListingSentCredentialRelationship(
+            if (contractTerms) {
+                await traceDb('createRelationships', () =>
+                    createContractCredentialRelationships({
+                        issuer: from,
+                        writerProfileId: contractWriterProfileId ?? fromProfile.profileId,
+                        recipient: to,
+                        credential: credentialInstance,
+                        boost,
+                        terms: contractTerms,
+                        metadata,
+                        activityId,
+                        integrationId,
                         listingId,
+                        allowConsumedOneTime,
+                    })
+                );
+            } else {
+                // These writes share Credential/Profile/Listing nodes. Separate concurrent
+                // auto-commit transactions can deadlock on Neo4j relationship-chain locks.
+                await traceDb('createRelationships', async () => {
+                    await createBoostInstanceOfRelationship(credentialInstance, boost);
+                    await createSentCredentialRelationship(
+                        from,
                         to,
                         credentialInstance,
                         metadata,
                         activityId,
                         integrationId
-                    )
-                );
+                    );
+
+                    // Listing issuers already create this edge inside createSentCredentialRelationship.
+                    // Keep explicit attribution for profile/integration issuers or another listing.
+                    if (
+                        listingId &&
+                        (!isAppStoreListingIssuer(from) || from.listing.listing_id !== listingId)
+                    ) {
+                        await createListingSentCredentialRelationship(
+                            listingId,
+                            to,
+                            credentialInstance,
+                            metadata,
+                            activityId,
+                            integrationId
+                        );
+                    }
+                });
             }
-
-            if (contractTerms) {
-                tasks.push(
-                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
-                );
-            }
-
-            await traceDb('createRelationships', () => Promise.all(tasks));
-
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
                     skipNotification,

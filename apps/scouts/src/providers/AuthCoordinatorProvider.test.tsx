@@ -21,6 +21,11 @@ const mocks = vi.hoisted(() => ({
     setUser: vi.fn(),
     setMode: vi.fn(),
     log: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+    // Plain object (not vi.fn) so module-level registrations survive vi.resetAllMocks().
+    keyDerivationFactories: {} as Record<string, () => unknown>,
+    resolvedTenant: null as null | { tenantId: string; email?: Record<string, string> },
+    createSSSStrategy: vi.fn(),
+    getTenantEscrowStrategyConfig: vi.fn(),
 }));
 
 // Only the coordinator input/SDK seams are mocked. The exported Scouts provider
@@ -39,9 +44,11 @@ vi.mock('learn-card-base', async () => {
         useSignInAdapter: () => ({ getCurrentUser: () => null }),
         getAuthConfig: () => mocks.config,
         getSSSConfig: () => ({ serverUrl: 'https://example.test' }),
-        getEscrowStrategyConfig: vi.fn(),
+        getTenantEscrowStrategyConfig: mocks.getTenantEscrowStrategyConfig,
         getLogger: () => mocks.log,
-        registerKeyDerivationFactory: vi.fn(),
+        registerKeyDerivationFactory: (name: string, factory: () => unknown) => {
+            mocks.keyDerivationFactories[name] = factory;
+        },
         resolveKeyDerivation: () => mocks.coordinator.keyDerivation,
         resolveAuthProvider: () => null,
         createWeb3AuthStrategy: vi.fn(),
@@ -115,12 +122,19 @@ vi.mock('learn-card-base/stores/firstStartupStore', () => ({
     default: { set: { introSlidesCompleted: vi.fn(), firstStart: vi.fn() } },
 }));
 vi.mock('@learncard/sss-key-manager', () => ({
-    createSSSStrategy: vi.fn(),
+    createSSSStrategy: mocks.createSSSStrategy,
     generateEd25519PrivateKey: vi.fn(),
     createAdaptiveStorage: vi.fn(),
     isPublicComputerMode: () => false,
 }));
 vi.mock('../auth/firebaseProviderInit', () => ({}));
+vi.mock('../config/bootstrapTenantConfig', () => ({
+    peekResolvedTenantConfig: () => mocks.resolvedTenant,
+    getResolvedTenantConfig: () => {
+        if (!mocks.resolvedTenant) throw new Error('TenantConfig not yet resolved.');
+        return mocks.resolvedTenant;
+    },
+}));
 vi.mock('../components/debug/authDebugEvents', () => ({
     emitAuthDebugEvent: vi.fn(),
     emitAuthSuccess: vi.fn(),
@@ -205,6 +219,7 @@ beforeEach(() => {
     mocks.persist.mockResolvedValue(undefined);
     mocks.push.mockResolvedValue(undefined);
     window.sessionStorage.clear();
+    mocks.resolvedTenant = null;
 });
 afterEach(() => {
     unmounts.splice(0).forEach(unmount => unmount());
@@ -297,4 +312,46 @@ describe('ScoutPass interrupted account initialization', () => {
             await expectAccount('new-account');
         }
     );
+});
+
+describe('ScoutPass SSS key-derivation factory', () => {
+    const createStrategy = () => {
+        const factory = mocks.keyDerivationFactories.sss;
+        expect(factory).toBeTypeOf('function');
+        factory!();
+        expect(mocks.createSSSStrategy).toHaveBeenCalledOnce();
+        return mocks.createSSSStrategy.mock.calls[0]![0];
+    };
+
+    it('forwards the resolved ScoutPass tenant to the SSS strategy', () => {
+        const email = { brandName: 'ScoutPass' };
+        mocks.resolvedTenant = { tenantId: 'scoutpass', email };
+
+        const config = createStrategy();
+
+        expect(config.tenantId).toBe('scoutpass');
+        expect(config.emailBranding).toBe(email);
+        expect(config.serverUrl).toBe('https://example.test');
+    });
+
+    it('falls back to the server default tenant when the tenant config is not bootstrapped', () => {
+        const config = createStrategy();
+
+        expect(config.tenantId).toBeUndefined();
+        expect(config.emailBranding).toBeUndefined();
+    });
+
+    it('keeps escrow driven solely by getTenantEscrowStrategyConfig (off stays off)', () => {
+        mocks.resolvedTenant = { tenantId: 'scoutpass' };
+        mocks.getTenantEscrowStrategyConfig.mockReturnValue(undefined);
+
+        const config = createStrategy();
+
+        expect(mocks.getTenantEscrowStrategyConfig).toHaveBeenCalledOnce();
+        expect(mocks.getTenantEscrowStrategyConfig).toHaveBeenCalledWith(
+            expect.anything(),
+            mocks.resolvedTenant
+        );
+        expect(config.escrow).toBeUndefined();
+    });
 });

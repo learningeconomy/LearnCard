@@ -51,7 +51,11 @@ import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
 
 import { RecoveryPinStep } from './RecoveryPinStep';
 import { waitForEscrowEnrollment } from './waitForEscrowEnrollment';
-import { writeRecoveryPinPromptFlag } from '../../recovery/recoveryPinPromptFlag';
+import { decideOnboardingPinStep } from './requiredPinStep';
+import {
+    readRecoveryPinPromptFlag,
+    writeRecoveryPinPromptFlag,
+} from '../../recovery/recoveryPinPromptFlag';
 import BirthdayPicker from './BirthdayPicker';
 import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySelectorModal';
 import LocationIcon from '../../svgs/LocationIcon';
@@ -680,18 +684,37 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 trackOnboardingStepCompleted('profile', 2);
 
-                const pinAvailable = await waitForEscrowEnrollment(
-                    () => {
+                // The PIN is required at sign-up but fail-open: when escrow is not
+                // confirmed available in time the step is skipped and the user is
+                // asked later (see requiredPinStep.ts).
+                const showPinStep = await decideOnboardingPinStep({
+                    waitForPinAvailable: () =>
+                        waitForEscrowEnrollment(
+                            () => {
+                                const state = coordinatorStateRef.current;
+                                return {
+                                    status: state.status,
+                                    escrowEnrollment:
+                                        state.status === 'ready'
+                                            ? state.escrowEnrollment
+                                            : undefined,
+                                };
+                            },
+                            { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
+                        ),
+                    getSnapshot: () => {
                         const state = coordinatorStateRef.current;
-                        return {
-                            status: state.status,
-                            escrowEnrollment:
-                                state.status === 'ready' ? state.escrowEnrollment : undefined,
-                        };
+                        return state.status === 'ready'
+                            ? {
+                                  status: state.status,
+                                  did: state.did,
+                                  escrowPinEnabled: state.escrowPin?.enabled,
+                              }
+                            : { status: state.status };
                     },
-                    { escrowEnabled: getSSSConfig().escrowEnclaveMode !== 'off' }
-                );
-                setStep(pinAvailable ? 'pin' : 'celebrate');
+                    readPromptFlag: readRecoveryPinPromptFlag,
+                });
+                setStep(showPinStep ? 'pin' : 'celebrate');
             }
         } catch (err: unknown) {
             const errorDetails =
@@ -1338,12 +1361,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                         trackOnboardingStepCompleted('pin', 3);
                         setStep('celebrate');
                     }}
-                    onSkip={() => {
-                        if (coordinatorState.status === 'ready') {
-                            writeRecoveryPinPromptFlag(coordinatorState.did, 'skipped');
-                        }
-                        setStep('celebrate');
-                    }}
+                    // Offered only after repeated save failures (the PIN is required but
+                    // fails open). No prompt flag is written, so the existing first-time
+                    // PIN prompt asks again on a later start (see requiredPinStep.ts).
+                    onSkip={() => setStep('celebrate')}
                     setPin={setEscrowPin}
                 />
             )}

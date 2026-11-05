@@ -64,7 +64,7 @@
         },
         "test": {
             "executor": "nx:run-script",
-            "inputs": ["source", "tests"],
+            "inputs": ["source", "tests", "ciTestConfig"],
             "options": {
                 "script": "test"
             }

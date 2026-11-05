@@ -7,6 +7,8 @@
 - [What Do You Want to Build?](introduction/what-do-you-want-to-build.md)
 - [How LearnCard Works](introduction/how-learncard-works.md)
 - [Glossary](introduction/glossary.md)
+- [Use LearnCard from an AI Agent](introduction/for-ai-agents.md)
+    - [Install the LearnCard Skill](how-to-guides/use-learncard-with-coding-agents.md)
 
 ## 🛠️ Build
 
@@ -50,6 +52,7 @@
     - [Brokered Referrals](how-to-guides/consent-flow/brokered-referrals.md)
     - [Brokered Referral Lifecycle](core-concepts/consent-and-permissions/brokered-referral-lifecycle.md)
     - [Reading & Writing Consented Data](core-concepts/consent-and-permissions/writing-consented-data.md)
+    - [Updating a Contract](core-concepts/consent-and-permissions/updating-a-contract.md)
     - [Issue on Consent](core-concepts/consent-and-permissions/auto-boosts.md)
     - [GameFlow](core-concepts/consent-and-permissions/gameflow-overview.md)
     - [Verifiable Data in ConsentFlow](core-concepts/consent-and-permissions/verifiable-data-in-consentflow.md)

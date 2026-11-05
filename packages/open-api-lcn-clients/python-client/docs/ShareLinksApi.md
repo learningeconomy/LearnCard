@@ -2,20 +2,23 @@
 
 All URIs are relative to _/api_
 
-| Method                                                                                          | HTTP request                                  | Description                               |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------- |
-| [**public_share_links_acknowledge_view**](ShareLinksApi.md#public_share_links_acknowledge_view) | **POST** /public/share-links/acknowledge-view | Acknowledge a share view receipt          |
-| [**public_share_links_content**](ShareLinksApi.md#public_share_links_content)                   | **POST** /public/share-links/{id}/content     | Fetch guarded share content               |
-| [**public_share_links_resolve**](ShareLinksApi.md#public_share_links_resolve)                   | **POST** /public/share-links/{id}             | Resolve public share metadata             |
-| [**share_links_create**](ShareLinksApi.md#share_links_create)                                   | **POST** /share-links/create                  | Create an owner share link                |
-| [**share_links_get**](ShareLinksApi.md#share_links_get)                                         | **GET** /share-links/{id}                     | Get owner share-link metadata             |
-| [**share_links_get_content**](ShareLinksApi.md#share_links_get_content)                         | **GET** /share-links/{id}/content             | Get encrypted share content (owner only)  |
-| [**share_links_get_operation_status**](ShareLinksApi.md#share_links_get_operation_status)       | **GET** /share-links/operations/{operationId} | Get owner scoped operation status         |
-| [**share_links_get_recovery**](ShareLinksApi.md#share_links_get_recovery)                       | **GET** /share-links/{id}/recovery            | Get owner-encrypted recovery (owner only) |
-| [**share_links_list**](ShareLinksApi.md#share_links_list)                                       | **GET** /share-links                          | List owner share links                    |
-| [**share_links_retry**](ShareLinksApi.md#share_links_retry)                                     | **POST** /share-links/retry                   | Retry an owner operation                  |
-| [**share_links_revoke**](ShareLinksApi.md#share_links_revoke)                                   | **POST** /share-links/revoke                  | Revoke an owner share link                |
-| [**share_links_update**](ShareLinksApi.md#share_links_update)                                   | **POST** /share-links/update                  | Update an owner share link                |
+| Method                                                                                            | HTTP request                                   | Description                               |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------- |
+| [**public_share_links_acknowledge_view**](ShareLinksApi.md#public_share_links_acknowledge_view)   | **POST** /public/share-links/acknowledge-view  | Acknowledge a share view receipt          |
+| [**public_share_links_attachment_chunk**](ShareLinksApi.md#public_share_links_attachment_chunk)   | **POST** /public/share-links/attachment-chunk  | Fetch guarded encrypted attachment chunk  |
+| [**public_share_links_content**](ShareLinksApi.md#public_share_links_content)                     | **POST** /public/share-links/{id}/content      | Fetch guarded share content               |
+| [**public_share_links_resolve**](ShareLinksApi.md#public_share_links_resolve)                     | **POST** /public/share-links/{id}              | Resolve public share metadata             |
+| [**share_links_create**](ShareLinksApi.md#share_links_create)                                     | **POST** /share-links/create                   | Create an owner share link                |
+| [**share_links_delete_attachment_chunks**](ShareLinksApi.md#share_links_delete_attachment_chunks) | **POST** /share-links/attachment-chunks/delete | Delete unreferenced encrypted attachment  |
+| [**share_links_get**](ShareLinksApi.md#share_links_get)                                           | **GET** /share-links/{id}                      | Get owner share-link metadata             |
+| [**share_links_get_content**](ShareLinksApi.md#share_links_get_content)                           | **GET** /share-links/{id}/content              | Get encrypted share content (owner only)  |
+| [**share_links_get_operation_status**](ShareLinksApi.md#share_links_get_operation_status)         | **GET** /share-links/operations/{operationId}  | Get owner scoped operation status         |
+| [**share_links_get_recovery**](ShareLinksApi.md#share_links_get_recovery)                         | **GET** /share-links/{id}/recovery             | Get owner-encrypted recovery (owner only) |
+| [**share_links_list**](ShareLinksApi.md#share_links_list)                                         | **GET** /share-links                           | List owner share links                    |
+| [**share_links_put_attachment_chunk**](ShareLinksApi.md#share_links_put_attachment_chunk)         | **POST** /share-links/attachment-chunk/put     | Stage encrypted share attachment chunk    |
+| [**share_links_retry**](ShareLinksApi.md#share_links_retry)                                       | **POST** /share-links/retry                    | Retry an owner operation                  |
+| [**share_links_revoke**](ShareLinksApi.md#share_links_revoke)                                     | **POST** /share-links/revoke                   | Revoke an owner share link                |
+| [**share_links_update**](ShareLinksApi.md#share_links_update)                                     | **POST** /share-links/update                   | Update an owner share link                |
 
 # **public_share_links_acknowledge_view**
 
@@ -63,6 +66,72 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 [**PublicShareLinksAcknowledgeView200Response**](PublicShareLinksAcknowledgeView200Response.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description           | Response headers |
+| ----------- | --------------------- | ---------------- |
+| **200**     | Successful response   | -                |
+| **400**     | Invalid input data    | -                |
+| **500**     | Internal server error | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **public_share_links_attachment_chunk**
+
+> PublicShareLinksAttachmentChunk200Response public_share_links_attachment_chunk(public_share_links_attachment_chunk_request)
+
+Fetch guarded encrypted attachment chunk
+
+### Example
+
+```python
+import openapi_client
+from openapi_client.models.public_share_links_attachment_chunk200_response import PublicShareLinksAttachmentChunk200Response
+from openapi_client.models.public_share_links_attachment_chunk_request import PublicShareLinksAttachmentChunkRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ShareLinksApi(api_client)
+    public_share_links_attachment_chunk_request = openapi_client.PublicShareLinksAttachmentChunkRequest() # PublicShareLinksAttachmentChunkRequest |
+
+    try:
+        # Fetch guarded encrypted attachment chunk
+        api_response = api_instance.public_share_links_attachment_chunk(public_share_links_attachment_chunk_request)
+        print("The response of ShareLinksApi->public_share_links_attachment_chunk:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ShareLinksApi->public_share_links_attachment_chunk: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                            | Type                                                                                    | Description | Notes |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------- | ----------- | ----- |
+| **public_share_links_attachment_chunk_request** | [**PublicShareLinksAttachmentChunkRequest**](PublicShareLinksAttachmentChunkRequest.md) |             |
+
+### Return type
+
+[**PublicShareLinksAttachmentChunk200Response**](PublicShareLinksAttachmentChunk200Response.md)
 
 ### Authorization
 
@@ -276,6 +345,85 @@ with openapi_client.ApiClient(configuration) as api_client:
 ### Return type
 
 [**ShareLinksCreate200Response**](ShareLinksCreate200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **share_links_delete_attachment_chunks**
+
+> ShareLinksDeleteAttachmentChunks200Response share_links_delete_attachment_chunks(share_links_delete_attachment_chunks_request)
+
+Delete unreferenced encrypted attachment
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.share_links_delete_attachment_chunks200_response import ShareLinksDeleteAttachmentChunks200Response
+from openapi_client.models.share_links_delete_attachment_chunks_request import ShareLinksDeleteAttachmentChunksRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ShareLinksApi(api_client)
+    share_links_delete_attachment_chunks_request = openapi_client.ShareLinksDeleteAttachmentChunksRequest() # ShareLinksDeleteAttachmentChunksRequest |
+
+    try:
+        # Delete unreferenced encrypted attachment
+        api_response = api_instance.share_links_delete_attachment_chunks(share_links_delete_attachment_chunks_request)
+        print("The response of ShareLinksApi->share_links_delete_attachment_chunks:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ShareLinksApi->share_links_delete_attachment_chunks: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                             | Type                                                                                      | Description | Notes |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------- | ----------- | ----- |
+| **share_links_delete_attachment_chunks_request** | [**ShareLinksDeleteAttachmentChunksRequest**](ShareLinksDeleteAttachmentChunksRequest.md) |             |
+
+### Return type
+
+[**ShareLinksDeleteAttachmentChunks200Response**](ShareLinksDeleteAttachmentChunks200Response.md)
 
 ### Authorization
 
@@ -693,6 +841,85 @@ with openapi_client.ApiClient(configuration) as api_client:
 | **401**     | Authorization not provided | -                |
 | **403**     | Insufficient access        | -                |
 | **404**     | Not found                  | -                |
+| **500**     | Internal server error      | -                |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **share_links_put_attachment_chunk**
+
+> ShareLinksPutAttachmentChunk200Response share_links_put_attachment_chunk(share_links_put_attachment_chunk_request)
+
+Stage encrypted share attachment chunk
+
+### Example
+
+- Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.share_links_put_attachment_chunk200_response import ShareLinksPutAttachmentChunk200Response
+from openapi_client.models.share_links_put_attachment_chunk_request import ShareLinksPutAttachmentChunkRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to /api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ShareLinksApi(api_client)
+    share_links_put_attachment_chunk_request = openapi_client.ShareLinksPutAttachmentChunkRequest() # ShareLinksPutAttachmentChunkRequest |
+
+    try:
+        # Stage encrypted share attachment chunk
+        api_response = api_instance.share_links_put_attachment_chunk(share_links_put_attachment_chunk_request)
+        print("The response of ShareLinksApi->share_links_put_attachment_chunk:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ShareLinksApi->share_links_put_attachment_chunk: %s\n" % e)
+```
+
+### Parameters
+
+| Name                                         | Type                                                                              | Description | Notes |
+| -------------------------------------------- | --------------------------------------------------------------------------------- | ----------- | ----- |
+| **share_links_put_attachment_chunk_request** | [**ShareLinksPutAttachmentChunkRequest**](ShareLinksPutAttachmentChunkRequest.md) |             |
+
+### Return type
+
+[**ShareLinksPutAttachmentChunk200Response**](ShareLinksPutAttachmentChunk200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+- **Content-Type**: application/json
+- **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description                | Response headers |
+| ----------- | -------------------------- | ---------------- |
+| **200**     | Successful response        | -                |
+| **400**     | Invalid input data         | -                |
+| **401**     | Authorization not provided | -                |
+| **403**     | Insufficient access        | -                |
 | **500**     | Internal server error      | -                |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

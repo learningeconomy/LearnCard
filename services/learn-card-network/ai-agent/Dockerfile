@@ -1,10 +1,16 @@
 # syntax=docker/dockerfile:1.7
-FROM oven/bun:1.4.2 AS build
+FROM oven/bun:1.4.4 AS build
 
 ENV NODE_ENV=production \
     SKIP_DIDKIT_NAPI=1
 
 WORKDIR /app
+
+# ARM64 dependencies can fall back to node-gyp during the frozen install.
+# Keep the compiler toolchain in this build stage, out of the runtime image.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3 make g++ && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
@@ -17,7 +23,7 @@ RUN bun build services/learn-card-network/ai-agent/scripts/runtime-did-auth-smok
     --outfile=services/learn-card-network/ai-agent/dist/runtime-did-auth-smoke.js \
     --external='@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
 
-FROM oven/bun:1.4.2-alpine
+FROM oven/bun:1.4.4-alpine
 
 RUN apk upgrade --no-cache
 

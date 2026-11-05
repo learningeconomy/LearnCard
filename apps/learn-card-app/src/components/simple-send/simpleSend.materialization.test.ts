@@ -53,6 +53,31 @@ describe('standard field materialization in self and link issuance', () => {
             })
         );
     });
+    it('returns the network credential a self-issued LearnCloud copy was made from', async () => {
+        const { wallet, invoke } = makeWallet();
+        const uploadEncrypted = vi.fn().mockResolvedValue('lc:cloud:copy');
+        const selfWallet = {
+            ...wallet,
+            invoke,
+            read: { get: vi.fn().mockResolvedValue({ id: 'urn:credential:test' }) },
+            store: { LearnCloud: { uploadEncrypted } },
+        } as unknown as BespokeLearnCard;
+
+        const result = await issueViaBoost(selfWallet, makeTemplate(), {
+            mode: 'self',
+            recipients: [],
+            linkOptions: {},
+            currentLCNUser: { profileId: 'issuer' },
+        });
+
+        // The wallet indexes the copy, but revoke and suspend live on the network credential.
+        expect(result).toEqual(
+            expect.objectContaining({
+                credentialUri: 'lc:cloud:copy',
+                networkUri: 'urn:credential:test',
+            })
+        );
+    });
     it('materializes filled link fields before storing the one-off unsigned template', async () => {
         const template = makeTemplate();
         template.awardedDate = dynamicField('awarded');

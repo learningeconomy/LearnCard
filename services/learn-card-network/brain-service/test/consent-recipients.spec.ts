@@ -453,18 +453,18 @@ describe('contract data recipients', () => {
         await accept(uri, 1);
         const id = uri.split(':').at(-1)!;
         expect(
-            await getConsentedDataForContract(id, recipient.profileId, { limit: 10 })
+            (await getConsentedDataForContract(id, recipient.profileId, { limit: 10 })).records
         ).toHaveLength(1);
         await owner.clients.fullAuth.contracts.removeContractRecipient({
             contractUri: uri,
             recipient: recipient.profileId,
         });
-        expect(await getConsentedDataForContract(id, recipient.profileId, { limit: 10 })).toEqual(
-            []
-        );
-        expect(await getConsentedDataForContract(id, owner.profileId, { limit: 10 })).toHaveLength(
-            1
-        );
+        expect(
+            (await getConsentedDataForContract(id, recipient.profileId, { limit: 10 })).records
+        ).toEqual([]);
+        expect(
+            (await getConsentedDataForContract(id, owner.profileId, { limit: 10 })).records
+        ).toHaveLength(1);
     });
 
     it('includes recipient endpoints and audience acknowledgements in generated OpenAPI', () => {

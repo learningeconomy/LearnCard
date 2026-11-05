@@ -1,0 +1,49 @@
+---
+type Props = {
+  className?: string;
+  hideOnMobile?: boolean;
+  hideOnDesktop?: boolean;
+}
+
+const {
+  className = '',
+  hideOnMobile = false,
+  hideOnDesktop = false,
+} = Astro.props;
+
+// Create responsive classes separately from the visibility toggle classes
+const responsiveClass = hideOnMobile ? 'hidden sm:block' : hideOnDesktop ? 'sm:hidden' : '';
+---
+
+<div class={`profile-container h-fit w-fit ${responsiveClass}`}>
+  <div class={`profile-placeholder h-[40px] w-[40px] bg-gray-200 rounded-full ${className}`}></div>
+  <img class={`profile-picture h-[40px] w-[40px] rounded-full hidden ${className}`} alt="Profile picture" />
+</div>
+
+<script>
+  import { profile, getProfile } from '../stores/profile'
+
+  const placeholders: NodeListOf<HTMLDivElement> = document.querySelectorAll('.profile-placeholder');
+  const images: NodeListOf<HTMLImageElement> = document.querySelectorAll('.profile-picture');
+
+  function updateAllImages(imageUrl: string) {
+    images.forEach((img, i) => {
+      const placeholder = placeholders[i]
+      if (imageUrl) {
+        img.src = imageUrl
+        img.classList.remove('hidden')
+        if (placeholder) placeholder.classList.add('hidden')
+      } else {
+        img.classList.add('hidden')
+        if (placeholder) placeholder.classList.remove('hidden')
+      }
+    })
+  }
+
+  updateAllImages(profile.get().profile?.image ?? '')
+  getProfile()
+
+  profile.subscribe(({ profile }) => {
+    updateAllImages(profile?.image ?? '')
+  })
+</script>

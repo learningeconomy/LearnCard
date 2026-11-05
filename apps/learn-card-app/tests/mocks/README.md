@@ -1,8 +1,81 @@
 # Mocked-network E2E tier
 
 Playwright tests that run against the **vite dev server only — no docker backend**.
-Fast and deterministic, so they run on every affected PR (`.github/workflows/mock-e2e.yml`)
-via the `test-mock` nx target. The real-backend E2E stays on the gated EC2 job.
+They run via the `test-mock` Nx target (`.github/workflows/mock-e2e.yml`).
+The real-backend E2E tier is hosted separately in `.github/workflows/e2e.yml`.
+
+## CI eligibility and browser reuse (LC-2312 / CI-14)
+
+Before installing the workspace or downloading Firefox, a Node check compares
+the PR's changes from its Git merge base. It can skip unrelated code projects
+using Nx's project graph and the planned `test-mock` prerequisite tasks.
+
+For example, a ScoutPass-only or AI-agent-only code edit can skip the LearnCard
+App mock suite, workspace installation and Firefox. Changes to shared types,
+crypto, `learn-card-base` or brain-service still run: those projects are in the
+app's dependency graph. A backend label alone is not a reason to skip.
+
+The preflight copies the isolated `.github/mock-e2e-preflight/package.json` and
+`package-lock.json` into a temporary directory, then runs **`npm ci --ignore-scripts`**
+from that directory. Nx, TypeScript and their transitive dependencies use the
+committed lockfile; checkout-local `.npmrc` settings do not apply to this install.
+The checkout does not persist Git credentials. This npm project lives outside
+Bun's `scripts/*` workspace pattern, so it does not change the Bun workspace lock.
+It does not install workspace dependencies, run builds or execute tests. Nx
+produces its actual project/task graph; the check follows transitive, dynamic
+and implicit dependencies and includes build prerequisites. A file must belong
+to a known project outside that required set to skip. Unknown/deleted project
+paths, missing/invalid/empty comparisons, graph/bootstrap failures and global
+config or dependency metadata changes run the **complete** mock suite. Renames
+consider both old and new paths. Non-prose deletions, renames and file-type
+changes also run in full: removing a module can erase a former consumer edge
+from the head graph. Manual dispatch always runs the complete suite.
+
+Keep the preflight's Nx/TypeScript versions aligned with root `devDependencies`.
+When either changes, update the isolated manifest and regenerate its lock with
+`npm install --package-lock-only --ignore-scripts --save-exact nx@<version> typescript@<version>`
+from `.github/mock-e2e-preflight`, then review both files. Version drift requests
+the full suite with `reason=preflight-version-mismatch`. A future Nx root project
+(`root: '.'`) also requests the full suite, visibly reported as
+`reason=root-project-requires-full-run`, until root ownership is reviewed.
+
+An even cheaper check skips prose-only changes without downloading graph tools:
+Markdown under `docs/`, `.changeset/*.md`, and exact root `README.md`,
+`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` or `LICENSE`. Code snippets and assets
+outside known unrelated projects do not qualify for that shortcut. The path
+prefixes only bound when graph analysis may be attempted; they never establish
+that an app or service is unrelated.
+
+Eligible runs cache a job-local Playwright browser directory with an exact key
+covering the installed Playwright version, Firefox revision, full browser
+manifest (including FFmpeg/revision overrides), OS distribution/release and
+architecture. There is no broad fallback key. `playwright install --with-deps
+firefox` still runs on cache hits: OS packages are not cached, and Playwright can
+install missing browser files. A cache hit never skips tests. GitHub controls
+cache scope/eviction; this does not add a default-branch cache producer.
+The initial cache benefit is **repeat runs/commits within the same PR**. A cache
+saved on one PR's merge ref does not seed other PRs or the default branch. It is
+saved only after a successful job; a failing test run does not publish a new
+cache. Cross-PR warming is deferred until measured restore/download costs justify
+a separate default-branch producer.
+
+[Playwright cautions](https://playwright.dev/docs/ci#caching-browsers) that browser
+cache restore can cost as much as downloading. Treat this as download reuse,
+not a guaranteed speedup; compare actual install/cache timings before expanding
+it. Neither the browser cache nor eligibility changes retries, workers, browser
+choice, HAR fixtures or backend isolation.
+
+Review locally with `node --test scripts/mock-e2e-ci.test.cjs` and
+`node .github/tests/test-mock-e2e-workflow.test.cjs` from the repository root.
+In Actions, an unrelated-project PR should show `run_e2e=false` /
+`reason=unrelated-projects`; prose-only changes show `reason=prose-only`. Both
+skip workspace/browser/test/report steps. A graph/tooling failure shows
+`reason=graph-unavailable` and runs the full suite. For an eligible or manual run,
+inspect the exact cache key, unconditional browser/OS install, and full results.
+The run page's step summary distinguishes **Not applicable — suite skipped**
+from **Full suite requested**, with the reason. A green skipped check is not a
+claim that browser tests ran. Policy regression tests run in Lint's
+**Repository shell contracts** job, outside the mock check's eligibility path.
 
 ## What it covers
 

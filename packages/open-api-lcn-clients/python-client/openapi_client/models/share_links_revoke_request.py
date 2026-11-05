@@ -29,7 +29,7 @@ class ShareLinksRevokeRequest(BaseModel):
     """
     ShareLinksRevokeRequest
     """ # noqa: E501
-    id: Optional[StrictStr]
+    id: StrictStr
     expected_version: Optional[Annotated[int, Field(le=2147483647, strict=True, ge=1)]] = Field(default=None, alias="expectedVersion")
     client_request_id: Optional[UUID] = Field(default=None, alias="clientRequestId")
     additional_properties: Dict[str, Any] = {}
@@ -72,9 +72,8 @@ class ShareLinksRevokeRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -91,10 +90,9 @@ class ShareLinksRevokeRequest(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if id (nullable) is None
-        # and model_fields_set contains the field
-        if self.id is None and "id" in self.model_fields_set:
-            _dict['id'] = None
+        # Preserve a supplied nullable value.
+        if self.client_request_id is None and "client_request_id" in self.model_fields_set and "client_request_id" not in excluded_fields:
+            _dict['clientRequestId'] = None
 
         return _dict
 

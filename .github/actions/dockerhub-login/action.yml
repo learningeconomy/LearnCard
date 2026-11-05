@@ -1,7 +1,7 @@
 name: 'Docker Hub login (best effort)'
 description: >-
-    Authenticate Docker Hub pulls so CI is not throttled by the per-IP anonymous pull
-    limit shared across GitHub-hosted runners. Credentials live in a job-scoped
+    Authenticate Docker Hub CLI pulls with the existing pull-only account.
+    Credentials live in a job-scoped
     DOCKER_CONFIG under RUNNER_TEMP, which the runner empties at the start and end of
     every job, so they never reach the shared ~/.docker store on reused runners. Never
     fails the job: without credentials (fork and Dependabot PRs) or with a rejected
@@ -45,5 +45,5 @@ runs:
                 echo "Authenticated Docker Hub pulls."
               else
                 rm -f "$docker_config/config.json"
-                echo "::warning title=Docker Hub login failed::Pulling anonymously; rotate DOCKERHUB_PULL_TOKEN to restore authenticated pulls."
+                echo "::warning title=Docker Hub login failed::CLI pulls continue anonymously. Service-container jobs using the same rejected credentials fail during Initialize containers; coordinate rotation of DOCKERHUB_PULL_TOKEN. See .github/SERVICE_IMAGE_PULLS.md."
               fi

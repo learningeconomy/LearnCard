@@ -21,6 +21,7 @@ import {
 } from './generated/snippets';
 import { writeSnippet } from './snippet-files';
 import { out } from './out';
+import { UsageError } from './errors';
 
 export const consentUrl = (uri: string, returnTo: string, network: string): string => {
     const url = new URL('/consent-flow', appUrlFor(network));
@@ -39,8 +40,14 @@ export const runConsentContract = async (
     const project = await loadProject(process.cwd());
     const returnTo =
         options.redirectUrl || project.env.RETURN_TO || 'http://localhost:3000/consent-callback';
-    if (!['http:', 'https:'].includes(new URL(returnTo).protocol)) {
-        throw new Error('Redirect URL must use HTTP or HTTPS.');
+    let protocol: string;
+    try {
+        protocol = new URL(returnTo).protocol;
+    } catch {
+        throw new UsageError(`Invalid redirect URL: ${returnTo}`);
+    }
+    if (!['http:', 'https:'].includes(protocol)) {
+        throw new UsageError('Redirect URL must use HTTP or HTTPS.');
     }
     const identity = await ensureIdentity(project, options);
     const learnCard = await connect(project, options);

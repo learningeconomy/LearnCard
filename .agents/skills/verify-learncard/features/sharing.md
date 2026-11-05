@@ -32,6 +32,7 @@ Preconditions:
 ## Gotchas
 
 - Links are always `https://`. The local stack has no TLS, so the viewer swaps only the scheme; host, path and query stay as copied. Record that substitution in any report.
-- The link carries bearer secrets (`seed`, `pin`). The journey navigates away from the share screen before its automatic "after" screenshot. Never paste these links into PRs.
+- The link carries bearer secrets (`seed`, `pin`). Before each automatic "after" screenshot, the journey uses **Close** to dismiss Share and credential detail, requires the copy/QR/link controls to disappear, and returns to the Badges list. Reopening Share uses that existing app session instead of reloading Wallet and Badges. Never paste these links into PRs.
+- After the independent SDK seeds the endorsed credential, one explicit reload refreshes the UI's stored index. Anonymous deep-link loading and its subsequent reload remain separate checks.
 - Newer `/s/{id}#{key}` links (LC-2187) exist for other share surfaces. This journey covers the credential-detail share path, which still emits `/share-boost`.
 - Preview metadata is publisher-supplied, not proof of presentation ownership. A new encrypted presentation needs a separate preview; refresh never rebinds an existing one.

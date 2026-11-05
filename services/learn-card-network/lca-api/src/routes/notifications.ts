@@ -8,12 +8,17 @@ import { t, didAndChallengeRoute, authorizedDidRoute } from '@routes';
 import cache from '@cache';
 import { createPushNotificationRegistration } from '@accesslayer/pushtokens/create';
 import { deletePushNotificationRegistration } from '@accesslayer/pushtokens/delete';
-import { LCNNotification, LCNNotificationValidator } from '@learncard/types';
+import {
+    ConsentFlowContractNotificationDataValidator,
+    LCNNotification,
+    LCNNotificationValidator,
+} from '@learncard/types';
 import { sendPushNotification } from '@helpers/pushNotifications.helpers';
 import { isDidOwnerOfNotification } from '@helpers/notifications.helpers';
 import {
     createNotification,
     isManagedCredentialRefreshNotification,
+    upsertConsentFlowContractUpdateNotification,
     upsertCredentialRefreshNotification,
 } from '@accesslayer/notifications/create';
 import {
@@ -315,6 +320,34 @@ export const notificationsRouter = t.router({
             }
 
             let sendNotificationResponse: unknown;
+
+            // Quiet revisions belong in the feed as already-read records; access
+            // increases are unread and pushed once per recipient and revision.
+            if (input.type === 'CONSENT_FLOW_CONTRACT_UPDATED') {
+                const updateData = ConsentFlowContractNotificationDataValidator.safeParse(
+                    input.data
+                );
+                if (!updateData.success) return false;
+
+                const updateResult = await upsertConsentFlowContractUpdateNotification(input);
+
+                if (!updateResult) return false;
+
+                if (updateResult.created && updateData.data.kind === 'requires_consent') {
+                    await recordE2ePushAttempt(input);
+
+                    try {
+                        sendNotificationResponse = await sendPushNotification(input);
+                    } catch (error) {
+                        console.error(
+                            'Failed to send push notification after durable storage',
+                            error
+                        );
+                    }
+                }
+
+                return true;
+            }
 
             // Managed credential refresh deliveries (LC-2117/LC-2136) collapse
             // atomically per delivery window: persist first, push only when the

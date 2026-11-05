@@ -20,7 +20,7 @@ import { useAiFeatureGate } from './useAiFeatureGate';
 import { useGetCurrentLCNUser } from './useGetCurrentLCNUser';
 import { useConsentedContracts } from './useConsentedContracts';
 import { useGetCredentialsForSkills } from '../react-query/queries/vcQueries';
-import { LEARNCARD_AI_PASSPORT_CONTRACT_URI } from '../constants/aiPassport';
+import { isLearnCardAiPassportContractUri } from '../constants/aiPassport';
 import { AiServiceError, getAiServiceError } from '../helpers/aiErrors';
 import { aiPassportFetch, ensureAiPassportSession } from '../helpers/aiPassportAuth';
 const log = getLogger('use-ai-insight-credential');
@@ -319,8 +319,9 @@ export const useAiInsightCredential = ({ enabled = true }: { enabled?: boolean }
         useConsentedContracts();
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
-            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-            consent?.status !== 'withdrawn'
+            isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
+            consent?.status !== 'withdrawn' &&
+            consent?.status !== 'consumed'
     );
     const refreshStatus = aiInsightRefreshStore.use.status();
     const requestedAt = aiInsightRefreshStore.use.requestedAt();
@@ -610,8 +611,9 @@ export const useAiInsightCredentialMutation = () => {
         useConsentedContracts();
     const hasLearnCardAiConsent = consentedContracts.some(
         (consent: { contract?: { uri?: string | null }; status?: string | null }) =>
-            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-            consent?.status !== 'withdrawn'
+            isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
+            consent?.status !== 'withdrawn' &&
+            consent?.status !== 'consumed'
     );
     const hasWalletCredentials = Number(resolvedCredentials?.length ?? 0) > 0;
     const hasCachedAiInsightCredential = Boolean(

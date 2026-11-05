@@ -107,3 +107,58 @@ describe('runner boundaries', () => {
         expect(await memory.storage.getShareVersion('pending')).toBeNull();
     });
 });
+
+describe('tier 3 metric rollups', () => {
+    it('keeps Account and Kind diagnostic; alarms use {Environment, Tier}', () => {
+        const lines: string[] = [];
+        const emit = createMetrics('production', 3, line => lines.push(line));
+        emit(
+            'Tier3.Released',
+            0,
+            undefined,
+            { reason: 'did_mismatch' },
+            { holdAccount: 'hold-03', kind: 'daily' }
+        );
+        emit('Tier3.EmailLatency', 1234, undefined, undefined, {
+            holdAccount: 'hold-03',
+            kind: 'code',
+        });
+        const [released, latency] = lines.map(line => JSON.parse(line));
+        expect(released._aws.CloudWatchMetrics[0].Dimensions).toEqual([
+            ['Environment', 'Tier', 'Account', 'Kind', 'Reason'],
+            ['Environment', 'Tier'],
+        ]);
+        expect(released).toMatchObject({ Tier: '3', Account: 'hold-03', Reason: 'did_mismatch' });
+        expect(latency._aws.CloudWatchMetrics[0].Dimensions).toEqual([
+            ['Environment', 'Tier', 'Account', 'Kind'],
+            ['Environment', 'Tier', 'Kind'],
+            ['Environment', 'Tier'],
+        ]);
+        expect(latency._aws.CloudWatchMetrics[0].Metrics[0].Unit).toBe('Milliseconds');
+    });
+});
+
+describe('provisioning stays out of the Lambda', () => {
+    it("handler.ts's import graph never reaches src/provision or test fakes", async () => {
+        const { readFile } = await import('node:fs/promises');
+        const { dirname, resolve } = await import('node:path');
+        const { fileURLToPath } = await import('node:url');
+        const root = dirname(fileURLToPath(import.meta.url));
+        const seen = new Set<string>();
+        const visit = async (file: string): Promise<void> => {
+            if (seen.has(file)) return;
+            seen.add(file);
+            const source = await readFile(file, 'utf8');
+            for (const match of source.matchAll(
+                /from '(\.{1,2}\/[^']+)'|import\('(\.{1,2}\/[^']+)'\)/g
+            ))
+                await visit(`${resolve(dirname(file), match[1] ?? match[2])}.ts`);
+        };
+        await visit(resolve(root, 'handler.ts'));
+        const files = [...seen].map(file => file.slice(root.length + 1));
+        expect(files).toContain('tier3/inbox.ts');
+        expect(
+            files.filter(file => file.startsWith('provision/') || /test-|\.test\./.test(file))
+        ).toEqual([]);
+    });
+});

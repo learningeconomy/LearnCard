@@ -2,69 +2,31 @@ import React, { useState } from 'react';
 
 import Checkmark from 'learn-card-base/svgs/Checkmark';
 
-import { ConsentFlowContractDetails } from '@learncard/types';
-import { contractCategoryNameToCategoryMetadata, CredentialCategoryEnum } from 'learn-card-base';
-import { SetState } from 'packages/shared-types/dist';
+import type { ConsentFlowContract } from '@learncard/types';
+import { contractCategoryNameToCategoryMetadata } from 'learn-card-base';
 import { CONTRACT_CATEGORIES } from 'apps/learn-card-app/src/helpers/contract.helpers';
 
 export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
-    selectedCategories: Record<
-        CredentialCategoryEnum,
-        { required?: boolean; defaultEnabled?: boolean }
-    >;
-    setContract: SetState<ConsentFlowContractDetails>;
-    mode: 'read' | 'write';
-    allowedCategories?: CredentialCategoryEnum[];
-    titleOverrides?: Partial<Record<CredentialCategoryEnum, string>>;
-}> = ({ selectedCategories, setContract, mode, allowedCategories, titleOverrides }) => {
-    const [_selectedCategories, setSelectedCategories] = useState(Object.keys(selectedCategories));
+    selectedCategories: ConsentFlowContract['read']['credentials']['categories'];
+    onChange: (categories: ConsentFlowContract['read']['credentials']['categories']) => void;
+    allowedCategories?: readonly string[];
+    titleOverrides?: Partial<Record<string, string>>;
+}> = ({ selectedCategories, onChange, allowedCategories, titleOverrides }) => {
+    const [categories, setCategories] = useState(selectedCategories);
+    const _selectedCategories = Object.keys(categories);
     const categoryList = allowedCategories ?? CONTRACT_CATEGORIES;
 
-    const handleSetCategory = (category: CredentialCategoryEnum) => {
-        setContract(prevState => {
-            return {
-                ...prevState,
-                contract: {
-                    ...prevState.contract,
-                    [mode]: {
-                        ...prevState.contract[mode],
-                        credentials: {
-                            ...prevState.contract[mode].credentials,
-                            categories: {
-                                ...prevState.contract[mode].credentials.categories,
-                                [category]: {
-                                    required: false,
-                                    defaultEnabled: true,
-                                },
-                            },
-                        },
-                    },
-                },
-            };
-        });
-        setSelectedCategories(prevState => [...prevState, category]);
+    const handleSetCategory = (category: string) => {
+        const next = { ...categories, [category]: { required: false, defaultEnabled: true } };
+        setCategories(next);
+        onChange(next);
     };
 
-    const handleRemoveCategory = (category: CredentialCategoryEnum) => {
-        setContract(prevState => {
-            const newCategories = { ...prevState.contract[mode].credentials.categories };
-            delete newCategories[category];
-
-            return {
-                ...prevState,
-                contract: {
-                    ...prevState.contract,
-                    [mode]: {
-                        ...prevState.contract[mode],
-                        credentials: {
-                            ...prevState.contract[mode].credentials,
-                            categories: newCategories,
-                        },
-                    },
-                },
-            };
-        });
-        setSelectedCategories(prevState => prevState.filter(c => c !== category));
+    const handleRemoveCategory = (category: string) => {
+        const next = { ...categories };
+        delete next[category];
+        setCategories(next);
+        onChange(next);
     };
 
     return (
@@ -79,6 +41,8 @@ export const AdminToolsConsentFlowCategoryPickerModal: React.FC<{
                 return (
                     <button
                         key={category}
+                        type="button"
+                        aria-pressed={isActive}
                         className="flex items-center justify-between bg-white text-black px-[18px] py-[6px] font-poppins text-lg font-normal text-center w-full mb-4"
                         onClick={e => {
                             e.stopPropagation();

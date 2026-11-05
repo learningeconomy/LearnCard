@@ -48,6 +48,16 @@ The app shares fresh preference responses between consumers for 30 seconds withi
 
 ## User Flows
 
+### Finding Your Credentials
+
+Open a Passport category and choose **Search**. Search checks every eligible record in that category without requiring you to scroll first. **Searching…** and **found so far** mean results are incomplete; matching cards stay visible while the remaining records are checked. A final no-results message appears only after the search finishes.
+
+Dashboard credential and credential-category totals exclude hidden and internal records. Totals remain unknown while the collection is loading; a failed count offers **Retry credential totals** instead of showing zero or first-credential onboarding. Passport categories remain available when their count cannot be loaded, and the unavailable-count message follows the app language.
+
+**Recently added** fills up to five visible cards, including when the first page contains only internal records. **See all** stays available even if recent cards are empty or fail to load. Category lists and **All credentials** keep loading when you scroll, even if the collection total has already finished counting. In **All credentials**, **Load more credentials** also works with a keyboard. A loading failure preserves the cards already loaded, explains that the collection is incomplete, and offers **Retry loading credentials**.
+
+Titles already saved in the encrypted index are searched locally from metadata. Older records without saved titles may need their credential contents loaded before a search can finish; wrapped credentials can match both their displayed name and their achievement name. Collection totals use metadata rather than credential contents.
+
 ### Claiming a Credential
 
 ```mermaid
@@ -115,6 +125,28 @@ LinkedIn sharing controls follow your app language.
 Deploy the Brain service and LearnCard App together to enable previews. The `/share-boost` Netlify edge function resolves the request's tenant domain, reads only the matching public preview record, and returns Open Graph metadata to social crawlers. The canonical destination preserves the original link's decryption parameters so a card click can open the credential. Ordinary visitors continue to the app; unavailable or mismatched previews fall back to the normal page. After deployment, use [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/) to inspect a preview-enabled share link.
 
 Developer verification: `lc verify run sdk` covers owner-only refresh/deletion, immutable URI binding, creation/update times, and profile cleanup; `lc verify run sharing` checks private-record isolation, deleted-preview recovery, and that earlier and newer cards both resolve after sharing an endorsed credential again.
+
+### Saving a Shared Collection
+
+Saving someone else's shared collection keeps it for reference, even when it contains
+only one credential. It does not issue those credentials to you, change their subjects,
+or add them to your earned Passport credentials.
+
+```mermaid
+flowchart LR
+    A[Open a shared collection] --> B[Sign in if needed]
+    B --> C[Save collection]
+    C --> D[View saved collections]
+    D --> E[Data & Sharing: Shared with you]
+    E --> F[Open the saved collection]
+```
+
+The success message appears only after saving is confirmed. If saving fails, the
+collection stays open with an error and the option to try again.
+
+Saved collections remain available under **Data & Sharing → Shared with you**, even
+when creating shared links is not enabled for your account. **View saved collections**
+opens that list once; closing it does not make it reopen on later Back/Forward visits.
 
 ### Private Verifier History
 

@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.90.49
+
+### Patch Changes
+
+- [#1929](https://github.com/learningeconomy/LearnCard/pull/1929) [`2c75125b4e03dfb2cc7579cfa5b796b3519e3ac4`](https://github.com/learningeconomy/LearnCard/commit/2c75125b4e03dfb2cc7579cfa5b796b3519e3ac4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix native sign-in failing at Web3Auth account setup. Web3Auth's session server rejects CORS from Capacitor's localhost origin, so native builds now derive the key without saving an SDK session there. Web behavior is unchanged.
+
+- [#1928](https://github.com/learningeconomy/LearnCard/pull/1928) [`e6ce315cf2fa13247b41952977649ca265dfec54`](https://github.com/learningeconomy/LearnCard/commit/e6ce315cf2fa13247b41952977649ca265dfec54) Thanks [@Custard7](https://github.com/Custard7)! - Restore quiet retry for Web3Auth sign-in network failures. Since the multi-tab sign-in fix, every Web3Auth error was rewritten to a generic message before the auth coordinator saw it, so connectivity failures showed the "We couldn't finish signing you in" error screen instead of returning to idle and retrying.
+
+    Record which Web3Auth setup step failed (init, connect, identity check, private key, ...) and a redacted error type, code and message in the "Web3Auth account setup failed" log, so production sign-in failures can be diagnosed.
+
+- Updated dependencies [[`27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6`](https://github.com/learningeconomy/LearnCard/commit/27be1a449118c3c9b69f1fd961cf0b7fe3cbcdb6)]:
+    - @learncard/sss-key-manager@0.2.7
+    - @learncard/helpers@1.7.3
+    - @learncard/lca-api-plugin@2.0.15
+    - @learncard/react@3.0.4
+
+## 1.90.48
+
+### Patch Changes
+
+- Updated dependencies [[`372c1431e78a9708454f9c4c2f2c99dd5486b8e9`](https://github.com/learningeconomy/LearnCard/commit/372c1431e78a9708454f9c4c2f2c99dd5486b8e9), [`c20460f6fef685272227f506f536b6811f90b8a0`](https://github.com/learningeconomy/LearnCard/commit/c20460f6fef685272227f506f536b6811f90b8a0)]:
+    - @learncard/sss-key-manager@0.2.6
+    - @learncard/helpers@1.7.2
+    - @learncard/lca-api-plugin@2.0.14
+    - @learncard/react@3.0.3
+
+## 1.90.47
+
+### Patch Changes
+
+- [#1888](https://github.com/learningeconomy/LearnCard/pull/1888) [`39dc0d73fbb51a9e2101988e59c047fccd772f9d`](https://github.com/learningeconomy/LearnCard/commit/39dc0d73fbb51a9e2101988e59c047fccd772f9d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop `useGetCredentialList` from crashing on a malformed cached entry (LC-2330). The hook now drops a cache entry that isn't valid infinite-query data and refetches, `useGetRecordForUri` and `insertItem` skip or replace malformed entries, `insertItem` now prepends to the first page without disturbing later pages' cursors (so `hasNextPage` survives a failed refetch), Scouts busts its persisted query cache on each app version, and Scouts' add-credential mutation now targets the real `useGetCredentialList` / `useGetCredentialCount` keys.
+
+- [#1885](https://github.com/learningeconomy/LearnCard/pull/1885) [`b1e3bbf58d89de8a28d13d35f047e8ac85ecf55d`](https://github.com/learningeconomy/LearnCard/commit/b1e3bbf58d89de8a28d13d35f047e8ac85ecf55d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Account Recovery and Edit Card crashing in the My Scouts modal by restoring the current user and wallet hooks removed during SSS hardening.
+
+- [#1837](https://github.com/learningeconomy/LearnCard/pull/1837) [`9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334`](https://github.com/learningeconomy/LearnCard/commit/9ca23fb866dcfa7c9cc1c63db3dd5f3c25917334) Thanks [@goblincore](https://github.com/goblincore)! - Coordinate shared SQLite connection and schema ownership, preserve successful operations when cleanup fails, and clear existing logout tables without requiring eagerly initialized schemas. Load web SQLite locally in LearnCard App and ScoutPass.
+
+- Updated dependencies [[`b0c7891371fa621a1c2c4a419a1d4f330ed2993a`](https://github.com/learningeconomy/LearnCard/commit/b0c7891371fa621a1c2c4a419a1d4f330ed2993a)]:
+    - @learncard/sss-key-manager@0.2.5
+    - @learncard/lca-api-plugin@2.0.13
+    - @learncard/react@3.0.2
+
 ## 1.90.46
 
 ### Patch Changes

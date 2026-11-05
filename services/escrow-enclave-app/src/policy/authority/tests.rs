@@ -427,6 +427,17 @@ impl Fixture {
         pin: Option<&str>,
         contact: Option<(&str, &str)>,
     ) -> EscrowEnvelope {
+        self.blob_with_brand(version, pin, contact, None)
+    }
+    /// D21: like `blob_with_contact`, plus an owner-sealed email brand (not
+    /// part of the signed intent).
+    fn blob_with_brand(
+        &self,
+        version: u32,
+        pin: Option<&str>,
+        contact: Option<(&str, &str)>,
+        brand: Option<&str>,
+    ) -> EscrowEnvelope {
         encrypt_escrow_blob(
             &EscrowBlobPlaintext {
                 version: 1,
@@ -437,6 +448,7 @@ impl Fixture {
                 pin_attempts_floor: None,
                 recovery_email: contact.map(|(e, _)| e.to_string()),
                 recovery_language: contact.map(|(_, l)| l.to_string()),
+                recovery_brand: brand.map(str::to_owned),
             },
             &self.old.public_key,
             "old",
@@ -508,8 +520,20 @@ impl Fixture {
         SignedEnrollmentIntent { intent, signature }
     }
     async fn enroll(&self, p: &mut Policy<'_>, delegated: bool) -> EscrowEnvelope {
-        let target =
-            self.blob_with_contact(1, Some(&"11".repeat(32)), Some(("owner@example.com", "en")));
+        self.enroll_with_brand(p, delegated, None).await
+    }
+    async fn enroll_with_brand(
+        &self,
+        p: &mut Policy<'_>,
+        delegated: bool,
+        brand: Option<&str>,
+    ) -> EscrowEnvelope {
+        let target = self.blob_with_brand(
+            1,
+            Some(&"11".repeat(32)),
+            Some(("owner@example.com", "en")),
+            brand,
+        );
         let signed = self
             .intent(
                 "enroll",
@@ -1349,6 +1373,9 @@ struct ContactContractCase {
     blob_recovery_email: Option<String>,
     #[serde(rename = "blobRecoveryLanguage")]
     blob_recovery_language: Option<String>,
+    /// D21: optional so the pre-brand cases stay byte-identical.
+    #[serde(rename = "blobRecoveryBrand", default)]
+    blob_recovery_brand: Option<String>,
     expected: String,
 }
 #[derive(serde::Deserialize)]
@@ -1381,6 +1408,7 @@ async fn carry_contact_contract_matches_the_shared_cross_language_fixture() {
                     pin_attempts_floor: None,
                     recovery_email: case.blob_recovery_email.clone(),
                     recovery_language: case.blob_recovery_language.clone(),
+                    recovery_brand: case.blob_recovery_brand.clone(),
                 },
                 &f.old.public_key,
                 "old",
@@ -2205,11 +2233,12 @@ impl<'a> EmailSender for ClockAdvancingEmailSender<'a> {
         &'b self,
         recipient: &'b str,
         language: &'b str,
+        brand: Option<&'b str>,
         message: EmailMessage,
     ) -> EmailFuture<'b> {
         Box::pin(async move {
             *self.time.0.lock().unwrap() += self.advance_ms;
-            self.inner.send(recipient, language, message).await
+            self.inner.send(recipient, language, brand, message).await
         })
     }
 }
@@ -2651,4 +2680,159 @@ mod wire_tests {
         assert_eq!(state.enrollment_version, 1);
         proof.verify(&service.policy.ledger_public_key()).unwrap();
     }
+}
+
+// D21 (owner-sealed email brand): every enclave send site renders the brand
+// sealed in the blob it already decrypted; a blob with no brand keeps the
+// label-derived fallback ("learncard" -> "LearnCard" in the fake sender).
+#[tokio::test]
+async fn every_send_site_renders_the_owner_sealed_brand_and_unbranded_blobs_fall_back() {
+    for (sealed, expected) in [(Some("VetPass"), "VetPass"), (None, "LearnCard")] {
+        let f = Fixture::new();
+        let mut p = f.policy(false);
+        let env = f.enroll_with_brand(&mut p, true, sealed).await;
+        // Enroll keeps the owner-sealed brand (not in the signed intent).
+        let enrolled = decrypt_escrow_blob(&env, &f.keys.private_key).unwrap();
+        assert_eq!(enrolled.recovery_brand.as_deref(), sealed);
+        let hold = f.awaiting_hold(&mut p, &env).await;
+        *f.time.0.lock().unwrap() += crate::policy::authority::MIN_SEND_GAP_MS + 1;
+        p.resend_code(ResendCodeRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "resend",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+        })
+        .await
+        .unwrap();
+        let code = f.last_sent_code();
+        p.confirm_hold(ConfirmHoldRequest {
+            envelope: &env,
+            hold: &hold,
+            request_id: "confirm",
+            expected_did: &f.did,
+            client_ephemeral_public_key: &f.client.public_key,
+            code: &code,
+        })
+        .await
+        .unwrap();
+        p.send_release_warning(SendReleaseWarningRequest {
+            hold_id: "hold",
+            request_id: "warn",
+            expected_did: &f.did,
+        })
+        .await
+        .unwrap();
+        let sent = f.email.sent.lock().unwrap();
+        // create (code), resend (code), confirm (started), warning.
+        assert_eq!(sent.len(), 4);
+        for record in sent.iter() {
+            assert_eq!(record.brand, expected);
+            assert!(record.subject.contains(expected), "{}", record.subject);
+            assert!(record.body.contains(expected), "{}", record.body);
+        }
+    }
+}
+
+// D21: the maximum-length brand never trips the release warning's
+// fail-closed send path (SES subject/body caps; see the email tests).
+#[tokio::test]
+async fn release_warning_succeeds_with_the_maximum_length_sealed_brand() {
+    let brand = "Aa".repeat(crate::crypto::MAX_RECOVERY_BRAND_CHARS / 2);
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll_with_brand(&mut p, true, Some(&brand)).await;
+    // `hold` confirms and then sends the release warning, which fails closed
+    // (unwrap panics) if the fake, applying the real SES caps, refuses it.
+    let _ = f.hold(&mut p, &env, ReleasePolicy::Hold).await;
+    let sent = f.email.sent.lock().unwrap();
+    let warning = sent.last().unwrap();
+    assert_eq!(warning.code, None);
+    assert_eq!(
+        warning.subject,
+        format!("Your {brand} recovery completes soon")
+    );
+    assert_eq!(warning.brand, brand);
+    assert!(crate::authority::email::ses_payload_ok(
+        &warning.subject,
+        &warning.body
+    ));
+}
+
+// D21: an invalid sealed brand is dropped on decrypt (lenient on read), so
+// recovery still proceeds and the email falls back to the label brand.
+#[tokio::test]
+async fn an_invalid_sealed_brand_never_blocks_recovery_and_falls_back_to_the_label() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f
+        .enroll_with_brand(&mut p, true, Some("Visit www.example.com"))
+        .await;
+    let _ = f.awaiting_hold(&mut p, &env).await;
+    let sent = f.email.sent.lock().unwrap();
+    assert_eq!(sent.last().unwrap().brand, "LearnCard");
+}
+
+// D21: Carry inherits the source blob's sealed brand (like email/language/PIN
+// verifier) and refuses a target that already claims one.
+#[tokio::test]
+async fn carry_inherits_the_source_brand_and_rejects_a_target_that_claims_one() {
+    let f = Fixture::new();
+    let mut p = f.policy(false);
+    let env = f.enroll_with_brand(&mut p, true, Some("VetPass")).await;
+    let branded_target = f.blob_with_brand(2, None, None, Some("ScoutPass"));
+    let signed = f
+        .intent(
+            "carry-with-brand",
+            EnrollmentAction::Carry,
+            PinAction::Keep,
+            Some(&env),
+            Some(&branded_target),
+            2,
+            true,
+        )
+        .await;
+    assert!(matches!(
+        p.apply_enrollment_intent(&signed, Some(&env), Some(&branded_target))
+            .await,
+        Err(ErrorCode::Policy)
+    ));
+    let target = f.blob(2, None);
+    let signed = f
+        .intent(
+            "carry",
+            EnrollmentAction::Carry,
+            PinAction::Keep,
+            Some(&env),
+            Some(&target),
+            2,
+            true,
+        )
+        .await;
+    let output = p
+        .apply_enrollment_intent(&signed, Some(&env), Some(&target))
+        .await
+        .unwrap()
+        .envelope
+        .unwrap();
+    let carried = decrypt_escrow_blob(&output, &f.keys.private_key).unwrap();
+    assert_eq!(carried.recovery_brand.as_deref(), Some("VetPass"));
+    assert_eq!(carried.recovery_email.as_deref(), Some("owner@example.com"));
+}
+
+// D21: a rewrap re-encrypts the plaintext unchanged, brand included.
+#[tokio::test]
+async fn rewrap_preserves_the_sealed_brand() {
+    let f = Fixture::new();
+    let mut old = f.policy(true);
+    let mut new = f.policy(false);
+    let env = f.enroll_with_brand(&mut old, true, Some("VetPass")).await;
+    let output = new
+        .authority_rewrap(&env, &f.did, 1, 1)
+        .await
+        .unwrap()
+        .envelope
+        .unwrap();
+    let rewrapped = decrypt_escrow_blob(&output, &f.keys.private_key).unwrap();
+    assert_eq!(rewrapped.recovery_brand.as_deref(), Some("VetPass"));
 }

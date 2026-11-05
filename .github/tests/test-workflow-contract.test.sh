@@ -35,11 +35,11 @@ workspace_lint_step = workspace_lint_job.fetch('steps').find do |step|
 end
 abort 'dedicated workspace lint CI step missing' unless workspace_lint_step
 
-accessibility_job = lint_jobs.fetch('Accessibility')
+accessibility_job = lint_jobs.fetch('SourceLint')
 accessibility_step = accessibility_job.fetch('steps').find do |step|
     step['run'] == 'bun run lint:a11y'
 end
-abort 'accessibility job must run only the accessibility lint' unless accessibility_step
+abort 'source lint must retain the dedicated accessibility command' unless accessibility_step
 
 lint_script = File.read(ARGV.fetch(2))
 abort 'lint fingerprints must normalize the checkout path' unless lint_script.include?(

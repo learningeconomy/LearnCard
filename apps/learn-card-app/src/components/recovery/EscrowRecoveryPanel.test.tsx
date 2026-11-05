@@ -36,34 +36,154 @@ describe('EscrowRecoveryPanel', () => {
         expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
     });
 
-    it.each(['EscrowPinUnavailableError', 'EscrowRequestError'])(
-        'falls back safely for %s',
-        async name => {
-            const error = Object.assign(new Error('private server details'), { name, status: 403 });
-            render(
-                <EscrowRecoveryPanel
-                    view="start"
-                    available
-                    pinAvailable
-                    onStart={vi.fn()}
-                    onStatus={vi.fn()}
-                    onRecover={vi.fn().mockRejectedValue(error)}
-                    onConfirmCode={vi.fn()}
-                    onResendCode={vi.fn()}
-                />
-            );
-            fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
-                clipboardData: { getData: () => '135790' },
+    it('only runs the hold: PIN sign-in lives on the first screen', async () => {
+        const onUsePin = vi.fn();
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                pinAvailable
+                onUsePin={onUsePin}
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+        expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+        expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Use my recovery PIN instead' }));
+        expect(onUsePin).toHaveBeenCalledOnce();
+    });
+
+    it('offers no PIN link without a PIN', async () => {
+        render(
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+            />
+        );
+        expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+        expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
+    });
+
+    describe('email sender note (app brand differs from the enclave brand)', () => {
+        const emailSender = { sender: 'LearnCard', brand: 'VetPass', mixed: false };
+        const codeNote =
+            "We'll email you a code from LearnCard, the service that secures your VetPass account.";
+        const updatesNote =
+            'Some emails about this request come from LearnCard, the service that secures your VetPass account.';
+        const pendingHold = (confirmed: boolean) => {
+            const releaseAfter = new Date(Date.now() + 86400000).toISOString();
+            vi.mocked(loadPendingEscrowRecovery).mockResolvedValueOnce({
+                holdId: 'hold-confirm-1',
+                resumeToken: 'token',
+                clientEphemeralPrivateKey: 'key',
+                releaseAfter,
+                requiresConfirmation: true,
+                expectations: {
+                    tenant: 'learncard',
+                    did: 'did:key:z6Mkexample',
+                    holdId: 'hold-confirm-1',
+                    clientEphemeralPublicKey: 'ephemeral-pub',
+                    blobHash: 'blob-hash',
+                    authorityGeneration: 'generation-1',
+                    holdDigest: 'hold-digest',
+                    ledgerPublicKey: 'ledger-pub',
+                    keyId: 'key-1',
+                },
             });
-            expect(
-                await screen.findByText(
-                    "PIN sign-in isn't available for this account. Start a 7-day recovery instead."
-                )
-            ).toBeInTheDocument();
-            expect(screen.queryByLabelText('PIN digit 1')).not.toBeInTheDocument();
-            expect(screen.queryByText('private server details')).not.toBeInTheDocument();
-        }
-    );
+            return vi.fn().mockResolvedValue({ status: 'pending', confirmed, releaseAfter });
+        };
+        const panel = (props: Partial<React.ComponentProps<typeof EscrowRecoveryPanel>> = {}) => (
+            <EscrowRecoveryPanel
+                view="start"
+                available
+                onStart={vi.fn()}
+                onStatus={vi.fn()}
+                onRecover={vi.fn()}
+                onConfirmCode={vi.fn()}
+                onResendCode={vi.fn()}
+                {...props}
+            />
+        );
+
+        it('names the sender before a 7-day recovery starts', async () => {
+            render(panel({ emailSender }));
+            expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(screen.getByText(codeNote)).toBeInTheDocument();
+        });
+
+        it('shows nothing when the brands match (no emailSender)', async () => {
+            render(panel());
+            expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+            expect(screen.queryByText(/the service that secures your/)).not.toBeInTheDocument();
+        });
+
+        it('names the sender on the confirm-code step', async () => {
+            render(panel({ view: 'status', emailSender, onStatus: pendingHold(false) }));
+            expect(await screen.findByText('Check your email')).toBeInTheDocument();
+            expect(screen.getByText(codeNote)).toBeInTheDocument();
+        });
+
+        it('names the sender of hold updates while the 7 days run', async () => {
+            render(panel({ view: 'status', emailSender, onStatus: pendingHold(true) }));
+            expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+            expect(screen.getByText(updatesNote)).toBeInTheDocument();
+        });
+
+        // D21: with the app brand sealed, the stored blob may still carry either brand.
+        describe('when this app seals its own brand (mixed)', () => {
+            const mixed = { ...emailSender, mixed: true };
+            const codeMixed =
+                'Your code may come from VetPass or from LearnCard, the service that secures your VetPass account.';
+            const updatesMixed =
+                'Some emails about this request may come from VetPass or from LearnCard, the service that secures your VetPass account.';
+
+            it('says the code may come from either brand', async () => {
+                render(panel({ emailSender: mixed }));
+                expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+                expect(screen.getByText(codeMixed)).toBeInTheDocument();
+                expect(screen.queryByText(codeNote)).not.toBeInTheDocument();
+            });
+
+            it('says hold updates may come from either brand', async () => {
+                render(panel({ view: 'status', emailSender: mixed, onStatus: pendingHold(true) }));
+                expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+                expect(screen.getByText(updatesMixed)).toBeInTheDocument();
+            });
+        });
+
+        // D21: LearnCard (its own authority brand) names a co-tenant app that may have sealed
+        // its brand on a shared DID.
+        describe('when another app on the account may have sealed its brand (shared)', () => {
+            const shared = { sender: 'VetPass', brand: 'LearnCard', mixed: true, shared: true };
+            const codeShared =
+                'If you also use VetPass with this account, your code may come from VetPass instead of LearnCard.';
+            const updatesShared =
+                'If you also use VetPass with this account, some emails about this request may come from VetPass instead of LearnCard.';
+
+            it('says the code may come from the other app', async () => {
+                render(panel({ emailSender: shared }));
+                expect(await screen.findByText('Start a 7-day recovery')).toBeInTheDocument();
+                expect(screen.getByText(codeShared)).toBeInTheDocument();
+                expect(screen.queryByText(/the service that secures your/)).not.toBeInTheDocument();
+            });
+
+            it('says hold updates may come from the other app', async () => {
+                render(panel({ view: 'status', emailSender: shared, onStatus: pendingHold(true) }));
+                expect(await screen.findByText('Recovery in progress')).toBeInTheDocument();
+                expect(screen.getByText(updatesShared)).toBeInTheDocument();
+            });
+        });
+    });
+
     const mockOnStart = vi.fn();
     const mockOnStatus = vi.fn();
     const mockOnRecover = vi.fn();
@@ -444,110 +564,6 @@ describe('EscrowRecoveryPanel', () => {
         expect(JSON.stringify(logError.mock.calls)).not.toContain('private@');
     });
 
-    it('shows PIN flow first', async () => {
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        expect(screen.getByText('Enter my recovery PIN')).toBeInTheDocument();
-        expect(screen.getByText("I don't have a PIN")).toBeInTheDocument();
-    });
-
-    it('handles PIN mismatch error', async () => {
-        const error = new Error('Incorrect PIN') as Error & { attemptsRemaining: number };
-        error.name = 'EscrowPinMismatchError';
-        error.attemptsRemaining = 8;
-        mockOnRecover.mockRejectedValueOnce(error);
-
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        const inputs = screen.getAllByLabelText(/PIN digit/);
-        fireEvent.paste(inputs[0], { clipboardData: { getData: () => '135790' } });
-
-        await waitFor(() => {
-            expect(mockOnRecover).toHaveBeenCalledWith({ method: 'escrow-pin', pin: '135790' });
-            expect(screen.getByText('Incorrect PIN. 8 attempts left.')).toBeInTheDocument();
-        });
-    });
-
-    it('keeps the PIN step visible after a temporary throttle without auto-retrying', async () => {
-        const error = new Error('Throttled');
-        error.name = 'EscrowPinThrottledError';
-        mockOnRecover.mockRejectedValueOnce(error);
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-        fireEvent.paste(screen.getAllByLabelText(/PIN digit/)[0], {
-            clipboardData: { getData: () => '135790' },
-        });
-        expect(
-            await screen.findByText('Too many attempts. Please try again later.')
-        ).toBeInTheDocument();
-        expect(screen.getByText('Enter my recovery PIN')).toBeInTheDocument();
-        expect(screen.getAllByLabelText(/PIN digit/)).toHaveLength(6);
-        expect(mockOnRecover).toHaveBeenCalledTimes(1);
-        expect(mockOnStart).not.toHaveBeenCalled();
-    });
-
-    it('handles PIN locked error and falls back to hold flow', async () => {
-        const error = new Error('Locked');
-        error.name = 'EscrowPinLockedError';
-        mockOnRecover.mockRejectedValueOnce(error);
-
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        const inputs = screen.getAllByLabelText(/PIN digit/);
-        fireEvent.paste(inputs[0], { clipboardData: { getData: () => '135790' } });
-
-        await waitFor(() => {
-            expect(
-                screen.getByText('Too many attempts. You can still recover by waiting 7 days.')
-            ).toBeInTheDocument();
-            expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
-        });
-        expect(screen.queryByText('Use my recovery PIN instead')).not.toBeInTheDocument();
-    });
-
     it('shows existing request card when onStart returns null resumeToken', async () => {
         const requestedAt = new Date().toISOString();
         const releaseAfter = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -782,25 +798,6 @@ describe('EscrowRecoveryPanel', () => {
                 screen.queryByText('A recovery request is already waiting')
             ).not.toBeInTheDocument();
         });
-    });
-
-    it('switches to hold flow when clicking I dont have a PIN', async () => {
-        render(
-            <EscrowRecoveryPanel
-                view="start"
-                available={true}
-                pinAvailable
-                onStart={mockOnStart}
-                onStatus={mockOnStatus}
-                onRecover={mockOnRecover}
-                onConfirmCode={vi.fn()}
-                onResendCode={vi.fn()}
-            />
-        );
-
-        fireEvent.click(screen.getByText("I don't have a PIN"));
-
-        expect(screen.getByText('Start a 7-day recovery')).toBeInTheDocument();
     });
 
     // [B] releaseAfter can move after the start-time estimate (e.g. an

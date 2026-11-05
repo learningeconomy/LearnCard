@@ -5,8 +5,9 @@ tenants, stage by stage. It is operator-facing, not implementation documentation
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
 Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
-The authority Object Lock archiver/outbox is **deferred to a pre-50% rollout gate**,
-not a launch blocker, unless security rejects R-AUTHORITY-ROLLBACK. Preparing
+The authority Object Lock archiver/outbox is **post-launch hardening**, not a
+launch or stage gate: R-AUTHORITY-ROLLBACK is accepted for all stages
+(LAUNCH-DECISIONS.md RAR, amended 2026-10-31). Preparing
 infrastructure or passing offline Terraform tests does not close any live gate.
 
 ## What this controls (and what it doesn't)
@@ -46,8 +47,9 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
 
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
-   host. Remaining: the operators' availability and rate limits for production
-   traffic (time.txryan.com's operator, Tanner Ryan, approved our use on 2026-10-01).
+   host. All three operators acknowledged LearnCard's use (operator-reported,
+   2026-10-30; see LAUNCH-DECISIONS.md RT). Remaining for stage 2: attach the
+   measured per-operation request count and the volume forecast to that record.
 2. **Enrollment authority — verified on staging, not yet deployed to production.**
    Without a configured authority the enclave wires in `UnavailableEnrollment`, so
    create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
@@ -60,9 +62,9 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
    staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
    refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
-   cancellation is signed. Remaining: an operator inbox confirmation of the code
-   email, and the 7-day-since-confirmation soak (jackson+wait3, releasing about
-   2026-10-30) on the new image.
+   cancellation is signed. The 7-day-since-confirmation soak (jackson+wait3) released
+   successfully on 2026-10-30 (operator-reported). Remaining: an operator inbox
+   confirmation of the code email (production pilot hold or tier 3 canary).
 4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
@@ -71,6 +73,15 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    explicitly accept this residual risk (or adopt the immutable-key-policy
    alternative documented in `infra/escrow-enclave/README.md`) before rollout
    proceeds past internal.
+
+**Stage 1 decisions (2026-10-30, Jackson Smith).** Internal-only escrow (SSS pilot
+channel and production canary accounts) proceeds with: item 1 (Roughtime) and
+item 4 (D10) accepted for stage 1, see LAUNCH-DECISIONS.md RT and D10; item 2
+(enrollment authority) and item 3 (attack C) proceed so that stage 1 itself
+provides the production verification (pilot enrollment, PIN and hold
+recoveries, hold-confirmation email), with the staging soak and inbox check
+still to be recorded. None of these close any item (1-4) for stage 2: D10's
+acceptance is stage 1 only and is revisited before stage 2.
 
 **Gate:** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
@@ -135,12 +146,12 @@ up.
 
 ## Go/no-go criteria per stage
 
-**Before stage 4 (50%):** ship and security-approve
-[AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md), including independent immutable
-history, reconciliation, rollback/purge drills and independent alarm delivery.
-Remain at 10% or below until this gate closes. Security rejection of
-R-AUTHORITY-ROLLBACK moves this requirement earlier, including before launch.
-This is an operator gate, not a newly implemented automatic percentage limit.
+**Archiver (no longer a stage gate).** R-AUTHORITY-ROLLBACK is accepted for all
+stages (LAUNCH-DECISIONS.md RAR, amended 2026-10-31), conditional on authority
+PITR, the authority write trail and alarms, and a production drill of the
+denied-write and unexpected-write alarms before the switch.
+[AUTHORITY-ARCHIVER.md](AUTHORITY-ARCHIVER.md), or a lighter tamper-evident
+history, is post-launch hardening.
 
 At every stage, require zero unexplained `AuthorityGovernance:unexpected_write`,
 `AuthorityGovernance:denied_write` or `EscrowCloudTrailTamper` alerts. Planned
@@ -223,5 +234,30 @@ switch already does without disrupting existing users.
   and redeploy is required for every stage advance or rollback.
 - Bucketing hashes `${tenantId}:${userDid}`, so the same user can be in the
   rollout for one tenant and not another — stage each tenant independently.
+- **VetPass shares LearnCard's enclave and accounts.** VetPass runs on the
+  LearnCard enclave with `auth.sss.escrowAuthorityTenant: "learncard"`
+  ([SECURITY.md](SECURITY.md) D20). A VetPass user and a LearnCard user with the
+  same sign-in are one account: enrollment, PIN and opt-out are shared, and an
+  account enrolled from either app is enrolled for both. Keep VetPass on the same
+  key derivation, `escrowEnclaveMode` and enclave pins as LearnCard at every stage
+  (enforced by `apps/learn-card-app/src/config/escrowTenantParity.test.ts`); an SSS
+  client with escrow off can leave the shared escrow copy stale. VetPass staging and
+  production deploy from main, so VetPass escrow stays off at every stage
+  (including the `sss-pilot` overlay) until the SSS switch turns it on together
+  with LearnCard production; that PR must set VetPass's mode, pins and
+  `escrowAuthorityTenant` in the same change. Update both
+  tenants' pins on every image roll.
+- **Sealed email brand (D21).** `auth.sss.escrowSealEmailBrand` makes the client
+  seal the app's `branding.name` into the escrow blob so enclave-sent emails carry
+  that brand. Keep it off until every live host (staging, then production) runs the
+  brand-aware image, because an older image drops the field whenever it re-encrypts
+  a blob. Then turn it on for LearnCard and VetPass in one config PR, which also sets
+  LearnCard's `auth.sss.escrowSharedEmailBrands: ["VetPass"]` (parity and the list are
+  enforced by `escrowTenantParity.test.ts`). Existing blobs keep the LearnCard brand
+  until their next enroll/replace, so the VetPass in-app note stays on, worded as
+  "may come from VetPass or from LearnCard". A shared DID last written by VetPass
+  sends VetPass-branded emails even when recovery starts in LearnCard, so LearnCard
+  shows "If you also use VetPass with this account, your code may come from VetPass". Rolling back the image reverts sealed
+  brands to "LearnCard"; it does not break recovery.
 - Never put a raw DID or email in a PR, ticket, or this document — only the
   SHA-256 hash described above.
