@@ -1220,6 +1220,7 @@ jobs:
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
             - name: Set CapGo Channel
+              id: capgo-set-channel
               if: matrix.capgo
               working-directory: apps/${{ steps.vars.outputs.project_name }}
               env:
@@ -1240,6 +1241,58 @@ jobs:
                     --self-assign \
                     --downgrade \
                     ${{ steps.vars.outputs.capgo_id }}
+
+            # Ask Capgo's update endpoint, as an iOS and an Android device, whether users
+            # would actually get the bundle we just published. A successful upload is not
+            # enough: channel settings (e.g. "Disable auto downgrade under native") can
+            # block a whole platform. Non-blocking: a failure here must not skip the
+            # native store publish, so it alerts #release-owner instead.
+            - name: Check OTA delivery (Capgo canary)
+              id: capgo-canary
+              if: matrix.capgo
+              continue-on-error: true
+              env:
+                  CAPGO_TOKEN: ${{ secrets.CAPGO_TOKEN }}
+                  CAPGO_APP_ID: ${{ steps.vars.outputs.capgo_id }}
+                  CAPGO_CHANNEL: ${{ steps.capgo-channel.outputs.channel }}
+                  BUNDLE_VERSION: ${{ steps.capgo-upload.outputs.version }}
+                  APP_PACKAGE_JSON: apps/${{ steps.vars.outputs.project_name }}/package.json
+                  APP_LABEL: ${{ matrix.name }}
+                  # Native versions come from Capgo's device list. Overrides must be set on the
+                  # leg's GitHub *environment*, never repo-wide: LearnCard and ScoutPass have
+                  # different native version numbers.
+                  CANARY_NATIVE_IOS: ${{ vars.CAPGO_CANARY_NATIVE_IOS }}
+                  CANARY_NATIVE_ANDROID: ${{ vars.CAPGO_CANARY_NATIVE_ANDROID }}
+                  CANARY_GH_ENVIRONMENT: ${{ matrix.environment }}
+                  CANARY_ALERT_FILE: ${{ runner.temp }}/capgo-canary-alert.txt
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: node scripts/release-alerts/capgo-canary.mjs
+
+            # Also covers the upload or channel step failing outright (no bundle went out).
+            - name: Alert release owner (OTA delivery)
+              if: |
+                  always() && matrix.capgo &&
+                  (steps.capgo-canary.outcome == 'failure' ||
+                   steps.capgo-upload.outcome == 'failure' ||
+                   steps.capgo-set-channel.outcome == 'failure')
+              continue-on-error: true
+              env:
+                  SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+                  RELEASE_ALERT_CHANNEL: ${{ vars.RELEASE_ALERT_SLACK_CHANNEL || '#release-owner' }}
+                  # If the bot can't post (e.g. not invited), the alert goes to deploy-errors
+                  # instead of being lost behind continue-on-error.
+                  SLACK_FALLBACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
+                  ALERT_FILE: ${{ runner.temp }}/capgo-canary-alert.txt
+                  LEG: ${{ matrix.name }}
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  if [[ ! -s "$ALERT_FILE" ]]; then
+                    printf '%s\n%s\n<%s|Deploy run>\n' \
+                      ":rotating_light: *OTA bundle was not published: ${LEG}*" \
+                      "The Capgo upload or channel step failed, so users are not getting this release over the air." \
+                      "$RUN_URL" > "$ALERT_FILE"
+                  fi
+                  node scripts/release-alerts/slack.mjs "$ALERT_FILE"
 
             # Tenant legs are continue-on-error, so their failure doesn't fail the run and the
             # global failure notification never fires. Alert the same channel directly.
@@ -1493,6 +1546,59 @@ jobs:
             submitToAppStore: true
             releaseNotes: '- Critical Bug Fixes and Security Patches'
         secrets: inherit
+
+    # Tell the release owner when a native store release did not go out. The generic
+    # "Deploy failed" notifier fires for many unrelated reasons, so an App Store failure
+    # used to look like every other failure. Runs on failure, skip (frontend failed) and
+    # cancellation, naming the platform and the reason from the job log.
+    release-delivery-check:
+        name: Alert release owner on native store problems
+        needs: [determine-affected, deploy-frontend, publish-native-apps]
+        if: |
+            always() &&
+            (
+                (needs.determine-affected.outputs.is_manual == 'true' && github.event.inputs.publish-app-stores == 'true') ||
+                (needs.determine-affected.outputs.is_release == 'true' && needs.determine-affected.outputs.lca_app_changed == 'true')
+            ) &&
+            needs.publish-native-apps.result != 'success'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            actions: read
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v7
+              with:
+                  persist-credentials: false
+                  sparse-checkout: |
+                      scripts/release-alerts
+                      apps/learn-card-app/package.json
+                      apps/scouts/package.json
+                  sparse-checkout-cone-mode: false
+
+            - name: Describe the native release failure
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PUBLISH_RESULT: ${{ needs.publish-native-apps.result }}
+                  FRONTEND_RESULT: ${{ needs.deploy-frontend.result }}
+                  TARGET_ENV: ${{ needs.determine-affected.outputs.target_frontend_env }}
+                  ALERT_FILE: ${{ runner.temp }}/native-release-alert.txt
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  # VetPass is a learn-card-app tenant, so only ScoutPass has its own version.
+                  case "$TARGET_ENV" in
+                    scout-app-*) PACKAGE_JSON=apps/scouts/package.json ;;
+                    *) PACKAGE_JSON=apps/learn-card-app/package.json ;;
+                  esac
+                  APP_VERSION=$(node -p "require('./$PACKAGE_JSON').version") \
+                    node scripts/release-alerts/native-release-check.mjs
+
+            - name: Alert release owner
+              env:
+                  SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+                  RELEASE_ALERT_CHANNEL: ${{ vars.RELEASE_ALERT_SLACK_CHANNEL || '#release-owner' }}
+                  SLACK_FALLBACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
+              run: node scripts/release-alerts/slack.mjs "${{ runner.temp }}/native-release-alert.txt"
 
     # ============================================================================
     # DOCKER IMAGES
