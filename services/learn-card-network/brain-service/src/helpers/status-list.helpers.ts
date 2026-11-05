@@ -1,5 +1,6 @@
 import { environment, getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { gzipSync, gunzipSync } from 'node:zlib';
+import { isDeepStrictEqual } from 'node:util';
 import type { Transaction } from 'neo4j-driver';
 import { v4 as uuid } from 'uuid';
 import { TRPCError } from '@trpc/server';
@@ -49,7 +50,8 @@ export const reserveCredentialStatusEntries = async (
     entries: BitstringStatusListEntry[],
     ownerProfileId: string,
     credentialId: string,
-    transaction: Transaction
+    transaction: Transaction,
+    options: { lenient?: boolean; credential?: VC | UnsignedVC } = {}
 ): Promise<void> => {
     const domain = getCredentialRefreshRuntimeEnvironment().DOMAIN_NAME || 'localhost%3A3000';
     for (const entry of [...entries].sort((a, b) =>
@@ -78,6 +80,8 @@ export const reserveCredentialStatusEntries = async (
             }
             continue; // External status lists are not managed by this network.
         }
+        // Forwarding does not confer authority over another issuer's local list.
+        if (options.lenient && list.ownerProfileId !== ownerProfileId) continue;
         const index = Number(entry.statusListIndex);
         if (
             entry.statusListCredential !== getStatusListCredentialUrl(list.id, domain) ||
@@ -98,6 +102,39 @@ export const reserveCredentialStatusEntries = async (
             row?.get('refreshId') ||
             (row?.get('credentialId') && row.get('credentialId') !== credentialId)
         ) {
+            const boundId: unknown = row?.get('credentialId');
+            if (
+                options.lenient &&
+                !row?.get('refreshId') &&
+                typeof boundId === 'string' &&
+                options.credential?.proof &&
+                (!Array.isArray(options.credential.proof) || options.credential.proof.length > 0)
+            ) {
+                const existing = await transaction.run(
+                    'MATCH (credential:Credential {id: $id}) RETURN credential.credential AS body',
+                    { id: boundId }
+                );
+                const body: unknown = existing.records[0]?.get('body');
+                if (
+                    typeof body === 'string' &&
+                    isDeepStrictEqual(
+                        JSON.parse(body),
+                        JSON.parse(JSON.stringify(options.credential))
+                    )
+                ) {
+                    await transaction.run(
+                        `MATCH (:BitstringStatusList {statusListCredential: $url})-[:HAS_STATUS_BINDING]->(binding:CredentialStatusBinding {index: $index})
+                         WITH binding, coalesce(binding.credentialIds, [binding.credentialId]) AS ids
+                         SET binding.credentialIds = CASE WHEN $credentialId IN ids THEN ids ELSE ids + $credentialId END`,
+                        {
+                            url: entry.statusListCredential,
+                            index: String(entry.statusListIndex),
+                            credentialId,
+                        }
+                    );
+                    continue; // Retain every delivery under the list lock, including legacy bindings.
+                }
+            }
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'Status list index is already bound to another credential',
@@ -106,7 +143,8 @@ export const reserveCredentialStatusEntries = async (
         await transaction.run(
             `MATCH (list:BitstringStatusList {statusListCredential: $url})
              MERGE (list)-[:HAS_STATUS_BINDING]->(binding:CredentialStatusBinding {index: $index})
-             SET binding.credentialId = $credentialId`,
+             SET binding.credentialId = $credentialId,
+                 binding.credentialIds = coalesce(binding.credentialIds, [$credentialId])`,
             { url: entry.statusListCredential, index: String(entry.statusListIndex), credentialId }
         );
     }
@@ -427,7 +465,10 @@ export const setStatusListEntryBit = async (
         (typeof entry.statusListIndex === 'string' &&
             String(statusListIndex) !== entry.statusListIndex)
     ) {
-        throw new Error('Bitstring status list index is out of range');
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Bitstring status list index is out of range',
+        });
     }
 
     return neogma.getTransaction(transaction ?? null, async tx => {
@@ -461,15 +502,30 @@ export const setStatusListEntryBit = async (
             url.username ||
             url.password
         ) {
-            throw new Error('Status list URL must be canonical and local');
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL must be canonical and local',
+            });
         }
 
-        if (list.ownerProfileId !== ownerProfileId || list.statusPurpose !== entry.statusPurpose) {
-            throw new Error('Status list owner or purpose does not match the credential');
+        if (list.ownerProfileId !== ownerProfileId) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Status list owner does not match the credential',
+            });
+        }
+        if (list.statusPurpose !== entry.statusPurpose) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list purpose does not match the credential',
+            });
         }
 
         if (statusListIndex >= list.size || statusListIndex >= list.nextIndex) {
-            throw new Error('Bitstring status list index is out of range');
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Bitstring status list index is out of range',
+            });
         }
 
         const bitstring = decodeBitstring(list.encodedList, list.size);
@@ -587,18 +643,35 @@ export const validateStatusEntries = async (
     for (const entry of entries) {
         const prefix = `${getStatusListBaseUrl(domain)}/status-lists/`;
         const id = entry.statusListCredential.slice(prefix.length);
-        if (!entry.statusListCredential.startsWith(prefix) || !/^[a-zA-Z0-9-]+$/.test(id)) {
-            throw new Error('Status list URL must be canonical and local');
+        if (!entry.statusListCredential.startsWith(prefix)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Managed credentials must use network-hosted status lists',
+            });
+        }
+        if (!/^[a-zA-Z0-9-]+$/.test(id)) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL must be canonical and local',
+            });
         }
         const list = await getStatusListById(id);
         const index = Number(entry.statusListIndex);
         if (
             !list ||
             list.statusListCredential !== entry.statusListCredential ||
-            list.ownerProfileId !== ownerProfileId ||
             list.statusPurpose !== entry.statusPurpose
         ) {
-            throw new Error('Status list owner or purpose does not match the credential');
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list URL or purpose does not match the credential',
+            });
+        }
+        if (list.ownerProfileId !== ownerProfileId) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Status list owner does not match the credential',
+            });
         }
         if (
             !Number.isSafeInteger(index) ||
@@ -607,7 +680,10 @@ export const validateStatusEntries = async (
             index >= list.nextIndex ||
             (typeof entry.statusListIndex === 'string' && String(index) !== entry.statusListIndex)
         ) {
-            throw new Error('Status list index is out of range');
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Status list index is out of range',
+            });
         }
     }
 };

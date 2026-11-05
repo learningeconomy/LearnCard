@@ -48,7 +48,9 @@ export const sendCredential = async (
     statusOwnerProfileId: string = from.profileId
 ): Promise<string> => {
     const credentialInstance = await neogma.getTransaction(null, async tx => {
-        const instance = await storeCredential(credential, tx, statusOwnerProfileId);
+        const instance = await storeCredential(credential, tx, statusOwnerProfileId, {
+            lenient: true,
+        });
         await createSentCredentialRelationship(
             { type: 'profile', profile: from },
             to,

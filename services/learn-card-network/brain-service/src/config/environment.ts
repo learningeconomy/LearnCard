@@ -31,6 +31,31 @@ const credentialRefreshNotificationWindowHours = z.preprocess(
     z.coerce.number().finite().positive().default(24)
 );
 
+const credentialRefreshPreviousDigestKeys = z
+    .string()
+    .default('{}')
+    .transform((value, context) => {
+        let parsed: unknown;
+        try {
+            parsed = JSON.parse(value);
+        } catch {
+            context.addIssue({
+                code: 'custom',
+                message: 'Must be a JSON object mapping digest versions to string keys',
+            });
+            return z.NEVER;
+        }
+        const result = z.record(z.string(), z.string()).safeParse(parsed);
+        if (!result.success) {
+            context.addIssue({
+                code: 'custom',
+                message: 'Must be a JSON object mapping digest versions to string keys',
+            });
+            return z.NEVER;
+        }
+        return result.data;
+    });
+
 export const brainServiceEnvironmentShape = {
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: environmentPort.default(3000),
@@ -111,6 +136,7 @@ export const brainServiceEnvironmentShape = {
     SKILL_SEMANTIC_SEARCH_RATE_LIMIT_PER_MIN: optionalEnvironmentPort,
     BITSTRING_STATUS_LIST_SIZE: optionalEnvironmentPort,
     CREDENTIAL_REFRESH_DIGEST_SECRET: optionalEnvironmentString,
+    CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: credentialRefreshPreviousDigestKeys,
     SHARE_LINK_REQUEST_HASH_SECRET: optionalEnvironmentString,
     CREDENTIAL_REFRESH_ENABLED: optionalEnvironmentBoolean.default(false),
     CREDENTIAL_REFRESH_NOTIFICATION_WINDOW_HOURS: credentialRefreshNotificationWindowHours,
@@ -338,7 +364,6 @@ const credentialRefreshRuntimeEnvironmentSchema = z
             .string()
             .regex(/^[A-Za-z0-9_-]+$/)
             .default('v1'),
-        CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: z.string().default('{}'),
         NODE_ENV: brainServiceEnvironmentShape.NODE_ENV,
         DOMAIN_NAME: brainServiceEnvironmentShape.DOMAIN_NAME,
         CREDENTIAL_REFRESH_DIGEST_SECRET:
@@ -364,6 +389,18 @@ const credentialRefreshRuntimeEnvironmentSchema = z
 export type CredentialRefreshRuntimeEnvironment = z.output<
     typeof credentialRefreshRuntimeEnvironmentSchema
 >;
+
+/** Previous keys are startup-validated and only read again when matching an older digest. */
+export const getCredentialRefreshPreviousDigestKeys = (): Record<string, string> =>
+    parseEnvironment(
+        z.object({ CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS: credentialRefreshPreviousDigestKeys }),
+        process.env,
+        {
+            project: 'brain-service credential refresh',
+            source: 'process environment',
+            examplePath: 'services/learn-card-network/brain-service/.env.example',
+        }
+    ).CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS;
 
 /** Reads refresh settings at call time so tests and local route registration can override them. */
 export const getCredentialRefreshRuntimeEnvironment = (): CredentialRefreshRuntimeEnvironment =>
