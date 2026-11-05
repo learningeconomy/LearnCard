@@ -7,6 +7,7 @@ frameworkVersion: '3'
 useDotenv: true
 
 plugins:
+    - ../../../scripts/serverless-node24-runtime.cjs
     - serverless-esbuild
     - serverless-offline
     - serverless-lift
@@ -29,7 +30,7 @@ custom:
         minify: true
         external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit']
         sourcemap: external
-        target: 'node20'
+        target: 'node24'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
 
@@ -41,7 +42,7 @@ package:
 
 provider:
     name: aws
-    runtime: nodejs20.x
+    runtime: nodejs24.x
     memorySize: 2048
     timeout: 29
     stage: ${opt:stage, "dev"}

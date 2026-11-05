@@ -398,6 +398,21 @@ untouched.
    follows only after the drills and a 7-day observation; the first release
    signal comes 7 days after the first start.
 
+**Hold duration.** `tier3_hold_duration_ms` must be `604800000` (7 days) in **both**
+environments. The Nitro enclave signs every hold with the compile-time
+`HOLD_DURATION_MS` (`services/escrow-enclave-app/src/policy.rs`); lca-api's
+`ESCROW_HOLD_DURATION_MS` (600000 on staging) only affects the software enclave. With
+600000 the first two staging runs (2026-11-03/04) closed `Confirmed=0`
+`deadline_mismatch`; staging was set to 604800000 on 2026-11-04.
+
+**Rollout record.** Staging tier 3 has been enabled since 2026-11-03. Production tier 3
+was enabled 2026-11-04 22:25Z by owner decision, ahead of the staging drills and the
+7-day observation (staging's hold is also 7 days, so it gives no earlier signal); its
+first run (22:26Z, `hold-01`) reached `Started=1` and `Confirmed=1`. Production login
+mail from lca-api (`login@learncard.com`, Postmark pools `104.245.209.x`) was scored
+`X-SES-Spam-Verdict: FAIL` on every try while staging's identical mail passed, so
+production provisioning needs `--allow-login-spam-fail` (#1949).
+
 `tier3-admin` commands (ledger only; never secrets or escrow state; record each use):
 `list`, `close-step <runId> <Step>` (close a step left open by a crash),
 `close-run <runId> <orphaned|quarantined>` (close a run stuck in any open state,
@@ -413,8 +428,8 @@ the runner touches nothing and the evaluator reports `Overdue=0`, `StartAge=0`,
 up. Disabling only the schedules instead would page through Overdue/StartAge.
 
 A daily run whose **warning email never arrives** pages through Overdue at
-confirm + max(0, hold − 24 h) + 2 h (6 d 2 h for the production 7-day hold, 2 h for
-staging's 10-minute hold); a day later the runner closes it `Warned=0`
+confirm + max(0, hold − 24 h) + 2 h (6 d 2 h for the 7-day hold both environments
+use); a day later the runner closes it `Warned=0`
 `warning_missing` and orphans the account (cleanup below).
 
 **Quarantine** happens on release failure, DID mismatch, failed re-enrolment,
@@ -430,8 +445,12 @@ backlog of real holds can legitimately delay a warning past its due time and pag
 ### Tier 3 staging drills
 
 1. Warm-up and cancel gap: 8+ days enabled with no false page.
-2. `inject-overdue` pages within one evaluation; `close-step` clears it.
-3. Disable only the evaluator schedule: the heartbeat alarm pages after ~45 min.
+2. `inject-overdue` pages within one evaluation; `close-step` clears it. Observed
+   2026-11-04: paged at the first evaluation (19:58Z), OK one evaluation after `close-step`.
+3. Disable only the evaluator schedule: the heartbeat alarm pages. Observed 2026-11-04:
+   76 min after the last heartbeat, not the ~45 min that 3 × 900 s suggests, because
+   CloudWatch keeps counting the last real datapoint while it is inside the alarm's
+   evaluation range. Cleared ~1 min after the schedule was re-enabled.
 4. Point `TIER3_LEDGER_TABLE` at a missing table: no heartbeat, pages.
 5. Send mail from a non-allowlisted sender to a pool address: ignored.
 6. Resolve every UNVERIFIED item in TIER3-DESIGN.md §11: capture a redacted

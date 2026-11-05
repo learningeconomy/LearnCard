@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { resolveUrls } from '../lib/resolveUrls';
 
@@ -136,6 +137,21 @@ test.describe('Tier 1: API Health Checks', () => {
         test('OpenAPI docs endpoint returns 200', async ({ request }) => {
             const response = await request.get(`${LCA_ROOT}/docs`);
             expect(response.status()).toBe(200);
+        });
+
+        // LearnCard staging and production run a remote (Nitro) escrow enclave. A 412
+        // "Escrow recovery is not available" here means lca-api lost its enclave URL or
+        // token (2026-11-04: a runtime-secrets sync dropped both) or cannot reach it.
+        test('escrow enclave attestation answers', async ({ request }) => {
+            test.skip(process.env.SMOKETEST_ENV === 'scouts', 'ScoutPass has escrow off');
+            const nonce = randomBytes(32).toString('hex');
+            const response = await request.get(
+                `${LCA_API_URL}/keys/escrow/attestation?nonce=${nonce}`
+            );
+            expect(
+                response.status(),
+                `escrow attestation returned ${response.status()}; check lca-api ESCROW_ENCLAVE_REMOTE_* config`
+            ).toBe(200);
         });
     });
 });

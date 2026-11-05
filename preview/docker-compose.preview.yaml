@@ -177,7 +177,7 @@ services:
             OIDC_CLIENT_SECRET: dev-only-broker-secret # Public local-development placeholder
 
     test-embed-app:
-        image: node:24.12.0-alpine
+        image: node:24.22.1-alpine
         working_dir: /app
         volumes:
             - ../tests/test-embed-app:/app:ro
