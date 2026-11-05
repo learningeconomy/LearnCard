@@ -44,7 +44,7 @@ export const sendCredential = async (
     activityId?: string,
     integrationId?: string
 ): Promise<string> => {
-    const credentialInstance = await storeCredential(credential);
+    const credentialInstance = await storeCredential(credential, undefined, from.profileId);
 
     await createSentCredentialRelationship(
         { type: 'profile', profile: from },

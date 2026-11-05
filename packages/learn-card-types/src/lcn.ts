@@ -5,6 +5,10 @@ import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 import {
+    BitstringStatusListEntryValidator,
+    BitstringStatusPurposeValidator,
+} from './bitstring-status-list';
+import {
     ManagedCredentialRefreshReceiptValidator,
     InboxCredentialRefreshReceiptValidator,
     ManagedCredentialRefreshServiceValidator,
@@ -544,6 +548,7 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         options: SendOptionsValidator.optional().describe(
             'Options for email/phone recipients (Universal Inbox)'
         ),
@@ -614,6 +619,7 @@ export type SendBoostResponse = z.infer<typeof SendBoostResponseValidator>;
 
 export const PrepareRefreshableSendInputValidator = z
     .object({
+        statusPurposes: z.array(BitstringStatusPurposeValidator).optional(),
         recipient: z.string(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
@@ -630,6 +636,7 @@ export const PrepareRefreshableSendInputValidator = z
 export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
 
 export const PrepareRefreshableSendResultValidator = z.object({
+    statusEntries: z.array(BitstringStatusListEntryValidator).optional(),
     boostUri: z.string(),
     credentialId: z.string(),
     refreshId: z.string(),

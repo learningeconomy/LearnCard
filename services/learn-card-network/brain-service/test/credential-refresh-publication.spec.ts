@@ -649,13 +649,11 @@ describe('Credential Refresh Publication', () => {
         });
 
         it('rejects removal or replacement of the original credentialStatus descriptor', async () => {
-            const credentialStatus = {
-                id: 'https://status.example.com/lists/42#7',
-                type: 'BitstringStatusListEntry',
-                statusPurpose: 'revocation',
-                statusListIndex: '7',
-                statusListCredential: 'https://status.example.com/lists/42',
-            };
+            const [credentialStatus] = await issuer.clients.fullAuth.boost.allocateCredentialStatus(
+                {
+                    statusPurposes: ['revocation'],
+                }
+            );
             const { allocation } = await sendOriginal({ credentialStatus });
 
             const removed = await signAs(
@@ -984,13 +982,12 @@ describe('Credential Refresh Publication', () => {
         });
 
         it('preserves an existing credentialStatus and allocates no new status-list entry', async () => {
-            const credentialStatus = {
-                id: 'https://status.example.com/lists/42#7',
-                type: 'BitstringStatusListEntry',
-                statusPurpose: 'revocation',
-                statusListIndex: '7',
-                statusListCredential: 'https://status.example.com/lists/42',
-            };
+            const [credentialStatus] = await issuer.clients.fullAuth.boost.allocateCredentialStatus(
+                {
+                    statusPurposes: ['revocation'],
+                }
+            );
+            const initialListCount = await countStatusLists();
             const { allocation } = await sendOriginal({ credentialStatus });
             await registerIssuerSigningAuthority();
 
@@ -1005,7 +1002,7 @@ describe('Credential Refresh Publication', () => {
             );
 
             // No status list was created or allocated for the refresh version.
-            expect(await countStatusLists()).toEqual(0);
+            expect(await countStatusLists()).toEqual(initialListCount);
         });
 
         it('does not add a credentialStatus when the body has none', async () => {

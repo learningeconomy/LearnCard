@@ -1,4 +1,5 @@
 import { createHmac } from 'crypto';
+import { z } from 'zod';
 
 import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { canonicalizeCredentialContent, canonicalizeCredentialJson } from '@learncard/helpers';
@@ -96,10 +97,39 @@ export const computeCredentialStatusDigest = (
     credentialStatus: unknown,
     secret: string = getCredentialRefreshDigestSecret()
 ): string =>
+    `${getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_DIGEST_KEY_VERSION}:${statusDigest(credentialStatus, secret)}`;
+
+const statusDigest = (credentialStatus: unknown, secret: string): string =>
     createHmac('sha256', secret)
         .update('credential-status:v1\0')
         .update(canonicalizeCredentialJson(credentialStatus ?? null))
         .digest('base64url');
+
+/** Unversioned legacy fingerprints use the current key; retired keys must be explicitly listed. */
+export const matchesCredentialStatusDigest = (
+    credentialStatus: unknown,
+    stored?: string
+): boolean => {
+    if (!stored) return false;
+    const runtime = getCredentialRefreshRuntimeEnvironment();
+    const separator = stored.indexOf(':');
+    const version =
+        separator < 0 ? runtime.CREDENTIAL_REFRESH_DIGEST_KEY_VERSION : stored.slice(0, separator);
+    const digest = separator < 0 ? stored : stored.slice(separator + 1);
+    const previous = z
+        .record(z.string(), z.string())
+        .parse(JSON.parse(runtime.CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS));
+    if (separator < 0) {
+        return [getCredentialRefreshDigestSecret(), ...Object.values(previous)].some(
+            secret => statusDigest(credentialStatus, secret) === digest
+        );
+    }
+    const secret =
+        version === runtime.CREDENTIAL_REFRESH_DIGEST_KEY_VERSION
+            ? getCredentialRefreshDigestSecret()
+            : previous[version];
+    return Boolean(secret && statusDigest(credentialStatus, secret) === digest);
+};
 
 /** Keyed fingerprint matching the holder SDK's sorted subject identity comparison. */
 export const computeCredentialSubjectDigest = (

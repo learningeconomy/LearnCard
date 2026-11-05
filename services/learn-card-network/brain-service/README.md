@@ -80,5 +80,31 @@ authorities, or contracts.
 
 ## Notes
 
+### Managed public status repair
+
+An issuer can call `credentialRefresh.attachStatusEntries({ refreshId, credentialStatus })`
+with the original signed credential's exact status descriptor. Object versus array shape,
+array order, and all descriptor fields must match the stored HMAC. The route validates
+local issuer-owned coordinates and reconciles an existing revocation or suspension.
+Credentials without supported public status entries cannot be repaired this way.
+
+New status fingerprints use `<keyVersion>:<base64url HMAC-SHA256>`. Configure
+`CREDENTIAL_REFRESH_DIGEST_KEY_VERSION` (default `v1`) with
+`CREDENTIAL_REFRESH_DIGEST_SECRET`. `CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS` is a JSON
+object mapping retained versions to their secret keys (default `{}`). Unversioned legacy
+fingerprints accept the current key or an explicitly retained previous key. Never log these
+secrets. Removing a previous key disables repair for fingerprints made with that key.
+
+Lifecycle mutations join the relationship update and status-list signing/write in one
+Neo4j transaction. A failed bit write rolls back the relationship, including unsuspension;
+retry the original mutation. No pending-sync worker is needed for these atomic writes.
+
+Managed versions share one status binding. Ordinary deliveries reserve their local
+coordinates under the same list locks and cannot reuse a managed credential's index.
+Binding and lifecycle writes lock the root, aggregate, then sorted status lists;
+attaching coordinates to an existing root also reconciles its lifecycle atomically.
+Legacy deliveries without public status metadata retain network-only lifecycle state;
+repair requires supported entries authenticated by the original status fingerprint.
+
 - The default fixture is idempotent by framework and skill ID, so running the seed command multiple times does not duplicate data.
 - Seeded skills are compatible with the existing skill search, boost alignment, and OBv3 alignment flows.

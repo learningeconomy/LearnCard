@@ -6,10 +6,13 @@ import { isIssuedCredential } from '@helpers/issuedCredentialStatus.helpers';
 import type { IssuedCredential } from 'types/credential';
 
 import { Credential, CredentialInstance } from '@models';
+import { neogma } from '@instance';
+import { reserveCredentialStatusEntries } from '@helpers/status-list.helpers';
 
 export const storeCredential = async (
     input: UnsignedVC | VC | JWE | IssuedCredential,
-    transaction?: Transaction
+    transaction?: Transaction,
+    statusOwnerProfileId?: string
 ): Promise<CredentialInstance> => {
     const id = uuid();
 
@@ -30,12 +33,19 @@ export const storeCredential = async (
             { credentialId: id }
         );
     }
-    return Credential.createOne(
-        {
-            id,
-            credential: JSON.stringify(credential),
-            ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
-        },
-        transaction ? { session: transaction } : undefined
-    );
+    const create = (session?: Transaction) =>
+        Credential.createOne(
+            {
+                id,
+                credential: JSON.stringify(credential),
+                ...(statusEntries?.length ? { statusEntries: JSON.stringify(statusEntries) } : {}),
+            },
+            session ? { session } : undefined
+        );
+    const entries = statusEntries ?? getBitstringStatusListEntries(credential);
+    if (!statusOwnerProfileId || entries.length === 0) return create(transaction);
+    return neogma.getTransaction(transaction ?? null, async tx => {
+        await reserveCredentialStatusEntries(entries, statusOwnerProfileId, id, tx);
+        return create(tx);
+    });
 };

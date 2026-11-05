@@ -43,6 +43,8 @@ vi.mock('@learncard/types', async importOriginal => ({
         },
     },
     UnsignedVCValidator: {
+        parse: (await importOriginal<typeof import('@learncard/types')>()).UnsignedVCValidator
+            .parse,
         spa: async (value: any) => ({
             success: true,
             data: typeof value === 'string' ? JSON.parse(value) : value,
@@ -174,6 +176,56 @@ const getPlugin = async (learnCard: any, client: any) => {
 };
 
 describe('unified send with refresh: true (managed branch)', () => {
+    it('includes revocation when an old server requires fallback suspension allocation', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+            statusPurposes: ['suspension'],
+        });
+        expect(client.boost.allocateCredentialStatus.mutate).toHaveBeenCalledWith({
+            statusPurposes: ['revocation', 'suspension'],
+        });
+    });
+
+    it.each([false, true])(
+        'uses server-bound status without allocating again (array=%s)',
+        async arrayShape => {
+            const client = getMockClient();
+            const learnCard = getMockIssuingLearnCard();
+            const entry = SERVER_MANAGED_RESPONSE.refresh.credentialStatus;
+            client.boost.prepareRefreshableSend.mutate.mockResolvedValue(
+                Object.assign(
+                    {},
+                    {
+                        ...defaultPrepared,
+                        statusEntries: [entry],
+                    }
+                )
+            );
+            client.boost.getBoost.query.mockResolvedValue({
+                boost: getUnsignedBoostTemplate({ credentialStatus: arrayShape ? [entry] : entry }),
+            });
+            const plugin = await getPlugin(learnCard, client);
+            await plugin.methods?.send(learnCard, {
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: 'did:web:network.example:boost:1',
+                refresh: true,
+            });
+            expect(client.boost.allocateCredentialStatus.mutate).not.toHaveBeenCalled();
+            expect(learnCard.invoke.issueCredential).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    credentialStatus: arrayShape ? [entry] : entry,
+                })
+            );
+        }
+    );
+
     beforeEach(() => {
         vi.clearAllMocks();
     });

@@ -42,6 +42,7 @@ const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =
 
 /** Digest of everything that defines a prepare request; a reused key must match it. */
 export const computeRefreshSendRequestDigest = (request: {
+    statusPurposes?: ('revocation' | 'suspension')[];
     recipientProfileId: string;
     holderDid: string;
     templateUri?: string;
@@ -62,6 +63,9 @@ export const computeRefreshSendRequestDigest = (request: {
                 templateData: request.templateData ?? {},
                 integrationId: request.integrationId ?? null,
                 credentialId: request.credentialId ?? null,
+                ...(request.statusPurposes?.includes('suspension')
+                    ? { suspensionRequested: true }
+                    : {}),
             })
         )
         .digest('base64url');
