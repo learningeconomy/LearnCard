@@ -20,7 +20,7 @@ import {
     useBrandingConfig,
     useAiFeatureGate,
     ToastTypeEnum,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     ModalTypes,
     useModal,
 } from 'learn-card-base';
@@ -165,7 +165,9 @@ const PrivacySettingsPage: React.FC = () => {
     const contracts = useMemo(
         () =>
             [...(consentedContracts ?? [])]
-                .filter(contract => contract?.status !== 'withdrawn')
+                .filter(
+                    contract => contract?.status !== 'withdrawn' && contract?.status !== 'consumed'
+                )
                 .sort((a, b) => {
                     const aUpdatedAt = new Date(
                         a.terms?.updatedAt ?? a.contract?.updatedAt ?? 0
@@ -213,7 +215,7 @@ const PrivacySettingsPage: React.FC = () => {
 
     const hasAiConsent = contracts.some(
         consent =>
-            consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
+            isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
             consent?.status !== 'withdrawn'
     );
 

@@ -17,9 +17,11 @@ let logoutAttempt = 0;
  * to the KeyDerivationStrategy, keeping itself a pure state machine.
  */
 
-import { withDeadline, withDeadlineOr, isDeadlineError } from '../helpers/withDeadline';
+import { withDeadline, withDeadlineOr } from '../helpers/withDeadline';
 import { withNetworkFault } from '../helpers/networkFault';
+import { isNetworkError } from '../helpers/networkError';
 import {
+    ESCROW_PIN_MAX_ATTEMPTS,
     IdentityRecoverySessionConsumedError,
     DuplicateShareCoordinateError,
     createAdaptiveStorage,
@@ -27,6 +29,7 @@ import {
 } from '@learncard/sss-key-manager';
 
 import { AuthSessionError } from './types';
+import { RecoveryInProgressError, SameEscrowPinError } from './errors';
 import type { MigrationIdentityVerdict, MigrationKeySource } from './types';
 
 const DEFAULT_AUTH_SESSION_TIMEOUT_MS = 2500;
@@ -36,48 +39,23 @@ export const MIGRATION_IDENTITY_MISMATCH_MESSAGE =
     'Nothing was changed. Please contact support (MIGRATION_IDENTITY_MISMATCH).';
 const DEFAULT_SERVER_STATUS_TIMEOUT_MS = 4000;
 
-/**
- * Whether a thrown error is a transient connectivity failure rather than a real
- * fault. Offline boot must treat these as "no session yet" (→ idle) instead of
- * a hard `error`, which would otherwise surface an error overlay and drive a
- * re-init loop while the device is offline. Covers Firebase's
- * `auth/network-request-failed`, our own deadline timeouts, and common fetch
- * failure messages across browsers/webviews.
- */
-const isNetworkError = (e: unknown): boolean => {
-    if (isDeadlineError(e)) return true;
-
-    if (typeof (e as { code?: unknown })?.code === 'string') {
-        const code = (e as { code: string }).code.toLowerCase();
-        if (code.includes('network-request-failed') || code.includes('network_error')) return true;
-    }
-
-    const msg = (e instanceof Error ? e.message : String(e)).toLowerCase();
-
-    return (
-        msg.includes('network-request-failed') ||
-        msg.includes('network request failed') ||
-        msg.includes('failed to fetch') ||
-        msg.includes('networkerror') ||
-        msg.includes('network error') ||
-        msg.includes('err_internet_disconnected') ||
-        msg.includes('load failed')
-    );
-};
-
 import type {
     AuthProvider,
     AuthUser,
     AuthCoordinatorConfig,
+    PinChangeGuardStorage,
     EscrowEnrollmentState,
     EscrowRecoveryExpectations,
     KeyDerivationStrategy,
+    PinSignInInfo,
     RecoveryMethodInfo,
     RecoveryReason,
+    RecoveryResult,
     ServerKeyStatus,
     SssActivationState,
     UnifiedAuthState,
 } from './types';
+import type { RevokeOtherDevicesResult } from '@learncard/types';
 
 /** True for recovery inputs that consume a single-use escrow hold (delay or PIN release). */
 const isEscrowRecoveryMethod = (input: unknown): boolean =>
@@ -86,14 +64,79 @@ const isEscrowRecoveryMethod = (input: unknown): boolean =>
     'method' in input &&
     (input.method === 'escrow' || input.method === 'escrow-pin');
 
+/** A wrong-PIN response from the PIN release (matched by name across bundles). */
+const isPinMismatchError = (error: unknown): boolean =>
+    error instanceof Error && error.name === 'EscrowPinMismatchError';
+
 /** Narrows to a PIN-release input so `expectedDid` can be filled in from state. */
 const isEscrowPinInput = (
     input: unknown
-): input is { method: 'escrow-pin'; pin: string; expectedDid?: string } =>
+): input is {
+    method: 'escrow-pin';
+    pin: string;
+    expectedDid?: string;
+    recoverySessionToken?: string;
+} =>
     typeof input === 'object' &&
     input !== null &&
     'method' in input &&
     input.method === 'escrow-pin';
+
+const toHex = (bytes: Uint8Array): string =>
+    Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+
+/**
+ * Equality tag of a PIN for the "choose a new PIN" guard (E): HMAC-SHA-256 over the
+ * DID and the PIN, keyed by a hash of the account's private key. Only someone who
+ * already holds that key can test PIN candidates against it, so the tag can be kept
+ * across app starts. Never sent or logged. Undefined when Web Crypto is unavailable
+ * (the check is then skipped).
+ */
+const pinGuardTag = async (
+    privateKey: string,
+    did: string,
+    pin: string
+): Promise<string | undefined> => {
+    const subtle = globalThis.crypto?.subtle;
+    if (!subtle) return undefined;
+    try {
+        const encoder = new TextEncoder();
+        const keyBytes = await subtle.digest(
+            'SHA-256',
+            encoder.encode(`learncard:pin-change-guard:v1:${privateKey}`)
+        );
+        const key = await subtle.importKey(
+            'raw',
+            keyBytes,
+            { name: 'HMAC', hash: 'SHA-256' },
+            false,
+            ['sign']
+        );
+        const tag = await subtle.sign('HMAC', key, encoder.encode(`${did}\u0000${pin}`));
+        return toHex(new Uint8Array(tag));
+    } catch {
+        return undefined;
+    }
+};
+
+const PIN_GUARD_STORAGE_PREFIX = 'learncard:pin-change-guard:';
+/**
+ * A PIN sign-in's tag until that sign-in completes. Never read as a guard: a sign-in
+ * that is cancelled or abandoned (even across a restart) must not leave its PIN refused.
+ * It survives a restart only so a lost-login sign-in that finishes after the new
+ * login's redirect can still promote it.
+ */
+const PIN_GUARD_PENDING_STORAGE_PREFIX = 'learncard:pin-change-guard-pending:';
+
+/** `localStorage` when this runtime has a working one; otherwise the guard is memory-only. */
+const defaultPinGuardStorage = (): PinChangeGuardStorage | null => {
+    try {
+        const storage = (globalThis as { localStorage?: PinChangeGuardStorage }).localStorage;
+        return storage && typeof storage.getItem === 'function' ? storage : null;
+    } catch {
+        return null;
+    }
+};
 
 /** Legacy strategies resolve a bare state string; PIN-aware strategies resolve the full object. */
 const normalizeEscrowEnrollmentState = (
@@ -109,7 +152,13 @@ export class AuthCoordinator {
     private config: AuthCoordinatorConfig;
     private keyDerivation: KeyDerivationStrategy;
     private recoveryGeneration = 0;
-    private escrowRecoveryInFlight = false;
+    /**
+     * One recovery at a time (D): every recovery input and the lost-login session steps
+     * share a single-use session and one pending identity, so a second call is rejected
+     * with RecoveryInProgressError before it touches any state. Each claim records the
+     * recovery generation it started in; see runExclusiveRecovery.
+     */
+    private recoveryClaims = new Set<{ generation: number }>();
     private escrowStatusGeneration = 0;
     /**
      * Set only when a recovery's direct escrow re-enrollment failed or was deferred.
@@ -126,6 +175,42 @@ export class AuthCoordinator {
     private escrowOperations = new Set<Promise<unknown>>();
     private endingSession = false;
     private destroyed = false;
+    /**
+     * The current PIN sign-in flow (own-typos rule, E). `wrongAttempts`: wrong PIN
+     * entries as first reported for this account in this session, before any attempt
+     * here, keyed by account so later refreshes (which include this session's misses)
+     * never overwrite it. `ownWrongAttempts`: wrong entries this client itself submitted
+     * since (mismatch responses). `pinSalt`: the PIN generation the counts belong to
+     * (a new PIN or a same-PIN re-set writes a new salt). Both counts start and end
+     * together, so a new flow (new session, app start, after any sign-in, or a new PIN
+     * generation) never mixes counts from another one. Cleared on reaching `ready` by
+     * any method (consumed into `ready.pinSignIn` by a PIN sign-in) and on logout.
+     */
+    private pinAttemptBaseline?: {
+        account: string;
+        wrongAttempts?: number;
+        ownWrongAttempts: number;
+        pinSalt?: string;
+    };
+    /**
+     * Wrong entries a PIN sign-in excused as the user's own typing when its same-PIN
+     * re-set did not run, so `escrowPinChangeRequired` does not ask for a new PIN for
+     * them this session. In memory only: after a restart they count again (the device
+     * cannot prove whose they were). Any further entry, or a new PIN, drops it.
+     */
+    private excusedPinTypos?: { did: string; wrongAttempts: number };
+    /**
+     * Tag of the PIN used for a PIN sign-in whose PIN has recorded wrong entries, so
+     * `setEscrowPin` / `secureAccount` can reject re-using it. Also persisted per DID
+     * (config.pinChangeGuardStorage) so the rule survives an app restart, but only once
+     * that sign-in completes (until then the tag is pending, see
+     * PIN_GUARD_PENDING_STORAGE_PREFIX); cleared once a new PIN is set, the account is
+     * secured, the PIN shows no wrong entries, or the device is forgotten.
+     */
+    private signInPinDigest?: { did: string; tag: string };
+    private readonly pinGuardStorage: PinChangeGuardStorage | null;
+    /** Account whose "choose a new PIN" prompt was dismissed for this session. */
+    private escrowPinChangeDismissed?: string;
     /** Recovery state replaced by a provisional re-derive; see needRecovery(). */
     private recoveryFallback: UnifiedAuthState | null = null;
     private stopEscrowPolling?: () => void;
@@ -163,14 +248,23 @@ export class AuthCoordinator {
     constructor(config: AuthCoordinatorConfig) {
         this.config = config;
         this.keyDerivation = config.keyDerivation;
+        this.pinGuardStorage =
+            config.pinChangeGuardStorage === undefined
+                ? defaultPinGuardStorage()
+                : config.pinChangeGuardStorage;
     }
 
     getState(): UnifiedAuthState {
         return this.state;
     }
 
-    private setState(newState: UnifiedAuthState): void {
+    private setState(nextState: UnifiedAuthState): void {
+        const newState = this.withEscrowPinChangeFlag(nextState);
         if (newState.status === 'idle') this.recoveredEscrowAccount = undefined;
+        this.capturePinAttemptBaseline(newState);
+        // Reaching `ready` (by any method) ends a PIN sign-in flow: its counts must never
+        // carry into a later flow, where own typos could excuse someone else's guesses.
+        if (newState.status === 'ready') this.pinAttemptBaseline = undefined;
         if (newState.status !== 'ready') this.escrowStatusGeneration++;
         const enteringReady =
             newState.status === 'ready' &&
@@ -503,30 +597,320 @@ export class AuthCoordinator {
         }
     }
 
+    /** Record the first PIN status seen for an account, before any attempt in this session. */
+    private capturePinAttemptBaseline(state: UnifiedAuthState): void {
+        const account =
+            state.status === 'needs_recovery'
+                ? (state.expectedDid ?? state.authUser.id)
+                : state.status === 'identity_recovery' && state.escrowPin
+                  ? state.expectedDid
+                  : undefined;
+        if (!account) return;
+        const pin =
+            state.status === 'needs_recovery' || state.status === 'identity_recovery'
+                ? state.escrowPin
+                : undefined;
+        const current = this.pinAttemptBaseline;
+        if (current?.account === account) {
+            // Same flow unless the status shows a different PIN generation (a new PIN, or
+            // a same-PIN re-set by another device): its counts start over from this read.
+            const salt = pin?.salt;
+            if (!salt || !current.pinSalt || salt === current.pinSalt) return;
+        }
+        if (!pin) return;
+        this.pinAttemptBaseline = {
+            account,
+            wrongAttempts: pin.wrongAttempts,
+            ownWrongAttempts: 0,
+            ...(pin.salt ? { pinSalt: pin.salt } : {}),
+        };
+    }
+
+    /** The own-typos context for a PIN attempt on `account`, or undefined without a flow. */
+    private pinAttemptsFor(
+        account: string | undefined
+    ): { priorWrongAttempts?: number; ownWrongAttempts: number; pinSalt?: string } | undefined {
+        const baseline = this.pinAttemptBaseline;
+        if (!account || baseline?.account !== account) return undefined;
+        return {
+            ...(baseline.wrongAttempts !== undefined
+                ? { priorWrongAttempts: baseline.wrongAttempts }
+                : {}),
+            ownWrongAttempts: baseline.ownWrongAttempts,
+            // The strategy checks every status it reads against this generation.
+            ...(baseline.pinSalt ? { pinSalt: baseline.pinSalt } : {}),
+        };
+    }
+
+    /** Count a wrong PIN this client submitted in the current flow for `account`. */
+    private notePinAttemptError(account: string | undefined, error: unknown): void {
+        const baseline = this.pinAttemptBaseline;
+        if (!account || baseline?.account !== account || !isPinMismatchError(error)) return;
+        baseline.ownWrongAttempts++;
+    }
+
+    /** Build `ready.pinSignIn` from a strategy result, consuming the attempt baseline. */
+    private takePinSignInInfo(did: string, result: RecoveryResult): PinSignInInfo | undefined {
+        const baseline = this.pinAttemptBaseline;
+        // Any completed sign-in ends the flow, including one by another method.
+        this.pinAttemptBaseline = undefined;
+        if (!result.pinSignIn) return undefined;
+        const priorWrongAttempts = baseline?.account === did ? baseline.wrongAttempts : undefined;
+        const ownWrongAttempts = baseline?.account === did ? baseline.ownWrongAttempts : 0;
+        // Own typos were excused but the re-set did not run, so they stay on the record.
+        this.excusedPinTypos =
+            result.pinSignIn.newPinRequired === false &&
+            !result.pinSignIn.pinRefreshed &&
+            ownWrongAttempts > 0
+                ? { did, wrongAttempts: ownWrongAttempts }
+                : undefined;
+        return {
+            mode: result.pinSignIn.mode,
+            pinRefreshed: result.pinSignIn.pinRefreshed,
+            // An older strategy that does not say is treated as "wrong entries recorded".
+            newPinRequired: result.pinSignIn.newPinRequired !== false,
+            ...(result.pinSignIn.pinRefreshFailed ? { pinRefreshFailed: true } : {}),
+            ...(priorWrongAttempts !== undefined ? { priorWrongAttempts } : {}),
+        };
+    }
+
+    /**
+     * Derive `ready.escrowPinChangeRequired` (E): a PIN with recorded wrong entries never
+     * gets a fresh budget for the same PIN, so the user is asked for a different one
+     * until they set it, unless they dismissed the prompt for this account this session.
+     */
+    private withEscrowPinChangeFlag(state: UnifiedAuthState): UnifiedAuthState {
+        if (state.status !== 'ready') return state;
+        const pin = state.escrowPin;
+        // The guarded PIN is gone: cleared, or replaced by a new PIN generation (a full,
+        // untouched budget; the guarded PIN's own release always used one attempt).
+        // Drop its tag so a later, unrelated PIN choice is not refused. A wrong-entry
+        // count of 0 alone is not enough: a legacy record reports 0 after any release.
+        if (
+            pin &&
+            (pin.state === 'none' ||
+                (pin.enabled && pin.attemptsRemaining >= ESCROW_PIN_MAX_ATTEMPTS))
+        ) {
+            this.forgetPinGuard(state.did);
+            if (this.excusedPinTypos?.did === state.did) this.excusedPinTypos = undefined;
+        }
+        const excused =
+            this.excusedPinTypos?.did === state.did ? this.excusedPinTypos.wrongAttempts : 0;
+        // Wrong entries on the current PIN beyond this session's excused own typing.
+        const attention = pin?.enabled === true && (pin.wrongAttempts ?? 0) > excused;
+        const pinGuessed =
+            attention || (pin?.enabled === true && this.readPinGuard(state.did) !== undefined);
+        const required =
+            this.escrowPinChangeDismissed !== state.did &&
+            (state.pinSignIn?.newPinRequired === true || pinGuessed);
+        if (
+            required === (state.escrowPinChangeRequired === true) &&
+            attention === (state.escrowPinAttention === true)
+        )
+            return state;
+        const {
+            escrowPinChangeRequired: _previousRequired,
+            escrowPinAttention: _previousAttention,
+            ...rest
+        } = state;
+        return {
+            ...rest,
+            ...(required ? { escrowPinChangeRequired: true as const } : {}),
+            ...(attention ? { escrowPinAttention: true as const } : {}),
+        };
+    }
+
+    private readPinGuard(did: string): string | undefined {
+        if (this.signInPinDigest?.did === did) return this.signInPinDigest.tag;
+        try {
+            return this.pinGuardStorage?.getItem(PIN_GUARD_STORAGE_PREFIX + did) ?? undefined;
+        } catch {
+            return undefined;
+        }
+    }
+
+    /** Drop the guard for `did` (memory, persisted and pending). */
+    private forgetPinGuard(did: string | undefined): void {
+        if (!did || this.signInPinDigest?.did === did) this.signInPinDigest = undefined;
+        if (!did) return;
+        try {
+            this.pinGuardStorage?.removeItem(PIN_GUARD_STORAGE_PREFIX + did);
+            this.pinGuardStorage?.removeItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did);
+        } catch {
+            // Best effort: a stale tag only refuses one PIN for an account with that key.
+        }
+    }
+
+    /**
+     * Remember the PIN just used (as a keyed tag) when it must not be re-used: in memory,
+     * and persisted as pending until `commitSignInPin` (the sign-in completed) or
+     * `abandonSignInPin` (it did not).
+     */
+    private async rememberSignInPin(did: string, privateKey: string, pin: string): Promise<void> {
+        const tag = await pinGuardTag(privateKey, did, pin);
+        this.signInPinDigest = tag ? { did, tag } : undefined;
+        if (!tag) return;
+        try {
+            this.pinGuardStorage?.setItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did, tag);
+        } catch {
+            // Memory-only for this session when storage is unavailable.
+        }
+    }
+
+    /** The PIN sign-in for `did` completed: its pending tag becomes the persisted guard. */
+    private commitSignInPin(did: string): void {
+        const memory = this.signInPinDigest?.did === did ? this.signInPinDigest.tag : undefined;
+        try {
+            const tag =
+                this.pinGuardStorage?.getItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did) ?? memory;
+            if (tag) this.pinGuardStorage?.setItem(PIN_GUARD_STORAGE_PREFIX + did, tag);
+            this.pinGuardStorage?.removeItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did);
+        } catch {
+            // Memory-only for this session when storage is unavailable.
+        }
+    }
+
+    /**
+     * The PIN sign-in for `did` was cancelled or abandoned: drop its tag (memory and
+     * pending). A guard persisted by an earlier, completed sign-in is left as it was.
+     */
+    private abandonSignInPin(did: string | undefined): void {
+        if (!did || this.signInPinDigest?.did === did) this.signInPinDigest = undefined;
+        if (!did) return;
+        try {
+            this.pinGuardStorage?.removeItem(PIN_GUARD_PENDING_STORAGE_PREFIX + did);
+        } catch {
+            // Best effort: a pending tag is never read as a guard.
+        }
+    }
+
+    /**
+     * Reject the PIN used for a PIN sign-in whose PIN has recorded wrong entries, in
+     * this session or (via the persisted tag) after a restart.
+     */
+    private async assertNotSignInPin(did: string, privateKey: string, pin: string): Promise<void> {
+        const remembered = this.readPinGuard(did);
+        if (!remembered) return;
+        if ((await pinGuardTag(privateKey, did, pin)) === remembered) {
+            throw new SameEscrowPinError();
+        }
+    }
+
+    /** A new PIN was set (or the account secured): the change prompt is resolved. */
+    private resolveEscrowPinChange(did?: string): void {
+        this.forgetPinGuard(did);
+        this.excusedPinTypos = undefined;
+        this.signInPinDigest = undefined;
+        this.escrowPinChangeDismissed = undefined;
+    }
+
+    /**
+     * Dismiss the post-PIN-sign-in review ("Done" / "Not now"). Also
+     * hides the "choose a new PIN" prompt for this session; the PIN keeps its reduced
+     * budget and the prompt returns on the next app start while wrong entries remain.
+     */
+    acknowledgePinSignIn(): void {
+        if (this.state.status !== 'ready') return;
+        this.escrowPinChangeDismissed = this.state.did;
+        this.setState({ ...this.state, pinSignIn: undefined });
+    }
+
+    /** Hide the "choose a new PIN" prompt for this session only; see acknowledgePinSignIn. */
+    dismissEscrowPinChange(): void {
+        if (this.state.status !== 'ready') return;
+        this.escrowPinChangeDismissed = this.state.did;
+        this.setState({ ...this.state });
+    }
+
+    /**
+     * "Secure my account" / "Sign out of all other devices": re-split the key and drop
+     * every older share version on the server, which signs out other devices and turns
+     * off the old recovery phrase, backup file, passkey and email key. With `pin`,
+     * escrow is re-enrolled with that PIN; `null` re-enrolls without one. The PIN is
+     * passed straight to the strategy and not kept here.
+     */
+    async secureAccount(params: { pin: string | null }): Promise<RevokeOtherDevicesResult> {
+        const ready = this.state;
+        if (ready.status !== 'ready' || !ready.authSessionValid) {
+            throw new Error('Sign in again to secure your account.');
+        }
+        const revoke = this.keyDerivation.revokeOtherDevices?.bind(this.keyDerivation);
+        const signDidAuthVp = this.config.signDidAuthVp;
+        if (!revoke || !signDidAuthVp) throw new Error('Securing the account is not available');
+        // Re-enrolling gives a fresh budget, so a guessed-at PIN is never kept this way.
+        if (params.pin !== null)
+            await this.assertNotSignInPin(ready.did, ready.privateKey, params.pin);
+        const credentials = await this.getAuthCredentials();
+        const result = await this.runEscrowOperation(() =>
+            revoke({
+                ...credentials,
+                privateKey: ready.privateKey,
+                did: ready.did,
+                signDidAuthVp,
+                pin: params.pin,
+                options: this.recoveryContactOptions(ready),
+            })
+        );
+        // The re-split re-enrolled escrow (or dropped the PIN): the PIN prompt is resolved.
+        this.resolveEscrowPinChange(ready.did);
+        // The revoke re-opened recovery-method confirmation on the server.
+        let sssActivationState: SssActivationState | null | undefined = 'provisional';
+        try {
+            const status = await this.keyDerivation.fetchServerKeyStatus(
+                credentials.token,
+                credentials.providerType
+            );
+            sssActivationState = status.sssActivationState ?? 'provisional';
+        } catch (error) {
+            log.warn('Unable to refresh activation state after securing the account', error);
+        }
+        const current = this.state;
+        if (
+            current.status === 'ready' &&
+            current.privateKey === ready.privateKey &&
+            current.authUser?.id === ready.authUser?.id
+        ) {
+            this.setState({
+                ...current,
+                pinSignIn: undefined,
+                escrowPin: undefined,
+                escrowEnrollment: undefined,
+                escrowPinAutoCleared: undefined,
+                escrowPinResetRequired: undefined,
+                sssActivationState,
+            });
+            await this.refreshEscrow(this.state as Extract<UnifiedAuthState, { status: 'ready' }>);
+        }
+        return result;
+    }
+
     /** Start recovery using either a signed-in identity or a verified recovery session. */
     async startEscrowRecovery(options?: { restart?: boolean }) {
         const generation = this.recoveryGeneration;
         if (!this.keyDerivation.startEscrowRecovery) throw new Error('Recovery is not available');
         const start = this.keyDerivation.startEscrowRecovery.bind(this.keyDerivation);
-        const result = await this.runEscrowOperation(async () => {
-            if (this.state.status === 'identity_recovery' && this.state.recoverySessionToken) {
-                // Independently known from the verify-recovery-session response
-                // above, never from an escrow response -- see EscrowRecoveryExpectations.
+        const result = await this.runExclusiveRecovery('recovery', () =>
+            this.runEscrowOperation(async () => {
+                if (this.state.status === 'identity_recovery' && this.state.recoverySessionToken) {
+                    // Independently known from the verify-recovery-session response
+                    // above, never from an escrow response -- see EscrowRecoveryExpectations.
+                    return start({
+                        recoverySessionToken: this.state.recoverySessionToken,
+                        expectedDid: this.state.expectedDid,
+                        options,
+                    });
+                }
+                if (this.state.status !== 'needs_recovery')
+                    throw new Error('Recovery is not ready');
+                // Independently known from the server key-status lookup above, never
+                // from an escrow status response -- see EscrowRecoveryExpectations.
                 return start({
-                    recoverySessionToken: this.state.recoverySessionToken,
+                    ...(await this.getAuthCredentials()),
                     expectedDid: this.state.expectedDid,
                     options,
                 });
-            }
-            if (this.state.status !== 'needs_recovery') throw new Error('Recovery is not ready');
-            // Independently known from the server key-status lookup above, never
-            // from an escrow status response -- see EscrowRecoveryExpectations.
-            return start({
-                ...(await this.getAuthCredentials()),
-                expectedDid: this.state.expectedDid,
-                options,
-            });
-        });
+            })
+        );
         if (generation !== this.recoveryGeneration)
             throw new Error('This recovery request was cancelled.');
         return result;
@@ -650,8 +1034,16 @@ export class AuthCoordinator {
         );
     }
 
-    /** Set or change a PIN by rotating escrow material with an owner proof. */
+    /**
+     * Set or change a PIN by rotating escrow material with an owner proof. After a PIN
+     * sign-in whose PIN has recorded wrong entries, the PIN just used is rejected with
+     * SameEscrowPinError before anything changes.
+     */
     async setEscrowPin(pin: string): Promise<void> {
+        // Only awaits while a PIN-change guard exists for this account, so ordinary PIN
+        // changes still clear the published status synchronously.
+        if (this.state.status === 'ready' && this.readPinGuard(this.state.did))
+            await this.assertNotSignInPin(this.state.did, this.state.privateKey, pin);
         const ready = this.state;
         if (
             ready.status !== 'ready' ||
@@ -683,6 +1075,18 @@ export class AuthCoordinator {
                     options: this.recoveryContactOptions(ready),
                 })
             );
+            if (this.state.status === 'ready' && this.state.did === ready.did) {
+                this.resolveEscrowPinChange(ready.did);
+                const pinSignIn = this.state.pinSignIn;
+                if (pinSignIn?.newPinRequired || pinSignIn?.pinRefreshFailed) {
+                    // A new PIN generation has a full budget: nothing failed any more.
+                    const { pinRefreshFailed: _failed, ...rest } = pinSignIn;
+                    this.setState({
+                        ...this.state,
+                        pinSignIn: { ...rest, newPinRequired: false, pinRefreshed: true },
+                    });
+                }
+            }
         } catch (err) {
             if (
                 supersedesRecovery &&
@@ -960,6 +1364,14 @@ export class AuthCoordinator {
                     signDidAuthVp: this.config.signDidAuthVp,
                     options: this.recoveryContactOptions({ authUser }),
                 });
+                const pinSignIn = this.takePinSignInInfo(result.did, result);
+                // The lost-login sign-in completed: keep its PIN's tag only while a new
+                // PIN is required.
+                if (!pinSignIn?.newPinRequired) this.forgetPinGuard(result.did);
+                else {
+                    this.commitSignInPin(result.did);
+                    if (this.signInPinDigest?.did !== result.did) this.signInPinDigest = undefined;
+                }
                 // Only a failed or deferred direct enrollment needs the scoped repair.
                 if (!result.escrowEnrolled) {
                     this.recoveredEscrowAccount = {
@@ -994,6 +1406,7 @@ export class AuthCoordinator {
                     did: result.did,
                     privateKey: result.privateKey,
                     sssActivationState,
+                    ...(pinSignIn ? { pinSignIn } : {}),
                 });
 
                 return this.state;
@@ -1536,24 +1949,53 @@ export class AuthCoordinator {
      * Delegates the actual recovery logic to the strategy's executeRecovery().
      */
     async recover(input: unknown): Promise<UnifiedAuthState> {
-        if (isEscrowRecoveryMethod(input)) {
-            return this.runEscrowOperation(() => this.executeRecovery(input));
+        return this.runExclusiveRecovery('recovery', () =>
+            isEscrowRecoveryMethod(input)
+                ? this.runEscrowOperation(() => this.executeRecovery(input))
+                : this.executeRecovery(input)
+        );
+    }
+
+    /**
+     * Run one recovery step at a time. The check and the claim are synchronous, so a
+     * second call (another method, a re-submit, a new code request) is rejected with
+     * RecoveryInProgressError before it reads or writes any state, and the pending
+     * recovery completes against the state it started from.
+     *
+     * Cancel, logout and forget-device bump the recovery generation; an abandoned step
+     * then discards its own result. `'session'` steps (send / verify a recovery-email
+     * code) only touch coordinator state, so they wait only for a step of the current
+     * generation and a fresh lost-login flow is not stalled by an abandoned request.
+     * `'recovery'` steps (any method, the hold start) share the strategy's single
+     * pending identity, so they wait for every outstanding step, including an
+     * abandoned one, until it has settled and cleaned up after itself.
+     */
+    private async runExclusiveRecovery<T>(
+        kind: 'recovery' | 'session',
+        operation: () => Promise<T>
+    ): Promise<T> {
+        const generation = this.recoveryGeneration;
+        for (const claim of this.recoveryClaims) {
+            if (kind === 'recovery' || claim.generation === generation)
+                throw new RecoveryInProgressError();
         }
-        return this.executeRecovery(input);
+        const claim = { generation };
+        this.recoveryClaims.add(claim);
+        try {
+            return await operation();
+        } finally {
+            this.recoveryClaims.delete(claim);
+        }
     }
 
     private async executeRecovery(input: unknown): Promise<UnifiedAuthState> {
-        if (
-            this.state.status === 'identity_recovery' &&
-            input &&
-            typeof input === 'object' &&
-            'method' in input &&
-            input.method === 'escrow-pin'
-        ) {
-            throw new Error('PIN recovery requires signing in first.');
-        }
         const isEscrow = isEscrowRecoveryMethod(input);
-        if (isEscrow && this.escrowRecoveryInFlight) throw new Error('Recovery is already running');
+        if (this.state.status === 'identity_recovery' && isEscrowPinInput(input)) {
+            if (this.state.phase !== 'choose_method' || !this.state.recoverySessionToken) {
+                throw new Error('PIN recovery requires signing in first.');
+            }
+            return this.executeIdentityPinSignIn(input, this.state);
+        }
         if (
             this.state.status === 'identity_recovery' &&
             typeof input === 'object' &&
@@ -1563,29 +2005,24 @@ export class AuthCoordinator {
         ) {
             const identityState = this.state;
             const generation = this.recoveryGeneration;
-            this.escrowRecoveryInFlight = true;
-            try {
-                const result = await this.keyDerivation.executeRecovery({
-                    token: '',
-                    providerType: this.config.authProvider.getProviderType(),
-                    input,
-                    didFromPrivateKey: this.config.didFromPrivateKey,
-                    signDidAuthVp: this.config.signDidAuthVp,
-                });
-                if (generation !== this.recoveryGeneration || this.state !== identityState) {
-                    this.keyDerivation.cancelIdentityRecovery?.();
-                    throw new Error('This recovery request was cancelled.');
-                }
-                this.setState({
-                    ...identityState,
-                    phase: 'new_login',
-                    recoverySessionToken: undefined,
-                    recoveredDid: result.did,
-                });
-                return this.state;
-            } finally {
-                this.escrowRecoveryInFlight = false;
+            const result = await this.keyDerivation.executeRecovery({
+                token: '',
+                providerType: this.config.authProvider.getProviderType(),
+                input,
+                didFromPrivateKey: this.config.didFromPrivateKey,
+                signDidAuthVp: this.config.signDidAuthVp,
+            });
+            if (generation !== this.recoveryGeneration || this.state !== identityState) {
+                this.keyDerivation.cancelIdentityRecovery?.();
+                throw new Error('This recovery request was cancelled.');
             }
+            this.setState({
+                ...identityState,
+                phase: 'new_login',
+                recoverySessionToken: undefined,
+                recoveredDid: result.did,
+            });
+            return this.state;
         }
         if (this.state.status !== 'needs_recovery') {
             throw new Error(`Cannot recover in state: ${this.state.status}`);
@@ -1598,7 +2035,6 @@ export class AuthCoordinator {
         const sssActivationState = this.state.sssActivationState;
         const expectedDid = this.state.expectedDid;
         const generation = this.recoveryGeneration;
-        if (isEscrow) this.escrowRecoveryInFlight = true;
 
         try {
             // Keep the request panel mounted so it owns progress, errors and retry proofs.
@@ -1606,29 +2042,48 @@ export class AuthCoordinator {
 
             const { token, providerType } = await this.getAuthCredentials();
 
+            const pinAttempts = isEscrowPinInput(input)
+                ? this.pinAttemptsFor(expectedDid ?? authUser.id)
+                : undefined;
             const params = {
                 token,
                 providerType,
                 // PIN release has no persisted hold to carry its own binding, so
                 // fill in the DID independently known from this `needs_recovery`
                 // state (never from a server response) when the caller omits it.
+                // `pinAttempts` (own-typos rule, E) comes from this coordinator's own
+                // flow counts only, never from the caller.
                 input: isEscrowPinInput(input)
-                    ? { ...input, expectedDid: input.expectedDid ?? expectedDid }
+                    ? {
+                          ...input,
+                          expectedDid: input.expectedDid ?? expectedDid,
+                          pinAttempts,
+                      }
                     : input,
                 didFromPrivateKey: this.config.didFromPrivateKey,
                 signDidAuthVp: this.config.signDidAuthVp,
                 options: this.recoveryContactOptions({ authUser }),
             };
-            const { privateKey, did, escrowEnrolled, escrowRecovery } =
+            const result =
                 isEscrow &&
                 this.keyDerivation.hasPendingIdentityRecovery?.() &&
                 this.keyDerivation.completeIdentityRecovery
                     ? await this.keyDerivation.completeIdentityRecovery(params)
                     : await this.keyDerivation.executeRecovery(params);
+            const { privateKey, did, escrowEnrolled, escrowRecovery } = result;
+            const guardPin =
+                !!result.pinSignIn &&
+                result.pinSignIn.newPinRequired !== false &&
+                isEscrowPinInput(input);
+            // Before the cancellation check, so nothing awaits between it and setState.
+            if (guardPin) await this.rememberSignInPin(did, privateKey, input.pin);
             if (isEscrow && generation !== this.recoveryGeneration) {
+                this.abandonSignInPin(did);
                 this.keyDerivation.cancelIdentityRecovery?.();
                 throw new Error('This recovery request was cancelled.');
             }
+            if (guardPin) this.commitSignInPin(did);
+            const pinSignIn = this.takePinSignInInfo(did, result);
 
             if (isEscrow && !escrowEnrolled)
                 this.recoveredEscrowAccount = {
@@ -1644,10 +2099,12 @@ export class AuthCoordinator {
                 privateKey,
                 authSessionValid: true,
                 sssActivationState,
+                ...(pinSignIn ? { pinSignIn } : {}),
             });
 
             return this.state;
         } catch (e) {
+            if (isEscrowPinInput(input)) this.notePinAttemptError(expectedDid ?? authUser.id, e);
             if (isEscrow) throw e;
             const errorMessage = e instanceof Error ? e.message : 'Recovery failed';
 
@@ -1667,8 +2124,60 @@ export class AuthCoordinator {
             });
 
             return this.state;
-        } finally {
-            if (isEscrow) this.escrowRecoveryInFlight = false;
+        }
+    }
+
+    /**
+     * PIN sign-in after the recovery-email code (lost login). The verified session
+     * proves the PIN start and is consumed by it, so every attempt, right or wrong,
+     * needs a fresh code: on failure the flow returns to `enter_email` and the
+     * original error (e.g. attempts left) is rethrown for the PIN form.
+     */
+    private async executeIdentityPinSignIn(
+        input: { method: 'escrow-pin'; pin: string; expectedDid?: string },
+        identityState: Extract<UnifiedAuthState, { status: 'identity_recovery' }>
+    ): Promise<UnifiedAuthState> {
+        const generation = this.recoveryGeneration;
+        try {
+            const result = await this.keyDerivation.executeRecovery({
+                token: '',
+                providerType: this.config.authProvider.getProviderType(),
+                input: {
+                    ...input,
+                    expectedDid: input.expectedDid ?? identityState.expectedDid,
+                    recoverySessionToken: identityState.recoverySessionToken,
+                    pinAttempts: this.pinAttemptsFor(identityState.expectedDid),
+                },
+                didFromPrivateKey: this.config.didFromPrivateKey,
+                signDidAuthVp: this.config.signDidAuthVp,
+            });
+            // Whether a new PIN is required is known only once the new login is linked;
+            // the digest is dropped there when it is not.
+            await this.rememberSignInPin(result.did, result.privateKey, input.pin);
+            if (generation !== this.recoveryGeneration || this.state !== identityState) {
+                this.abandonSignInPin(result.did);
+                this.keyDerivation.cancelIdentityRecovery?.();
+                throw new Error('This recovery request was cancelled.');
+            }
+            this.setState({
+                ...identityState,
+                phase: 'new_login',
+                recoverySessionToken: undefined,
+                recoveredDid: result.did,
+            });
+            return this.state;
+        } catch (error) {
+            this.notePinAttemptError(identityState.expectedDid, error);
+            if (generation === this.recoveryGeneration && this.state === identityState) {
+                this.setState({
+                    status: 'identity_recovery',
+                    phase: 'enter_email',
+                    email: identityState.email,
+                    recoveryMethods: [],
+                    error: error instanceof Error ? error.message : 'Recovery failed',
+                });
+            }
+            throw error;
         }
     }
 
@@ -1688,7 +2197,12 @@ export class AuthCoordinator {
         return this.state;
     }
 
+    /** Rejected with RecoveryInProgressError while a recovery is in flight. */
     async sendIdentityRecoveryCode(email: string): Promise<UnifiedAuthState> {
+        return this.runExclusiveRecovery('session', () => this.sendIdentityRecoveryCodeNow(email));
+    }
+
+    private async sendIdentityRecoveryCodeNow(email: string): Promise<UnifiedAuthState> {
         if (
             this.state.status !== 'identity_recovery' ||
             !this.keyDerivation.startIdentityRecovery
@@ -1706,7 +2220,12 @@ export class AuthCoordinator {
         return this.state;
     }
 
+    /** Rejected with RecoveryInProgressError while a recovery is in flight. */
     async verifyIdentityRecoveryCode(code: string): Promise<UnifiedAuthState> {
+        return this.runExclusiveRecovery('session', () => this.verifyIdentityRecoveryCodeNow(code));
+    }
+
+    private async verifyIdentityRecoveryCodeNow(code: string): Promise<UnifiedAuthState> {
         if (
             this.state.status !== 'identity_recovery' ||
             this.state.phase !== 'verify_email' ||
@@ -1724,11 +2243,21 @@ export class AuthCoordinator {
             recoverySessionToken: session.recoverySessionToken,
             recoveryMethods: session.recoveryMethods,
             expectedDid: session.primaryDid ?? undefined,
+            ...(session.escrowPin ? { escrowPin: session.escrowPin } : {}),
         });
         return this.state;
     }
 
+    /**
+     * Phrase/passkey/backup recovery in the lost-login flow. Rejected with
+     * RecoveryInProgressError, without touching state, while another recovery (e.g. a
+     * PIN sign-in on the same single-use session) is in flight.
+     */
     async prepareIdentityRecovery(input: unknown): Promise<UnifiedAuthState> {
+        return this.runExclusiveRecovery('recovery', () => this.prepareIdentityRecoveryNow(input));
+    }
+
+    private async prepareIdentityRecoveryNow(input: unknown): Promise<UnifiedAuthState> {
         if (
             this.state.status !== 'identity_recovery' ||
             this.state.phase !== 'choose_method' ||
@@ -1809,6 +2338,7 @@ export class AuthCoordinator {
             privateKey: this.state.privateKey,
             authSessionValid: true,
             sssActivationState: this.state.sssActivationState ?? 'provisional',
+            ...(this.state.pinSignIn ? { pinSignIn: this.state.pinSignIn } : {}),
         });
         return this.state;
     }
@@ -1818,6 +2348,12 @@ export class AuthCoordinator {
             return this.state;
         }
 
+        // The lost-login PIN sign-in will not complete: its PIN stays usable.
+        this.abandonSignInPin(
+            this.state.status === 'awaiting_rebind'
+                ? this.state.did || this.signInPinDigest?.did
+                : (this.state.recoveredDid ?? this.signInPinDigest?.did)
+        );
         this.recoveryGeneration++;
         this.keyDerivation.cancelIdentityRecovery?.();
         this.setState({ status: 'idle' });
@@ -1973,6 +2509,11 @@ export class AuthCoordinator {
         };
         log.info('Logout started', { logoutAttemptId });
         this.endingSession = true;
+        this.pinAttemptBaseline = undefined;
+        this.excusedPinTypos = undefined;
+        // An in-flight PIN sign-in is abandoned; a completed one's persisted guard stays.
+        this.abandonSignInPin(this.signInPinDigest?.did);
+        this.escrowPinChangeDismissed = undefined;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;
@@ -2022,6 +2563,10 @@ export class AuthCoordinator {
      */
     async forgetDevice(): Promise<void> {
         this.endingSession = true;
+        // The device is no longer trusted: drop this account's persisted PIN guard too.
+        this.forgetPinGuard('did' in this.state ? this.state.did : undefined);
+        this.signInPinDigest = undefined;
+        this.escrowPinChangeDismissed = undefined;
         this.stopEscrowPolling?.();
         this.recoveryGeneration++;
         this.escrowStatusGeneration++;

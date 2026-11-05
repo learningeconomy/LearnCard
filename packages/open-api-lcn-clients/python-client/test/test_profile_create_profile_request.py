@@ -46,6 +46,7 @@ class TestProfileCreateProfileRequest(unittest.TestCase):
                 email = '',
                 image = '',
                 hero_image = '',
+                linked_in_organization_id = '4',
                 website_link = '',
                 type = '',
                 notifications_webhook = 'httpjUR,rZ#UM/?R,Fp^l6$ARj',

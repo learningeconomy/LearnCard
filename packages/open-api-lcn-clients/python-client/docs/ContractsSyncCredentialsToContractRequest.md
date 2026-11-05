@@ -2,10 +2,11 @@
 
 ## Properties
 
-| Name           | Type                     | Description | Notes |
-| -------------- | ------------------------ | ----------- | ----- |
-| **terms_uri**  | **str**                  |             |
-| **categories** | **Dict[str, List[str]]** |             |
+| Name                 | Type                     | Description | Notes      |
+| -------------------- | ------------------------ | ----------- | ---------- |
+| **terms_uri**        | **str**                  |             |
+| **audience_version** | **int**                  |             | [optional] |
+| **categories**       | **Dict[str, List[str]]** |             |
 
 ## Example
 

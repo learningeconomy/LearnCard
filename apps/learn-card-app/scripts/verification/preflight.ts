@@ -6,6 +6,18 @@ import { chromium } from '@playwright/test';
 import { APP_ROOT, REPO_ROOT } from './constants';
 import { runCommand } from './process';
 
+export type PreflightCheck =
+    | 'platform'
+    | 'bun-version'
+    | 'node-version'
+    | 'flock'
+    | 'docker-trust'
+    | 'docker-daemon'
+    | 'docker-compose'
+    | 'chromium-installation'
+    | 'chromium-execution'
+    | 'disk-space';
+
 /** Restrict commands to the explicitly trusted system daemon; unix:// alone proves nothing. */
 export const verifyDockerTrust = async (signal?: AbortSignal): Promise<void> => {
     const overrides = [
@@ -79,14 +91,16 @@ export const verifyDockerTrust = async (signal?: AbortSignal): Promise<void> => 
 
 export const preflightVerification = async (
     directory = APP_ROOT,
-    options: { signal?: AbortSignal } = {}
+    options: { signal?: AbortSignal; onCheck?: (check: PreflightCheck) => void } = {}
 ): Promise<Record<string, unknown>> => {
     const { signal } = options;
+    options.onCheck?.('platform');
     signal?.throwIfAborted();
     if (process.platform !== 'linux')
         throw new Error(
             'lc verify requires Linux /proc birth identity tracking. Use the documented Linux sandbox or hosted manual verification workflow.'
         );
+    options.onCheck?.('bun-version');
     const pkg = JSON.parse(await readFile(join(REPO_ROOT, 'package.json'), 'utf8')) as {
         packageManager?: string;
         engines?: { node?: string };
@@ -97,6 +111,7 @@ export const preflightVerification = async (
             `Use ${pkg.packageManager} from package.json (running ${typeof Bun === 'undefined' ? 'non-Bun runtime' : `bun@${Bun.version}`}); then run bun install --frozen-lockfile.`
         );
     }
+    options.onCheck?.('node-version');
     const nodeExecutable = process.env.LC_VERIFY_NODE || 'node';
     const node = await runCommand([nodeExecutable, '--version'], REPO_ROOT, { signal }).catch(
         error => {
@@ -110,12 +125,15 @@ export const preflightVerification = async (
             `Node ${node} (${nodeExecutable}) does not satisfy package.json engines.node ${pkg.engines?.node}. Put the repository-compatible Node first on PATH or set LC_VERIFY_NODE to its executable.`
         );
     }
+    options.onCheck?.('flock');
     await runCommand(['flock', '--version'], REPO_ROOT, { signal }).catch(error => {
         throw new Error(
             `Linux util-linux flock is required for crash-safe per-directory cleanup ownership. Install your distribution's util-linux package: ${String(error)}`
         );
     });
+    options.onCheck?.('docker-trust');
     await verifyDockerTrust(signal);
+    options.onCheck?.('docker-daemon');
     const docker = JSON.parse(
         await runCommand(['docker', 'info', '--format', '{{json .}}'], REPO_ROOT, { signal }).catch(
             error => {
@@ -127,6 +145,7 @@ export const preflightVerification = async (
         throw new Error(
             'Docker daemon reports an HTTP(S) proxy. Proxy configurations are not verified for this local-only workflow; use a trusted proxy-free system daemon.'
         );
+    options.onCheck?.('docker-compose');
     const compose = await runCommand(['docker', 'compose', 'version', '--short'], REPO_ROOT, {
         signal,
     }).catch(error => {
@@ -136,12 +155,14 @@ export const preflightVerification = async (
     });
     if (!/^(?:v)?[2-9]\d*\./.test(compose))
         throw new Error(`Docker Compose v2 or newer is required; found ${compose}.`);
+    options.onCheck?.('chromium-installation');
     const browserPath = chromium.executablePath();
     await access(browserPath, constants.X_OK).catch(() => {
         throw new Error(
             `Playwright Chromium is missing at ${browserPath}. From ${APP_ROOT}, run bunx playwright install chromium. For missing Linux shared libraries see https://playwright.dev/docs/intro#system-requirements; verification never installs privileged system dependencies.`
         );
     });
+    options.onCheck?.('chromium-execution');
     await runCommand([browserPath, '--version'], APP_ROOT, { signal, timeoutMs: 10_000 }).catch(
         error => {
             throw new Error(
@@ -149,6 +170,7 @@ export const preflightVerification = async (
             );
         }
     );
+    options.onCheck?.('disk-space');
     const filesystem = await statfs(directory);
     const freeDiskBytes = filesystem.bavail * filesystem.bsize;
     const memoryBytes = totalmem();

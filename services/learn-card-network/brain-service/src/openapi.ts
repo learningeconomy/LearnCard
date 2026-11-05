@@ -96,6 +96,26 @@ if (publishRequestBody && !('$ref' in publishRequestBody)) {
     }
 }
 
+// Preserve the existing Python allocation identity contract without changing
+// None/default serialization for unrelated optional request fields.
+const allocationBody = openApiDocument.paths?.['/credential-refresh/allocate']?.post?.requestBody;
+const allocationSchema =
+    allocationBody && !('$ref' in allocationBody)
+        ? allocationBody.content?.['application/json']?.schema
+        : undefined;
+const allocationHolder =
+    allocationSchema && !('$ref' in allocationSchema)
+        ? allocationSchema.properties?.holder
+        : undefined;
+const allocationProfile =
+    allocationHolder && !('$ref' in allocationHolder)
+        ? allocationHolder.properties?.profileId
+        : undefined;
+if (!allocationProfile || '$ref' in allocationProfile) {
+    throw new Error('Managed refresh allocation schema is missing its holder profile input');
+}
+Object.assign(allocationProfile, { 'x-python-preserve-explicit-null': true });
+
 const SCALAR_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>

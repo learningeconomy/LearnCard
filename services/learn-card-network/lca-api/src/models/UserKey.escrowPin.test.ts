@@ -28,6 +28,7 @@ describe('getEscrowPinStatus', () => {
             state,
             enabled: false,
             attemptsRemaining: 10,
+            wrongAttempts: 0,
         });
     });
 
@@ -43,7 +44,27 @@ describe('getEscrowPinStatus', () => {
                 enabled: true,
                 attemptsRemaining: Math.max(0, 10 - failedAttempts),
                 salt: 'salt',
+                // Charged budget alone never proves a wrong entry (legacy records).
+                ...(failedAttempts === 0 ? { wrongAttempts: 0 } : {}),
             });
         }
     );
+
+    it('reports verified wrong entries, not the charged budget', () => {
+        const userKey = {
+            shareVersion: 1,
+            escrowPin: {
+                salt: 'salt',
+                shareVersion: 1,
+                // 3 verified mismatches + 1 successful release + 1 open reservation.
+                failedAttempts: 5,
+                verifiedFailedAttempts: 3,
+                enabledAt: new Date(),
+            },
+        } as MongoUserKeyType;
+        expect(getEscrowPinStatus(userKey)).toMatchObject({
+            attemptsRemaining: 5,
+            wrongAttempts: 3,
+        });
+    });
 });

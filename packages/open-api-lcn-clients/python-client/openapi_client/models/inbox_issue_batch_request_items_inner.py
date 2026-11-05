@@ -21,8 +21,8 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from openapi_client.models.inbox_issue_batch_request_items_inner_configuration import InboxIssueBatchRequestItemsInnerConfiguration
-from openapi_client.models.inbox_issue_batch_request_items_inner_recipient import InboxIssueBatchRequestItemsInnerRecipient
 from openapi_client.models.inbox_issue_request_credential import InboxIssueRequestCredential
+from openapi_client.models.inbox_issue_request_recipient import InboxIssueRequestRecipient
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -31,7 +31,7 @@ class InboxIssueBatchRequestItemsInner(BaseModel):
     """
     One issuance: provide credential or templateUri. Invalid input is rejected at submission with its item index.
     """ # noqa: E501
-    recipient: InboxIssueBatchRequestItemsInnerRecipient
+    recipient: InboxIssueRequestRecipient
     credential: Optional[InboxIssueRequestCredential] = None
     template_uri: Optional[StrictStr] = Field(default=None, description="URI of a boost template to use for issuance. The boost credential will be resolved and used. Mutually exclusive with credential field.", alias="templateUri")
     refresh: Optional[StrictBool] = Field(default=None, description="Allocate managed refresh before signing. Requires unsigned content and a registered signing authority; binds the holder on claim.")
@@ -66,9 +66,8 @@ class InboxIssueBatchRequestItemsInner(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -99,7 +98,7 @@ class InboxIssueBatchRequestItemsInner(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "recipient": InboxIssueBatchRequestItemsInnerRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None,
+            "recipient": InboxIssueRequestRecipient.from_dict(obj["recipient"]) if obj.get("recipient") is not None else None,
             "credential": InboxIssueRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None,
             "templateUri": obj.get("templateUri"),
             "refresh": obj.get("refresh"),

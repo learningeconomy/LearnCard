@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { isEscrowReleaseKillSwitchEnabled, parseLcaApiEnvironment } from './environment';
+import { ESCROW_AUTHORITY_TENANT_PATTERN } from '@learncard/sss-key-manager';
+import {
+    ESCROW_AUTHORITY_TENANT_LABEL,
+    isEscrowReleaseKillSwitchEnabled,
+    parseLcaApiEnvironment,
+} from './environment';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -155,5 +160,26 @@ describe('Keycloak startup configuration', () => {
                 KEYCLOAK_AUDIENCES: ' , learncard-app, ',
             })
         ).not.toThrow();
+    });
+});
+
+describe('escrow authority tenant', () => {
+    it('validates the label exactly like the SDK', () => {
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.source).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.source);
+        expect(ESCROW_AUTHORITY_TENANT_LABEL.flags).toBe(ESCROW_AUTHORITY_TENANT_PATTERN.flags);
+    });
+
+    const offline = { ...production, IS_OFFLINE: 'true' };
+    it('defaults to the learncard enclave label (no infra change)', () => {
+        expect(parseLcaApiEnvironment(offline).ESCROW_AUTHORITY_TENANT).toBe('learncard');
+    });
+    it('accepts an explicit label and rejects a malformed one', () => {
+        expect(
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'scouts' })
+                .ESCROW_AUTHORITY_TENANT
+        ).toBe('scouts');
+        expect(() =>
+            parseLcaApiEnvironment({ ...offline, ESCROW_AUTHORITY_TENANT: 'learn card' })
+        ).toThrow();
     });
 });

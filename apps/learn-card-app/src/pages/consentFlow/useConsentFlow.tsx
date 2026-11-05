@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useHistory } from 'react-router-dom';
 import {
     useModal,
     useContract,
@@ -21,7 +22,8 @@ export const useConsentFlow = (
     app?: LaunchPadAppListItem,
     contractUri?: string
 ) => {
-    const { newModal } = useModal({
+    const history = useHistory();
+    const { newModal, closeAllModals } = useModal({
         desktop: ModalTypes.Cancel,
         mobile: ModalTypes.Cancel,
     });
@@ -33,7 +35,10 @@ export const useConsentFlow = (
     const { data: consentedContracts, isLoading: consentedContractLoading } =
         useConsentedContracts();
     const consentedContract = consentedContracts?.find(
-        c => c?.contract?.uri === contract?.uri && c?.status !== 'withdrawn'
+        c =>
+            c?.contract?.uri === contract?.uri &&
+            c?.status !== 'withdrawn' &&
+            c?.status !== 'consumed'
     );
     const hasConsented = !!consentedContract;
 
@@ -55,6 +60,15 @@ export const useConsentFlow = (
         onBackCallback?: () => void,
         keepParentModalsOpen?: boolean
     ) => {
+        if (
+            contract &&
+            (consentedContract?.status === 'needs_reconsent' ||
+                consentedContract?.status === 'suspended')
+        ) {
+            closeAllModals();
+            history.push(`/consent-flow/review?uri=${encodeURIComponent(contract.uri)}`);
+            return;
+        }
         if (contract?.needsGuardianConsent && !hasConsented) {
             newModal(
                 <FullScreenGameFlow contractDetails={contract} />,

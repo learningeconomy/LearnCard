@@ -10,8 +10,15 @@ import { resolveBranding } from '@learncard/email-templates';
 import type { EscrowHold, MongoUserKeyType } from '@models';
 import { getDeliveryService, getFrom, type DeliveryService } from '../delivery';
 import { buildEscrowCancelUrl } from '@helpers/escrowCancelLink';
+import { buildAccountSecureUrl } from '@helpers/accountSecureLink';
 
-export type EscrowHoldEventKind = 'started' | 'reminder' | 'completed' | 'cancelled' | 'pin-locked';
+/**
+ * `'pin-sign-in'` replaces `'completed'` for PIN releases: a PIN release now
+ * signs a new device in without signing out other devices, so the notice links
+ * to "Secure my account" instead of only confirming a recovery.
+ */
+export type EscrowHoldEventKind =
+    'started' | 'reminder' | 'completed' | 'cancelled' | 'pin-locked' | 'pin-sign-in';
 
 export interface EscrowHoldEvent {
     kind: EscrowHoldEventKind;
@@ -79,6 +86,7 @@ const EMAIL_TEMPLATE_ALIAS: Record<EscrowHoldEventKind, TemplateId> = {
     completed: 'escrow-hold-released',
     cancelled: 'escrow-hold-cancelled',
     'pin-locked': 'escrow-pin-locked',
+    'pin-sign-in': 'escrow-pin-sign-in',
 };
 
 const PUSH_MESSAGES: Record<EscrowHoldEventKind, { title: string; body: string }> = {
@@ -101,6 +109,10 @@ const PUSH_MESSAGES: Record<EscrowHoldEventKind, { title: string; body: string }
     'pin-locked': {
         title: 'Recovery PIN locked',
         body: 'Your recovery PIN was locked after too many attempts.',
+    },
+    'pin-sign-in': {
+        title: 'New device signed in with your PIN',
+        body: 'Not you? Open the app to secure your account.',
     },
 };
 
@@ -206,6 +218,12 @@ const buildEmailTemplateModel = async (
 
         case 'completed':
             return { completedAt: (hold.completedAt ?? deps.now()).toISOString() };
+
+        case 'pin-sign-in':
+            return {
+                signedInAt: (hold.completedAt ?? deps.now()).toISOString(),
+                secureUrl: buildAccountSecureUrl({ baseUrl }),
+            };
 
         case 'cancelled':
             return {

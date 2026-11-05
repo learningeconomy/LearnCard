@@ -15,13 +15,15 @@
  * exposed through the KeyDerivationStrategy recovery interface.
  */
 
-import { Web3Auth } from '@web3auth/single-factor-auth';
+import { Capacitor } from '@capacitor/core';
+import { SDK_MODE, Web3Auth } from '@web3auth/single-factor-auth';
 import { CHAIN_NAMESPACES } from '@web3auth/base';
 import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
 
 import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
 import { AuthSessionError } from '@learncard/types';
 import { getLogger } from '../logging/logger';
+import { isNetworkError } from '../helpers/networkError';
 
 const log = getLogger('web3auth-key-derivation');
 const DERIVATION_LOCK = 'learncard:web3auth:key-derivation';
@@ -31,6 +33,94 @@ let derivationAttempt = 0;
 // Also deduplicate coordinator recreation within a document, including hosts
 // without Web Locks. Entries live only until the operation settles.
 const pendingDerivations = new Map<string, Promise<string>>();
+
+/** The SDK step a derivation attempt last entered; reported when it fails. */
+type Web3AuthSetupStage =
+    | 'lock_wait'
+    | 'session_check'
+    | 'init'
+    | 'restored_session_check'
+    | 'restored_session_logout'
+    | 'connect'
+    | 'identity_check'
+    | 'private_key';
+
+const MAX_FAILURE_MESSAGE_LENGTH = 300;
+
+/**
+ * Error with a stable `code` so the coordinator's network classifier routes it
+ * to `idle` (quiet retry) instead of the hard error overlay.
+ */
+class Web3AuthNetworkError extends Error {
+    readonly code = 'network_error';
+
+    constructor() {
+        super('Network error while signing in. Please check your connection and try again.');
+        this.name = 'Web3AuthNetworkError';
+    }
+}
+
+/**
+ * The shape of a JWT: a base64url JSON header (`{"` encodes to `eyJ`) followed
+ * by two more dot-separated segments. Anchored on `eyJ` so hostnames such as
+ * `api.web3auth.io` survive in diagnostics.
+ */
+const JWT_SHAPE_RE = /eyJ[A-Za-z0-9_-]{2,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*/g;
+
+const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Best-effort readable text for whatever the SDK rejected with. */
+const rawFailureText = (error: unknown): string => {
+    if (error instanceof Error) return error.message;
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object' && error !== null) {
+        const message = (error as { message?: unknown }).message;
+        if (typeof message === 'string') return message;
+        try {
+            return JSON.stringify(error) ?? String(error);
+        } catch {
+            return String(error);
+        }
+    }
+    return String(error);
+};
+
+/**
+ * Describe an SDK failure for diagnostics without leaking credentials. Handles
+ * `Error`s, strings and plain objects (the SDK and Torus do not always reject
+ * with an `Error`). Torus errors can embed the OAuth JWT, so the known token
+ * (and each of its segments), the account uid, and any JWT-shaped string are
+ * removed here before truncation; the logger additionally redacts bearer,
+ * long-hex and long-base64 shapes. Keys deliberately avoid the logger's
+ * scrubbed substrings (`name`, `token`, ...).
+ */
+const describeFailure = (
+    error: unknown,
+    secrets: { idToken: string; uid: string }
+): Record<string, unknown> => {
+    const code =
+        typeof error === 'object' && error !== null
+            ? (error as { code?: unknown }).code
+            : undefined;
+    const known: Array<[string, string]> = [secrets.idToken, ...secrets.idToken.split('.')]
+        .filter(part => part.length >= 8)
+        .map(part => [part, '[redacted]']);
+    if (secrets.uid) known.push([secrets.uid, '[uid]']);
+
+    let failureMessage = rawFailureText(error);
+    for (const [value, replacement] of known) {
+        failureMessage = failureMessage.replace(new RegExp(escapeRegExp(value), 'g'), replacement);
+    }
+    failureMessage = failureMessage
+        .replace(JWT_SHAPE_RE, '[redacted]')
+        .slice(0, MAX_FAILURE_MESSAGE_LENGTH);
+
+    return {
+        errorType: error instanceof Error ? error.name || 'Error' : typeof error,
+        ...(typeof code === 'string' || typeof code === 'number' ? { errorCode: code } : {}),
+        failureMessage,
+    };
+};
 
 // ---------------------------------------------------------------------------
 // Config
@@ -122,7 +212,11 @@ export const createWeb3AuthStrategy = (
     /**
      * Connect to Web3Auth SFA and extract the Ethereum private key.
      */
-    const deriveKeyFromWeb3Auth = async (idToken: string, uid: string): Promise<string> => {
+    const deriveKeyFromWeb3Auth = async (
+        idToken: string,
+        uid: string,
+        progress: { stage: Web3AuthSetupStage }
+    ): Promise<string> => {
         const privateKeyProvider = new EthereumPrivateKeyProvider({
             config: {
                 chainConfig: {
@@ -140,17 +234,25 @@ export const createWeb3AuthStrategy = (
             >[0]['web3AuthNetwork'],
             privateKeyProvider,
             usePnPKey: config.usePnPKey ?? true,
+            // session.web3auth.io rejects CORS from Capacitor's localhost origins,
+            // so web-mode connect() fails after the key is derived. Native never
+            // restores that session anyway (the read is blocked too); node mode
+            // skips the session server and keeps derivation identical.
+            ...(Capacitor.isNativePlatform() ? { mode: SDK_MODE.NODE } : {}),
         });
 
+        progress.stage = 'init';
         await web3auth.init();
         log.info('Web3Auth session checked', { restoredSession: web3auth.connected });
 
         // A persisted session can outlive an account switch. Remove the wrong
         // session under the same lock before connecting the current account.
         if (web3auth.connected) {
+            progress.stage = 'restored_session_check';
             const restoredUser = await web3auth.getUserInfo();
             if (restoredUser.verifierId !== uid || restoredUser.verifier !== config.verifier) {
                 log.warn('Web3Auth restored session identity mismatch; reconnecting');
+                progress.stage = 'restored_session_logout';
                 await web3auth.logout();
             }
         }
@@ -159,6 +261,7 @@ export const createWeb3AuthStrategy = (
         // (e.g. on Android app resume). Calling connect() when already
         // connected throws "Already connected", so skip it in that case.
         if (!web3auth.connected) {
+            progress.stage = 'connect';
             await web3auth.connect({
                 verifier: config.verifier,
                 verifierId: uid,
@@ -168,11 +271,13 @@ export const createWeb3AuthStrategy = (
 
         // A session restored from shared SDK storage must belong to this login.
         // Never return a different account's key just because init() connected.
+        progress.stage = 'identity_check';
         const userInfo = await web3auth.getUserInfo();
         if (userInfo.verifierId !== uid || userInfo.verifier !== config.verifier) {
             throw new Error('Web3Auth restored session identity mismatch');
         }
 
+        progress.stage = 'private_key';
         const provider = web3auth.provider;
 
         if (!provider) {
@@ -206,6 +311,7 @@ export const createWeb3AuthStrategy = (
             setupAttemptId,
             crossTabLockAvailable: Boolean(locks),
         });
+        const progress: { stage: Web3AuthSetupStage } = { stage: 'lock_wait' };
         const lockWaitController = locks ? new AbortController() : undefined;
         let lockWaitTimedOut = false;
         let waitTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -218,6 +324,7 @@ export const createWeb3AuthStrategy = (
             // Only queued acquisition has a deadline. Once acquired, retain the
             // lock until the SDK settles, even if the network takes longer.
             clearLockWait();
+            progress.stage = 'session_check';
             const assertSessionCurrent = async (): Promise<void> => {
                 if (config.isSessionCurrent && !(await config.isSessionCurrent(uid))) {
                     throw new AuthSessionError('Sign-in changed while waiting.', 'no_session');
@@ -230,7 +337,8 @@ export const createWeb3AuthStrategy = (
             });
             // Acquire before init(): the preceding tab must finish publishing
             // its SDK session before this tab attempts session restoration.
-            const privateKey = await deriveKeyFromWeb3Auth(idToken, uid);
+            const privateKey = await deriveKeyFromWeb3Auth(idToken, uid, progress);
+            progress.stage = 'session_check';
             await assertSessionCurrent();
             return privateKey;
         };
@@ -260,10 +368,15 @@ export const createWeb3AuthStrategy = (
                     log.info('Web3Auth account setup cancelled', { setupAttemptId });
                     throw error;
                 }
-                const message = error instanceof Error ? error.message : '';
+                const message = rawFailureText(error);
                 const tokenAlreadyUsed = /token is used|duplicate token/i.test(message);
+                const networkFailure =
+                    !lockWaitTimedOut && (isNetworkError(error) || isNetworkError(message));
                 log.error('Web3Auth account setup failed', {
                     setupAttemptId,
+                    failureStage: progress.stage,
+                    ...describeFailure(error, { idToken, uid }),
+                    networkFailure,
                     replayedCredential: tokenAlreadyUsed,
                     restoredIdentityMismatch:
                         message === 'Web3Auth restored session identity mismatch',
@@ -271,6 +384,10 @@ export const createWeb3AuthStrategy = (
                     lockWaitTimedOut,
                     elapsedMs: Math.round(performance.now() - startedAt),
                 });
+                // Connectivity failures keep a network-class error so the
+                // coordinator returns to idle and retries, as it did before
+                // this wrapper existed, instead of showing the error overlay.
+                if (networkFailure) throw new Web3AuthNetworkError();
                 // Torus errors can embed the full OAuth JWT. Do not propagate
                 // them into coordinator state, debug events, or the overlay.
                 throw new Error(

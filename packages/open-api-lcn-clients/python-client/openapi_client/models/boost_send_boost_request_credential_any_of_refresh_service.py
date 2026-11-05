@@ -20,12 +20,11 @@ import re  # noqa: F401
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, field_validator
 from typing import List, Optional
 from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service_any_of import BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf
-from openapi_client.models.boost_send_boost_request_credential_any_of_refresh_service_any_of1_inner import BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-BOOSTSENDBOOSTREQUESTCREDENTIALANYOFREFRESHSERVICE_ANY_OF_SCHEMAS = ["BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf", "List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]"]
+BOOSTSENDBOOSTREQUESTCREDENTIALANYOFREFRESHSERVICE_ANY_OF_SCHEMAS = ["BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf", "List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]"]
 
 class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
     """
@@ -34,13 +33,13 @@ class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
 
     # data type: BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf
     anyof_schema_1_validator: Optional[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf] = None
-    # data type: List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]
-    anyof_schema_2_validator: Optional[List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]] = None
+    # data type: List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]
+    anyof_schema_2_validator: Optional[List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]]] = None
+        actual_instance: Optional[Union[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf", "List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]" }
+    any_of_schemas: Set[str] = { "BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf", "List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]" }
 
     model_config = {
         "validate_assignment": True,
@@ -67,7 +66,7 @@ class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
         else:
             return v
 
-        # validate data type: List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]
+        # validate data type: List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]
         try:
             instance.anyof_schema_2_validator = v
             return v
@@ -75,7 +74,7 @@ class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
             error_messages.append(str(e))
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in BoostSendBoostRequestCredentialAnyOfRefreshService with anyOf schemas: BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in BoostSendBoostRequestCredentialAnyOfRefreshService with anyOf schemas: BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -94,7 +93,7 @@ class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
-        # deserialize data into List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]
+        # deserialize data into List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]
         try:
             # validation
             instance.anyof_schema_2_validator = json.loads(json_str)
@@ -106,7 +105,7 @@ class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into BoostSendBoostRequestCredentialAnyOfRefreshService with anyOf schemas: BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into BoostSendBoostRequestCredentialAnyOfRefreshService with anyOf schemas: BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -120,7 +119,7 @@ class BoostSendBoostRequestCredentialAnyOfRefreshService(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf1Inner]]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf, List[BoostSendBoostRequestCredentialAnyOfRefreshServiceAnyOf]]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

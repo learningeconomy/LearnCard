@@ -45,7 +45,7 @@ node services/escrow-canary/dist/provision.mjs \
   ( --labels <hold-01,hold-02|all> --login-sender <address> --login-dkim-domain <domain>
   | --account <read-only|pin-a|pin-b> --email <address> ) \
   [--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] \
-  [--no-require-dmarc] [--firebase-project <id>] [--function <name>]
+  [--no-require-dmarc] [--allow-login-spam-fail] [--firebase-project <id>] [--function <name>]
 ```
 
 - `--environment` and `--expect-account` are required in every mode. No account id is
@@ -205,6 +205,10 @@ active: `activate(T,'firebase', getFreshDidAuthVp(key, did, sign))`
 All checks apply: one SES `Authentication-Results`, SPF pass, DMARC pass (unless
 `--no-require-dmarc`), every DKIM result pass with one aligned inside the DKIM
 domain, spam and virus PASS, exactly one To equal to `email`, no Cc or Bcc.
+`--allow-login-spam-fail` accepts exactly one SES spam verdict of `FAIL` for login
+mail only (production login mail from some Postmark pools scored `FAIL` on every
+try, 2026-11-04, while staging's identical mail passed); the virus verdict and every
+other check still apply, and the tier 3 runner's enclave-mail policy never sets it.
 
 `src/tier3/inbox.ts` now exports `findParsed(store, prefix, since, policy, parse)`;
 `findMessage` and `readKnownMessage` are thin wrappers with unchanged behaviour (all
@@ -311,6 +315,26 @@ and known to no other run), so the run continues; the label still where this run
 left it means nothing changed (`secret: claim`, exit 1, re-run); anywhere else is
 exit 3.
 
+**`DescribeSecret` lags label moves.** `VersionIdsToStages` is eventually
+consistent: right after a claim it can still show `PROVISIONING` absent or on this
+run's previous version (seen on staging, 2026-11-03: a run stopped with
+`provisioning_label_moved` on its own committed claim). A stale read can show the
+label absent, on this run's previous version, or where it was before this run
+started (a label an operator or an earlier promote just detached, or the version
+before the one this run resumed). Every ownership read (the precheck, the fence,
+the failed-claim re-read and the check after a failed detach in promotion)
+therefore re-reads with a short bounded backoff (250 ms to 1.5 s, 4 s in total)
+until it shows the expected version, and only then proceeds. If the reads never
+settle, the last one decides: another run's version is exit 3
+(`provisioning_label_moved`, reported after the re-reads), and the label absent or
+on one of this run's versions is `secret: provisioning_label_lag` (exit 1). A
+`DescribeSecret` error during the failed-claim re-reads is exit 1 (`secret: claim`)
+once a read has shown the label absent or on this run's version, and exit 3 as
+before otherwise. Lag longer than 4 s on a label's earlier holder can still give a
+false exit 3. A stale read can also show this run's version after a takeover; the
+conditional claim on the next renewal and the promotion fence's conditional moves
+remain the atomic guards.
+
 - Promotion: first the fence (a run whose claim was taken over never promotes its
   superseded version: `secret: provisioning_label_moved`, exit 3, `AWSCURRENT`
   untouched); then `UpdateSecretVersionStage(AWSCURRENT, MoveToVersionId=own, RemoveFromVersionId=<placeholder version seen at classification>)`,
@@ -334,7 +358,8 @@ on the server (the claim precedes every server change).
 | Losing concurrent run (`secret: provisioning_label_moved`)                      | Another run holds the claim. If the loser had not yet claimed (two runs that saw the same state), nothing of it reached the server. If its claim was taken over (lease expired or `--takeover`), it stopped at its fence before its next server change; changes it made earlier are on the server and the new owner continues from them. Wait for the other run, then re-run: it classifies `live` or resumes.                                                                  |
 | `classify: provisioning_in_progress` (exit 1)                                   | The staged version was written less than 15 min ago. Re-run after the printed wait, or with `--takeover` once you know no other run is active (the earlier run printed `FAILED` or its process is gone).                                                                                                                                                                                                                                                                        |
 | `promote: provisioning_label_moved` (exit 3)                                    | This run promoted its version, then found `PROVISIONING` on another version (a run took over after the fence, which needs a step to outlast the lease or a misused `--takeover`). Stop the other run. Re-run (it classifies `live` and runs the read-only checks); if they pass, detach the stale label: `update-secret-version-stage --secret-id <name> --version-stage PROVISIONING --remove-from-version-id <id>`. If they fail, escalate: do not edit `AWSCURRENT` by hand. |
-| `secret: claim` (exit 1)                                                        | Re-run.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `secret: claim` (exit 1)                                                        | Re-run. The claim may have committed despite the stop, so a re-run within 15 min can stop with `classify: provisioning_in_progress`; once this run has printed `FAILED`, `--takeover` is safe (no other run is active).                                                                                                                                                                                                                                                         |
+| `secret: provisioning_label_lag` (exit 1)                                       | Re-run. `DescribeSecret` still lagged after the bounded re-reads (§6.3); nothing changed on the server. The claim may have committed despite the stop, so a re-run within 15 min can stop with `classify: provisioning_in_progress`; once this run has printed `FAILED`, `--takeover` is safe (no other run is active).                                                                                                                                                         |
 | `PROVISIONING_PENDING` on a version without `PROVISIONING`                      | An unclaimed write (crash between put and claim, or a losing run). Never read; the next put moves the label. Optional tidy-up: `aws secretsmanager update-secret-version-stage --secret-id <name> --version-stage PROVISIONING_PENDING --remove-from-version-id <id>`.                                                                                                                                                                                                          |
 | Crash after a claim                                                             | Re-run: classification resumes that version (§6.1-6.2).                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `PROVISIONING` holds a key the server does NOT have, and resume cannot continue | First confirm with `--dry-run` (stored token) or the server state that **no** server key exists for the address; then detach it: `update-secret-version-stage --secret-id <name> --version-stage PROVISIONING --remove-from-version-id <id>`. The next run is fresh. Never detach a label whose DID is the server's `primaryDid`: that version is the only copy of the key. A server key with another DID is orphaned (§6.5).                                                   |

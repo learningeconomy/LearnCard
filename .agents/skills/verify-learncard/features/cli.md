@@ -7,7 +7,7 @@ Developers run `npx @learncard/cli` to send their first credential, check whethe
 - `cli-send`: `send <profileId> --yes --json --name … --badge …` creates an issuer identity in its workdir (`.env`) and returns `{ ok: true, status: 'ISSUED', credentialUri: … }` with a URI on this stack's allocated Brain endpoint.
 - `cli-recipient-claims`: the recipient's wallet finds the URI in `getIncomingCredentials`, accepts it, and reads a credential containing the badge name.
 - `cli-status`: `status <activityId> --json` reports `state: 'CLAIMED'` for that credential.
-- `cli-verify`: `verify <file> --json` cryptographically verifies the actual received credential, requiring `errors: []` and a `proof` check. Its verify-only child fetch policy confines the known DIDKit WASM/dynamic-loader resolution path to owned HTTP service origins; it refuses redirects and forces nonzero failure on policy violations.
+- `cli-verify`: `verify <file> --json` cryptographically verifies the actual received credential and prints one line `{ ok: true, command: 'verify', verified, result }`, requiring `verified: true`, `result.errors: []` and a `proof` check in `result.checks`. Its verify-only child fetch policy confines the known DIDKit WASM/dynamic-loader resolution path to owned HTTP service origins; it refuses redirects and forces nonzero failure on policy violations.
 
 ## How to get to it (user POV)
 
@@ -28,7 +28,7 @@ Preconditions:
 
 - Without `--yes`, a recipient argument is required; non-interactive runs fail with `A recipient is required…`.
 - Sending to a handle that doesn't exist fails with `Profile not found`. Create the recipient first (`v.sdk(actor)`).
-- `verify --json` prints the raw verification result, not the `{ ok, command }` envelope. The wrapper's fetch policy is scoped confinement, **not** networkless verification or a general OS sandbox; arbitrary remote DID/context resolution is rejected. Ordinary CLI execution outside the wrapper is unchanged.
+- `verify --json` prints one line `{ ok: true, command: 'verify', verified, result }`; the raw verification output is under `result`, and an unverified credential still exits 1 with `verified: false`. The wrapper's fetch policy is scoped confinement, **not** networkless verification or a general OS sandbox; arbitrary remote DID/context resolution is rejected. Ordinary CLI execution outside the wrapper is unchanged.
 - The CLI's `start` script and verifier preparation regenerate `src/generated/snippets.ts` from `docs/snippets` with deterministic content and atomic replacement. Keep the checkout stable and CLI workdirs distinct across workers.
 - Email recipients go through the Universal Inbox (claim email); this stack has no mail delivery. Use profile IDs.
 - `repl` hard-codes production; `demo` initializes an incompletely pinned SDK; `promote` needs another network. They are unavailable through this wrapper. Webhook callbacks/receivers and custom signer endpoints are also unprovisioned and rejected. `org apply FILE …` supports only the local hosted signer with no webhooks.

@@ -15,7 +15,7 @@ import {
     useToast,
     useWallet,
     useBrandingConfig,
-    LEARNCARD_AI_PASSPORT_CONTRACT_URI,
+    isLearnCardAiPassportContractUri,
     useAiFeatureGate,
 } from 'learn-card-base';
 import { switchedProfileStore } from 'learn-card-base/stores/walletStore';
@@ -68,8 +68,9 @@ const PrivacySettingsModal: React.FC = () => {
     const hasAiConsent = useMemo(() => {
         return consentedContracts?.some(
             consent =>
-                consent?.contract?.uri === LEARNCARD_AI_PASSPORT_CONTRACT_URI &&
-                consent?.status !== 'withdrawn'
+                isLearnCardAiPassportContractUri(consent?.contract?.uri) &&
+                consent?.status !== 'withdrawn' &&
+                consent?.status !== 'consumed'
         );
     }, [consentedContracts]);
     const showAiConsentWarning =

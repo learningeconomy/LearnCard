@@ -1,0 +1,29 @@
+{
+    "description": "Authority label -> fallback email brand. Rust brand_name (escrow-enclave-app/src/authority/email.rs) and TS escrowAuthorityBrandName (learn-card-base/src/config/authConfig.ts) must both map every case exactly; changing either side means updating this file.",
+    "cases": [
+        {
+            "label": "learncard",
+            "brand": "LearnCard"
+        },
+        {
+            "label": "scouts",
+            "brand": "ScoutPass"
+        },
+        {
+            "label": "vetpass",
+            "brand": "vetpass"
+        },
+        {
+            "label": "other",
+            "brand": "other"
+        },
+        {
+            "label": "LearnCard",
+            "brand": "LearnCard"
+        },
+        {
+            "label": "scoutpass",
+            "brand": "scoutpass"
+        }
+    ]
+}

@@ -79,7 +79,15 @@ describe('project context', () => {
         };
         expect(() =>
             assertProjectNetwork(project, 'https://staging.network.learncard.com/trpc')
-        ).toThrow('separate folder');
+        ).toThrow('set up for production, not staging');
+        expect(() =>
+            assertProjectNetwork(project, 'https://staging.network.learncard.com/trpc')
+        ).toThrow(
+            expect.objectContaining({
+                code: 'NETWORK_MISMATCH',
+                hint: expect.stringContaining('separate folder'),
+            })
+        );
         expect(() =>
             assertProjectNetwork(project, 'https://network.learncard.com/trpc')
         ).not.toThrow();
@@ -191,7 +199,7 @@ describe('project context', () => {
                 LCA_API_URL: 'http://localhost:5200/api',
             }).lcaAPI
         ).toBe('http://localhost:5200/api');
-        expect(() => resolveServices({}, 'file:///tmp/network', {})).toThrow('HTTP');
+        expect(() => resolveServices({}, 'file:///tmp/network', {})).toThrow('Unknown network');
     });
 });
 

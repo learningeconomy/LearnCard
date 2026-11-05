@@ -107,7 +107,7 @@ export type DashboardProfileSkill = {
 export type DashboardLearningProfileViewModel = {
     state: DashboardLearningProfileState;
     strength?: { title: string; summary?: string } | null;
-    verifiedRecords: number;
+    verifiedRecords: number | null;
     skills: DashboardProfileSkill[];
     updatedAt?: string;
     onViewInsights: () => void;
@@ -133,7 +133,7 @@ export type DashboardRecoveryPromptViewModel = {
     recoverySupported: boolean;
     recoveryMethodCount: number | null;
     activationPending: boolean;
-    totalCredentialCount: number;
+    totalCredentialCount: number | null;
     escrowEnrolled?: boolean;
     pinEnabled?: boolean | null;
     onSetupPin?: () => void;
@@ -146,6 +146,11 @@ export type DashboardRecoveryPromptViewModel = {
 
 export type DashboardViewModel = {
     brandName: string;
+    collection?: {
+        isError: boolean;
+        isFetching: boolean;
+        retry: () => unknown;
+    };
     header: DashboardHeaderViewModel;
     heroSlot: DashboardHeroSlot;
     checklistItems: DashboardChecklistItem[];

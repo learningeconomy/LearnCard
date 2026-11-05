@@ -95,10 +95,16 @@ changes.
 On a PIN-enrolled canary account (two accounts, alternating):
 
 1. Drop the local device share (fresh in-memory storage).
-2. Run the authenticated PIN recovery with the correct PIN. This goes through
-   `completeIdentityRecovery`, which rotates shares and re-enrols the account.
+2. Run the authenticated PIN recovery with the correct PIN. Since PIN sign-in
+   keeps the account (SECURITY.md D19, pending approval), this no longer goes
+   through `completeIdentityRecovery`: the SDK stores the released share at the
+   current version and re-sets the same PIN without rotating (only while no
+   wrong attempt is recorded against that PIN; otherwise the budget is not
+   refreshed and the canary PIN eventually locks until a new PIN is set). Each run also
+   sends the "New device signed in with your PIN" email to the canary
+   account's verified addresses.
 3. Check the recovered private key derives the account's known DID.
-4. Store the new device state, then set the PIN again (recovery retires it), so
+4. Store the new device state, then set the PIN again (this rotates shares), so
    the attempt budget (10 per PIN set) never accumulates and the next run starts
    clean. If the runner crashes between steps 2 and 4, the next run will detect
    the retired PIN state and re-set the PIN before attempting recovery, preventing
@@ -350,8 +356,9 @@ Tier 3 produces its first release signal 7 days after it starts.
 
 ## 14. Open questions
 
-1. Resolved: authenticated PIN recovery goes through `completeIdentityRecovery`,
-   which rotates shares and re-enrols; tier 2 re-sets the PIN each run (§4).
+1. Resolved: authenticated PIN recovery now keeps the account (no rebind or
+   rotation; SECURITY.md D19, pending approval); tier 2 still re-sets the PIN each
+   run with a rotation (§4).
 2. Resolved: the SDK accepts custom storage via `SSSStrategyConfig.storage` (§8).
 3. A failed code send currently leaves a confirmable-by-nobody hold that the app
    cannot see (observed in staging). Returned code-send failures can expose the

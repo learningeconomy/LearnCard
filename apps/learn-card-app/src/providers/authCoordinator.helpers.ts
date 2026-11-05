@@ -85,6 +85,7 @@ export const mergeAuthUserIntoCurrentUser = <
 export type EscrowRecoveryKind = 'pin' | 'hold';
 
 export type PinPromptAfterReady =
+    | { kind: 'pin-sign-in-review' }
     | { kind: 'after-recovery' }
     | { kind: 'after-hold-recovery' }
     | { kind: 'pin-reset-required' }
@@ -100,6 +101,9 @@ export type PinPromptAfterReady =
  * migrated from Web3Auth, who skip the new-user setup that owns the prompt for
  * accounts created in this session. Asking only enrolled accounts keeps the
  * escrow rollout gate in charge of who sees it.
+ *
+ * `pin-sign-in-review` (the one-time "Did you lose a device…?" sheet after a PIN
+ * sign-in) comes first and holds every other prompt back until it is answered.
  */
 export const decidePinPromptAfterReady = ({
     recoveredVia,
@@ -108,6 +112,7 @@ export const decidePinPromptAfterReady = ({
     promptFlag,
     pinResetRequired = false,
     newUserThisSession = false,
+    pinSignInReview = false,
 }: {
     recoveredVia: EscrowRecoveryKind | null;
     pinEnabled: boolean | undefined;
@@ -117,7 +122,10 @@ export const decidePinPromptAfterReady = ({
     pinResetRequired?: boolean;
     /** The account was created in this session; new-user setup prompts instead. */
     newUserThisSession?: boolean;
+    /** A PIN sign-in just kept the account and its review has not been answered. */
+    pinSignInReview?: boolean;
 }): PinPromptAfterReady => {
+    if (pinSignInReview) return { kind: 'pin-sign-in-review' };
     if (pinEnabled !== false) return { kind: 'none' };
     if (pinResetRequired) return { kind: 'pin-reset-required' };
     if (recoveredVia === 'pin') return { kind: 'after-recovery' };
@@ -141,3 +149,35 @@ export const settleEscrowRecoveryMarker = (
     recoveredVia: EscrowRecoveryKind | null,
     pinEnabled: boolean | undefined
 ): EscrowRecoveryKind | null => (pinEnabled === undefined ? recoveredVia : null);
+
+/**
+ * Whether "Secure my account" should offer the PIN step. A PIN sign-in proves a PIN
+ * exists even before the async escrow refresh publishes `ready.escrowPin`, and an
+ * unloaded status (`escrowEnrollment` still undefined) must not skip the step: that
+ * would turn the PIN off without asking.
+ */
+export const secureFlowOffersPin = ({
+    afterPinSignIn,
+    pinEnabled,
+    escrowEnrollment,
+}: {
+    afterPinSignIn: boolean;
+    pinEnabled: boolean | undefined;
+    escrowEnrollment: string | undefined;
+}): boolean => afterPinSignIn || pinEnabled === true || escrowEnrollment === undefined;
+
+/**
+ * Whether the "choose a new PIN" prompt opens on its own. The coordinator sets
+ * `escrowPinChangeRequired` while wrong entries are recorded against the current PIN
+ * (unless dismissed this session); right after a PIN sign-in the review sheet asks
+ * first, so the prompt only opens directly on later renders and app starts.
+ */
+export const pinChangePromptOpens = ({
+    did,
+    changeRequired,
+    pinSignInPending,
+}: {
+    did: string | undefined;
+    changeRequired: boolean;
+    pinSignInPending: boolean;
+}): boolean => !!did && changeRequired && !pinSignInPending;

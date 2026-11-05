@@ -23,7 +23,7 @@ import type { Environment, Tier } from '../src/provision/targets';
  *   node services/escrow-canary/dist/provision.mjs \
  *     --environment <staging|production> --expect-account <12 digits> --tier 3 \
  *     --labels <hold-01,hold-02|all> --login-sender <address> --login-dkim-domain <domain> \
- *     [--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] [--no-require-dmarc] \
+ *     [--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] [--no-require-dmarc] [--allow-login-spam-fail] \
  *     [--firebase-project <id>] [--function <name>]
  *
  *   ... --tier <1|2> --account <read-only|pin-a|pin-b> --email <address>   (code typed at a hidden prompt)
@@ -39,7 +39,7 @@ const usage = (): never => {
     write(
         'Usage: node dist/provision.mjs --environment <staging|production> --expect-account <id> --tier <1|2|3> ' +
             '(--labels <hold-NN,...|all> --login-sender <addr> --login-dkim-domain <domain> | --account <label> --email <addr>) ' +
-            '[--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] [--no-require-dmarc] [--firebase-project <id>] [--function <name>]'
+            '[--dry-run] [--check-mail] [--activate] [--init-pool] [--takeover] [--no-require-dmarc] [--allow-login-spam-fail] [--firebase-project <id>] [--function <name>]'
     );
     return exit(2);
 };
@@ -58,6 +58,7 @@ const parsed = (() => {
                 'login-sender': { type: 'string' },
                 'login-dkim-domain': { type: 'string' },
                 'no-require-dmarc': { type: 'boolean', default: false },
+                'allow-login-spam-fail': { type: 'boolean', default: false },
                 'firebase-project': { type: 'string' },
                 'dry-run': { type: 'boolean', default: false },
                 'check-mail': { type: 'boolean', default: false },
@@ -165,6 +166,7 @@ try {
                   sender: parsed['login-sender'] ?? '',
                   dkimDomain: parsed['login-dkim-domain'] ?? '',
                   requireDmarc: !parsed['no-require-dmarc'],
+                  allowSpamFail: parsed['allow-login-spam-fail'],
               }
             : undefined;
     if (loginMail && (!/^[^\s@]+@[^\s@]+$/.test(loginMail.sender) || !loginMail.dkimDomain))
@@ -176,7 +178,7 @@ try {
     );
     if (loginMail)
         write(
-            `plan login-mail sender=${loginMail.sender} dkim-domain=${loginMail.dkimDomain} require-dmarc=${loginMail.requireDmarc}`
+            `plan login-mail sender=${loginMail.sender} dkim-domain=${loginMail.dkimDomain} require-dmarc=${loginMail.requireDmarc} allow-spam-fail=${loginMail.allowSpamFail}`
         );
     if (!parsed['dry-run'])
         await confirmProduction(plan.environment, process.stdin.isTTY === true, visiblePrompt);

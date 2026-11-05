@@ -59,9 +59,8 @@ class ContractsDeleteCredentialFromAllContracts200Response(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -78,14 +77,12 @@ class ContractsDeleteCredentialFromAllContracts200Response(BaseModel):
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
 
-        # set to None if contracts_updated (nullable) is None
-        # and model_fields_set contains the field
-        if self.contracts_updated is None and "contracts_updated" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.contracts_updated is None and "contracts_updated" in self.model_fields_set and "contracts_updated" not in excluded_fields:
             _dict['contractsUpdated'] = None
 
-        # set to None if removed_shared_uris (nullable) is None
-        # and model_fields_set contains the field
-        if self.removed_shared_uris is None and "removed_shared_uris" in self.model_fields_set:
+        # Preserve a supplied nullable value.
+        if self.removed_shared_uris is None and "removed_shared_uris" in self.model_fields_set and "removed_shared_uris" not in excluded_fields:
             _dict['removedSharedUris'] = None
 
         return _dict

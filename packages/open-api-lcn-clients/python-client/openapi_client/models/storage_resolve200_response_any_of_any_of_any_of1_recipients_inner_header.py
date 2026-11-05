@@ -28,9 +28,9 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
     """
     StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader
     """ # noqa: E501
-    alg: Optional[StrictStr]
-    iv: Optional[StrictStr]
-    tag: Optional[StrictStr]
+    alg: StrictStr
+    iv: StrictStr
+    tag: StrictStr
     epk: Optional[StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeaderEpk] = None
     kid: Optional[StrictStr] = None
     apv: Optional[StrictStr] = None
@@ -65,9 +65,8 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         * Fields in `self.additional_properties` are added to the output dict.
         """
         excluded_fields: Set[str] = set([
@@ -86,36 +85,6 @@ class StorageResolve200ResponseAnyOfAnyOfAnyOf1RecipientsInnerHeader(BaseModel):
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
                 _dict[_key] = _value
-
-        # set to None if alg (nullable) is None
-        # and model_fields_set contains the field
-        if self.alg is None and "alg" in self.model_fields_set:
-            _dict['alg'] = None
-
-        # set to None if iv (nullable) is None
-        # and model_fields_set contains the field
-        if self.iv is None and "iv" in self.model_fields_set:
-            _dict['iv'] = None
-
-        # set to None if tag (nullable) is None
-        # and model_fields_set contains the field
-        if self.tag is None and "tag" in self.model_fields_set:
-            _dict['tag'] = None
-
-        # set to None if kid (nullable) is None
-        # and model_fields_set contains the field
-        if self.kid is None and "kid" in self.model_fields_set:
-            _dict['kid'] = None
-
-        # set to None if apv (nullable) is None
-        # and model_fields_set contains the field
-        if self.apv is None and "apv" in self.model_fields_set:
-            _dict['apv'] = None
-
-        # set to None if apu (nullable) is None
-        # and model_fields_set contains the field
-        if self.apu is None and "apu" in self.model_fields_set:
-            _dict['apu'] = None
 
         return _dict
 

@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
@@ -28,9 +28,9 @@ class ProfileRegisterSigningAuthorityRequest(BaseModel):
     """
     ProfileRegisterSigningAuthorityRequest
     """ # noqa: E501
-    endpoint: Optional[StrictStr]
+    endpoint: StrictStr
     name: Annotated[str, Field(strict=True, max_length=15)]
-    did: Optional[StrictStr]
+    did: StrictStr
     __properties: ClassVar[List[str]] = ["endpoint", "name", "did"]
 
     @field_validator('name', mode="before")
@@ -67,9 +67,8 @@ class ProfileRegisterSigningAuthorityRequest(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -79,16 +78,6 @@ class ProfileRegisterSigningAuthorityRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if endpoint (nullable) is None
-        # and model_fields_set contains the field
-        if self.endpoint is None and "endpoint" in self.model_fields_set:
-            _dict['endpoint'] = None
-
-        # set to None if did (nullable) is None
-        # and model_fields_set contains the field
-        if self.did is None and "did" in self.model_fields_set:
-            _dict['did'] = None
-
         return _dict
 
     @classmethod

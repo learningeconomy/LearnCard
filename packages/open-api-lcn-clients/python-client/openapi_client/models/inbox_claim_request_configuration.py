@@ -28,7 +28,7 @@ class InboxClaimRequestConfiguration(BaseModel):
     """
     InboxClaimRequestConfiguration
     """ # noqa: E501
-    publishable_key: Optional[StrictStr] = Field(alias="publishableKey")
+    publishable_key: StrictStr = Field(alias="publishableKey")
     expires_in_days: Optional[Annotated[int, Field(le=720, strict=True, ge=1)]] = Field(default=None, description="Inbox claim window in days. Defaults to 720; use a shorter window for sensitive records.", alias="expiresInDays")
     signing_authority_name: Optional[StrictStr] = Field(default=None, alias="signingAuthorityName")
     listing_id: Optional[StrictStr] = Field(default=None, alias="listingId")
@@ -62,9 +62,8 @@ class InboxClaimRequestConfiguration(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -74,26 +73,6 @@ class InboxClaimRequestConfiguration(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # set to None if publishable_key (nullable) is None
-        # and model_fields_set contains the field
-        if self.publishable_key is None and "publishable_key" in self.model_fields_set:
-            _dict['publishableKey'] = None
-
-        # set to None if signing_authority_name (nullable) is None
-        # and model_fields_set contains the field
-        if self.signing_authority_name is None and "signing_authority_name" in self.model_fields_set:
-            _dict['signingAuthorityName'] = None
-
-        # set to None if listing_id (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_id is None and "listing_id" in self.model_fields_set:
-            _dict['listingId'] = None
-
-        # set to None if listing_slug (nullable) is None
-        # and model_fields_set contains the field
-        if self.listing_slug is None and "listing_slug" in self.model_fields_set:
-            _dict['listingSlug'] = None
-
         return _dict
 
     @classmethod

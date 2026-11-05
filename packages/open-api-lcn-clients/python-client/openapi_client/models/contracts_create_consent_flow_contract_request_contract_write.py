@@ -19,8 +19,8 @@ import json
 
 from pydantic import BaseModel, ConfigDict
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_personal_value import ContractsCreateConsentFlowContractRequestContractReadPersonalValue
-from openapi_client.models.contracts_create_consent_flow_contract_request_contract_write_credentials import ContractsCreateConsentFlowContractRequestContractWriteCredentials
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials import ContractsCreateConsentFlowContractRequestContractReadCredentials
+from openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials_categories_value import ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,8 +29,8 @@ class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
     """
     ContractsCreateConsentFlowContractRequestContractWrite
     """ # noqa: E501
-    credentials: Optional[ContractsCreateConsentFlowContractRequestContractWriteCredentials] = None
-    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadPersonalValue]] = None
+    credentials: Optional[ContractsCreateConsentFlowContractRequestContractReadCredentials] = None
+    personal: Optional[Dict[str, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue]] = None
     __properties: ClassVar[List[str]] = ["credentials", "personal"]
 
     model_config = ConfigDict(
@@ -60,9 +60,8 @@ class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
         This has the following differences from calling pydantic's
         `self.model_dump(by_alias=True)`:
 
-        * `None` is only added to the output dict for nullable fields that
-          were set at model initialization. Other fields with value `None`
-          are ignored.
+        * Unset `None` defaults and nonnullable optional values are omitted.
+          Nullable values and explicitly marked strict inputs preserve supplied `None`.
         """
         excluded_fields: Set[str] = set([
         ])
@@ -93,9 +92,9 @@ class ContractsCreateConsentFlowContractRequestContractWrite(BaseModel):
             return cls.model_validate(obj)
 
         _values = {
-            "credentials": ContractsCreateConsentFlowContractRequestContractWriteCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
+            "credentials": ContractsCreateConsentFlowContractRequestContractReadCredentials.from_dict(obj["credentials"]) if obj.get("credentials") is not None else None,
             "personal": dict(
-                (_k, ContractsCreateConsentFlowContractRequestContractReadPersonalValue.from_dict(_v))
+                (_k, ContractsCreateConsentFlowContractRequestContractReadCredentialsCategoriesValue.from_dict(_v))
                 for _k, _v in obj["personal"].items()
             )
             if obj.get("personal") is not None

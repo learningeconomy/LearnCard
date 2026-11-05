@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { methodSignaturesModule, readMethodSignatures } from './method-signatures';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const snippets = {
@@ -14,6 +15,7 @@ const snippets = {
     CONSENT_CALLBACK_MJS: 'consentflow/consent-callback.mjs',
     READ_USER_DATA_MJS: 'consentflow/read-user-data.mjs',
     ISSUE_THROUGH_CONTRACT_MJS: 'consentflow/issue-through-contract.mjs',
+    AGENT_SKILL_MD: 'agents/learncard-skill.md',
 };
 /** Deterministic and atomic: independent checkout users never read a partial module. */
 export const embedSnippets = async (signal?: AbortSignal): Promise<void> => {
@@ -24,8 +26,24 @@ export const embedSnippets = async (signal?: AbortSignal): Promise<void> => {
                 `export const ${name} = ${JSON.stringify(await readFile(resolve(root, 'docs/snippets', file), { encoding: 'utf8', signal }))};\n`
         )
     );
-    const output = resolve(root, 'packages/learn-card-cli/src/generated/snippets.ts');
-    const content = '// Generated from docs/snippets. Do not edit.\n' + lines.join('');
+    await writeGenerated(
+        resolve(root, 'packages/learn-card-cli/src/generated/snippets.ts'),
+        '// Generated from docs/snippets. Do not edit.\n' + lines.join(''),
+        signal
+    );
+    await writeGenerated(
+        resolve(root, 'packages/learn-card-cli/src/generated/method-signatures.ts'),
+        methodSignaturesModule(await readMethodSignatures(root)),
+        signal
+    );
+};
+
+/** Write a generated module only when it changed, atomically (temp file + rename). */
+const writeGenerated = async (
+    output: string,
+    content: string,
+    signal?: AbortSignal
+): Promise<void> => {
     try {
         if ((await readFile(output, 'utf8')) === content) return;
     } catch (error) {

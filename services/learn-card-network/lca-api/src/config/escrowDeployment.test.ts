@@ -32,6 +32,7 @@ const SOURCES = {
         'ESCROW_HOLD_DURATION_MS',
         'ESCROW_HOLD_RESTART_MIN_AGE_MS',
         'ESCROW_ENCLAVE_REMOTE_TIMEOUT_MS',
+        'ESCROW_AUTHORITY_TENANT',
     ],
 };
 const SECRETS = new Set([
