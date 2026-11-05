@@ -1,4 +1,8 @@
-import type { SendContractRequest, ConsentFlowContractRequestForProfile } from '@learncard/types';
+import type {
+    SendContractRequest,
+    ConsentFlowContractRequestForProfile,
+    GuardianApprovalRequestStatus,
+} from '@learncard/types';
 import type { LCNClient } from '@learncard/network-brain-client';
 import type {
     Campaign,
@@ -891,7 +895,8 @@ export type LearnCardNetworkPluginMethods = {
         guardianEmail: string;
         ttlHours?: number;
         template?: { id?: string; model?: Record<string, unknown> };
-    }) => Promise<{ message: string; approvalUrl: string }>;
+    }) => Promise<{ message: string; status: 'accepted' }>;
+    getGuardianApprovalStatus: () => Promise<GuardianApprovalRequestStatus>;
     approveGuardianRequest: (token: string) => Promise<{ message: string }>;
     approveGuardianRequestByPath: (token: string) => Promise<{ message: string }>;
     getGuardianPendingCredential: (token: string) => Promise<{
