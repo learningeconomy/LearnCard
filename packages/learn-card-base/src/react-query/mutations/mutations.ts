@@ -240,6 +240,8 @@ export const useDeleteCredentialRecord = () => {
         oldStaleTime?: unknown;
         oldListStaleTime?: unknown;
         category?: string;
+        // Profile whose stale-time defaults were pinned; onSettled must unpin the same keys (LC-2355).
+        didWeb?: string;
         uri: string;
         skipPostDeleteCleanup?: boolean;
     };
@@ -432,6 +434,7 @@ export const useDeleteCredentialRecord = () => {
                     ...(currentQuery ? { currentQuery } : {}),
                     oldStaleTime,
                     oldListStaleTime,
+                    didWeb: didWeb ?? '',
                     skipPostDeleteCleanup: Boolean(record.skipPostDeleteCleanup),
                 };
 
@@ -583,7 +586,7 @@ export const useDeleteCredentialRecord = () => {
         onSettled: (_, __, ___, context) => {
             // Reset stale times to original values when mutation is complete
             if (context?.category) {
-                const didWeb = switchedProfileStore.get.switchedDid();
+                const didWeb = context.didWeb ?? switchedProfileStore.get.switchedDid();
 
                 // Reset stale times to their original values
                 if (context.oldStaleTime !== undefined) {

@@ -2,6 +2,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { isVC2Format } from '@learncard/helpers';
 import { getIDsQueryKey } from '../queries/idCredentials';
+import { getPaginatedManagedBoostsKey } from '../queries/vcQueries';
 import {
     BoostCategoryOptionsEnum,
     // oxlint-disable-next-line no-unused-vars
@@ -406,12 +407,12 @@ export const useCreateBoost = () => {
         },
         onSuccess: async ({ boostUri, name, type, category, status }) => {
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: getPaginatedManagedBoostsKey(category),
             });
             const wallet = await initWallet();
 
             // update cache optimistically
-            insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+            insertItem(queryClient, getPaginatedManagedBoostsKey(category), {
                 uri: boostUri,
                 name,
                 type,
@@ -421,7 +422,7 @@ export const useCreateBoost = () => {
 
             // Intentionally don't await these to keep this mutation fast!
 
-            queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+            queryClient.refetchQueries({ queryKey: getPaginatedManagedBoostsKey(category) });
             queryClient.invalidateQueries({ queryKey: ['useGetPaginatedFamilialBoosts'] });
             queryClient.invalidateQueries({ queryKey: ['useGetBoostChildren'] });
             queryClient.invalidateQueries({ queryKey: ['useCountBoostChildren'] });
@@ -572,12 +573,12 @@ export const useCreateChildBoost = () => {
             });
 
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: getPaginatedManagedBoostsKey(category),
             });
             const wallet = await initWallet();
 
             // update cache optimistically
-            insertItem(queryClient, ['useGetPaginatedManagedBoosts', category], {
+            insertItem(queryClient, getPaginatedManagedBoostsKey(category), {
                 uri: boostUri,
                 name,
                 type,
@@ -586,7 +587,7 @@ export const useCreateChildBoost = () => {
             });
 
             // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({ queryKey: ['useGetPaginatedManagedBoosts', category] });
+            queryClient.refetchQueries({ queryKey: getPaginatedManagedBoostsKey(category) });
             wallet.invoke.resolveFromLCN(boostUri).then(async boost => {
                 const validationResult = await VCValidator.spa(boost);
 
@@ -980,7 +981,7 @@ export const useDeleteManagedBoostMutation = () => {
                 clean up paginatedManagedBoosts
             */
             await queryClient.cancelQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: getPaginatedManagedBoostsKey(category),
             });
 
             queryClient.setQueryData<{
@@ -990,8 +991,8 @@ export const useDeleteManagedBoostMutation = () => {
                     records: Array<any>;
                 }>;
                 pageParams: Array<string | null>;
-            }>(['useGetPaginatedManagedBoosts', category], old => {
-                if (!old) return old;
+            }>(getPaginatedManagedBoostsKey(category), old => {
+                if (!Array.isArray(old?.pages)) return old;
 
                 const newPages = old.pages.map(page => ({
                     ...page,
@@ -1017,7 +1018,7 @@ export const useDeleteManagedBoostMutation = () => {
                 queryKey: ['useGetResolvedBoostsFromCategory', category],
             });
             queryClient.invalidateQueries({
-                queryKey: ['useGetPaginatedManagedBoosts', category],
+                queryKey: getPaginatedManagedBoostsKey(category),
             });
             queryClient.invalidateQueries({ queryKey: ['boosts'] });
         },

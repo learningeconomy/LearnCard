@@ -130,4 +130,45 @@ describe('query persistence save barrier', () => {
         client.clear();
         restored.clear();
     });
+    it('stamps explicit saves with the app buster so they survive a same-version restore', async () => {
+        let stored: string | undefined;
+        const storage = {
+            getItem: vi.fn(async () => stored),
+            setItem: vi.fn(async (_key: string, value: string) => {
+                stored = value;
+            }),
+            removeItem: vi.fn(async () => undefined),
+        };
+        const { persister, persistNow } = createQueryPersister(storage, vi.fn(), '1.2.3');
+        const client = new QueryClient();
+        client.setQueryData(ownProfileKey, { displayName: 'Versioned' });
+        await persistNow(client);
+        expect((await persister.restoreClient())?.buster).toBe('1.2.3');
+        client.clear();
+    });
+
+    it('logout removal drops a throttled snapshot so the previous user is not written back', async () => {
+        let stored: string | undefined = 'previous-user-cache';
+        const storage = {
+            getItem: vi.fn(async () => stored),
+            setItem: vi.fn(async (_key: string, value: string) => {
+                stored = value;
+            }),
+            removeItem: vi.fn(async () => {
+                stored = undefined;
+            }),
+        };
+        const { persister } = createQueryPersister(storage, vi.fn());
+        const client = new QueryClient();
+        client.setQueryData(ownProfileKey, { displayName: 'Previous User' });
+        persister.persistClient(snapshot(client));
+
+        await persister.removeClient();
+        await vi.advanceTimersByTimeAsync(2000);
+
+        expect(stored).toBeUndefined();
+        expect(storage.setItem).not.toHaveBeenCalled();
+        expect(await persister.restoreClient()).toBeUndefined();
+        client.clear();
+    });
 });

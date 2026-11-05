@@ -191,13 +191,14 @@ export const useWallet = () => {
                 }>
             >([...listPrefix, category, readerDid], data => {
                 const records = recordsByCategory.get(category)!;
-                const firstPage = data?.pages[0];
-                if (firstPage) {
+                // Malformed persisted entries (no pages array) are rebuilt instead of crashing (LC-2352).
+                const firstPage = Array.isArray(data?.pages) ? data.pages[0] : undefined;
+                if (data && firstPage) {
                     return {
                         ...data,
                         pages: [
                             { ...firstPage, records: [...records, ...firstPage.records] },
-                            ...(data?.pages.slice(1) ?? []),
+                            ...data.pages.slice(1),
                         ],
                     };
                 }
