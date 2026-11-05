@@ -222,7 +222,7 @@ run "authority_writer_is_only_data_principal" {
     error_message = "Observer grants and fixed table/generation/trust wiring must be read-only."
   }
   assert {
-    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].metric_name == "AuthorityRepeatedPinClear" && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
+    condition     = anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyMonitorNonReads" && try(toset(s.NotAction), toset([])) == toset(["dynamodb:GetItem", "dynamodb:Query", "dynamodb:Scan"]) && try(s.Condition.ArnEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && anytrue([for s in local.authority_resource_policy.Statement : s.Sid == "DenyEnumerationExceptMonitor" && try(s.Condition.ArnNotEquals["aws:PrincipalArn"], "") == local.authority_monitor_arn]) && length(aws_cloudwatch_metric_alarm.authority_integrity) == 2 && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].metric_name == "AuthorityRepeatedPinClearAccounts" && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].statistic == "Maximum" && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].threshold == 0 && aws_cloudwatch_metric_alarm.authority_heartbeat[0].treat_missing_data == "breaching"
     error_message = "Monitor must have no write/control escape and must alarm on failures or missing coverage."
   }
 }
@@ -351,6 +351,29 @@ run "reject_malformed_ami" {
     host_ami_id = "ami-latest"
   }
   expect_failures = [var.host_ami_id]
+}
+
+run "repeated_pin_clear_threshold_is_an_account_count" {
+  command = plan
+  variables {
+    enable_enrollment_authority            = true
+    authority_generation                   = "g1"
+    authority_tenant                       = "learncard"
+    authority_guardrail_policy_id          = "p-12345678"
+    authority_repeated_pin_clear_threshold = 1
+  }
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].threshold == 1 && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].metric_name == "AuthorityRepeatedPinClearAccounts" && aws_cloudwatch_metric_alarm.authority_repeated_pin_clear[0].statistic == "Maximum"
+    error_message = "One known account must not hide a second: Maximum of the per-sweep account gauge above the configured count."
+  }
+}
+
+run "reject_fractional_repeated_pin_clear_threshold" {
+  command = plan
+  variables {
+    authority_repeated_pin_clear_threshold = 0.5
+  }
+  expect_failures = [var.authority_repeated_pin_clear_threshold]
 }
 
 run "delegated_sending_zone_and_cross_region_global_events" {
