@@ -4,6 +4,13 @@ const path = require('node:path');
 const workflow = 'nx-artifact-producer.yml';
 const artifactName = 'nx-main-build-payloads';
 
+// github-script v8 uses fetch: request.timeout is not forwarded by Octokit.
+exports.lookupRequest = deadline => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new Error('Lookup budget exhausted');
+    return { signal: AbortSignal.timeout(Math.min(5_000, remaining)) };
+};
+
 exports.eligible = (run, repository, baseSha, now = Date.now()) =>
     run.conclusion === 'success' &&
     run.event === 'workflow_dispatch' &&
@@ -20,10 +27,7 @@ exports.selectProducer = async ({ github, context, core }) => {
     const repo = context.repo;
     const baseSha = context.payload.merge_group.base_sha;
     const deadline = Date.now() + 20_000;
-    const request = () => {
-        if (Date.now() >= deadline) throw new Error('Lookup budget exhausted');
-        return { timeout: Math.min(5_000, deadline - Date.now()) };
-    };
+    const request = () => exports.lookupRequest(deadline);
     try {
         const { data } = await github.rest.actions.listWorkflowRuns({
             ...repo,

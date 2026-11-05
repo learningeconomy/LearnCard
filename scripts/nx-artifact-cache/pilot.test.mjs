@@ -4,13 +4,30 @@ import { mkdtemp, readFile, writeFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { createServer } from 'node:http';
 import { builds, cacheServer, digest, verifyCache } from './transport.mjs';
 import { startCache, validatePolicy, validateResults } from './run.mjs';
 
 const require = createRequire(import.meta.url);
-const { eligible, selectProducer } = require('./select-producer.cjs');
+const { eligible, lookupRequest, selectProducer } = require('./select-producer.cjs');
 const headSha = 'a'.repeat(40);
 const baseSha = 'b'.repeat(40);
+
+test('lookup aborts a stalled fetch at its remaining deadline', async t => {
+    const server = createServer(() => {});
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    t.after(() => {
+        server.closeAllConnections();
+        return new Promise(resolve => server.close(resolve));
+    });
+    const request = lookupRequest(Date.now() + 50);
+    await assert.rejects(
+        fetch(`http://127.0.0.1:${server.address().port}`, request),
+        error => error.name === 'TimeoutError'
+    );
+    assert.equal(request.signal.aborted, true);
+    assert.throws(() => lookupRequest(Date.now() - 1), /budget exhausted/);
+});
 
 test('a cache startup failure permits fresh consumer execution but fails a producer', async () => {
     const fail = async () => {

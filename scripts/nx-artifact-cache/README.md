@@ -38,7 +38,8 @@ The downloaded manifest must match the separately selected run ID, attempt and
 source SHA, runtime/platform/architecture, lockfile, relevant environment and
 pilot implementation. It must contain exactly the three audited task archives
 with matching byte counts and SHA-256 digests. Only these native archives are
-transferred: no local Nx database, cached test verdict, logs or credentials.
+transferred, including their native build terminal output. No local Nx database,
+cached test verdict, raw test/session logs or credentials are exported.
 
 Nx accesses them through an authenticated, runner-local HTTP adapter. Consumer
 writes are accepted and discarded; they cannot update the shared artifact.
