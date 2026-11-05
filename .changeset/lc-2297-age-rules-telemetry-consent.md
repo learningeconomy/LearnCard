@@ -12,3 +12,5 @@ Keep ordinary preferences available during profile-authority outages without era
 Report unavailable analytics opt-in instead of silently accepting it, keep age-enforced reads available when a repair cannot be saved, and ensure preference writes target the newly selected account.
 
 Use checked-in Lambda stage configuration for the profile authority URL instead of forwarding stale deployment-environment values as secrets.
+
+Normalize the shared Brain URL for login-email locale lookups and preserve onboarding AI and bug-report choices when analytics authority is unavailable. Keep the Firebase logger import independent of the wallet barrel.

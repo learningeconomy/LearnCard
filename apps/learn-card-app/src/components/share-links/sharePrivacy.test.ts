@@ -18,8 +18,8 @@ vi.mock('userflow.js', () => ({
 vi.mock('@capacitor-firebase/analytics', () => ({
     FirebaseAnalytics: { setEnabled: capture.analytics },
 }));
-vi.mock('learn-card-base/logging/logger', () => ({ configureLoggerContext: capture.logger }));
-vi.mock('learn-card-base', () => ({
+vi.mock('learn-card-base/logging/logger', () => ({
+    configureLoggerContext: capture.logger,
     getLogger: () => ({ debug: vi.fn(), error: vi.fn() }),
 }));
 import {

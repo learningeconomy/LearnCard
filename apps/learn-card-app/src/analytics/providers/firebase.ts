@@ -1,6 +1,6 @@
 import { FirebaseAnalytics } from '@capacitor-firebase/analytics';
 import { Capacitor } from '@capacitor/core';
-import { getLogger } from 'learn-card-base';
+import { getLogger } from 'learn-card-base/logging/logger';
 const log = getLogger('firebase');
 
 import type { AnalyticsProvider } from '../types';

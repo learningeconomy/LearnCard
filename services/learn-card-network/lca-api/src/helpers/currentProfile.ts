@@ -3,13 +3,12 @@ import { z } from 'zod';
 
 import { environment } from '@environment';
 import type { Context } from '@routes';
+import { getBrainOpenApiBase } from './brainUrl';
 
 const brainServiceUrl = environment.NETWORK_BRAIN_SERVICE_URL;
 // The shared service endpoint is normally the tRPC base. OpenAPI is served
 // alongside it, not beneath /trpc.
-const profileUrl = brainServiceUrl
-    ? `${brainServiceUrl.replace(/\/(?:trpc|api)\/?$/, '')}/api/profile`
-    : null;
+const profileUrl = brainServiceUrl ? `${getBrainOpenApiBase(brainServiceUrl)}/profile` : null;
 
 const currentProfileSchema = z.object({
     dob: z.string().nullish(),
