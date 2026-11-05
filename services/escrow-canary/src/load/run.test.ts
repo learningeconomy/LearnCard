@@ -32,6 +32,8 @@ const world = () => {
     const calls: string[] = [];
     let keys = 0;
     let createdUsers = 0;
+    const recorded: { uid: string; email: string }[] = [];
+    const record: { fail: boolean } = { fail: false };
     const failures: Partial<Record<string, () => Error>> = {};
     const pinResponses: { recover?: PinResponse; complete?: PinResponse } = {};
     const params: Record<string, unknown[]> = {};
@@ -137,6 +139,10 @@ const world = () => {
             },
             createCustomToken: async uid => `custom:${uid}`,
         },
+        recordUser: user => {
+            if (record.fail) throw new Error('ENOSPC');
+            recorded.push(user);
+        },
         exchange: async custom => ({ idToken: custom.replace('custom:', 'id:') }),
         checkToken: () => undefined,
         sdk: { did: async key => `did:key:${key}`, sign: async () => 'vp' },
@@ -161,6 +167,8 @@ const world = () => {
         failures,
         pinResponses,
         out,
+        recorded,
+        record,
         created: () => createdUsers,
     };
 };
@@ -310,6 +318,12 @@ describe('runLoad', () => {
             { requested: false }
         );
         expect(w.created()).toBe(15);
+        // Every created user is in the manifest, with its uid and synthetic address.
+        expect(w.recorded).toHaveLength(15);
+        expect(w.recorded[3]).toEqual({
+            uid: 'uid-3',
+            email: 'escrow-load+a1b2c3d4-3@inbox.example.org',
+        });
         const [setup, s1, s2] = stagesOf(summary);
         expect(setup).toMatchObject({ stage: 'setup', started: 15, ok: 15 });
         expect(setup.scenarios.createUser).toMatchObject({ count: 15, ok: 15 });
@@ -457,6 +471,19 @@ describe('runLoad', () => {
         expect(summary.stopped).toBe('fatal_token_project');
         expect(s1.started).toBe(1);
         expect(s1.dropped).toEqual({ stopped: 4 });
+    });
+
+    it('a user that cannot be recorded in the manifest stops the run', async () => {
+        const w = world();
+        w.record.fail = true;
+        const stop = { requested: false };
+        const summary = await runLoad(options([{ rate: 1, durationSec: 5 }]), w.deps, stop);
+        const [setup, s1] = stagesOf(summary);
+        expect(summary.stopped).toBe('fatal_manifest_write');
+        expect(stop.requested).toBe(true);
+        expect(w.created()).toBe(1);
+        expect(setup.scenarios.createUser.errors).toEqual({ manifest_write: 1 });
+        expect(s1.started).toBe(0);
     });
 
     it('records a fatal guard hit by an operation still in flight after the last start', async () => {

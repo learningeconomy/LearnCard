@@ -18,7 +18,8 @@ import { LoadError } from './errors';
  * Orchestrates one load run:
  *
  * 1. **setup** (not part of the measured stages): create every Firebase user the
- *    plan needs at `setupRate`, and prepare the PIN pool (`pinSetup`). Account
+ *    plan needs at `setupRate` (each recorded in the run manifest right after
+ *    `createUser`), and prepare the PIN pool (`pinSetup`). Account
  *    creation is not part of the user flows being measured, so it is kept out of
  *    the stage numbers and cannot become an artificial first bottleneck.
  * 2. **stages**: open-loop arrivals. `enrol` takes the next fresh user;
@@ -52,6 +53,11 @@ export interface RunOptions {
 
 export interface RunDeps extends Omit<ScenarioDeps, 'time' | 'customToken'>, ScheduleDeps {
     admin: Pick<AdminAuth, 'createUser' | 'createCustomToken'>;
+    /**
+     * Durably records a created user in the run manifest (the only cleanup
+     * source) before it is used. A throw stops the run (`fatal_manifest_write`).
+     */
+    recordUser(user: { uid: string; email: string }): void;
     out(line: string): void;
     /** Repeating timer; returns a cancel function. */
     every(ms: number, callback: () => void): () => void;
@@ -68,8 +74,11 @@ interface SetupItem {
     pool: boolean;
 }
 
-/** A token for the wrong project/user means the guards were bypassed: stop everything. */
-const FATAL = new Set(['token_project', 'token_issuer', 'token_email']);
+/**
+ * A token for the wrong project/user means the guards were bypassed; a user that
+ * cannot be recorded in the manifest could not be cleaned up: stop everything.
+ */
+const FATAL = new Set(['token_project', 'token_issuer', 'token_email', 'manifest_write']);
 
 export const runLoad = async (
     options: RunOptions,
@@ -150,6 +159,11 @@ export const runLoad = async (
         const { uid } = await scenario.time('createUser', () =>
             deps.admin.createUser({ email, emailVerified: true })
         );
+        try {
+            deps.recordUser({ uid, email });
+        } catch {
+            throw new LoadError('manifest_write');
+        }
         return { n, email, uid };
     };
 

@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { cert, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
@@ -23,12 +24,8 @@ import {
     parseMaxEmails,
     parseMaxUsers,
 } from '../src/load/guards';
-import {
-    deleteUsersInBatches,
-    findRunUsers,
-    runEmailMatcher,
-    type AdminAuth,
-} from '../src/load/identity';
+import { cleanupRunUsers, type AdminAuth } from '../src/load/identity';
+import { createManifest, openManifestProgress, parseManifest } from '../src/load/manifest';
 import {
     buildPlan,
     parseStages,
@@ -50,14 +47,17 @@ import { narrowLoadStrategy } from '../src/load/scenarios';
  *     --lca-api-url https://<staging host>/api --staging-host <staging host> --tenant-id <id> \
  *     --firebase-project <staging project id> --domain <canary inbox domain> \
  *     --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
- *     --max-users <n> --max-emails <n> --i-understand-roughtime [--dry-run] > summary.json
+ *     --max-users <n> --max-emails <n> --manifest <new file> --i-understand-roughtime \
+ *     [--shared-production-firebase learncard] [--dry-run] > summary.json
  *
  *   GOOGLE_APPLICATION_CREDENTIALS=<staging service-account json> \
- *   node services/escrow-canary/dist/load.mjs cleanup --run <id> --domain <domain> \
- *     --firebase-project <id> [--prefix <p>] [--dry-run]
+ *   node services/escrow-canary/dist/load.mjs cleanup --manifest <file> \
+ *     --firebase-project <id> [--shared-production-firebase learncard] [--dry-run]
  *
  * Plan and progress lines go to stderr; the final JSON summary is the only stdout.
  * Nothing prints keys, PINs, tokens, shares or email addresses (counts and run id only).
+ * The run manifest (`--manifest`, mode 0600) records each created uid and its
+ * synthetic address; it is the only cleanup source (no user listing anywhere).
  *
  * EMAIL FINDINGS (read from code, 2026-11-05; re-check if these files change):
  * - Enrolment sends NO email. Automatic enrolment (`ensureEscrowEnrollment`) enrols
@@ -95,11 +95,13 @@ const exit = (code: number): never => process.exit(code);
 const USAGE =
     'Usage: node dist/load.mjs --lca-api-url <url> --staging-host <host> --tenant-id <id> ' +
     '--firebase-project <id> --domain <inbox domain> --stages <rate:sec,...> --max-users <n> ' +
-    '--max-emails <n> --i-understand-roughtime [--prefix <p>] [--run-id <id>] [--max-in-flight <n>] ' +
+    '--max-emails <n> --manifest <new file> --i-understand-roughtime ' +
+    '[--shared-production-firebase <id>] [--prefix <p>] [--run-id <id>] [--max-in-flight <n>] ' +
     '[--pin-ratio <0..1>] [--pin-pool <n>] [--enrol-with-pin] [--enrol-opt-in] ' +
     '[--pin-reset-after-recovery] [--setup-rate <n/s>] ' +
     '[--progress-sec <n>] [--stop-error-rate <0..1>] [--late-ms <n>] [--dry-run]\n' +
-    '       node dist/load.mjs cleanup --run <id> --domain <domain> --firebase-project <id> [--prefix <p>] [--dry-run]';
+    '       node dist/load.mjs cleanup --manifest <file> --firebase-project <id> ' +
+    '[--shared-production-firebase <id>] [--dry-run]';
 
 const parsed = (() => {
     try {
@@ -109,10 +111,11 @@ const parsed = (() => {
                 'staging-host': { type: 'string' },
                 'tenant-id': { type: 'string' },
                 'firebase-project': { type: 'string' },
+                'shared-production-firebase': { type: 'string' },
+                manifest: { type: 'string' },
                 domain: { type: 'string' },
                 prefix: { type: 'string', default: 'escrow-load' },
                 'run-id': { type: 'string' },
-                run: { type: 'string' },
                 stages: { type: 'string' },
                 'max-in-flight': { type: 'string', default: '50' },
                 'pin-ratio': { type: 'string', default: '0' },
@@ -146,7 +149,9 @@ const number = (value: string, reason: string, min: number, max: number): number
 };
 
 /** Reads only `type`/`project_id` for the guard; the Admin SDK reads the file itself. */
-const adminAuth = (expectedProject: string | undefined): (() => AdminAuth) => {
+const adminAuth = (
+    expectedProject: string | undefined
+): { sharedProduction: boolean; auth: () => AdminAuth } => {
     const path = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (!path) throw refuse('google_application_credentials_required');
     let raw: string;
@@ -155,28 +160,89 @@ const adminAuth = (expectedProject: string | undefined): (() => AdminAuth) => {
     } catch {
         throw refuse('credentials_unreadable');
     }
-    checkFirebaseProject(expectedProject, credentialProjectId(raw));
-    return () =>
-        getAuth(
-            initializeApp({ credential: cert(path), projectId: expectedProject }, 'escrow-load')
-        ) as unknown as AdminAuth;
+    const { sharedProduction } = checkFirebaseProject(
+        expectedProject,
+        credentialProjectId(raw),
+        flags['shared-production-firebase']
+    );
+    return {
+        sharedProduction,
+        auth: () =>
+            getAuth(
+                initializeApp({ credential: cert(path), projectId: expectedProject }, 'escrow-load')
+            ) as unknown as AdminAuth,
+    };
 };
 
-const cleanup = async (): Promise<void> => {
-    if (!flags.run) throw refuse('run_required');
-    const domain = checkDomain(flags.domain);
-    checkPrefix(flags.prefix!);
-    checkRunId(flags.run);
-    const auth = adminAuth(flags['firebase-project'])();
-    const matches = runEmailMatcher({ prefix: flags.prefix!, runId: flags.run, domain });
-    const uids = await findRunUsers(auth, matches);
-    write(`cleanup run=${flags.run} matched_users=${uids.length} dry-run=${flags['dry-run']}`);
-    if (flags['dry-run'] || uids.length === 0) return;
-    const result = await deleteUsersInBatches(auth, uids);
-    write(`cleanup run=${flags.run} deleted=${result.deleted} failed=${result.failed}`);
+const SHARED_WARNING = (project: string, what: string): string[] => [
+    '!'.repeat(78),
+    `WARNING: SHARED PRODUCTION FIREBASE PROJECT "${project}" (--shared-production-firebase)`,
+    what,
+    'They count toward monthly active users (billing) and run any Auth-triggered',
+    'extensions or functions. Keep the manifest until `cleanup --manifest` reports',
+    'every user deleted or already gone.',
+    '!'.repeat(78),
+];
+
+const cleanupCommand = (manifest: string): string =>
+    `load.mjs cleanup --manifest ${manifest} --firebase-project ${flags['firebase-project']}` +
+    (flags['shared-production-firebase']
+        ? ` --shared-production-firebase ${flags['shared-production-firebase']}`
+        : '');
+
+/** Deletes exactly the manifest's users that still carry the run's address. */
+const cleanup = async (): Promise<number> => {
+    if (!flags.manifest) throw refuse('manifest_required');
+    const admin = adminAuth(flags['firebase-project']);
+    let text: string;
+    try {
+        text = readFileSync(flags.manifest, 'utf8');
+    } catch {
+        throw refuse('manifest_unreadable');
+    }
+    const manifest = parseManifest(text);
+    if (manifest.header.firebaseProject !== flags['firebase-project'])
+        throw refuse('manifest_project_mismatch');
+    const runId = manifest.header.runId;
+    if (admin.sharedProduction)
+        for (const line of SHARED_WARNING(
+            manifest.header.firebaseProject,
+            'Cleanup deletes test users from the project that holds real production users.'
+        ))
+            write(`cleanup ${line}`);
     write(
-        'note: lca-api user keys, escrow authority records and holds for these accounts remain in staging (see README)'
+        `cleanup run=${runId} firebase-project=${manifest.header.firebaseProject} manifest-users=${manifest.users.length} torn-last-line=${manifest.tornTail} dry-run=${flags['dry-run']}`
     );
+    if (manifest.users.length === 0) return 0;
+    const auth = admin.auth();
+    const progress = flags['dry-run'] ? undefined : openManifestProgress(flags.manifest);
+    try {
+        const counts = await cleanupRunUsers(auth, {
+            address: manifest.header,
+            users: manifest.users,
+            done: manifest.done,
+            dryRun: flags['dry-run']!,
+            record: (outcome, uids) => progress!.record(outcome, uids),
+        });
+        write(
+            `cleanup run=${runId} listed=${counts.listed} previously-done=${counts.previouslyDone} ` +
+                (flags['dry-run']
+                    ? `would-delete=${counts.wouldDelete} `
+                    : `deleted=${counts.deleted} failed=${counts.failed} `) +
+                `already-gone=${counts.alreadyGone} skipped-mismatch=${counts.skippedMismatch}`
+        );
+        if (!flags['dry-run'])
+            write(
+                'note: lca-api user keys, escrow authority records and holds for these accounts remain in staging (see README)'
+            );
+        if (counts.failed > 0) {
+            write('cleanup incomplete: re-run the same command (finished uids are skipped)');
+            return 4;
+        }
+        return 0;
+    } finally {
+        progress?.close();
+    }
 };
 
 const run = async (): Promise<number> => {
@@ -224,10 +290,23 @@ const run = async (): Promise<number> => {
     });
     checkBudgets(plan, maxUsers, maxEmails);
     const admin = adminAuth(flags['firebase-project']);
+    if (!flags.manifest) throw refuse('manifest_required');
+    const manifestPath = resolve(flags.manifest);
+    if (existsSync(manifestPath)) throw refuse('manifest_exists');
+    if (!existsSync(dirname(manifestPath))) throw refuse('manifest_unwritable');
 
     // ---- Plan (printed before anything is sent) ----
     write(
         `plan run=${runId} host=${new URL(serverUrl.data).hostname} tenant=${tenantId.data} firebase-project=${flags['firebase-project']} dry-run=${flags['dry-run']}`
+    );
+    if (admin.sharedProduction)
+        for (const line of SHARED_WARNING(
+            flags['firebase-project']!,
+            `This run creates ${plan.users} test users beside real production users.`
+        ))
+            write(`plan ${line}`);
+    write(
+        `plan manifest=${manifestPath} (created before the first user, mode 0600; the only cleanup source)`
     );
     write(
         `plan stages=${plan.stages.map(s => `${s.rate}/s x ${s.durationSec}s`).join(', ')} duration=${plan.durationSec}s setup-rate=${setupRate}/s max-in-flight=${maxInFlight}`
@@ -251,6 +330,14 @@ const run = async (): Promise<number> => {
     }
 
     // ---- Run ----
+    // The manifest exists (header fsynced) before any Firebase user is created.
+    const manifest = createManifest(manifestPath, {
+        runId,
+        prefix: flags.prefix!,
+        domain,
+        firebaseProject: flags['firebase-project']!,
+        createdAt: new Date().toISOString(),
+    });
     const counters = newRequestCounters();
     // Attributes escrow responses to the scenario that made them (route + status only).
     const escrowObserver = new AsyncLocalStorage<EscrowObserver>();
@@ -290,7 +377,8 @@ const run = async (): Promise<number> => {
             stopErrorRate,
         },
         {
-            admin: admin(),
+            admin: admin.auth(),
+            recordUser: user => manifest.user(user),
             exchange: customToken => login.exchange(customToken),
             checkToken: (idToken, email) =>
                 checkIdToken(idToken, email, Date.now(), flags['firebase-project']),
@@ -309,9 +397,10 @@ const run = async (): Promise<number> => {
         },
         stop
     );
+    manifest.close();
     process.stdout.write(`${JSON.stringify({ ...summary, requests: counters }, null, 2)}\n`);
     write(
-        `done run=${runId} stopped=${summary.stopped ?? 'no'} (cleanup: load.mjs cleanup --run ${runId})`
+        `done run=${runId} stopped=${summary.stopped ?? 'no'} (cleanup: ${cleanupCommand(manifestPath)})`
     );
     return typeof summary.stopped === 'string' && summary.stopped.startsWith('fatal_') ? 3 : 0;
 };
@@ -332,12 +421,13 @@ if (parsed.positionals.length > 1 || (command !== undefined && command !== 'clea
 }
 const containment = containConsole();
 try {
-    const code = command === 'cleanup' ? (await cleanup(), 0) : await run();
+    const code = command === 'cleanup' ? await cleanup() : await run();
     write(`(${containment.suppressed()} SDK console lines suppressed)`);
     exit(code);
 } catch (error) {
     if (error instanceof LoadRefusal) {
         write(`refused ${error.reason} exit=2`);
+        if (error.hint) write(error.hint);
         exit(2);
     }
     const name =

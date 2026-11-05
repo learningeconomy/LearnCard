@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-    deleteUsersInBatches,
-    findRunUsers,
-    runEmailMatcher,
-    syntheticEmail,
-    type AdminAuth,
-} from './identity';
+import { cleanupRunUsers, runEmailMatcher, syntheticEmail, type AdminAuth } from './identity';
 
 const address = { prefix: 'escrow-load', runId: 'a1b2c3d4', domain: 'inbox.example.org' };
 
@@ -36,45 +30,105 @@ describe('synthetic addresses', () => {
     });
 });
 
-describe('Firebase cleanup helpers', () => {
-    it('pages through all users and keeps only matches', async () => {
-        const pages: Record<
-            string,
-            { users: { uid: string; email?: string }[]; pageToken?: string }
-        > = {
-            first: {
-                users: [
-                    { uid: 'u1', email: syntheticEmail(address, 1) },
-                    { uid: 'u2', email: 'person@example.org' },
-                    { uid: 'u3' },
-                ],
-                pageToken: 'p2',
-            },
-            p2: { users: [{ uid: 'u4', email: syntheticEmail(address, 2) }] },
-        };
-        const listUsers = vi.fn<AdminAuth['listUsers']>(
-            async (_max, token) => pages[token ?? 'first']
-        );
-        expect(await findRunUsers({ listUsers }, runEmailMatcher(address))).toEqual(['u1', 'u4']);
-        expect(listUsers.mock.calls).toEqual([
-            [1000, undefined],
-            [1000, 'p2'],
+describe('cleanupRunUsers (manifest-driven, no scanning)', () => {
+    const fake = (live: Map<string, string | undefined>, failDelete = new Set<string>()) => {
+        const getUsers = vi.fn<AdminAuth['getUsers']>(async identifiers => ({
+            users: identifiers
+                .filter(({ uid }) => live.has(uid))
+                .map(({ uid }) => ({ uid, email: live.get(uid) })),
+        }));
+        const deleteUsers = vi.fn<AdminAuth['deleteUsers']>(async uids => {
+            const errors = uids.flatMap((uid, index) => (failDelete.has(uid) ? [{ index }] : []));
+            for (const uid of uids) if (!failDelete.has(uid)) live.delete(uid);
+            return {
+                successCount: uids.length - errors.length,
+                failureCount: errors.length,
+                errors,
+            };
+        });
+        return { getUsers, deleteUsers };
+    };
+    const manifestUsers = (count: number) =>
+        Array.from({ length: count }, (_, n) => ({
+            uid: `u${n}`,
+            email: syntheticEmail(address, n),
+        }));
+
+    it('deletes only users whose current email is still the recorded run address', async () => {
+        const users = manifestUsers(5);
+        const live = new Map<string, string | undefined>([
+            ['u0', users[0].email],
+            ['u1', 'person@example.org'], // changed since the run
+            ['u2', undefined], // email removed
+            ['u3', syntheticEmail(address, 9)], // another address of this run
+            // u4 already gone
+        ]);
+        const auth = fake(live);
+        const records: [string, string[]][] = [];
+        const counts = await cleanupRunUsers(auth, {
+            address,
+            users,
+            done: new Set(),
+            dryRun: false,
+            record: (outcome, uids) => records.push([outcome, uids]),
+        });
+        expect(counts).toEqual({
+            listed: 5,
+            previouslyDone: 0,
+            deleted: 1,
+            alreadyGone: 1,
+            skippedMismatch: 3,
+            failed: 0,
+            wouldDelete: 0,
+        });
+        expect(auth.deleteUsers.mock.calls).toEqual([[['u0']]]);
+        expect(records).toEqual([
+            ['gone', ['u4']],
+            ['deleted', ['u0']],
         ]);
     });
-    it('stops on a runaway page loop', async () => {
-        const listUsers = async () => ({ users: [], pageToken: 'again' });
-        await expect(findRunUsers({ listUsers }, () => true, 3)).rejects.toThrow('Too many');
+    it('looks users up in batches of at most 100 and is idempotent', async () => {
+        const users = manifestUsers(250);
+        const live = new Map(users.map(user => [user.uid, user.email as string | undefined]));
+        const auth = fake(live, new Set(['u7']));
+        const done = new Set<string>();
+        const input = {
+            address,
+            users,
+            done,
+            dryRun: false,
+            record: (_outcome: string, uids: string[]) => uids.forEach(uid => done.add(uid)),
+        };
+        const first = await cleanupRunUsers(auth, input);
+        expect(first).toMatchObject({ deleted: 249, failed: 1, alreadyGone: 0 });
+        expect(auth.getUsers.mock.calls.map(([batch]) => batch.length)).toEqual([100, 100, 50]);
+        expect(auth.deleteUsers.mock.calls.map(([batch]) => batch.length)).toEqual([100, 100, 50]);
+        // Re-run (e.g. after a crash): finished uids are skipped, the failure is retried.
+        auth.getUsers.mockClear();
+        const second = await cleanupRunUsers(
+            { ...auth, deleteUsers: fake(live).deleteUsers },
+            input
+        );
+        expect(second).toMatchObject({ previouslyDone: 249, deleted: 1, failed: 0 });
+        expect(auth.getUsers.mock.calls).toEqual([[[{ uid: 'u7' }]]]);
+        // Without progress records, everything reads as already gone.
+        const third = await cleanupRunUsers(auth, { ...input, done: new Set() });
+        expect(third).toMatchObject({ alreadyGone: 250, deleted: 0 });
     });
-    it('deletes in batches of at most 1000', async () => {
-        const deleteUsers = vi.fn<AdminAuth['deleteUsers']>(async uids => ({
-            successCount: uids.length - 1,
-            failureCount: 1,
-        }));
-        const uids = Array.from({ length: 2500 }, (_, i) => `u${i}`);
-        expect(await deleteUsersInBatches({ deleteUsers }, uids)).toEqual({
-            deleted: 2497,
-            failed: 3,
+    it('a dry run looks up but neither deletes nor records', async () => {
+        const users = manifestUsers(3);
+        const live = new Map(users.map(user => [user.uid, user.email as string | undefined]));
+        const auth = fake(live);
+        const record = vi.fn();
+        const counts = await cleanupRunUsers(auth, {
+            address,
+            users,
+            done: new Set(),
+            dryRun: true,
+            record,
         });
-        expect(deleteUsers.mock.calls.map(([batch]) => batch.length)).toEqual([1000, 1000, 500]);
+        expect(counts).toMatchObject({ wouldDelete: 3, deleted: 0 });
+        expect(auth.deleteUsers).not.toHaveBeenCalled();
+        expect(record).not.toHaveBeenCalled();
     });
 });

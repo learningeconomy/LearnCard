@@ -6,12 +6,17 @@
  * error-rate stop (failures are data, see the summary); 1 = stopped by an
  * unexpected error; 2 = guard or usage refusal, nothing was sent; 3 = fatal
  * mid-run guard (e.g. the ID token's Firebase project did not match
- * `--firebase-project`), scheduling stopped, including one hit by an operation
- * still in flight when the stages ended.
+ * `--firebase-project`, or the run manifest could not be written), scheduling stopped, including one hit by an operation
+ * still in flight when the stages ended; 4 = cleanup incomplete (some deletions
+ * failed; re-run the same cleanup command).
  */
 export class LoadRefusal extends Error {
     readonly exitCode = 2;
-    constructor(readonly reason: string) {
+    constructor(
+        readonly reason: string,
+        /** Fixed operator guidance printed with the refusal (never upstream text). */
+        readonly hint?: string
+    ) {
         super(`refused: ${reason}`);
         this.name = 'LoadRefusal';
     }
@@ -28,4 +33,4 @@ export class LoadError extends Error {
     }
 }
 
-export const refuse = (reason: string): LoadRefusal => new LoadRefusal(reason);
+export const refuse = (reason: string, hint?: string): LoadRefusal => new LoadRefusal(reason, hint);

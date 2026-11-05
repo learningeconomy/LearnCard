@@ -567,7 +567,20 @@ id only.
   `project_id` equals `--firebase-project`; known production projects and ids
   that look like production are refused. Each ID token's audience is also
   checked against `--firebase-project`; a mismatch stops the run (exit 3).
-  If staging shares a Firebase project with production, the tool cannot be used.
+  The one exception is the shared project (next item); `scoutpass-9a67e` is
+  never allowed.
+- **Shared Firebase project.** Staging lca-api verifies sign-ins from the
+  Firebase project `learncard`, which production also uses (staging has no
+  Firebase project of its own), so the test users have to be created there.
+  That is refused unless the operator passes
+  `--shared-production-firebase learncard` (the value must equal
+  `--firebase-project`; the flag is refused for any other project). The plan
+  then prints a boxed WARNING. Consequences: the synthetic users sit beside
+  real production accounts in the Firebase console, count toward the
+  project's monthly active users (billing), and run any Auth-triggered
+  extension or function the project has. They are removed only by
+  `cleanup --manifest` (below).
+- `--manifest <path>` is required and must not exist yet (see "Run manifest").
 - `--domain` is required and is an **allowlist**: only subdomains of
   `notify.learncard.com`, where the canary's receive-only SES inbox lives (e.g.
   `canary.notify.learncard.com`), are accepted. The bare organisation domains
@@ -600,6 +613,36 @@ id only.
   guard or Ctrl-C that arrives while in-flight work drains after the last start;
   a fatal stop exits 3.
 
+### Before the first run against the shared project (one time)
+
+- **Credential.** Create a dedicated service account in `learncard` with only
+  the **Firebase Authentication Admin** role, use its key for the test window,
+  and delete the service account (not just the key) afterwards. Do not reuse a
+  broader production credential.
+- **Console check.** In the Firebase console for `learncard`, review
+  Extensions and Integrations (and any Cloud Functions on Auth `onCreate` /
+  `onDelete`): each created and deleted test user triggers them. Check the
+  billing plan: if the project is on Identity Platform's monthly-active-user
+  pricing, every synthetic user that signs in counts as an active user for that
+  month (billed above the free tier); size `--max-users` with that in mind.
+  Record the result with the run record (Confluence), not here.
+
+### Run manifest
+
+Before the first Firebase user is created, the tool creates `--manifest <path>`
+(exclusive create: an existing file is refused; mode 0600) with the run id,
+prefix, domain, Firebase project and creation time. After each successful
+`createUser` it appends the uid and that user's synthetic address and fsyncs
+before the user is used, so a crash leaves a usable manifest (a torn last line
+is ignored; a user created but not yet recorded at the moment of a crash is the
+only possible miss). If the manifest cannot be written, the run stops
+(`fatal_manifest_write`, exit 3). The manifest holds no keys, PINs, tokens or
+shares. It is JSON Lines; cleanup appends its progress to it.
+
+The manifest is the **only** cleanup source: the tool never lists or scans the
+project's users. Keep it until cleanup reports every user deleted or already
+gone; without it this run's users cannot be removed by this tool.
+
 ### Usage
 
 Build from the repo root (as in "Staging operator setup" step 4):
@@ -621,7 +664,8 @@ node services/escrow-canary/dist/load.mjs \
   --lca-api-url https://<staging host>/api --staging-host <staging host> --tenant-id <tenant> \
   --firebase-project <staging project> --domain <canary inbox domain> \
   --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
-  --max-users <n> --max-emails <n> --i-understand-roughtime --dry-run
+  --max-users <n> --max-emails <n> --manifest <new file> --i-understand-roughtime \
+  [--shared-production-firebase learncard] --dry-run
 # optional: --enrol-with-pin, --enrol-opt-in, --pin-reset-after-recovery
 # then without --dry-run, redirecting stdout to keep the JSON summary
 ```
@@ -630,12 +674,20 @@ node services/escrow-canary/dist/load.mjs \
 
 ```sh
 export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
-node services/escrow-canary/dist/load.mjs cleanup --run <run id> --domain <domain> \
-  --firebase-project <staging project> [--prefix <prefix>] [--dry-run]
+node services/escrow-canary/dist/load.mjs cleanup --manifest <file> \
+  --firebase-project <project> [--shared-production-firebase learncard] [--dry-run]
 ```
 
-This deletes only the run's Firebase users (matched exactly on
-`<prefix>+<runId>-<n>@<domain>`). The tool does **not** delete anything in
+The same Firebase project guards run first (including the shared-project
+flag), and `--firebase-project` must equal the manifest's project. For each uid
+in the manifest the tool fetches the user (`getUsers`, batches of 100) and
+deletes it (`deleteUsers`) only if its **current** email still matches the run
+(`<prefix>+<runId>-<n>@<domain>`, exactly) and equals the address recorded for
+it. It reports `deleted`, `already-gone` and `skipped-mismatch` (`--dry-run`
+looks up and reports `would-delete`, deleting nothing). Progress is appended to
+the manifest after each batch, so re-running after a crash or a partial failure
+is safe: finished uids are skipped and the rest re-checked. Exit 4 means some
+deletions failed; re-run the same command. The tool does **not** delete anything in
 lca-api or the enclave: user keys (`contactMethod` = the synthetic address,
 `authProvider` = the deleted Firebase uid), escrow blobs and authority records,
 and completed PIN holds for these accounts remain in staging. They can be

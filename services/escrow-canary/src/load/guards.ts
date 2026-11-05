@@ -15,8 +15,25 @@ export const PRODUCTION_API_HOSTS = new Set([
     'vetpass.app',
 ]);
 
-/** Known production Firebase projects (app Firebase config). Refused outright. */
+/** Known production Firebase projects (app Firebase config). Refused by default. */
 export const PRODUCTION_FIREBASE_PROJECTS = new Set(['learncard', 'scoutpass-9a67e']);
+
+/**
+ * The one production Firebase project that may be used, and only with
+ * `--shared-production-firebase <same id>`: staging lca-api verifies sign-ins
+ * from `learncard`, which production also uses (staging has no Firebase
+ * project of its own). Every other production project stays refused.
+ */
+export const SHARED_PRODUCTION_FIREBASE_PROJECT = 'learncard';
+
+/** Printed with the refusal so the operator sees the flag and its risks. */
+export const SHARED_PRODUCTION_FIREBASE_HINT =
+    `"${SHARED_PRODUCTION_FIREBASE_PROJECT}" is the PRODUCTION Firebase project; staging lca-api ` +
+    'also verifies sign-ins from it. To create test users there anyway, add ' +
+    `--shared-production-firebase ${SHARED_PRODUCTION_FIREBASE_PROJECT}. Risks: the users sit ` +
+    'beside real production accounts, count toward monthly active users (billing), run any ' +
+    'Auth-triggered extensions or functions, and are removed only by `cleanup --manifest`. ' +
+    'See README "Load testing (staging only)".';
 
 /**
  * The canary's receive-only SES inbox zone (`infra/escrow-canary-inbox`, e.g.
@@ -86,17 +103,35 @@ export const credentialProjectId = (json: string): string => {
 
 /**
  * `--firebase-project` is required, must equal the service account's project,
- * and must not be (or look like) production.
+ * and must not be (or look like) production, except the shared project
+ * (`SHARED_PRODUCTION_FIREBASE_PROJECT`) when `sharedProduction` (the
+ * `--shared-production-firebase` value) names it exactly. The flag is refused
+ * for any other project, so it cannot be left on by habit.
  */
 export const checkFirebaseProject = (
     expected: string | undefined,
-    credentialProject: string
-): void => {
+    credentialProject: string,
+    sharedProduction?: string
+): { sharedProduction: boolean } => {
     if (!expected) throw refuse('firebase_project_required');
     if (!/^[a-z0-9][a-z0-9-]{3,62}$/.test(expected)) throw refuse('firebase_project_format');
     if (expected !== credentialProject) throw refuse('firebase_project_mismatch');
-    if (PRODUCTION_FIREBASE_PROJECTS.has(expected)) throw refuse('firebase_project_production');
+    // Never allowed, flag or not.
+    if (
+        PRODUCTION_FIREBASE_PROJECTS.has(expected) &&
+        expected !== SHARED_PRODUCTION_FIREBASE_PROJECT
+    )
+        throw refuse('firebase_project_production');
+    if (sharedProduction !== undefined) {
+        if (sharedProduction !== expected) throw refuse('shared_production_firebase_mismatch');
+        if (expected !== SHARED_PRODUCTION_FIREBASE_PROJECT)
+            throw refuse('shared_production_firebase_not_shared');
+        return { sharedProduction: true };
+    }
+    if (expected === SHARED_PRODUCTION_FIREBASE_PROJECT)
+        throw refuse('firebase_project_production', SHARED_PRODUCTION_FIREBASE_HINT);
     if (/(^|-)prod(uction)?(-|$)/.test(expected)) throw refuse('firebase_project_production');
+    return { sharedProduction: false };
 };
 
 /**

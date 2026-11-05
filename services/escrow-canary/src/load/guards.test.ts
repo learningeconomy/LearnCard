@@ -90,6 +90,51 @@ describe('Firebase project', () => {
         for (const id of ['learncard', 'scoutpass-9a67e', 'lc-prod', 'prod-auth', 'lc-production'])
             expect(refusal(() => checkFirebaseProject(id, id))).toBe('firebase_project_production');
         expect(refusal(() => checkFirebaseProject('product-test', 'product-test'))).toBeUndefined();
+        expect(checkFirebaseProject('lc-staging', 'lc-staging')).toEqual({
+            sharedProduction: false,
+        });
+    });
+    it('refuses the shared production project without the flag, explaining it', () => {
+        let caught: unknown;
+        try {
+            checkFirebaseProject('learncard', 'learncard');
+        } catch (error) {
+            caught = error;
+        }
+        expect(caught).toBeInstanceOf(LoadRefusal);
+        expect((caught as LoadRefusal).reason).toBe('firebase_project_production');
+        expect((caught as LoadRefusal).hint).toContain('--shared-production-firebase learncard');
+        expect((caught as LoadRefusal).hint).toContain('billing');
+    });
+    it('refuses a shared-project flag that does not name the project exactly', () => {
+        for (const value of ['', 'LearnCard', 'learncard ', 'lc-staging', 'scoutpass-9a67e'])
+            expect(refusal(() => checkFirebaseProject('learncard', 'learncard', value))).toBe(
+                'shared_production_firebase_mismatch'
+            );
+        // The credential must still be for the same project.
+        expect(refusal(() => checkFirebaseProject('learncard', 'lc-staging', 'learncard'))).toBe(
+            'firebase_project_mismatch'
+        );
+    });
+    it('allows the shared production project with a matching flag', () => {
+        expect(checkFirebaseProject('learncard', 'learncard', 'learncard')).toEqual({
+            sharedProduction: true,
+        });
+    });
+    it('refuses the flag for any other project', () => {
+        expect(refusal(() => checkFirebaseProject('lc-staging', 'lc-staging', 'lc-staging'))).toBe(
+            'shared_production_firebase_not_shared'
+        );
+        expect(refusal(() => checkFirebaseProject('lc-prod', 'lc-prod', 'lc-prod'))).toBe(
+            'shared_production_firebase_not_shared'
+        );
+    });
+    it('never allows scoutpass-9a67e, with or without the flag', () => {
+        const id = 'scoutpass-9a67e';
+        for (const flag of [undefined, id, 'learncard'])
+            expect(refusal(() => checkFirebaseProject(id, id, flag))).toBe(
+                'firebase_project_production'
+            );
     });
 });
 
