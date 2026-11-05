@@ -18,6 +18,7 @@ export const NotificationAnnouncementCard: React.FC<{
     const { mutate: markRead } = useMarkNotificationRead();
     const { closeAllModals } = useModal();
     const [read, setRead] = useState(notification.read);
+    const destination = resolveNotificationRoute(notification);
     const open = (): void => {
         if (!read && notification._id) {
             setRead(true);
@@ -27,7 +28,7 @@ export const NotificationAnnouncementCard: React.FC<{
             );
         }
         closeAllModals();
-        history.push(resolveNotificationRoute(notification));
+        history.push(destination);
     };
     return (
         <div className={`${notificationCardStyles.shell} font-poppins gap-3 ${className ?? ''}`}>
@@ -40,13 +41,15 @@ export const NotificationAnnouncementCard: React.FC<{
                     <p className={notificationCardStyles.body}>{notification.message.body}</p>
                 )}
             </div>
-            <button
-                type="button"
-                onClick={open}
-                className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90"
-            >
-                {m['notifications.viewCampaign']()}
-            </button>
+            {destination.startsWith('/m/') && (
+                <button
+                    type="button"
+                    onClick={open}
+                    className="py-2 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-sm hover:opacity-90"
+                >
+                    {m['notifications.viewCampaign']()}
+                </button>
+            )}
         </div>
     );
 };

@@ -220,7 +220,7 @@ describe('campaign notification entry', () => {
         expect(
             resolveNotificationRoute({
                 type: 'ANNOUNCEMENT',
-                data: { metadata: { campaignId } },
+                data: { metadata: { campaignId, campaignHasInApp: true } },
             } as unknown as LCNNotification)
         ).toBe(route);
     });
@@ -266,3 +266,15 @@ describe('CONSENT_FLOW_CONTRACT_UPDATED notification boundaries', () => {
         );
     });
 });
+
+it.each([false, undefined, 'true'])(
+    'keeps announcements without a confirmed destination in the inbox (%s)',
+    campaignHasInApp => {
+        expect(
+            resolveNotificationRoute({
+                type: 'ANNOUNCEMENT',
+                data: { metadata: { campaignId: 'pilot', campaignHasInApp } },
+            } as unknown as LCNNotification)
+        ).toBe('/notifications');
+    }
+);
