@@ -27,6 +27,8 @@ export type RefreshSendIntent = {
     credentialId?: string;
     refreshId?: string;
     holderDid?: string;
+    contractUri?: string;
+    integrationId?: string;
     pendingReceipt?: ManagedCredentialRefreshReceipt;
     pendingActivityId?: string;
     result?: SendBoostResponse;
@@ -85,6 +87,8 @@ const parseIntent = (props: Record<string, unknown>): RefreshSendIntent => ({
     credentialId: (props.credentialId as string | undefined) ?? undefined,
     refreshId: (props.refreshId as string | undefined) ?? undefined,
     holderDid: (props.holderDid as string | undefined) ?? undefined,
+    contractUri: (props.contractUri as string | undefined) ?? undefined,
+    integrationId: (props.integrationId as string | undefined) ?? undefined,
     pendingReceipt: props.pendingReceipt
         ? (JSON.parse(props.pendingReceipt as string) as ManagedCredentialRefreshReceipt)
         : undefined,
@@ -103,6 +107,19 @@ export const getRefreshSendIntent = async (
     );
     const node = result.records[0]?.get('i');
 
+    return node ? parseIntent(node.properties) : null;
+};
+
+/** Resolve the preparation even when the caller did not supply an idempotency key. */
+export const getRefreshSendIntentForRefresh = async (
+    issuerProfileId: string,
+    refreshId: string
+): Promise<RefreshSendIntent | null> => {
+    const result = await neogma.queryRunner.run(
+        'MATCH (i:RefreshSendIntent {issuerProfileId: $issuerProfileId, refreshId: $refreshId}) RETURN i',
+        { issuerProfileId, refreshId }
+    );
+    const node = result.records[0]?.get('i');
     return node ? parseIntent(node.properties) : null;
 };
 
@@ -182,7 +199,15 @@ const lostIntentClaim = (): TRPCError =>
 export const recordRefreshSendIntent = async (
     intent: RefreshSendIntent,
     fields: Partial<
-        Pick<RefreshSendIntent, 'boostUri' | 'credentialId' | 'refreshId' | 'holderDid'>
+        Pick<
+            RefreshSendIntent,
+            | 'boostUri'
+            | 'credentialId'
+            | 'refreshId'
+            | 'holderDid'
+            | 'contractUri'
+            | 'integrationId'
+        >
     > & { state?: 'prepared' }
 ): Promise<RefreshSendIntent> => {
     const result = await neogma.queryRunner.run(

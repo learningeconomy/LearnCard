@@ -20,6 +20,7 @@ import {
     AllocateCredentialRefreshResult,
     ManagedCredentialRefreshReceipt,
     ManagedCredentialRefreshService,
+    ManagedCredentialRefreshBindingValidator,
     StoredCredentialEnvelope,
     StoredCredentialEnvelopeValidator,
     isStoredCredentialEnvelope,
@@ -533,7 +534,7 @@ const buildManagedRefreshReceipt = (
 
     return {
         refreshId: allocation.refreshId,
-        refreshService: allocation.refreshService,
+        refreshService: ManagedCredentialRefreshBindingValidator.parse(vc.refreshService),
         credentialId: typeof vc.id === 'string' && vc.id.length > 0 ? vc.id : credentialId,
         issuerDid,
         holderDid,
@@ -2010,7 +2011,10 @@ export async function getLearnCardNetworkPlugin(
                     boost.credentialSubject = { ...boost.credentialSubject, id: receipt.holderDid };
                 }
 
-                boost = injectManagedRefreshService(boost, receipt.refreshService);
+                boost = prepareManagedRefreshContext({
+                    ...boost,
+                    refreshService: receipt.refreshService,
+                });
                 boost.credentialStatus = receipt.credentialStatus;
 
                 const signedCredential = await issueCredentialWithNetworkStatus(
@@ -2026,6 +2030,7 @@ export async function getLearnCardNetworkPlugin(
                     credentialId: receipt.credentialId,
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,
+                    refreshService: receipt.refreshService,
                     credentialStatus: BitstringStatusListEntryValidator.or(
                         BitstringStatusListEntryValidator.array()
                     ).parse(receipt.credentialStatus),
@@ -2571,11 +2576,13 @@ export async function getLearnCardNetworkPlugin(
                             holderDid: prepared.holderDid,
                             issuerDid: _learnCard.id.did(),
                             credentialStatus: boundCredentialStatus,
+                            refreshService: ManagedCredentialRefreshBindingValidator.parse(
+                                signedCredential.refreshService
+                            ),
                         };
 
                         assertManagedCredentialBinding(signedCredential, {
                             ...holderBindings,
-                            refreshService: prepared.refreshService,
                             encryptionMode: 'holder',
                         });
 
@@ -2596,6 +2603,7 @@ export async function getLearnCardNetworkPlugin(
                                 holderClient.sendHolderEncryptedRefreshable.mutate({
                                     handoff,
                                     boostUri: prepared.boostUri,
+                                    idempotencyKey: input.idempotencyKey,
                                 })
                         );
 
@@ -2604,7 +2612,7 @@ export async function getLearnCardNetworkPlugin(
                             uri: prepared.boostUri,
                             credentialUri: delivered.uri,
                             activityId: delivered.activityId,
-                            refresh: { ...holderBindings, refreshService: prepared.refreshService },
+                            refresh: holderBindings,
                         };
                     }
 

@@ -94,11 +94,13 @@ export const credentialRefreshesRouter = t.router({
                 credentialId: refresh.credentialId,
                 issuerDid: refresh.issuerDid,
                 holderDid: refresh.holderDid,
-                refreshService: {
-                    id: getCredentialRefreshServiceUrl(refresh.refreshId, ctx.domain),
-                    type: 'LearnCardCredentialRefresh2026',
-                    authorization: { type: 'LearnCardDIDAuth' },
-                },
+                refreshService: refresh.refreshServiceBinding
+                    ? JSON.parse(refresh.refreshServiceBinding)
+                    : {
+                          id: getCredentialRefreshServiceUrl(refresh.refreshId, ctx.domain),
+                          type: 'LearnCardCredentialRefresh2026',
+                          authorization: { type: 'LearnCardDIDAuth' },
+                      },
                 ...(status === null ? {} : { credentialStatus: status }),
                 encryptionMode: refresh.encryptionMode ?? 'network',
             });
@@ -287,6 +289,7 @@ export const credentialRefreshesRouter = t.router({
             const { uri, activityId } = await sendHolderEncryptedRefreshableCredential({
                 issuerProfile: profile,
                 handoff: input.handoff,
+                idempotencyKey: input.idempotencyKey,
                 boostUri: input.boostUri,
                 skipNotification: input.skipNotification,
                 domain: ctx.domain,

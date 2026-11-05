@@ -207,6 +207,29 @@ beforeEach(() => {
 });
 
 describe('unified send with encryption: "holder"', () => {
+    it('preserves additional services and forwards the preparation idempotency key', async () => {
+        const other = {
+            id: 'https://issuer.example/refresh/other',
+            type: '1EdTechCredentialRefresh',
+        };
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ refreshService: other }),
+        });
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+        const result = await plugin.methods?.send(learnCard, {
+            ...HOLDER_SEND_INPUT,
+            idempotencyKey: 'stable-key',
+        });
+        expect(result).toMatchObject({ refresh: { refreshService: [REFRESH_SERVICE, other] } });
+        expect(client.credentialRefresh.sendHolderEncryptedRefreshable.mutate).toHaveBeenCalledWith(
+            expect.objectContaining({
+                idempotencyKey: 'stable-key',
+                handoff: expect.objectContaining({ refreshService: [REFRESH_SERVICE, other] }),
+            })
+        );
+    });
     it.each([false, true])('preserves the signed status shape (array=%s)', async arrayShape => {
         const credentialStatus = arrayShape ? [STATUS_ENTRY] : STATUS_ENTRY;
         const client = getMockClient();
@@ -251,6 +274,7 @@ describe('unified send with encryption: "holder"', () => {
                 'issuerDid',
                 'jwe',
                 'refreshId',
+                'refreshService',
             ].sort()
         );
         expect(handoffCall.handoff.credentialId).toBe(defaultPreparedHolder.credentialId);
@@ -556,6 +580,34 @@ describe('publishHolderEncryptedRefreshable', () => {
             expect.objectContaining({ credentialStatus })
         );
     });
+
+    it.each([false, true])(
+        'publishes the receipt service shape rather than the template shape (array=%s)',
+        async arrayShape => {
+            const other = {
+                id: 'https://issuer.example/refresh/other',
+                type: '1EdTechCredentialRefresh',
+            };
+            const refreshService = arrayShape ? [REFRESH_SERVICE, other] : REFRESH_SERVICE;
+            const client = getMockClient();
+            const learnCard = getMockIssuingLearnCard();
+            const plugin = await getPlugin(learnCard, client);
+            await plugin.methods?.publishHolderEncryptedRefreshable(
+                learnCard,
+                { ...RECEIPT, refreshService },
+                UnsignedVCValidator.parse(getUnsignedBoostTemplate({ refreshService: other })),
+                { notify: false }
+            );
+            expect(learnCard.invoke.issueCredential).toHaveBeenCalledWith(
+                expect.objectContaining({ refreshService })
+            );
+            expect(
+                client.credentialRefresh.publishHolderEncryptedRefreshable.mutate
+            ).toHaveBeenCalledWith(
+                expect.objectContaining({ handoff: expect.objectContaining({ refreshService }) })
+            );
+        }
+    );
 
     it('publishes a new version, encrypted to the current recipients, with explicit notify', async () => {
         const client = getMockClient();

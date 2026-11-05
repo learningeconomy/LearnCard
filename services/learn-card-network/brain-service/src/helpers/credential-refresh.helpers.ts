@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
     VC,
+    ManagedCredentialRefreshBindingValidator,
     type AllocateCredentialRefreshResult,
     type BitstringStatusListEntry,
     type CredentialRefreshSigningMode,
@@ -20,6 +21,7 @@ import {
 } from '@learncard/types';
 import {
     assertExactJweRecipients,
+    canonicalizeCredentialJson,
     getCredentialEffectiveTime,
     getBitstringStatusListEntries,
     getCredentialIssuerId,
@@ -85,6 +87,14 @@ import type { TenantBranding } from '@learncard/email-templates';
 import { getDidWeb } from './did.helpers';
 import { isRelationshipBlocked } from './connection.helpers';
 import { ProfileType } from 'types/profile';
+import { resolveContractForSend } from './send-contract.helpers';
+import {
+    getRefreshSendIntent,
+    getRefreshSendIntentForRefresh,
+    markRefreshSendIntentDelivered,
+    reconcileBoundRefreshSendIntent,
+    recordRefreshSendIntentPending,
+} from './refresh-send-intent.helpers';
 
 /**
  * Managed credential refresh issuance helpers (LC-2135).
@@ -586,6 +596,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
     credentialIssuerDid: string;
     statusEntries: BitstringStatusListEntry[];
     credentialStatus: CredentialStatus | CredentialStatus[] | undefined;
+    refreshService: ManagedCredentialRefreshReceipt['refreshService'];
     jwe: JWE;
     materialDigest: string;
     credentialStatusDigest: string;
@@ -605,6 +616,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
         credentialIssuerDid,
         statusEntries,
         credentialStatus,
+        refreshService,
         jwe,
         materialDigest: rootMaterialDigest,
         credentialStatusDigest,
@@ -622,11 +634,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
     // bodies, plaintext VC content, and JWE payloads.
     const buildReceipt = (): ManagedCredentialRefreshReceipt => ({
         refreshId,
-        refreshService: {
-            id: getCredentialRefreshServiceUrl(refreshId, domain),
-            type: 'LearnCardCredentialRefresh2026',
-            authorization: { type: 'LearnCardDIDAuth' },
-        },
+        refreshService,
         credentialId: aggregate.credentialId,
         issuerDid: credentialIssuerDid,
         holderDid: aggregate.holderDid!,
@@ -725,6 +733,7 @@ const deliverManagedRefreshVersion1Credential = async (params: {
             credentialSubjectDigest,
             credentialStatusDigest,
             credentialStatusBinding: JSON.stringify(credentialStatus ?? null),
+            refreshServiceBinding: JSON.stringify(refreshService),
             initialNotificationSuppressed: skipNotification,
         };
         const bindQuery = contractTerms
@@ -773,7 +782,8 @@ const deliverManagedRefreshVersion1Credential = async (params: {
                        refresh.materialDigest = $materialDigest,
                        refresh.rootMaterialDigest = $materialDigest,
                         refresh.credentialStatusDigest = $credentialStatusDigest,
-                        refresh.credentialStatusBinding = $credentialStatusBinding,
+                         refresh.credentialStatusBinding = $credentialStatusBinding,
+                        refresh.refreshServiceBinding = $refreshServiceBinding,
                        refresh.credentialSubjectDigest = $credentialSubjectDigest,
                        refresh.boostId = $boostId,
                        refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
@@ -802,7 +812,8 @@ const deliverManagedRefreshVersion1Credential = async (params: {
                        refresh.materialDigest = $materialDigest,
                        refresh.rootMaterialDigest = $materialDigest,
                         refresh.credentialStatusDigest = $credentialStatusDigest,
-                        refresh.credentialStatusBinding = $credentialStatusBinding,
+                         refresh.credentialStatusBinding = $credentialStatusBinding,
+                        refresh.refreshServiceBinding = $refreshServiceBinding,
                        refresh.credentialSubjectDigest = $credentialSubjectDigest,
                        refresh.boostId = $boostId,
                        refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
@@ -1029,6 +1040,7 @@ export const sendRefreshableCredential = async (
         credentialIssuerDid,
         statusEntries: getBitstringStatusListEntries(credential),
         credentialStatus: credential.credentialStatus,
+        refreshService: ManagedCredentialRefreshBindingValidator.parse(credential.refreshService),
         jwe,
         materialDigest: rootMaterialDigest,
         credentialStatusDigest,
@@ -1045,6 +1057,7 @@ export const sendRefreshableCredential = async (
 export type SendHolderEncryptedRefreshableCredentialParams = {
     issuerProfile: ProfileType;
     handoff: HolderEncryptedHandoff;
+    idempotencyKey?: string;
     boostUri?: string;
     skipNotification?: boolean;
     domain: string;
@@ -1063,7 +1076,7 @@ export type SendHolderEncryptedRefreshableCredentialParams = {
 export const sendHolderEncryptedRefreshableCredential = async (
     params: SendHolderEncryptedRefreshableCredentialParams
 ): Promise<SendRefreshableCredentialResult & { activityId: string }> => {
-    const { issuerProfile, handoff, boostUri, skipNotification = false, domain } = params;
+    const { issuerProfile, handoff, skipNotification = false, domain } = params;
 
     const aggregate = await getCredentialRefresh(handoff.refreshId);
 
@@ -1118,6 +1131,46 @@ export const sendHolderEncryptedRefreshableCredential = async (
         });
     }
 
+    const intent = params.idempotencyKey
+        ? await getRefreshSendIntent(issuerProfile.profileId, params.idempotencyKey)
+        : await getRefreshSendIntentForRefresh(issuerProfile.profileId, handoff.refreshId);
+    if (
+        !intent ||
+        intent.state === 'preparing' ||
+        intent.refreshId !== handoff.refreshId ||
+        intent.holderDid !== handoff.holderDid ||
+        intent.credentialId !== handoff.credentialId ||
+        !intent.boostUri ||
+        (params.boostUri !== undefined && params.boostUri !== intent.boostUri)
+    ) {
+        throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'This request does not match the prepared refresh send.',
+        });
+    }
+    const boostUri = intent.boostUri;
+    const completed = await reconcileBoundRefreshSendIntent(intent, domain);
+    if (completed?.type === 'boost' && completed.refresh && completed.credentialUri) {
+        return {
+            uri: completed.credentialUri,
+            receipt: completed.refresh,
+            activityId: completed.activityId,
+        };
+    }
+
+    const refreshService = handoff.refreshService ?? {
+        id: getCredentialRefreshServiceUrl(handoff.refreshId, domain),
+        type: 'LearnCardCredentialRefresh2026' as const,
+        authorization: { type: 'LearnCardDIDAuth' as const },
+    };
+    const managedServices = getManagedRefreshServices({ refreshService });
+    if (
+        managedServices.length !== 1 ||
+        managedServices[0]!.id !== getCredentialRefreshServiceUrl(handoff.refreshId, domain)
+    ) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid refresh service binding' });
+    }
+
     const holderProfile = aggregate.holderProfileId
         ? await getProfileByProfileId(aggregate.holderProfileId)
         : null;
@@ -1138,15 +1191,47 @@ export const sendHolderEncryptedRefreshableCredential = async (
         throw new TRPCError({ code: 'CONFLICT', message: 'RECIPIENTS_CHANGED' });
     }
 
-    const activityId = await logCredentialSent({
-        actorProfileId: issuerProfile.profileId,
-        onBehalfOf: params.onBehalfOf,
-        recipientType: 'profile',
-        recipientIdentifier: holderProfile.profileId,
-        recipientProfileId: holderProfile.profileId,
-        boostUri,
-        source: 'send',
+    const boost = await getBoostByUri(boostUri);
+    if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+    const contractTerms = await resolveContractForSend({
+        profile: issuerProfile,
+        targetProfile: holderProfile,
+        boost,
+        boostCreated: false,
+        contractUri: intent.contractUri,
     });
+    if (intent.contractUri && !contractTerms) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'User has not yet approved the latest version of this contract',
+        });
+    }
+
+    const activityId =
+        intent.pendingActivityId ??
+        (await logCredentialSent({
+            actorProfileId: issuerProfile.profileId,
+            onBehalfOf: params.onBehalfOf,
+            recipientType: 'profile',
+            recipientIdentifier: holderProfile.profileId,
+            recipientProfileId: holderProfile.profileId,
+            boostUri,
+            source: 'send',
+            integrationId: intent.integrationId,
+        }));
+
+    await recordRefreshSendIntentPending(
+        intent,
+        {
+            refreshId: handoff.refreshId,
+            credentialId: handoff.credentialId,
+            issuerDid: handoff.issuerDid,
+            holderDid: handoff.holderDid,
+            credentialStatus: handoff.credentialStatus,
+            refreshService,
+        },
+        activityId
+    );
 
     const delivered = await deliverManagedRefreshVersion1Credential({
         activityId,
@@ -1160,12 +1245,22 @@ export const sendHolderEncryptedRefreshableCredential = async (
         }),
         credentialStatus: handoff.credentialStatus,
         jwe: handoff.jwe,
-        materialDigest: computeRefreshEtag(JSON.stringify(handoff.jwe)),
+        refreshService,
+        materialDigest: intent.requestDigest,
         credentialStatusDigest: computeCredentialStatusDigest(handoff.credentialStatus),
         credentialSubjectDigest: null,
         boostUri,
         skipNotification,
+        integrationId: intent.integrationId,
+        contractTerms: contractTerms ?? undefined,
         domain,
+    });
+    await markRefreshSendIntentDelivered(intent, {
+        type: 'boost',
+        uri: boostUri,
+        credentialUri: delivered.uri,
+        activityId,
+        refresh: delivered.receipt,
     });
     return { ...delivered, activityId };
 };
@@ -1359,6 +1454,14 @@ const assertRefreshVersionInvariants = async (
             code: 'BAD_REQUEST',
             message: 'Credential does not contain the allocated refresh service',
         });
+    }
+
+    if (
+        aggregate.refreshServiceBinding &&
+        canonicalizeCredentialJson(credential.refreshService) !==
+            canonicalizeCredentialJson(JSON.parse(aggregate.refreshServiceBinding))
+    ) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid refresh service binding' });
     }
 
     if (
@@ -1892,6 +1995,19 @@ export const publishHolderEncryptedRefreshableCredential = async (
             code: 'BAD_REQUEST',
             message: 'Credential status does not match the original credential',
         });
+    }
+
+    if (
+        aggregate.refreshServiceBinding &&
+        canonicalizeCredentialJson(
+            handoff.refreshService ?? {
+                id: getCredentialRefreshServiceUrl(refreshId, domain),
+                type: 'LearnCardCredentialRefresh2026',
+                authorization: { type: 'LearnCardDIDAuth' },
+            }
+        ) !== canonicalizeCredentialJson(JSON.parse(aggregate.refreshServiceBinding))
+    ) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid refresh service binding' });
     }
 
     await bindRefreshStatusEntries(

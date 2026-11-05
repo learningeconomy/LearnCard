@@ -1,6 +1,11 @@
 import { z } from 'zod/v4';
 
-import { CredentialStatusValidator, UnsignedVCValidator, VCValidator } from './vc';
+import {
+    CredentialStatusValidator,
+    RefreshServiceValidator,
+    UnsignedVCValidator,
+    VCValidator,
+} from './vc';
 import { JWEValidator } from './crypto';
 
 export const AttachCredentialRefreshStatusEntriesInputValidator = z.object({
@@ -42,6 +47,17 @@ export const ManagedCredentialRefreshServiceValidator = z
 export type ManagedCredentialRefreshService = z.infer<
     typeof ManagedCredentialRefreshServiceValidator
 >;
+
+/** Exact signed descriptor, including additional services and their order. */
+export const ManagedCredentialRefreshBindingValidator = ManagedCredentialRefreshServiceValidator.or(
+    RefreshServiceValidator.array().refine(
+        services =>
+            services.some(
+                service => ManagedCredentialRefreshServiceValidator.safeParse(service).success
+            ),
+        'A managed refresh service is required'
+    )
+);
 
 /** Standard 1EdTech protocol: HTTPS GET returning a signed VC or VC-JWT. */
 export const StandardCredentialRefreshServiceValidator = z
@@ -96,7 +112,7 @@ export type AllocateCredentialRefreshResult = z.infer<
 export const ManagedCredentialRefreshReceiptValidator = z
     .object({
         refreshId: z.string().min(1),
-        refreshService: ManagedCredentialRefreshServiceValidator,
+        refreshService: ManagedCredentialRefreshBindingValidator,
         credentialId: z.string().min(1),
         issuerDid: z.string().min(1),
         holderDid: z.string().min(1),
@@ -127,6 +143,7 @@ export const HolderEncryptedHandoffValidator = z
         holderDid: z.string().min(1),
         issuerDid: z.string().min(1),
         credentialStatus: CredentialStatusValidator.or(CredentialStatusValidator.array()),
+        refreshService: ManagedCredentialRefreshBindingValidator.optional(),
         jwe: JWEValidator,
     })
     .strict();
@@ -135,6 +152,7 @@ export type HolderEncryptedHandoff = z.infer<typeof HolderEncryptedHandoffValida
 /** Delivers version 1 of a holder-mode (student-only encrypted) managed refresh. */
 export const SendHolderEncryptedRefreshableInputValidator = z.object({
     handoff: HolderEncryptedHandoffValidator,
+    idempotencyKey: z.string().min(1).optional(),
     boostUri: z.string().optional(),
     skipNotification: z.boolean().optional(),
 });

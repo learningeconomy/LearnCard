@@ -41,6 +41,7 @@ import {
     PrepareRefreshableSendResult,
     AllocateCredentialStatusInputValidator,
     AllocatedBitstringStatusListEntryValidator,
+    ManagedCredentialRefreshBindingValidator,
 } from '@learncard/types';
 import {
     isVC2Format,
@@ -145,12 +146,7 @@ import {
     getSigningAuthorityForUserByName,
     getPrimarySigningAuthorityForUser,
 } from '@accesslayer/signing-authority/relationships/read';
-import {
-    getContractDetailsByUri,
-    getContractTermsForProfile,
-    getWritersForContract,
-} from '@accesslayer/consentflowcontract/relationships/read';
-import { setRelatedBoostForContract } from '@accesslayer/consentflowcontract/relationships/create';
+import { resolveContractForSend } from '@helpers/send-contract.helpers';
 
 import {
     isClaimLinkAlreadySetForBoost,
@@ -289,63 +285,6 @@ const resolveBoostCredentialInstance = async ({
     return getCredentialInstanceForBoostAndProfile(boostId, recipientProfileId);
 };
 
-/**
- * Resolves the approved consent-flow contract terms for a unified send, and links a
- * newly created boost to the contract. Shared by the normal and managed-refresh send
- * paths so contract linkage semantics stay identical.
- */
-const resolveContractForSend = async (params: {
-    profile: ProfileType;
-    targetProfile: ProfileType;
-    boost: BoostInstance;
-    boostCreated: boolean;
-    contractUri?: string;
-}) => {
-    const { profile, targetProfile, boost, boostCreated, contractUri } = params;
-
-    let contractTerms = null as Awaited<ReturnType<typeof getContractTermsForProfile>> | null;
-    let contractDetails: Awaited<ReturnType<typeof getContractDetailsByUri>> | null = null;
-
-    if (contractUri) {
-        const decodedContractUri = decodeURIComponent(contractUri);
-        contractDetails = await traceDb('getContractDetailsByUri', () =>
-            getContractDetailsByUri(decodedContractUri)
-        );
-
-        if (!contractDetails) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Could not find contract',
-            });
-        }
-
-        const terms = await traceDb('getContractTermsForProfile', () =>
-            getContractTermsForProfile(targetProfile, contractDetails!.contract)
-        );
-
-        const writers = await traceDb('getWritersForContract', () =>
-            getWritersForContract(contractDetails!.contract)
-        );
-        const isWriter = writers.some(writer => writer.profileId === profile.profileId);
-        const isDenied = terms?.terms.deniedWriters?.includes(profile.profileId) ?? false;
-        const categoryAllowed = boost.category
-            ? terms?.terms.write?.credentials?.categories?.[boost.category] === true
-            : true;
-
-        if (terms && isWriter && !isDenied && categoryAllowed) {
-            contractTerms = terms;
-        }
-    }
-
-    if (boostCreated && contractDetails) {
-        await traceDb('setRelatedBoostForContract', () =>
-            setRelatedBoostForContract(contractDetails!.contract, boost)
-        );
-    }
-
-    return contractTerms;
-};
-
 /** Validate managed send support and recipient before creating any send state. */
 const validateRefreshSendRecipient = async ({
     profile,
@@ -479,10 +418,10 @@ const prepareManagedRefreshSend = async (params: {
 
     let intent: RefreshSendIntent | undefined;
 
-    if (params.idempotencyKey) {
+    if (params.idempotencyKey || holderMode) {
         const claim = await claimRefreshSendIntent({
             issuerProfileId: profile.profileId,
-            idempotencyKey: params.idempotencyKey,
+            idempotencyKey: params.idempotencyKey ?? uuid(),
             requestDigest: computeRefreshSendRequestDigest({
                 recipientProfileId: targetProfile.profileId,
                 holderDid,
@@ -602,6 +541,8 @@ const prepareManagedRefreshSend = async (params: {
             credentialId,
             refreshId,
             holderDid,
+            contractUri,
+            integrationId: params.integrationId,
             state: 'prepared',
         });
     }
@@ -1673,7 +1614,10 @@ export const boostsRouter = t.router({
                                     intent,
                                     {
                                         refreshId,
-                                        refreshService: managedRefreshServiceFor(refreshId, domain),
+                                        refreshService:
+                                            ManagedCredentialRefreshBindingValidator.parse(
+                                                signedVc.refreshService
+                                            ),
                                         credentialId: signedVc.id as string,
                                         issuerDid:
                                             getCredentialIssuerId(signedVc) ??

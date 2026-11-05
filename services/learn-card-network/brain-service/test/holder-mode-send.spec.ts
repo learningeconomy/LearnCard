@@ -1,6 +1,8 @@
 import { vi } from 'vitest';
 import type { HolderEncryptedHandoff, JWE, UnsignedVC, VC } from '@learncard/types';
 import { JWEValidator, VCValidator } from '@learncard/types';
+import { assertManagedCredentialBinding } from '@learncard/helpers';
+import { getRefreshSendIntent } from '@helpers/refresh-send-intent.helpers';
 
 import { neogma } from '@instance';
 
@@ -156,6 +158,7 @@ const buildHandoff = async (
             issuerDid: params.issuerDid ?? issuerId,
             credentialStatus: (params.credentialStatus ??
                 credential.credentialStatus) as HolderEncryptedHandoff['credentialStatus'],
+            refreshService: credential.refreshService as HolderEncryptedHandoff['refreshService'],
             jwe,
         },
     };
@@ -197,6 +200,10 @@ describe('Holder-mode managed sends (LC-2345)', () => {
         await runQuery('MATCH (c:Credential) DETACH DELETE c');
         await runQuery('MATCH (b:Boost) DETACH DELETE b');
         await runQuery('MATCH (i:RefreshSendIntent) DETACH DELETE i');
+        await runQuery('MATCH (a:CredentialActivity) DETACH DELETE a');
+        await runQuery('MATCH (t:ConsentFlowTransaction) DETACH DELETE t');
+        await runQuery('MATCH (t:ConsentFlowTerms) DETACH DELETE t');
+        await runQuery('MATCH (c:ConsentFlowContract) DETACH DELETE c');
         await runQuery('MATCH (l:BitstringStatusList) DETACH DELETE l');
         await runQuery('MATCH (bind:CredentialStatusBinding) DETACH DELETE bind');
         await runQuery('MATCH (p:Profile) DETACH DELETE p');
@@ -213,6 +220,74 @@ describe('Holder-mode managed sends (LC-2345)', () => {
     });
 
     describe('sendHolderEncryptedRefreshable: success', () => {
+        it('completes the intent and replays fresh ciphertext without another activity or delivery', async () => {
+            const idempotencyKey = 'holder-send-replay';
+            const prepared = await prepareHolderSend({ idempotencyKey });
+            const { credential, handoff } = await buildHandoff(prepared);
+            const send = issuer.clients.fullAuth.credentialRefresh.sendHolderEncryptedRefreshable;
+            const first = await send({ handoff, idempotencyKey });
+            const retry = await buildHandoff(prepared, { credential });
+            expect(retry.handoff.jwe).not.toEqual(handoff.jwe);
+            expect(await send({ handoff: retry.handoff, idempotencyKey })).toEqual(first);
+            expect(await getRefreshSendIntent(ISSUER_PROFILE_ID, idempotencyKey)).toMatchObject({
+                state: 'delivered',
+                result: { credentialUri: first.uri, activityId: first.activityId },
+            });
+            const counts = await runQuery('MATCH (a:CredentialActivity) RETURN count(a) AS count');
+            expect(toNum(counts.records[0]?.get('count'))).toBe(1);
+            const sent = await runQuery(
+                'MATCH ()-[r:CREDENTIAL_SENT]->() RETURN count(r) AS count'
+            );
+            expect(toNum(sent.records[0]?.get('count'))).toBe(1);
+            const other = await prepareHolderSend({ recipient: OUTSIDER_PROFILE_ID });
+            const otherHandoff = await buildHandoff(other, {
+                recipients: [outsider.learnCard.id.did()],
+            });
+            await expect(
+                send({ handoff: otherHandoff.handoff, idempotencyKey })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            await expect(
+                send({ handoff: { ...handoff, holderDid: other.holderDid }, idempotencyKey })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await runQuery(
+                "MATCH (i:RefreshSendIntent {refreshId: $refreshId}) SET i.state = 'prepared' REMOVE i.result",
+                { refreshId: prepared.refreshId }
+            );
+            expect(await send({ handoff: retry.handoff, idempotencyKey })).toEqual(first);
+        });
+
+        it.each([false, true])(
+            'returns the exact service descriptor before claim (array=%s)',
+            async arrayShape => {
+                const prepared = await prepareHolderSend();
+                const refreshService = arrayShape
+                    ? [
+                          prepared.refreshService,
+                          {
+                              id: 'https://example.org/refresh/other',
+                              type: 'https://example.org/OtherRefreshService',
+                          },
+                      ]
+                    : prepared.refreshService;
+                const credential = await signHolderCredential(prepared, { refreshService });
+                const { handoff } = await buildHandoff(prepared, { credential });
+                const uri = await sendHandoff(handoff);
+                const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+                expect(receipt?.refreshService).toEqual(refreshService);
+                expect(receipt).not.toBeNull();
+                assertManagedCredentialBinding(credential, receipt!);
+                await holder.clients.fullAuth.credential.acceptCredential({ uri });
+                expect((await getCredentialRefresh(prepared.refreshId))?.state).toBe('active');
+                if (arrayShape) {
+                    expect(() =>
+                        assertManagedCredentialBinding(
+                            { ...credential, refreshService: prepared.refreshService },
+                            receipt!
+                        )
+                    ).toThrow('MANAGED_CREDENTIAL_BINDING_MISMATCH');
+                }
+            }
+        );
         it('stores only the JWE, matches the published recipient set, and leaks no claim', async () => {
             const prepared = await prepareHolderSend();
 
@@ -264,6 +339,57 @@ describe('Holder-mode managed sends (LC-2345)', () => {
     });
 
     describe('sendHolderEncryptedRefreshable: structural rejections', () => {
+        it('rejects consent withdrawn after preparation and records writes only while consent is live', async () => {
+            await runQuery('MATCH (:Profile {profileId: $id})-[r:MANAGED_BY]->() DELETE r', {
+                id: HOLDER_PROFILE_ID,
+            });
+            const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: { required: false } } } },
+                },
+                name: 'Holder delivery contract',
+                writers: [ISSUER_PROFILE_ID],
+            });
+            const { termsUri } = await holder.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: {
+                    read: { anonymize: false },
+                    write: { credentials: { categories: { TestBoosts: true } } },
+                },
+            });
+            await linkManager(MANAGER_PROFILE_ID);
+            const prepared = await prepareHolderSend({
+                contractUri,
+                idempotencyKey: 'consented-holder-send',
+                display: { name: 'Prepared credential', category: 'TestBoosts' },
+            });
+            expect(
+                await getRefreshSendIntent(ISSUER_PROFILE_ID, 'consented-holder-send')
+            ).toMatchObject({ contractUri });
+            const first = await buildHandoff(prepared);
+            await sendHandoff(first.handoff);
+            const transactions = await runQuery(
+                "MATCH (t:ConsentFlowTransaction {action: 'write'}) RETURN count(t) AS count"
+            );
+            expect(toNum(transactions.records[0]?.get('count'))).toBe(1);
+
+            const pending = await prepareHolderSend({
+                contractUri,
+                display: { name: 'Prepared credential', category: 'TestBoosts' },
+            });
+            await holder.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+            const { handoff } = await buildHandoff(pending);
+            await expect(sendHandoff(handoff)).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: 'User has not yet approved the latest version of this contract',
+            });
+            expect(await getCredentialRefreshHead(pending.refreshId)).toBeNull();
+            const sent = await runQuery(
+                'MATCH ()-[r:CREDENTIAL_SENT]->() RETURN count(r) AS count'
+            );
+            expect(toNum(sent.records[0]?.get('count'))).toBe(1);
+        });
         it('rejects a JWE encrypted to the wrong recipient entirely', async () => {
             const prepared = await prepareHolderSend();
             const { handoff } = await buildHandoff(prepared, {
