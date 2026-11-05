@@ -380,7 +380,7 @@ queue cannot guarantee bounded revocation latency. Unconfigured mode remains una
 
 - **RESOLVED-PIN-SIGN-IN (D19) — trade-off accepted: Jackson Smith (CTO), 2026-11-03.** PIN sign-in keeps the account by default, with the compensating controls and known limits listed under D19 ([PR #1905](https://github.com/learningeconomy/LearnCard/pull/1905)). Remaining before production (verification, not a decision): confirm the two nitro behaviours listed under D19 against a live enclave (so far verified by code reading only), and run the PIN sign-in, secure-account and canary tier 2 journeys on staging.
 
-- **BLOCKER-TIME — all three sources verify; operational review remains:** Three operator-published keys are compiled in: Cloudflare, int08h and Tanner Ryan. All three verify live from the staging host (2026-10-06, image `vc3b4711b`). Cloudflare's draft-08 replies omit the `NONC` echo; the parser now accepts that (the nonce is bound by the signed Merkle `ROOT`) and still rejects a present-but-wrong echo, covered by a real captured response. Before launch obtain Tanner's requested high-volume infrastructure approval and review public-service availability/rate limits. No Netnod Roughtime endpoint/key could be established from its official pages, so none is guessed. Signed processing-time/delayed-delivery limitations remain unchanged. ([Design Decisions](#design-decisions) D2)
+- **BLOCKER-TIME — all three sources verify; operational review remains:** Three operator-published keys are compiled in: Cloudflare, int08h and Tanner Ryan. All three verify live from the staging host (2026-10-06, image `vc3b4711b`). Cloudflare's draft-08 replies omit the `NONC` echo; the parser now accepts that (the nonce is bound by the signed Merkle `ROOT`) and still rejects a present-but-wrong echo, covered by a real captured response. Before launch obtain Tanner's requested high-volume infrastructure approval and review public-service availability/rate limits. **Status (2026-11-05):** all three operators acknowledged LearnCard's use (operator-reported, 2026-10-30); the 100% volume figures and the owner's sign-off remain (LAUNCH-DECISIONS.md RT). No Netnod Roughtime endpoint/key could be established from its official pages, so none is guessed. Signed processing-time/delayed-delivery limitations remain unchanged. ([Design Decisions](#design-decisions) D2)
 - **BLOCKER-ENROLLMENT — resolved when configured, not an unconditional launch approval:** Measured scope and attested writer credentials select `AuthorityEnrollment`; owner Ed25519 `did:key` intent binds exact source/target identities and expected enrollment version. Older/fabricated sources (attack B), signature replay, counter rollback through parent history and competing enclave writes are refused. Operation revision is separate from enrollment version. Set/change/clear require signatures and reset a PIN generation; keep/carry/rewrap preserve its ten-attempt budget. Rewrap requires original signed delegation and preserves DID/share/epoch/verifier/count. The actual resealed envelope is committed atomically. Unconfigured mode remains `UnavailableEnrollment`. Credential provisioning, IAM/SCP verification and rollout are operator gates, not established by offline tests.
 - **RESOLVED-PIN-EPOCH-CARRY (P8.3/H1, v2):** Chain identity is SHA-256 of `learncard-ledger-chain-v2\0 || tenant_byte_length_u64_be || tenant || sha256(did) || blob_hash`. `sourceEnrollmentEpoch` still binds signed source records but never selects the chain. Stateful `observe` rejects changed epoch, invalid or remembered stale history with `Ledger`; storage failures map to `Unavailable`. Every carry/rewrap appends and reads back a first `Carried` event on the output blob's empty chain before returning ciphertext. Its code-7 CBOR array is `[7, sourceChainId(bytes32), sourceHeadHash(bytes32), attemptsCarried(uint 0..10)]`. The floor is `min(10, sourceCarried + sourceAttemptsUsed)`; positive encrypted floors must match the first signed Carried event on carry, hold creation and release. Carry binds `targetEnrollmentEpoch`; rewrap preserves the source epoch. Append failure returns no blob. The monitor checks the source prefix accounting on INSERT and sweeps without recursive ancestry traversal. An all-zero head denotes an empty prefix with floor zero (the source may have later acquired ordinary hold records); nonzero heads must exist in the authenticated source chain. Client-made new blobs legitimately start at zero. Nitro never ran in production, so there is no chain migration.
     - **Floor accounting:** `ChainState.attempts_used` counts attempts on the destination chain only; `policy.rs` adds the inherited floor at its call sites (release budget and carry floor). The inherited count is not hidden from the monitor: it is signed in the destination's `Carried` genesis record, which the monitor parses and checks against the source head (`services/escrow-ledger-monitor/src/lib.rs`). `PinAttemptReserved` numbering restarts on the destination chain, and an explicit `PinLocked` record is written only when the local count reaches ten; a carried account can lock earlier (`floor + local >= 10`), enforced by the budget check rather than by that audit record.
@@ -398,6 +398,33 @@ Sweeps paginate both heads and records (25 items/page, at most 10,000 pages per
 table), detect record partitions lacking heads, and emit SweepCompleted only after
 both scans finish. Operational errors/cap exhaustion fail the invocation, not a
 fabricated empty result. Fully suppressed evidence remains outside detection.
+
+## D21 Image Rolls (2026-11-05)
+
+Brand-aware image (#1925, D21). Same key, same procedure as 2026-10-23: client pins
+first, then both CMK policies and monitor trust (N kept), then the host roll.
+
+- **Staging:** CI run 41927558249, commit `13e080923`, PCR0 `00a32cbc…`. Signed
+  manifest verified with cosign (workflow identity `escrow-enclave-eif.yml@refs/heads/main`);
+  EIF, host and measurements matched their hashes. Pins in #1954, served before the
+  roll. Rolled 01:02Z (one host); `/keys/escrow/attestation` returned the new PCRs with
+  key `escrow-staging-v1` and the unchanged public key; the next monitor sweep had no
+  coverage failure. **Finding:** canary tiers 1/2 failed `pcr` until the canary's own
+  measurement list was updated (same as 2026-10-23); the roll checklist now includes it.
+  Staging monitor trust is full (8 of 8 measurements for `escrow-staging-v1`).
+- **Production:** dispatch run 41946425244, commit `4d23346b7` (enclave and host source
+  identical to staging's image), PCR0 `18902a68…`, PCR2 `7955b5d9…`. Cosign and hashes
+  verified; the published EIF matched the manifest. Pins in #1958 (independent
+  approver TaylorBeeston); the canary measurements, both CMK policies and monitor trust
+  were updated before the roll. A candidate host launched outside the ASG and target
+  group performed a successful attested `kms:Decrypt` with the new PCR0/1/2 (CloudTrail),
+  then was terminated. Rolled 02:25–02:36Z (two hosts, new-first, launch template v3).
+  Attestation through `api.learncard.app` returned the new PCRs on 6 of 6 calls with key
+  `escrow-production-v1` and the same public key as the 2026-10-28 probe; the next
+  monitor sweep had no coverage failure; canary tiers 1 and 2 passed.
+- **Open:** remove the old tuples (`ae3e13e4…`/`69543e24…` staging, `6dc94e2b…`
+  production) from the CMK policies, app pins and canary after the rollback window;
+  never from monitor trust.
 
 ## Staging Verification (2026-10-23)
 
