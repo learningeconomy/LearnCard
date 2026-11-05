@@ -4,6 +4,24 @@ import {
     type ManagedCredentialRefreshService,
     type SupportedCredentialRefreshService,
 } from '@learncard/types';
+import { getBitstringStatusListEntries } from './bitstring-status-list';
+
+// The entry scope from the W3C VC v2 context, for managed credentials using VC v1.
+// Inline terms avoid a new remote-context dependency during signing.
+const BITSTRING_STATUS_ENTRY_CONTEXT = {
+    '@id': 'https://www.w3.org/ns/credentials/status#BitstringStatusListEntry',
+    '@context': {
+        '@protected': true,
+        id: '@id',
+        type: '@type',
+        statusListCredential: {
+            '@id': 'https://www.w3.org/ns/credentials/status#statusListCredential',
+            '@type': '@id',
+        },
+        statusListIndex: 'https://www.w3.org/ns/credentials/status#statusListIndex',
+        statusPurpose: 'https://www.w3.org/ns/credentials/status#statusPurpose',
+    },
+};
 
 /**
  * Canonical helpers for credential refresh (LC-2117, LC-2135, LC-2136).
@@ -241,6 +259,21 @@ export const prepareManagedRefreshContext = <T>(credential: T): T => {
     const inlineObjects = contextList.filter(isPlainObject);
 
     const fragment: Record<string, unknown> = {};
+
+    if (
+        !contextList.includes('https://www.w3.org/ns/credentials/v2') &&
+        getBitstringStatusListEntries(credential).length > 0
+    ) {
+        const definition = findTopLevelDefinition(inlineObjects, 'BitstringStatusListEntry');
+        if (definition === undefined) {
+            fragment.BitstringStatusListEntry = BITSTRING_STATUS_ENTRY_CONTEXT;
+        } else if (
+            canonicalizeCredentialJson(definition) !==
+            canonicalizeCredentialJson(BITSTRING_STATUS_ENTRY_CONTEXT)
+        ) {
+            throw new Error('Conflicting BitstringStatusListEntry context definition');
+        }
+    }
 
     // Managed refresh service type term
     const typeDefinition = findTopLevelDefinition(inlineObjects, MANAGED_REFRESH_TYPE_TERM);

@@ -184,7 +184,7 @@ export const sendBoost = async ({
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
             const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential)
+                storeCredential(credential, undefined, fromProfile.profileId)
             );
 
             if (contractTerms) {

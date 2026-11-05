@@ -283,6 +283,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedBoost,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         credentialSubject: {
                             ...testUnsignedBoost.credentialSubject,
@@ -493,6 +494,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedVcV2,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         validFrom: '2026-01-01T00:00:00Z',
                         credentialSubject: { id: prepared.holderDid },
@@ -537,6 +539,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     {
                         ...testUnsignedVcV2,
                         id: prepared.credentialId,
+                        credentialStatus: prepared.statusEntries,
                         issuer: issuer.learnCard.id.did(),
                         validFrom: '2026-01-01T00:00:00Z',
                         credentialSubject: { id: prepared.holderDid },
@@ -1760,6 +1763,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                 type: ['VerifiableCredential'],
                 issuer: receipt.issuerDid,
                 name: 'SA Updated Badge',
+                credentialStatus: receipt.credentialStatus,
                 credentialSubject: { id: receipt.holderDid },
                 refreshService: receipt.refreshService,
                 validFrom: new Date().toISOString(),

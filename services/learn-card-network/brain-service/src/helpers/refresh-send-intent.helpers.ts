@@ -43,8 +43,10 @@ const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =
 
 /** Versioned, domain-separated public-metadata digest. Legacy unkeyed intents fail closed. */
 export const computeRefreshSendRequestDigest = (request: {
+    statusPurposes?: ('revocation' | 'suspension')[];
     recipientProfileId: string;
     holderDid: string;
+    credentialId?: string;
     templateUri?: string;
     display?: import('@learncard/types').CredentialDisplay;
     contractUri?: string;
@@ -62,6 +64,10 @@ export const computeRefreshSendRequestDigest = (request: {
                 contractUri: request.contractUri ?? null,
                 integrationId: request.integrationId ?? null,
                 refresh: true,
+                credentialId: request.credentialId ?? null,
+                ...(request.statusPurposes?.includes('suspension')
+                    ? { suspensionRequested: true }
+                    : {}),
             })
         )
         .digest('base64url');
