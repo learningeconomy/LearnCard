@@ -360,9 +360,11 @@ describe('Refreshable Sends E2E (LC-2198)', () => {
 
         const receipt = expectValidReceipt(result.refresh);
 
-        // The boost was created from the same template — exactly one source of truth.
+        // Managed sends create a display-only anchor: the template's name stays private
+        // (generic label), while its category is kept for consent authorization.
         const boost = await a.invoke.getBoost(result.uri);
-        expect(boost.name).toBe('Inline Refresh Boost');
+        expect(boost.name).toBe('Credential');
+        expect(boost.category).toBe('Achievement');
         expect(await a.invoke.countBoosts()).toBe(boostsBefore + 1);
 
         await claimCredential(b, result.credentialUri);
