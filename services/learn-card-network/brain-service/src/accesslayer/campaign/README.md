@@ -311,3 +311,79 @@ never automatically retry a full stale form against a fresh token. Successful
 writes advance the timestamp monotonically, including same-millisecond writes.
 Legacy SDK callers may omit the optional token; those callers retain existing
 last-write behavior and do not receive optimistic concurrency protection.
+
+## Announcement email (LC-2268)
+
+Campaigns can include `email` alongside `inApp` and `notify`. Supply `email.subject`,
+`title`, `body`, and `ctaLabel`; `heroImageUrl` is optional and must be HTTPS. Body
+copy is plain text, escaped by React. Keep announcement copy free of private learner
+or credential data. Create records capture the request's resolved tenant; queued
+waves use that stored tenant for branding and `/m/<id>?utm_source=email&utm_campaign=<id>`.
+Legacy records without a tenant use the configured default tenant.
+The CTA origin comes from the deployment-owned `CAMPAIGN_APP_ORIGINS` JSON map.
+Stage configs map LearnCard staging to `staging.learncard.ai`, VetPass staging to
+`staging.vetpass.app`, and ScoutPass staging to `staging.pass.scout.org`. Production
+configs supply their corresponding production origins. Queued sends do not use
+request headers to choose an app origin. Custom deployments must configure a map;
+missing, malformed, credential-bearing or non-origin URLs fail preparation before
+the durable email claim. HTTP is allowed only for loopback development origins.
+
+Email dispatch requires `POSTMARK_API_KEY`, `DOMAIN_NAME` (the public Brain host),
+`POSTMARK_BROADCAST_STREAM` (default `broadcast`) and `CAMPAIGN_UNSUBSCRIBE_SECRET`
+(a dedicated random secret of at least 32 bytes). The adapter checks the actual
+Postmark stream type is `Broadcasts`; transactional streams are rejected. Provisioning
+these values, enabling a stream, deployment and live sends are separate operator
+steps. No production configuration is included here. `CAMPAIGN_EMAIL_PAGE_SIZE`
+defaults to 500 (1–1000); email and notification jobs keep independent cursors and
+use `CAMPAIGN_DISPATCH_DELAY_SECONDS` between waves.
+
+Email requires exactly one valid primary verified ContactMethod email, a known adult
+profile under the existing campaign adult policy, and no announcement email opt-out.
+Email waves filter adult eligibility and opt-outs before pagination, then recheck both
+under the profile lock before reserving a send. Audience management still lists opted-out members.
+Unknown ages, children, managed non-service profiles and minors fail closed even if
+`excludeMinors` is false. Parent age-policy sign-off is still outstanding: this does
+not authorize marketing to minors. Self-tests bypass audience/status only; they retain
+email eligibility and preferences and do not change production statistics.
+
+A profile lock serializes durable `emailClaimedAt` reservations. A claim commits before
+provider I/O; accepted sends set `emailedAt` and contribute to `getStats().emailed`.
+Retries, concurrent workers and redispatch cannot resend a reserved recipient. This
+is **at-most-once attempt**, not guaranteed delivery: a crash before sending or lost
+provider acknowledgement leaves a reservation with no `emailedAt`. There is no automatic
+lease expiry/replay; an operator must investigate delivery with the provider before any
+future recovery design permits another send. Never clear claims blindly. Provider
+acceptance is not proof of inbox delivery. Archive/pause, generation, membership,
+age, contact and opt-out state are checked at the reservation boundary.
+
+Browser unsubscribe links use the sending Brain service's anonymous
+`/campaigns/unsubscribe/browser?token=...` confirmation page, including ScoutPass.
+GET renders a form; POST applies the opt-out and renders confirmation. This page
+uses no external assets or analytics, sends no-store/no-referrer/CSP headers, and
+supports English, Spanish, French and Arabic using the browser language.
+The `List-Unsubscribe` header uses the Brain HTTPS
+`/campaigns/unsubscribe?token=...` endpoint: it accepts the actual RFC 8058
+`application/x-www-form-urlencoded` POST `List-Unsubscribe=One-Click`, without login,
+cookies, redirects or JavaScript. GET does not mutate. Both POST paths verify the same
+purpose-separated HMAC token, then idempotently set the profile's email opt-out.
+Version 2 tokens bind to a unique, durable `campaignUnsubscribeId` allocated under
+the recipient lock before sending. Renaming a profile preserves its links; reusing
+or deleting a profile name never transfers those links to another account. Legacy
+name-based tokens are rejected because their original recipient cannot be resolved
+safely after a rename. Generate a new test email to replace an old test link.
+Links remain valid after campaign archive/deletion; rotating the secret invalidates
+old links. Tokens are bearer authority for opt-out only, not authentication. Do not
+log token URLs or capture them in analytics; ingress/proxy access-log redaction for
+this endpoint must be checked at deployment. The public endpoint returns no profile data.
+
+Authenticated `getAnnouncementPreferences` and `updateAnnouncementPreferences` return
+and patch `announcementEmailOptOut` / `announcementPushOptOut`. SDK methods use these
+same names, plus anonymous `unsubscribeFromAnnouncements(token)`. Preference fields
+are private graph properties, omitted from public profile projections. Push opt-out
+suppresses both campaign push and inbox at enqueue/delivery checks; in-app selection
+is unaffected. Partial patches leave the other choice unchanged.
+
+Before rollout, use mocked adapter/HTTP tests and the campaign Neo4j suite. Separately
+verify real broadcast receipt and headers, configured public POST ingress, and cold/warm
+`/m/` universal-link handoff on web, iOS and Android in an authorized environment.
+The composer still needs its email controls, counts/wiring and CSV result follow-up.

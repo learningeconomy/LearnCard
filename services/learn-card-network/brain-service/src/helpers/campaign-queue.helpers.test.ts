@@ -4,6 +4,9 @@ import type { Campaign, LCNNotification } from '@learncard/types';
 
 const mocks = vi.hoisted(() => ({
     getCampaign: vi.fn(),
+    email: vi.fn(),
+    prepareEmail: vi.fn(),
+    preferences: vi.fn(),
     pageAudience: vi.fn(),
     recipient: vi.fn(),
     acknowledge: vi.fn(),
@@ -14,8 +17,17 @@ const mocks = vi.hoisted(() => ({
         IS_OFFLINE: false,
         CAMPAIGN_QUEUE_URL: 'https://sqs.example/campaigns',
         CAMPAIGN_DISPATCH_PAGE_SIZE: 1000,
+        CAMPAIGN_EMAIL_PAGE_SIZE: 500,
         CAMPAIGN_DISPATCH_DELAY_SECONDS: 60,
     },
+}));
+vi.mock('@helpers/campaign-email.helpers', () => ({
+    prepareCampaignEmailDelivery: mocks.prepareEmail,
+    CampaignEmailDeliveryError: class extends Error {},
+    sendCampaignEmail: mocks.email,
+}));
+vi.mock('@accesslayer/campaign/preferences', () => ({
+    getAnnouncementPreferences: mocks.preferences,
 }));
 vi.mock('@environment', () => ({ environment: mocks.environment }));
 vi.mock('@aws-sdk/client-sqs', () => ({
@@ -55,6 +67,7 @@ import {
     processCampaignDispatchJob,
     addCampaignDispatchToQueue,
 } from './campaign-queue.helpers';
+import { CampaignEmailDeliveryError } from './campaign-email.helpers';
 import { buildCampaignNotification, sendCampaignTestToMe } from './campaign-notifications.helpers';
 import { deliverQueuedNotification } from './notificationQueue.helpers';
 
@@ -74,6 +87,11 @@ const recipient = (profileId = 'learner') => ({ profileId, did: `did:key:${profi
 
 beforeEach(() => {
     vi.resetAllMocks();
+    mocks.prepareEmail.mockResolvedValue({ prepared: true });
+    mocks.preferences.mockResolvedValue({
+        announcementEmailOptOut: false,
+        announcementPushOptOut: false,
+    });
     mocks.environment.IS_OFFLINE = false;
     mocks.environment.CAMPAIGN_DISPATCH_PAGE_SIZE = 1000;
     mocks.environment.CAMPAIGN_DISPATCH_DELAY_SECONDS = 60;
@@ -96,12 +114,20 @@ describe('campaign wave dispatch', () => {
         expect(mocks.enqueue).toHaveBeenCalledTimes(1000);
         const second = mocks.sqs.mock.calls[0]![0].input;
         expect(second.DelaySeconds).toBe(60);
-        expect(JSON.parse(second.MessageBody)).toEqual({ ...job, afterProfileId: '0999' });
+        expect(JSON.parse(second.MessageBody)).toEqual({
+            ...job,
+            channel: 'notify',
+            afterProfileId: '0999',
+        });
         await processCampaignDispatchJob(JSON.parse(second.MessageBody));
         expect(mocks.enqueue).toHaveBeenCalledTimes(2000);
         const third = mocks.sqs.mock.calls[1]![0].input;
         expect(third.DelaySeconds).toBe(60);
-        expect(JSON.parse(third.MessageBody)).toEqual({ ...job, afterProfileId: '1999' });
+        expect(JSON.parse(third.MessageBody)).toEqual({
+            ...job,
+            channel: 'notify',
+            afterProfileId: '1999',
+        });
         await processCampaignDispatchJob(JSON.parse(third.MessageBody));
         expect(mocks.enqueue).toHaveBeenCalledTimes(2500);
         expect(mocks.sqs).toHaveBeenCalledTimes(2);
@@ -212,7 +238,7 @@ describe('campaign delivery acknowledgement', () => {
         mocks.getCampaign.mockResolvedValue({
             ...campaign,
             status: 'archived',
-            channels: ['inApp'],
+            channels: ['notify'],
         });
         await sendCampaignTestToMe(campaign.id, recipient('admin'));
         await sendCampaignTestToMe(campaign.id, recipient('admin'));
@@ -225,6 +251,126 @@ describe('campaign delivery acknowledgement', () => {
         await deliverQueuedNotification(JSON.stringify(first));
         expect(mocks.send).toHaveBeenCalledOnce();
         expect(mocks.recipient).not.toHaveBeenCalled();
+    });
+});
+
+describe('email channel dispatch', () => {
+    it('fails stream preflight before paging or claiming recipients', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.prepareEmail.mockRejectedValueOnce(new Error('Invalid broadcast stream'));
+        await expect(processCampaignDispatchJob({ ...job, channel: 'email' })).rejects.toThrow(
+            'Invalid broadcast stream'
+        );
+        expect(mocks.pageAudience).not.toHaveBeenCalled();
+        expect(mocks.email).not.toHaveBeenCalled();
+    });
+    it('continues the page and schedules the next wave after a reserved send fails', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.pageAudience.mockResolvedValue({
+            records: Array.from({ length: 500 }, (_, i) => recipient(String(i).padStart(4, '0'))),
+        });
+        mocks.email.mockRejectedValueOnce(new CampaignEmailDeliveryError('private details'));
+        const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await processCampaignDispatchJob({ ...job, channel: 'email' });
+            expect(mocks.prepareEmail).toHaveBeenCalledOnce();
+            expect(mocks.email).toHaveBeenCalledTimes(500);
+            expect(mocks.email).toHaveBeenLastCalledWith(expect.anything(), '0499', false, {
+                prepared: true,
+            });
+            expect(JSON.parse(mocks.sqs.mock.calls[0]![0].input.MessageBody).afterProfileId).toBe(
+                '0499'
+            );
+            expect(log).toHaveBeenCalledWith(
+                'Campaign email delivery failed; reservation retained'
+            );
+        } finally {
+            log.mockRestore();
+        }
+    });
+    it('retries unclaimed preparation or database failures without advancing the cursor', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.email.mockRejectedValueOnce(new Error('Preparation failed'));
+        await expect(processCampaignDispatchJob({ ...job, channel: 'email' })).rejects.toThrow(
+            'Preparation failed'
+        );
+        expect(mocks.sqs).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        { channels: ['notify'] },
+        { channels: ['inApp', 'notify'] },
+        { channels: ['notify', 'email'] },
+        { channels: ['inApp', 'notify', 'email'] },
+    ])(
+        'rejects opted-out notification tests before any channel sends ($channels)',
+        async ({ channels }) => {
+            mocks.preferences.mockResolvedValue({
+                announcementEmailOptOut: false,
+                announcementPushOptOut: true,
+            });
+            mocks.getCampaign.mockResolvedValue({ ...campaign, channels });
+            await expect(
+                sendCampaignTestToMe(campaign.id, recipient('admin'))
+            ).rejects.toMatchObject({
+                code: 'PRECONDITION_FAILED',
+                message: 'Notification tests are disabled by your announcement preferences',
+            });
+            expect(mocks.email).not.toHaveBeenCalled();
+            expect(mocks.enqueue).not.toHaveBeenCalled();
+        }
+    );
+    it('uses an independent 500-recipient email wave and cursor', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            channels: ['email'],
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.pageAudience.mockResolvedValue({
+            records: Array.from({ length: 500 }, (_, i) => ({
+                profileId: String(i).padStart(4, '0'),
+            })),
+        });
+        await processCampaignDispatchJob({ ...job, channel: 'email' });
+        expect(mocks.pageAudience).toHaveBeenCalledWith(campaign.id, undefined, 500, 'email');
+        expect(mocks.email).toHaveBeenCalledTimes(500);
+        expect(mocks.enqueue).not.toHaveBeenCalled();
+        expect(JSON.parse(mocks.sqs.mock.calls[0]![0].input.MessageBody)).toMatchObject({
+            channel: 'email',
+            afterProfileId: '0499',
+        });
+    });
+    it('sends email self-tests only to the authenticated caller and fails for ineligible email', async () => {
+        mocks.getCampaign.mockResolvedValue({
+            ...campaign,
+            status: 'draft',
+            channels: ['email'],
+            notification: undefined,
+            email: { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' },
+        });
+        mocks.email.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+        await expect(sendCampaignTestToMe(campaign.id, recipient('admin'))).resolves.toBe(true);
+        expect(mocks.email).toHaveBeenCalledWith(
+            expect.objectContaining({ id: campaign.id }),
+            'admin',
+            true
+        );
+        await expect(sendCampaignTestToMe(campaign.id, recipient('admin'))).rejects.toThrow(
+            'verified primary email'
+        );
+        expect(mocks.enqueue).not.toHaveBeenCalled();
     });
 });
 

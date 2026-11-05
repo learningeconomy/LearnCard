@@ -131,6 +131,9 @@ describe('classifyMethod', () => {
     it('honours the read allowlist and the write overrides', () => {
         expect(classifyMethod('learnCloudRead').effect).toBe('read');
         expect(classifyMethod('campaignsList').effect).toBe('read');
+        expect(classifyMethod('getAnnouncementPreferences').effect).toBe('read');
+        expect(classifyMethod('updateAnnouncementPreferences').effect).toBe('write');
+        expect(classifyMethod('unsubscribeFromAnnouncements').effect).toBe('write');
         // tRPC mutations or one-time-code consumers despite their read-looking names.
         expect(classifyMethod('resolveShareLink').effect).toBe('write');
         expect(classifyMethod('getShareLinkContent').effect).toBe('write');

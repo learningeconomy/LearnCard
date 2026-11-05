@@ -104,6 +104,7 @@ export const getCampaignStats = async (campaignId: string): Promise<CampaignStat
          OPTIONAL MATCH (p)-[state:CAMPAIGN_STATE]->(c)
          RETURN count(DISTINCT p) AS audience,
            count(DISTINCT CASE WHEN audience.source = 'selfEnrolled' THEN p END) AS enrolled,
+           count(DISTINCT CASE WHEN state.emailedAt IS NOT NULL THEN p END) AS emailed,
            count(DISTINCT CASE WHEN state.notifiedAt IS NOT NULL THEN p END) AS notified,
            count(DISTINCT CASE WHEN state.firstShownAt IS NOT NULL THEN p END) AS shown,
            count(DISTINCT CASE WHEN state.clickedAt IS NOT NULL THEN p END) AS clicked,
@@ -117,6 +118,7 @@ export const getCampaignStats = async (campaignId: string): Promise<CampaignStat
         audience: record.get('audience').toNumber(),
         enrolled: record.get('enrolled').toNumber(),
         notified: record.get('notified').toNumber(),
+        emailed: record.get('emailed').toNumber(),
         shown: record.get('shown').toNumber(),
         clicked: record.get('clicked').toNumber(),
         dismissed: record.get('dismissed').toNumber(),
