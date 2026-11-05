@@ -12,19 +12,22 @@ beforeEach(() => {
     unsubscribe.mockReset();
 });
 describe('one-click unsubscribe HTTP', () => {
-    it('exposes the browser and provider routes through the deployed Lambda', () => {
-        const config = parse(readFileSync(new URL('../serverless.yml', import.meta.url), 'utf8'));
-        expect(config.functions.campaignUnsubscribe.handler).toBe(
-            'lambda.campaignUnsubscribeHandler'
-        );
-        expect(config.functions.campaignUnsubscribe.events).toEqual(
-            expect.arrayContaining([
-                { httpApi: 'GET /campaigns/unsubscribe/browser' },
-                { httpApi: 'POST /campaigns/unsubscribe/browser' },
-                { httpApi: 'POST /campaigns/unsubscribe' },
-            ])
-        );
-    });
+    it.each(['serverless.yml', 'serverless-local.yml', 'serverless.local.yml'])(
+        'exposes the browser and provider routes in %s',
+        manifest => {
+            const config = parse(readFileSync(new URL(`../${manifest}`, import.meta.url), 'utf8'));
+            expect(config.functions.campaignUnsubscribe.handler).toBe(
+                'lambda.campaignUnsubscribeHandler'
+            );
+            expect(config.functions.campaignUnsubscribe.events).toEqual(
+                expect.arrayContaining([
+                    { httpApi: 'GET /campaigns/unsubscribe/browser' },
+                    { httpApi: 'POST /campaigns/unsubscribe/browser' },
+                    { httpApi: 'POST /campaigns/unsubscribe' },
+                ])
+            );
+        }
+    );
 
     it.each([
         ['es-MX', 'es', 'ltr', 'Cancelar suscripción'],

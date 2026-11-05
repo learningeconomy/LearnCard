@@ -128,6 +128,8 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - httpApi: POST /campaigns/unsubscribe
+            - httpApi: GET /campaigns/unsubscribe/browser
+            - httpApi: POST /campaigns/unsubscribe/browser
 
     skillsViewer:
         handler: lambda.skillsViewerHandler
