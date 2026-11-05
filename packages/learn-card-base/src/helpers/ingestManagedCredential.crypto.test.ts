@@ -16,7 +16,13 @@ const createWallet = async (seed: string) => {
     return encryption.addPlugin(getVCPlugin(encryption));
 };
 
-describe('managed ingestion with native signatures and JWE', () => {
+const hasNativeDidKit = await getDidKitPlugin().then(
+    () => true,
+    () => false
+);
+
+// Unit CI does not build the native DIDKit addon; this suite runs wherever it is available.
+describe.skipIf(!hasNativeDidKit)('managed ingestion with native signatures and JWE', () => {
     let issuer: Awaited<ReturnType<typeof createWallet>>;
     let holder: Awaited<ReturnType<typeof createWallet>>;
     let receipt: CredentialRefreshReceipt;

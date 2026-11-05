@@ -52,11 +52,37 @@ export const ingestManagedCredential = async (
 };
 
 /** Classify from authenticated delivery metadata, never from attacker-controlled VC fields. */
+const isNetworkCredentialUri = (uri: string): boolean =>
+    uri.startsWith('lc:network:') && uri.includes(':credential:');
+
+/**
+ * Verifies a managed delivery before it is accepted. Ordinary credentials are not read;
+ * the network receipt (not the payload) decides whether a delivery is managed.
+ */
+export const verifyManagedDeliveryBeforeAccept = async (
+    wallet: ManagedCredentialIngestionWallet,
+    uri: string
+): Promise<void> => {
+    if (!isNetworkCredentialUri(uri)) return;
+    const receipt = await wallet.invoke.getCredentialRefreshReceipt({ uri });
+    if (!receipt) return;
+    await ingestManagedCredential(
+        {
+            read: wallet.read,
+            invoke: {
+                verifyCredential: credential => wallet.invoke.verifyCredential(credential),
+                getCredentialRefreshReceipt: async () => receipt,
+            },
+        },
+        uri
+    );
+};
+
 export const resolveCredentialForClaim = async (
     wallet: ManagedCredentialIngestionWallet,
     uri: string
 ): Promise<{ credential: VC | VP; baseline?: CredentialRefreshReceipt }> => {
-    if (uri.startsWith('lc:network:') && uri.includes(':credential:')) {
+    if (isNetworkCredentialUri(uri)) {
         const receipt = await wallet.invoke.getCredentialRefreshReceipt({ uri });
         if (receipt) {
             return ingestManagedCredential(

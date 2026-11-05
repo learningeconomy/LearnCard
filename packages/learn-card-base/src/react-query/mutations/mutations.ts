@@ -148,7 +148,7 @@ export const useBlockProfileMutation = () => {
 };
 
 // ** CREDENTIAL MUTATIONS **
-import { resolveCredentialForClaim } from '../../helpers/ingestManagedCredential';
+import { verifyManagedDeliveryBeforeAccept } from '../../helpers/ingestManagedCredential';
 
 export const useAcceptCredentialMutation = () => {
     const { initWallet } = useWallet();
@@ -163,7 +163,7 @@ export const useAcceptCredentialMutation = () => {
             metadata?: Record<string, unknown>;
         }) => {
             const wallet = await initWallet();
-            await resolveCredentialForClaim(wallet, uri);
+            await verifyManagedDeliveryBeforeAccept(wallet, uri);
             const data = await wallet?.invoke?.acceptCredential(uri, {
                 ...(metadata ? { metadata } : {}),
             });
