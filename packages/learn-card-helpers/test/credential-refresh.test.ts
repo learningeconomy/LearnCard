@@ -52,9 +52,10 @@ describe('managed VC v1 public status context', () => {
             },
             { id: 'https://example.com/refresh/1', type: 'LearnCardCredentialRefresh2026' }
         );
-        expect(credential['@context'].includes('https://www.w3.org/ns/credentials/status/v1')).toBe(
-            context !== 'https://www.w3.org/ns/credentials/v2'
+        const hasStatusContext = credential['@context'].some(
+            entry => entry === 'https://www.w3.org/ns/credentials/status/v1'
         );
+        expect(hasStatusContext).toBe(context !== 'https://www.w3.org/ns/credentials/v2');
     });
 
     it('adds the status list context without changing status shape and is idempotent', () => {
