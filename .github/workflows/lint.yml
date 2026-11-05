@@ -125,6 +125,9 @@ jobs:
             - name: Test mock E2E CI policy
               run: node --test scripts/mock-e2e-ci.test.cjs
 
+            - name: Test release delivery alerts
+              run: node --test scripts/release-alerts/release-alerts.test.mjs
+
             - name: Run repository shell contracts
               run: |
                   for contract in .github/tests/*.test.sh; do

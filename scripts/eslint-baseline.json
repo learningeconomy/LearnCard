@@ -1,32 +1,4 @@
 {
-    "apps/ai-passport/src/components/ChatInterface.tsx": {
-        "50f069aaa5e14cef005971117d0b9075e7d4f85cb46e08b3138fed8d64a1b967": 1
-    },
-    "apps/ai-passport/src/components/ChatMessages.tsx": {
-        "1b7cbbe6ed534cf3a281b3360d733c734ac38ec6789dbe64c4f19ed8e474e06b": 1
-    },
-    "apps/ai-passport/src/components/ExampleChatColumn.tsx": {
-        "0f75394e04d1f7cdc0a9d3ccd643fdd528bebd4a2b3a5835712a35ab544b03a3": 1
-    },
-    "apps/ai-passport/src/components/FeedbackToast.tsx": {
-        "29b07019bfe0df8b54f79e4f097ee11588158ab1a4ca46178f29e6373b926b95": 1
-    },
-    "apps/ai-passport/src/components/LoginColumn.tsx": {
-        "4ccf2c37e9cef40cdb80af385ff1cf91a015291ff898f1a623495d47a6ba5a02": 1
-    },
-    "apps/ai-passport/src/components/MarkdownRenderer.tsx": {
-        "9ad03dafc79f4d443f0d81ef6739252271cc40aa4d53de308606d1176b6b55e0": 2
-    },
-    "apps/ai-passport/src/components/ProfilePicture.tsx": {
-        "4c9f2e21950df250e336c776aecc9d877195fa4cbf9f1be65cdc23bd1ff53c86": 1
-    },
-    "apps/ai-passport/src/hooks/useIsClient.ts": {
-        "c41a624b76a41d8d1df20fd97045a3f0bc7533ec83e53c35b5d5bf0c59c3555a": 1
-    },
-    "apps/ai-passport/src/stores/chatStore.ts": {
-        "771a5b07a0b904326ada12a16f9f0d819f64601bb96b9a1cf7d21fc43c47bf17": 1,
-        "e84276bd014678459f31b370438965b81a330117a7dd5d5ea9bbd2b682850f92": 1
-    },
     "apps/learn-card-app/src/Routes.tsx": {
         "0611cb41a438115a5cd0bbf91d666040f8cfd5337cebd0155fcbfd13404d909e": 1,
         "80ec18b41ed0243ba58c74130095acd24863c60b03c46ad7acc6ba2913a405c8": 1,

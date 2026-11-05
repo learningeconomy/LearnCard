@@ -35,6 +35,8 @@
         "sss": {
             "serverUrl": "https://staging.api.learncard.app/api",
             "escrowEnclaveMode": "nitro",
+            "escrowSealEmailBrand": true,
+            "escrowSharedEmailBrands": ["VetPass"],
             "escrowEnclavePublicKeys": [
                 "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErzuapPkQxSAb0oEQdYHWQIGXt8aSTKZwUWxrFoysw6WggnF8caCLNZiaFBeAfBd2PUty+/pXmgmpFsIo86zzcQ=="
             ],
