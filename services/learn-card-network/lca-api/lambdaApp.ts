@@ -23,7 +23,8 @@ import { createRetryingOnce } from './src/helpers/retryingOnce';
 
 checkEscrowRemoteConfig();
 
-// Retry global startup without letting an escrow migration reject unrelated calls.
+// Retry global startup (WASM + user-keys) without caching failures, and without
+// letting an escrow migration reject unrelated calls.
 const ensureStartup = createRetryingOnce(() =>
     Promise.all([
         getEmptyLearnCard(), // Load WASM in for better cold starts
@@ -31,6 +32,7 @@ const ensureStartup = createRetryingOnce(() =>
     ])
 );
 
+// Start during init for faster first requests; handlers await (and retry) it.
 ensureStartup().catch(error => {
     console.error('lca-api startup failed; the next request retries', error);
 });
