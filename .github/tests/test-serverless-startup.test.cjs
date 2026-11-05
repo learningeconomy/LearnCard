@@ -46,7 +46,7 @@ const smoke = async () => {
     const configuration = {
         service: 'simple-git-startup-smoke',
         frameworkVersion: '3',
-        provider: { name: 'aws', runtime: 'nodejs20.x', region: 'us-east-1' },
+        provider: { name: 'aws', runtime: 'nodejs24.x', region: 'us-east-1' },
         dashboard: { disableMonitoring: true },
         functions: {},
     };
