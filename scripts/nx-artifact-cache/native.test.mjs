@@ -42,6 +42,9 @@ test(
             fs.mkdirSync('dist', { recursive: true }); fs.writeFileSync('dist/output', source);
         } else {
             require('node:assert/strict').equal(fs.readFileSync('dist/output', 'utf8'), source);
+            if (process.env.PROBE_BREAK_OBSERVATION === '1') {
+                fs.mkdirSync(path.join(process.env.RUNNER_TEMP, 'nx-pilot/tasks.json'), { recursive: true });
+            }
             if (process.env.PROBE_FAIL === '1') process.exit(1);
         }
     `
@@ -110,7 +113,10 @@ test(
         await mkdir(counts);
         let attempt = 0;
         const driver = path.join(repo, 'scripts/nx-artifact-cache/run.mjs');
-        const run = async (mode, { artifact, fail = false } = {}) => {
+        const run = async (
+            mode,
+            { artifact, fail = false, breakPlan = false, breakObservation = false } = {}
+        ) => {
             const runnerTemp = path.join(root, `runner-${++attempt}`);
             await mkdir(runnerTemp);
             if (artifact) {
@@ -138,7 +144,21 @@ test(
                 LC_NX_PILOT_BASE: base,
                 PROBE_COUNTS: counts,
                 PROBE_FAIL: fail ? '1' : '0',
+                PROBE_BREAK_OBSERVATION: breakObservation ? '1' : '0',
             };
+            if (breakPlan) {
+                const bin = path.join(runnerTemp, 'bin');
+                await mkdir(bin);
+                const bun = execFileSync('which', ['bun'], { encoding: 'utf8' }).trim();
+                await writeFile(
+                    path.join(bin, 'bun'),
+                    '#!/usr/bin/env node\n' +
+                        `if (process.argv.some(arg => arg.startsWith('--graph='))) process.exit(1);\n` +
+                        `const r = require('node:child_process').spawnSync(${JSON.stringify(bun)}, process.argv.slice(2), {stdio:'inherit'}); process.exit(r.status ?? 1);\n`,
+                    { mode: 0o755 }
+                );
+                env.PATH = `${bin}${path.delimiter}${env.PATH}`;
+            }
             for (const key of [
                 'NX_BASE',
                 'NX_HEAD',
@@ -196,6 +216,25 @@ test(
         assert.equal(cold.report.cacheState, 'unavailable-or-incompatible');
         assert.ok(cold.tasks.every(task => task.status === 'success'));
         assert.equal(await readFile(path.join(counts, 'core-test'), 'utf8'), '2');
+        const unobserved = await run('consume', {
+            artifact: produced.artifact,
+            breakObservation: true,
+        });
+        assert.equal(unobserved.code, 0, unobserved.output);
+        assert.equal(unobserved.report.cacheState, 'observation-unavailable');
+        assert.equal(unobserved.report.liveConsumed, false);
+        const unplanned = await run('consume', { artifact: produced.artifact, breakPlan: true });
+        assert.equal(unplanned.code, 0, unplanned.output);
+        assert.equal(unplanned.report.cacheState, 'plan-unavailable');
+        assert.equal(unplanned.report.liveConsumed, false);
+        const countBefore = Number(await readFile(path.join(counts, 'core-test'), 'utf8'));
+        const failedFallback = await run('consume', { breakPlan: true, fail: true });
+        assert.notEqual(failedFallback.code, 0);
+        assert.equal(failedFallback.report.liveConsumed, false);
+        assert.equal(
+            Number(await readFile(path.join(counts, 'core-test'), 'utf8')),
+            countBefore + 1
+        );
         await put('packages/types/src/index.ts', 'export const changed = true;\n');
         commit();
         const changed = await run('consume', { artifact: produced.artifact });

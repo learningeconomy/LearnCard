@@ -30,12 +30,64 @@ export function validateResults(tasks, graph) {
     }
 }
 
-const command = (cwd, args, env) =>
+export const command = (cwd, args, env, timeoutMs = 0) =>
     new Promise((resolve, reject) => {
-        const child = spawn(args[0], args.slice(1), { cwd, env, stdio: 'inherit' });
-        child.on('error', reject);
-        child.on('close', code => resolve(code ?? 1));
+        const child = spawn(args[0], args.slice(1), {
+            cwd,
+            env,
+            stdio: 'inherit',
+            detached: timeoutMs > 0,
+        });
+        const timer = timeoutMs
+            ? setTimeout(() => {
+                  // Planning is read-only and owns this process group. Stop its workers
+                  // before restoring configuration and starting the fresh fallback.
+                  try {
+                      process.kill(-child.pid, 'SIGKILL');
+                  } catch (error) {
+                      if (error.code !== 'ESRCH') child.kill('SIGKILL');
+                  }
+              }, timeoutMs)
+            : undefined;
+        child.on('error', error => {
+            clearTimeout(timer);
+            reject(error);
+        });
+        child.on('close', code => {
+            clearTimeout(timer);
+            resolve(code ?? 1);
+        });
     });
+
+export async function readObservation(mode, file) {
+    try {
+        const tasks = await json(file);
+        assert.ok(
+            Array.isArray(tasks) &&
+                tasks.every(
+                    task =>
+                        typeof task?.id === 'string' &&
+                        typeof task.target === 'string' &&
+                        typeof task.hash === 'string' &&
+                        typeof task.status === 'string' &&
+                        Number.isInteger(task.code)
+                )
+        );
+        return tasks;
+    } catch (error) {
+        if (mode === 'produce') throw error;
+        return undefined;
+    }
+}
+
+export async function diagnostic(mode, write) {
+    try {
+        await write();
+    } catch (error) {
+        if (mode === 'produce') throw error;
+        console.warn('Nx artifact pilot: diagnostic output unavailable');
+    }
+}
 
 export async function startCache(mode, cache, start = cacheServer) {
     try {
@@ -116,6 +168,14 @@ export async function runPilot(mode) {
     let exitCode = 1;
     let tasks = [];
     let hookCreated = false;
+    let observationValidated = false;
+    const restore = async () => {
+        await writeFile('nx.json', original);
+        if (hookCreated) {
+            await rm(hook, { force: true });
+            hookCreated = false;
+        }
+    };
     const identity = {
         node: process.version,
         bun: execFileSync('bun', ['--version'], { encoding: 'utf8' }).trim(),
@@ -132,20 +192,36 @@ export async function runPilot(mode) {
     try {
         // This uniform, relative hook changes the hashed nx.json identically for
         // publisher and consumer. No target/input/cache definitions are replaced.
-        await writeFile(hook, await readFile(new URL('./observe.cjs', import.meta.url)), {
-            flag: 'wx',
-        });
-        hookCreated = true;
-        const config = JSON.parse(original);
-        config.plugins = [...(config.plugins ?? []), `./${hook}`];
-        await writeFile('nx.json', JSON.stringify(config));
-        assert.equal(
-            await phase('planMs', () =>
-                command(workspace, [...nx, `--graph=${path.join(output, 'graph.json')}`], env)
-            ),
-            0
-        );
-        graph = await json(path.join(output, 'graph.json'));
+        try {
+            await writeFile(hook, await readFile(new URL('./observe.cjs', import.meta.url)), {
+                flag: 'wx',
+            });
+            hookCreated = true;
+            const config = JSON.parse(original);
+            config.plugins = [...(config.plugins ?? []), `./${hook}`];
+            await writeFile('nx.json', JSON.stringify(config));
+            assert.equal(
+                await phase('planMs', () =>
+                    command(
+                        workspace,
+                        [...nx, `--graph=${path.join(output, 'graph.json')}`],
+                        env,
+                        30_000
+                    )
+                ),
+                0
+            );
+            graph = await json(path.join(output, 'graph.json'));
+            assert.ok(graph?.tasks?.tasks && graph?.graph?.nodes);
+        } catch (error) {
+            if (mode === 'produce') throw error;
+            cacheState = 'plan-unavailable';
+            await restore();
+            env.NX_SKIP_NX_CACHE = 'true';
+            env.NX_WORKSPACE_DATA_DIRECTORY = path.join(output, 'fallback-workspace-data');
+            exitCode = await phase('commandMs', () => command(workspace, nx, env));
+            return exitCode;
+        }
         let policyValid = true;
         try {
             validatePolicy(graph);
@@ -177,9 +253,26 @@ export async function runPilot(mode) {
             console.log(`Nx artifact pilot: ${cacheState}; executing without cache`);
         }
         const commandExit = await phase('commandMs', () => command(workspace, nx, env));
-        if (Object.keys(graph.tasks.tasks).length) tasks = await json(env.LC_NX_PILOT_TASKS);
-        if (commandExit === 0) validateResults(tasks, graph);
         exitCode = commandExit;
+        const observed = Object.keys(graph.tasks.tasks).length
+            ? await readObservation(mode, env.LC_NX_PILOT_TASKS)
+            : [];
+        if (observed === undefined) cacheState = 'observation-unavailable';
+        else {
+            tasks = observed;
+            if (commandExit === 0) {
+                try {
+                    validateResults(tasks, graph);
+                    observationValidated = true;
+                } catch (error) {
+                    // Valid observations contradicting fresh successful tests are
+                    // correctness failures, not optional diagnostic failures.
+                    cacheState = 'invalid-task-results';
+                    exitCode = 1;
+                    throw error;
+                }
+            }
+        }
         if (mode === 'produce' && exitCode === 0) {
             const entries = [];
             for (const id of allowed) {
@@ -204,10 +297,12 @@ export async function runPilot(mode) {
             });
         }
         return exitCode;
+    } catch (error) {
+        exitCode ||= 1;
+        throw error;
     } finally {
         if (server) await server.close();
-        await writeFile('nx.json', original);
-        if (hookCreated) await rm(hook, { force: true });
+        await restore();
         const coverage = [];
         // Only numeric/project coverage goes into the diagnostic artifact.
         if (process.env.LC_CI_TEST_REPORT_DIR) {
@@ -227,6 +322,7 @@ export async function runPilot(mode) {
         const liveConsumed =
             mode === 'consume' &&
             cacheState === 'verified' &&
+            observationValidated &&
             exitCode === 0 &&
             tasks.some(t => t.target === 'test' && t.status === 'success') &&
             hits.length > 0 &&
@@ -247,6 +343,7 @@ export async function runPilot(mode) {
             producer,
             cacheState,
             liveConsumed,
+            observationValidated,
             exitCode,
             identity,
             productionConfigSha256: digest(original),
@@ -263,15 +360,22 @@ export async function runPilot(mode) {
             totalMs: performance.now() - started,
             transport: server?.events ?? [],
         };
-        await writeFile(path.join(output, 'result.json'), JSON.stringify(report, null, 2));
-        await rm(path.join(output, 'local-cache'), { recursive: true, force: true });
-        await rm(path.join(output, 'workspace-data'), { recursive: true, force: true });
+        await diagnostic(mode, () =>
+            writeFile(path.join(output, 'result.json'), JSON.stringify(report, null, 2))
+        );
+        await diagnostic(mode, async () => {
+            for (const dir of ['local-cache', 'workspace-data', 'fallback-workspace-data']) {
+                await rm(path.join(output, dir), { recursive: true, force: true });
+            }
+        });
         if (process.env.GITHUB_STEP_SUMMARY)
-            await appendFile(
-                process.env.GITHUB_STEP_SUMMARY,
-                `\n### Nx artifact pilot\n\nSource: \`${sourceSha}\` · event: \`${report.event}\`\n\n` +
-                    `Cache: ${cacheState}; build hits: ${hits.length}; freshly executed test targets: ${tasks.filter(t => t.target === 'test' && t.status === 'success').length}.\n\n` +
-                    `Live queue consumption verified: **${liveConsumed}**. Producer run: ${producer?.runId ?? 'none'}.\n`
+            await diagnostic(mode, () =>
+                appendFile(
+                    process.env.GITHUB_STEP_SUMMARY,
+                    `\n### Nx artifact pilot\n\nSource: \`${sourceSha}\` · event: \`${report.event}\`\n\n` +
+                        `Cache: ${cacheState}; build hits: ${hits.length}; freshly executed test targets: ${tasks.filter(t => t.target === 'test' && t.status === 'success').length}.\n\n` +
+                        `Live queue consumption verified: **${liveConsumed}**. Producer run: ${producer?.runId ?? 'none'}.\n`
+                )
             );
     }
 }

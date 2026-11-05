@@ -45,8 +45,14 @@ Nx accesses them through an authenticated, runner-local HTTP adapter. Consumer
 writes are accepted and discarded; they cannot update the shared artifact.
 Missing, expired or incompatible artifacts, API/download failures and adapter
 startup failure fall back to uncached execution. Failed tests remain failures.
-Evidence upload is advisory; a missing evidence artifact is an unverified
-observation, even if Test passed.
+Planning is limited to 30 seconds; a failure restores the original configuration
+and executes the exact affected command once with caching disabled. A failed
+test command is never rerun as a cache fallback. Missing/malformed observation
+files and consumer evidence writes are advisory and cannot establish live proof.
+A valid observation contradicting fresh successful execution (for example a
+cached test, missing scheduled task or failed task despite Nx success) still
+fails the check. Evidence upload is advisory; a missing evidence artifact is an
+unverified observation, even if Test passed.
 
 Both producer and consumer install the same temporary observation hook at a
 stable relative path. This changes hashed `nx.json` identically without changing

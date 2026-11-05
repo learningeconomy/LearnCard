@@ -6,12 +6,54 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { createServer } from 'node:http';
 import { builds, cacheServer, digest, verifyCache } from './transport.mjs';
-import { startCache, validatePolicy, validateResults } from './run.mjs';
+import {
+    command,
+    diagnostic,
+    readObservation,
+    startCache,
+    validatePolicy,
+    validateResults,
+} from './run.mjs';
 
 const require = createRequire(import.meta.url);
 const { eligible, lookupRequest, selectProducer } = require('./select-producer.cjs');
 const headSha = 'a'.repeat(40);
 const baseSha = 'b'.repeat(40);
+
+test(
+    'bounded planning stops its process before returning failure',
+    { timeout: 2_000 },
+    async () => {
+        assert.notEqual(
+            await command(
+                process.cwd(),
+                [process.execPath, '-e', 'setInterval(() => {}, 1000)'],
+                process.env,
+                50
+            ),
+            0
+        );
+    }
+);
+
+test('unavailable observations and evidence writes are advisory only for consumers', async t => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'nx-pilot-observation-'));
+    t.after(() => rm(dir, { recursive: true, force: true }));
+    const file = path.join(dir, 'tasks.json');
+    assert.equal(await readObservation('consume', file), undefined);
+    await writeFile(file, '{not-json');
+    assert.equal(await readObservation('consume', file), undefined);
+    await writeFile(file, '{}');
+    assert.equal(await readObservation('consume', file), undefined);
+    await assert.rejects(readObservation('produce', file));
+    await writeFile(file, '[]');
+    assert.deepEqual(await readObservation('consume', file), []);
+    const fail = async () => {
+        throw new Error('unavailable');
+    };
+    await diagnostic('consume', fail);
+    await assert.rejects(diagnostic('produce', fail));
+});
 
 test('lookup aborts a stalled fetch at its remaining deadline', { timeout: 2_000 }, async t => {
     const server = createServer(() => {});
