@@ -10,21 +10,28 @@ placeholders until a named approver records a decision and date. Recommendations
 are the author's proposals for owners to accept or reject. Line references are
 against `main` at the time of writing (2026-10-26) and may drift.
 
+**Launch plan (2026-11-05).** There are no intermediate percentage stages any more:
+SSS launches only together with escrow at 100% (decision 2026-10-31), for LearnCard
+and VetPass production in the same change (#1875). Where a record below was accepted
+"for stage 1" with a revisit "before stage 2", that revisit now happens before the
+100% switch. The amendments proposed below for D10 and RT are **not** decisions until
+the owner records them.
+
 **Recording a decision:** replace `_pending_` with `Accepted` / `Rejected` /
 `Accepted with conditions`, fill in the approver's name, role and date, link the
 evidence (PR, ticket or meeting notes), and update the matching ROLLOUT.md item
 in the same PR.
 
-| ID  | Decision                                     | Blocks                                  | Owner (placeholder)       | Decision                           |
-| --- | -------------------------------------------- | --------------------------------------- | ------------------------- | ---------------------------------- |
-| D10 | Accept KMS key-admin policy rewrite residual | Stage 2+ (ROLLOUT.md item 4)            | Jackson Smith             | Accepted (A), stage 1              |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)    | Jackson Smith             | Accepted (A), up to 100%           |
-| RT  | Roughtime sources for production volume      | Stage 2+ (ROLLOUT.md item 1)            | Jackson Smith             | Accepted (A), stage 1              |
-| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call     | _TBD (security)_          | _pending_                          |
-| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker      | Jackson Smith             | Accepted (C)                       |
-| P-b | Email backup share default                   | Product/security call                   | Jackson Smith             | Off at launch                      |
-| P-c | Privacy-policy disclosure                    | Legal call before real users (stage 2+) | Legal (via Jackson Smith) | Text approved (reported; link due) |
-| P-d | Userflow gating fix                          | Scope unclear — see record              | _TBD (product/eng)_       | _pending_                          |
+| ID  | Decision                                     | Blocks                                | Owner (placeholder)       | Decision                            |
+| --- | -------------------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------- |
+| D10 | Accept KMS key-admin policy rewrite residual | 100% switch (ROLLOUT.md item 4)       | Jackson Smith             | Accepted (A), stage 1; 100% pending |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)  | Jackson Smith             | Accepted (A), up to 100%; date TBD  |
+| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A), stage 1; 100% pending |
+| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call   | _TBD (security)_          | _pending_                           |
+| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker    | Jackson Smith             | Accepted (C)                        |
+| P-b | Email backup share default                   | Product/security call                 | Jackson Smith             | Off at launch                       |
+| P-c | Privacy-policy disclosure                    | Legal call before real users (switch) | Legal (via Jackson Smith) | Text approved (reported; link TBD)  |
+| P-d | Userflow gating fix                          | Scope unclear — see record            | _TBD (product/eng)_       | _pending_                           |
 
 ---
 
@@ -76,6 +83,26 @@ stage 2 (any non-internal user), together with option B, once the image-roll
 cadence settles.
 
 `Owner: Jackson Smith` · `Decision: Accepted (option A), stage 1 internal` · `Approver/date: Jackson Smith, 2026-10-30`
+
+**Proposed amendment for the 100% launch (2026-11-05): A for full exposure.** The
+stage 1 revisit falls due before the switch, since there is no stage 2 any more. The
+proposal keeps option A for all LearnCard and VetPass production users, because the
+image-roll cadence has not settled (two production rolls so far: the steady image
+`6dc94e2b…` on 2026-10-27, and the D21 image `18902a68…` on 2026-11-05, both as
+in-place N/N+1 policy edits), and option B would make every such roll a new-key
+operation. Conditions, all already required elsewhere in this file or ROLLOUT.md:
+
+- The production escrow CloudTrail trail keeps logging with no delivery error, and
+  `escrow-enclave-production-kms-governance` stays enabled.
+- Every `PutKeyPolicy` remains a reviewed, two-person change: the 2026-11-05 roll's
+  policy edits were reviewed in #1958 (approver TaylorBeeston) and applied by the
+  MFA operator. Confirm that those edits paged the alarm inbox and record it here
+  (not yet recorded).
+- `DenyPutKeyPolicyWithoutMFA`, no `kms:CreateGrant` and the debug-PCR denies stay in
+  the key policies.
+- Option B is revisited once the image-roll cadence settles.
+
+**Pending: owner sign-off (Jackson Smith, CTO).**
 
 ---
 
@@ -154,6 +181,10 @@ Conditions (verified 2026-10-31 unless noted):
   locked AWS Backup copies of the authority table in a separate account plus a
   monitor reconciliation), or the full archiver in AUTHORITY-ARCHIVER.md. Target
   date to be recorded before the switch.
+
+**Hardening target date: TBD (owner decision).** Record the chosen mechanism
+(locked AWS Backup copies or the full archiver) and its target date here before the
+switch.
 
 `Owner: Jackson Smith` · `Decision: Accepted (A) for all stages; archiver is post-launch hardening` · `Approver/date: Jackson Smith, 2026-10-31`
 
@@ -266,6 +297,28 @@ Smith; store the replies with this record). Still to attach before stage 2: the
 measured per-operation request count from staging and the volume forecast.
 
 `Owner: Jackson Smith` · `Decision: Accepted (option A) for stage 1; operator acknowledgments received; stage 2 needs the measured count and forecast` · `Approver/date: Jackson Smith, 2026-10-30`
+
+**Proposed amendment for the 100% launch (2026-11-05): A for full exposure.** Keep
+the three pinned sources (2-of-3) for all LearnCard and VetPass production users. The
+stage 1 decision listed two items for any wider exposure; both are still open and
+are conditions of this amendment, not done:
+
+- [ ] Measured per-operation Roughtime request count from staging (replaces
+      assumption A1 above). Not yet measured.
+- [ ] A 100% volume forecast (H, P, E, R in the sizing formula above): expected
+      auto-enrolments at the switch (every active user is in the bucket at 100%,
+      so E peaks in the first days), PIN and hold recoveries per day. Not yet
+      produced.
+- [ ] Send the measured count and forecast to the three operators (their
+      acknowledgments of 2026-10-30 predate a 100% figure) and attach the replies.
+- Per-source failure monitoring, as recommended above (not yet in place; a ticket
+  is enough for this amendment).
+
+Production evidence so far: canary tier 2 PIN releases (since 2026-10-30) and the
+first tier 3 create and confirm (2026-11-04) succeeded, so the three sources have
+served real production operations. No per-source failure analysis has been done.
+
+**Pending: owner sign-off (Jackson Smith, CTO)**, after the two measurements above.
 
 ---
 
@@ -455,6 +508,11 @@ policy revision.
 by Jackson Smith; link the approved text and approval here). The short in-app notice
 recommended above is still a product item before automatic enrollment reaches real
 users.
+
+**Link to approved text: TBD: link to approved privacy-policy text.** Record the
+published-policy revision (or the approved draft) and the named legal approver here.
+At 100% every active user is silently auto-enrolled at the switch, so the short in-app
+notice is a switch prerequisite (ROLLOUT.md, "100% launch").
 
 `Owner: Legal` · `Decision: Policy text approved (operator-reported; named legal approver and published-policy link pending)` · `Approver/date: Legal (name pending), reported by Jackson Smith, 2026-10-30`
 
