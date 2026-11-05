@@ -39,6 +39,9 @@ jobs:
     Test:
         runs-on: ubuntu-latest
         environment: ci-tests
+        permissions:
+            contents: read
+            actions: read
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v7
@@ -68,27 +71,74 @@ jobs:
             - name: Test retry reporting contract
               run: node --test scripts/ci-test-retries/retry.test.cjs
 
+            - name: Test artifact pilot contracts
+              run: node --test scripts/nx-artifact-cache/pilot.test.mjs
+
             - name: Test SDK build cache policy when its configuration changes
               run: |
                   if git diff --quiet origin/main...HEAD -- \
                       nx.json package.json bun.lock bunfig.toml .nvmrc ':(glob)tsconfig*.json' \
                       packages/learn-card-types packages/learn-card-helpers packages/learn-card-core \
                       tools/executors/workspace/run-command \
-                      .github/tests/test-sdk-cache-policy.cjs .github/workflows/test.yml; then
+                      .github/tests/test-sdk-cache-policy.cjs .github/workflows/test.yml \
+                      .github/workflows/nx-artifact-producer.yml scripts/nx-artifact-cache; then
                     echo "SDK cache policy unchanged"
                   else
                     node --test .github/tests/test-sdk-cache-policy.cjs
+                    node --test scripts/nx-artifact-cache/native.test.mjs
                   fi
+
+            - name: Select trusted main artifact for queue pilot
+              id: nx-pilot
+              if: github.event_name == 'merge_group' && vars.LC_NX_ARTIFACT_PILOT == 'true'
+              timeout-minutes: 1
+              continue-on-error: true
+              uses: actions/github-script@v8
+              with:
+                  retries: 0
+                  script: |
+                      const { selectProducer } = require('./scripts/nx-artifact-cache/select-producer.cjs');
+                      await selectProducer({ github, context, core });
+
+            - name: Download main build payloads
+              id: nx-pilot-download
+              if: steps.nx-pilot.outputs.artifact-id != ''
+              timeout-minutes: 1
+              continue-on-error: true
+              uses: actions/download-artifact@v4
+              with:
+                  artifact-ids: ${{ steps.nx-pilot.outputs.artifact-id }}
+                  merge-multiple: true
+                  path: ${{ runner.temp }}/nx-pilot-payloads
+                  run-id: ${{ steps.nx-pilot.outputs.run-id }}
+                  github-token: ${{ github.token }}
 
             - name: Run tests
               id: tests
               timeout-minutes: 20
-              run: bunx nx affected --target=test --base=origin/main --head=HEAD
+              run: |
+                  if [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
+                    node scripts/nx-artifact-cache/run.mjs consume
+                  else
+                    bunx nx affected --target=test --base=origin/main --head=HEAD
+                  fi
               env:
+                  LC_NX_PILOT_ACTIVE: ${{ steps.nx-pilot.outputs.active }}
+                  LC_NX_PILOT_BASE: ${{ github.event.merge_group.base_sha }}
                   LC_CI_TEST_RETRY: '1'
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+
+            - name: Upload numeric queue cache evidence
+              if: always() && steps.nx-pilot.outputs.active == 'true'
+              timeout-minutes: 1
+              continue-on-error: true
+              uses: actions/upload-artifact@v4
+              with:
+                  name: nx-pilot-queue-evidence
+                  path: ${{ runner.temp }}/nx-pilot/result.json
+                  retention-days: 7
 
             - name: Summarize test retries
               if: always()
