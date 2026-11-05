@@ -242,10 +242,11 @@ switch already does without disrupting existing users.
   key derivation, `escrowEnclaveMode` and enclave pins as LearnCard at every stage
   (enforced by `apps/learn-card-app/src/config/escrowTenantParity.test.ts`); an SSS
   client with escrow off can leave the shared escrow copy stale. VetPass staging and
-  production deploy from main, so VetPass escrow stays off at every stage
-  (including the `sss-pilot` overlay) until the SSS switch turns it on together
-  with LearnCard production; that PR must set VetPass's mode, pins and
-  `escrowAuthorityTenant` in the same change. Update both
+  production deploy separately (#1942): VetPass staging runs SSS with escrow on the
+  staging enclave (`escrowAuthorityTenant: "learncard"`, LearnCard staging's pins),
+  while VetPass production and the `sss-pilot` overlay stay off until the SSS switch
+  turns them on together with LearnCard production; that PR must set VetPass's mode,
+  pins and `escrowAuthorityTenant` in the same change. Update both
   tenants' pins on every image roll.
 - **Sealed email brand (D21).** `auth.sss.escrowSealEmailBrand` makes the client
   seal the app's `branding.name` into the escrow blob so enclave-sent emails carry

@@ -48,6 +48,10 @@ impl Backend for Fake {
         self.metrics.lock().unwrap().push(metric);
         Ok(())
     }
+    async fn gauge(&self, metric: Metric, _: u64) -> Result<()> {
+        self.metrics.lock().unwrap().push(metric);
+        Ok(())
+    }
     async fn notify(&self, metric: Metric) -> Result<()> {
         self.notices.lock().unwrap().push(metric);
         Ok(())
