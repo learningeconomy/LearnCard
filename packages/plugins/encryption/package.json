@@ -1,7 +1,7 @@
 {
     "name": "@learncard/encryption-plugin",
     "version": "1.1.43",
-    "description": "",
+    "description": "Adds JWE and DAG-JWE encryption methods backed by the wallet's DID keys.",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/encryption-plugin.esm.js",
