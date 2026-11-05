@@ -1387,7 +1387,6 @@ export const escrowRouter = t.router({
                     message: killSwitchMessage,
                 });
             }
-            await ensureHoldIndexes();
             if (input.pinProof !== undefined) await limitPinCompletion(ctx.clientIp);
             const hold = await findEscrowHoldById(input.holdId);
             if (!hold || !resumeTokenMatches(hold, input.resumeToken)) {
@@ -1405,6 +1404,7 @@ export const escrowRouter = t.router({
             // Legacy Mongo rows can predate the required creation-time record.
             if (hold.status !== 'pending' || !hold.holdRecord)
                 throw new TRPCError({ code: 'FORBIDDEN', message: invalidMessage });
+            await ensureHoldIndexes();
             const now = new Date();
             if (now < hold.releaseAfter) {
                 throw new TRPCError({
