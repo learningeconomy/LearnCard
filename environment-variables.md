@@ -447,6 +447,13 @@ Folder → AWS secret mapping:
 | `/scouts/brain-service/runtime`             | `brain-service/<stage>/runtime-secrets`       | `eu-west-1` |
 | `/scouts/cloud-service/runtime`             | `learn-cloud-service/<stage>/runtime-secrets` | `eu-west-1` |
 
+Each sync is many-to-one with auto-sync on: every change in the folder rewrites the whole AWS
+secret from the folder's contents. **Never add or edit keys directly on the AWS secret**; put them
+in the Infisical folder. A key that exists only in AWS is dropped on the next sync (2026-11-04:
+`ESCROW_ENCLAVE_REMOTE_URL`/`ESCROW_ENCLAVE_REMOTE_TOKEN`, written straight into
+`lca-api/production/runtime-secrets` at the escrow cutover, vanished when another key was added in
+Infisical, and production escrow was unavailable until they were added to the folder).
+
 ScoutPass reuses the same secret names because its services deploy to the same
 stage names in a different region; the region (plus admin-only sync creation)
 keeps the two tenants apart.
