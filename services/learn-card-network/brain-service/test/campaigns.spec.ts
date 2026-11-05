@@ -25,6 +25,7 @@ import { getLiveCampaignsForProfile } from '@accesslayer/campaign/read';
 import { campaignTimeParams } from '@accesslayer/campaign/shared';
 import { constructUri } from '@helpers/uri.helpers';
 import { ensureCampaignConstraints } from '../src/models/campaign-constraints';
+import { buildCampaignNotification } from '@helpers/campaign-notifications.helpers';
 
 const domain = 'localhost%3A3000';
 const tenant = resolveTenantFromRequest({}, 'learncard');
@@ -52,6 +53,39 @@ const audience = (source: CampaignAudienceInput['source']): CampaignAudienceInpu
 const addLearner = async (): Promise<void> => {
     await admin.addAudience(audience({ type: 'dids', dids: [did('learner')] }));
 };
+
+it.each([
+    { channels: ['notify'], enabled: true, expected: false },
+    { channels: ['inApp', 'notify'], enabled: false, expected: false },
+    { channels: ['inApp', 'notify'], enabled: true, expected: true },
+] as const)(
+    'aligns notification destinations with learner feed eligibility (%j)',
+    async ({ channels, enabled, expected }) => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: [...channels],
+                message: { title: 'News', enabled },
+                notification: { title: 'News', body: 'Read this announcement' },
+            })
+        );
+        await addLearner();
+        const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
+            id: { did: () => 'did:web:brain.example' },
+        } as never);
+        try {
+            const notification = await buildCampaignNotification(campaign, {
+                profileId: 'learner',
+                did: did('learner'),
+            });
+            expect(notification.data?.metadata?.campaignHasInApp).toBe(expected);
+            const feed = await getLiveCampaignsForProfile('learner');
+            expect(feed.some(item => item.campaign.id === campaign.id)).toBe(expected);
+        } finally {
+            signer.mockRestore();
+        }
+    }
+);
 
 beforeAll(async () => {
     await ensureCampaignConstraints();

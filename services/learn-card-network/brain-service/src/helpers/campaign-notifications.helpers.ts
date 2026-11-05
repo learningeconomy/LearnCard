@@ -41,6 +41,10 @@ export const buildCampaignNotification = async (
             metadata: {
                 campaignId: campaign.id,
                 campaignCreatedAt: campaign.createdAt,
+                campaignHasInApp:
+                    !campaignTestId &&
+                    campaign.channels.includes('inApp') &&
+                    campaign.message?.enabled === true,
                 ...(campaignTestId ? { campaignTestId } : {}),
             },
         },

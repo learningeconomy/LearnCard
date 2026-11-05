@@ -26,7 +26,9 @@ export const resolveNotificationRoute = (notification: LCNNotification): string 
     switch (type) {
         case LCNNotificationTypeEnumValidator.enum.ANNOUNCEMENT: {
             const id = notification.data?.metadata?.campaignId;
-            return typeof id === 'string' && id.trim().length > 0
+            return notification.data?.metadata?.campaignHasInApp === true &&
+                typeof id === 'string' &&
+                id.trim().length > 0
                 ? `/m/${encodeURIComponent(id)}`
                 : '/notifications';
         }

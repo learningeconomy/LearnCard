@@ -1380,6 +1380,7 @@ export const LCNNotificationMetadataValidator = z
             .regex(/^[a-z0-9-]{3,64}$/)
             .optional(),
         campaignCreatedAt: z.iso.datetime().optional(),
+        campaignHasInApp: z.boolean().optional(),
         campaignTestId: z.uuid().optional(),
     })
     .catchall(z.unknown());

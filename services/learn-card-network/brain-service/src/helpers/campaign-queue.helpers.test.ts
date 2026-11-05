@@ -373,3 +373,23 @@ describe('email channel dispatch', () => {
         expect(mocks.enqueue).not.toHaveBeenCalled();
     });
 });
+
+describe('announcement message destinations', () => {
+    it.each([
+        { channels: ['notify'], enabled: true, expected: false },
+        { channels: ['inApp', 'notify'], enabled: false, expected: false },
+        { channels: ['inApp', 'notify'], enabled: true, expected: true },
+    ])('advertises only usable in-app content (%j)', async ({ channels, enabled, expected }) => {
+        const notification = await buildCampaignNotification(
+            { ...campaign, channels, message: { enabled } } as Campaign,
+            recipient()
+        );
+        expect(notification.data?.metadata?.campaignHasInApp).toBe(expected);
+        const testNotification = await buildCampaignNotification(
+            { ...campaign, channels, message: { enabled } } as Campaign,
+            recipient(),
+            'test-id'
+        );
+        expect(testNotification.data?.metadata?.campaignHasInApp).toBe(false);
+    });
+});

@@ -29,37 +29,41 @@ afterEach(() => {
     cleanup();
     vi.clearAllMocks();
 });
-it.each(['pilot', undefined])(
-    'opens the campaign or inbox from a foreground toast (%s)',
-    campaignId => {
-        const history = createMemoryHistory();
-        state.data = { notifications: [] };
-        const view = render(
-            <Router history={history}>
-                <NotificationToastListener />
-            </Router>
-        );
-        expect(state.present).not.toHaveBeenCalled();
-        state.data = {
-            notifications: [
-                {
-                    _id: 'new',
-                    type: 'ANNOUNCEMENT',
-                    data: { metadata: { campaignId } },
-                    message: { title: 'Campaign' },
-                } as NotificationType,
-            ],
-        };
-        view.rerender(
-            <Router history={history}>
-                <NotificationToastListener />
-            </Router>
-        );
-        expect(state.present).toHaveBeenCalledOnce();
-        render(state.present.mock.calls[0][0]);
-        fireEvent.click(screen.getByRole('button', { name: 'Campaign' }));
-        expect(history.location.pathname).toBe(campaignId ? '/m/pilot' : '/');
-        expect(state.mark).toHaveBeenCalledWith({ notificationId: 'new' });
-        expect(state.open).toHaveBeenCalledTimes(campaignId ? 0 : 1);
-    }
-);
+it.each([
+    ['pilot', true],
+    ['pilot', false],
+    ['pilot', undefined],
+    [undefined, true],
+])('opens the campaign or inbox from a foreground toast (%s)', (campaignId, campaignHasInApp) => {
+    const history = createMemoryHistory();
+    state.data = { notifications: [] };
+    const view = render(
+        <Router history={history}>
+            <NotificationToastListener />
+        </Router>
+    );
+    expect(state.present).not.toHaveBeenCalled();
+    state.data = {
+        notifications: [
+            {
+                _id: 'new',
+                type: 'ANNOUNCEMENT',
+                data: { metadata: { campaignId, campaignHasInApp } },
+                message: { title: 'Campaign' },
+            } as NotificationType,
+        ],
+    };
+    view.rerender(
+        <Router history={history}>
+            <NotificationToastListener />
+        </Router>
+    );
+    expect(state.present).toHaveBeenCalledOnce();
+    render(state.present.mock.calls[0][0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Campaign' }));
+    expect(history.location.pathname).toBe(
+        campaignId && campaignHasInApp === true ? '/m/pilot' : '/'
+    );
+    expect(state.mark).toHaveBeenCalledWith({ notificationId: 'new' });
+    expect(state.open).toHaveBeenCalledTimes(campaignId && campaignHasInApp === true ? 0 : 1);
+});
