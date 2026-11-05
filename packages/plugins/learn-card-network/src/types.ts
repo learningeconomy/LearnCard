@@ -158,11 +158,11 @@ import {
     PublishCredentialRefreshInput,
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
-    GetCredentialRefreshReceiptInput,
-    CredentialRefreshReceipt,
+    type GetCredentialRefreshReceiptInput,
+    type CredentialRefreshReceipt,
     GetCredentialRefreshHistoryResult,
-    SendBoostInput,
-    CredentialRefreshUpdateReason,
+    type SendBoostInput,
+    type CredentialRefreshUpdateReason,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';

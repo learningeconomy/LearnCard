@@ -25,12 +25,12 @@ import {
     isStoredCredentialEnvelope,
     ACT_AS_HEADER,
     HolderEncryptedHandoffValidator,
-    HolderEncryptedHandoff,
-    SendHolderEncryptedRefreshableInput,
-    PublishHolderEncryptedRefreshInput,
-    GetEncryptionRecipientsInput,
-    EncryptionRecipientsResult,
-    PublishCredentialRefreshResult,
+    type HolderEncryptedHandoff,
+    type SendHolderEncryptedRefreshableInput,
+    type PublishHolderEncryptedRefreshInput,
+    type GetEncryptionRecipientsInput,
+    type EncryptionRecipientsResult,
+    type PublishCredentialRefreshResult,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -53,8 +53,8 @@ import {
     LearnCardNetworkPlugin,
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
-    SendBoostInputWithEncryption,
-    PublishHolderEncryptedRefreshableOptions,
+    type SendBoostInputWithEncryption,
+    type PublishHolderEncryptedRefreshableOptions,
 } from './types';
 
 /**
