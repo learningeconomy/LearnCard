@@ -1230,10 +1230,15 @@ jobs:
                     echo "::error::No CapGo bundle version received; aborting channel assignment."
                     exit 1
                   fi
+                  # --downgrade turns off "Disable auto downgrade under native". iOS
+                  # store builds (20.0.x) are numbered above our bundles (1.100.x), so
+                  # with it on no iPhone takes an OTA update. Set it on every deploy so
+                  # new channels and dashboard edits can't re-enable it.
                   bunx --package @capgo/cli@8.50.3 capgo channel set ${{ steps.capgo-channel.outputs.channel }} \
                     -s default \
                     -b "$BUNDLE_VERSION" \
                     --self-assign \
+                    --downgrade \
                     ${{ steps.vars.outputs.capgo_id }}
 
             # Tenant legs are continue-on-error, so their failure doesn't fail the run and the
