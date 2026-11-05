@@ -167,9 +167,6 @@ test('trusted exact-range proof restores only a successful latest queue Test ver
 test('different deployment range, target selection, runtime and protocol retain full tests', async t => {
     for (const mutate of [
         f => {
-            f.proof.base = 'c'.repeat(40);
-        },
-        f => {
             f.proof.head = 'c'.repeat(40);
         },
         f => {
@@ -210,6 +207,25 @@ test('different deployment range, target selection, runtime and protocol retain 
         mutate(f);
         assert.deepEqual(await f.resolve(), { reused: false, reason: 'proof-mismatch' });
     }
+});
+
+test('queue and Deploy base mismatches stay rejected and are visible separately', async t => {
+    const f = fixture(t);
+    // B tested M -> A+B while Deploy has advanced to A -> A+B, or the
+    // inverse timing: queue tests use A while Deploy still starts from M.
+    for (const [queueBase, deployBase] of [
+        [base, 'c'.repeat(40)],
+        ['c'.repeat(40), base],
+    ]) {
+        f.proof.base = queueBase;
+        assert.deepEqual(await f.resolve({ base: deployBase }), {
+            reused: false,
+            reason: 'comparison-base-mismatch',
+        });
+    }
+    // A base difference must not hide a second contract mismatch in the tally.
+    f.proof.runtime.node = 'v22.1.0';
+    assert.deepEqual(await f.resolve(), { reused: false, reason: 'proof-mismatch' });
 });
 
 test('PR, fork, other-branch, incomplete, failed and older-green runs cannot authorize reuse', async t => {

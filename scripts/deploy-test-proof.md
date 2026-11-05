@@ -23,6 +23,10 @@ An unsupported selection, different range/runtime, missing or expired artifact, 
 
 Older queue runs have no proof artifact and cannot be reused. The first live reuse needs a subsequent eligible queue run containing the producer, followed by a staging push with the same range. Inspect the `Deploy test reuse` summary in `Determine Affected Projects` for a reason code and, on reuse, the source run ID and attempt. Confirm that `Test Affected Projects` shows only `Record reused queue tests`, while native compilation and downstream gates still run as selected.
 
+Queue depth alone does not determine whether the bases match. For example, B's queue tests can freeze `M → A+B`, then A's Deploy succeeds before B's Deploy selects its range. Deploy now compares `A → A+B`, so the proof is rejected. If A has not successfully deployed yet, both can still start from `M`; if B fetches main after A merges, both can start from `A`. A single-entry queue can also miss when Deploy is behind main.
+
+Rollout samples should report the hit rate and fallback reasons alongside per-hit time savings, grouped by observed queue depth and Deploy lag. `comparison-base-mismatch` means the base is the only differing proof field; combined range/target/runtime mismatches remain `proof-mismatch`. Record lookup overhead on misses too. The historical 5m44s duplicate job is a per-hit opportunity, not a typical saving across all Deploy runs. Low eligibility may justify a separately reviewed exact-head/task-coverage extension; it does not justify loosening this equality gate without that review.
+
 For example, an escrow-only queue run tests `A → B`. If the last successful staging Deploy is `A` and the new head is `B`, Deploy can reuse that verdict. If the last successful Deploy is an earlier commit `Z`, Deploy tests `Z → B` again even though `A → B` passed.
 
 Run the local contracts with:

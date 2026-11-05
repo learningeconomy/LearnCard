@@ -3,6 +3,7 @@ const { execFileSync } = require('node:child_process');
 const { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync } = require('node:fs');
 const { tmpdir } = require('node:os');
 const path = require('node:path');
+const { isDeepStrictEqual } = require('node:util');
 
 const FILE = 'queue-test-proof.json';
 const LIMIT = 128 * 1024;
@@ -266,7 +267,14 @@ async function resolveReuse({
         try {
             assert.deepEqual(proof, expected);
         } catch {
-            fail('proof-mismatch');
+            // Attribute a miss to the base only when every other field matches.
+            // Speculative queue ranges and successful Deploy history can advance
+            // independently; this diagnostic never relaxes the equality gate.
+            const onlyBaseDiffers =
+                SHA.test(proof?.base) &&
+                proof.base !== base &&
+                isDeepStrictEqual({ ...proof, base }, expected);
+            fail(onlyBaseDiffers ? 'comparison-base-mismatch' : 'proof-mismatch');
         }
         const latest = (
             await github.rest.actions.getWorkflowRun({ ...repo, run_id: run.id, request })
