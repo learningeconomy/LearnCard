@@ -301,6 +301,47 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(learnCard.invoke.createDagJwe).not.toHaveBeenCalled();
     });
 
+    it('throws instead of signing when templateUri points at a display-only anchor', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ displayOnlyAnchor: true, display: {} }),
+        });
+        const plugin = await getPlugin(learnCard, client);
+
+        await expect(
+            plugin.methods?.send(learnCard, {
+                type: 'boost',
+                recipient: 'userb',
+                templateUri: 'did:web:network.example:boost:1',
+                refresh: true,
+            })
+        ).rejects.toThrow('display-only anchor');
+
+        expect(learnCard.invoke.issueCredential).not.toHaveBeenCalled();
+        expect(client.boost.prepareRefreshableSend.mutate).not.toHaveBeenCalled();
+    });
+
+    it('signs normally from templateUri when the Boost has its own display object (not a display-only anchor)', async () => {
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({
+                display: { backgroundColor: '#fff', backgroundImage: '', displayType: 'card' },
+            }),
+        });
+        const plugin = await getPlugin(learnCard, client);
+
+        await plugin.methods?.send(learnCard, {
+            type: 'boost',
+            recipient: 'userb',
+            templateUri: 'did:web:network.example:boost:1',
+            refresh: true,
+        });
+
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalled();
+    });
+
     it('prepares the inline boost before signing and reuses its prepared URI for delivery', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();

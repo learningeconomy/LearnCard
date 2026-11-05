@@ -1407,6 +1407,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     credentialSubject: { id: 'did:example:123' },
                     name: display.name,
                     display,
+                    displayOnlyAnchor: true,
                 });
                 expect(JSON.stringify(stored)).not.toContain('PRIVATE TEMPLATE TITLE');
                 const signedInput = signingAuthorityMocks.issueCredential.mock.calls[0]?.[1];
@@ -1415,7 +1416,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
         );
 
         it.each([undefined, 'omit-display-fallback-key'])(
-            'ignores the inline template name and category when display is omitted (%s)',
+            'ignores the inline template name but copies its category when display is omitted (%s)',
             async idempotencyKey => {
                 const result = await issuer.clients.fullAuth.boost.send({
                     type: 'boost',
@@ -1423,24 +1424,124 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     template: {
                         credential: testUnsignedBoost,
                         name: 'Private Template Name',
-                        category: 'PrivateCategory',
+                        category: 'TemplateCategory',
                     },
                     refresh: true,
                     idempotencyKey,
                 });
                 const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
                 expect(stored.name).toBe('Credential');
-                expect(stored.category).toBeUndefined();
+                // Unlike name/image, category is copied from the template: consent-flow
+                // write authorization keys off a Boost's category and treats an absent
+                // one as unrestricted, so dropping it would let an unconsented category
+                // through as an unrestricted write merely by omitting `display`.
+                expect(stored.category).toBe('TemplateCategory');
                 expect(stored.boost).toEqual({
                     '@context': ['https://www.w3.org/ns/credentials/v2'],
                     type: ['VerifiableCredential'],
                     issuer: getDidWeb(DOMAIN, ISSUER_PROFILE_ID),
                     credentialSubject: { id: 'did:example:123' },
                     name: 'Credential',
-                    display: {},
+                    display: { category: 'TemplateCategory' },
+                    displayOnlyAnchor: true,
                 });
                 expect(JSON.stringify(stored)).not.toContain('Private Template Name');
-                expect(JSON.stringify(stored)).not.toContain('PrivateCategory');
+            }
+        );
+
+        it.each([undefined, 'category-not-consented-key'])(
+            'never records a contract-flow write for an inline template category the recipient did not consent to (%s)',
+            async idempotencyKey => {
+                const contractUri =
+                    await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: {
+                            read: { anonymize: false },
+                            write: {
+                                credentials: {
+                                    categories: {
+                                        AllowedCategory: { required: false },
+                                        RestrictedCategory: { required: false },
+                                    },
+                                },
+                            },
+                        },
+                        name: 'Category Enforcement Contract',
+                        writers: [ISSUER_PROFILE_ID],
+                    });
+                await holder.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: {
+                        read: { anonymize: false },
+                        write: {
+                            credentials: {
+                                categories: { AllowedCategory: true, RestrictedCategory: false },
+                            },
+                        },
+                    },
+                });
+
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, category: 'RestrictedCategory' },
+                    contractUri,
+                    refresh: true,
+                    idempotencyKey,
+                });
+
+                const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
+                // The category must reach the anchor for the consent check below to see
+                // it at all; this is what the previous test already locks in.
+                expect(stored.category).toBe('RestrictedCategory');
+
+                const transactions = await runQuery(
+                    `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                     RETURN count(*) AS count`,
+                    { key: `${result.refresh!.refreshId}:1` }
+                );
+                expect(toNum(transactions.records[0].get('count'))).toBe(0);
+            }
+        );
+
+        it.each([undefined, 'category-consented-key'])(
+            'records a contract-flow write for an inline template category the recipient consented to (%s)',
+            async idempotencyKey => {
+                const contractUri =
+                    await issuer.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: {
+                            read: { anonymize: false },
+                            write: {
+                                credentials: {
+                                    categories: { AllowedCategory: { required: false } },
+                                },
+                            },
+                        },
+                        name: 'Category Enforcement Allowed Contract',
+                        writers: [ISSUER_PROFILE_ID],
+                    });
+                await holder.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: {
+                        read: { anonymize: false },
+                        write: { credentials: { categories: { AllowedCategory: true } } },
+                    },
+                });
+
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, category: 'AllowedCategory' },
+                    contractUri,
+                    refresh: true,
+                    idempotencyKey,
+                });
+
+                const transactions = await runQuery(
+                    `MATCH (root:Credential {refreshVersionKey: $key})-[:ISSUED_VIA_TRANSACTION]->(:ConsentFlowTransaction)-[:IS_FOR]->(:ConsentFlowTerms)
+                     RETURN count(*) AS count`,
+                    { key: `${result.refresh!.refreshId}:1` }
+                );
+                expect(toNum(transactions.records[0].get('count'))).toBe(1);
             }
         );
 
@@ -1459,6 +1560,28 @@ describe('Unified send with managed refresh (LC-2198)', () => {
                     expect.objectContaining({ statusPurpose: 'suspension' }),
                 ])
             );
+        });
+
+        it('sends an ordinary reusable Boost whose credential has its own display object, not a display-only anchor', async () => {
+            // Real app-created BoostCredentials have their own top-level `display`
+            // object (appearance fields like backgroundColor); this must never be
+            // mistaken for the display-only anchor marker.
+            const boostUri = await issuer.clients.fullAuth.boost.createBoost({
+                credential: {
+                    ...testUnsignedBoost,
+                    display: { backgroundColor: '#fff', backgroundImage: '' },
+                },
+            });
+
+            const result = (await issuer.clients.fullAuth.boost.send({
+                type: 'boost',
+                recipient: HOLDER_PROFILE_ID,
+                templateUri: boostUri,
+                refresh: true,
+            })) as SendResult;
+
+            expect(result.refresh).toBeDefined();
+            expect(result.credentialUri).toBeDefined();
         });
 
         it('returns no refresh receipt when refresh is omitted', async () => {

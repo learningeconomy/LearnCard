@@ -133,7 +133,11 @@ import {
     buildObv3AlignmentsForBoost,
     normalizeCredentialAlignments,
 } from '@services/skills-provider/inject';
-import { createBoost, createDisplayOnlyBoost } from '@accesslayer/boost/create';
+import {
+    createBoost,
+    createDisplayOnlyBoost,
+    normalizePublicDisplay,
+} from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -472,6 +476,10 @@ const prepareManagedRefreshSend = async (params: {
     // Local recipients authenticate refresh requests as their network profile DID,
     // including when the caller addressed them by their controller did:key.
     const holderDid = getDidWeb(domain, targetProfile.profileId);
+    // Computed once and reused for both the request digest and anchor creation below,
+    // so a retried/keyed request can never digest a different display than the one
+    // actually stored on the anchor.
+    const normalizedDisplay = normalizePublicDisplay(params.display, template);
 
     let intent: RefreshSendIntent | undefined;
 
@@ -483,7 +491,7 @@ const prepareManagedRefreshSend = async (params: {
                 recipientProfileId: targetProfile.profileId,
                 holderDid,
                 templateUri,
-                display: params.display,
+                display: normalizedDisplay,
                 contractUri,
                 integrationId: params.integrationId,
                 credentialId: params.credentialId,
@@ -530,7 +538,7 @@ const prepareManagedRefreshSend = async (params: {
 
         if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
     } else {
-        boost = await createDisplayOnlyBoost(params.display, profile, domain);
+        boost = await createDisplayOnlyBoost(normalizedDisplay, profile, domain);
         boostUri = getBoostUri(boost.id, domain);
 
         if (intent) intent = await recordRefreshSendIntent(intent, { boostUri });
@@ -1313,7 +1321,12 @@ export const boostsRouter = t.router({
                     } else if (input.template) {
                         boost =
                             input.refresh || input.signedCredential
-                                ? await createDisplayOnlyBoost(input.display, profile, domain)
+                                ? await createDisplayOnlyBoost(
+                                      input.display,
+                                      profile,
+                                      domain,
+                                      input.template
+                                  )
                                 : await createInlineBoostForSend(input.template, profile, domain);
 
                         boostUri = getBoostUri(boost.id, domain);
@@ -1360,7 +1373,12 @@ export const boostsRouter = t.router({
                             boost = preparedBoost;
                             boostUri = preparedBoostUri;
                         } else {
-                            boost = await createDisplayOnlyBoost(input.display, profile, domain);
+                            boost = await createDisplayOnlyBoost(
+                                input.display,
+                                profile,
+                                domain,
+                                input.template
+                            );
 
                             boostUri = getBoostUri(boost.id, domain);
                             boostCreated = true;

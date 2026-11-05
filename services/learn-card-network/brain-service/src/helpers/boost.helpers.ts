@@ -1,6 +1,7 @@
 import cloneDeep from 'lodash/cloneDeep';
 import {
     CredentialFieldError,
+    isDisplayOnlyAnchorTemplate,
     isEncrypted,
     isVC2Format,
     materializeCredentialFields,
@@ -388,7 +389,7 @@ export const prepareCredentialFromBoost = async (
     let boostJsonString = options.credential
         ? convertCredentialToBoostTemplateJSON(options.credential)
         : boost.dataValues.boost;
-    if (!options.credential && 'display' in JSON.parse(boostJsonString)) {
+    if (!options.credential && isDisplayOnlyAnchorTemplate(JSON.parse(boostJsonString))) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Display-only anchors require an issuance credential in the request.',
