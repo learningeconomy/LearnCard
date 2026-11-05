@@ -304,7 +304,10 @@ export function useLearnCardMessageHandlers({
 
                     // Check if already consented
                     const consentedContract = consentedContracts?.find(
-                        c => c?.contract?.uri === contractUri && c?.status !== 'withdrawn'
+                        c =>
+                            c?.contract?.uri === contractUri &&
+                            c?.status !== 'withdrawn' &&
+                            c?.status !== 'consumed'
                     );
 
                     const isPostConsent = !!consentedContract;

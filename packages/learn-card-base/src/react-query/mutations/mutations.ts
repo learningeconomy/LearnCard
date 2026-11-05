@@ -345,6 +345,7 @@ export const useDeleteCredentialRecord = () => {
             }
 
             const didWeb = switchedProfileStore.get.switchedDid();
+            const readerDid = (await initWallet()).id.did();
 
             if (!category) {
                 return { uri } satisfies DeleteCredentialContext;
@@ -373,7 +374,7 @@ export const useDeleteCredentialRecord = () => {
                     hasMore: boolean;
                     records: LCR[];
                 }>
-            >(['useGetCredentialList', didWeb ?? '', category]);
+            >(['useGetCredentialList', didWeb ?? '', category, readerDid]);
 
             log.debug('optimistic update');
 
@@ -421,7 +422,7 @@ export const useDeleteCredentialRecord = () => {
 
                 log.debug('setting list', updatedQueryList);
                 queryClient.setQueryData(
-                    ['useGetCredentialList', didWeb ?? '', category],
+                    ['useGetCredentialList', didWeb ?? '', category, readerDid],
                     updatedQueryList
                 );
 
@@ -565,7 +566,7 @@ export const useDeleteCredentialRecord = () => {
                     queryKey: ['useGetCredentials', didWeb ?? '', category],
                 });
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', category],
+                    queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
                 queryClient.invalidateQueries({
                     queryKey: ['useGetCredentialCount', didWeb ?? '', category],
@@ -608,7 +609,7 @@ export const useDeleteCredentialRecord = () => {
                     queryKey: ['useGetCredentials', didWeb ?? '', context.category],
                 });
                 queryClient.invalidateQueries({
-                    queryKey: ['useGetCredentialList', didWeb ?? '', context.category],
+                    queryKey: ['useGetCredentialList', didWeb ?? ''],
                 });
                 queryClient.invalidateQueries({
                     queryKey: ['boosts'],

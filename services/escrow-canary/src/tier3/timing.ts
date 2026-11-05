@@ -19,7 +19,8 @@ export const WARNING_DEADLINE_GRACE_MS = 2 * HOUR;
 /**
  * lca-api's hourly job sends the warning once at most {@link WARNING_HOURS} of the
  * hold remain, so measured from confirmation it is due after `hold - 24h`, and at
- * once for holds of 24h or less (staging uses a 10-minute hold).
+ * once for holds of 24h or less (the Nitro enclave's hold is always 7 days; shorter
+ * holds exist only with lca-api's software enclave).
  */
 export const warningSendsAfterMs = (holdDurationMs: number): number =>
     Math.max(0, holdDurationMs - WARNING_HOURS * HOUR);

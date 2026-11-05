@@ -49,7 +49,10 @@ const ConsentFlowCredFrontDoor: React.FC<ConsentFlowCredFrontDoorProps> = ({
 
     const { data: consentedContracts } = useConsentedContracts();
     const consentedContract = consentedContracts?.find(
-        c => c?.contract?.uri === contractDetails?.uri && c?.status !== 'withdrawn'
+        c =>
+            c?.contract?.uri === contractDetails?.uri &&
+            c?.status !== 'withdrawn' &&
+            c?.status !== 'consumed'
     );
     const hasAlreadyConsented = !!consentedContract;
 

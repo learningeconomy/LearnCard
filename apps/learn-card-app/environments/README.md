@@ -112,6 +112,41 @@ Example `config.local.json` — only the diffs:
 
 If no `--stage` is specified, **production** is assumed (no overlay applied).
 
+## Web deployments
+
+Tenant web apps deploy from CI (`.github/workflows/deploy.yml`, `deploy-frontend`),
+one Netlify site per GitHub Environment. The Environment's `TENANT` and `STAGE`
+variables pick the baked config (`public/tenant-config.json`) and pin the edge
+overlay; `NETLIFY_SITE_ID` picks the site. `NETLIFY_AUTH_TOKEN` is a repository
+secret, so Environments inherit it.
+
+- **Automatic:** staging legs deploy on `main` pushes that affect `learn-card-app`.
+  Production legs deploy on release commits that bump `learn-card-app`, and VetPass
+  ships alongside LearnCard.
+- **Manual dispatch:** choose one app per run. `staging`/`production` deploy
+  LearnCard, `vetpass-staging`/`vetpass` deploy VetPass only, and
+  `scouts-staging`/`scouts` deploy ScoutPass. VetPass has no services of its own, so
+  service checkboxes are rejected for the VetPass targets.
+
+| Tenant    | Staging Environment → host                        | Production Environment → host                 |
+| --------- | ------------------------------------------------- | --------------------------------------------- |
+| learncard | `learn-card-app-staging` → `staging.learncard.ai` | `learn-card-app-production` → `learncard.app` |
+| vetpass   | `vetpass-app-staging` → `staging.vetpass.app`     | `vetpass-app-production` → `vetpass.app`      |
+
+On automatic runs the VetPass legs set `"tenant_leg": true` (continue-on-error). A
+failed VetPass deploy therefore doesn't fail the job result that gates LearnCard native
+publishing. Instead, the failing leg posts its own alert to the deploy-errors Slack
+channel. Manual VetPass dispatches use the plain legs, so a failure fails the run.
+
+To add a tenant:
+
+1. Create a Netlify site per stage. Attach each hostname to its site and turn off
+   Netlify's own git builds (`stop_builds`), so CI is the only publisher.
+2. Create both GitHub Environments: copy the variables from an existing pair, then
+   set `TENANT`, `STAGE=staging` (staging only) and `NETLIFY_SITE_ID`.
+3. Add the tenant's legs and dispatch targets in `deploy.yml`, following
+   `VETPASS_FE_*` and the `vetpass`/`vetpass-staging` options.
+
 ## Switching tenants
 
 ### Opt-in local Keycloak
