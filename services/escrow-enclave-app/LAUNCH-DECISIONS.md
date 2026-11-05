@@ -14,24 +14,24 @@ against `main` at the time of writing (2026-10-26) and may drift.
 SSS launches only together with escrow at 100% (decision 2026-10-31), for LearnCard
 and VetPass production in the same change (#1875). Where a record below was accepted
 "for stage 1" with a revisit "before stage 2", that revisit now happens before the
-100% switch. The amendments proposed below for D10 and RT are **not** decisions until
-the owner records them.
+100% switch. D10's 100% amendment was accepted on 2026-11-05; RT's is still pending
+owner sign-off.
 
 **Recording a decision:** replace `_pending_` with `Accepted` / `Rejected` /
 `Accepted with conditions`, fill in the approver's name, role and date, link the
 evidence (PR, ticket or meeting notes), and update the matching ROLLOUT.md item
 in the same PR.
 
-| ID  | Decision                                     | Blocks                                | Owner (placeholder)       | Decision                            |
-| --- | -------------------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------- |
-| D10 | Accept KMS key-admin policy rewrite residual | 100% switch (ROLLOUT.md item 4)       | Jackson Smith             | Accepted (A), stage 1; 100% pending |
-| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)  | Jackson Smith             | Accepted (A), up to 100%; date TBD  |
-| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A), stage 1; 100% pending |
-| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call   | _TBD (security)_          | _pending_                           |
-| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker    | Jackson Smith             | Accepted (C)                        |
-| P-b | Email backup share default                   | Product/security call                 | Jackson Smith             | Off at launch                       |
-| P-c | Privacy-policy disclosure                    | Legal call before real users (switch) | Legal (via Jackson Smith) | Text approved (reported; link TBD)  |
-| P-d | Userflow gating fix                          | Scope unclear — see record            | _TBD (product/eng)_       | _pending_                           |
+| ID  | Decision                                     | Blocks                                | Owner (placeholder)       | Decision                                                          |
+| --- | -------------------------------------------- | ------------------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| D10 | Accept KMS key-admin policy rewrite residual | 100% switch (ROLLOUT.md item 4)       | Jackson Smith             | Accepted (A) for 100%, 2026-11-05                                 |
+| RAR | Accept R-AUTHORITY-ROLLBACK until archiver   | Launch without archiver (all stages)  | Jackson Smith             | Accepted (A), up to 100%; hardening by 2026-12-31                 |
+| RT  | Roughtime sources for production volume      | 100% switch (ROLLOUT.md item 1)       | Jackson Smith             | Accepted (A), stage 1; 100% pending (owner deferred measurements) |
+| CNL | Bearer-only vault cancellation               | Not a listed blocker; security call   | Jackson Smith             | Accepted (A) + D post-launch                                      |
+| P-a | PIN prompt for migrated Web3Auth users       | Product call, not a listed blocker    | Jackson Smith             | Accepted (C)                                                      |
+| P-b | Email backup share default                   | Product/security call                 | Jackson Smith             | Off at launch                                                     |
+| P-c | Privacy-policy disclosure                    | Legal call before real users (switch) | Legal (via Jackson Smith) | Text approved and published; app link and legal approver pending  |
+| P-d | Userflow gating fix                          | Fix gap 1 (#1967)                     | Jackson Smith             | Accepted: fix gap 1 (#1967)                                       |
 
 ---
 
@@ -96,13 +96,18 @@ operation. Conditions, all already required elsewhere in this file or ROLLOUT.md
   `escrow-enclave-production-kms-governance` stays enabled.
 - Every `PutKeyPolicy` remains a reviewed, two-person change: the 2026-11-05 roll's
   policy edits were reviewed in #1958 (approver TaylorBeeston) and applied by the
-  MFA operator. Confirm that those edits paged the alarm inbox and record it here
-  (not yet recorded).
+  MFA operator. They paged as designed: the 2026-11-05 01:55Z production
+  `PutKeyPolicy` apply triggered `escrow-enclave-production-kms-governance` 2× and
+  `escrow-enclave-production-authority-credential_key` 1× (EventBridge
+  `TriggeredRules`).
 - `DenyPutKeyPolicyWithoutMFA`, no `kms:CreateGrant` and the debug-PCR denies stay in
   the key policies.
 - Option B is revisited once the image-roll cadence settles.
 
-**Pending: owner sign-off (Jackson Smith, CTO).**
+**Decision (2026-11-05): A accepted for 100%** (all LearnCard and VetPass production
+users), with the conditions above.
+
+`Owner: Jackson Smith` · `Decision: Accepted (option A) for 100%` · `Approver/date: Jackson Smith (CTO), 2026-11-05`
 
 ---
 
@@ -174,17 +179,29 @@ Conditions (verified 2026-10-31 unless noted):
   delivery error), and the seven `escrow-enclave-production-authority-*` rules
   stay enabled (enabled).
 - **Before the switch:** drill the production denied-write and unexpected-write
-  alarms and record the outcome (staging drills exist; production is not yet
-  drilled).
+  alarms and record the outcome. **Done 2026-11-05 ~17:10Z:** an SSO admin
+  conditional `DeleteItem` on a nonexistent authority key
+  (`DRILL#2026-11-05-denied-write`, condition `attribute_exists`) was denied
+  (`AccessDeniedException`; no change was possible).
+  `escrow-enclave-production-authority-unexpected_write` and `-denied_write` each
+  triggered and invoked once with 0 failed invocations; SNS
+  `escrow-enclave-production-ledger-alerts` published 2, delivered 2, failed 0 to
+  escrow-alarm@learningeconomy.io; the monitor DLQ was empty.
 - Two-person MFA controls and the guardrail SCPs stay in place.
 - Hardening follow-up, not a gate: a lightweight tamper-evident history (scheduled
   locked AWS Backup copies of the authority table in a separate account plus a
   monitor reconciliation), or the full archiver in AUTHORITY-ARCHIVER.md. Target
   date to be recorded before the switch.
 
-**Hardening target date: TBD (owner decision).** Record the chosen mechanism
-(locked AWS Backup copies or the full archiver) and its target date here before the
-switch.
+**Hardening follow-up (decided 2026-11-05, Jackson Smith): target date 2026-12-31.**
+Mechanism: a same-account AWS Backup vault with Vault Lock in compliance mode for the
+authority table (no new AWS account), plus CloudWatch/EventBridge alarms on Backup
+plan, selection and vault changes and on failed backup jobs. Retention is chosen at
+implementation; compliance mode is irreversible once its grace period ends. Why it
+addresses the threat: locked recovery points cannot be deleted or have their
+retention shortened, even by an account admin or root, so a coherent rollback or
+purge of the table leaves an independent history. An attacker can still stop future
+backups, hence the alarms.
 
 `Owner: Jackson Smith` · `Decision: Accepted (A) for all stages; archiver is post-launch hardening` · `Approver/date: Jackson Smith, 2026-10-31`
 
@@ -318,7 +335,9 @@ Production evidence so far: canary tier 2 PIN releases (since 2026-10-30) and th
 first tier 3 create and confirm (2026-11-04) succeeded, so the three sources have
 served real production operations. No per-source failure analysis has been done.
 
-**Pending: owner sign-off (Jackson Smith, CTO)**, after the two measurements above.
+**Update (2026-11-05):** the measured count and 100% forecast were not provided; the
+owner deferred them. The 100% amendment remains pending owner sign-off (Jackson
+Smith, CTO) and stays an open item on the switch checklist.
 
 ---
 
@@ -361,7 +380,10 @@ cancel commits and the bearer-only gap. No cancel alerting was found in this rev
 **Decided looks like:** a security approver and date accepting A, plus tickets for
 D and B with target stages.
 
-`Owner: _TBD (security)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Decision (2026-11-05): A for launch, with D (cancel-rate/anomaly alerting) as a
+post-launch follow-up; B tracked later.**
+
+`Owner: Jackson Smith` · `Decision: Accepted (option A) for launch; D post-launch; B tracked` · `Approver/date: Jackson Smith (CTO), 2026-11-05`
 
 ---
 
@@ -509,12 +531,17 @@ by Jackson Smith; link the approved text and approval here). The short in-app no
 recommended above is still a product item before automatic enrollment reaches real
 users.
 
-**Link to approved text: TBD: link to approved privacy-policy text.** Record the
-published-policy revision (or the approved draft) and the named legal approver here.
+**Update (2026-11-05):** the current published policy is
+<https://learncard.com/privacy-policy> ("Last Updated: October 27, 2026"); it covers
+escrow and recovery. The app still links
+<https://www.learncard.com/learncard-privacy-policy> ("Last Updated: February 4,
+2026", no escrow wording). Jackson Smith asked the web team, who own that page, to
+make sure the page the app links shows the latest wording; not yet confirmed. The
+named legal approver is still pending.
 At 100% every active user is silently auto-enrolled at the switch, so the short in-app
 notice is a switch prerequisite (ROLLOUT.md, "100% launch").
 
-`Owner: Legal` · `Decision: Policy text approved (operator-reported; named legal approver and published-policy link pending)` · `Approver/date: Legal (name pending), reported by Jackson Smith, 2026-10-30`
+`Owner: Legal` · `Decision: Policy text approved and published (learncard.com/privacy-policy); app-linked page update and named legal approver pending` · `Approver/date: Legal (name pending), reported by Jackson Smith, 2026-10-30`
 
 ---
 
@@ -562,4 +589,8 @@ apply the diff above in a small code PR with a unit test.
 
 **Decided looks like:** an owner names the intended fix, plus a linked PR.
 
-`Owner: _TBD (product/eng)_` · `Decision: _pending_` · `Approver/date: _none recorded_`
+**Decision (2026-11-05): fix gap 1** (Userflow fails closed when the tenant config is
+unresolved), PR #1967. Gap 2 (raw DID as the Userflow ID) is a P-c privacy question,
+not part of this fix.
+
+`Owner: Jackson Smith` · `Decision: Fix gap 1 (#1967)` · `Approver/date: Jackson Smith (CTO), 2026-11-05`

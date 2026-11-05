@@ -51,9 +51,10 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
    host. All three operators acknowledged LearnCard's use (operator-reported,
-   2026-10-30; see LAUNCH-DECISIONS.md RT). Remaining for the 100% switch: attach
-   the measured per-operation request count and the 100% volume forecast to that
-   record, and record the owner's sign-off on the proposed 100% amendment.
+   2026-10-30; see LAUNCH-DECISIONS.md RT). Remaining for the 100% switch: the
+   owner's sign-off on the proposed 100% amendment. The measured per-operation
+   request count and the 100% volume forecast were not provided; the owner deferred
+   them (2026-11-05).
 2. **Enrollment authority — verified on staging; deployed to production.**
    Without a configured authority the enclave wires in `UnavailableEnrollment`, so
    create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
@@ -65,7 +66,7 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    enrolled, set a PIN and recovered with it on a fresh device, and the production
    canary has run PIN releases (tier 2) since then and started a 7-day hold (tier 3)
    on 2026-11-04 (operator-observed).
-3. **Attack C (hold notification) — verified on staging; soak and inbox check remain.**
+3. **Attack C (hold notification) — closed (2026-11-05).**
    Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
    staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
    refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
@@ -74,9 +75,9 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    canary's inbox read the enclave code email, passed its trust checks (SPF, DKIM
    aligned to the enclave sender, SES verdicts) and confirmed the hold, on production
    on 2026-11-04 22:26Z (staging's first runs failed the confirm step on a canary
-   hold-duration misconfiguration, fixed 2026-11-04). Remaining: the owner records
-   whether this closes the item; the first production tier 3 release (~2026-11-11)
-   completes the end-to-end signal.
+   hold-duration misconfiguration, fixed 2026-11-04). Jackson Smith confirmed on
+   2026-11-05 that this closes the "operator inbox confirmation" item. The first
+   production tier 3 release (~2026-11-11) completes the end-to-end signal.
 4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
@@ -84,8 +85,8 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    `escrow-kms-admin`, a CloudTrail alarm), not eliminated. Security must
    explicitly accept this residual risk (or adopt the immutable-key-policy
    alternative documented in `infra/escrow-enclave/README.md`) before rollout
-   proceeds past internal. Accepted for stage 1 (2026-10-30); a 100% amendment is
-   proposed in LAUNCH-DECISIONS.md D10, pending the owner's sign-off.
+   proceeds past internal. Accepted for stage 1 (2026-10-30) and for 100%
+   (LAUNCH-DECISIONS.md D10, Jackson Smith, 2026-11-05).
 
 **Stage 1 decisions (2026-10-30, Jackson Smith).** Internal-only escrow (SSS pilot
 channel and production canary accounts) proceeds with: item 1 (Roughtime) and
@@ -146,18 +147,27 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
 
 ### Prerequisites (mirror of #1875's checklist)
 
-- [ ] Decisions recorded: D10 and RT 100% amendments signed off, RAR hardening
-      target date, P-c published-policy link (LAUNCH-DECISIONS.md).
+- [x] D10 100% amendment signed off (2026-11-05); RAR hardening target date
+      recorded (2026-12-31); CNL and P-d decided (LAUNCH-DECISIONS.md).
+- [ ] RT 100% amendment signed off (measured count and forecast deferred by the
+      owner, 2026-11-05).
+- [ ] P-c: the privacy-policy page the app links shows the current (2026-10-27)
+      wording, and the legal approver is named (LAUNCH-DECISIONS.md P-c).
+- [ ] P-d fix merged (#1967).
 - [ ] Native force-update shipped, so old native builds cannot run Web3Auth
       against migrated accounts.
 - [ ] In-app privacy notice shipped (auto-enrolment is silent; P-c).
 - [ ] Load test at 100% enrolment on staging.
-- [ ] Production alarm drill: denied-write and unexpected-write authority alarms
-      (LAUNCH-DECISIONS.md RAR condition).
+- [x] Production alarm drill: denied-write and unexpected-write authority alarms
+      fired and delivered (2026-11-05 ~17:10Z; LAUNCH-DECISIONS.md RAR condition).
 - [ ] Production canary clean, including the first production tier 3 release
       (~2026-11-11).
-- [ ] `escrow-enclave-production-AuthorityRepeatedPinClear` (ALARM since
-      2026-10-30) understood and cleared.
+- [x] `escrow-enclave-production-AuthorityRepeatedPinClear` (ALARM since
+      2026-10-30) understood: the 2026-10-30 production pilot test on Jackson Smith's
+      own account (`ACCOUNT#3ab64432…`, matched from his `did:key`; 13 authority
+      writes 21:55–22:14Z). Threshold raised to 4 (#1965) on 2026-11-05; OK since
+      16:55Z. Follow-up: deploy the account-count monitor build from #1965, set the
+      threshold to 1, then to 0 after ~2026-11-29.
 - [ ] DMARC for `learncard.com` (production login mail is scored as spam by SES).
 - [ ] lca-api production deploy current with `main`.
 
