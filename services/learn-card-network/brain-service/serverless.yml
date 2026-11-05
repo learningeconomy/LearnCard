@@ -16,6 +16,18 @@ plugins:
     - serverless-prune-plugin
 
 constructs:
+    campaign-queue:
+        type: queue
+        batchSize: 1
+        maxRetries: 3
+        worker:
+            handler: lambda.campaignDispatchWorker
+            timeout: 300
+            vpc:
+                securityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+                subnetIds:
+                    - Ref: PrivateSubnetA
     inbox-queue:
         type: queue
         batchSize: 1
@@ -34,6 +46,14 @@ constructs:
         type: queue
         worker:
             handler: lambda.notificationsWorker
+            timeout: 30
+            # Graph/cache bookkeeping requires the VPC. All webhook HTTP delivery
+            # must retain the connection-time public-address and no-redirect guard.
+            vpc:
+                securityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+                subnetIds:
+                    - Ref: PrivateSubnetA
 
 custom:
     prune:

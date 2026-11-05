@@ -40,6 +40,8 @@ import {
     pageCampaignAudience,
 } from '@accesslayer/campaign/audience';
 import { enrollInCampaign, recordCampaignEvent } from '@accesslayer/campaign/state';
+import { dispatchCampaign } from '@helpers/campaign-queue.helpers';
+import { sendCampaignTestToMe } from '@helpers/campaign-notifications.helpers';
 
 const campaignAdminRoute = profileRouteWithoutInputCapture
     .meta({ requiredScope: 'campaigns:admin' })
@@ -68,6 +70,20 @@ const idInput = z.object({ campaignId: CampaignIdValidator }).strict();
 const noInput = z.object({}).strict().default({});
 
 export const campaignsRouter = t.router({
+    sendTestToMe: campaignAdminRoute
+        .input(idInput)
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }): Promise<boolean> =>
+            trace('route', 'campaigns:sendTestToMe', () =>
+                sendCampaignTestToMe(input.campaignId, ctx.user.profile)
+            )
+        ),
+    dispatch: campaignAdminRoute
+        .input(idInput)
+        .output(z.object({ dispatchId: z.uuid() }))
+        .mutation(async ({ input }): Promise<{ dispatchId: string }> =>
+            trace('route', 'campaigns:dispatch', () => dispatchCampaign(input.campaignId))
+        ),
     isAdmin: campaignUserRoute
         .meta({ requiredScope: 'campaigns:read' })
         .input(noInput)

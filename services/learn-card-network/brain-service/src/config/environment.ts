@@ -45,6 +45,15 @@ export const brainServiceEnvironmentShape = {
     SIGNING_AUTHORITY_ENDPOINT: optionalEnvironmentUrl,
     APP_STORE_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     CAMPAIGN_ADMIN_PROFILE_IDS: optionalEnvironmentString,
+    CAMPAIGN_QUEUE_URL: optionalEnvironmentUrl,
+    CAMPAIGN_DISPATCH_PAGE_SIZE: z.preprocess(
+        value => (value === '' ? undefined : value),
+        z.coerce.number().int().min(1).max(1000).default(1000)
+    ),
+    CAMPAIGN_DISPATCH_DELAY_SECONDS: z.preprocess(
+        value => (value === '' ? undefined : value),
+        z.coerce.number().int().min(0).max(900).default(60)
+    ),
     SKILL_FRAMEWORK_ADMIN_PROFILE_IDS: optionalEnvironmentString,
     SKILL_FRAMEWORK_SEED_OWNER_PROFILE_ID: optionalEnvironmentString,
     TRUSTED_BRAIN_SERVICES: optionalEnvironmentString,
