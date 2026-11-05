@@ -193,10 +193,25 @@ production host has run the brand-aware image since 2026-11-05 02:36Z (pins
 
 ### Switch rollback
 
-Revert #1875 and redeploy the frontend. Accounts already switched stay on SSS with the
-same key and DID, and their escrow enrolments stay valid; only new switches and new
-auto-enrolments stop. Use the kill switch below only for a suspected compromise of
-the release path.
+Reverting #1875 is **not** safe for every account, so treat it as a last resort:
+
+- After a revert, current builds select the Web3Auth strategy again, and that
+  strategy ignores the server's `keyProvider: sss` record: its
+  `fetchServerKeyStatus` always returns `exists: true, primaryDid: null` and derives
+  the key from Web3Auth (`packages/learn-card-base/src/key-derivation/createWeb3AuthStrategy.ts`,
+  `fetchServerKeyStatus`). Nothing compares the result with the SSS DID.
+- **Migrated accounts** (created on Web3Auth, upgraded at the switch) are unaffected:
+  Web3Auth re-derives the same key, so they keep the same DID. Their escrow
+  enrolments stay valid.
+- **Accounts created on SSS after the switch** never had a Web3Auth key. After a
+  revert, Web3Auth would derive a different key, so the user would silently land in
+  a new, empty account under a different DID (their SSS record and credentials are
+  untouched but unreachable until SSS is re-enabled).
+
+Prefer a forward fix. If a revert is unavoidable, it first needs a coordinator guard
+that refuses Web3Auth sign-in when the server record is `keyProvider: sss` (verified
+in code above; not yet run as a staging revert check). Use the kill switch below only
+for a suspected compromise of the release path.
 
 ## Stages (superseded 2026-10-31, kept as history)
 
