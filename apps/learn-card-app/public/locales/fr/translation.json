@@ -2329,6 +2329,7 @@
         "error.invalidPassword": "Mot de passe incorrect ou le fichier n'a pas pu être lu. Veuillez réessayer.",
         "error.invalidCode": "Ce code est incorrect ou a expiré. Demandez-en un nouveau et réessayez.",
         "error.network": "Problème de connexion. Veuillez vérifier votre internet et réessayer.",
+        "error.updateRequired": "Votre compte utilise une méthode de connexion plus récente. Veuillez mettre à jour l’application vers la dernière version (il suffit souvent de la fermer et de la rouvrir), puis reconnectez-vous.",
         "error.default": "Quelque chose s'est mal passé. Veuillez réessayer.",
         "prompt": {
             "openAria": "Configurer un moyen de se reconnecter",

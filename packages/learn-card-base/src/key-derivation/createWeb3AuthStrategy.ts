@@ -24,6 +24,7 @@ import type { KeyDerivationStrategy, ServerKeyStatus } from '@learncard/types';
 import { AuthSessionError } from '@learncard/types';
 import { getLogger } from '../logging/logger';
 import { isNetworkError } from '../helpers/networkError';
+import { ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE } from './accountSignInErrors';
 
 const log = getLogger('web3auth-key-derivation');
 const DERIVATION_LOCK = 'learncard:web3auth:key-derivation';
@@ -68,14 +69,19 @@ export class AccountUsesNewerSignInError extends Error {
     readonly code = 'account_uses_newer_sign_in';
 
     constructor() {
-        super(
-            'This account uses a newer way to sign in. Please update to the latest version of the app and sign in again.'
-        );
+        super(ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE);
         this.name = 'AccountUsesNewerSignInError';
     }
 }
 
 const ACCOUNT_LOOKUP_TIMEOUT_MS = 30_000;
+
+/** Linear, unlike a `/\/+$/` replace on configured input. */
+const trimTrailingSlashes = (url: string): string => {
+    let end = url.length;
+    while (end > 0 && url[end - 1] === '/') end--;
+    return url.slice(0, end);
+};
 
 /**
  * Whether lca-api already has an SSS key record for the signed-in account.
@@ -91,7 +97,7 @@ const accountUsesSss = async (
 ): Promise<boolean> => {
     let response: Response;
     try {
-        response = await fetch(`${lookup.serverUrl.replace(/\/+$/, '')}/keys/auth-share`, {
+        response = await fetch(`${trimTrailingSlashes(lookup.serverUrl)}/keys/auth-share`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

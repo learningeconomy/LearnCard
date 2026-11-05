@@ -15,4 +15,6 @@ export {
     deriveWeb3AuthKey,
 } from './createWeb3AuthStrategy';
 
+export { ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE } from './accountSignInErrors';
+
 export type { Web3AuthStrategyConfig } from './createWeb3AuthStrategy';

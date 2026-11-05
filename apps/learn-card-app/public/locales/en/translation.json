@@ -2318,6 +2318,7 @@
         "error.invalidPassword": "Incorrect password or the file couldn't be read. Please try again.",
         "error.invalidCode": "That code is incorrect or has expired. Request a new one and try again.",
         "error.network": "Connection issue. Please check your internet and try again.",
+        "error.updateRequired": "Your account uses a newer way to sign in. Please update to the latest version of the app (closing and reopening it is often enough), then sign in again.",
         "error.default": "Something went wrong. Please try again.",
         "prompt": {
             "openAria": "Set up a way to sign back in",
