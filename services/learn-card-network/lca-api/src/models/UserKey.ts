@@ -1577,7 +1577,6 @@ export const markUserKeyMigratedByAuthProvider = async (
             migratedFromWeb3Auth: true,
             migratedAt: new Date(),
             keyProvider: 'sss',
-            web3AuthLogin: authProvider,
             updatedAt: new Date(),
         },
     });
