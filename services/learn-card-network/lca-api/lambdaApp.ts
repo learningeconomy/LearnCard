@@ -23,8 +23,7 @@ import { createRetryingOnce } from './src/helpers/retryingOnce';
 
 checkEscrowRemoteConfig();
 
-// Preserve #1972's retryable global startup, but keep escrow migration scoped
-// to escrow writers so persistent escrow failures cannot reject unrelated calls.
+// Retry global startup without letting an escrow migration reject unrelated calls.
 const ensureStartup = createRetryingOnce(() =>
     Promise.all([
         getEmptyLearnCard(), // Load WASM in for better cold starts

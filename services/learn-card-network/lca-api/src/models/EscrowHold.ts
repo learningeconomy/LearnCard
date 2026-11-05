@@ -7,6 +7,7 @@ import {
 import type { Collection } from 'mongodb';
 import mongodb from '@mongo';
 import { environment } from '@environment';
+import { createRetryingOnce } from '../helpers/retryingOnce';
 import {
     AuthProviderMappingValidator,
     EscrowEnvelopeValidator,
@@ -282,16 +283,9 @@ export const createEscrowHoldsIndexes = async (): Promise<void> => {
     );
 };
 
-let escrowHoldIndexesReady: Promise<void> | undefined;
-
 /** Only escrow writers wait for this migration; a failure can retry on the next request. */
-export const ensureEscrowHoldsIndexes = (): Promise<void> => {
-    escrowHoldIndexesReady ??= createEscrowHoldsIndexes().catch(error => {
-        escrowHoldIndexesReady = undefined;
-        throw error;
-    });
-    return escrowHoldIndexesReady;
-};
+export const ensureEscrowHoldsIndexes: () => Promise<void> =
+    createRetryingOnce(createEscrowHoldsIndexes);
 
 export const createEscrowHold = async (input: CreateEscrowHoldInput): Promise<EscrowHold> => {
     await ensureEscrowHoldsIndexes();

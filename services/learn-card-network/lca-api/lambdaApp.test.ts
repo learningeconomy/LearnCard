@@ -82,6 +82,21 @@ beforeEach(() => {
     vi.clearAllMocks();
 });
 describe('Lambda startup isolation', () => {
+    it('retries transient non-escrow startup failures on the next request', async () => {
+        const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        handlers.ensureUserKeysIndexes.mockRejectedValueOnce(
+            new Error('transient startup failure')
+        );
+        const app = await import('./lambdaApp');
+        await vi.waitFor(() => expect(diagnostic).toHaveBeenCalled());
+        await expect(
+            app.openApiHandler(event('GET'), context, () => undefined)
+        ).resolves.toMatchObject({ statusCode: 200 });
+        expect(handlers.ensureUserKeysIndexes).toHaveBeenCalledTimes(2);
+        expect(handlers.createEscrowHoldsIndexes).not.toHaveBeenCalled();
+        diagnostic.mockRestore();
+    });
+
     it.each(['openApiHandler', 'trpcHandler'] as const)(
         '%s serves unrelated requests and OPTIONS without migrating escrow indexes',
         async name => {
