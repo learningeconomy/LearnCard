@@ -13,6 +13,7 @@
  */
 import { getClient as getBrainClient } from '@learncard/network-brain-client';
 import { vi } from 'vitest';
+import { UnsignedVCValidator } from '@learncard/types';
 
 import { getLearnCardNetworkPlugin } from '../';
 
@@ -206,6 +207,26 @@ beforeEach(() => {
 });
 
 describe('unified send with encryption: "holder"', () => {
+    it.each([false, true])('preserves the signed status shape (array=%s)', async arrayShape => {
+        const credentialStatus = arrayShape ? [STATUS_ENTRY] : STATUS_ENTRY;
+        const client = getMockClient();
+        client.boost.getBoost.query.mockResolvedValue({
+            boost: getUnsignedBoostTemplate({ credentialStatus }),
+        });
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+
+        const result = await plugin.methods?.send(learnCard, HOLDER_SEND_INPUT);
+
+        expect(client.credentialRefresh.sendHolderEncryptedRefreshable.mutate).toHaveBeenCalledWith(
+            expect.objectContaining({ handoff: expect.objectContaining({ credentialStatus }) })
+        );
+        expect(result).toMatchObject({ refresh: { credentialStatus } });
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialStatus })
+        );
+    });
+
     it('encrypts exactly to recipientKeyIds and sends only the ciphertext handoff', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();
@@ -508,6 +529,33 @@ describe('publishHolderEncryptedRefreshable', () => {
         holderDid: defaultPreparedHolder.holderDid,
         credentialStatus: STATUS_ENTRY,
     };
+
+    it.each([false, true])('publishes the receipt status shape (array=%s)', async arrayShape => {
+        const credentialStatus = arrayShape ? [STATUS_ENTRY] : STATUS_ENTRY;
+        const client = getMockClient();
+        const learnCard = getMockIssuingLearnCard();
+        const plugin = await getPlugin(learnCard, client);
+
+        await plugin.methods?.publishHolderEncryptedRefreshable(
+            learnCard,
+            { ...RECEIPT, credentialStatus },
+            UnsignedVCValidator.parse(
+                getUnsignedBoostTemplate({
+                    credentialStatus: arrayShape ? STATUS_ENTRY : [STATUS_ENTRY],
+                })
+            ),
+            { notify: false }
+        );
+
+        expect(
+            client.credentialRefresh.publishHolderEncryptedRefreshable.mutate
+        ).toHaveBeenCalledWith(
+            expect.objectContaining({ handoff: expect.objectContaining({ credentialStatus }) })
+        );
+        expect(learnCard.invoke.issueCredential).toHaveBeenCalledWith(
+            expect.objectContaining({ credentialStatus })
+        );
+    });
 
     it('publishes a new version, encrypted to the current recipients, with explicit notify', async () => {
         const client = getMockClient();

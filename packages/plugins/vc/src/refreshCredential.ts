@@ -927,24 +927,29 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
             return { status: 'unchanged', checkedAt: new Date().toISOString(), etag: decoded.etag };
         }
 
-        // Managed updates require a strictly newer signed validFrom, not unsigned version metadata.
+        // Managed updates require a strictly newer signed effective time, not unsigned metadata.
         const currentTime = getCredentialEffectiveTime(credential);
         const candidateTime = getCredentialEffectiveTime(candidate);
 
         if (service.type === 'LearnCardCredentialRefresh2026') {
-            const currentValidFrom =
-                typeof credential.validFrom === 'string' ? Date.parse(credential.validFrom) : NaN;
-            const candidateValidFrom =
-                typeof candidate.validFrom === 'string' ? Date.parse(candidate.validFrom) : NaN;
+            const managedEffectiveTime = (vc: VC): number | undefined =>
+                getCredentialEffectiveTime({
+                    validFrom: vc['@context'].includes('https://www.w3.org/ns/credentials/v2')
+                        ? vc.validFrom
+                        : vc.issuanceDate,
+                });
+            const currentEffectiveTime = managedEffectiveTime(credential);
+            const candidateEffectiveTime = managedEffectiveTime(candidate);
             if (
-                !Number.isFinite(currentValidFrom) ||
-                !Number.isFinite(candidateValidFrom) ||
-                candidateValidFrom <= currentValidFrom
+                currentEffectiveTime === undefined ||
+                candidateEffectiveTime === undefined ||
+                candidateEffectiveTime <= currentEffectiveTime
             )
                 return failed('ROLLBACK', false);
         }
 
         if (
+            service.type !== 'LearnCardCredentialRefresh2026' &&
             currentTime !== undefined &&
             candidateTime !== undefined &&
             candidateTime < currentTime

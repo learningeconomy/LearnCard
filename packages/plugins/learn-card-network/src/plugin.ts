@@ -608,12 +608,6 @@ const didFromRecipientKeyId = (keyId: string): string => {
  * templateData, or display-derived claim value outside the JWE itself — only the
  * public bindings `HolderEncryptedHandoffValidator` allows.
  */
-/** One bound status entry is sent as an object, several as an array (the original shape). */
-const toBoundCredentialStatus = <T>(entries: T[]): T | T[] => {
-    const [only] = entries;
-    return entries.length === 1 && only !== undefined ? only : entries;
-};
-
 /** The public bindings of a holder handoff; validated with the JWE by HolderEncryptedHandoffValidator. */
 type HolderEncryptedHandoffBindings = Omit<HolderEncryptedHandoff, 'jwe'>;
 
@@ -2017,6 +2011,7 @@ export async function getLearnCardNetworkPlugin(
                 }
 
                 boost = injectManagedRefreshService(boost, receipt.refreshService);
+                boost.credentialStatus = receipt.credentialStatus;
 
                 const signedCredential = await issueCredentialWithNetworkStatus(
                     _learnCard,
@@ -2031,7 +2026,9 @@ export async function getLearnCardNetworkPlugin(
                     credentialId: receipt.credentialId,
                     holderDid: receipt.holderDid,
                     issuerDid: receipt.issuerDid,
-                    credentialStatus: toBoundCredentialStatus(boundCredentialStatus),
+                    credentialStatus: BitstringStatusListEntryValidator.or(
+                        BitstringStatusListEntryValidator.array()
+                    ).parse(receipt.credentialStatus),
                 };
 
                 assertManagedCredentialBinding(signedCredential, {
@@ -2565,9 +2562,9 @@ export async function getLearnCardNetworkPlugin(
                             );
                         }
 
-                        const boundCredentialStatus = toBoundCredentialStatus(
-                            prepared.statusEntries
-                        );
+                        const boundCredentialStatus = BitstringStatusListEntryValidator.or(
+                            BitstringStatusListEntryValidator.array()
+                        ).parse(signedCredential.credentialStatus);
                         const holderBindings = {
                             refreshId: prepared.refreshId,
                             credentialId: prepared.credentialId,

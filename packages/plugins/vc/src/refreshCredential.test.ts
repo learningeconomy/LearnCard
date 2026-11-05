@@ -192,6 +192,38 @@ describe('refreshCredential', () => {
             }
         );
 
+        it.each([
+            ['2026-02-01T00:00:00.000Z', 'updated'],
+            ['2026-01-01T00:00:00.000Z', 'failed'],
+            ['2025-12-01T00:00:00.000Z', 'failed'],
+        ])('uses the signed VC 1.1 issuanceDate %s', async (issuanceDate, status) => {
+            const held = makeCredential({
+                '@context': ['https://www.w3.org/2018/credentials/v1'],
+                validFrom: undefined,
+                issuanceDate: '2026-01-01T00:00:00.000Z',
+            });
+            const candidate = {
+                ...held,
+                issuanceDate,
+                credentialSubject: updatedCredential.credentialSubject,
+            };
+            fetchMock.mockResolvedValue(jsonResponse(candidate));
+            expect(await runRefresh(held)).toMatchObject(
+                status === 'updated' ? { status } : { status, code: 'ROLLBACK' }
+            );
+        });
+
+        it('does not substitute issuanceDate for a missing VC 2.0 validFrom', async () => {
+            fetchMock.mockResolvedValue(
+                jsonResponse({
+                    ...updatedCredential,
+                    validFrom: undefined,
+                    issuanceDate: '2026-03-01T00:00:00.000Z',
+                })
+            );
+            expect(await runRefresh()).toMatchObject({ status: 'failed', code: 'ROLLBACK' });
+        });
+
         it('returns the verified updated credential on a public GET success', async () => {
             fetchMock.mockResolvedValue(
                 jsonResponse(updatedCredential, { headers: { etag: 'W/"v2"' } })

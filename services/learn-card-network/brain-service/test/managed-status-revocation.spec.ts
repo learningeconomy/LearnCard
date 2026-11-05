@@ -86,6 +86,27 @@ const send = async (arrayShape = false) => {
 
 describe('Managed public status', () => {
     it.each([false, true])(
+        'repairs the exact legacy receipt before claim (array=%s)',
+        async arrayShape => {
+            const { allocation, credential, uri } = await send(arrayShape);
+            await neogma.queryRunner.run(
+                'MATCH (r:CredentialRefresh {refreshId: $refreshId}) REMOVE r.statusEntries, r.credentialStatusBinding',
+                { refreshId: allocation.refreshId }
+            );
+            await expect(
+                holder.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+            ).rejects.toThrow('Delivery binding unavailable');
+            await issuer.clients.fullAuth.credentialRefresh.attachStatusEntries({
+                refreshId: allocation.refreshId,
+                credentialStatus: credential.credentialStatus!,
+            });
+            const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+            expect(receipt?.credentialStatus).toEqual(credential.credentialStatus);
+            expect(await holder.clients.fullAuth.credential.acceptCredential({ uri })).toBeTruthy();
+        }
+    );
+
+    it.each([false, true])(
         'returns the exact signed status shape before acceptance (array=%s)',
         async arrayShape => {
             const { credential, uri } = await send(arrayShape);

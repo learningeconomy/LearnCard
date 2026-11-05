@@ -153,6 +153,14 @@ export const credentialRefreshesRouter = t.router({
                     ctx.domain,
                     tx
                 );
+                await tx.run(
+                    `MATCH (refresh:CredentialRefresh {refreshId: $refreshId})
+                     SET refresh.credentialStatusBinding = $credentialStatusBinding`,
+                    {
+                        refreshId: input.refreshId,
+                        credentialStatusBinding: JSON.stringify(input.credentialStatus),
+                    }
+                );
             });
             return true;
         }),
