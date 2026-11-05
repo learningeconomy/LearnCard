@@ -142,6 +142,31 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('School Connect', () => {
+    it.each([
+        { allowed: false, verified: true, trusted: false },
+        { allowed: true, verified: undefined, trusted: true },
+        { allowed: true, verified: false, trusted: false },
+    ])(
+        'creates a first sign-in with only trusted email attributes: %j',
+        async ({ allowed, verified, trusted }) => {
+            config.tenants['tenant-test']!.allowedEmailDomains = allowed ? ['example.edu'] : [];
+            claims.email_verified = verified;
+            await caller().exchangeCode(exchange);
+            expect(firebase.createUser).toHaveBeenCalledWith({
+                uid: expect.any(String),
+                displayName: undefined,
+                ...(trusted ? { email: claims.email, emailVerified: true } : {}),
+            });
+            const subject = await findAuthSubjectByIdentityKey(identityKey);
+            expect(subject?.emailVerified).toBe(trusted);
+            expect(subject?.email).toBe(trusted ? claims.email : undefined);
+            expect(await findAuthSubjectByIdentityKey(`email:${claims.email}`)).toBeNull();
+            expect(await findClassLinkIdentityByIdentityKey(identityKey)).toMatchObject({
+                email: claims.email,
+            });
+        }
+    );
+
     it('reports an unconnected account that can connect', async () => {
         await expect(caller().getConnection()).resolves.toEqual({
             available: true,

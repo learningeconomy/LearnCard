@@ -1,4 +1,3 @@
-import { EnvironmentConfigurationError } from '@learncard/helpers';
 import { environment } from '@environment';
 import {
     ClassLinkTenantsValidator,
@@ -42,6 +41,8 @@ const isAllowedTranscriptIssuerEndpoint = (url: string): boolean => {
 
 // Once per container, like services/escrow-enclave/index.ts's remoteConfigMissingReported.
 let explicitDefaultOverridesLegacyWarned = false;
+let invalidRegistryWarned = false;
+const unknownIssuerWarnings = new Set<string>();
 
 /**
  * Every configured transcript issuer, keyed by TRANSCRIPT_ISSUERS key (or `default` for the
@@ -87,7 +88,10 @@ const getTranscriptIssuerRegistry = (): Record<string, ResolvedTranscriptIssuer>
             }
             for (const [key, issuer] of Object.entries(parsed)) registry[key] = { key, ...issuer };
         } catch {
-            console.warn('TRANSCRIPT_ISSUERS is invalid and will be ignored');
+            if (!invalidRegistryWarned) {
+                invalidRegistryWarned = true;
+                console.warn('TRANSCRIPT_ISSUERS is invalid and will be ignored');
+            }
         }
     }
 
@@ -113,9 +117,14 @@ export const getClassLinkConfig = (): ClassLinkConfig | null => {
     const transcriptIssuers = getTranscriptIssuerRegistry();
     for (const tenant of Object.values(tenants)) {
         if (tenant.transcriptIssuer && !Object.hasOwn(transcriptIssuers, tenant.transcriptIssuer)) {
-            throw new EnvironmentConfigurationError(
-                'A ClassLink district references a transcript issuer that is not defined in TRANSCRIPT_ISSUERS.'
-            );
+            if (!unknownIssuerWarnings.has(tenant.transcriptIssuer)) {
+                unknownIssuerWarnings.add(tenant.transcriptIssuer);
+                console.warn(
+                    'ClassLink transcripts disabled: unknown issuer key',
+                    tenant.transcriptIssuer
+                );
+            }
+            tenant.transcriptEnabled = false;
         }
     }
 

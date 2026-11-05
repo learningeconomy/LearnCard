@@ -94,7 +94,7 @@ export const TranscriptOptInCard: React.FC<TranscriptOptInCardProps> = ({ source
     const [reauthing, setReauthing] = useState(false);
 
     const data = status.data;
-    const latest = requestResult ?? data?.latest;
+    const latest = data?.latest ?? requestResult;
 
     useTranscriptArrival({
         status: latest?.status,

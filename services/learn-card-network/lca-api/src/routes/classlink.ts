@@ -25,7 +25,7 @@ import { z } from 'zod';
 import { environment } from '@environment';
 import { didAndChallengeRoute, openRoute, t } from '@routes';
 import app from '../firebase';
-import { getClassLinkDiscovery, getClassLinkEmail } from '@helpers/classlink.helpers';
+import { getClassLinkDiscovery } from '@helpers/classlink.helpers';
 import {
     classLinkExchangeInput,
     classLinkNonce,
@@ -111,6 +111,10 @@ export const classlinkRouter = t.router({
                 const email = (claims.email?.trim() || claims.or_email?.trim())?.toLowerCase();
                 if (!email || !z.string().email().safeParse(email).success)
                     throw new ClassLinkEmailMissing();
+                const emailTrusted =
+                    tenant.allowedEmailDomains.some(
+                        domain => domain.toLowerCase() === email.split('@')[1]
+                    ) && claims.email_verified !== false;
                 const existing = await findClassLinkIdentityByIdentityKey(identityKey);
                 const auth = environment.IS_E2E_TEST ? undefined : app?.auth();
                 if (!environment.IS_E2E_TEST && !auth)
@@ -129,24 +133,23 @@ export const classlinkRouter = t.router({
                     : undefined;
                 if (existing && emailUser && emailUser.uid !== existing.firebaseUid)
                     conflict(tenantId);
-                if (
-                    !existing &&
-                    emailUser &&
-                    (!tenant.allowedEmailDomains.some(
-                        domain => domain.toLowerCase() === email.split('@')[1]
-                    ) ||
-                        !emailUser.emailVerified ||
-                        claims.email_verified === false)
-                )
+                if (!existing && emailUser && (!emailTrusted || !emailUser.emailVerified))
                     conflict(tenantId);
-                if (!getClassLinkEmail(claims)) throw new ClassLinkEmailMissing();
                 const displayName = typeof claims.name === 'string' ? claims.name : undefined;
-                const attrs = { email, emailVerified: true, displayName };
+                const attrs = {
+                    ...(emailTrusted ? { email } : {}),
+                    emailVerified: emailTrusted,
+                    displayName,
+                };
                 let uid = existing?.firebaseUid ?? emailUser?.uid;
                 if (!uid) {
                     uid = classLinkFirebaseUid(identityKey);
                     if (auth)
-                        await auth.createUser({ uid, email, emailVerified: true, displayName });
+                        await auth.createUser({
+                            uid,
+                            displayName,
+                            ...(emailTrusted ? { email, emailVerified: true } : {}),
+                        });
                 }
                 let subject = existing?.subject;
                 if (!subject) {

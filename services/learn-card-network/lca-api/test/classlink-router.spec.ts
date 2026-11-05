@@ -252,10 +252,24 @@ describe('ClassLink sign-in broker', () => {
         });
     });
     it.each(['missing', 'unverified', 'helper-error'])(
-        'maps %s email to the friendly error',
+        'handles %s email without binding an unverified address',
         async reason => {
             if (reason === 'missing') delete claims.email;
-            if (reason === 'unverified') claims.email_verified = false;
+            if (reason === 'unverified') {
+                claims.email_verified = false;
+                await expect(caller().exchangeCode(exchange)).resolves.toEqual({
+                    token: `custom-${uid}`,
+                });
+                expect(firebase.createUser).toHaveBeenCalledExactlyOnceWith({
+                    uid,
+                    displayName: claims.name,
+                });
+                expect(await findAuthSubjectByIdentityKey(identityKey)).toMatchObject({
+                    emailVerified: false,
+                });
+                expect(await findAuthSubjectByIdentityKey(identityKey)).not.toHaveProperty('email');
+                return;
+            }
             if (reason === 'helper-error')
                 vi.mocked(verifyClassLinkIdToken).mockRejectedValueOnce(
                     new ClassLinkEmailMissing()

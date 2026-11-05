@@ -154,6 +154,7 @@ describe('isMatchingTranscript', () => {
 describe('useTranscriptArrival', () => {
     beforeEach(() => {
         vi.useFakeTimers();
+        localStorage.clear();
         mocks.initWallet.mockResolvedValue(wallet);
         mocks.wallet.read.get.mockReset();
         mocks.wallet.invoke.verifyCredential
@@ -263,6 +264,31 @@ describe('useTranscriptArrival', () => {
             expect.objectContaining({ uri: 'u2' })
         );
     });
+
+    it.each([false, true])(
+        'retries acknowledgement without claiming again (remount: %s)',
+        async remount => {
+            mocks.incomingCredentials.data = [{ uri: 'u1', from: ISSUER_DID }];
+            mocks.wallet.read.get.mockResolvedValue(VALID_VC);
+            mocks.wallet.invoke.transcriptsMarkReceived.mockRejectedValueOnce(new Error('offline'));
+            const hook = renderHook(() => useTranscriptArrival(activeParams));
+            await vi.advanceTimersByTimeAsync(0);
+            expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(1);
+            mocks.incomingCredentials.data = [];
+            if (remount) {
+                hook.unmount();
+                renderHook(() => useTranscriptArrival(activeParams));
+            }
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(mocks.wallet.invoke.transcriptsMarkReceived).toHaveBeenCalledTimes(2);
+            expect(mocks.claimIncomingCredential).toHaveBeenCalledTimes(1);
+            expect(mocks.invalidateQueries).toHaveBeenCalledWith({
+                queryKey: ['transcriptStatus'],
+            });
+            expect(localStorage.getItem('transcript_pending_received:did:user:req-1')).toBeNull();
+        }
+    );
 
     it('polls every 5s for the first minute, then backs off to 60s, and stops after 15 minutes', async () => {
         mocks.incomingCredentials.data = undefined;

@@ -161,14 +161,27 @@ describe('ClassLink configuration', () => {
         expect(getClassLinkConfig()).toBeNull();
     });
 
-    it('throws when a district references a transcript issuer key that is not registered', () => {
-        env.CLASSLINK_TENANTS = JSON.stringify({
-            'tenant-test': { ...validTenants['tenant-test'], transcriptIssuer: 'missing-issuer' },
-        });
-        expect(() => getClassLinkConfig()).toThrow(
-            'A ClassLink district references a transcript issuer that is not defined in TRANSCRIPT_ISSUERS.'
-        );
-    });
+    it.each([undefined, '{invalid registry'])(
+        'disables transcripts without disabling sign-in for an unknown issuer (%s)',
+        registry => {
+            env.TRANSCRIPT_ISSUERS = registry;
+            env.CLASSLINK_TENANTS = JSON.stringify({
+                'tenant-test': {
+                    ...validTenants['tenant-test'],
+                    transcriptIssuer: 'missing-issuer',
+                },
+            });
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            expect(getClassLinkConfig()).toMatchObject({
+                clientId: 'client-id',
+                tenants: { 'tenant-test': { transcriptEnabled: false } },
+            });
+            const count = warn.mock.calls.length;
+            getClassLinkConfig();
+            expect(warn).toHaveBeenCalledTimes(count);
+            expect(getTranscriptIssuerConfig({ transcriptIssuer: 'missing-issuer' })).toBeNull();
+        }
+    );
 
     it('allows a district that references a registered transcript issuer key', () => {
         env.TRANSCRIPT_ISSUERS = JSON.stringify({ 'example-records': exampleRecordsIssuer });

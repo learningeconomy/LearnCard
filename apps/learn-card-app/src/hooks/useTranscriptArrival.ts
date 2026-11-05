@@ -92,6 +92,9 @@ export const useTranscriptArrival = ({
     const queryClient = useQueryClient();
     const { track } = useAnalytics();
     const hasAcceptedRef = useRef(false);
+    const pendingMarkRef = useRef<string>();
+    const busyRef = useRef(false);
+    const retryRef = useRef({ delay: FAST_POLL_MS, at: 0 });
     const pollStartedAtRef = useRef<number | null>(null);
     const [isVisible, setIsVisible] = useState(
         typeof document === 'undefined' ? true : document.visibilityState === 'visible'
@@ -106,6 +109,7 @@ export const useTranscriptArrival = ({
     // A new request means a fresh credential may legitimately arrive again.
     useEffect(() => {
         hasAcceptedRef.current = false;
+        retryRef.current = { delay: FAST_POLL_MS, at: 0 };
     }, [requestId]);
 
     useEffect(() => {
@@ -117,50 +121,91 @@ export const useTranscriptArrival = ({
     }, []);
 
     const checkCredentials = useCallback(async (): Promise<void> => {
-        if (!isActive || hasAcceptedRef.current) return;
-        if (!incomingCredentials?.length) return;
+        if (!isActive || busyRef.current || Date.now() < retryRef.current.at) return;
         if (!issuerDid || !requestId || !requestedAt) return;
 
-        const wallet = await initWallet();
-        const userDid = wallet.id.did();
-
-        for (const credInfo of incomingCredentials) {
-            if (hasAcceptedRef.current) break;
-
+        busyRef.current = true;
+        try {
+            const wallet = await initWallet();
+            const userDid = wallet.id.did();
+            const storageKey = `transcript_pending_received:${userDid}:${requestId}`;
+            const persistPending = (pending: boolean): void => {
+                try {
+                    if (pending) localStorage.setItem(storageKey, 'true');
+                    else localStorage.removeItem(storageKey);
+                } catch (error) {
+                    log.warn('transcript-arrival.pending-storage.failed', error);
+                }
+            };
             try {
-                const vc = await wallet.read.get(credInfo.uri);
-                if (!vc) continue;
-
-                const matches = await isMatchingTranscript(
-                    vc as VC,
-                    credInfo.from,
-                    issuerDid,
-                    userDid,
-                    requestedAt,
-                    wallet
-                );
-                if (!matches) continue;
-
-                hasAcceptedRef.current = true;
-                log.info('transcript-arrival.match.found');
-
-                await claimIncomingCredential({
-                    uri: credInfo.uri,
-                    wallet,
-                    addVCtoWallet,
-                    queryClient,
-                });
+                if (localStorage.getItem(storageKey)) pendingMarkRef.current = requestId;
+            } catch (error) {
+                log.warn('transcript-arrival.pending-storage.failed', error);
+            }
+            const markReceived = async (): Promise<void> => {
                 await wallet.invoke.transcriptsMarkReceived({ requestId });
+                pendingMarkRef.current = undefined;
+                persistPending(false);
                 await Promise.all([
                     queryClient.invalidateQueries({ queryKey: ['incomingCredentials'] }),
                     queryClient.invalidateQueries({ queryKey: ['transcriptStatus'] }),
                     queryClient.invalidateQueries({ queryKey: ['useGetCredentials'] }),
                 ]);
                 void track(AnalyticsEvents.TRANSCRIPT_ARRIVED, {});
-                break;
-            } catch (error) {
-                log.error('transcript-arrival.check.failed', error);
+            };
+            if (pendingMarkRef.current === requestId) {
+                hasAcceptedRef.current = true;
+                await markReceived();
+                return;
             }
+            if (hasAcceptedRef.current) return;
+
+            for (const credInfo of incomingCredentials ?? []) {
+                if (hasAcceptedRef.current) break;
+
+                try {
+                    const vc = await wallet.read.get(credInfo.uri);
+                    if (!vc) continue;
+
+                    const matches = await isMatchingTranscript(
+                        vc as VC,
+                        credInfo.from,
+                        issuerDid,
+                        userDid,
+                        requestedAt,
+                        wallet
+                    );
+                    if (!matches) continue;
+
+                    hasAcceptedRef.current = true;
+                    log.info('transcript-arrival.match.found');
+
+                    try {
+                        await claimIncomingCredential({
+                            uri: credInfo.uri,
+                            wallet,
+                            addVCtoWallet,
+                            queryClient,
+                        });
+                    } catch (error) {
+                        hasAcceptedRef.current = false;
+                        throw error;
+                    }
+                    pendingMarkRef.current = requestId;
+                    persistPending(true);
+                    await markReceived();
+                    break;
+                } catch (error) {
+                    log.error('transcript-arrival.check.failed', error);
+                    if (pendingMarkRef.current === requestId) throw error;
+                }
+            }
+        } catch (error) {
+            retryRef.current.at = Date.now() + retryRef.current.delay;
+            retryRef.current.delay = Math.min(retryRef.current.delay * 2, SLOW_POLL_MS);
+            log.error('transcript-arrival.retry.pending', error);
+        } finally {
+            busyRef.current = false;
         }
     }, [
         isActive,
@@ -177,6 +222,13 @@ export const useTranscriptArrival = ({
     useEffect(() => {
         void checkCredentials();
     }, [checkCredentials]);
+
+    // A claimed credential is no longer incoming; acknowledgement retries must run independently.
+    useEffect(() => {
+        if (!isActive || !isVisible) return;
+        const timer = setInterval(() => void checkCredentials(), FAST_POLL_MS);
+        return () => clearInterval(timer);
+    }, [isActive, isVisible, checkCredentials]);
 
     // Backoff polling: 5s for the first minute, then 60s, stopping after 15 minutes.
     useEffect(() => {

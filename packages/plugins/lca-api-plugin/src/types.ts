@@ -390,6 +390,7 @@ export type LCAPluginMethods = {
     }>;
     transcriptsMarkReceived: (args: { requestId: string }) => Promise<{ success: true }>;
     transcriptsRequest: (args: { consent: true }) => Promise<{
+        requestId: string;
         status: 'requested' | 'none_yet' | 'failed';
         /** ISO 8601 string — tRPC serializes Dates to strings (no superjson transformer). */
         requestedAt: string;

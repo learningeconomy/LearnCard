@@ -29,7 +29,11 @@ if redis.call('GET', KEYS[1]) == ARGV[1] then
     return redis.call('DEL', KEYS[1])
 end
 return 0`;
-const project = ({ status, requestedAt }: MongoTranscriptRequestType) => ({ status, requestedAt });
+const project = ({ status, requestedAt, jti }: MongoTranscriptRequestType) => ({
+    status,
+    requestedAt,
+    requestId: jti,
+});
 const recent = (record: MongoTranscriptRequestType | null): record is MongoTranscriptRequestType =>
     record?.status === 'requested' &&
     Date.now() - record.requestedAt.getTime() < DEDUPE_SECONDS * 1000;
@@ -121,6 +125,13 @@ export const transcriptsRouter = t.router({
         }),
     request: didAndChallengeRoute
         .input(z.object({ consent: z.literal(true) }).strict())
+        .output(
+            z.object({
+                status: z.enum(['requested', 'none_yet', 'failed']),
+                requestedAt: z.date(),
+                requestId: z.string(),
+            })
+        )
         .mutation(async ({ ctx }) => {
             const redis = cache.redis ?? cache.node;
             let lockKey: string | undefined;

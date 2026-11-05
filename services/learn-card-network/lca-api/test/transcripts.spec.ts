@@ -108,11 +108,12 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('transcript requests', () => {
     it('exposes issuer identity and the stored request jti without a received marker', async () => {
-        await caller().request({ consent: true });
+        const result = await caller().request({ consent: true });
         const stored = await getTranscriptRequestsCollection().findOne({});
         const status = await caller().getStatus();
         expect(status.issuerDid).toBe('did:web:issuer.example');
         expect(status.latest?.requestId).toBe(stored?.jti);
+        expect(result.requestId).toBe(stored?.jti);
         expect(status.latest?.receivedAt).toBeUndefined();
     });
     it('prefers the district issuer override', async () => {
@@ -277,7 +278,7 @@ describe('transcript requests', () => {
             const result = await caller().request({ consent: true });
             const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
             expect(getStateStudentId(stored!)).toBe('private-student-id');
-            expect(Object.keys(result).sort()).toEqual(['requestedAt', 'status']);
+            expect(Object.keys(result).sort()).toEqual(['requestId', 'requestedAt', 'status']);
             expect(result.status).toBe('requested');
             expect(await caller().getStatus()).toMatchObject({
                 eligible: true,

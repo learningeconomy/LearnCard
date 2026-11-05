@@ -766,8 +766,7 @@ export const getLCAPlugin = async (
                     return { eligible: false, stateDisplayName: '' };
                 },
                 transcriptsRequest: async () => {
-                    console.error('Unable to connect to LCA API. Plugin must be re-added.');
-                    return { status: 'failed', requestedAt: new Date().toISOString() };
+                    throw new Error('Unable to connect to LCA API.');
                 },
                 transcriptsMarkReceived: async () => {
                     throw new Error('Unable to connect to LCA API.');
