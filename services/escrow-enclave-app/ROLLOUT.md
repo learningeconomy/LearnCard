@@ -1,7 +1,10 @@
 # Escrow Recovery — Staged Rollout Runbook
 
 This runbook governs turning on **automatic** escrow recovery enrollment for real
-tenants, stage by stage. It is operator-facing, not implementation documentation —
+tenants. **As of 2026-10-31 there are no intermediate stages:** SSS launches only
+with escrow at 100%, for LearnCard and VetPass production together (#1875). See
+[100% launch](#100-launch-the-switch) for the current plan; the staged sections below
+are kept as history. It is operator-facing, not implementation documentation —
 see `packages/learn-card-base/src/config/escrowRollout.ts` for the code.
 
 Before production infrastructure bring-up, complete [PRODUCTION.md](./PRODUCTION.md).
@@ -48,23 +51,33 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
 1. **Roughtime operational review.** Releases need 2 of 3 agreeing Roughtime
    servers (Cloudflare, int08h, time.txryan.com); all three verify from the staging
    host. All three operators acknowledged LearnCard's use (operator-reported,
-   2026-10-30; see LAUNCH-DECISIONS.md RT). Remaining for stage 2: attach the
-   measured per-operation request count and the volume forecast to that record.
-2. **Enrollment authority — verified on staging, not yet deployed to production.**
+   2026-10-30; see LAUNCH-DECISIONS.md RT). Remaining for the 100% switch: the
+   owner's sign-off on the proposed 100% amendment. The measured per-operation
+   request count and the 100% volume forecast were not provided; the owner deferred
+   them (2026-11-05).
+2. **Enrollment authority — verified on staging; deployed to production.**
    Without a configured authority the enclave wires in `UnavailableEnrollment`, so
    create hold, release and cancel fail closed with `Unavailable` (carry and rewrap
    do not use it). The design is in [ENROLLMENT-AUTHORITY.md](ENROLLMENT-AUTHORITY.md).
    Staging runs it (generation `staging-g1`); a real 7-day hold released there
    (jackson+pin2, operator-reported), and staging passed the live attack C run on image `v79ea1bd7`
    ([SECURITY.md](SECURITY.md#staging-verification-2026-10-23)). Production
-   closes when the production stack is configured and verified the same way.
-3. **Attack C (hold notification) — verified on staging; soak and inbox check remain.**
+   runs it too (generation `production-g1`): on 2026-10-30 the SSS pilot account
+   enrolled, set a PIN and recovered with it on a fresh device, and the production
+   canary has run PIN releases (tier 2) since then and started a 7-day hold (tier 3)
+   on 2026-11-04 (operator-observed).
+3. **Attack C (hold notification) — closed (2026-11-05).**
    Enclave-sent confirmation email (ENROLLMENT-AUTHORITY.md section 9) is live on
    staging: a bearer-only create-hold stays `awaitingConfirmation`, wrong codes are
    refused (`codeMismatch` x4, then `codeLocked`), unconfirmed release is refused and
    cancellation is signed. The 7-day-since-confirmation soak (jackson+wait3) released
-   successfully on 2026-10-30 (operator-reported). Remaining: an operator inbox
-   confirmation of the code email (production pilot hold or tier 3 canary).
+   successfully on 2026-10-30 (operator-reported). Inbox confirmation: the tier 3
+   canary's inbox read the enclave code email, passed its trust checks (SPF, DKIM
+   aligned to the enclave sender, SES verdicts) and confirmed the hold, on production
+   on 2026-11-04 22:26Z (staging's first runs failed the confirm step on a canary
+   hold-duration misconfiguration, fixed 2026-11-04). Jackson Smith confirmed on
+   2026-11-05 that this closes the "operator inbox confirmation" item. The first
+   production tier 3 release (~2026-11-11) completes the end-to-end signal.
 4. **D10 residual risk: `escrow-kms-admin` can rewrite the KMS key policy.**
    An MFA-authenticated admin session can still add an unattested `kms:Decrypt`
    Allow, fully bypassing the attestation gate. Mitigated (CODEOWNERS
@@ -72,7 +85,8 @@ for these and related launch calls live in [LAUNCH-DECISIONS.md](LAUNCH-DECISION
    `escrow-kms-admin`, a CloudTrail alarm), not eliminated. Security must
    explicitly accept this residual risk (or adopt the immutable-key-policy
    alternative documented in `infra/escrow-enclave/README.md`) before rollout
-   proceeds past internal.
+   proceeds past internal. Accepted for stage 1 (2026-10-30) and for 100%
+   (LAUNCH-DECISIONS.md D10, Jackson Smith, 2026-11-05).
 
 **Stage 1 decisions (2026-10-30, Jackson Smith).** Internal-only escrow (SSS pilot
 channel and production canary accounts) proceeds with: item 1 (Roughtime) and
@@ -83,7 +97,7 @@ recoveries, hold-confirmation email), with the staging soak and inbox check
 still to be recorded. None of these close any item (1-4) for stage 2: D10's
 acceptance is stage 1 only and is revisited before stage 2.
 
-**Gate:** stage 1 (internal allowlist) may proceed once all items have an
+**Gate (superseded 2026-10-31 by the 100% launch; kept as history):** stage 1 (internal allowlist) may proceed once all items have an
 explicit, documented decision from security/product — even a "we accept this
 risk" sign-off counts as resolved for D10. Stages 2+ (1% and above, i.e. any real,
 non-internal user) must not start until all are actually fixed or the
@@ -124,7 +138,82 @@ To find a tester's own DID for this purpose, use the in-app debug tooling
 you the DID over an insecure channel if avoidable, and never paste a raw DID
 into this runbook, a ticket, or a Slack message. Hash it locally first.
 
-## Stages
+## 100% launch (the switch)
+
+One change, #1875, moves LearnCard and VetPass production from Web3Auth to SSS with
+escrow (`nitro`, `escrowRolloutPercent: 100`) and turns on D21 brand sealing. Every
+production host has run the brand-aware image since 2026-11-05 02:36Z (pins
+`6dc94e2b…` and `18902a68…`, #1958), so sealing is safe to turn on with the switch.
+
+### Prerequisites (mirror of #1875's checklist)
+
+- [x] D10 100% amendment signed off (2026-11-05); RAR hardening target date
+      recorded (2026-12-31); CNL and P-d decided (LAUNCH-DECISIONS.md).
+- [ ] RT 100% amendment signed off (measured count and forecast deferred by the
+      owner, 2026-11-05).
+- [ ] P-c: the privacy-policy page the app links shows the current (2026-10-27)
+      wording, and the legal approver is named (LAUNCH-DECISIONS.md P-c).
+- [ ] P-d fix merged (#1967).
+- [ ] Native force-update shipped, so old native builds cannot run Web3Auth
+      against migrated accounts.
+- [ ] In-app privacy notice shipped (auto-enrolment is silent; P-c).
+- [ ] Load test at 100% enrolment on staging.
+- [x] Production alarm drill: denied-write and unexpected-write authority alarms
+      fired and delivered (2026-11-05 ~17:10Z; LAUNCH-DECISIONS.md RAR condition).
+- [ ] Production canary clean, including the first production tier 3 release
+      (~2026-11-11).
+- [x] `escrow-enclave-production-AuthorityRepeatedPinClear` (ALARM since
+      2026-10-30) understood: the 2026-10-30 production pilot test on Jackson Smith's
+      own account (`ACCOUNT#3ab64432…`, matched from his `did:key`; 13 authority
+      writes 21:55–22:14Z). Threshold raised to 4 (#1965) on 2026-11-05; OK since
+      16:55Z. Follow-up: deploy the account-count monitor build from #1965, set the
+      threshold to 1, then to 0 after ~2026-11-29.
+- [ ] DMARC for `learncard.com` (production login mail is scored as spam by SES).
+- [ ] lca-api production deploy current with `main`.
+
+### Switch
+
+1. Mark #1875 ready, get review, merge.
+2. Dispatch the production frontend deploy (LearnCard and VetPass).
+3. Verify `https://learncard.app/__tenant-config` (and VetPass's) serves
+   `keyDerivation: "sss"`, `escrowEnclaveMode: "nitro"`, `escrowRolloutPercent: 100`,
+   both PCR tuples and `escrowSealEmailBrand: true`. Check the served config, not the
+   deploy run: queued deploys are replaced by later merges.
+4. Sign in with a test account on each app; confirm enrolment and the PIN prompt.
+
+### Watch (first 48 hours, then daily)
+
+- Escrow alarms in the production escrow account (governance, authority writes,
+  ledger monitor, NLB healthy hosts) and the go/no-go table below.
+- Production canary tiers 1–3 (monitoring account) and the tier 3 dashboard.
+- Enrolment rate (authority writes) against the RT forecast, and per-source
+  Roughtime failures.
+- lca-api escrow errors, including `EnclaveFailure` with
+  `Reason=remote_config_missing`.
+
+### Switch rollback
+
+Reverting #1875 is **not** safe for every account, so treat it as a last resort:
+
+- After a revert, current builds select the Web3Auth strategy again, and that
+  strategy ignores the server's `keyProvider: sss` record: its
+  `fetchServerKeyStatus` always returns `exists: true, primaryDid: null` and derives
+  the key from Web3Auth (`packages/learn-card-base/src/key-derivation/createWeb3AuthStrategy.ts`,
+  `fetchServerKeyStatus`). Nothing compares the result with the SSS DID.
+- **Migrated accounts** (created on Web3Auth, upgraded at the switch) are unaffected:
+  Web3Auth re-derives the same key, so they keep the same DID. Their escrow
+  enrolments stay valid.
+- **Accounts created on SSS after the switch** never had a Web3Auth key. After a
+  revert, Web3Auth would derive a different key, so the user would silently land in
+  a new, empty account under a different DID (their SSS record and credentials are
+  untouched but unreachable until SSS is re-enabled).
+
+Prefer a forward fix. If a revert is unavoidable, it first needs a coordinator guard
+that refuses Web3Auth sign-in when the server record is `keyProvider: sss` (verified
+in code above; not yet run as a staging revert check). Use the kill switch below only
+for a suspected compromise of the release path.
+
+## Stages (superseded 2026-10-31, kept as history)
 
 Advance one stage at a time. Each stage should run for at least 48 hours
 (long enough to observe at least one full 7-day-hold cohort's _start_ events,
@@ -180,6 +269,9 @@ drop back to the previous stage's percent (see Rollback) and open an incident
 before considering another advance.
 
 ## Rollback
+
+For the 100% launch, see [Switch rollback](#switch-rollback). The steps below
+describe lowering the percent, which is still how to stop **new** auto-enrolments.
 
 **Lowering the percent (the normal path):**
 
@@ -242,16 +334,19 @@ switch already does without disrupting existing users.
   key derivation, `escrowEnclaveMode` and enclave pins as LearnCard at every stage
   (enforced by `apps/learn-card-app/src/config/escrowTenantParity.test.ts`); an SSS
   client with escrow off can leave the shared escrow copy stale. VetPass staging and
-  production deploy from main, so VetPass escrow stays off at every stage
-  (including the `sss-pilot` overlay) until the SSS switch turns it on together
-  with LearnCard production; that PR must set VetPass's mode, pins and
-  `escrowAuthorityTenant` in the same change. Update both
+  production deploy separately (#1942): VetPass staging runs SSS with escrow on the
+  staging enclave (`escrowAuthorityTenant: "learncard"`, LearnCard staging's pins),
+  while VetPass production and the `sss-pilot` overlay stay off until the SSS switch
+  (#1875) turns them on together with LearnCard production; that PR must set VetPass's mode,
+  pins and `escrowAuthorityTenant` in the same change. Update both
   tenants' pins on every image roll.
 - **Sealed email brand (D21).** `auth.sss.escrowSealEmailBrand` makes the client
   seal the app's `branding.name` into the escrow blob so enclave-sent emails carry
   that brand. Keep it off until every live host (staging, then production) runs the
   brand-aware image, because an older image drops the field whenever it re-encrypts
-  a blob. Then turn it on for LearnCard and VetPass in one config PR, which also sets
+  a blob. Status: staging has sealed since #1951 (2026-11-05, image `00a32cbc…`);
+  production hosts run the brand-aware image since 2026-11-05, and #1875 turns sealing
+  on with the switch. Turn it on for LearnCard and VetPass in one config PR, which also sets
   LearnCard's `auth.sss.escrowSharedEmailBrands: ["VetPass"]` (parity and the list are
   enforced by `escrowTenantParity.test.ts`). Existing blobs keep the LearnCard brand
   until their next enroll/replace, so the VetPass in-app note stays on, worded as

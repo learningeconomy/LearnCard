@@ -69,9 +69,9 @@ prevent the first loss. Changes:
   `ready.escrowPinAutoCleared`.
 - Q4: the authority read and attestation already run before rotation, so a failed read
   burns no share version (covered by a regression test).
-- Monitor: `services/escrow-ledger-monitor` emits `AuthorityRepeatedPinClear` for at least
-  2 verified signed PIN clears per account in 30 days (alarm in
-  `infra/escrow-enclave/authority-audit.tf`). Signed records cannot tell automatic clears
+- Monitor: `services/escrow-ledger-monitor` emits `AuthorityRepeatedPinClearAccounts`, the
+  number of accounts with at least 2 verified signed PIN clears in 30 days, after each
+  complete sweep (alarm in `infra/escrow-enclave/authority-audit.tf`). Signed records cannot tell automatic clears
   from user-initiated ones.
 
 **Still open for security:** Q1 (now: what independently trustworthy recovery evidence

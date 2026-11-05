@@ -150,7 +150,6 @@ const getDeploymentChangeFlags = ({ base, head, cwd = process.cwd() }) => {
         ai_agent_changed: 'services/learn-card-network/ai-agent/package.json',
         lca_app_changed: 'apps/learn-card-app/package.json',
         aip_backend_changed: 'services/ai-passport-backend/package.json',
-        aip_app_changed: 'apps/ai-passport/package.json',
     };
     const flags = Object.fromEntries(
         Object.entries(packages).map(([flag, file]) => [

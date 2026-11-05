@@ -374,7 +374,7 @@ Execute in this order:
     - Exercise resend: confirm the old code stops working and the new one in
       the resend email works.
     - Let (or force, via the reminders job's own `now` override if testing
-      off a short `ESCROW_HOLD_DURATION_MS`) the hourly reminder job run past
+      off a short `ESCROW_HOLD_DURATION_MS`, which only affects the software enclave: the Nitro enclave's hold is a compiled 7 days, `policy.rs` `HOLD_DURATION_MS`) the hourly reminder job run past
       the warning window; confirm the "release in ~24 hours" email arrives
       and lca-api's own reminder notification does **not** also fire for this
       hold (see `AUDIT-COVERAGE.md`'s attack-C row for the offline test this
