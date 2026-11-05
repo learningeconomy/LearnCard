@@ -2161,6 +2161,7 @@ export async function getLearnCardNetworkPlugin(
                         }
 
                         const prepared = await client.boost.prepareRefreshableSend.mutate({
+                            statusBinding: 'server',
                             ...(input.statusPurposes
                                 ? { statusPurposes: input.statusPurposes }
                                 : {}),

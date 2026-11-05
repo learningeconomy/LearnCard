@@ -51,6 +51,7 @@ const send = async (arrayShape = false) => {
         validFrom: '2026-01-01T00:00:00Z',
     };
     const allocation = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
+        statusBinding: 'server',
         recipient: 'status-holder',
         template: { credential: template },
         credentialId: 'urn:uuid:managed-status-test',
@@ -88,6 +89,95 @@ const send = async (arrayShape = false) => {
 };
 
 describe('Managed public status', () => {
+    it.each([false, true])(
+        'preserves client allocation unless server binding is requested (server=%s)',
+        async serverBinding => {
+            const template: UnsignedVC = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                type: ['VerifiableCredential'],
+                issuer: issuer.learnCard.id.did(),
+                credentialSubject: { id: holder.learnCard.id.did() },
+            };
+            const input = {
+                recipient: 'status-holder',
+                template: { credential: template },
+                idempotencyKey: 'status-binding-compatibility',
+                ...(serverBinding ? { statusBinding: 'server' as const } : {}),
+            };
+            const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+            const aggregate = await neogma.queryRunner.run(
+                'MATCH (r:CredentialRefresh {refreshId: $refreshId}) RETURN r.statusEntries AS entries',
+                { refreshId: prepared.refreshId }
+            );
+            if (serverBinding) {
+                expect(prepared.statusEntries).toHaveLength(1);
+                expect(JSON.parse(aggregate.records[0]!.get('entries'))).toEqual(
+                    prepared.statusEntries
+                );
+            } else {
+                expect(prepared.statusEntries).toBeUndefined();
+                expect(aggregate.records[0]!.get('entries')).toBeNull();
+                const bindings = await neogma.queryRunner.run(
+                    'MATCH (b:CredentialStatusBinding) RETURN b'
+                );
+                expect(bindings.records).toHaveLength(0);
+            }
+            expect(await issuer.clients.fullAuth.boost.prepareRefreshableSend(input)).toEqual(
+                prepared
+            );
+            await expect(
+                issuer.clients.fullAuth.boost.prepareRefreshableSend({
+                    ...input,
+                    statusBinding: serverBinding ? undefined : 'server',
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            // Previous SDKs independently allocate through this route after preparation.
+            const clientEntries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+                statusPurposes: ['revocation'],
+            });
+            const handoff = async (entries: BitstringStatusListEntry[]) => {
+                const signedCredential = await issuer.learnCard.invoke.issueCredential(
+                    injectManagedRefreshService(
+                        {
+                            ...template,
+                            id: prepared.credentialId,
+                            credentialSubject: { id: prepared.holderDid },
+                            credentialStatus: entries,
+                        },
+                        prepared.refreshService
+                    )
+                );
+                return issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: input.recipient,
+                    templateUri: prepared.boostUri,
+                    idempotencyKey: input.idempotencyKey,
+                    refresh: true,
+                    signedCredential,
+                });
+            };
+            if (serverBinding) {
+                await expect(handoff(clientEntries)).rejects.toThrow(
+                    'Credential status does not match allocated entries'
+                );
+            }
+            const entries = prepared.statusEntries ?? clientEntries;
+            const result = await handoff(entries);
+            expect(result.refresh?.refreshId).toBe(prepared.refreshId);
+            expect(await bit(entries[0]!)).toBe(false);
+            await issuer.clients.fullAuth.boost.revokeBoostRecipient({
+                boostUri: prepared.boostUri,
+                recipientProfileId: input.recipient,
+                credentialUri: result.credentialUri,
+            });
+            expect(await bit(entries[0]!)).toBe(true);
+            const retry = await issuer.clients.fullAuth.boost.prepareRefreshableSend(input);
+            expect(retry.completed).toEqual(result);
+            expect(retry.statusEntries).toEqual(prepared.statusEntries);
+        }
+    );
+
     it('unsuspends legacy revocation-only deliveries and supports new suspension and revocation', async () => {
         const { root, entries } = await send();
         await neogma.queryRunner.run(
