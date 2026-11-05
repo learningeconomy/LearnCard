@@ -4,17 +4,41 @@ import { inAppMessageAuthoringValidator, inAppMessageValidator } from './inAppMe
 
 export const CampaignIdValidator = z.string().regex(/^[a-z0-9-]{3,64}$/);
 export const CampaignStatusValidator = z.enum(['draft', 'live', 'paused', 'archived']);
-export const CampaignChannelValidator = z.enum(['inApp', 'notify']);
+export const CampaignChannelValidator = z.enum(['inApp', 'notify', 'email']);
 export const CampaignEventValidator = z.enum(['shown', 'clicked', 'dismissed', 'converted']);
 
-const timestamp = z.iso
-    .datetime({ offset: true })
-    .overwrite(value => new Date(value).toISOString());
+const timestamp = z.iso.datetime({ offset: true }).overwrite(value => {
+    const date = new Date(value);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : value;
+});
 const notification = z.object({ title: z.string().min(1), body: z.string().min(1) }).strict();
+export const CampaignEmailValidator = z
+    .object({
+        subject: z
+            .string()
+            .trim()
+            .min(1)
+            .max(200)
+            .regex(/^[^\r\n]+$/),
+        title: z.string().trim().min(1).max(200),
+        body: z.string().trim().min(1).max(20000),
+        heroImageUrl: z.url().startsWith('https://').max(2048).optional(),
+        ctaLabel: z.string().trim().min(1).max(100),
+    })
+    .strict();
+
+export const AnnouncementPreferencesValidator = z
+    .object({
+        announcementEmailOptOut: z.boolean(),
+        announcementPushOptOut: z.boolean(),
+    })
+    .strict();
+export type AnnouncementPreferences = z.infer<typeof AnnouncementPreferencesValidator>;
+
 const channels = z
     .array(CampaignChannelValidator)
     .min(1)
-    .max(2)
+    .max(3)
     .refine(values => new Set(values).size === values.length, 'Channels must be unique');
 
 const campaignDefinition = z
@@ -25,6 +49,7 @@ const campaignDefinition = z
         channels,
         message: inAppMessageValidator,
         notification: notification.optional(),
+        email: CampaignEmailValidator.optional(),
         startsAt: timestamp.optional(),
         endsAt: timestamp.optional(),
         excludeMinors: z.boolean().default(true),
@@ -35,7 +60,7 @@ const campaignDefinition = z
 const validDefinition = (
     value: Pick<
         z.output<typeof campaignDefinition>,
-        'channels' | 'notification' | 'startsAt' | 'endsAt'
+        'channels' | 'notification' | 'email' | 'startsAt' | 'endsAt'
     >,
     ctx: z.RefinementCtx
 ): void => {
@@ -46,6 +71,13 @@ const validDefinition = (
             message: 'Notify requires a title and body',
         });
     }
+    if (value.channels.includes('email') && !value.email) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['email'],
+            message: 'Email requires announcement content',
+        });
+    }
     if (value.startsAt && value.endsAt && value.startsAt >= value.endsAt) {
         ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'End must be after start' });
     }
@@ -53,6 +85,7 @@ const validDefinition = (
 
 export const CampaignValidator = campaignDefinition
     .extend({
+        tenantId: z.string().optional(),
         createdAt: timestamp,
         updatedAt: timestamp,
     })
@@ -83,6 +116,7 @@ export const CampaignUpdatesValidator = campaignDefinition
         selfEnroll: z.boolean().optional(),
         message: inAppMessageAuthoringValidator.optional(),
         notification: notification.nullable().optional(),
+        email: CampaignEmailValidator.nullable().optional(),
         startsAt: timestamp.nullable().optional(),
         endsAt: timestamp.nullable().optional(),
     })
@@ -92,6 +126,7 @@ export const UpdateCampaignInputValidator = z
     .object({
         campaignId: CampaignIdValidator,
         updates: CampaignUpdatesValidator,
+        expectedUpdatedAt: timestamp.optional(),
     })
     .strict();
 
@@ -168,6 +203,7 @@ export const CampaignUserStateValidator = z.object({
     dismissedAt: timestamp.optional(),
     convertedAt: timestamp.optional(),
     notifiedAt: timestamp.optional(),
+    emailedAt: timestamp.optional(),
 });
 
 export const MyCampaignValidator = z.object({
@@ -184,6 +220,7 @@ export const MyCampaignValidator = z.object({
 export const CampaignStatsValidator = z.object({
     audience: z.number().int().nonnegative(),
     notified: z.number().int().nonnegative(),
+    emailed: z.number().int().nonnegative(),
     shown: z.number().int().nonnegative(),
     clicked: z.number().int().nonnegative(),
     dismissed: z.number().int().nonnegative(),

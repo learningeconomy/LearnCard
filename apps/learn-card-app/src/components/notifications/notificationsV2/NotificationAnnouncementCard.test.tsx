@@ -1,0 +1,83 @@
+import React from 'react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { Router } from 'react-router-dom';
+import { createMemoryHistory } from 'history';
+import type { NotificationType } from '@learncard/lca-api-plugin';
+import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
+
+vi.mock('./types', () => ({ notificationCardStyles: { shell: '', title: '', body: '' } }));
+const mocks = vi.hoisted(() => ({ close: vi.fn(), mark: vi.fn() }));
+vi.mock('learn-card-base', async () => ({
+    ...(await import('learn-card-base/helpers/pushNotificationHelpers')),
+    useMarkNotificationRead: () => ({ mutate: mocks.mark }),
+    useModal: () => ({ closeAllModals: mocks.close }),
+}));
+afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+});
+it.each([['pilot', '/m/pilot']])(
+    'opens campaign %s and marks the inbox card read once',
+    (campaignId, path) => {
+        const history = createMemoryHistory();
+        const notification = {
+            _id: 'announcement',
+            type: 'ANNOUNCEMENT',
+            read: false,
+            data: { metadata: { campaignId, campaignHasInApp: true } },
+            message: { title: 'Welcome', body: 'Learn something new' },
+        } as NotificationType;
+        render(
+            <Router history={history}>
+                <NotificationAnnouncementCard notification={notification} />
+            </Router>
+        );
+        expect(screen.getByText('Learn something new')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'View' }));
+        expect(history.location.pathname).toBe(path);
+        expect(mocks.mark).toHaveBeenCalledWith(
+            { notificationId: 'announcement' },
+            expect.any(Object)
+        );
+        expect(mocks.close).toHaveBeenCalledOnce();
+        fireEvent.click(screen.getByRole('button', { name: 'View' }));
+        expect(mocks.mark).toHaveBeenCalledOnce();
+    }
+);
+
+it('still opens a campaign when a malformed notification has no inbox ID', () => {
+    const history = createMemoryHistory();
+    const notification = {
+        type: 'ANNOUNCEMENT',
+        data: { metadata: { campaignId: 'pilot', campaignHasInApp: true } },
+    } as NotificationType;
+    render(
+        <Router history={history}>
+            <NotificationAnnouncementCard notification={notification} />
+        </Router>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'View' }));
+    expect(history.location.pathname).toBe('/m/pilot');
+    expect(mocks.mark).not.toHaveBeenCalled();
+});
+
+it.each([false, undefined, 'true'])(
+    'omits View without a confirmed message destination (%s)',
+    campaignHasInApp => {
+        render(
+            <Router history={createMemoryHistory()}>
+                <NotificationAnnouncementCard
+                    notification={
+                        {
+                            type: 'ANNOUNCEMENT',
+                            data: { metadata: { campaignId: 'pilot', campaignHasInApp } },
+                            message: { title: 'Announcement', body: 'Read it here' },
+                        } as NotificationType
+                    }
+                />
+            </Router>
+        );
+        expect(screen.getByText('Read it here')).toBeTruthy();
+        expect(screen.queryByRole('button', { name: 'View' })).toBeNull();
+    }
+);

@@ -5014,6 +5014,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "Ver",
         "contract": "tu contrato",
         "loadErr": "No se pudo cargar la actividad",
         "updates": "Actualizaciones",
@@ -10306,5 +10307,16 @@
         "revocationCheck": "Comprobación de revocación disponible",
         "evidenceCount": "Elementos de evidencia: {{count}}",
         "evidence": "Evidencia de apoyo"
+    },
+    "announcements": {
+        "title": "Anuncios del producto",
+        "email": "Correo electrónico",
+        "push": "Notificaciones push",
+        "loading": "Cargando preferencias…",
+        "saving": "Guardando preferencias…",
+        "error": "Algo salió mal. Inténtalo de nuevo.",
+        "retry": "Reintentar",
+        "unsubscribing": "Cancelando la suscripción…",
+        "unsubscribed": "Ya no recibirás anuncios."
     }
 }

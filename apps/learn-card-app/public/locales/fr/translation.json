@@ -5011,6 +5011,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "Voir",
         "contract": "votre contrat",
         "loadErr": "Impossible de charger l'activité",
         "updates": "Mises à jour",
@@ -10303,5 +10304,16 @@
         "revocationCheck": "Vérification de révocation disponible",
         "evidenceCount": "Éléments de preuve : {{count}}",
         "evidence": "Pièces justificatives"
+    },
+    "announcements": {
+        "title": "Annonces du produit",
+        "email": "E-mail",
+        "push": "Notifications push",
+        "loading": "Chargement des préférences…",
+        "saving": "Enregistrement des préférences…",
+        "error": "Une erreur est survenue. Veuillez réessayer.",
+        "retry": "Réessayer",
+        "unsubscribing": "Désinscription…",
+        "unsubscribed": "Vous ne recevrez plus les annonces."
     }
 }
