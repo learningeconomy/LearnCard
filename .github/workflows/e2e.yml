@@ -1,17 +1,16 @@
 name: E2E
 
 on:
+    # Keep the required E2E check on PRs, but defer the full suites to the queue.
     pull_request:
         types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
-    # Merge queue: GitHub creates a temporary branch with the PR(s) merged onto
-    # current main and runs this once per batch. This is what lets PRs stay
-    # mergeable without every author re-running E2E after main moves.
+    # Validate the combined revision containing current main and queued changes.
     merge_group:
         types: [checks_requested]
     workflow_dispatch:
         inputs:
             ref:
-                description: 'LearnCard ref to test'
+                description: 'LearnCard branch or commit SHA to test (use the PR head for an early full run)'
                 required: false
                 default: 'main'
             test_files:
@@ -50,18 +49,17 @@ jobs:
             reason: ${{ steps.policy.outputs.reason }}
         steps:
             - name: Checkout for change detection
-              if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
+              if: ${{ github.event_name == 'merge_group' }}
               uses: actions/checkout@v7
               with:
                   ref: ${{ env.E2E_TESTED_REF }}
                   fetch-depth: 0
 
-            - name: Evaluate PR policy
+            - name: Evaluate E2E policy
               id: policy
               env:
                   EVENT_NAME: ${{ github.event_name }}
-                  PR_DRAFT: ${{ github.event.pull_request.draft || false }}
-                  BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+                  BASE_SHA: ${{ github.event.merge_group.base_sha }}
               run: |
                   if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
                     echo 'run_e2e=true' >> "$GITHUB_OUTPUT"
@@ -69,10 +67,15 @@ jobs:
                     exit 0
                   fi
 
-                  if [[ "$EVENT_NAME" == "pull_request" && "$PR_DRAFT" == "true" ]]; then
+                  if [[ "$EVENT_NAME" == "pull_request" ]]; then
                     echo 'run_e2e=false' >> "$GITHUB_OUTPUT"
-                    echo 'reason=draft-pr' >> "$GITHUB_OUTPUT"
+                    echo 'reason=merge-queue-only' >> "$GITHUB_OUTPUT"
                     exit 0
+                  fi
+
+                  if [[ "$EVENT_NAME" != "merge_group" ]]; then
+                    echo "Unsupported E2E event: $EVENT_NAME" >&2
+                    exit 1
                   fi
 
                   if bash scripts/e2e-hosted/changes-are-docs-only.sh "$BASE_SHA" HEAD; then
@@ -327,6 +330,7 @@ jobs:
         steps:
             - name: Evaluate E2E result
               env:
+                  EVENT_NAME: ${{ github.event_name }}
                   ELIGIBILITY_RESULT: ${{ needs.eligibility.result }}
                   ELIGIBLE: ${{ needs.eligibility.outputs.run_e2e }}
                   ELIGIBILITY_REASON: ${{ needs.eligibility.outputs.reason }}
@@ -340,8 +344,19 @@ jobs:
 
                   if [[ "$ELIGIBLE" == "false" ]]; then
                     case "$ELIGIBILITY_REASON" in
-                      draft-pr)  echo 'E2E skipped: draft pull request.'; exit 0 ;;
-                      docs-only) echo 'E2E skipped: only documentation files changed.'; exit 0 ;;
+                      merge-queue-only)
+                        if [[ "$EVENT_NAME" == "pull_request" ]]; then
+                          echo 'Full E2E deferred to the merge queue. This PR check does not represent a test pass.' | tee -a "$GITHUB_STEP_SUMMARY"
+                          echo 'To run full E2E before queuing, dispatch the E2E workflow with the PR branch or commit SHA as ref.' >> "$GITHUB_STEP_SUMMARY"
+                          exit 0
+                        fi
+                        ;;
+                      docs-only)
+                        if [[ "$EVENT_NAME" == "merge_group" ]]; then
+                          echo 'E2E skipped: only documentation files changed.'
+                          exit 0
+                        fi
+                        ;;
                     esac
                   fi
 

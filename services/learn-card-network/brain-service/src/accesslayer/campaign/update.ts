@@ -14,9 +14,15 @@ import {
 } from './shared';
 
 export const updateCampaign = async (input: UpdateCampaignInput): Promise<Campaign> => {
-    const { campaignId, updates } = UpdateCampaignInputValidator.parse(input);
+    const { campaignId, updates, expectedUpdatedAt } = UpdateCampaignInputValidator.parse(input);
     return withCampaignTransaction('campaign:update', async transaction => {
         const existing = await lockCampaign(transaction, campaignId);
+        if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== existing.updatedAt) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Campaign changed since it was loaded. Reload before saving.',
+            });
+        }
         assertCampaignEditable(existing);
         const message = updates.message ?? existing.message;
         const result = CampaignValidator.safeParse({
@@ -28,10 +34,14 @@ export const updateCampaign = async (input: UpdateCampaignInput): Promise<Campai
                 updates.notification === null
                     ? undefined
                     : (updates.notification ?? existing.notification),
+            email: updates.email === null ? undefined : (updates.email ?? existing.email),
             startsAt:
                 updates.startsAt === null ? undefined : (updates.startsAt ?? existing.startsAt),
             endsAt: updates.endsAt === null ? undefined : (updates.endsAt ?? existing.endsAt),
-            updatedAt: new Date().toISOString(),
+            // Every successful write must invalidate a loaded revision, even within one millisecond.
+            updatedAt: new Date(
+                Math.max(Date.now(), Date.parse(existing.updatedAt) + 1)
+            ).toISOString(),
         });
         if (!result.success)
             throw new TRPCError({ code: 'BAD_REQUEST', message: result.error.message });

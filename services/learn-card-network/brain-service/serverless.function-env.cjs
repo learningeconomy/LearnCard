@@ -27,6 +27,7 @@ const PROVIDER_SECRETS = [
     'SHARE_LINK_REQUEST_HASH_SECRET',
     'APP_STORE_ADMIN_PROFILE_IDS',
     'CAMPAIGN_ADMIN_PROFILE_IDS',
+    'CAMPAIGN_UNSUBSCRIBE_SECRET',
     'LOGIN_PROVIDER_DID',
     'NOTIFICATIONS_SERVICE_WEBHOOK_URL',
 ];
@@ -46,6 +47,7 @@ exports.provider = ({ options = {}, env = process.env } = {}) => ({
     REDIS_PORT: { 'Fn::GetAtt': ['ElasticCacheCluster', 'RedisEndpoint.Port'] },
     NOTIFICATIONS_QUEUE_URL: '${construct:notifications-queue.queueUrl}',
     INBOX_QUEUE_URL: '${construct:inbox-queue.queueUrl}',
+    CAMPAIGN_QUEUE_URL: '${construct:campaign-queue.queueUrl}',
     // The deploy commit, emitted only when set so an empty string never counts toward the
     // 4KB per-function environment limit.
     ...pickNonEmpty(['GIT_SHA'], env),

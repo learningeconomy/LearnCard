@@ -115,7 +115,13 @@ test(
         const driver = path.join(repo, 'scripts/nx-artifact-cache/run.mjs');
         const run = async (
             mode,
-            { artifact, fail = false, breakPlan = false, breakObservation = false } = {}
+            {
+                artifact,
+                fail = false,
+                breakPlan = false,
+                breakObservation = false,
+                frozenRange = false,
+            } = {}
         ) => {
             const runnerTemp = path.join(root, `runner-${++attempt}`);
             await mkdir(runnerTemp);
@@ -166,6 +172,13 @@ test(
                 'LC_CI_TEST_REPORT_DIR',
             ])
                 delete env[key];
+            if (frozenRange) {
+                env.NX_BASE = base;
+                env.NX_HEAD = env.GITHUB_SHA;
+                // The event range would select no work. The caller's frozen
+                // range must still execute the changed test and its builds.
+                env.LC_NX_PILOT_BASE = env.GITHUB_SHA;
+            }
             let output = '';
             const code = await new Promise((resolve, reject) => {
                 const child = spawn(process.execPath, [driver, mode], { cwd, env });
@@ -198,8 +211,10 @@ test(
             await rm(path.join(cwd, 'packages', name, 'dist'), { recursive: true });
         await put('packages/core/tests/marker.txt', 'test-only change');
         commit();
-        const warm = await run('consume', { artifact: produced.artifact });
+        const warm = await run('consume', { artifact: produced.artifact, frozenRange: true });
         assert.equal(warm.code, 0, warm.output);
+        assert.equal(warm.report.baseSha, base);
+        assert.equal(warm.report.queueBaseSha, git('rev-parse', 'HEAD'));
         assert.equal(warm.report.liveConsumed, true);
         assert.equal(warm.report.producer.runId, '101');
         for (const task of produced.tasks) {

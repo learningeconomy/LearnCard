@@ -3,6 +3,7 @@ import type { LCNClient } from '@learncard/network-brain-client';
 import type {
     Campaign,
     CampaignAudienceInput,
+    AnnouncementPreferences,
     CampaignEvent,
     CampaignStats,
     CampaignStatus,
@@ -1173,6 +1174,11 @@ export type LearnCardNetworkPluginMethods = {
     }>;
 
     isAppStoreAdmin: () => Promise<boolean>;
+    getAnnouncementPreferences: () => Promise<AnnouncementPreferences>;
+    updateAnnouncementPreferences: (
+        updates: Partial<AnnouncementPreferences>
+    ) => Promise<AnnouncementPreferences>;
+    unsubscribeFromAnnouncements: (token: string) => Promise<boolean>;
     campaignsIsAdmin: () => Promise<boolean>;
     campaignsCreate: (input: CreateCampaignInput) => Promise<Campaign>;
     campaignsUpdate: (input: UpdateCampaignInput) => Promise<Campaign>;
@@ -1184,6 +1190,10 @@ export type LearnCardNetworkPluginMethods = {
     campaignsAddAudience: (input: CampaignAudienceInput) => Promise<{ count: number }>;
     campaignsPageAudience: (input: PageCampaignAudienceInput) => Promise<PaginatedCampaignAudience>;
     campaignsGetStats: (campaignId: string) => Promise<CampaignStats>;
+    /** Send notification copy only to the signed-in administrator, regardless of campaign status. */
+    campaignsSendTestToMe: (campaignId: string) => Promise<boolean>;
+    /** Start paced notification delivery for an eligible live campaign. */
+    campaignsDispatch: (campaignId: string) => Promise<{ dispatchId: string }>;
     getMyCampaigns: () => Promise<MyCampaign[]>;
     recordCampaignEvent: (campaignId: string, event: CampaignEvent) => Promise<boolean>;
     enrollInCampaign: (campaignId: string) => Promise<boolean>;

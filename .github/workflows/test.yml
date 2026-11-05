@@ -31,7 +31,7 @@ jobs:
               with:
                   node-version-file: .nvmrc
             - name: Test recovery validation, manifest diagnostics, and registry retries
-              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs
+              run: node --test scripts/validate-capgo-recovery-version.test.mjs scripts/capgo-manifest-diagnostics.test.mjs scripts/smoketest-npm-packages.test.mjs .github/tests/test-deploy-test-proof.test.cjs
 
             - name: Test shared native registry readiness gate
               run: node --test scripts/wait-for-didkit-registry.test.mjs
@@ -88,6 +88,18 @@ jobs:
                     node --test scripts/nx-artifact-cache/native.test.mjs
                   fi
 
+            - name: Freeze affected test range
+              id: test-range
+              run: |
+                  base=$(git rev-parse origin/main)
+                  head=$(git rev-parse HEAD)
+                  echo "base=$base" >> "$GITHUB_OUTPUT"
+                  echo "head=$head" >> "$GITHUB_OUTPUT"
+                  if [[ "$GITHUB_EVENT_NAME" == merge_group ]]; then
+                    timeout --kill-after=5s 20s bunx nx affected --target=test --base="$base" --head="$head" \
+                      --graph="$RUNNER_TEMP/queue-test-selection.json" || echo 'Queue test proof unavailable; tests still run normally.'
+                  fi
+
             - name: Select trusted main artifact for queue pilot
               id: nx-pilot
               if: github.event_name == 'merge_group' && vars.LC_NX_ARTIFACT_PILOT == 'true'
@@ -120,11 +132,13 @@ jobs:
                   if [ "$LC_NX_PILOT_ACTIVE" = 'true' ]; then
                     node scripts/nx-artifact-cache/run.mjs consume
                   else
-                    bunx nx affected --target=test --base=origin/main --head=HEAD
+                    bunx nx affected --target=test --base="$NX_BASE" --head="$NX_HEAD"
                   fi
               env:
                   LC_NX_PILOT_ACTIVE: ${{ steps.nx-pilot.outputs.active }}
                   LC_NX_PILOT_BASE: ${{ github.event.merge_group.base_sha }}
+                  NX_BASE: ${{ steps.test-range.outputs.base }}
+                  NX_HEAD: ${{ steps.test-range.outputs.head }}
                   LC_CI_TEST_RETRY: '1'
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   SEED: ${{ secrets.SEED || 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
@@ -146,6 +160,25 @@ jobs:
                   LC_CI_TEST_REPORT_DIR: ${{ runner.temp }}/learncard-ci-test-reports
                   LC_CI_NX_OUTCOME: ${{ steps.tests.outcome }}
               run: node scripts/ci-test-retries/summary.cjs
+
+            - name: Record queue test proof
+              id: queue-proof
+              if: ${{ success() && github.event_name == 'merge_group' }}
+              continue-on-error: true
+              env:
+                  NX_BASE: ${{ steps.test-range.outputs.base }}
+                  NX_HEAD: ${{ steps.test-range.outputs.head }}
+              run: node scripts/deploy-test-proof.cjs record "$RUNNER_TEMP/queue-test-selection.json" "$RUNNER_TEMP/queue-test-proof/queue-test-proof.json"
+
+            - name: Publish queue test proof
+              if: ${{ success() && github.event_name == 'merge_group' && steps.queue-proof.outputs.publish == 'true' }}
+              continue-on-error: true
+              uses: actions/upload-artifact@v4
+              with:
+                  name: queue-test-proof-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: ${{ runner.temp }}/queue-test-proof/queue-test-proof.json
+                  if-no-files-found: error
+                  retention-days: 7
 
     escrow-integration:
         name: Escrow integration (lca-api)
@@ -336,6 +369,11 @@ jobs:
               run: bunx nx run network-brain-service:test:campaigns
               env:
                   TESTCONTAINERS_REUSE_ENABLE: 'false'
+            - name: Test campaign inbox deduplication and push suppression with MongoDB
+              working-directory: services/learn-card-network/lca-api
+              run: >-
+                  bunx vitest run --config vitest.integration.config.ts
+                  test/notifications.spec.ts -t 'deduplicates concurrent campaign'
 
     # Temporary manual fallback during the hosted-runner cutover.
     # Remove after one sprint of stable GitHub-hosted E2E operation.

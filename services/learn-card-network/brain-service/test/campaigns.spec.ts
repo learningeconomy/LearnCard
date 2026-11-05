@@ -1,4 +1,10 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { claimCampaignEmail, acknowledgeCampaignEmail } from '@accesslayer/campaign/email';
+import { pageCampaignAudience } from '@accesslayer/campaign/audience';
+import { getAnnouncementPreferences } from '@accesslayer/campaign/preferences';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { updateProfile } from '@accesslayer/profile/update';
+import { signCampaignUnsubscribeToken } from '@helpers/campaign-unsubscribe.helpers';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resolveTenantFromRequest } from '@learncard/email-templates';
 import {
     CampaignAudienceSourceValidator,
@@ -9,10 +15,17 @@ import {
 import { neogma } from '@instance';
 import cache from '@cache';
 import { campaignsRouter } from '@routes/campaigns';
+import {
+    acknowledgeCampaignNotification,
+    getCampaignDeliveryRecipient,
+} from '@accesslayer/campaign/delivery';
+import * as notifications from '@helpers/notifications.helpers';
+import * as learnCardHelpers from '@helpers/learnCard.helpers';
 import { getLiveCampaignsForProfile } from '@accesslayer/campaign/read';
 import { campaignTimeParams } from '@accesslayer/campaign/shared';
 import { constructUri } from '@helpers/uri.helpers';
 import { ensureCampaignConstraints } from '../src/models/campaign-constraints';
+import { buildCampaignNotification } from '@helpers/campaign-notifications.helpers';
 
 const domain = 'localhost%3A3000';
 const tenant = resolveTenantFromRequest({}, 'learncard');
@@ -40,6 +53,39 @@ const audience = (source: CampaignAudienceInput['source']): CampaignAudienceInpu
 const addLearner = async (): Promise<void> => {
     await admin.addAudience(audience({ type: 'dids', dids: [did('learner')] }));
 };
+
+it.each([
+    { channels: ['notify'], enabled: true, expected: false },
+    { channels: ['inApp', 'notify'], enabled: false, expected: false },
+    { channels: ['inApp', 'notify'], enabled: true, expected: true },
+] as const)(
+    'aligns notification destinations with learner feed eligibility (%j)',
+    async ({ channels, enabled, expected }) => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: [...channels],
+                message: { title: 'News', enabled },
+                notification: { title: 'News', body: 'Read this announcement' },
+            })
+        );
+        await addLearner();
+        const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
+            id: { did: () => 'did:web:brain.example' },
+        } as never);
+        try {
+            const notification = await buildCampaignNotification(campaign, {
+                profileId: 'learner',
+                did: did('learner'),
+            });
+            expect(notification.data?.metadata?.campaignHasInApp).toBe(expected);
+            const feed = await getLiveCampaignsForProfile('learner');
+            expect(feed.some(item => item.campaign.id === campaign.id)).toBe(expected);
+        } finally {
+            signer.mockRestore();
+        }
+    }
+);
 
 beforeAll(async () => {
     await ensureCampaignConstraints();
@@ -117,6 +163,8 @@ describe('campaign lifecycle and access', () => {
             () => other.addAudience(audience({ type: 'dids', dids: [did('learner')] })),
             () => other.pageAudience({ campaignId: 'pilot-clr' }),
             () => other.getStats({ campaignId: 'pilot-clr' }),
+            () => other.sendTestToMe({ campaignId: 'pilot-clr' }),
+            () => other.dispatch({ campaignId: 'pilot-clr' }),
         ])
             await expect(request()).rejects.toMatchObject({ code: 'FORBIDDEN' });
         await expect(caller('campaign-admin', '*:read').create(draft())).rejects.toMatchObject({
@@ -226,6 +274,66 @@ describe('campaign lifecycle and access', () => {
             expect(await admin.get({ campaignId: 'pilot-clr' })).toMatchObject({ status });
         }
     );
+
+    it('rejects an editor save after another administrator pauses the campaign', async () => {
+        const opened = await admin.create(draft({ status: 'live' }));
+        const paused = await admin.setStatus({ campaignId: opened.id, status: 'paused' });
+        await expect(
+            admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: opened.updatedAt,
+                updates: { name: 'Stale editor', status: 'live' },
+            })
+        ).rejects.toMatchObject({ code: 'CONFLICT' });
+        expect(await admin.get({ campaignId: opened.id })).toEqual(paused);
+    });
+
+    it('serializes two editors saving the same revision without overwriting the winner', async () => {
+        const opened = await admin.create(draft());
+        const results = await Promise.allSettled(
+            ['First editor', 'Second editor'].map(name =>
+                admin.update({
+                    campaignId: opened.id,
+                    expectedUpdatedAt: opened.updatedAt,
+                    updates: { name },
+                })
+            )
+        );
+        const accepted = results.filter(result => result.status === 'fulfilled');
+        const rejected = results.filter(result => result.status === 'rejected');
+        expect(accepted).toHaveLength(1);
+        expect(rejected).toHaveLength(1);
+        expect(rejected[0]?.reason).toMatchObject({ code: 'CONFLICT' });
+        expect(await admin.get({ campaignId: opened.id })).toEqual(accepted[0]?.value);
+    });
+
+    it('advances the revision even when writes share a clock tick', async () => {
+        const opened = await admin.create(draft());
+        const clock = vi.spyOn(Date, 'now').mockReturnValue(Date.parse(opened.updatedAt));
+        try {
+            const updated = await admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: opened.updatedAt,
+                updates: { name: 'First edit' },
+            });
+            expect(Date.parse(updated.updatedAt)).toBe(Date.parse(opened.updatedAt) + 1);
+            await expect(
+                admin.update({
+                    campaignId: opened.id,
+                    expectedUpdatedAt: opened.updatedAt,
+                    updates: { name: 'Stale edit' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+            const next = await admin.update({
+                campaignId: opened.id,
+                expectedUpdatedAt: updated.updatedAt,
+                updates: { name: 'Fresh edit' },
+            });
+            expect(Date.parse(next.updatedAt)).toBe(Date.parse(updated.updatedAt) + 1);
+        } finally {
+            clock.mockRestore();
+        }
+    });
 
     it('paginates campaigns by immutable ID and filters status', async () => {
         await admin.create(draft({ id: 'aaa', status: 'live' }));
@@ -750,6 +858,7 @@ describe('campaign eligibility and engagement', () => {
             audience: 1,
             enrolled: 0,
             notified: 0,
+            emailed: 0,
             shown: 1,
             clicked: 1,
             dismissed: 1,
@@ -785,5 +894,314 @@ describe('campaign eligibility and engagement', () => {
         expect(
             await getLiveCampaignsForProfile('learner', new Date('2028-03-01T00:00:00Z'))
         ).toHaveLength(1);
+    });
+});
+
+describe('campaign notification delivery state', () => {
+    it('rechecks delivery eligibility and atomically records concurrent acknowledgements', async () => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: ['inApp', 'notify'],
+                notification: { title: 'Explore', body: 'Your next step' },
+            })
+        );
+        await addLearner();
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toMatchObject({ profileId: 'learner' });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'other')
+        ).resolves.toBeUndefined();
+        const notification = {
+            type: 'ANNOUNCEMENT' as const,
+            from: 'did:web:brain.example',
+            to: { profileId: 'learner', did: did('learner') },
+            data: { metadata: { campaignId: campaign.id, campaignCreatedAt: campaign.createdAt } },
+        };
+        await Promise.all([
+            ...Array.from({ length: 10 }, () => acknowledgeCampaignNotification(notification)),
+            learner.recordEvent({ campaignId: campaign.id, event: 'shown' }),
+        ]);
+        const states = await neogma.queryRunner.run(
+            `MATCH (:Profile {profileId: 'learner'})-[state:CAMPAIGN_STATE]->(:Campaign {id: $id})
+             RETURN count(state) AS count`,
+            { id: campaign.id }
+        );
+        expect(states.records[0]!.get('count').toNumber()).toBe(1);
+        await expect(admin.getStats({ campaignId: campaign.id })).resolves.toMatchObject({
+            notified: 1,
+            shown: 1,
+        });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+    });
+
+    it('test delivery does not increment stats and only targets the authenticated administrator', async () => {
+        await admin.create(
+            draft({ channels: ['notify'], notification: { title: 'Test', body: 'Preview' } })
+        );
+        const queue = vi.spyOn(notifications, 'addNotificationToQueue').mockResolvedValue(true);
+        const signer = vi.spyOn(learnCardHelpers, 'getDidWebLearnCard').mockResolvedValue({
+            id: { did: () => 'did:web:brain.example' },
+        } as never);
+        try {
+            await expect(admin.sendTestToMe({ campaignId: 'pilot-clr' })).resolves.toBe(true);
+            expect(queue).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'ANNOUNCEMENT',
+                    to: expect.objectContaining({ profileId: 'campaign-admin' }),
+                    data: {
+                        metadata: expect.objectContaining({
+                            campaignId: 'pilot-clr',
+                            campaignTestId: expect.any(String),
+                        }),
+                    },
+                }),
+                expect.anything()
+            );
+            await expect(admin.getStats({ campaignId: 'pilot-clr' })).resolves.toMatchObject({
+                notified: 0,
+                emailed: 0,
+            });
+            await expect(admin.dispatch({ campaignId: 'pilot-clr' })).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+        } finally {
+            queue.mockRestore();
+            signer.mockRestore();
+        }
+    });
+
+    it('suppresses paused, removed-channel and age-ineligible recipients', async () => {
+        const campaign = await admin.create(
+            draft({
+                status: 'live',
+                channels: ['notify'],
+                notification: { title: 'Test', body: 'Preview' },
+            })
+        );
+        await addLearner();
+        await admin.setStatus({ campaignId: campaign.id, status: 'paused' });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+        await admin.setStatus({ campaignId: campaign.id, status: 'live' });
+        await admin.update({ campaignId: campaign.id, updates: { channels: ['inApp'] } });
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+        await admin.update({ campaignId: campaign.id, updates: { channels: ['notify'] } });
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId: 'learner'}) SET p.dob = '2020-01-01'"
+        );
+        await expect(
+            getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).resolves.toBeUndefined();
+    });
+});
+
+describe('campaign email database boundaries', () => {
+    const email = { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' };
+    const setup = async () => {
+        const campaign = await admin.create(
+            draft({
+                channels: ['inApp', 'notify', 'email'],
+                notification: { title: 'News', body: 'Programs' },
+                email,
+                status: 'live',
+            })
+        );
+        await addLearner();
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId: 'learner'}) CREATE (p)-[:HAS_CONTACT_METHOD]->(:ContactMethod {id:'primary', type:'email', value:'learner@example.com', isVerified:true, isPrimary:true})`
+        );
+        return campaign;
+    };
+    it('keeps old links bound to the original recipient after renames and name reuse', async () => {
+        const campaign = await setup();
+        const recipient = await claimCampaignEmail(
+            campaign.id,
+            campaign.createdAt,
+            'learner',
+            true
+        );
+        const token = signCampaignUnsubscribeToken(recipient!.unsubscribeId, campaign.id);
+        await updateProfile((await getProfileByProfileId('learner'))!, {
+            profileId: 'renamed-learner',
+        });
+        const anonymous = campaignsRouter.createCaller({ domain });
+        await anonymous.unsubscribe({ token });
+        expect((await getAnnouncementPreferences('renamed-learner')).announcementEmailOptOut).toBe(
+            true
+        );
+
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'renamed-learner'}) SET p.announcementEmailOptOut = false"
+        );
+        await updateProfile((await getProfileByProfileId('other'))!, { profileId: 'learner' });
+        await anonymous.unsubscribe({ token });
+        expect((await getAnnouncementPreferences('renamed-learner')).announcementEmailOptOut).toBe(
+            true
+        );
+        expect((await getAnnouncementPreferences('learner')).announcementEmailOptOut).toBe(false);
+    });
+
+    it('does not transfer an old link to a new holder after recipient deletion', async () => {
+        const campaign = await setup();
+        const recipient = await claimCampaignEmail(
+            campaign.id,
+            campaign.createdAt,
+            'learner',
+            true
+        );
+        const token = signCampaignUnsubscribeToken(recipient!.unsubscribeId, campaign.id);
+        await neogma.queryRunner.run("MATCH (p:Profile {profileId:'learner'}) DETACH DELETE p");
+        await updateProfile((await getProfileByProfileId('other'))!, { profileId: 'learner' });
+        await campaignsRouter.createCaller({ domain }).unsubscribe({ token });
+        expect((await getAnnouncementPreferences('learner')).announcementEmailOptOut).toBe(false);
+    });
+
+    it('allocates one durable unsubscribe identity across concurrent self-tests', async () => {
+        const campaign = await setup();
+        const recipients = await Promise.all(
+            Array.from({ length: 8 }, () =>
+                claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+            )
+        );
+        expect(new Set(recipients.map(recipient => recipient!.unsubscribeId)).size).toBe(1);
+        expect(recipients[0]!.unsubscribeId).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
+    it('filters email opt-outs before pagination without hiding them from audience management', async () => {
+        const campaign = await setup();
+        await admin.addAudience(audience({ type: 'dids', dids: [did('other')] }));
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = true"
+        );
+        const page = await pageCampaignAudience(campaign.id, undefined, 1, 'email');
+        expect(page.records.map(row => row.profileId)).toEqual(['other']);
+        expect(page.hasMore).toBe(false);
+        expect((await pageCampaignAudience(campaign.id, 'other', 1, 'email')).records).toEqual([]);
+        expect((await pageCampaignAudience(campaign.id)).records.map(row => row.profileId)).toEqual(
+            ['learner', 'other']
+        );
+        // A preference change after paging must still be enforced by the locked claim.
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = false"
+        );
+        expect(
+            (await pageCampaignAudience(campaign.id, undefined, 1, 'email')).records[0]?.profileId
+        ).toBe('learner');
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.announcementEmailOptOut = true"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+
+    it('leaves a recipient claimable after local preparation fails', async () => {
+        const campaign = await setup();
+        await expect(
+            claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', false, async () => {
+                throw new Error('Cannot render');
+            })
+        ).rejects.toThrow('Cannot render');
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(0);
+        expect(await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')).toMatchObject({
+            email: 'learner@example.com',
+        });
+    });
+    it('atomically claims once across concurrent dispatches and only counts acknowledged sends', async () => {
+        const campaign = await setup();
+        const claims = await Promise.all(
+            Array.from({ length: 8 }, () =>
+                claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+            )
+        );
+        expect(claims.filter(Boolean)).toHaveLength(1);
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(0);
+        await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, 'learner');
+        await acknowledgeCampaignEmail(campaign.id, campaign.createdAt, 'learner');
+        expect((await admin.getStats({ campaignId: campaign.id })).emailed).toBe(1);
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+    it.each([
+        'SET p.announcementEmailOptOut = true',
+        "SET p.dob = '2020-01-01'",
+        'REMOVE p.dob',
+        "SET p.type = 'child'",
+        'SET email.isVerified = false',
+        'SET email.isPrimary = false',
+        "SET email.value = 'invalid'",
+    ])('skips ineligible recipients: %s', async change => {
+        const campaign = await setup();
+        await neogma.queryRunner.run(
+            `MATCH (p:Profile {profileId:'learner'})-[:HAS_CONTACT_METHOD]->(email:ContactMethod) ${change}`
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+        ).toBeUndefined();
+    });
+    it('keeps minors excluded from email even when the campaign relaxes the older age flag', async () => {
+        const campaign = await setup();
+        await admin.update({ campaignId: campaign.id, updates: { excludeMinors: false } });
+        await neogma.queryRunner.run(
+            "MATCH (p:Profile {profileId:'learner'}) SET p.dob = '2020-01-01'"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+    it('checks pause, membership and campaign generation at claim time', async () => {
+        const campaign = await setup();
+        expect(
+            await claimCampaignEmail(campaign.id, '2000-01-01T00:00:00.000Z', 'learner')
+        ).toBeUndefined();
+        await admin.setStatus({ campaignId: campaign.id, status: 'paused' });
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner', true)
+        ).toBeDefined();
+        await admin.setStatus({ campaignId: campaign.id, status: 'live' });
+        await neogma.queryRunner.run(
+            "MATCH (:Profile {profileId:'learner'})-[a:IN_CAMPAIGN_AUDIENCE]->(:Campaign) DELETE a"
+        );
+        expect(
+            await claimCampaignEmail(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+    });
+    it('authenticates preferences, patches choices independently, and leaves in-app messages available', async () => {
+        const campaign = await setup();
+        await expect(
+            campaignsRouter.createCaller({ domain }).getAnnouncementPreferences()
+        ).rejects.toThrow();
+        expect(await learner.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: false,
+            announcementPushOptOut: false,
+        });
+        await learner.updateAnnouncementPreferences({ announcementPushOptOut: true });
+        expect(
+            await getCampaignDeliveryRecipient(campaign.id, campaign.createdAt, 'learner')
+        ).toBeUndefined();
+        expect(await learner.getMyCampaigns()).toHaveLength(1);
+        await learner.updateAnnouncementPreferences({ announcementEmailOptOut: true });
+        expect(await learner.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: true,
+            announcementPushOptOut: true,
+        });
+        expect(await other.getAnnouncementPreferences()).toEqual({
+            announcementEmailOptOut: false,
+            announcementPushOptOut: false,
+        });
     });
 });

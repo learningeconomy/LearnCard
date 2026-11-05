@@ -2872,6 +2872,8 @@
         "generic": "Something went wrong. Please try again.",
         "goHome": "Go Home",
         "network": "Connection issue. Please check your internet and try again.",
+        "updateRequired": "Your account uses a newer way to sign in. Please update to the latest version of the app (closing and reopening it is often enough), then sign in again.",
+        "updateRequiredTitle": "Update required",
         "notFound": "Page not found.",
         "retry": "Try Again",
         "sessionExpired": "Your session has expired. Please sign in again.",
@@ -5050,6 +5052,7 @@
         }
     },
     "notifications": {
+        "viewCampaign": "View",
         "contract": "your contract",
         "loadErr": "Unable to load activity",
         "updates": "Updates",
@@ -10342,5 +10345,16 @@
         "revocationCheck": "Revocation check available",
         "evidenceCount": "Evidence items: {{count}}",
         "evidence": "Supporting evidence"
+    },
+    "announcements": {
+        "title": "Product announcements",
+        "email": "Email",
+        "push": "Push notifications",
+        "loading": "Loading preferences…",
+        "saving": "Saving preferences…",
+        "error": "Something went wrong. Please try again.",
+        "retry": "Try Again",
+        "unsubscribing": "Unsubscribing…",
+        "unsubscribed": "You’re unsubscribed from announcements."
     }
 }

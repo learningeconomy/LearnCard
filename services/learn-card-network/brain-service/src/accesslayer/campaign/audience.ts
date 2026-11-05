@@ -13,6 +13,7 @@ import { constructUri, getUriParts } from '@helpers/uri.helpers';
 import type { CampaignAudienceQuery } from 'types/campaign';
 import {
     assertCampaignEditable,
+    adultProfilePredicate,
     campaignAgePredicate,
     campaignTimeParams,
     lockCampaign,
@@ -131,13 +132,15 @@ export const addCampaignAudience = async (
 export const pageCampaignAudience = async (
     campaignId: string,
     cursor?: string,
-    limit = 100
+    limit = 100,
+    deliveryChannel?: 'email'
 ): Promise<PaginatedCampaignAudience> => {
     await getCampaign(campaignId);
     const result = await traceDb('campaign:pageAudience', () =>
         neogma.queryRunner.run(
             `MATCH (p:Profile)-[:IN_CAMPAIGN_AUDIENCE]->(c:Campaign {id: $campaignId})
          WHERE ($cursor IS NULL OR p.profileId > $cursor) AND ${campaignAgePredicate}
+         ${deliveryChannel === 'email' ? `AND ${adultProfilePredicate} AND coalesce(p.announcementEmailOptOut, false) = false` : ''}
          RETURN DISTINCT p.profileId AS profileId, p.did AS did ORDER BY profileId LIMIT $limit`,
             { campaignId, cursor: cursor ?? null, limit: int(limit + 1), ...campaignTimeParams() }
         )

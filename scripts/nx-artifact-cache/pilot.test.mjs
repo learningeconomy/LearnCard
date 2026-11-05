@@ -322,7 +322,7 @@ test('workflow activates only for opted-in merge groups and publishes only from 
         /github.event_name == 'merge_group' && vars.LC_NX_ARTIFACT_PILOT == 'true'/
     );
     assert.match(workflow, /LC_NX_PILOT_BASE: \$\{\{ github.event.merge_group.base_sha \}\}/);
-    assert.match(workflow, /bunx nx affected --target=test --base=origin\/main --head=HEAD/);
+    assert.match(workflow, /bunx nx affected --target=test --base="\$NX_BASE" --head="\$NX_HEAD"/);
     assert.match(workflow, /actions: read/);
     assert.match(producer, /if: github.ref == 'refs\/heads\/main'/);
     assert.match(producer, /workflow_dispatch:/);
