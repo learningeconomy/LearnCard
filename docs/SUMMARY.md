@@ -15,6 +15,7 @@
 - [Send & Issue Credentials](how-to-guides/send-credentials.md)
     - [Revoke or Update a Credential](how-to-guides/revoke-or-update-a-credential.md)
     - [Issue & Refresh a Managed Credential](how-to-guides/issue-and-refresh-a-managed-credential.md)
+        - [Send a Private, Refreshable Credential](how-to-guides/send-a-private-refreshable-credential.md)
     - [Who Signs Your Credentials?](how-to-guides/create-signing-authority.md)
     - [Bootstrap an Issuer Organization](how-to-guides/bootstrap-an-issuer-org.md)
     - [Know When a Credential Is Claimed](tutorials/listen-to-webhooks.md)
