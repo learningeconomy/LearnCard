@@ -426,7 +426,14 @@ export const useCreateBoost = () => {
 
             // Intentionally don't await these to keep this mutation fast!
 
-            queryClient.refetchQueries({ queryKey: managedBoostsKey });
+            // The queryFn reads the live wallet, so never refetch another profile's list.
+            queryClient.invalidateQueries({
+                queryKey: managedBoostsKey,
+                refetchType:
+                    managedBoostsKey[1] === (switchedProfileStore.get.switchedDid() ?? '')
+                        ? 'all'
+                        : 'none',
+            });
             queryClient.invalidateQueries({ queryKey: ['useGetPaginatedFamilialBoosts'] });
             queryClient.invalidateQueries({ queryKey: ['useGetBoostChildren'] });
             queryClient.invalidateQueries({ queryKey: ['useCountBoostChildren'] });
@@ -594,7 +601,14 @@ export const useCreateChildBoost = () => {
             });
 
             // Intentionally don't await these to keep this mutation fast!
-            queryClient.refetchQueries({ queryKey: managedBoostsKey });
+            // The queryFn reads the live wallet, so never refetch another profile's list.
+            queryClient.invalidateQueries({
+                queryKey: managedBoostsKey,
+                refetchType:
+                    managedBoostsKey[1] === (switchedProfileStore.get.switchedDid() ?? '')
+                        ? 'all'
+                        : 'none',
+            });
             wallet.invoke.resolveFromLCN(boostUri).then(async boost => {
                 const validationResult = await VCValidator.spa(boost);
 

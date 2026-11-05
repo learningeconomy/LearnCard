@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import React, { act } from 'react';
-import { cleanup, renderHook } from '@testing-library/react';
+import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -39,7 +39,7 @@ vi.mock('./pruneConsentFlowDeletedCredentials', () => ({
 
 import { initialBoostCMSState } from '../../components/boost/boost';
 import { BoostCategoryOptionsEnum } from '../../types/boostCategories';
-import { getPaginatedManagedBoostsKey } from '../queries/vcQueries';
+import { getPaginatedManagedBoostsKey, useGetPaginatedManagedBoosts } from '../queries/vcQueries';
 import { useCreateBoost, useCreateChildBoost, useDeleteManagedBoostMutation } from './boosts';
 
 const category = BoostCategoryOptionsEnum.achievement;
@@ -126,6 +126,7 @@ describe.each(createCases)('$name profile pinning', ({ useCreate, request }) => 
             client.setQueryData(parentKey, parentList);
             client.setQueryData(childKey, childList);
             const cancel = vi.spyOn(client, 'cancelQueries');
+            const invalidate = vi.spyOn(client, 'invalidateQueries');
             const refetch = vi.spyOn(client, 'refetchQueries');
             const pending = Promise.withResolvers<string>();
             request.mockReturnValueOnce(pending.promise);
@@ -163,9 +164,120 @@ describe.each(createCases)('$name profile pinning', ({ useCreate, request }) => 
             });
             expect(client.getQueryData(childKey)).toEqual(childList);
             expect(cancel).toHaveBeenCalledWith({ queryKey: parentKey });
-            expect(refetch).toHaveBeenCalledWith({ queryKey: parentKey });
+            expect(invalidate).toHaveBeenCalledWith({
+                queryKey: parentKey,
+                refetchType: 'none',
+            });
+            expect(client.getQueryState(parentKey)?.isInvalidated).toBe(true);
+            expect(refetch).not.toHaveBeenCalledWith({ queryKey: parentKey });
             expect(cancel).not.toHaveBeenCalledWith({ queryKey: childKey });
             expect(refetch).not.toHaveBeenCalledWith({ queryKey: childKey });
+        }
+    );
+
+    it.each(['did:web:parent', undefined])(
+        'does not refetch an inactive source query with the new profile wallet (%s)',
+        async did => {
+            host.switchedDid = did;
+            const parentKey = getPaginatedManagedBoostsKey(category, did ?? '');
+            const childKey = getPaginatedManagedBoostsKey(category, 'did:web:child');
+            const parentPage = { records: [{ uri: 'boost:existing' }], hasMore: false };
+            const childPage = { records: [{ uri: 'boost:child' }], hasMore: false };
+            const parentWallet = {
+                ...wallet,
+                id: { did: () => did ?? 'did:key:reader' },
+                invoke: {
+                    ...wallet.invoke,
+                    getPaginatedBoosts: vi.fn().mockResolvedValue(parentPage),
+                },
+            };
+            const childWallet = {
+                ...wallet,
+                id: { did: () => 'did:web:child' },
+                invoke: {
+                    ...wallet.invoke,
+                    getPaginatedBoosts: vi.fn().mockResolvedValue(childPage),
+                },
+            };
+            host.init.mockImplementation(async () =>
+                host.switchedDid === 'did:web:child' ? childWallet : parentWallet
+            );
+            const query = renderHook(() => useGetPaginatedManagedBoosts(category), { wrapper });
+            await waitFor(() => expect(query.result.current.isSuccess).toBe(true));
+            const pending = Promise.withResolvers<string>();
+            request.mockReturnValueOnce(pending.promise);
+            const { result } = renderHook(useCreate, { wrapper });
+            let settled: Promise<unknown>;
+            await act(async () => {
+                settled = result.current();
+                await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
+            });
+
+            host.switchedDid = 'did:web:child';
+            query.rerender();
+            await waitFor(() => expect(query.result.current.data?.pages).toEqual([childPage]));
+            expect(client.getQueryCache().find({ queryKey: parentKey })?.isActive()).toBe(false);
+            await act(async () => {
+                pending.resolve('boost:new');
+                await settled;
+            });
+            await waitFor(() => expect(client.isFetching()).toBe(0));
+
+            expect(client.getQueryData(parentKey)).toMatchObject({
+                pages: [{ records: [{ uri: 'boost:new' }, { uri: 'boost:existing' }] }],
+            });
+            expect(client.getQueryState(parentKey)?.isInvalidated).toBe(true);
+            expect(client.getQueryData(childKey)).toEqual({
+                pages: [childPage],
+                pageParams: [undefined],
+            });
+            expect(parentWallet.invoke.getPaginatedBoosts).toHaveBeenCalledOnce();
+            expect(childWallet.invoke.getPaginatedBoosts).toHaveBeenCalledOnce();
+
+            host.switchedDid = did;
+            query.rerender();
+            await waitFor(() =>
+                expect(parentWallet.invoke.getPaginatedBoosts).toHaveBeenCalledTimes(2)
+            );
+            await waitFor(() => expect(query.result.current.data?.pages).toEqual([parentPage]));
+        }
+    );
+
+    it.each(['did:web:parent', undefined])(
+        'still refetches a registered inactive query when the profile stays the same (%s)',
+        async did => {
+            host.switchedDid = did;
+            const key = getPaginatedManagedBoostsKey(category, did ?? '');
+            const getPaginatedBoosts = vi.fn().mockResolvedValue({
+                records: [{ uri: 'boost:existing' }],
+                hasMore: false,
+            });
+            host.init.mockResolvedValue({
+                ...wallet,
+                invoke: { ...wallet.invoke, getPaginatedBoosts },
+            });
+            const query = renderHook(() => useGetPaginatedManagedBoosts(category), { wrapper });
+            await waitFor(() => expect(query.result.current.isSuccess).toBe(true));
+            query.unmount();
+            getPaginatedBoosts.mockResolvedValue({
+                records: [{ uri: 'boost:new' }, { uri: 'boost:existing' }],
+                hasMore: false,
+            });
+            request.mockResolvedValueOnce('boost:new');
+            const { result } = renderHook(useCreate, { wrapper });
+            await act(async () => {
+                await result.current();
+            });
+            await waitFor(() => expect(client.isFetching()).toBe(0));
+
+            expect(getPaginatedBoosts).toHaveBeenCalledTimes(2);
+            expect(client.getQueryData(key)).toEqual({
+                pages: [
+                    { records: [{ uri: 'boost:new' }, { uri: 'boost:existing' }], hasMore: false },
+                ],
+                pageParams: [undefined],
+            });
+            expect(client.getQueryState(key)?.isInvalidated).toBe(false);
         }
     );
 
