@@ -670,7 +670,7 @@ the Linux browser catalog cannot establish native isolation.
 ### Engagement and QA
 
 The host optionally calls `onEvent` with `type` (`shown`, `action`, `dismissed`), `messageId`,
-`presentation`, `source` (`flag`, `deepLink`, `override`), and optional zero-based `actionIndex`,
+`presentation`, `source` (`flag`, `campaign`, `deepLink`, `override`), and optional zero-based `actionIndex`,
 `stepIndex`, `actionSource` (`step` or `message`), and `actionType`. An `actionIndex` indexes
 `steps[stepIndex].actions` when `actionSource` is `step`, otherwise `message.actions`.
 `deepLink` identifies `/m/` and `openMessage` requests. Bridge actions have no authored action index or action source.
@@ -848,3 +848,131 @@ analytics event; required campaigns restore the same content and in-flight actio
 Staged consent-flow index entries are excluded from credential-fact backfill until acceptance is
 final. Failed, revoked, or suspended acceptance cannot emit a claim event or count a provisional
 credential as owned. Successful acceptance updates facts before emitting the claim event.
+
+## Server campaigns (LC-2267)
+
+LearnCard App supplies `useMyCampaigns()` to the existing `InAppMessageHost` through
+`campaignSource`. There is one selection/presentation engine for LaunchDarkly and
+server campaigns. Other hosts may opt into the same source. No composer UI is
+required: the learner SDK methods (`getMyCampaigns`, `enrollInCampaign`, and
+`recordCampaignEvent`) are supplied by the campaign backend/network plugin.
+
+The query is enabled only for a signed-in network profile, keyed by network and
+active profile DID, with a five-minute stale time. Window focus and native resume
+refetch even fresh data. Explicit message entry also refreshes the feed before
+unknown-ID expiry, so a newly delivered campaign can resolve from a fresh cache. Switching profiles hides the previous feed immediately;
+late wallet resolution cannot send requests as the new profile. Paused/removed
+campaigns disappear on the next successful fetch. Local campaign time-window
+boundaries also stop presentation. Fetch failures leave the flag engine usable.
+
+Campaign messages merge with the selected flag feed (V2 or its existing legacy
+fallback). A campaign wins an ID collision; use distinct IDs to avoid accidentally
+replacing a flag message. Campaign IDs remain authoritative even if a message has
+another ID. Both sources share priority, credential facts, targeting, triggers,
+fatigue, and the presentation gate. Diagnostics distinguish `flag` and `campaign`.
+Server `firstShownAt` suppresses `once`; server `lastShownAt` supplements local
+`everyDays`. Local state still protects repeated/interrupted displays before the
+server round-trip completes. `always` and `session` remain device-local. This is
+shared fetched state, not an atomic cross-device reservation: simultaneously
+opening two devices before either reports an impression can show both.
+
+`ANNOUNCEMENT` push taps, inbox **View**, and foreground toast taps use encoded
+`/m/:campaignId`; missing or malformed IDs fall back to `/notifications`. Inbox
+View marks the card read. Native cold/warm URL handling and the authenticated
+message route remain shared with ordinary message links. Unknown IDs expire after
+feed loading, and known messages wait behind the presentation gate. Campaigns
+must be live, enabled, accessible to the profile, and include `inApp` to resolve
+through this learner feed. Draft/private administrator tests remain the composer
+layer's responsibility.
+
+Explicit `/m/` and `openMessage` requests bypass device targeting, triggers,
+frequency, and caps, as specified by LC-2251. They retain authentication, the
+presentation gate, enabled checks and presentation platform safety. A notification
+is **not** proof that its device rule passed. Lifecycle events retain
+`source: 'deepLink'` for explicit entry and additionally carry `campaignId`;
+ordinary delivery uses `source: 'campaign'`. Shown, successful non-dismiss actions
+(clicked), and explicit dismissals report only campaign ID and event kind through
+the SDK. Reporting is fire-and-forget; failures/rejections are logged without
+payloads or credential facts. Preview overrides never report campaign engagement.
+
+### Two-layer targeting and self-enrollment
+
+The server narrows the audience using metadata it already holds; the device
+checks private credential facts for normal automatic selection. For example, add
+an audience with `credentialsSentBy` for a dedicated university profile and
+`metadata: { kind: 'transcript' }`, then require on-device
+`{ credential: { issuers: ['did:example:university'], vcTypes: ['ClrCredential'] } }`.
+Issuers should send transcripts from a dedicated profile (or listing) and pass
+`metadata: { kind: 'transcript' }` to `sendCredential`.
+
+The existing admin SDK exposes these audience sources:
+
+```ts
+await learnCard.invoke.campaignsAddAudience({
+    campaignId,
+    source: { type: 'dids', dids: [learnerDid] },
+});
+await learnCard.invoke.campaignsAddAudience({
+    campaignId,
+    source: { type: 'emails', emails: ['learner@example.org'] },
+});
+await learnCard.invoke.campaignsAddAudience({
+    campaignId,
+    source: {
+        type: 'credentialsSentBy',
+        senderProfileId: 'university',
+        metadata: { kind: 'transcript' },
+        includePending: false,
+    },
+});
+await learnCard.invoke.campaignsAddAudience({
+    campaignId,
+    source: { type: 'credentialsSentBy', listingId, includePending: false },
+});
+await learnCard.invoke.campaignsAddAudience({
+    campaignId,
+    source: { type: 'inboxClaims', issuerDid },
+});
+await learnCard.invoke.campaignsAddAudience({
+    campaignId,
+    source: { type: 'boostRecipients', boostUri, includePending: false },
+});
+```
+
+Emails must be verified contacts; DID/email batches are bounded by the backend.
+See the [campaign backend guide](../../../../services/learn-card-network/brain-service/src/accesslayer/campaign/README.md)
+for preview, authoring, age policy, status transitions, and notification dispatch.
+The existing environment-variable guide documents backend queue configuration;
+this client integration adds no environment variables.
+
+For `selfEnroll` campaigns, a normal enabled device match enrolls the active
+profile even when frequency or fatigue suppresses presentation. In-flight calls
+are deduplicated; successful enrollment is remembered per network/profile/campaign
+in localStorage, with in-memory fallback. Failures do not persist success; a
+one-minute backoff allows a later evaluation/fetch to retry. Matching
+self-enrollment completes before reporting its engagement. Direct-entry bypass
+alone never enrolls a nonmatching profile. The backend may reject its engagement
+if it is not an audience member; there is no learner membership indicator in the
+current `MyCampaign` contract. Minor rejection remains server-side.
+
+No raw credentials, summaries, or predicate traces are sent. **Self-enrollment
+reveals that this profile matched campaign X.** Authors should choose rules that
+reveal no more than needed. Enrollment success markers contain only identity and
+campaign identifiers, never the facts used to match.
+
+### Validation and stack
+
+The PR stack is delivery/backend (`lc-2266`) → learner integration (`lc-2267`) →
+composer (`lc-2270`). Keep authoring UI and private admin test delivery in the top
+layer. Unit coverage exercises mixed-source selection, server frequency state,
+profile switching, interrupted enrollment, direct-entry attribution, presentation
+gating, and notification routing/cards/toasts.
+
+Before release, run the full Linux `lc verify` catalog plus a campaign pilot with
+authorized disposable admin/learner profiles. The default verification stack does
+not grant campaign administration; its existing campaign script proves SDK
+authorization boundaries, not positive campaign delivery. Final composer-stack
+QA must create a live campaign, match one learner and reject another, reload a
+second device to check shared frequency, pause/refetch, and test inbox/push entry
+on physical iOS and Android (cold start and already running). Do not infer FCM
+receipt or native OS handoff from mocked tests.

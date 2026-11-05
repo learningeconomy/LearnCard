@@ -195,6 +195,12 @@ configurable through `CAMPAIGN_DISPATCH_PAGE_SIZE` and `CAMPAIGN_DISPATCH_DELAY_
 A re-dispatch starts at the beginning, including newly added members with earlier IDs,
 and skips recipients with `notifiedAt`.
 
+Announcements include `metadata.campaignHasInApp`, true only for an enabled in-app
+channel on an ordinary delivery. Notification-only campaigns, disabled messages,
+and admin notification self-tests fall back to the inbox. Clients require an explicit
+true flag before routing to `/m/:id` or showing the inbox card's View action. Older
+stored announcements without the flag also stay in the inbox.
+
 The worker sends ANNOUNCEMENT via the existing notification queue. Each recipient is
 checked again before enqueue and before webhook delivery. Paused, archived, expired,
 deleted, no-longer-notify and age-ineligible campaigns/recipients stop future delivery;

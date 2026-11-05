@@ -20,6 +20,7 @@ import NotificationProfileApprovalCard from './NotificationProfileApprovalCard';
 import NotificationAppStoreCard from './NotificationAppStoreCard';
 import NotificationGuardianApprovalCard from './NotificationGuardianApprovalCard';
 import NotificationGuardianOutcomeCard from './NotificationGuardianOutcomeCard';
+import { NotificationAnnouncementCard } from './NotificationAnnouncementCard';
 import NotificationAppNotificationCard from './NotificationAppNotificationCard';
 import NotificationCredentialStatusCard from './NotificationCredentialStatusCard';
 import NotificationCredentialRefreshedCard from './NotificationCredentialRefreshedCard';
@@ -57,6 +58,7 @@ export const NOTIFICATION_TYPES = {
     GUARDIAN_APPROVED: 'GUARDIAN_APPROVED',
     GUARDIAN_REJECTED: 'GUARDIAN_REJECTED',
     APP_NOTIFICATION: 'APP_NOTIFICATION',
+    ANNOUNCEMENT: 'ANNOUNCEMENT',
     CREDENTIAL_REVOKED: 'CREDENTIAL_REVOKED',
     CREDENTIAL_SUSPENDED: 'CREDENTIAL_SUSPENDED',
     CREDENTIAL_UNSUSPENDED: 'CREDENTIAL_UNSUSPENDED',
@@ -66,7 +68,7 @@ export const NOTIFICATION_TYPES = {
 import { getLogger } from 'learn-card-base';
 const log = getLogger('notification-card-container');
 
-export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
+const StandardNotificationCardContainer: React.FC<NotificationCardProps> = ({
     className,
     notification: _notification,
 }) => {
@@ -463,5 +465,13 @@ export const NotificationCardContainer: React.FC<NotificationCardProps> = ({
         <div className={`${notificationCardStyles.fallbackShell} ${className}`}>Notification</div>
     );
 };
+
+// Campaign copy is authored; service senders need no public profile lookup.
+export const NotificationCardContainer: React.FC<NotificationCardProps> = props =>
+    props.notification.type === NOTIFICATION_TYPES.ANNOUNCEMENT ? (
+        <NotificationAnnouncementCard {...props} />
+    ) : (
+        <StandardNotificationCardContainer {...props} />
+    );
 
 export default NotificationCardContainer;
