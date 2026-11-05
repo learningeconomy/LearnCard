@@ -44,7 +44,10 @@ import { LearnCardRolesEnum, LearnCardRoles } from '../onboarding.helpers';
 import { getRoleTitle } from '../onboardingRoles/onboardingRolesI18n';
 import { isEUCountry, requiresEUParentalConsent } from '../onboardingNetworkForm/helpers/gdpr';
 import { getDefaultPrivacyPreferences, OnboardingPrivacyPreferences } from '../privacyPreferences';
-import { ProfileIDStateValidator } from '../onboardingNetworkForm/helpers/validators';
+import {
+    ProfileIDStateValidator,
+    isValidGuardianEmail,
+} from '../onboardingNetworkForm/helpers/validators';
 import { generateHandle, generateRandomSuffix } from './handleGenerator';
 import { inferCountryCode } from './countryInference';
 import { resolvePostOnboardingRedirect } from './postOnboardingRedirect';
@@ -60,6 +63,7 @@ import CountrySelectorModal from '../onboardingNetworkForm/components/CountrySel
 import LocationIcon from '../../svgs/LocationIcon';
 import UnderageModalContent from '../onboardingNetworkForm/components/UnderageModalContent';
 import GuardianLinkedModal from '../GuardianLinkedModal';
+import type { GuardianApprovalEmailStatus } from '@learncard/types';
 import { Confetti } from '../../../pages/issue/components/Confetti';
 
 import useLogout from '../../../hooks/useLogout';
@@ -289,6 +293,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
     const [euParentalConsentRequested, setEuParentalConsentRequested] = useState(false);
     const [guardianEmail, setGuardianEmail] = useState('');
+    const [guardianEmailTouched, setGuardianEmailTouched] = useState(false);
+    const [guardianEmailStatus, setGuardianEmailStatus] =
+        useState<GuardianApprovalEmailStatus>('unknown');
 
     const [name, setName] = useState(
         () => adapter.getCurrentUser()?.displayName?.trim() || currentUser?.name || ''
@@ -453,11 +460,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
         if (!dob || !country) return false;
         if (age === null) return false;
         if (age < 13) return true;
-        if (needsEUConsent && (!guardianEmail || !/^\S+@\S+\.\S+$/.test(guardianEmail)))
-            return false;
+        if (needsEUConsent && !isValidGuardianEmail(guardianEmail)) return false;
         if (needsUSConsent && !usMinorConsent) return false;
         return true;
     }, [dob, country, age, needsEUConsent, guardianEmail, needsUSConsent, usMinorConsent]);
+
+    const showGuardianEmailError =
+        needsEUConsent &&
+        guardianEmailTouched &&
+        guardianEmail.trim() !== '' &&
+        !isValidGuardianEmail(guardianEmail);
 
     const handleScreen1Continue = async () => {
         setError(null);
@@ -587,9 +599,19 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
 
                 if (euParentalConsentRequested && guardianEmail) {
                     try {
-                        await wallet.invoke.sendGuardianApprovalEmail({ guardianEmail });
+                        await wallet.invoke.sendGuardianApprovalEmail({
+                            guardianEmail: guardianEmail.trim(),
+                        });
+                        setGuardianEmailStatus('accepted');
                     } catch (err) {
                         log.error('Failed to send guardian approval email:', err);
+                        // The profile exists either way; report what the server recorded.
+                        try {
+                            const recorded = await wallet.invoke.getGuardianApprovalStatus();
+                            setGuardianEmailStatus(recorded.status);
+                        } catch {
+                            setGuardianEmailStatus('unknown');
+                        }
                     }
                 }
 
@@ -935,11 +957,39 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                             <input
                                                 id="onboarding-guardian-email"
                                                 type="email"
+                                                autoComplete="email"
                                                 value={guardianEmail}
-                                                onChange={e => setGuardianEmail(e.target.value)}
+                                                onChange={e => {
+                                                    const next = e.target.value;
+                                                    setGuardianEmail(next);
+                                                    if (!next.trim() || isValidGuardianEmail(next))
+                                                        setGuardianEmailTouched(false);
+                                                }}
+                                                onBlur={() => setGuardianEmailTouched(true)}
+                                                aria-invalid={showGuardianEmailError}
+                                                aria-describedby={
+                                                    showGuardianEmailError
+                                                        ? 'onboarding-guardian-email-error'
+                                                        : undefined
+                                                }
                                                 placeholder={m['onboarding.v2.guardianEmailHint']()}
-                                                className="w-full py-3 px-4 border border-grayscale-200/60 rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all"
+                                                className={`w-full py-3 px-4 border rounded-xl text-sm text-grayscale-900 placeholder:text-grayscale-400 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:border-transparent bg-white/50 transition-all ${
+                                                    showGuardianEmailError
+                                                        ? 'border-red-300'
+                                                        : 'border-grayscale-200/60'
+                                                }`}
                                             />
+                                            {showGuardianEmailError && (
+                                                <p
+                                                    id="onboarding-guardian-email-error"
+                                                    role="alert"
+                                                    className="mt-1.5 text-xs text-red-600"
+                                                >
+                                                    {m[
+                                                        'onboarding.consent.eu.error.invalidEmail'
+                                                    ]()}
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -955,7 +1005,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 aria-label={m['onboarding.v2.continue']()}
                                 onClick={handleScreen1Continue}
                                 disabled={isPreparingKey || !canContinueScreen1}
-                                className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md active:scale-[0.98]"
+                                className="w-full py-3.5 px-4 rounded-[20px] bg-grayscale-900 text-white font-medium text-base hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md active:scale-[0.98]"
                             >
                                 {isPreparingKey ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -1368,11 +1418,17 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onSuccess }) => {
                                 ? m['onboarding.v2.almostThere']()
                                 : m['onboarding.v2.youreIn']()}
                         </h1>
-                        <p className="text-base text-grayscale-600">
-                            {euParentalConsentRequested
-                                ? m['onboarding.v2.guardianEmailed']()
-                                : m['onboarding.v2.ready']({ brand: brandName })}
-                        </p>
+                        {!euParentalConsentRequested ? (
+                            <p className="text-base text-grayscale-600">
+                                {m['onboarding.v2.ready']({ brand: brandName })}
+                            </p>
+                        ) : (
+                            <p role="status" className="text-base text-grayscale-600">
+                                {guardianEmailStatus === 'accepted'
+                                    ? m['onboarding.v2.guardianEmailed']()
+                                    : m['onboarding.v2.guardianEmailNotSent']()}
+                            </p>
+                        )}
                     </div>
 
                     <div className="w-full max-w-[320px] bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-white/50 p-8 flex flex-col items-center gap-5 relative overflow-hidden mb-10">
