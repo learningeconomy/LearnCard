@@ -147,8 +147,6 @@ export type DashboardRecoveryPromptViewModel = {
 export type DashboardViewModel = {
     brandName: string;
     collection?: {
-        total: number | null;
-        skills: number | null;
         isError: boolean;
         isFetching: boolean;
         retry: () => unknown;
