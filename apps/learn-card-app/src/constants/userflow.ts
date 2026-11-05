@@ -21,6 +21,7 @@ const getUserflowToken = (): string => {
     try {
         return getResolvedTenantConfig().observability.userflowToken;
     } catch {
+        // Fail closed: an unresolved tenant must never use another project's token.
         return '';
     }
 };

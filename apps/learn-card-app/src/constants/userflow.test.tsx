@@ -6,6 +6,7 @@ import { renderHook } from '@testing-library/react';
 const state = vi.hoisted(() => ({
     analyticsEnabled: false,
     tenantEnabled: true,
+    tenantResolved: true,
     identityKey: null as string | null,
     getDID: vi.fn(async () => 'did:key:account'),
 }));
@@ -28,7 +29,10 @@ vi.mock('../components/share-links/sharePrivacy', () => ({
 }));
 vi.mock('../config/tenantConfigState', () => ({
     isTenantAnalyticsEnabled: () => state.tenantEnabled,
-    getResolvedTenantConfig: () => ({ observability: { userflowToken: 'tenant-token' } }),
+    getResolvedTenantConfig: () => {
+        if (!state.tenantResolved) throw new Error('Tenant config is unresolved');
+        return { observability: { userflowToken: 'tenant-token' } };
+    },
 }));
 
 import userflow from 'userflow.js';
@@ -42,6 +46,7 @@ describe('Userflow consent lifecycle', () => {
     beforeEach(() => {
         state.analyticsEnabled = false;
         state.tenantEnabled = true;
+        state.tenantResolved = true;
         state.identityKey = null;
         state.getDID.mockClear();
         userflowWindow.USERFLOWJS_QUEUE = [];
@@ -68,6 +73,15 @@ describe('Userflow consent lifecycle', () => {
         state.analyticsEnabled = true;
         state.identityKey = 'account/profile-a';
         state.tenantEnabled = false;
+        renderHook(() => useUserflowIdentify());
+        expect(document.querySelector('script[src*="userflow.com"]')).toBeNull();
+        expect(userflowWindow.USERFLOWJS_QUEUE).toHaveLength(0);
+    });
+
+    it('loads no fallback project if tenant lookup fails after consent resolves', () => {
+        state.analyticsEnabled = true;
+        state.identityKey = 'account/profile-a';
+        state.tenantResolved = false;
         renderHook(() => useUserflowIdentify());
         expect(document.querySelector('script[src*="userflow.com"]')).toBeNull();
         expect(userflowWindow.USERFLOWJS_QUEUE).toHaveLength(0);
