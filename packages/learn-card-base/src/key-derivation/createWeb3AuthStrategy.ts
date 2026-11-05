@@ -110,12 +110,11 @@ const trimTrailingSlashes = (url: string): string => {
 
 /**
  * Whether Web3Auth would derive a different key than the signed-in account's:
- * lca-api has an SSS record for it and does not confirm (`isWeb3AuthLogin`) that
- * this login is the one the account was migrated from Web3Auth through.
- * A missing record (a `null` body), a `web3auth` record (legacy or mid-migration)
- * and a migration login all keep Web3Auth, which derives the account's existing
- * key. lca-api answers a missing record with `null`, never 404, so a 404 means a
- * wrong URL.
+ * lca-api has a key record for this login and does not confirm
+ * (`isWeb3AuthLogin`) that Web3Auth through this login derives that account's
+ * key. That covers SSS accounts and logins linked to a mid-migration account by
+ * PIN sign-in. Only a missing record (a `null` body) skips the check. lca-api
+ * answers a missing record with `null`, never 404, so a 404 means a wrong URL.
  *
  * Anything that cannot be read fails closed. A device the browser reports as
  * offline gets a network error (the offline UI owns it); a timeout or an
@@ -171,16 +170,16 @@ const web3AuthWouldSplitAccount = async (
             throw new Error(LOOKUP_FAILED_MESSAGE);
         }
 
-        // The body includes the SSS auth share; only these two fields are read.
+        // The body includes the SSS auth share; only `isWeb3AuthLogin` is read.
         const data = (await response.json().catch(() => undefined)) as
-            { keyProvider?: unknown; isWeb3AuthLogin?: unknown } | null | undefined;
+            { isWeb3AuthLogin?: unknown } | null | undefined;
         if (data === undefined) {
             log.warn('Web3Auth account lookup unreadable', { timedOut, timeoutMs });
             throw new Error(LOOKUP_FAILED_MESSAGE);
         }
 
-        // An older lca-api omits `isWeb3AuthLogin`: every SSS record then stops.
-        return data?.keyProvider === 'sss' && data.isWeb3AuthLogin !== true;
+        // An older lca-api omits `isWeb3AuthLogin`: every existing record then stops.
+        return data !== null && data.isWeb3AuthLogin !== true;
     } finally {
         clearTimeout(timer);
     }
@@ -631,7 +630,9 @@ export const createWeb3AuthStrategy = (
                 lookupFailures = 0;
                 if (wouldSplit) {
                     forgetCredentials();
-                    log.warn('Web3Auth sign-in stopped: SSS account outside its migration login');
+                    log.warn(
+                        'Web3Auth sign-in stopped: this login does not derive the account key'
+                    );
                     throw new AccountUsesNewerSignInError();
                 }
             }

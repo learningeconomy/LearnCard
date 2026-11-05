@@ -829,18 +829,45 @@ const getAuthProviderFilter = (authProvider: AuthProviderMapping): Filter<MongoU
 });
 
 /**
- * Whether Web3Auth, signing in through `authProvider`, derives this account's key:
- * the account was migrated from Web3Auth and `authProvider` is the login it was
- * migrated through. Any other login (added by PIN sign-in, recovery or a revoke)
- * derives a different Web3Auth key, i.e. a different, empty identity.
+ * Whether Web3Auth, signing in through `authProvider`, derives this account's key.
+ * Web3Auth derives a key from the login alone, so this holds only for the login
+ * the account's key came from; any other login (added by PIN sign-in, recovery or
+ * a revoke) derives a different, empty identity. Web3Auth-mode clients stop every
+ * existing account for which this is false.
+ *
+ * - A recorded `web3AuthLogin` decides it: true only for that login, on a record
+ *   that is still Web3Auth (mid-migration) or finished migrating from it.
+ * - Without one, only a still-Web3Auth record (e.g. a migration that started
+ *   before logins were recorded) qualifies, and only through its sole login at
+ *   security epoch 0: the same evidence `/keys/migrate` requires to record it.
+ *   A migrated or SSS-native record without one is never confirmed.
  */
 export const isWeb3AuthLogin = (
-    userKey: Pick<MongoUserKeyType, 'migratedFromWeb3Auth' | 'web3AuthLogin'>,
+    userKey: Pick<
+        MongoUserKeyType,
+        'keyProvider' | 'migratedFromWeb3Auth' | 'web3AuthLogin' | 'authProviders' | 'securityEpoch'
+    >,
     authProvider: AuthProviderMapping
-): boolean =>
-    userKey.migratedFromWeb3Auth === true &&
-    userKey.web3AuthLogin?.type === authProvider.type &&
-    userKey.web3AuthLogin?.id === authProvider.id;
+): boolean => {
+    const isThisLogin = (login: AuthProviderMapping | undefined): boolean =>
+        login?.type === authProvider.type && login?.id === authProvider.id;
+    const stillWeb3Auth = (userKey.keyProvider ?? 'sss') === 'web3auth';
+
+    if (userKey.web3AuthLogin) {
+        return (
+            isThisLogin(userKey.web3AuthLogin) &&
+            (stillWeb3Auth || userKey.migratedFromWeb3Auth === true)
+        );
+    }
+
+    const logins = userKey.authProviders ?? [];
+    return (
+        stillWeb3Auth &&
+        logins.length === 1 &&
+        isThisLogin(logins[0]) &&
+        getSecurityEpoch(userKey) === 0
+    );
+};
 
 /** The account's security epoch; a legacy record without the field is at epoch 0. */
 export const getSecurityEpoch = (userKey: Pick<MongoUserKeyType, 'securityEpoch'>): number =>
@@ -1702,7 +1729,6 @@ export const purgeExpiredProvisionalMigrationByAuthProvider = async (
                 shareUpdatedAt: '',
                 sssActivationState: '',
                 provisionalCreatedAt: '',
-                web3AuthLogin: '',
             },
         }
     );

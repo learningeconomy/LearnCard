@@ -482,7 +482,10 @@ describe('Web3Auth sign-in account lookup', () => {
 
     it.each([
         ['no record', () => respond(200, null)],
-        ['a legacy or mid-migration record', () => respond(200, { keyProvider: 'web3auth' })],
+        [
+            'a mid-migration record through its migration login',
+            () => respond(200, { keyProvider: 'web3auth', isWeb3AuthLogin: true }),
+        ],
         [
             'an SSS account signing in through its migration login',
             () => respond(200, { keyProvider: 'sss', isWeb3AuthLogin: true }),
@@ -498,8 +501,13 @@ describe('Web3Auth sign-in account lookup', () => {
     it.each([
         ['another login (isWeb3AuthLogin: false)', { keyProvider: 'sss', isWeb3AuthLogin: false }],
         ['an older lca-api (no isWeb3AuthLogin)', { keyProvider: 'sss' }],
+        [
+            'a login PIN-linked to a mid-migration record',
+            { keyProvider: 'web3auth', isWeb3AuthLogin: false },
+        ],
+        ['a mid-migration record from an older lca-api', { keyProvider: 'web3auth' }],
         ['a non-boolean isWeb3AuthLogin', { keyProvider: 'sss', isWeb3AuthLogin: 'true' }],
-    ])('stops an SSS account for %s', async (_label, body) => {
+    ])('stops an existing account for %s', async (_label, body) => {
         fetchMock.mockResolvedValueOnce(respond(200, body));
         const strategy = createWeb3AuthStrategy(lookupConfig);
 

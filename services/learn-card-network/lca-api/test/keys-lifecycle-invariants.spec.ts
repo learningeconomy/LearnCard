@@ -11,6 +11,7 @@ import {
     activateUserKeyByAuthProvider,
     createUserKeysIndexes,
     getUserKeysCollection,
+    linkAuthProviderKeepingShares,
     PROVISIONAL_MIGRATION_TTL_MS,
     upsertUserKeyByAuthProvider,
     UserKeyVersionConflictError,
@@ -563,7 +564,8 @@ describe('P0-1 provisional SSS activation', () => {
             expect(purged?.sssActivationState).toBeUndefined();
             expect(purged?.provisionalCreatedAt).toBeUndefined();
             expect(purged?.recoveryMethods).toEqual([]);
-            expect(purged?.web3AuthLogin).toBeUndefined();
+            // The migration login stays known, so the original login still signs in.
+            expect(purged?.web3AuthLogin).toEqual({ type: 'firebase', id: uid });
             expect(purged?.previousAuthShares).toEqual([]);
         } finally {
             await collection.deleteMany({ 'contactMethod.value': email });
@@ -965,6 +967,89 @@ describe('Web3Auth migration login', () => {
             await collection.deleteMany({ 'contactMethod.value': email });
         }
     });
+
+    it('refuses a login PIN-linked to a mid-migration account whose activation failed', async () => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `pin-linked-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const linkedUid = `linked-${suffix}`;
+        const token = makeMockToken(email, uid);
+        const { learnCard } = await getUser('1'.repeat(64));
+        const collection = getUserKeysCollection();
+        const caller = getClient({ did: learnCard.id.did(), isChallengeValid: true });
+
+        try {
+            await caller.keys.storeAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+                primaryDid: learnCard.id.did(),
+                authShare: { encryptedData: 'share', encryptedDek: '', iv: '' },
+            });
+            await caller.keys.markMigrated({ authToken: token, providerType: 'firebase' });
+            // PIN saved, activation never ran: the record stays provisional 'web3auth'.
+            const record = await collection.findOne({ 'contactMethod.value': email });
+            expect(record?.keyProvider).toBe('web3auth');
+
+            await expect(
+                linkAuthProviderKeepingShares({
+                    oldAuthProvider: { type: 'firebase', id: uid },
+                    newAuthProvider: { type: 'firebase', id: linkedUid },
+                    primaryDid: learnCard.id.did(),
+                    shareVersion: record!.shareVersion ?? 1,
+                    securityEpoch: 0,
+                })
+            ).resolves.not.toBeNull();
+
+            const viaLinked = await getClient().keys.getAuthShare({
+                authToken: makeMockToken(email, linkedUid),
+                providerType: 'firebase',
+            });
+            expect(viaLinked?.keyProvider).toBe('web3auth');
+            expect(viaLinked?.isWeb3AuthLogin).toBe(false);
+
+            const viaOriginal = await getClient().keys.getAuthShare({
+                authToken: token,
+                providerType: 'firebase',
+            });
+            expect(viaOriginal?.isWeb3AuthLogin).toBe(true);
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+
+    it.each([
+        ['its sole login', {}, true],
+        ['one of two logins', { extraLogin: true }, false],
+        ['a rotated security epoch', { securityEpoch: 1 }, false],
+    ])(
+        'confirms an unrecorded mid-migration record only through %s',
+        async (_label, setup, expected) => {
+            const suffix = `${Date.now()}-${randomUUID()}`;
+            const email = `unrecorded-${suffix}@example.com`;
+            const uid = `uid-${suffix}`;
+            const { learnCard } = await getUser('e'.repeat(64));
+            const collection = getUserKeysCollection();
+            const key = makeUserKey(email, uid, learnCard.id.did());
+
+            key.keyProvider = 'web3auth';
+            key.sssActivationState = 'provisional';
+            key.provisionalCreatedAt = new Date();
+            if ('extraLogin' in setup)
+                key.authProviders.push({ type: 'firebase', id: `x-${suffix}` });
+            if ('securityEpoch' in setup) key.securityEpoch = setup.securityEpoch;
+            await collection.insertOne(key);
+
+            try {
+                const result = await getClient().keys.getAuthShare({
+                    authToken: makeMockToken(email, uid),
+                    providerType: 'firebase',
+                });
+                expect(result?.isWeb3AuthLogin).toBe(expected);
+            } finally {
+                await collection.deleteMany({ 'contactMethod.value': email });
+            }
+        }
+    );
 
     it('never confirms an account created with SSS', async () => {
         const suffix = `${Date.now()}-${randomUUID()}`;

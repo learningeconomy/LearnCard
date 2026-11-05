@@ -1060,9 +1060,9 @@ export const keysRouter = t.router({
                     priorEscrowEnrollment: z.boolean(),
                     sssActivationState: z.enum(['provisional', 'active']),
                     /**
-                     * This sign-in's login is the one the account was migrated from
-                     * Web3Auth through, so a Web3Auth-mode client derives the account's
-                     * own key. Web3Auth-mode clients stop any other SSS sign-in.
+                     * Web3Auth, signing in through this login, derives this account's
+                     * key (see `isWeb3AuthLogin`). Web3Auth-mode clients stop any
+                     * existing account where this is false.
                      */
                     isWeb3AuthLogin: z.boolean(),
                 })
