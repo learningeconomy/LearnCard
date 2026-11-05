@@ -14,6 +14,10 @@ const mocks = vi.hoisted(() => ({
     setCurrentUser: vi.fn(),
     track: vi.fn(),
     refetch: vi.fn(),
+    country: 'US',
+    dob: '1990-01-01',
+    sendGuardianApprovalEmail: vi.fn(),
+    getGuardianApprovalStatus: vi.fn(),
 }));
 const stableAdapter = vi.hoisted(() => ({
     getCurrentUser: () => ({ displayName: mocks.authName }),
@@ -30,6 +34,8 @@ vi.mock('learn-card-base', () => ({
             invoke: {
                 createProfile: mocks.createProfile,
                 resetLCAClient: vi.fn(),
+                sendGuardianApprovalEmail: mocks.sendGuardianApprovalEmail,
+                getGuardianApprovalStatus: mocks.getGuardianApprovalStatus,
             },
         }),
     }),
@@ -64,7 +70,10 @@ vi.mock('../../../providers/AuthCoordinatorProvider', () => ({
 vi.mock('@learncard/sss-key-manager', () => ({ generateEd25519PrivateKey: vi.fn() }));
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ resetQueries: vi.fn() }) }));
 vi.mock('react-router-dom', () => ({ useHistory: () => ({ replace: vi.fn() }) }));
-vi.mock('../../../i18n', () => ({ useLocale: () => 'en' }));
+vi.mock('../../../i18n', async importOriginal => ({
+    ...(await importOriginal<typeof import('../../../i18n')>()),
+    useLocale: () => 'en',
+}));
 vi.mock('../../../hooks/useLogout', () => ({ default: () => ({ handleLogout: vi.fn() }) }));
 vi.mock('../../../hooks/useAutoConsentLearnCardAi', () => ({
     default: () => ({ autoConsentLearnCardAi: vi.fn() }),
@@ -80,11 +89,14 @@ vi.mock('@analytics', () => ({
     getOrCreateSignupFlow: () => ({ flowId: 'test-flow', startedAtMs: Date.now(), isNew: false }),
     clearSignupFlow: vi.fn(),
 }));
-vi.mock('./countryInference', () => ({ inferCountryCode: () => 'US' }));
+vi.mock('./countryInference', () => ({ inferCountryCode: () => mocks.country }));
 vi.mock('./BirthdayPicker', () => ({
     default: ({ onChange }: { onChange: (value: string) => void }) => (
-        <button onClick={() => onChange('1990-01-01')}>Set birthday</button>
+        <button onClick={() => onChange(mocks.dob)}>Set birthday</button>
     ),
+}));
+vi.mock('../onboardingNetworkForm/components/EUParentalConsentModalContent', () => ({
+    default: () => null,
 }));
 vi.mock('./RecoveryPinStep', () => ({ RecoveryPinStep: () => null }));
 vi.mock('../onboardingNetworkForm/components/CountrySelectorModal', () => ({
@@ -115,6 +127,8 @@ beforeEach(() => {
     mocks.loginType = 'apple';
     mocks.authName = '';
     mocks.localName = '';
+    mocks.country = 'US';
+    mocks.dob = '1990-01-01';
     mocks.createProfile.mockResolvedValue('did:web:example.com');
 });
 
@@ -211,6 +225,219 @@ describe('Apple profile onboarding', () => {
                 })
             )
         );
+    });
+
+    describe('EU guardian approval email (LC-2261)', () => {
+        const fifteenYearsAgo = (): string => {
+            const date = new Date();
+            date.setFullYear(date.getFullYear() - 15);
+            return date.toISOString().slice(0, 10);
+        };
+
+        const completeAsEUTeen = async (): Promise<void> => {
+            mocks.country = 'DE';
+            mocks.dob = fifteenYearsAgo();
+            const view = render(<OnboardingFlow />);
+            fireEvent.click(screen.getByText('Set birthday'));
+            const guardianInput = view.container.querySelector(
+                '#onboarding-guardian-email'
+            ) as HTMLInputElement;
+            fireEvent.change(guardianInput, { target: { value: 'guardian@example.com' } });
+            fireEvent.click(screen.getByRole('button', { name: m['onboarding.v2.continue']() }));
+            await screen.findByLabelText(/Full Name/);
+            await waitFor(() => expect(createButton()).toBeEnabled());
+            fireEvent.click(createButton());
+            await screen.findByText(m['onboarding.v2.almostThere']());
+        };
+
+        it('confirms acceptance only when the provider accepted the email', async () => {
+            mocks.sendGuardianApprovalEmail.mockResolvedValue({
+                message: 'ok',
+                status: 'accepted',
+            });
+
+            await completeAsEUTeen();
+
+            expect(mocks.sendGuardianApprovalEmail).toHaveBeenCalledWith({
+                guardianEmail: 'guardian@example.com',
+            });
+            expect(screen.getByText(m['onboarding.v2.guardianEmailed']())).toBeInTheDocument();
+            expect(
+                screen.queryByRole('button', { name: m['common.tryAgain']() })
+            ).not.toBeInTheDocument();
+        });
+
+        it('does not claim the email was sent when it failed, and shows no retry controls', async () => {
+            mocks.sendGuardianApprovalEmail.mockRejectedValue(new Error('provider down'));
+            mocks.getGuardianApprovalStatus.mockResolvedValue({
+                pendingApproval: true,
+                status: 'failed',
+                guardianEmail: 'guardian@example.com',
+                attemptsRemaining: 4,
+            });
+
+            await completeAsEUTeen();
+
+            expect(
+                await screen.findByText(m['onboarding.v2.guardianEmailNotSent']())
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByText(m['onboarding.v2.guardianEmailed']())
+            ).not.toBeInTheDocument();
+            expect(
+                screen.queryByRole('button', { name: m['common.tryAgain']() })
+            ).not.toBeInTheDocument();
+            expect(
+                screen.queryByRole('button', { name: m['onboarding.consent.eu.sendRequest']() })
+            ).not.toBeInTheDocument();
+        });
+
+        it('uses the same accurate copy when the outcome is unknown', async () => {
+            mocks.sendGuardianApprovalEmail.mockRejectedValue(new Error('network'));
+            mocks.getGuardianApprovalStatus.mockRejectedValue(new Error('network'));
+
+            await completeAsEUTeen();
+
+            expect(
+                await screen.findByText(m['onboarding.v2.guardianEmailNotSent']())
+            ).toBeInTheDocument();
+            expect(
+                screen.queryByText(m['onboarding.v2.guardianEmailed']())
+            ).not.toBeInTheDocument();
+        });
+
+        it.each([
+            'guardian',
+            'guardian@',
+            '@example.com',
+            'guardian@example',
+            'guard ian@example.com',
+        ])(
+            'blocks continuing with the malformed guardian email %j and explains why',
+            invalidEmail => {
+                mocks.country = 'DE';
+                mocks.dob = fifteenYearsAgo();
+                const view = render(<OnboardingFlow />);
+                fireEvent.click(screen.getByText('Set birthday'));
+                const guardianInput = view.container.querySelector(
+                    '#onboarding-guardian-email'
+                ) as HTMLInputElement;
+
+                fireEvent.change(guardianInput, { target: { value: invalidEmail } });
+                fireEvent.blur(guardianInput);
+
+                expect(
+                    screen.getByRole('button', { name: m['onboarding.v2.continue']() })
+                ).toBeDisabled();
+                expect(screen.getByRole('alert')).toHaveTextContent(
+                    m['onboarding.consent.eu.error.invalidEmail']()
+                );
+                expect(guardianInput).toHaveAttribute('aria-invalid', 'true');
+
+                fireEvent.change(guardianInput, { target: { value: 'guardian@example.com' } });
+
+                expect(guardianInput).toHaveValue('guardian@example.com');
+                expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+                expect(
+                    screen.getByRole('button', { name: m['onboarding.v2.continue']() })
+                ).toBeEnabled();
+            }
+        );
+
+        describe('validation timing', () => {
+            const renderGuardianStep = (): HTMLInputElement => {
+                mocks.country = 'DE';
+                mocks.dob = fifteenYearsAgo();
+                const view = render(<OnboardingFlow />);
+                fireEvent.click(screen.getByText('Set birthday'));
+                return view.container.querySelector(
+                    '#onboarding-guardian-email'
+                ) as HTMLInputElement;
+            };
+            const type = (input: HTMLInputElement, value: string): void => {
+                fireEvent.change(input, { target: { value } });
+            };
+            const continueButton = (): HTMLElement =>
+                screen.getByRole('button', { name: m['onboarding.v2.continue']() });
+
+            it('does not show the error while the user is still typing', () => {
+                const input = renderGuardianStep();
+
+                type(input, 'guardian');
+                type(input, 'guardian@');
+
+                expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+                expect(input).toHaveAttribute('aria-invalid', 'false');
+                expect(continueButton()).toBeDisabled();
+            });
+
+            it('shows the error when the field loses focus', () => {
+                const input = renderGuardianStep();
+
+                type(input, 'guardian@');
+                fireEvent.blur(input);
+
+                expect(screen.getByRole('alert')).toHaveTextContent(
+                    m['onboarding.consent.eu.error.invalidEmail']()
+                );
+                expect(screen.getByRole('alert')).toHaveClass('text-red-600');
+                expect(input).toHaveAttribute('aria-invalid', 'true');
+            });
+
+            it('keeps the error while still invalid and clears it as soon as the email is valid', () => {
+                const input = renderGuardianStep();
+
+                type(input, 'guardian@');
+                fireEvent.blur(input);
+                type(input, 'guardian@example');
+                expect(screen.getByRole('alert')).toBeInTheDocument();
+
+                type(input, 'guardian@example.com');
+                expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+                expect(continueButton()).toBeEnabled();
+
+                type(input, 'guardian@example.co m');
+                expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+                fireEvent.blur(input);
+                expect(screen.getByRole('alert')).toBeInTheDocument();
+            });
+
+            it('does not advance when the disabled Continue button is clicked', () => {
+                const input = renderGuardianStep();
+
+                type(input, 'guardian@');
+                expect(continueButton()).toBeDisabled();
+                fireEvent.click(continueButton());
+
+                expect(screen.queryByLabelText(/Full Name/)).not.toBeInTheDocument();
+                expect(input).toBeInTheDocument();
+            });
+        });
+
+        it('sends a trimmed guardian address', async () => {
+            mocks.sendGuardianApprovalEmail.mockResolvedValue({
+                message: 'ok',
+                status: 'accepted',
+            });
+            mocks.country = 'DE';
+            mocks.dob = fifteenYearsAgo();
+            const view = render(<OnboardingFlow />);
+            fireEvent.click(screen.getByText('Set birthday'));
+            fireEvent.change(
+                view.container.querySelector('#onboarding-guardian-email') as HTMLInputElement,
+                { target: { value: '  guardian@example.com  ' } }
+            );
+            fireEvent.click(screen.getByRole('button', { name: m['onboarding.v2.continue']() }));
+            await screen.findByLabelText(/Full Name/);
+            await waitFor(() => expect(createButton()).toBeEnabled());
+            fireEvent.click(createButton());
+
+            await waitFor(() =>
+                expect(mocks.sendGuardianApprovalEmail).toHaveBeenCalledWith({
+                    guardianEmail: 'guardian@example.com',
+                })
+            );
+        });
     });
 
     it.each(['google', 'email', 'sms'])('still requires a name for %s sign-in', async loginType => {
