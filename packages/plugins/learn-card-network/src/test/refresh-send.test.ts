@@ -221,7 +221,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
             recipient: 'userb',
             templateUri: 'did:web:network.example:boost:1',
-            templateData: { name: 'Refreshable Badge' },
+            display: undefined,
         });
         expect(client.credentialRefresh.allocateCredentialRefresh.mutate).not.toHaveBeenCalled();
 
@@ -273,7 +273,8 @@ describe('unified send with refresh: true (managed branch)', () => {
 
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
             recipient: 'userb',
-            template,
+            templateUri: undefined,
+            display: undefined,
             contractUri: 'contract:1',
             credentialId: 'urn:uuid:inline-credential-id',
         });
@@ -420,7 +421,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(forwarded.signedCredential.credentialSubject.id).toEqual(defaultPrepared.holderDid);
     });
 
-    it('includes claim data and integration in the keyed preparation fingerprint', async () => {
+    it('includes public integration metadata but not claim data in preparation', async () => {
         const client = getMockClient();
         const learnCard = getMockIssuingLearnCard();
         const plugin = await getPlugin(learnCard, client);
@@ -435,10 +436,12 @@ describe('unified send with refresh: true (managed branch)', () => {
         });
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledWith(
             expect.objectContaining({
-                templateData: { grade: 'A' },
                 integrationId: 'integration-1',
                 idempotencyKey: 'award-1',
             })
+        );
+        expect(client.boost.prepareRefreshableSend.mutate.mock.calls[0]?.[0]).not.toHaveProperty(
+            'templateData'
         );
     });
 

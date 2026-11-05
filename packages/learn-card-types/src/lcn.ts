@@ -477,6 +477,14 @@ export const AutoBoostConfigValidator = z.object({
 });
 export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
 
+/** Public metadata: never include private credential claims in these fields. */
+export const CredentialDisplayValidator = z.object({
+    name: z.string().trim().min(1).max(280).optional(),
+    category: z.string().max(280).optional(),
+    image: z.string().url().optional(),
+});
+export type CredentialDisplay = z.infer<typeof CredentialDisplayValidator>;
+
 export const SendBoostTemplateValidator = BoostValidator.partial()
     .omit({ uri: true, claimPermissions: true })
     .extend({
@@ -544,6 +552,9 @@ export const SendBoostInputValidator = z
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
         signedCredential: VCValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe(
+            'Public display metadata for managed and signed-only sends. Nothing is inferred from credential content; omitted names use generic copy.'
+        ),
         options: SendOptionsValidator.optional().describe(
             'Options for email/phone recipients (Universal Inbox)'
         ),
@@ -617,6 +628,7 @@ export const PrepareRefreshableSendInputValidator = z
         recipient: z.string(),
         templateUri: z.string().optional(),
         template: SendBoostTemplateValidator.optional(),
+        display: CredentialDisplayValidator.optional().describe('Public display metadata only'),
         contractUri: z.string().optional(),
         templateData: z.record(z.string(), z.unknown()).optional(),
         integrationId: z.string().optional(),
@@ -624,8 +636,8 @@ export const PrepareRefreshableSendInputValidator = z
         credentialId: z.string().min(1).optional(),
         idempotencyKey: z.string().min(1).max(200).optional(),
     })
-    .refine(data => Boolean(data.templateUri) !== Boolean(data.template), {
-        message: 'Provide exactly one of templateUri or template.',
+    .refine(data => !(data.templateUri && data.template), {
+        message: 'Provide at most one of templateUri or template.',
     });
 export type PrepareRefreshableSendInput = z.infer<typeof PrepareRefreshableSendInputValidator>;
 

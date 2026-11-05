@@ -2053,7 +2053,21 @@ export async function getLearnCardNetworkPlugin(
                     // Inbox credentials stay unsigned until a verified claimant binds their DID.
                     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.recipient);
                     const isPhone = /^\+?[\d\s-]{10,}$/.test(input.recipient.replace(/[\s-]/g, ''));
-                    if (isEmail || isPhone) return client.boost.send.mutate(input);
+                    const request = {
+                        type: 'boost' as const,
+                        recipient: input.recipient,
+                        templateUri: input.templateUri,
+                        template: input.template,
+                        signedCredential: input.signedCredential,
+                        display: input.display,
+                        contractUri: input.contractUri,
+                        templateData: input.templateData,
+                        integrationId: input.integrationId,
+                        options: input.options,
+                        idempotencyKey: input.idempotencyKey,
+                        refresh: true,
+                    };
+                    if (isEmail || isPhone) return client.boost.send.mutate(request);
 
                     const canIssueLocally = 'issueCredential' in _learnCard.invoke;
 
@@ -2068,6 +2082,12 @@ export async function getLearnCardNetworkPlugin(
                         // in ONE step. With an idempotencyKey that step also makes the whole
                         // call retryable; `completed` means this key already delivered.
                         let boost: UnsignedVC;
+
+                        if (input.template?.status === 'DRAFT') {
+                            throw new Error(
+                                'Draft Boosts cannot be sent. Publish the template first.'
+                            );
+                        }
 
                         if (input.templateUri) {
                             const result = await getBoostTemplateForIssuance(
@@ -2090,11 +2110,9 @@ export async function getLearnCardNetworkPlugin(
 
                         const prepared = await client.boost.prepareRefreshableSend.mutate({
                             recipient: input.recipient,
-                            ...(input.templateUri
-                                ? { templateUri: input.templateUri }
-                                : { template: input.template! }),
+                            templateUri: input.templateUri,
+                            display: input.display,
                             ...(input.contractUri ? { contractUri: input.contractUri } : {}),
-                            ...(input.templateData ? { templateData: input.templateData } : {}),
                             ...(input.integrationId ? { integrationId: input.integrationId } : {}),
                             ...(boost.id ? { credentialId: boost.id } : {}),
                             ...(input.idempotencyKey
@@ -2170,8 +2188,12 @@ export async function getLearnCardNetworkPlugin(
                         // signed service, re-validates ownership/holder/proof, records the
                         // idempotency intent, and returns the canonical receipt.
                         return client.boost.send.mutate({
-                            ...input,
-                            template: undefined,
+                            type: 'boost',
+                            recipient: input.recipient,
+                            display: input.display,
+                            contractUri: input.contractUri,
+                            integrationId: input.integrationId,
+                            idempotencyKey: input.idempotencyKey,
                             templateUri: prepared.boostUri,
                             signedCredential,
                             refresh: true,
@@ -2182,7 +2204,7 @@ export async function getLearnCardNetworkPlugin(
                     // which is forwarded untouched — its proof is never mutated):
                     // delegate the unchanged refresh request to the server signing
                     // authority path.
-                    return client.boost.send.mutate(input);
+                    return client.boost.send.mutate(request);
                 }
 
                 if (input.type === 'boost') {

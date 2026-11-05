@@ -215,7 +215,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
     });
 
     describe('inline refresh preparation', () => {
-        it('preserves metadata, permissions, skills and contract linkage, then reuses one boost', async () => {
+        it('keeps only public display and contract linkage, then reuses one boost', async () => {
             const contractUri = await issuer.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: {
                     read: { anonymize: false },
@@ -244,6 +244,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             const prepared = await issuer.clients.fullAuth.boost.prepareRefreshableSend({
                 recipient: HOLDER_PROFILE_ID,
                 contractUri,
+                display: { name: 'Prepared Boost', category: 'TestBoosts' },
                 template: {
                     credential: testUnsignedBoost,
                     name: 'Prepared Boost',
@@ -258,11 +259,12 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(boost).toMatchObject({
                 name: 'Prepared Boost',
                 category: 'TestBoosts',
-                claimPermissions: { canView: true },
             });
+            expect(boost.boost.display).toEqual({ name: 'Prepared Boost', category: 'TestBoosts' });
+            expect(boost.boost.credentialSubject).toEqual({ id: 'did:example:123' });
             expect(
                 await issuer.clients.fullAuth.boost.getBoostSkills({ uri: prepared.boostUri })
-            ).toEqual([expect.objectContaining({ id: 'skill-1', proficiencyLevel: 2 })]);
+            ).toEqual([]);
             const links = await runQuery(
                 'MATCH (:ConsentFlowContract)-[:RELATED_TO]->(b:Boost {name: $name}) RETURN count(b) AS count',
                 { name: 'Prepared Boost' }
@@ -614,7 +616,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             expect(await countNodes('CredentialActivity')).toBe(1);
         });
 
-        it.each(['templateData', 'integrationId', 'credentialId'] as const)(
+        it.each(['integrationId'] as const)(
             'rejects changing %s after preparation without allocating again',
             async field => {
                 const input = {
@@ -642,7 +644,7 @@ describe('Unified send with managed refresh (LC-2198)', () => {
             }
         );
 
-        it.each(['templateData', 'integrationId'] as const)(
+        it.each(['integrationId'] as const)(
             'rejects changing %s after delivery instead of returning the old receipt',
             async field => {
                 const input = {
@@ -1346,10 +1348,45 @@ describe('Unified send with managed refresh (LC-2198)', () => {
 
             expect(result.refresh).toBeDefined();
             expect(storedTemplate.refreshService).toBeUndefined();
+            expect(storedTemplate.display).toEqual({});
+            expect(storedTemplate.name).toBe('Credential');
+            expect(storedTemplate.credentialSubject).toEqual({ id: 'did:example:123' });
         });
     });
 
     describe('normal sends are unchanged', () => {
+        it.each([undefined, 'private-display-key'])(
+            'stores only public display for inline refresh (%s)',
+            async idempotencyKey => {
+                const display = {
+                    name: 'Public credential',
+                    category: 'Achievement',
+                    image: 'https://example.com/icon.png',
+                };
+                const result = await issuer.clients.fullAuth.boost.send({
+                    type: 'boost',
+                    recipient: HOLDER_PROFILE_ID,
+                    template: { credential: testUnsignedBoost, name: 'PRIVATE TEMPLATE TITLE' },
+                    display,
+                    refresh: true,
+                    idempotencyKey,
+                });
+                const stored = await issuer.clients.fullAuth.boost.getBoost({ uri: result.uri });
+                expect(stored.name).toBe(display.name);
+                expect(stored.boost).toEqual({
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    type: ['VerifiableCredential'],
+                    issuer: getDidWeb(DOMAIN, ISSUER_PROFILE_ID),
+                    credentialSubject: { id: 'did:example:123' },
+                    name: display.name,
+                    display,
+                });
+                expect(JSON.stringify(stored)).not.toContain('PRIVATE TEMPLATE TITLE');
+                const signedInput = signingAuthorityMocks.issueCredential.mock.calls[0]?.[1];
+                expect(signedInput.name).toBe(testUnsignedBoost.name);
+            }
+        );
+
         it('returns no refresh receipt when refresh is omitted', async () => {
             const boostUri = await issuer.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,

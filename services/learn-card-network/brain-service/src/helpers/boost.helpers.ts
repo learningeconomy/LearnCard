@@ -363,11 +363,21 @@ export const prepareCredentialFromBoost = async (
         recipientDid?: string;
         recipientName?: string;
         issuerDid?: string;
+        /** Transient issuance body for a display-only managed anchor; never persisted. */
+        credential?: UnsignedVC | VC;
     } = {}
 ): Promise<UnsignedVC> => {
     const { templateData, recipientDid, recipientName, issuerDid } = options;
 
-    let boostJsonString = boost.dataValues.boost;
+    let boostJsonString = options.credential
+        ? convertCredentialToBoostTemplateJSON(options.credential)
+        : boost.dataValues.boost;
+    if (!options.credential && 'display' in JSON.parse(boostJsonString)) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Display-only anchors require an issuance credential in the request.',
+        });
+    }
     const allowAutoAppendEvidence = shouldAutoAppendTemplateEvidence(boostJsonString);
 
     // Auto-inject known system variables into templateData

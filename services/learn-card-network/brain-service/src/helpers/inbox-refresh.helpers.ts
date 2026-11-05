@@ -241,10 +241,10 @@ export const publishPendingInboxRefresh = async (
         refreshId: aggregate.refreshId,
         expectedVersion: aggregate.currentVersion,
         credential: await encryptInboxCredential(JSON.stringify(prepared)),
-        credentialName: typeof prepared.name === 'string' ? prepared.name : undefined,
         materialDigest: computeCredentialMaterialDigest(prepared),
         idempotencyKey: input.idempotencyKey,
         updateSummary: input.updateSummary,
+        updateReason: input.updateReason,
     });
     if (!result)
         throw new TRPCError({
@@ -386,6 +386,7 @@ export const finalizeInboxRefresh = async (params: {
                     ? {}
                     : { effectiveAt: new Date(effectiveTime).toISOString() }),
                 ...(aggregate.updateSummary ? { updateSummary: aggregate.updateSummary } : {}),
+                ...(aggregate.updateReason ? { updateReason: aggregate.updateReason } : {}),
                 etag,
             },
             aggregate: {

@@ -23,7 +23,7 @@ import { neogma } from '@instance';
 
 import { storeCredential } from '@accesslayer/credential/create';
 import { deleteCredential } from '@accesslayer/credential/delete';
-import { getBoostByUri } from '@accesslayer/boost/read';
+import { getBoostByUri, getBoostById } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
@@ -69,6 +69,7 @@ import {
 } from './notifications.helpers';
 import { deliverCredentialRefreshEmailNotification } from './credential-refresh-email.helpers';
 import { extractBoundedCredentialDisplayTitle } from './credential-refresh-email-content.helpers';
+import { getPublicBoostDisplayName } from './credential-display.helpers';
 import type { TenantBranding } from '@learncard/email-templates';
 import { getDidWeb } from './did.helpers';
 import { isRelationshipBlocked } from './connection.helpers';
@@ -1141,15 +1142,8 @@ export const publishCredentialRefresh = async (
     params: PublishCredentialRefreshParams
 ): Promise<PublishCredentialRefreshResult> => {
     const { issuerProfile, input, domain } = params;
-    const { refreshId, idempotencyKey, notifyHolder, updateSummary } = input;
+    const { refreshId, idempotencyKey, notifyHolder, updateSummary, updateReason } = input;
     const branding = params.branding;
-
-    // Email-only bounded display title. Read from the issuer-supplied publication
-    // input (never from the holder-encrypted payload); `undefined` falls back to
-    // the original boost template at delivery time, then to generic copy.
-    const credentialDisplayName = extractBoundedCredentialDisplayTitle(
-        input.mode === 'signing-authority' ? input.credential.name : input.signedCredential.name
-    );
 
     const aggregate = await getCredentialRefresh(refreshId);
 
@@ -1163,6 +1157,11 @@ export const publishCredentialRefresh = async (
             message: 'Profile did not allocate this credential refresh',
         });
     }
+
+    const displayBoost = aggregate.boostId ? await getBoostById(aggregate.boostId) : null;
+    const credentialDisplayName = extractBoundedCredentialDisplayTitle(
+        getPublicBoostDisplayName(displayBoost)
+    );
 
     if (aggregate.state === 'revoked') {
         throw new TRPCError({
@@ -1366,6 +1365,7 @@ export const publishCredentialRefresh = async (
         etag,
         materialDigest: nextDigest,
         updateSummary,
+        updateReason,
         credentialDisplayName,
         effectiveAt:
             effectiveTime !== undefined ? new Date(effectiveTime).toISOString() : undefined,

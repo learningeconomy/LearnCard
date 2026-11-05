@@ -1,5 +1,10 @@
 import { QueryBuilder, BindParam } from 'neogma';
-import { UnsignedVC, VC } from '@learncard/types';
+import {
+    UnsignedVC,
+    VC,
+    CredentialDisplayValidator,
+    type CredentialDisplay,
+} from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import { Boost, BoostInstance, Profile, AppStoreListing } from '@models';
@@ -13,10 +18,11 @@ import { ProfileType } from 'types/profile';
 import { AppStoreListingType } from 'types/app-store-listing';
 
 export const createBoost = async (
-    credential: UnsignedVC | VC,
+    credential: UnsignedVC | VC | null,
     creator: ProfileType,
     metadata: Omit<BoostType, 'id' | 'boost'> = {},
-    domain: string
+    domain: string,
+    publicDisplay?: CredentialDisplay
 ): Promise<BoostInstance> => {
     const id = uuid();
 
@@ -30,10 +36,19 @@ export const createBoost = async (
         new BindParam({
             params: {
                 id,
-                boost: convertCredentialToBoostTemplateJSON(
-                    credential,
-                    getDidWeb(domain, creator.profileId)
-                ),
+                boost: credential
+                    ? convertCredentialToBoostTemplateJSON(
+                          credential,
+                          getDidWeb(domain, creator.profileId)
+                      )
+                    : JSON.stringify({
+                          '@context': ['https://www.w3.org/ns/credentials/v2'],
+                          type: ['VerifiableCredential'],
+                          issuer: getDidWeb(domain, creator.profileId),
+                          credentialSubject: { id: 'did:example:123' },
+                          name: publicDisplay?.name ?? 'Credential',
+                          display: CredentialDisplayValidator.parse(publicDisplay ?? {}),
+                      }),
                 status,
                 ...((flattenObject as any)(metadata) as any),
             },
@@ -62,6 +77,22 @@ export const createBoost = async (
     const boost = (await getBoostById(id))!;
 
     return boost;
+};
+
+/** Display-only anchors never receive credential content or inline template metadata. */
+export const createDisplayOnlyBoost = (
+    display: CredentialDisplay | undefined,
+    creator: ProfileType,
+    domain: string
+): Promise<BoostInstance> => {
+    const publicDisplay = CredentialDisplayValidator.parse(display ?? {});
+    return createBoost(
+        null,
+        creator,
+        { ...publicDisplay, name: publicDisplay.name ?? 'Credential' },
+        domain,
+        publicDisplay
+    );
 };
 
 /**

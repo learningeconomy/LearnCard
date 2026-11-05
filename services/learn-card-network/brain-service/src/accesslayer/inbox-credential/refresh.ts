@@ -87,6 +87,7 @@ export const advancePendingInboxRefresh = async (params: {
     materialDigest: string;
     idempotencyKey?: string;
     updateSummary?: string;
+    updateReason?: import('@learncard/types').CredentialRefreshUpdateReason;
 }): Promise<PublishCredentialRefreshResult | null> => {
     const { refreshId, expectedVersion, idempotencyKey } = params;
     const replay = await getPendingInboxPublication(refreshId, idempotencyKey);
@@ -103,9 +104,10 @@ export const advancePendingInboxRefresh = async (params: {
          CREATE (p:InboxRefreshPublication $publication)
          SET ic.credential = $credential, ic.credentialName = $credentialName,
              refresh.currentVersion = $version, refresh.materialDigest = $materialDigest,
-             refresh.credentialDisplayName = coalesce($credentialName, refresh.credentialDisplayName),
+              refresh.credentialDisplayName = $credentialName,
              refresh.lastPublishedAt = $publishedAt, refresh.updatedAt = $publishedAt,
-             refresh.updateSummary = $updateSummary
+              refresh.updateSummary = $updateSummary,
+              refresh.updateReason = $updateReason
          RETURN p`,
         {
             ...params,
@@ -113,6 +115,7 @@ export const advancePendingInboxRefresh = async (params: {
             publishedAt,
             credentialName: params.credentialName ?? null,
             updateSummary: params.updateSummary ?? null,
+            updateReason: params.updateReason ?? null,
             key: idempotencyKey ? `${refreshId}:${idempotencyKey}` : null,
             publication: Object.fromEntries(
                 Object.entries({
@@ -123,6 +126,7 @@ export const advancePendingInboxRefresh = async (params: {
                     publishedAt,
                     signingMode: 'signing-authority',
                     updateSummary: params.updateSummary,
+                    updateReason: params.updateReason,
                     refreshIdempotencyKey: idempotencyKey
                         ? `${refreshId}:${idempotencyKey}`
                         : undefined,

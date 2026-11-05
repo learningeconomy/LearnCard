@@ -43,6 +43,18 @@ For an existing boost template, refresh uses the same issuance permissions as an
 
 ## 1. Issue a credential that can be refreshed
 
+### Public metadata and privacy
+
+For inline managed sends, the stored Boost is a display-only anchor, not a reusable credential template. Pass optional top-level `display: { name, category, image }`. These fields are **public**; do not put private claims in them. Inline template names, categories, skills, permissions, and credential claims are not copied to the anchor. A minimal fixed credential-shaped placeholder keeps existing Boost readers compatible; its list label is `Credential` when `display.name` is absent. Refresh emails then use generic copy, and notifications never derive their text from claims.
+
+The SDK keeps the full issuance template locally during preparation. Server-side signing receives it transiently in the send request. Existing explicitly created reusable Boost templates retain their public storage behavior. Network mode still processes plaintext for signing, verification, and encryption; this is not holder-side encryption.
+
+Publishing accepts public `updateReason: 'corrected' | 'updated' | 'reissued'`. Legacy `updateSummary` remains public and is limited to 280 characters. Publication titles are never taken from the credential.
+
+Managed preparation fingerprints are now `v1:` server HMACs over public routing/display metadata, not claims or `templateData`. Keep the same original issuance input and prepared receipt on retry; a retry is not a way to update claims. Legacy unkeyed preparations cannot match the new digest and fail with `CONFLICT`. Before retrying across deployment, reconcile whether the original send delivered; do not blindly issue again with a new key. Finish pending preparations before deployment where possible. Secret rotation also requires draining outstanding preparations.
+
+Historical templates are not deleted by this change. Operators can run `bun scripts/report-send-template-exposure.ts <deployment-ISO-timestamp>` from brain-service with explicit Neo4j environment variables. It prints counts only: known managed anchors and unclassified send candidates. Historical signed-only sends have no unique marker, so the candidate count is an upper bound, not an exact signed-only inventory.
+
 One call does it. `send()` with `refresh: true` takes an ordinary credential template — no refresh fields, no hand-copied JSON-LD context — and handles the refresh setup, signing, and holder-only encrypted delivery. Profile/DID recipients use immediate issuance. Email and phone recipients use deferred Universal Inbox signing; see [Refresh through Universal Inbox](#refresh-through-universal-inbox) below.
 
 <!-- snippet: refresh/issue-refreshable.mjs -->
@@ -89,9 +101,8 @@ const result = await issuer.invoke.send({
                 },
             },
         },
-        name: 'Provisional Transcript',
-        category: 'Achievement',
     },
+    display: { name: 'Academic credential', category: 'Achievement' },
     refresh: true,
 });
 

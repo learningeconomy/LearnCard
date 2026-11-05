@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'crypto';
+import { createHmac, randomUUID } from 'crypto';
 import { TRPCError } from '@trpc/server';
 import type { ManagedCredentialRefreshReceipt, SendBoostResponse } from '@learncard/types';
 import { canonicalizeCredentialJson } from '@learncard/helpers';
@@ -6,6 +6,7 @@ import { canonicalizeCredentialJson } from '@learncard/helpers';
 import { neogma } from '@instance';
 
 import { getInitialRefreshRoot, getManagedCredentialUri } from './credential-refresh.helpers';
+import { getCredentialRefreshDigestSecret } from './credential-refresh-materiality.helpers';
 
 /** A preparation not touched for this long is considered abandoned and may be taken over. */
 export const REFRESH_SEND_INTENT_STALE_MS = 5 * 60_000;
@@ -40,28 +41,27 @@ export type ClaimRefreshSendIntentResult =
 const getIntentKey = (issuerProfileId: string, idempotencyKey: string): string =>
     `${issuerProfileId}:${idempotencyKey}`;
 
-/** Digest of everything that defines a prepare request; a reused key must match it. */
+/** Versioned, domain-separated public-metadata digest. Legacy unkeyed intents fail closed. */
 export const computeRefreshSendRequestDigest = (request: {
     recipientProfileId: string;
     holderDid: string;
     templateUri?: string;
-    template?: unknown;
+    display?: import('@learncard/types').CredentialDisplay;
     contractUri?: string;
-    templateData?: Record<string, unknown>;
     integrationId?: string;
-    credentialId?: string;
 }): string =>
-    createHash('sha256')
+    'v1:' +
+    createHmac('sha256', getCredentialRefreshDigestSecret())
+        .update('refresh-send-intent:v1\0')
         .update(
             canonicalizeCredentialJson({
                 recipientProfileId: request.recipientProfileId,
                 holderDid: request.holderDid,
                 templateUri: request.templateUri ?? null,
-                template: request.template ?? null,
+                display: request.display ?? {},
                 contractUri: request.contractUri ?? null,
-                templateData: request.templateData ?? {},
                 integrationId: request.integrationId ?? null,
-                credentialId: request.credentialId ?? null,
+                refresh: true,
             })
         )
         .digest('base64url');

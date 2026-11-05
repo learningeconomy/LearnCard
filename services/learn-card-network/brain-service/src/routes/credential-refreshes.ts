@@ -11,7 +11,7 @@ import {
 } from '@learncard/types';
 import type { PublishCredentialRefreshInput } from '@learncard/types';
 
-import { t, profileRoute } from '@routes';
+import { t, credentialProfileRoute } from '@routes';
 import { getCredentialRefreshRuntimeEnvironment } from '@environment';
 import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/read';
 import {
@@ -27,7 +27,7 @@ import { getDidWeb } from '@helpers/did.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { ensureCredentialRefreshConstraints } from '../models/credential-refresh-constraints';
 
-const credentialRefreshRoute = profileRoute.use(async ({ ctx, next }) => {
+const credentialRefreshRoute = credentialProfileRoute.use(async ({ ctx, next }) => {
     if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
         throw new TRPCError({
             code: 'NOT_FOUND',
@@ -212,6 +212,7 @@ export const credentialRefreshesRouter = t.router({
                     etag: record.etag,
                     signingMode: record.signingMode,
                     updateSummary: record.updateSummary,
+                    updateReason: record.updateReason,
                 })),
                 hasMore,
                 cursor,
