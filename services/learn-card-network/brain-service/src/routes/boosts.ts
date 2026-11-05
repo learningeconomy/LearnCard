@@ -1340,7 +1340,12 @@ export const boostsRouter = t.router({
                     } else if (input.template) {
                         boost =
                             input.refresh || input.signedCredential
-                                ? await createDisplayOnlyBoost(input.display, profile, domain)
+                                ? await createDisplayOnlyBoost(
+                                      input.display,
+                                      profile,
+                                      domain,
+                                      input.template
+                                  )
                                 : await createInlineBoostForSend(input.template, profile, domain);
 
                         boostUri = getBoostUri(boost.id, domain);
@@ -1387,7 +1392,12 @@ export const boostsRouter = t.router({
                             boost = preparedBoost;
                             boostUri = preparedBoostUri;
                         } else {
-                            boost = await createDisplayOnlyBoost(input.display, profile, domain);
+                            boost = await createDisplayOnlyBoost(
+                                input.display,
+                                profile,
+                                domain,
+                                input.template
+                            );
 
                             boostUri = getBoostUri(boost.id, domain);
                             boostCreated = true;

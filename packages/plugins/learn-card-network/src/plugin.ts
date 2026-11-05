@@ -709,6 +709,18 @@ export interface LearnCardNetworkPluginOptions extends FederationConfig {
     actAs?: string;
 }
 
+/** The caller's explicit Boost name and category are public metadata; credential content is not. */
+const getPublicDisplay = (input: {
+    display?: { name?: string; category?: string; image?: string };
+    template?: { name?: string | null; category?: string | null };
+}): { name?: string; category?: string; image?: string } | undefined => {
+    if (input.display) return input.display;
+    const name = input.template?.name?.trim().slice(0, 280);
+    const category = input.template?.category?.slice(0, 280);
+    if (!name && !category) return undefined;
+    return { ...(name ? { name } : {}), ...(category ? { category } : {}) };
+};
+
 export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string,
@@ -2359,7 +2371,7 @@ export async function getLearnCardNetworkPlugin(
                         templateUri: input.templateUri,
                         template: input.template,
                         signedCredential: input.signedCredential,
-                        display: input.display,
+                        display: getPublicDisplay(input),
                         contractUri: input.contractUri,
                         templateData: input.templateData,
                         integrationId: input.integrationId,
@@ -2426,7 +2438,7 @@ export async function getLearnCardNetworkPlugin(
                                 : {}),
                             recipient: input.recipient,
                             templateUri: input.templateUri,
-                            display: input.display,
+                            display: getPublicDisplay(input),
                             ...(input.contractUri ? { contractUri: input.contractUri } : {}),
                             ...(input.integrationId ? { integrationId: input.integrationId } : {}),
                             ...(boost.id ? { credentialId: boost.id } : {}),
@@ -2521,7 +2533,7 @@ export async function getLearnCardNetworkPlugin(
                             return client.boost.send.mutate({
                                 type: 'boost',
                                 recipient: input.recipient,
-                                display: input.display,
+                                display: getPublicDisplay(input),
                                 contractUri: input.contractUri,
                                 integrationId: input.integrationId,
                                 idempotencyKey: input.idempotencyKey,

@@ -79,13 +79,28 @@ export const createBoost = async (
     return boost;
 };
 
-/** Display-only anchors never receive credential content or inline template metadata. */
+/** The caller's explicit Boost name and category are public metadata; credential content is not. */
+export const getPublicDisplay = (
+    display: CredentialDisplay | undefined,
+    template?: { name?: string | null; category?: string | null }
+): CredentialDisplay => {
+    if (display) return CredentialDisplayValidator.parse(display);
+    const name = template?.name?.trim().slice(0, 280);
+    const category = template?.category?.slice(0, 280);
+    return CredentialDisplayValidator.parse({
+        ...(name ? { name } : {}),
+        ...(category ? { category } : {}),
+    });
+};
+
+/** Display-only anchors never receive credential content. */
 export const createDisplayOnlyBoost = (
     display: CredentialDisplay | undefined,
     creator: ProfileType,
-    domain: string
+    domain: string,
+    template?: { name?: string | null; category?: string | null }
 ): Promise<BoostInstance> => {
-    const publicDisplay = CredentialDisplayValidator.parse(display ?? {});
+    const publicDisplay = getPublicDisplay(display, template);
     return createBoost(
         null,
         creator,
