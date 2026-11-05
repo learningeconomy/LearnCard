@@ -101,7 +101,7 @@ let logs = '';
 
 try {
     docker('image', 'inspect', image);
-    docker('network', 'create', '--internal', '--label', `${label}=${token}`, network);
+    docker('network', 'create', '--label', `${label}=${token}`, network);
     networkCreated = true;
     const mongoPort = await port();
     const redisPort = await port();
@@ -197,6 +197,7 @@ try {
             await mkdir(localHome, { recursive: true, mode: 0o700 });
             const environment = {
                 NODE_ENV: 'development',
+                METABASE_SECRET_KEY: 'd'.repeat(64),
                 IS_OFFLINE: 'true',
                 IS_E2E_TEST: 'true',
                 SEED: 'a'.repeat(64),
@@ -283,6 +284,12 @@ try {
                 }
                 assert.ok(Date.now() < deadline, `${runtime}/${fixture} API startup timed out`);
                 assert.ok(!child || child.exitCode === null, 'Owned Lambda bridge exited');
+                if (activeContainer)
+                    assert.equal(
+                        docker('inspect', '--format', '{{.State.Running}}', activeContainer),
+                        'true',
+                        'Owned Docker entrypoint exited'
+                    );
                 await delay(200);
             }
             const normal = () =>
@@ -358,12 +365,13 @@ try {
                 assert.match(logs, new RegExp(`code: ${code}\\b`));
                 assert.match(logs, new RegExp(`codeName: ['"]${codeName}['"]`));
                 assert.match(logs, /errmsg: ['"].+/);
-                if (fixture === 'duplicates')
-                    assert.doesNotMatch(
-                        logs.match(/\[escrow-hold-indexes\][\s\S]*?\n}/)?.[0] ?? '',
-                        /legacy-duplicate/
-                    );
-                diagnostic = { code, codeName, errmsg: 'present; duplicate identity redacted' };
+                if (fixture === 'duplicates') assert.doesNotMatch(logs, /legacy-duplicate/);
+                diagnostic = {
+                    code,
+                    codeName,
+                    errmsg: 'present',
+                    ...(fixture === 'duplicates' ? { duplicateKeyRedacted: true } : {}),
+                };
             } else {
                 const started = ok(start);
                 assert.ok(started.resumeToken);
@@ -439,7 +447,12 @@ try {
         });
     }
     await mongo?.close();
-    for (const id of [...owned].reverse()) remove(id);
+    for (const id of [...owned].reverse()) {
+        await writeFile(resolve(evidence, `container-${id.slice(0, 12)}.log`), containerLogs(id), {
+            mode: 0o600,
+        });
+        remove(id);
+    }
     if (networkCreated) {
         assert.equal(
             docker('network', 'inspect', '--format', `{{index .Labels "${label}"}}`, network),

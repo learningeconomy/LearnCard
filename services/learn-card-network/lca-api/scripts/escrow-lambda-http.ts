@@ -1,7 +1,7 @@
 /** Local API Gateway bridge to the real Lambda entrypoint; no application mocks. */
 import { createServer } from 'node:http';
 import type { APIGatewayProxyEventV2, Context } from 'aws-lambda';
-import { openApiHandler } from '../lambdaApp';
+import { openApiHandler } from '../lambda';
 
 const server = createServer(async (request, response) => {
     try {

@@ -189,7 +189,7 @@ const runIndexMigrationOperation = async (
         // diagnosis in CloudWatch without copying account identifiers into logs.
         const redactDuplicateKey = (message: string | undefined): string | undefined =>
             message?.replace(/dup key:.*$/s, 'dup key: [redacted]');
-        console.error('[escrow-hold-indexes] initialization failed', {
+        const diagnostic = {
             operation: operationName,
             code: details.code,
             codeName: details.codeName,
@@ -198,8 +198,11 @@ const runIndexMigrationOperation = async (
             keyValue: details.keyValue
                 ? Object.fromEntries(Object.keys(details.keyValue).map(key => [key, '[redacted]']))
                 : undefined,
-        });
-        throw new Error('Escrow hold index initialization failed', { cause: error });
+        };
+        console.error('[escrow-hold-indexes] initialization failed', diagnostic);
+        // Generic route loggers also inspect Error.cause; never retain the raw identity there.
+        // eslint-disable-next-line preserve-caught-error -- MongoError retains PII; keep only the sanitized cause.
+        throw new Error('Escrow hold index initialization failed', { cause: diagnostic });
     }
 };
 

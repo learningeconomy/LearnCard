@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { inspect } from 'node:util';
 import { MongoClient, type Db } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -91,6 +92,8 @@ describe('escrow index migration with real Mongo', () => {
             message: 'Escrow hold index initialization failed',
             cause: { code: 11000, codeName: 'DuplicateKey' },
         });
+        const failure = await ready.catch((error: unknown) => error);
+        expect(inspect(failure, { depth: null })).not.toContain(identity.id);
         expect(console.error).toHaveBeenCalledWith(
             '[escrow-hold-indexes] initialization failed',
             expect.objectContaining({
