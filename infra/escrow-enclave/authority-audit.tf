@@ -46,18 +46,24 @@ resource "aws_cloudwatch_metric_alarm" "authority_integrity" {
   treat_missing_data  = "notBreaching"
   alarm_actions       = [aws_sns_topic.monitor.arn]
 }
-# Rate signal, not integrity: the monitor emits one datum per account per sweep
-# while >= 2 owner-signed PIN clears fall inside its 30-day lookback. A period
-# longer than the sweep interval keeps the alarm in ALARM (one notification)
-# instead of flapping between sweeps.
+# Rate signal, not integrity. After every complete sweep (never a partial one) the
+# monitor emits AuthorityRepeatedPinClearAccounts = number of accounts with >= 2
+# owner-signed PIN clears inside their 30-day lookback, including 0. Maximum over
+# the hour is "accounts currently affected", so the threshold is an account count:
+# 0 alarms on any account; during a known episode set it to the number of known
+# accounts and a new account still notifies. A period longer than the 15-minute
+# sweep keeps the alarm in ALARM (one notification) instead of flapping between
+# sweeps; missing data is covered by the authority heartbeat alarm below.
+# The per-account AuthorityRepeatedPinClear datum is still emitted for one
+# release but no longer alarmed on.
 resource "aws_cloudwatch_metric_alarm" "authority_repeated_pin_clear" {
   count               = var.enable_enrollment_authority ? 1 : 0
   alarm_name          = "${local.name_prefix}-AuthorityRepeatedPinClear"
-  alarm_description   = "An escrow account cleared its recovery PIN repeatedly; check lca-api for induced post-recovery PIN clears."
+  alarm_description   = "More escrow accounts than expected cleared their recovery PIN repeatedly (>= 2 clears in 30 days); check lca-api for induced post-recovery PIN clears."
   namespace           = "LearnCard/EscrowLedger"
-  metric_name         = "AuthorityRepeatedPinClear"
+  metric_name         = "AuthorityRepeatedPinClearAccounts"
   dimensions          = { Tenant = var.monitor_tenant }
-  statistic           = "Sum"
+  statistic           = "Maximum"
   period              = 3600
   evaluation_periods  = 1
   threshold           = var.authority_repeated_pin_clear_threshold
