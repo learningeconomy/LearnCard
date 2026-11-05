@@ -264,7 +264,7 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued);
+            expect(mocks.store).toHaveBeenCalledWith(issued, undefined, 'org');
         }
     );
 
