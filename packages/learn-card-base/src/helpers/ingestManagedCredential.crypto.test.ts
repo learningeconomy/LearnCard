@@ -85,9 +85,9 @@ describe('managed ingestion with native signatures and JWE', () => {
         const wrong = await other.invoke.createDagJwe({ secret: 'not-for-holder' });
         const spoofed = {
             ...wrong,
-            recipients: wrong.recipients.map(recipient => ({
+            recipients: (wrong.recipients ?? []).map(recipient => ({
                 ...recipient,
-                header: { ...recipient.header, kid: encrypted.recipients[0]?.header.kid },
+                header: { ...recipient.header, kid: encrypted.recipients?.[0]?.header?.kid },
             })),
         };
         await expect(ingest(spoofed)).rejects.toThrow();

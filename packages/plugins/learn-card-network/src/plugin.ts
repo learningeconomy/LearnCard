@@ -53,8 +53,6 @@ import {
     LearnCardNetworkPlugin,
     VerifyBoostPlugin,
     TrustedBoostRegistryEntry,
-    type SendBoostInputWithEncryption,
-    type PublishHolderEncryptedRefreshableOptions,
 } from './types';
 
 /**
@@ -608,13 +606,8 @@ const didFromRecipientKeyId = (keyId: string): string => {
  * templateData, or display-derived claim value outside the JWE itself — only the
  * public bindings `HolderEncryptedHandoffValidator` allows.
  */
-type HolderEncryptedHandoffBindings = {
-    refreshId: string;
-    credentialId: string;
-    holderDid: string;
-    issuerDid: string;
-    credentialStatus: BitstringStatusListEntry | BitstringStatusListEntry[];
-};
+/** The public bindings of a holder handoff; validated with the JWE by HolderEncryptedHandoffValidator. */
+type HolderEncryptedHandoffBindings = Omit<HolderEncryptedHandoff, 'jwe'>;
 
 const buildHolderEncryptedHandoff = async (
     learnCard: { invoke: Pick<LearnCardNetworkPluginDependentMethods, 'createDagJweExact'> },
