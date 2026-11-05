@@ -161,8 +161,15 @@ const buildHandoff = async (
     };
 };
 
-const sendHandoff = (handoff: HolderEncryptedHandoff) =>
-    issuer.clients.fullAuth.credentialRefresh.sendHolderEncryptedRefreshable({ handoff });
+const sendHandoff = async (handoff: HolderEncryptedHandoff): Promise<string> => {
+    const { uri, activityId } =
+        await issuer.clients.fullAuth.credentialRefresh.sendHolderEncryptedRefreshable({
+            handoff,
+        });
+    expect(activityId).toEqual(expect.any(String));
+    expect(activityId.length).toBeGreaterThan(0);
+    return uri;
+};
 
 describe('Holder-mode managed sends (LC-2345)', () => {
     beforeAll(async () => {

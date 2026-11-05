@@ -60,6 +60,7 @@ import { termsReferralSnapshotCypher } from './consent-referral.helpers';
 import { createDagJweForRecipients, getKeyAgreementKeyId, getLearnCard } from './learnCard.helpers';
 import { verifyManagedRefreshProof } from './credential-refresh-proof.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
+import { logCredentialSent } from './activity.helpers';
 import {
     computeCredentialMaterialDigest,
     computeCredentialStatusDigest,
@@ -1047,6 +1048,7 @@ export type SendHolderEncryptedRefreshableCredentialParams = {
     boostUri?: string;
     skipNotification?: boolean;
     domain: string;
+    onBehalfOf?: string;
 };
 
 /**
@@ -1060,7 +1062,7 @@ export type SendHolderEncryptedRefreshableCredentialParams = {
  */
 export const sendHolderEncryptedRefreshableCredential = async (
     params: SendHolderEncryptedRefreshableCredentialParams
-): Promise<SendRefreshableCredentialResult> => {
+): Promise<SendRefreshableCredentialResult & { activityId: string }> => {
     const { issuerProfile, handoff, boostUri, skipNotification = false, domain } = params;
 
     const aggregate = await getCredentialRefresh(handoff.refreshId);
@@ -1136,7 +1138,18 @@ export const sendHolderEncryptedRefreshableCredential = async (
         throw new TRPCError({ code: 'CONFLICT', message: 'RECIPIENTS_CHANGED' });
     }
 
-    return deliverManagedRefreshVersion1Credential({
+    const activityId = await logCredentialSent({
+        actorProfileId: issuerProfile.profileId,
+        onBehalfOf: params.onBehalfOf,
+        recipientType: 'profile',
+        recipientIdentifier: holderProfile.profileId,
+        recipientProfileId: holderProfile.profileId,
+        boostUri,
+        source: 'send',
+    });
+
+    const delivered = await deliverManagedRefreshVersion1Credential({
+        activityId,
         refreshId: handoff.refreshId,
         issuerProfile,
         holderProfile,
@@ -1154,6 +1167,7 @@ export const sendHolderEncryptedRefreshableCredential = async (
         skipNotification,
         domain,
     });
+    return { ...delivered, activityId };
 };
 
 // --- Publication (LC-2135) -----------------------------------------------------

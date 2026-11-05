@@ -554,7 +554,9 @@ const buildManagedRefreshReceipt = (
  */
 type HolderEncryptionClient = {
     sendHolderEncryptedRefreshable: {
-        mutate: (input: SendHolderEncryptedRefreshableInput) => Promise<string>;
+        mutate: (
+            input: SendHolderEncryptedRefreshableInput
+        ) => Promise<{ uri: string; activityId: string }>;
     };
     publishHolderEncryptedRefreshable: {
         mutate: (
@@ -2582,7 +2584,7 @@ export async function getLearnCardNetworkPlugin(
 
                         const holderClient =
                             client.credentialRefresh as unknown as HolderEncryptionClient;
-                        const credentialUri = await deliverHolderEncryptedHandoff(
+                        const delivered = await deliverHolderEncryptedHandoff(
                             holderClient,
                             prepared.refreshId,
                             initialRecipientKeyIds,
@@ -2603,8 +2605,8 @@ export async function getLearnCardNetworkPlugin(
                         return {
                             type: 'boost' as const,
                             uri: prepared.boostUri,
-                            credentialUri,
-                            activityId: '',
+                            credentialUri: delivered.uri,
+                            activityId: delivered.activityId,
                             refresh: { ...holderBindings, refreshService: prepared.refreshService },
                         };
                     }

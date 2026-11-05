@@ -67,6 +67,41 @@ describe('ingestManagedCredential', () => {
         ).rejects.toThrow();
         expect(wallet.read.get).not.toHaveBeenCalled();
     });
+    it('treats a network credential that is not a delivery to this account as ordinary', async () => {
+        const ordinary = { ...credential, refreshService: undefined };
+        const wallet = makeWallet(ordinary);
+        wallet.invoke.getCredentialRefreshReceipt.mockRejectedValue(
+            Object.assign(new Error('Delivery not found'), { data: { code: 'NOT_FOUND' } })
+        );
+        expect(
+            await resolveCredentialForClaim(
+                wallet,
+                'lc:network:network.example/trpc:credential:root'
+            )
+        ).toEqual({ credential: ordinary });
+        expect(wallet.invoke.verifyCredential).not.toHaveBeenCalled();
+    });
+    it('rejects a payload presenting a managed refresh service without a receipt', async () => {
+        const wallet = makeWallet();
+        wallet.invoke.getCredentialRefreshReceipt.mockRejectedValue(
+            Object.assign(new Error('Delivery not found'), { data: { code: 'NOT_FOUND' } })
+        );
+        await expect(
+            resolveCredentialForClaim(wallet, 'lc:network:network.example/trpc:credential:root')
+        ).rejects.toThrow('MANAGED_CREDENTIAL_VERIFICATION_FAILED');
+    });
+    it('fails closed when a managed delivery lacks its status binding', async () => {
+        const wallet = makeWallet();
+        wallet.invoke.getCredentialRefreshReceipt.mockRejectedValue(
+            Object.assign(new Error('Delivery binding unavailable'), {
+                data: { code: 'PRECONDITION_FAILED' },
+            })
+        );
+        await expect(
+            resolveCredentialForClaim(wallet, 'lc:network:network.example/trpc:credential:root')
+        ).rejects.toThrow('MANAGED_CREDENTIAL_VERIFICATION_FAILED');
+        expect(wallet.read.get).not.toHaveBeenCalled();
+    });
     it('keeps non-network reads on their existing path', async () => {
         const wallet = makeWallet();
         expect(await resolveCredentialForClaim(wallet, 'lc:cloud:ordinary')).toEqual({

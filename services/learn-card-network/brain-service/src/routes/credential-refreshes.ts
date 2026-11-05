@@ -272,19 +272,20 @@ export const credentialRefreshesRouter = t.router({
             requiredScope: 'credentials:write',
         })
         .input(SendHolderEncryptedRefreshableInputValidator)
-        .output(z.string())
+        .output(z.object({ uri: z.string(), activityId: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { uri } = await sendHolderEncryptedRefreshableCredential({
+            const { uri, activityId } = await sendHolderEncryptedRefreshableCredential({
                 issuerProfile: profile,
                 handoff: input.handoff,
                 boostUri: input.boostUri,
                 skipNotification: input.skipNotification,
                 domain: ctx.domain,
+                onBehalfOf: ctx.user.onBehalfOf,
             });
 
-            return uri;
+            return { uri, activityId };
         }),
 
     /** Issuer-only: the current recipient set a holder-mode handoff must encrypt to. */

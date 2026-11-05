@@ -151,7 +151,10 @@ const getMockClient = (options: Record<string, any> = {}) => ({
         allocateCredentialRefresh: { mutate: vi.fn() },
         sendRefreshableCredential: { mutate: vi.fn() },
         sendHolderEncryptedRefreshable: {
-            mutate: vi.fn().mockResolvedValue('did:web:network.example:credentials:holder-1'),
+            mutate: vi.fn().mockResolvedValue({
+                uri: 'did:web:network.example:credentials:holder-1',
+                activityId: 'activity-holder-1',
+            }),
         },
         getEncryptionRecipients: {
             query: vi.fn().mockResolvedValue({ recipientKeyIds: RECIPIENT_KEY_IDS }),
@@ -241,7 +244,7 @@ describe('unified send with encryption: "holder"', () => {
             type: 'boost',
             uri: defaultPreparedHolder.boostUri,
             credentialUri: 'did:web:network.example:credentials:holder-1',
-            activityId: '',
+            activityId: 'activity-holder-1',
             refresh: {
                 refreshId: defaultPreparedHolder.refreshId,
                 credentialId: defaultPreparedHolder.credentialId,
@@ -429,7 +432,10 @@ describe('unified send with encryption: "holder"', () => {
         });
         client.credentialRefresh.sendHolderEncryptedRefreshable.mutate
             .mockRejectedValueOnce(conflict)
-            .mockResolvedValueOnce('did:web:network.example:credentials:holder-2');
+            .mockResolvedValueOnce({
+                uri: 'did:web:network.example:credentials:holder-2',
+                activityId: 'activity-holder-2',
+            });
         const NEW_MANAGER_DID = 'did:key:zNewManager';
         const freshKeyIds = [keyIdForDid(HOLDER_DID), keyIdForDid(NEW_MANAGER_DID)];
         client.credentialRefresh.getEncryptionRecipients.query.mockResolvedValue({
