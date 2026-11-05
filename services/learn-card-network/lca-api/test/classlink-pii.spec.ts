@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash, createHmac } from 'node:crypto';
 
 const { env } = vi.hoisted(() => ({
     env: { CLASSLINK_PII_KEY: undefined as string | undefined },
@@ -6,6 +7,8 @@ const { env } = vi.hoisted(() => ({
 vi.mock('@environment', () => ({ environment: env }));
 
 import {
+    classLinkSubjectDigest,
+    classLinkFirebaseUid,
     getStateStudentId,
     hasExpiredStateStudentId,
     sealStateStudentId,
@@ -22,6 +25,23 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('ClassLink state student ID encryption', () => {
+    it('uses a domain-separated keyed identity and UID', () => {
+        const value = JSON.stringify(['tenant-test', 'source-1']);
+        const subKey = createHmac('sha256', Buffer.from(KEY, 'base64'))
+            .update('classlink-identity-v1')
+            .digest();
+        const digest = classLinkSubjectDigest('tenant-test', 'source-1');
+        expect(digest).toBe(createHmac('sha256', subKey).update(value).digest('base64url'));
+        expect(digest).toBe(classLinkSubjectDigest('tenant-test', 'source-1'));
+        expect(digest).not.toBe(createHash('sha256').update(value).digest('base64url'));
+        const opaqueKey = `classlink:tenant-test:v1:${digest}`;
+        expect(opaqueKey).not.toContain('source-1');
+        expect(classLinkFirebaseUid(opaqueKey)).toBe(
+            `classlink_${createHmac('sha256', subKey).update(opaqueKey).digest('hex').slice(0, 28)}`
+        );
+        env.CLASSLINK_PII_KEY = Buffer.alloc(32, 8).toString('base64');
+        expect(classLinkSubjectDigest('tenant-test', 'source-1')).not.toBe(digest);
+    });
     it('round-trips a versioned payload that does not contain the value', () => {
         const sealed = seal()!;
         expect(sealed.stateStudentIdEnc).toMatch(/^v1:/);

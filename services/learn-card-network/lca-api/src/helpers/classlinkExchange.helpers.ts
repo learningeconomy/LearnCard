@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { getClassLinkConfig, getClassLinkTenant } from '@helpers/classlink.config';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '@helpers/classlink.helpers';
+import { classLinkSubjectDigest } from '@helpers/classlinkPii.helpers';
 import type { ClassLinkClaims, ClassLinkConfig, ClassLinkTenantConfig } from 'types/classlink';
 
 export const classLinkRedirectUri = z.string().min(1).max(2048);
@@ -77,7 +78,7 @@ export const verifyClassLinkExchange = async (
         claims,
         tenantId,
         tenant,
-        identityKey: `classlink:${tenantId}:${claims.classLink_sourcedId}`,
+        identityKey: `classlink:${tenantId}:v1:${classLinkSubjectDigest(tenantId, claims.classLink_sourcedId)}`,
     };
 };
 

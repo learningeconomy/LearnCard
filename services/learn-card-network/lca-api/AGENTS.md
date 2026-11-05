@@ -278,7 +278,8 @@ sequenceDiagram
     App->>App: signInWithCustomToken
 ```
 
-- The state student ID is read only on the server, from the verified id_token `api_fields`, using the tenant's `stateStudentIdField`. It is never accepted from a client. A missing ID does not block sign-in.
+- The state student ID is read only from verified token claims, never userinfo or client input. `stateStudentIdSource` selects `{ "type": "sourcedId" }` or `{ "type": "apiField", "field": "student_id" }`; it takes precedence over legacy `stateStudentIdField` (optional, defaults to empty). No source means no ID. In some states the roster sourcedId is the state student ID, so it is sensitive.
+- Optional `stateStudentIdPattern` is a compilable regex, at most 200 characters, tested as `^(?:pattern)$` after trimming. Example only: `"[0-9]{10}"`. A mismatch is missing, logs only `classlink.state_id.pattern_mismatch` and tenant ID, and permits the existing test-stage fallback. Missing IDs do not block sign-in.
 - Testing only: a district override with `"testStateStudentIds": true` gives each student a stable fake ID (`TEST` + 10 digits, from the tenant and sourcedId) when the district sends none, so the transcript flow can be tested end to end. It works only when `LAMBDA_STAGE` is `dev`, `development`, `staging`, `test` or `local` (or, without a stage, `NODE_ENV` is not `production`); elsewhere it is ignored and `classlink.test_state_ids.ignored` is logged. A real `api_fields` value always wins.
 - It is stored encrypted (`src/helpers/classlinkPii.helpers.ts`): AES-256-GCM with `CLASSLINK_PII_KEY`, additional data bound to the identity key, versioned `v1:` payload in `stateStudentIdEnc`. It is kept only for the transcript window: `stateStudentIdExpiresAt` = sign-in time + `CLASSLINK_MAX_AUTH_AGE_SECONDS`. Read it only through `getStateStudentId`, which returns null once expired or unreadable.
 - Every write removes the legacy plaintext `stateStudentId`. A sign-in without a valid ID clears any stored one. Without a usable key nothing is stored and `classlink.pii.key_missing` is logged (no values). Expired IDs are removed lazily in `resolveClassLinkContext` (only if unchanged, so a newer sign-in is never cleared) and by the cleanup script. A transcript request does not clear the ID.
@@ -293,10 +294,10 @@ sequenceDiagram
 
 ### Linking rules
 
-- Identity key: `classlink:<tenant_id>:<sourcedId>`, stored as an AuthSubject and a `ClassLinkIdentity` record (tenant, sourcedId, sub, role, encrypted state student ID, Firebase uid, subject, last auth time).
+- Identity key: `classlink:<tenant_id>:v1:<digest>`, with base64url HMAC-SHA256 over the JSON tenant/sourcedId tuple. Its sub-key is HMAC-SHA256(CLASSLINK_PII_KEY, `classlink-identity-v1`), separate from encryption. The roster sourcedId is never written and is unset on upsert. Missing/invalid PII keys fail sign-in closed with `PRECONDITION_FAILED` and no values logged. No production migration: staging identities must be recreated; old AuthSubject/identity records are not looked up by plaintext keys. Key rotation changes identities.
 - A known ClassLink identity always reuses its Firebase uid. If its email now belongs to a different Firebase user, the exchange fails closed with `CONFLICT`.
 - A first-time ClassLink identity links to an existing Firebase email user only when the email domain is in the tenant's `allowedEmailDomains`, the Firebase email is verified, and the id_token does not say `email_verified: false`. Otherwise `CONFLICT`. An empty allowlist never links.
-- New users get a deterministic uid: `classlink_` + first 28 hex chars of sha256(identity key).
+- New users get a deterministic uid: `classlink_` + first 28 hex chars of HMAC-SHA256(identity key), using the identity sub-key.
 - Students get `isMinorHint`. The preferences routes force `MINOR_PREFERENCE_VALUES` for them (AI, analytics and bug reports off, each with its `*AutoDisabled` flag, and `isMinor`), whatever the client sends. If the student lookup fails, writes are refused and reads report locked settings without saving them, so a failure never unlocks a student or locks an adult.
 - Code exchange failures are rate limited per IP. Never log email, sub, state student ID, codes or tokens.
 
@@ -305,7 +306,7 @@ sequenceDiagram
 - `transcripts.getStatus` and `transcripts.request({ consent: true })` are DID-auth routes. The caller's DID resolves DID → UserKey → Firebase uid → ClassLink identity (`src/helpers/classlinkContext.helpers.ts`); inputs never carry a DID, profile ID or state ID.
 - Eligibility: tenant `transcriptEnabled`, ClassLink sign-in younger than `CLASSLINK_MAX_AUTH_AGE_SECONDS` (else `reauth_required`), and a state student ID present (else `no_state_id`).
 - An atomic Redis budget limits requests per DID per hour, and a per-user lock deduplicates requests within 10 minutes. Consent is saved before the outbound call.
-- lca-api signs a 5-minute EdDSA JWT with the service `did:web` `#owner` key (`src/helpers/issuerAssertion.helpers.ts`; claims: iss, aud, sub = student DID, state, state_student_id, ClassLink tenant/sourcedId/auth_time, consent_at, jti, iat, exp) and POSTs it to the district's resolved transcript issuer `endpoint` (`getTranscriptIssuerConfig`, `TRANSCRIPT_ISSUERS`; see Configuration), signed with that issuer's `audience`. The issuer verifies it against `/.well-known/did.json`.
+- lca-api signs a 5-minute EdDSA JWT with the service `did:web` `#owner` key (`src/helpers/issuerAssertion.helpers.ts`; claims: iss, aud, sub = student DID, state, state_student_id, ClassLink tenant/auth_time, consent_at, jti, iat, exp) and POSTs it to the district's resolved transcript issuer endpoint with its audience. The issuer verifies it against `/.well-known/did.json`. Mock issuers must not require `classlink_sourced_id`: it is omitted, with no replacement subject field.
 - Delivery is asynchronous: the issuer later sends the credential through the existing send API. Responses map to `requested`, `none_yet` or `failed`; there is no automatic retry, webhook or polling.
 
 ### School Connect (connect a school account to an existing account)
@@ -336,4 +337,4 @@ All optional; without client ID and secret the routes return `PRECONDITION_FAILE
 
 - Account deletion: the app calls `classlink.deleteMyData` before deleting keys. `scripts/cleanup-orphan-classlink-data.ts` removes ClassLink and transcript rows whose Firebase uid has no UserKey, and expired or legacy plaintext state student IDs (dry run by default, `--apply` to delete).
 - `provision:keycloak` reuses the ClassLink subject for ClassLink-only users; `--report-classlink` only prints how many users resolved that way.
-- Keycloak era: ClassLink sign-in becomes another lca-api login ticket (`classlink:<tenant>:<sourcedId>`) brokered by Keycloak's existing `lca-api` identity provider, so provisioned federated links keep the same subject and DID.
+- Keycloak era: ClassLink sign-in becomes another lca-api login ticket (`classlink:<tenant>:v1:<digest>`) brokered by Keycloak's existing `lca-api` identity provider, so provisioned federated links keep the same subject and DID.

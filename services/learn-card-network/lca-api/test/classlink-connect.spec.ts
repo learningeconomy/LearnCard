@@ -3,7 +3,7 @@ import mongodb from '@mongo';
 import { classlinkRouter } from '../src/routes/classlink';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
 import { exchangeClassLinkCode, verifyClassLinkIdToken } from '../src/helpers/classlink.helpers';
-import { getStateStudentId } from '../src/helpers/classlinkPii.helpers';
+import { classLinkSubjectDigest, getStateStudentId } from '../src/helpers/classlinkPii.helpers';
 import {
     findClassLinkIdentityByIdentityKey,
     getClassLinkIdentitiesCollection,
@@ -62,7 +62,7 @@ vi.mock('@cache', () => ({
 
 const did = 'did:key:existing-account';
 const uid = 'existing-firebase-uid';
-const identityKey = 'classlink:tenant-test:source-1';
+const identityKey = `classlink:tenant-test:v1:${classLinkSubjectDigest('tenant-test', 'source-1')}`;
 const redirectUri = 'https://app.example/auth/classlink/callback';
 const exchange = {
     code: 'private-code',
@@ -216,7 +216,6 @@ describe('School Connect', () => {
         await upsertClassLinkIdentity({
             identityKey,
             tenantId: 'tenant-test',
-            sourcedId: 'source-1',
             sub: 'private-sub',
             role: 'student',
             email: 'student@example.edu',

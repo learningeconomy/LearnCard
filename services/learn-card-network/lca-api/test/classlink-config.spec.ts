@@ -41,6 +41,28 @@ const validTenants = {
     },
 };
 
+it('accepts source-only districts and rejects invalid or oversized patterns', () => {
+    const district = {
+        ...validTenants['tenant-test'],
+        stateStudentIdField: undefined,
+        stateStudentIdSource: { type: 'sourcedId' },
+        stateStudentIdPattern: '[0-9]{10}',
+    };
+    expect(ClassLinkTenantsValidator.parse({ district }).district?.stateStudentIdField).toBe('');
+    for (const pattern of ['[', 'x'.repeat(201)]) {
+        expect(
+            ClassLinkTenantsValidator.safeParse({
+                district: { ...district, stateStudentIdPattern: pattern },
+            }).success
+        ).toBe(false);
+    }
+    expect(
+        ClassLinkTenantsValidator.safeParse({
+            district: { ...district, stateStudentIdSource: { type: 'sourcedId', field: 'extra' } },
+        }).success
+    ).toBe(false);
+});
+
 const exampleRecordsIssuer = {
     endpoint: 'https://records.example.org/transcript-requests',
     audience: 'records-service',

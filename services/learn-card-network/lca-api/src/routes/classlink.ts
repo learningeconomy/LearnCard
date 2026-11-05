@@ -7,7 +7,7 @@
  * code exchange against lca-api as today (code → `id_token` verification →
  * state-ID resolution), but instead of minting a Firebase token lca-api issues
  * a one-time ticket scoped to that user's stable
- * `identityKey = classlink:<tenant_id>:<sourcedId>`. The browser/app is then
+ * `identityKey = classlink:<tenant_id>:v1:<digest>`. The browser/app is then
  * redirected into Keycloak's existing `lca-api` identity-provider broker
  * (the same broker already used for native email/social sign-in — no new
  * ClassLink-specific Keycloak identity provider or Terraform module is needed)
@@ -20,7 +20,6 @@
  * account the wallet already uses, with no double-subject and no new identity
  * provider to provision or maintain.
  */
-import { createHash } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { environment } from '@environment';
@@ -37,7 +36,7 @@ import {
 } from '@helpers/classlinkExchange.helpers';
 import { ClassLinkEmailMissing, ClassLinkTokenInvalid } from '@helpers/classlink.errors';
 import { resolveStateStudentId } from '@helpers/classlink.stateId';
-import { sealStateStudentId } from '@helpers/classlinkPii.helpers';
+import { classLinkFirebaseUid, sealStateStudentId } from '@helpers/classlinkPii.helpers';
 import { isRateLimited, recordFailure } from '@helpers/rate-limit.helpers';
 import {
     findAuthSubjectByIdentityKey,
@@ -145,7 +144,7 @@ export const classlinkRouter = t.router({
                 const attrs = { email, emailVerified: true, displayName };
                 let uid = existing?.firebaseUid ?? emailUser?.uid;
                 if (!uid) {
-                    uid = `classlink_${createHash('sha256').update(identityKey).digest('hex').slice(0, 28)}`;
+                    uid = classLinkFirebaseUid(identityKey);
                     if (auth)
                         await auth.createUser({ uid, email, emailVerified: true, displayName });
                 }
@@ -172,7 +171,6 @@ export const classlinkRouter = t.router({
                 await upsertClassLinkIdentity({
                     identityKey,
                     tenantId,
-                    sourcedId: claims.classLink_sourcedId,
                     sub: claims.sub,
                     role: claims.classLink_role ?? '',
                     email,

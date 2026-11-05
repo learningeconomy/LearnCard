@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { classlinkRouter } from '../src/routes/classlink';
 import { getClassLinkConfig } from '../src/helpers/classlink.config';
@@ -14,7 +13,11 @@ import {
     findAuthSubjectByIdentityKey,
 } from '../src/models/AuthSubject';
 import { getContactMethodFromUser, verifyFirebaseToken } from '../src/helpers/auth.helpers';
-import { getStateStudentId } from '../src/helpers/classlinkPii.helpers';
+import {
+    classLinkSubjectDigest,
+    classLinkFirebaseUid,
+    getStateStudentId,
+} from '../src/helpers/classlinkPii.helpers';
 import type { ClassLinkClaims, ClassLinkConfig } from '../src/types/classlink';
 
 const { env, firebase, counts, windows } = vi.hoisted(() => ({
@@ -64,8 +67,8 @@ vi.mock('@cache', () => ({
     },
 }));
 
-const identityKey = 'classlink:tenant-test:source-1';
-const uid = `classlink_${createHash('sha256').update(identityKey).digest('hex').slice(0, 28)}`;
+const identityKey = `classlink:tenant-test:v1:${classLinkSubjectDigest('tenant-test', 'source-1')}`;
+const uid = classLinkFirebaseUid(identityKey);
 const redirectUri = 'https://app.example/auth/classlink/callback';
 const nativeUri = 'com.example.app://auth/classlink/callback';
 const exchange = {
@@ -191,6 +194,8 @@ describe('ClassLink sign-in broker', () => {
         });
         const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
         expect(stored).not.toHaveProperty('stateStudentId');
+        expect(stored).not.toHaveProperty('sourcedId');
+        expect(identityKey).not.toContain('source-1');
         expect(stored?.stateStudentIdEnc).toMatch(/^v1:/);
         expect(JSON.stringify(stored)).not.toContain('private-student-id');
         expect(getStateStudentId(stored!)).toBe('private-student-id');
@@ -319,12 +324,15 @@ describe('ClassLink sign-in broker', () => {
         expect(stored).not.toHaveProperty('stateStudentIdEnc');
         expect(stored).not.toHaveProperty('stateStudentIdExpiresAt');
     });
-    it('stores no state ID without an encryption key and logs no values', async () => {
+    it('fails closed without an encryption key and logs no values', async () => {
         env.CLASSLINK_PII_KEY = undefined;
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-        await caller().exchangeCode(exchange);
+        await expect(caller().exchangeCode(exchange)).rejects.toMatchObject({
+            code: 'PRECONDITION_FAILED',
+        });
         const stored = await getClassLinkIdentitiesCollection().findOne({ identityKey });
-        expect(stored).not.toHaveProperty('stateStudentIdEnc');
+        expect(stored).toBeNull();
+        expect(firebase.createUser).not.toHaveBeenCalled();
         expect(JSON.stringify(stored)).not.toContain('private-student-id');
         expect(warn).toHaveBeenCalledWith('classlink.pii.key_missing');
         expect(JSON.stringify(warn.mock.calls)).not.toContain('private-student-id');

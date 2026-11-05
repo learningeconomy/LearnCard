@@ -7,7 +7,6 @@ export const CLASSLINK_IDENTITIES_COLLECTION = 'classlinkidentities';
 export interface MongoClassLinkIdentityType {
     identityKey: string;
     tenantId: string;
-    sourcedId: string;
     sub: string;
     role: string;
     email: string;
@@ -29,11 +28,12 @@ export interface MongoClassLinkIdentityType {
 
 type StateStudentIdField = 'stateStudentId' | 'stateStudentIdEnc' | 'stateStudentIdExpiresAt';
 const STATE_STUDENT_ID_UNSET = {
+    sourcedId: '',
     stateStudentId: '',
     stateStudentIdEnc: '',
     stateStudentIdExpiresAt: '',
 } as const;
-const LEGACY_STATE_STUDENT_ID_UNSET = { stateStudentId: '' } as const;
+const LEGACY_STATE_STUDENT_ID_UNSET = { stateStudentId: '', sourcedId: '' } as const;
 
 export type ClassLinkIdentityInput = Omit<
     MongoClassLinkIdentityType,

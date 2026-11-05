@@ -46,7 +46,6 @@ beforeEach(async () => {
     await getClassLinkIdentitiesCollection().insertOne({
         identityKey: 'classlink:cleanup:identity',
         tenantId: 'cleanup',
-        sourcedId: 'source',
         sub: 'sub',
         role: 'student',
         email: 'cleanup@example.test',

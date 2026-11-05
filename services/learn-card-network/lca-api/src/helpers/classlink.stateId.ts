@@ -36,11 +36,14 @@ export const apiFieldsResolver: StateStudentIdResolver = {
                 return null;
             }
         }
-        if (!tenantCfg.stateStudentIdField) return null;
+        const field =
+            tenantCfg.stateStudentIdSource?.type === 'apiField'
+                ? tenantCfg.stateStudentIdSource.field
+                : tenantCfg.stateStudentIdField;
+        if (!field) return null;
         if (!fields || typeof fields !== 'object' || Array.isArray(fields)) return null;
-        if (!Object.prototype.hasOwnProperty.call(fields, tenantCfg.stateStudentIdField))
-            return null;
-        const value = (fields as Record<string, unknown>)[tenantCfg.stateStudentIdField];
+        if (!Object.prototype.hasOwnProperty.call(fields, field)) return null;
+        const value = (fields as Record<string, unknown>)[field];
         return typeof value === 'string' ? value.trim() || null : null;
     },
 };
@@ -50,7 +53,20 @@ export const resolveStateStudentId = async (
     claims: ClassLinkClaims,
     tenantCfg: ClassLinkTenantConfig
 ): Promise<string | null> => {
-    const fromDistrict = await apiFieldsResolver.resolve(claims, tenantCfg);
+    let fromDistrict =
+        tenantCfg.stateStudentIdSource?.type === 'sourcedId'
+            ? claims.classLink_sourcedId.trim() || null
+            : await apiFieldsResolver.resolve(claims, tenantCfg);
+    if (
+        fromDistrict &&
+        tenantCfg.stateStudentIdPattern !== undefined &&
+        !new RegExp(`^(?:${tenantCfg.stateStudentIdPattern})$`).test(fromDistrict)
+    ) {
+        console.warn('classlink.state_id.pattern_mismatch', {
+            tenantId: claims.classLink_tenant_id,
+        });
+        fromDistrict = null;
+    }
     if (fromDistrict || !tenantCfg.testStateStudentIds) return fromDistrict;
     if (!isTestStage()) {
         console.error('classlink.test_state_ids.ignored', { tenantId: claims.classLink_tenant_id });

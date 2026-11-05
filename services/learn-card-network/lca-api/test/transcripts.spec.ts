@@ -64,7 +64,6 @@ beforeEach(async () => {
         firebaseUid: 'uid-test',
         subject: 'subject-test',
         tenantId: 'tenant-test',
-        sourcedId: 'source-1',
         sub: 'upstream-sub',
         role: 'student',
         email: 'student@example.edu',
@@ -142,7 +141,6 @@ describe('transcript requests', () => {
             firebaseUid: 'uid-two',
             subject: 'subject-two',
             tenantId: 'tenant-two',
-            sourcedId: 'source-2',
             sub: 'upstream-sub-two',
             role: 'student',
             email: 'student2@example.edu',
@@ -262,6 +260,8 @@ describe('transcript requests', () => {
                     state_student_id: 'private-student-id',
                     classlink_tenant_id: 'tenant-test',
                 });
+                expect(payload).not.toHaveProperty('classlink_sourced_id');
+                expect(body).not.toHaveProperty('classlink_sourced_id');
                 const record = await getTranscriptRequestsCollection().findOne({
                     jti: payload.jti,
                 });

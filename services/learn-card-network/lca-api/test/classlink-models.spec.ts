@@ -17,7 +17,6 @@ import {
 const identity = (identityKey = 'classlink:tenant-test:source-1') => ({
     identityKey,
     tenantId: 'tenant-test',
-    sourcedId: 'source-1',
     sub: 'sub-1',
     role: 'student',
     email: 'student@example.edu',
@@ -37,6 +36,10 @@ afterEach(async () => {
 describe('ClassLink and transcript models', () => {
     it('upserts idempotently and preserves createdAt', async () => {
         const first = await upsertClassLinkIdentity({ ...identity(), sealedStateStudentId: null });
+        await getClassLinkIdentitiesCollection().updateOne(
+            { identityKey: first.identityKey },
+            { $set: { ...{ sourcedId: 'legacy-sensitive-value' } } }
+        );
         const second = await upsertClassLinkIdentity({
             ...identity(),
             email: 'new@example.edu',
@@ -49,6 +52,7 @@ describe('ClassLink and transcript models', () => {
             })
         ).toBe(1);
         expect(second.email).toBe('new@example.edu');
+        expect(second).not.toHaveProperty('sourcedId');
     });
 
     it('enforces unique identity keys', async () => {

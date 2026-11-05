@@ -240,6 +240,45 @@ describe('ClassLink token verification', () => {
 });
 
 describe('email and state student ID', () => {
+    it('uses trimmed sourcedId in preference to api fields', async () => {
+        expect(
+            await resolveStateStudentId(
+                claims({
+                    classLink_sourcedId: ' 0123456789 ',
+                    api_fields: { student_id: 'other' },
+                }),
+                {
+                    ...tenant,
+                    stateStudentIdSource: { type: 'sourcedId' },
+                    stateStudentIdPattern: '[0-9]{10}',
+                }
+            )
+        ).toBe('0123456789');
+    });
+    it('uses the explicit API field in preference to the legacy field', async () => {
+        expect(
+            await resolveStateStudentId(
+                claims({ api_fields: { alternate: ' 0123456789 ', student_id: 'other' } }),
+                {
+                    ...tenant,
+                    stateStudentIdSource: { type: 'apiField', field: 'alternate' },
+                }
+            )
+        ).toBe('0123456789');
+    });
+    it('rejects partial pattern matches and warns without the value', async () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        expect(
+            await resolveStateStudentId(claims({ classLink_sourcedId: 'x0123456789' }), {
+                ...tenant,
+                stateStudentIdSource: { type: 'sourcedId' },
+                stateStudentIdPattern: '[0-9]{10}',
+            })
+        ).toBeNull();
+        expect(warn).toHaveBeenCalledExactlyOnceWith('classlink.state_id.pattern_mismatch', {
+            tenantId: 'tenant-test',
+        });
+    });
     it('prefers normalized email', () =>
         expect(
             getClassLinkEmail(
@@ -285,6 +324,19 @@ describe('email and state student ID', () => {
     describe('test state IDs', () => {
         const testTenant = { ...tenant, testStateStudentIds: true };
         const noStateId = claims({ api_fields: {} });
+        it.each(['test', 'production'])(
+            'applies fallback after mismatch only on test stages: %s',
+            async stage => {
+                env.LAMBDA_STAGE = stage;
+                const result = await resolveStateStudentId(noStateId, {
+                    ...testTenant,
+                    stateStudentIdSource: { type: 'sourcedId' },
+                    stateStudentIdPattern: '[0-9]{10}',
+                });
+                if (stage === 'test') expect(result).toMatch(/^TEST\d{10}$/);
+                else expect(result).toBeNull();
+            }
+        );
         afterEach(() => {
             env.LAMBDA_STAGE = undefined;
             env.NODE_ENV = 'test';

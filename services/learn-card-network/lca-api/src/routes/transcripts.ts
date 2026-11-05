@@ -166,7 +166,6 @@ export const transcriptsRouter = t.router({
                         state: identity.state,
                         state_student_id: stateStudentId,
                         classlink_tenant_id: identity.tenantId,
-                        classlink_sourced_id: identity.sourcedId,
                         classlink_auth_time: Math.floor(identity.lastAuthTime.getTime() / 1000),
                         consent_at: Math.floor(consentAt.getTime() / 1000),
                     },

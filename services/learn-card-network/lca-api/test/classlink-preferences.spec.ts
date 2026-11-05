@@ -50,7 +50,6 @@ beforeEach(async () => {
     await upsertClassLinkIdentity({
         identityKey: 'classlink:tenant-test:student-1',
         tenantId: 'tenant-test',
-        sourcedId: 'student-1',
         sub: 'sub-1',
         role: 'Student',
         email: 'student@example.edu',

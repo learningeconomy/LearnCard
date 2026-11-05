@@ -38,7 +38,25 @@ export type ResolvedTranscriptIssuer = {
 export const ClassLinkTenantConfigValidator = z.object({
     displayName: z.string().min(1),
     state: z.string().regex(/^[A-Z]{2}$/),
-    stateStudentIdField: z.string().min(1),
+    stateStudentIdField: z.string().default(''),
+    stateStudentIdSource: z
+        .discriminatedUnion('type', [
+            z.object({ type: z.literal('sourcedId') }).strict(),
+            z.object({ type: z.literal('apiField'), field: z.string().min(1) }).strict(),
+        ])
+        .optional(),
+    stateStudentIdPattern: z
+        .string()
+        .max(200)
+        .refine(pattern => {
+            try {
+                new RegExp(`^(?:${pattern})$`);
+                return true;
+            } catch {
+                return false;
+            }
+        }, 'Invalid regular expression')
+        .optional(),
     allowedEmailDomains: z.array(z.string().min(1)),
     transcriptEnabled: z.boolean(),
     /** Selects a TRANSCRIPT_ISSUERS key for this district; falls back to `default` when unset. */

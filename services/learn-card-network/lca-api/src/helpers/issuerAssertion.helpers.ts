@@ -33,8 +33,6 @@ export interface IssuerAssertionClaims {
     state_student_id: string;
     /** The upstream SSO tenant id the student authenticated through. */
     classlink_tenant_id: string;
-    /** The upstream SSO roster `sourcedId` for the student. */
-    classlink_sourced_id: string;
     /** `auth_time` (unix seconds) from the student's verified id_token. */
     classlink_auth_time: number;
     /** When the student opted in to the transcript request (unix seconds). */

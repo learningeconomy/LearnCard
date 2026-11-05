@@ -590,3 +590,19 @@ Redeploy both services after editing the stage config (rebuilding the frontend a
 will not update Lambda configuration), then enable `share-multiple-enabled` in
 LaunchDarkly. Check create/open/revoke in the target environment, including opening
 a copied link in a signed-out browser. Missing values keep sharing disabled.
+
+# ClassLink district identity configuration
+
+`CLASSLINK_TENANTS` accepts optional `stateStudentIdSource`: `{ "type": "sourcedId" }`
+or `{ "type": "apiField", "field": "student_id" }`. This overrides legacy
+`stateStudentIdField`, which defaults to empty. Values come only from verified token
+claims, never userinfo. In some states the roster sourcedId is the state student ID.
+Optional `stateStudentIdPattern` is a compilable regex of at most 200 characters,
+fully matched after trimming (`^(?:pattern)$`); `"[0-9]{10}"` is an example only.
+Mismatch means missing, with the existing test-stage-only fallback still available.
+
+`CLASSLINK_PII_KEY` (base64, exactly 32 bytes) is required for sign-in. A separate
+HMAC-derived identity sub-key produces opaque identity keys and new Firebase UIDs;
+roster sourcedId is not stored or sent to transcript issuers. Missing/invalid keys
+fail closed. Rotation changes identity keys. Recreate staging identities; no
+production migration is provided.

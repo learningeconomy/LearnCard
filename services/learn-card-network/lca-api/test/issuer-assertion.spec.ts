@@ -59,7 +59,6 @@ const baseClaims: IssuerAssertionClaims = {
     state: 'XX',
     state_student_id: 'state-student-456',
     classlink_tenant_id: 'tenant-test',
-    classlink_sourced_id: 'sourced-789',
     classlink_auth_time: 1_770_000_000,
     consent_at: 1_770_000_100,
 };
@@ -168,7 +167,6 @@ describe('issuer assertion signer', () => {
                 state: baseClaims.state,
                 state_student_id: baseClaims.state_student_id,
                 classlink_tenant_id: baseClaims.classlink_tenant_id,
-                classlink_sourced_id: baseClaims.classlink_sourced_id,
                 classlink_auth_time: baseClaims.classlink_auth_time,
                 consent_at: baseClaims.consent_at,
             });

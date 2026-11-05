@@ -160,7 +160,6 @@ export const connectProcedures = {
                 await upsertClassLinkIdentity({
                     identityKey,
                     tenantId,
-                    sourcedId: claims.classLink_sourcedId,
                     sub: claims.sub,
                     role: claims.classLink_role ?? '',
                     email: email ?? existing?.email ?? '',

@@ -1,4 +1,5 @@
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHmac, randomBytes } from 'node:crypto';
+import { TRPCError } from '@trpc/server';
 
 import { environment } from '@environment';
 import type { MongoClassLinkIdentityType } from '../models/ClassLinkIdentity';
@@ -22,6 +23,33 @@ const getPiiKey = (): Buffer | null => {
     if (key.length !== KEY_LENGTH || key.toString('base64') !== encoded) return null;
     return key;
 };
+
+/** Domain-separated identity HMAC; an unusable key disables school sign-in. */
+const identityHmac = (value: string): Buffer => {
+    const key = getPiiKey();
+    if (!key) {
+        console.warn('classlink.pii.key_missing');
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'School sign-in is not configured.',
+        });
+    }
+    const subKey = createHmac('sha256', key).update('classlink-identity-v1').digest();
+    try {
+        return createHmac('sha256', subKey).update(value).digest();
+    } finally {
+        key.fill(0);
+        subKey.fill(0);
+    }
+};
+
+/** Opaque tenant-scoped identifier derived only from verified claims. */
+export const classLinkSubjectDigest = (tenantId: string, sourcedId: string): string =>
+    identityHmac(JSON.stringify([tenantId, sourcedId])).toString('base64url');
+
+/** Stable keyed UID for new identities; existing stored UIDs are retained. */
+export const classLinkFirebaseUid = (identityKey: string): string =>
+    `classlink_${identityHmac(identityKey).toString('hex').slice(0, 28)}`;
 
 // The identity key binds a ciphertext to its record, so it cannot be copied to another student.
 const getAad = (identityKey: string): Buffer =>
