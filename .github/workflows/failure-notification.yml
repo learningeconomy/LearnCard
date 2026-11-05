@@ -34,6 +34,7 @@ on:
             - Maid-Service
             - Migrate Signing Authority Seeds
             - Mock E2E
+            - Nx cache experiment
             - OpenID4VC Interop Tests
             - PR Review Reminder
             - Full-Stack PR Preview
