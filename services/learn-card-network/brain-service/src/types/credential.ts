@@ -13,5 +13,6 @@ export const CredentialValidator = z.object({
     credential: z.string(),
     statusEntries: z.string().optional(),
     statusOwnerProfileId: z.string().optional(),
+    statusReservationMode: z.enum(['strict', 'lenient']).optional(),
 });
 export type CredentialType = z.infer<typeof CredentialValidator>;

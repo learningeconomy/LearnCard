@@ -28,6 +28,9 @@ export const mutateCredentialStatus = async (
          WITH root, refresh, sent
          OPTIONAL MATCH (issuer:Profile)-[:CREDENTIAL_SENT]->(root)
          RETURN root.id AS rootId, sent.status AS status,
+                 coalesce(refresh.issuerProfileId, root.statusOwnerProfileId) AS storedOwner,
+                 refresh IS NOT NULL AS managed,
+                 root.statusReservationMode AS reservationMode,
                  coalesce(refresh.issuerProfileId, root.statusOwnerProfileId, issuer.profileId) AS owner`,
             { credentialId, profileId, now: new Date().toISOString() }
         );
@@ -47,7 +50,24 @@ export const mutateCredentialStatus = async (
         for (const entry of [...entries].sort((a, b) =>
             a.statusListCredential.localeCompare(b.statusListCredential)
         )) {
-            if (!(await setStatusListEntryBit(entry, value, String(row.get('owner')), tx))) {
+            let owner = String(row.get('owner'));
+            const lenient = !row.get('managed') && row.get('reservationMode') === 'lenient';
+            const legacy = !row.get('managed') && !row.get('storedOwner');
+            if (lenient || legacy) {
+                const list = await tx.run(
+                    'MATCH (list:BitstringStatusList {statusListCredential: $url}) RETURN list.ownerProfileId AS owner',
+                    { url: entry.statusListCredential }
+                );
+                const listOwner: unknown = list.records[0]?.get('owner');
+                if (typeof listOwner !== 'string' || (lenient && listOwner !== owner)) {
+                    console.warn('[credential-status] RELATIONSHIP_ONLY_UNCONTROLLED_STATUS_LIST');
+                    continue;
+                }
+                // Before stored owners existed, lifecycle updates used the matched list,
+                // including contract autoboosts delivered by a different sender.
+                if (legacy) owner = listOwner;
+            }
+            if (!(await setStatusListEntryBit(entry, value, owner, tx))) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Public credential status could not be updated; retry the operation',

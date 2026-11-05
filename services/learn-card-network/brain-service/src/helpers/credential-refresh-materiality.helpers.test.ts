@@ -16,6 +16,18 @@ import {
 describe('versioned status fingerprints', () => {
     afterEach(() => vi.unstubAllEnvs());
 
+    it('matches current-version digests without parsing previous keys', () => {
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'current-test-key');
+        const status = { type: 'BitstringStatusListEntry', statusPurpose: 'revocation' };
+        const digest = computeCredentialStatusDigest(status);
+        // Startup validation is separate; current matches never consult old keys.
+        vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', 'invalid-json');
+        expect(getCredentialRefreshDigestCandidateSecrets('v2')).toEqual(['current-test-key']);
+        expect(matchesCredentialStatusDigest(status, digest)).toBe(true);
+        expect(() => getCredentialRefreshDigestCandidateSecrets('v1')).toThrow();
+    });
+
     it('retains shape, array order and fields, and accepts unversioned current-key digests', () => {
         const status = { type: 'BitstringStatusListEntry', statusPurpose: 'revocation' };
         const digest = computeCredentialStatusDigest(status);

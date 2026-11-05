@@ -12,6 +12,7 @@ import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
 import { mutateCredentialStatus } from '@helpers/credential-status-mutation.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialUri, sendCredential } from '@helpers/credential.helpers';
+import { getUriParts } from '@helpers/uri.helpers';
 import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import * as credentialRelationships from '@accesslayer/credential/relationships/create';
@@ -89,6 +90,215 @@ const send = async (arrayShape = false) => {
 };
 
 describe('Managed public status', () => {
+    const ordinary = async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const from = await getProfileByProfileId('status-issuer');
+        const to = await getProfileByProfileId('status-holder');
+        if (!from || !to) throw new Error('Missing test profiles');
+        return { entries, credential, from, to };
+    };
+
+    it('forwards foreign-owner plaintext without reserving or mutating its public bit', async () => {
+        const { entries, credential, from, to } = await ordinary();
+        await expect(storeCredential(credential, undefined, to.profileId)).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+        const uri = await sendCredential(to, from, credential, domain);
+        const bindings = await neogma.queryRunner.run('MATCH (b:CredentialStatusBinding) RETURN b');
+        expect(bindings.records).toHaveLength(0);
+        const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            expect(
+                await mutateCredentialStatus(
+                    getUriParts(uri).id,
+                    from.profileId,
+                    'revocation',
+                    true
+                )
+            ).toBe(true);
+            expect(warning).toHaveBeenCalledWith(
+                '[credential-status] RELATIONSHIP_ONLY_UNCONTROLLED_STATUS_LIST'
+            );
+        } finally {
+            warning.mockRestore();
+        }
+        expect(await bit(entries[0]!)).toBe(false);
+    });
+
+    it('delivers identical signed content twice with one binding and revokes the shared bit', async () => {
+        const { entries, credential, from, to } = await ordinary();
+        const first = await sendCredential(from, to, credential, domain);
+        // Object key order is not part of signed JSON identity; proof content is.
+        const { proof, ...body } = credential;
+        const second = await sendCredential(from, from, { proof, ...body }, domain);
+        expect(second).not.toBe(first);
+        const bindings = await neogma.queryRunner.run('MATCH (b:CredentialStatusBinding) RETURN b');
+        expect(bindings.records).toHaveLength(1);
+        expect(
+            await mutateCredentialStatus(getUriParts(second).id, from.profileId, 'revocation', true)
+        ).toBe(true);
+        expect(await bit(entries[0]!)).toBe(true);
+        await expect(storeCredential(credential, undefined, from.profileId)).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+    });
+
+    it.each([false, true])(
+        'preserves shared reservations during unlinked cleanup (concurrent=%s)',
+        async concurrent => {
+            const { entries, credential, from, to } = await ordinary();
+            const first = await storeCredential(credential, undefined, from.profileId);
+            let second: string;
+            if (concurrent) {
+                [second] = await Promise.all([
+                    sendCredential(from, to, credential, domain),
+                    releaseUnlinkedCredential(first.id),
+                ]);
+            } else {
+                second = await sendCredential(from, to, credential, domain);
+                await releaseUnlinkedCredential(first.id);
+            }
+            const secondId = getUriParts(second).id;
+            const bindings = await neogma.queryRunner.run(
+                'MATCH (b:CredentialStatusBinding) RETURN b.credentialId AS id'
+            );
+            expect(bindings.records).toHaveLength(1);
+            expect(bindings.records[0]!.get('id')).toBe(secondId);
+            const removed = await neogma.queryRunner.run(
+                'MATCH (c:Credential {id: $id}) RETURN c',
+                { id: first.id }
+            );
+            expect(removed.records).toHaveLength(0);
+            const different = await issuer.learnCard.invoke.issueCredential({
+                ...credential,
+                proof: undefined,
+                id: 'urn:uuid:cleanup-reuse',
+            });
+            await expect(sendCredential(from, to, different, domain)).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+            expect(await mutateCredentialStatus(secondId, to.profileId, 'revocation', true)).toBe(
+                true
+            );
+            expect(await bit(entries[0]!)).toBe(true);
+        }
+    );
+
+    it('rejects different content or proof reusing an ordinary bound index', async () => {
+        const { credential, from, to } = await ordinary();
+        await sendCredential(from, to, credential, domain);
+        const different = await issuer.learnCard.invoke.issueCredential({
+            ...credential,
+            proof: undefined,
+            id: 'urn:uuid:different',
+        });
+        await expect(sendCredential(from, from, different, domain)).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+        });
+        await expect(
+            sendCredential(from, from, { ...credential, proof: [] }, domain)
+        ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    });
+
+    it.each(['credentialSubject', 'proof'] as const)(
+        'rejects differences in own JSON prototype-named keys within %s',
+        async field => {
+            const { credential, from, to } = await ordinary();
+            Object.defineProperty(credential[field], 'details', { value: {}, enumerable: true });
+            await sendCredential(from, to, credential, domain);
+            const different = structuredClone(credential);
+            Object.defineProperty(different[field], 'details', {
+                value: JSON.parse('{"__proto__":{"claim":"changed"}}'),
+                enumerable: true,
+            });
+            await expect(sendCredential(from, from, different, domain)).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+            });
+        }
+    );
+
+    it('preserves legacy contract-autoboost revocation when sender differs from list owner', async () => {
+        const { entries, credential, to } = await ordinary();
+        // Historical autoboost storage had no validated status owner or reservation mode.
+        const stored = await storeCredential(credential);
+        await neogma.queryRunner.run(
+            'MATCH (sender:Profile {profileId: $sender}), (c:Credential {id: $id}) CREATE (sender)-[:CREDENTIAL_SENT {to: $recipient}]->(c)',
+            { sender: to.profileId, recipient: to.profileId, id: stored.id }
+        );
+        expect(await mutateCredentialStatus(stored.id, to.profileId, 'revocation', true)).toBe(
+            true
+        );
+        expect(await bit(entries[0]!)).toBe(true);
+    });
+
+    it('does not treat a stored owner mismatch as a legacy delivery', async () => {
+        const { entries, credential, from, to } = await ordinary();
+        const stored = await storeCredential(credential, undefined, from.profileId);
+        await neogma.queryRunner.run(
+            `MATCH (sender:Profile {profileId: $sender}), (c:Credential {id: $id})
+             SET c.statusOwnerProfileId = $sender
+             CREATE (sender)-[:CREDENTIAL_SENT {to: $recipient}]->(c)`,
+            { sender: to.profileId, recipient: to.profileId, id: stored.id }
+        );
+        await expect(
+            mutateCredentialStatus(stored.id, to.profileId, 'revocation', true)
+        ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        expect(await bit(entries[0]!)).toBe(false);
+        const delivery = await neogma.queryRunner.run(
+            'MATCH ()-[sent:CREDENTIAL_SENT]->(:Credential {id: $id}) RETURN sent.status AS status',
+            { id: stored.id }
+        );
+        expect(delivery.records[0]!.get('status')).toBeNull();
+    });
+
+    it('rejects external managed status lists with BAD_REQUEST but preserves ordinary storage', async () => {
+        const allocation =
+            await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
+                holder: { profileId: 'status-holder', did: holder.learnCard.id.did() },
+                credentialId: 'urn:uuid:external-managed-status',
+            });
+        const credential = await issuer.learnCard.invoke.issueCredential(
+            injectManagedRefreshService(
+                {
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    id: 'urn:uuid:external-managed-status',
+                    type: ['VerifiableCredential'],
+                    issuer: issuer.learnCard.id.did(),
+                    credentialSubject: { id: holder.learnCard.id.did() },
+                    credentialStatus: {
+                        id: 'https://other.example/status-lists/id#0',
+                        type: 'BitstringStatusListEntry',
+                        statusPurpose: 'revocation',
+                        statusListIndex: '0',
+                        statusListCredential: 'https://other.example/status-lists/id',
+                    },
+                },
+                allocation.refreshService
+            )
+        );
+        await expect(
+            issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                refreshId: allocation.refreshId,
+                credential,
+            })
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'Managed credentials must use network-hosted status lists',
+        });
+        await expect(
+            storeCredential(credential, undefined, 'status-issuer')
+        ).resolves.toBeDefined();
+    });
+
     it.each([false, true])(
         'preserves client allocation unless server binding is requested (server=%s)',
         async serverBinding => {
@@ -441,7 +651,7 @@ describe('Managed public status', () => {
 
     it('rejects ordinary delivery reusing a managed index and concurrent cross-kind reservations', async () => {
         const { allocation, credential, entries } = await send();
-        const ordinary = await issuer.learnCard.invoke.issueCredential({
+        const ordinaryCredential = await issuer.learnCard.invoke.issueCredential({
             '@context': ['https://www.w3.org/ns/credentials/v2'],
             type: ['VerifiableCredential'],
             id: 'urn:uuid:ordinary-status-test',
@@ -453,7 +663,7 @@ describe('Managed public status', () => {
             issuer.clients.fullAuth.boost.sendBoost({
                 uri: allocation.boostUri,
                 profileId: 'status-holder',
-                credential: ordinary,
+                credential: ordinaryCredential,
             })
         ).rejects.toThrow('already bound');
         const other = await issuer.clients.fullAuth.credentialRefresh.allocateCredentialRefresh({
@@ -542,6 +752,9 @@ describe('Managed public status', () => {
                 'status-issuer',
                 domain
             )
-        ).rejects.toThrow('local');
+        ).rejects.toMatchObject({
+            code: 'BAD_REQUEST',
+            message: 'Managed credentials must use network-hosted status lists',
+        });
     });
 });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { JWE, VC } from '@learncard/types';
+import type { Transaction } from 'neo4j-driver';
 
 const mocks = vi.hoisted(() => ({
     decrypt: vi.fn(),
@@ -13,6 +14,16 @@ const mocks = vi.hoisted(() => ({
     notify: vi.fn(async () => undefined),
     signingAuthority: vi.fn(),
     release: vi.fn(),
+    transaction: { run: vi.fn() },
+}));
+
+vi.mock('@instance', () => ({
+    neogma: {
+        getTransaction: async (
+            _transaction: Transaction | null,
+            action: (transaction: unknown) => Promise<unknown>
+        ) => action(mocks.transaction),
+    },
 }));
 
 vi.mock('@models', () => ({}));
@@ -168,6 +179,9 @@ describe('boost payload storage', () => {
         listing.resolve();
         await expect(result).resolves.toBe('lc:network:network.example/credential:stored');
         expect(mocks.contract).not.toHaveBeenCalled();
+        expect(mocks.instanceOf.mock.calls[0]?.[2]).toBe(mocks.transaction);
+        expect(mocks.sent.mock.calls[0]?.[6]).toBe(mocks.transaction);
+        expect(mocks.listing.mock.calls[0]?.[6]).toBe(mocks.transaction);
     });
 
     it('releases a failed contract send so the same signed payload can be retried', async () => {
@@ -304,7 +318,7 @@ describe('boost payload storage', () => {
             } else {
                 expect(unsigned).not.toHaveProperty('boostId');
             }
-            expect(mocks.store).toHaveBeenCalledWith(issued, undefined, 'org');
+            expect(mocks.store).toHaveBeenCalledWith(issued, mocks.transaction, 'org');
         }
     );
 

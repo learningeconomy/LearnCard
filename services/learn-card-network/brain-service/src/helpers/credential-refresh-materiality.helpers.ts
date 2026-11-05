@@ -1,7 +1,9 @@
 import { createHmac } from 'crypto';
-import { z } from 'zod';
 
-import { getCredentialRefreshRuntimeEnvironment } from '@environment';
+import {
+    getCredentialRefreshRuntimeEnvironment,
+    getCredentialRefreshPreviousDigestKeys,
+} from '@environment';
 import { canonicalizeCredentialContent, canonicalizeCredentialJson } from '@learncard/helpers';
 import type { PublishCredentialRefreshNotification } from '@learncard/types';
 
@@ -38,15 +40,6 @@ export const getCredentialRefreshDigestSecret = (): string => {
     );
 };
 
-const getPreviousDigestKeys = (): Record<string, string> =>
-    z
-        .record(z.string(), z.string())
-        .parse(
-            JSON.parse(
-                getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS
-            )
-        );
-
 /**
  * Returns current then explicitly retained previous HMAC secrets for legacy digests.
  * A version prefix restricts matching to that version's key, just as status digests do.
@@ -61,9 +54,9 @@ const getPreviousDigestKeys = (): Record<string, string> =>
 export const getCredentialRefreshDigestCandidateSecrets = (version?: string): string[] => {
     const runtime = getCredentialRefreshRuntimeEnvironment();
     const current = getCredentialRefreshDigestSecret();
-    const previous = getPreviousDigestKeys();
-    if (version === undefined) return [current, ...Object.values(previous)];
     if (version === runtime.CREDENTIAL_REFRESH_DIGEST_KEY_VERSION) return [current];
+    const previous = getCredentialRefreshPreviousDigestKeys();
+    if (version === undefined) return [current, ...Object.values(previous)];
     return Object.prototype.hasOwnProperty.call(previous, version) ? [previous[version]!] : [];
 };
 

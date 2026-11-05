@@ -1,4 +1,6 @@
 import cloneDeep from 'lodash/cloneDeep';
+import type { Transaction } from 'neo4j-driver';
+import { neogma } from '@instance';
 import {
     CredentialFieldError,
     isDisplayOnlyAnchorTemplate,
@@ -32,7 +34,7 @@ import {
 import { setCredentialSubjectIds } from '@helpers/credentialSubject.helpers';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance } from '@models';
+import { BoostInstance, CredentialInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
@@ -186,13 +188,50 @@ export const sendBoost = async ({
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
             // Contract auto-boosts are signed by the writer, whose profile owns the status list.
-            const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(
-                    credential,
-                    undefined,
-                    contractWriterProfileId ?? fromProfile.profileId
-                )
-            );
+            const persistDelivery = async (
+                transaction?: Transaction
+            ): Promise<CredentialInstance> => {
+                const stored = await traceDb('storeCredential', () =>
+                    storeCredential(
+                        credential,
+                        transaction,
+                        contractWriterProfileId ?? fromProfile.profileId
+                    )
+                );
+                if (!contractTerms) {
+                    await traceDb('createRelationships', async () => {
+                        await createBoostInstanceOfRelationship(stored, boost, transaction);
+                        await createSentCredentialRelationship(
+                            from,
+                            to,
+                            stored,
+                            metadata,
+                            activityId,
+                            integrationId,
+                            transaction
+                        );
+                        if (
+                            listingId &&
+                            (!isAppStoreListingIssuer(from) ||
+                                from.listing.listing_id !== listingId)
+                        ) {
+                            await createListingSentCredentialRelationship(
+                                listingId,
+                                to,
+                                stored,
+                                metadata,
+                                activityId,
+                                integrationId,
+                                transaction
+                            );
+                        }
+                    });
+                }
+                return stored;
+            };
+            const credentialInstance = contractTerms
+                ? await persistDelivery()
+                : await neogma.getTransaction(null, persistDelivery);
 
             try {
                 if (contractTerms) {
@@ -211,37 +250,6 @@ export const sendBoost = async ({
                             allowConsumedOneTime,
                         })
                     );
-                } else {
-                    // These writes share Credential/Profile/Listing nodes. Separate concurrent
-                    // auto-commit transactions can deadlock on Neo4j relationship-chain locks.
-                    await traceDb('createRelationships', async () => {
-                        await createBoostInstanceOfRelationship(credentialInstance, boost);
-                        await createSentCredentialRelationship(
-                            from,
-                            to,
-                            credentialInstance,
-                            metadata,
-                            activityId,
-                            integrationId
-                        );
-
-                        // Listing issuers already create this edge inside createSentCredentialRelationship.
-                        // Keep explicit attribution for profile/integration issuers or another listing.
-                        if (
-                            listingId &&
-                            (!isAppStoreListingIssuer(from) ||
-                                from.listing.listing_id !== listingId)
-                        ) {
-                            await createListingSentCredentialRelationship(
-                                listingId,
-                                to,
-                                credentialInstance,
-                                metadata,
-                                activityId,
-                                integrationId
-                            );
-                        }
-                    });
                 }
             } catch (error) {
                 try {
