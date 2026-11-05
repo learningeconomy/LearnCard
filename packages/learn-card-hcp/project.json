@@ -1,0 +1,27 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "hcp",
+    "sourceRoot": "packages/learn-card-hcp/src",
+    "projectType": "library",
+    "root": "packages/learn-card-hcp",
+    "tags": [],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"]
+    },
+    "targets": {
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "ciTestConfig"],
+            "options": {
+                "script": "test"
+            }
+        },
+        "typecheck": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "typecheck"
+            }
+        }
+    }
+}

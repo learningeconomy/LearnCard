@@ -1,0 +1,36 @@
+{
+    "name": "@learncard/hcp",
+    "version": "0.0.0",
+    "private": true,
+    "description": "HCP MCP binding stubs (Draft2 §10 tools). Placement spike for LC-2320. No @learncard/mcp dependency until #1955 merges.",
+    "type": "module",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "exports": {
+        ".": "./src/index.ts"
+    },
+    "files": [
+        "src"
+    ],
+    "scripts": {
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "tsc --noEmit -p tsconfig.json"
+    },
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/learningeconomy/LearnCard"
+    },
+    "homepage": "https://github.com/learningeconomy/LearnCard/tree/main/packages/learn-card-hcp/README.md",
+    "bugs": {
+        "url": "https://github.com/learningeconomy/LearnCard/issues"
+    },
+    "devDependencies": {
+        "@types/node": "^18.7.19",
+        "typescript": "^5.4.5",
+        "vitest": "4.1.11"
+    },
+    "sideEffects": false
+}
