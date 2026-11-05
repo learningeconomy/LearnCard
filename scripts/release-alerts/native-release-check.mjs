@@ -30,7 +30,16 @@ const NATIVE_JOB_PREFIX = 'Publish Native Apps to App Stores';
  * of fastlane's generic error lines. `last` takes the final match (fastlane
  * repeats its user error; the last one is the one that stopped the lane).
  * `skip` drops build noise such as bundle file names containing "Error".
+ * `extract` replaces `pattern` for causes that sit on a later line than their
+ * marker (Gradle). An entry's position in the list is its priority.
  */
+/** Gradle prints its cause on the lines after "* What went wrong:". */
+const gradleCause = lines => {
+    const at = lines.findIndex(line => line.startsWith('* What went wrong:'));
+    if (at < 0) return undefined;
+    return lines.slice(at + 1, at + 4).find(line => line && !line.startsWith('*'));
+};
+
 export const REASON_PATTERNS = [
     {
         pattern: /waiting for review|review submission is already in progress/i,
@@ -40,6 +49,8 @@ export const REASON_PATTERNS = [
         pattern: /not in valid state|cannot be reviewed/i,
         hint: 'App Store Connect would not accept the version for review (usually a previous submission is still in flight). Check the version in App Store Connect.',
     },
+    // Gradle's cause outranks the generic patterns below, not App Store Connect ones.
+    { extract: gradleCause },
     // xcodebuild / xcpretty compile errors.
     { pattern: /^❌\s|(^|\s)error: / },
     { pattern: /google api error|the caller does not have permission/i },
@@ -50,13 +61,6 @@ export const REASON_PATTERNS = [
         skip: /\.(js|css|map|swift|kt|java|m|h)\b|^Compiling |^ERROR \[[^\]]*\]:\s*(=>\s*)?(\d+:|```)/,
     },
 ];
-
-/** Gradle prints its cause on the lines after "* What went wrong:". */
-const gradleCause = lines => {
-    const at = lines.findIndex(line => line.startsWith('* What went wrong:'));
-    if (at < 0) return undefined;
-    return lines.slice(at + 1, at + 4).find(line => line && !line.startsWith('*'));
-};
 
 /** Strip the Actions timestamp prefix and ANSI colour codes from a log line. */
 export const cleanLogLine = line =>
@@ -72,11 +76,11 @@ export const extractReason = log => {
         .split('\n')
         .map(cleanLogLine)
         .filter(line => line && !line.startsWith('##[') && !/^from \//.test(line));
-    for (const [index, { pattern, hint, last, skip }] of REASON_PATTERNS.entries()) {
-        // Gradle's cause outranks the generic patterns but not App Store Connect ones.
-        if (index === 2) {
-            const cause = gradleCause(lines);
-            if (cause) return { line: cause.slice(0, 300), hint: undefined };
+    for (const { pattern, extract, hint, last, skip } of REASON_PATTERNS) {
+        if (extract) {
+            const cause = extract(lines);
+            if (cause) return { line: cause.slice(0, 300), hint };
+            continue;
         }
         const hits = lines.filter(line => pattern.test(line) && !skip?.test(line));
         const line = last ? hits.at(-1) : hits[0];
@@ -192,7 +196,7 @@ export const formatAlert = ({
     lines.push(
         '',
         frontendResult === 'success'
-            ? 'OTA (Capgo) bundles went out, but users keep the old native app until the store release is fixed.'
+            ? 'The OTA (Capgo) upload succeeded; if users still are not getting it, see the OTA canary alert. Users keep the old native app until the store release is fixed.'
             : `The frontend deploy finished as \`${frontendResult}\`, so the OTA (Capgo) bundle may not have gone out either; check the run.`
     );
     if (runUrl) lines.push(`<${runUrl}|Deploy run>`);

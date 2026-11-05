@@ -478,3 +478,27 @@ test('collects native jobs across pages and reads only failed logs', async () =>
     assert.ok(requested[0].includes('/runs/1/attempts/2/jobs'));
     assert.ok(!requested.some(path => path.endsWith('/902/logs')));
 });
+
+test('an App Store Connect reason still outranks a Gradle cause in the same log', () => {
+    const reason = extractReason(
+        [
+            '* What went wrong:',
+            "Execution failed for task ':app:bundleRelease'.",
+            '[Deliver] The app store version is in Waiting For Review.',
+        ].join('\n')
+    );
+    assert.match(reason.line, /Waiting For Review/);
+});
+
+test('with a successful frontend, the native alert defers to the canary instead of claiming OTA is fine', () => {
+    const alert = formatNativeAlert({
+        publishResult: 'failure',
+        frontendResult: 'success',
+        jobs: [{ platform: 'iOS', conclusion: 'failure' }],
+    });
+    assert.match(
+        alert,
+        /OTA \(Capgo\) upload succeeded; if users still are not getting it, see the OTA canary alert/
+    );
+    assert.doesNotMatch(alert, /bundles went out/);
+});

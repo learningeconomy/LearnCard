@@ -84,3 +84,13 @@ test('a bot post failure falls back to the deploy-errors webhook on both alert p
         );
     }
 });
+
+test('a canary crash is not reported as an unpublished bundle', () => {
+    const alert = deploy.jobs['deploy-frontend'].steps.find(
+        step => step.name === 'Alert release owner (OTA delivery)'
+    );
+    assert.equal(alert.env.UPLOAD_OUTCOME, '${{ steps.capgo-upload.outcome }}');
+    assert.equal(alert.env.CHANNEL_OUTCOME, '${{ steps.capgo-set-channel.outcome }}');
+    assert.match(alert.run, /OTA canary crashed/);
+    assert.match(alert.run, /OTA bundle was not published/);
+});

@@ -1283,14 +1283,21 @@ jobs:
                   # instead of being lost behind continue-on-error.
                   SLACK_FALLBACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }}
                   ALERT_FILE: ${{ runner.temp }}/capgo-canary-alert.txt
+                  UPLOAD_OUTCOME: ${{ steps.capgo-upload.outcome }}
+                  CHANNEL_OUTCOME: ${{ steps.capgo-set-channel.outcome }}
                   LEG: ${{ matrix.name }}
                   RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
               run: |
+                  # The canary writes its own alert. Without one, say which step actually failed.
                   if [[ ! -s "$ALERT_FILE" ]]; then
-                    printf '%s\n%s\n<%s|Deploy run>\n' \
-                      ":rotating_light: *OTA bundle was not published: ${LEG}*" \
-                      "The Capgo upload or channel step failed, so users are not getting this release over the air." \
-                      "$RUN_URL" > "$ALERT_FILE"
+                    if [[ "$UPLOAD_OUTCOME" == "success" && "$CHANNEL_OUTCOME" == "success" ]]; then
+                      TITLE=":rotating_light: *OTA canary crashed: ${LEG}*"
+                      DETAIL="The bundle was uploaded and the channel set, but the Capgo canary crashed before it could check delivery. Check the run."
+                    else
+                      TITLE=":rotating_light: *OTA bundle was not published: ${LEG}*"
+                      DETAIL="The Capgo upload or channel step failed, so users are not getting this release over the air."
+                    fi
+                    printf '%s\n%s\n<%s|Deploy run>\n' "$TITLE" "$DETAIL" "$RUN_URL" > "$ALERT_FILE"
                   fi
                   node scripts/release-alerts/slack.mjs "$ALERT_FILE"
 
