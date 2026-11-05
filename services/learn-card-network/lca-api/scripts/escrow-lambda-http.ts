@@ -18,6 +18,7 @@ const server = createServer(async (request, response) => {
             routeKey: '$default',
             rawPath: url.pathname,
             rawQueryString: url.search.slice(1),
+            pathParameters: { trpc: url.pathname.replace(/^\/api\//, '') },
             headers,
             isBase64Encoded: false,
             body: Buffer.concat(chunks).toString() || undefined,
@@ -56,7 +57,12 @@ const server = createServer(async (request, response) => {
         };
         const result = await openApiHandler(event, context, () => {});
         if (typeof result !== 'object' || !result) throw new Error('Expected Lambda HTTP response');
-        response.writeHead(result.statusCode ?? 200, result.headers);
+        response.writeHead(
+            result.statusCode ?? 200,
+            Object.fromEntries(
+                Object.entries(result.headers ?? {}).map(([key, value]) => [key, String(value)])
+            )
+        );
         response.end(
             result.isBase64Encoded ? Buffer.from(result.body ?? '', 'base64') : result.body
         );
