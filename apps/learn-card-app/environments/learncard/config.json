@@ -41,7 +41,9 @@
                 }
             ],
             "enableEmailBackupShare": false,
-            "requireEmailForPhoneUsers": false
+            "requireEmailForPhoneUsers": false,
+            "escrowSealEmailBrand": true,
+            "escrowSharedEmailBrands": ["VetPass"]
         },
         "web3Auth": {
             "clientId": "BBB5ReobO60-olXYx2JB7s5pkJplYnBHz4E99Cdf9aaNokNt3XzvVvRL9UQfziK_PMEuBYcgdMEW_WCHNPdUGPg",
@@ -86,7 +88,7 @@
         "pathways": true,
         "launchPadQuickActions": false,
         "dashboardHome": true,
-        "escrowRolloutPercent": 1,
+        "escrowRolloutPercent": 100,
         "samplePersonas": [
             {
                 "id": "student",
