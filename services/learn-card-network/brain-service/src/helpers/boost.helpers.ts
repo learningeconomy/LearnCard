@@ -183,8 +183,13 @@ export const sendBoost = async ({
             }
 
             // Preserve the issuer's payload without decrypting or counter-signing it.
+            // Contract auto-boosts are signed by the writer, whose profile owns the status list.
             const credentialInstance = await traceDb('storeCredential', () =>
-                storeCredential(credential, undefined, fromProfile.profileId)
+                storeCredential(
+                    credential,
+                    undefined,
+                    contractWriterProfileId ?? fromProfile.profileId
+                )
             );
 
             if (contractTerms) {

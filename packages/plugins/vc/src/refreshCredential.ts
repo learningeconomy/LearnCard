@@ -75,6 +75,15 @@ const malformedResponse = () => failed('MALFORMED_RESPONSE', false);
 const invalidProof = () => failed('INVALID_PROOF', false);
 const unauthorized = () => failed('UNAUTHORIZED', false);
 // Deliberately fail closed on verifier warnings until each warning is reviewed.
+/** The proof is valid but the issuer has revoked the credential through its status list. */
+const isRevokedWithValidProof = (
+    check: { checks: string[]; errors: string[] } | null | undefined
+): boolean =>
+    !!check &&
+    check.checks.includes('proof') &&
+    check.errors.length > 0 &&
+    check.errors.every(error => /\brevoked\b/i.test(error));
+
 const proofVerified = (
     check: { checks: string[]; warnings: string[]; errors: string[] } | null | undefined
 ): boolean =>
@@ -745,6 +754,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
         try {
             const check = await _learnCard.invoke.verifyCredential(credential);
 
+            if (isRevokedWithValidProof(check)) return failed('REVOKED', false);
             if (!proofVerified(check)) return invalidProof();
         } catch {
             return invalidProof();
@@ -889,6 +899,7 @@ export const refreshCredential = (_initLearnCard: VCDependentLearnCard) => {
         try {
             const check = await _learnCard.invoke.verifyCredential(candidate);
 
+            if (isRevokedWithValidProof(check)) return failed('REVOKED', false);
             if (!proofVerified(check)) return invalidProof();
         } catch {
             return invalidProof();

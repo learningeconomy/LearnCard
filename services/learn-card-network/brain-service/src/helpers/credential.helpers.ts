@@ -42,9 +42,11 @@ export const sendCredential = async (
     domain: string,
     metadata?: Record<string, unknown> | undefined,
     activityId?: string,
-    integrationId?: string
+    integrationId?: string,
+    /** Local profile that owns any local status lists; defaults to the sender. */
+    statusOwnerProfileId: string = from.profileId
 ): Promise<string> => {
-    const credentialInstance = await storeCredential(credential, undefined, from.profileId);
+    const credentialInstance = await storeCredential(credential, undefined, statusOwnerProfileId);
 
     await createSentCredentialRelationship(
         { type: 'profile', profile: from },
