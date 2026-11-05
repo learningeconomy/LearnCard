@@ -34,7 +34,7 @@ for (const [name, job] of Object.entries(workflow.jobs)) {
 assert.equal(manifest.devDependencies['serverless-esbuild'], '1.57.2');
 assert.ok(
     manifest.scripts['serverless-deploy'].includes(
-        'node scripts/verify-node24-layer.cjs && serverless deploy'
+        'node ../../../scripts/verify-node24-didkit-layer.cjs && serverless deploy'
     )
 );
 assert.match(fs.readFileSync(path.join(service, 'bundle.mjs'), 'utf8'), /target: 'node24'/);
@@ -43,7 +43,7 @@ assert.equal(
     'node24'
 );
 
-const RuntimePlugin = require(path.join(service, 'scripts/node24-runtime.cjs'));
+const RuntimePlugin = require(path.join(root, 'scripts/serverless-node24-runtime.cjs'));
 const schema = { definitions: { awsLambdaRuntime: { enum: ['nodejs20.x'] } } };
 new RuntimePlugin({ configSchemaHandler: { schema } });
 new RuntimePlugin({ configSchemaHandler: { schema } });
@@ -133,7 +133,7 @@ for (const account of ['206533012615', '111122223333']) {
         }
     }
 }
-const { verifyLayer } = require(path.join(service, 'scripts/verify-node24-layer.cjs'));
+const { verifyLayer } = require(path.join(root, 'scripts/verify-node24-didkit-layer.cjs'));
 assert.throws(() => verifyLayer('/missing', 20), /Node 24/);
 assert.throws(() => verifyLayer('/missing', 24), /Missing Lambda/);
 console.log(
@@ -164,7 +164,7 @@ const smoke = async () => {
             frameworkVersion: '3',
             configValidationMode: 'error',
             provider: { name: 'aws', runtime: 'nodejs24.x', region: 'us-east-1' },
-            plugins: [path.join(service, 'scripts/node24-runtime.cjs')],
+            plugins: [path.join(root, 'scripts/serverless-node24-runtime.cjs')],
             dashboard: { disableMonitoring: true },
             functions: {},
             layers: {
