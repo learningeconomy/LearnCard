@@ -159,6 +159,8 @@ import {
     PublishCredentialRefreshInput,
     PublishCredentialRefreshResult,
     GetCredentialRefreshHistoryInput,
+    GetCredentialRefreshReceiptInput,
+    CredentialRefreshReceipt,
     GetCredentialRefreshHistoryResult,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
@@ -622,6 +624,10 @@ export type LearnCardNetworkPluginMethods = {
     getCredentialRefreshHistory: (
         input: GetCredentialRefreshHistoryInput
     ) => Promise<GetCredentialRefreshHistoryResult>;
+    /** Read the authenticated public binding for a pending managed delivery. */
+    getCredentialRefreshReceipt: (
+        input: GetCredentialRefreshReceiptInput
+    ) => Promise<CredentialRefreshReceipt | null>;
     revokeBoostRecipient: (
         boostUri: string,
         recipientProfileId: string,

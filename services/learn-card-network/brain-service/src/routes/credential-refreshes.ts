@@ -9,6 +9,8 @@ import {
     PublishCredentialRefreshInputValidator,
     PublishCredentialRefreshResultValidator,
     VCValidator,
+    GetCredentialRefreshReceiptInputValidator,
+    CredentialRefreshReceiptValidator,
 } from '@learncard/types';
 import type { PublishCredentialRefreshInput } from '@learncard/types';
 
@@ -18,6 +20,7 @@ import { getProfileByDid, getProfileByProfileId } from '@accesslayer/profile/rea
 import {
     getCredentialRefresh,
     getCredentialRefreshVersions,
+    getCredentialRefreshReceiptBinding,
 } from '@accesslayer/credential-refresh';
 import {
     allocateCredentialRefresh,
@@ -31,6 +34,8 @@ import { getBitstringStatusListEntries } from '@learncard/helpers';
 import { neogma } from '@instance';
 import { matchesCredentialStatusDigest } from '@helpers/credential-refresh-materiality.helpers';
 import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
+import { constructUri, getUriParts } from '@helpers/uri.helpers';
+import { getCredentialRefreshServiceUrl } from '@helpers/credential-refresh.helpers';
 
 const credentialRefreshRoute = credentialProfileRoute.use(async ({ ctx, next }) => {
     if (!getCredentialRefreshRuntimeEnvironment().CREDENTIAL_REFRESH_ENABLED) {
@@ -46,6 +51,52 @@ const credentialRefreshRoute = credentialProfileRoute.use(async ({ ctx, next }) 
 });
 
 export const credentialRefreshesRouter = t.router({
+    getReceipt: credentialRefreshRoute
+        .meta({ requiredScope: 'credentials:read' })
+        .input(GetCredentialRefreshReceiptInputValidator)
+        .output(CredentialRefreshReceiptValidator.nullable())
+        .query(async ({ ctx, input }) => {
+            const { id, type } = getUriParts(input.uri);
+            if (type !== 'credential' || input.uri !== constructUri('credential', id, ctx.domain)) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid delivery URI' });
+            }
+            const refresh = await getCredentialRefreshReceiptBinding(
+                id,
+                ctx.user.profile.profileId
+            );
+            if (refresh === null) return null;
+            if (
+                !refresh ||
+                !refresh.holderDid ||
+                refresh.holderProfileId !== ctx.user.profile.profileId ||
+                !['awaiting_claim', 'active'].includes(refresh.state)
+            ) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Delivery not found' });
+            }
+            // Coordinates alone cannot reconstruct the exact signed descriptor of legacy sends.
+            const binding = refresh.credentialStatusBinding ?? refresh.inboxCredentialStatus;
+            if (binding === undefined) {
+                throw new TRPCError({
+                    code: 'PRECONDITION_FAILED',
+                    message: 'Delivery binding unavailable',
+                });
+            }
+            const status: unknown = JSON.parse(binding);
+            return CredentialRefreshReceiptValidator.parse({
+                refreshId: refresh.refreshId,
+                credentialId: refresh.credentialId,
+                issuerDid: refresh.issuerDid,
+                holderDid: refresh.holderDid,
+                refreshService: {
+                    id: getCredentialRefreshServiceUrl(refresh.refreshId, ctx.domain),
+                    type: 'LearnCardCredentialRefresh2026',
+                    authorization: { type: 'LearnCardDIDAuth' },
+                },
+                ...(status === null ? {} : { credentialStatus: status }),
+                encryptionMode: refresh.encryptionMode ?? 'network',
+            });
+        }),
+
     attachStatusEntries: credentialRefreshRoute
         .meta({ requiredScope: 'credentials:write' })
         .input(AttachCredentialRefreshStatusEntriesInputValidator)

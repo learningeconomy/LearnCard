@@ -79,6 +79,8 @@ export type BoostAndVCType = {
     boostVC: VC;
 };
 
+import { resolveCredentialForClaim } from '../helpers/ingestManagedCredential';
+
 type AddVCInput = Omit<LCR, 'id'>;
 
 type StoreCredentialMetadata = Partial<{
@@ -723,7 +725,7 @@ export const useWallet = () => {
             const context = await createWalletMutationContext(originProfileDid);
             const wallet = context.wallet;
 
-            const vc = await wallet.read.get(uri);
+            const { credential: vc, baseline } = await resolveCredentialForClaim(wallet, uri);
 
             if (!vc) throw new Error('No credential was found at the provided URI');
 
@@ -748,6 +750,17 @@ export const useWallet = () => {
                 ...(boostUri ? { boostUri } : {}),
                 ...(networkUri ? { networkUri } : {}),
                 __v: 1,
+                ...(baseline
+                    ? {
+                          refresh: {
+                              baseline,
+                              serviceId: baseline.refreshService.id,
+                              serviceType: baseline.refreshService.type,
+                              credentialId: baseline.credentialId,
+                              history: [],
+                          },
+                      }
+                    : {}),
             };
 
             // get VC From stream given streamId

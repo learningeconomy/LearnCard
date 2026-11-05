@@ -56,6 +56,24 @@ const useCredentialReader = () => {
  * missing index metadata. Existing server authorization still applies; a rejected
  * metadata write never prevents the credential from being displayed.
  */
+import { resolveCredentialForClaim } from '../../helpers/ingestManagedCredential';
+
+/** Claim previews must not reuse the unverified document-resolution cache. */
+export const useGetClaimCredential = (uri: string | undefined) => {
+    const wallet = useCredentialReader();
+    return useQuery({
+        queryKey: ['verified-claim', wallet?.id.did(), uri],
+        enabled: Boolean(wallet && uri),
+        staleTime: 0,
+        gcTime: 0,
+        retry: false,
+        queryFn: async () => {
+            if (!wallet || !uri) throw new Error('CLAIM_READER_UNAVAILABLE');
+            return (await resolveCredentialForClaim(wallet, uri)).credential as VC;
+        },
+    });
+};
+
 export const useGetResolvedCredential = (uri: string | undefined, enabled = true) => {
     const wallet = useCredentialReader();
     const queryClient = useQueryClient();

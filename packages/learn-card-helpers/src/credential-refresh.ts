@@ -3,6 +3,7 @@ import {
     SupportedCredentialRefreshServiceValidator,
     type ManagedCredentialRefreshService,
     type SupportedCredentialRefreshService,
+    type CredentialRefreshReceipt,
 } from '@learncard/types';
 import { getBitstringStatusListEntries } from './bitstring-status-list';
 
@@ -124,6 +125,43 @@ export const canonicalizeCredentialContent = <T>(value: T): T => {
 /** Serializes a value to a deterministic canonical JSON string */
 export const canonicalizeCredentialJson = (value: unknown): string =>
     JSON.stringify(canonicalizeCredentialContent(value));
+
+/** Compares exact public bindings while ignoring JSON object-key order, never array order. */
+export const credentialRefreshBindingsEqual = (
+    credential: { credentialStatus?: unknown; refreshService?: unknown },
+    baseline: { credentialStatus?: unknown; refreshService?: unknown }
+): boolean =>
+    canonicalizeCredentialJson(credential.credentialStatus) ===
+        canonicalizeCredentialJson(baseline.credentialStatus) &&
+    canonicalizeCredentialJson(credential.refreshService) ===
+        canonicalizeCredentialJson(baseline.refreshService);
+
+/** Checks signed identity and public bindings. This does not replace proof/status verification. */
+export const assertManagedCredentialBinding = (
+    credential: RefreshableCredential,
+    receipt: CredentialRefreshReceipt
+): void => {
+    const subjects = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject
+        : [credential.credentialSubject];
+    const holderMatches =
+        subjects.length > 0 &&
+        subjects.every(
+            (subject: unknown) =>
+                typeof subject === 'object' &&
+                subject !== null &&
+                'id' in subject &&
+                subject.id === receipt.holderDid
+        );
+    if (
+        credential.id !== receipt.credentialId ||
+        getCredentialIssuerId(credential) !== receipt.issuerDid ||
+        !holderMatches ||
+        !credentialRefreshBindingsEqual(credential, receipt)
+    ) {
+        throw new Error('MANAGED_CREDENTIAL_BINDING_MISMATCH');
+    }
+};
 
 // --- Managed refresh JSON-LD context preparation (LC-2198) --------------------
 

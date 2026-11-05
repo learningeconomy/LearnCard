@@ -85,6 +85,45 @@ const send = async (arrayShape = false) => {
 };
 
 describe('Managed public status', () => {
+    it.each([false, true])(
+        'returns the exact signed status shape before acceptance (array=%s)',
+        async arrayShape => {
+            const { credential, uri } = await send(arrayShape);
+            const receipt = await holder.clients.fullAuth.credentialRefresh.getReceipt({ uri });
+            expect(receipt?.credentialStatus).toEqual(credential.credentialStatus);
+            expect(receipt?.refreshService).toEqual(credential.refreshService);
+            expect(receipt).not.toHaveProperty('credentialSubject');
+            expect(receipt).not.toHaveProperty('proof');
+        }
+    );
+
+    it('never exposes a managed receipt after delivery revocation', async () => {
+        const { uri, root } = await send();
+        await neogma.queryRunner.run(
+            'MATCH ()-[sent:CREDENTIAL_SENT]->(:Credential {id: $root}) SET sent.status = "revoked"',
+            { root }
+        );
+        await expect(
+            holder.clients.fullAuth.credentialRefresh.getReceipt({ uri })
+        ).rejects.toThrow();
+    });
+
+    it('distinguishes an authorized ordinary delivery from a missing delivery', async () => {
+        await neogma.queryRunner.run(
+            'MATCH (p:Profile {profileId: "status-issuer"}) CREATE (p)-[:CREDENTIAL_SENT {to: "status-holder"}]->(:Credential {id: "ordinary-root"})'
+        );
+        expect(
+            await holder.clients.fullAuth.credentialRefresh.getReceipt({
+                uri: getCredentialUri('ordinary-root', 'localhost%3A3000'),
+            })
+        ).toBeNull();
+        await expect(
+            holder.clients.fullAuth.credentialRefresh.getReceipt({
+                uri: getCredentialUri('unknown-root', 'localhost%3A3000'),
+            })
+        ).rejects.toThrow();
+    });
+
     it('keeps inbox escrow pending when a workflow claim reuses a managed index', async () => {
         const { entries } = await send();
         const credential = await issuer.learnCard.invoke.issueCredential({

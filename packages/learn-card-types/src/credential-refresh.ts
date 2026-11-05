@@ -109,6 +109,16 @@ export type ManagedCredentialRefreshReceipt = z.infer<
     typeof ManagedCredentialRefreshReceiptValidator
 >;
 
+/** Public delivery binding, authenticated independently of the encrypted payload. */
+export const GetCredentialRefreshReceiptInputValidator = z.object({ uri: z.string().min(1) });
+export type GetCredentialRefreshReceiptInput = z.infer<
+    typeof GetCredentialRefreshReceiptInputValidator
+>;
+export const CredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.extend({
+    encryptionMode: z.enum(['network', 'holder']),
+});
+export type CredentialRefreshReceipt = z.infer<typeof CredentialRefreshReceiptValidator>;
+
 /** Allocation metadata for deferred Inbox issuance. No holder is invented before claim. */
 export const InboxCredentialRefreshReceiptValidator = ManagedCredentialRefreshReceiptValidator.omit(
     { holderDid: true }
@@ -343,6 +353,7 @@ export const CredentialRefreshFailureCodeValidator = z.enum([
     'INVALID_PROOF',
     'ISSUER_MISMATCH',
     'ID_MISMATCH',
+    'BINDING_MISMATCH',
     'ROLLBACK',
     'REVOKED',
     'UNSAFE_ENDPOINT',

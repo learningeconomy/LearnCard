@@ -1800,6 +1800,10 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.credentialRefresh.getCredentialRefreshHistory.query(input);
             },
+            getCredentialRefreshReceipt: async (_learnCard, input) => {
+                await ensureUser();
+                return client.credentialRefresh.getReceipt.query(input);
+            },
             revokeBoostRecipient: async (
                 _learnCard,
                 boostUri,

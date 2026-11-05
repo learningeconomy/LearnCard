@@ -148,6 +148,50 @@ describe('refreshCredential', () => {
     });
 
     describe('public services', () => {
+        it('pins the held binding before making a request', async () => {
+            expect(
+                await runRefresh(currentCredential, {
+                    baseline: {
+                        refreshService: {
+                            id: 'https://other.example/refresh',
+                            type: 'LearnCardCredentialRefresh2026',
+                        },
+                    },
+                })
+            ).toMatchObject({ status: 'failed', code: 'BINDING_MISMATCH' });
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            {
+                credentialStatus: {
+                    id: 'https://example.com/status/1',
+                    type: 'BitstringStatusListEntry',
+                },
+            },
+            {
+                refreshService: {
+                    id: 'https://other.example/refresh',
+                    type: 'LearnCardCredentialRefresh2026',
+                },
+            },
+        ])('rejects a replacement that switches the baseline: %j', async overrides => {
+            fetchMock.mockResolvedValue(jsonResponse({ ...updatedCredential, ...overrides }));
+            expect(
+                await runRefresh(currentCredential, {
+                    baseline: { refreshService: currentCredential.refreshService },
+                })
+            ).toMatchObject({ status: 'failed', code: 'BINDING_MISMATCH' });
+        });
+
+        it.each([currentCredential.validFrom, undefined, 'not-a-date'])(
+            'rejects a changed managed version without strictly newer validFrom: %s',
+            async validFrom => {
+                fetchMock.mockResolvedValue(jsonResponse({ ...updatedCredential, validFrom }));
+                expect(await runRefresh()).toMatchObject({ status: 'failed', code: 'ROLLBACK' });
+            }
+        );
+
         it('returns the verified updated credential on a public GET success', async () => {
             fetchMock.mockResolvedValue(
                 jsonResponse(updatedCredential, { headers: { etag: 'W/"v2"' } })
@@ -504,17 +548,17 @@ describe('refreshCredential', () => {
             expect(result).toEqual({ status: 'failed', code: 'ROLLBACK', retryable: false });
         });
 
-        it('accepts an equal timestamp with changed content as an update', async () => {
+        it('rejects an equal timestamp with changed managed content', async () => {
             fetchMock.mockResolvedValue(
                 jsonResponse({ ...updatedCredential, validFrom: currentCredential.validFrom })
             );
 
             const result = await runRefresh();
 
-            expect(result.status).toBe('updated');
+            expect(result).toEqual({ status: 'failed', code: 'ROLLBACK', retryable: false });
         });
 
-        it('accepts changed content when neither credential carries a timestamp', async () => {
+        it('rejects changed managed content when neither credential carries a timestamp', async () => {
             const { validFrom: _a, ...current } = makeCredential();
             const { validFrom: _b, ...candidate } = { ...updatedCredential };
 
@@ -522,7 +566,7 @@ describe('refreshCredential', () => {
 
             const result = await runRefresh(current);
 
-            expect(result.status).toBe('updated');
+            expect(result).toEqual({ status: 'failed', code: 'ROLLBACK', retryable: false });
         });
 
         it('rejects plain-HTTP endpoints as UNSAFE_ENDPOINT', async () => {

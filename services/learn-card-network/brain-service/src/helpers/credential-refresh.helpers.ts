@@ -760,6 +760,7 @@ export const sendRefreshableCredential = async (
             materialDigest: rootMaterialDigest,
             credentialSubjectDigest: computeCredentialSubjectDigest(credential.credentialSubject),
             credentialStatusDigest,
+            credentialStatusBinding: JSON.stringify(credential.credentialStatus ?? null),
             initialNotificationSuppressed: skipNotification,
         };
         const bindQuery = contractTerms
@@ -807,7 +808,8 @@ export const sendRefreshableCredential = async (
                        refresh.issuerDid = $credentialIssuerDid,
                        refresh.materialDigest = $materialDigest,
                        refresh.rootMaterialDigest = $materialDigest,
-                       refresh.credentialStatusDigest = $credentialStatusDigest,
+                        refresh.credentialStatusDigest = $credentialStatusDigest,
+                        refresh.credentialStatusBinding = $credentialStatusBinding,
                        refresh.credentialSubjectDigest = $credentialSubjectDigest,
                        refresh.boostId = $boostId,
                        refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
@@ -835,7 +837,8 @@ export const sendRefreshableCredential = async (
                        refresh.issuerDid = $credentialIssuerDid,
                        refresh.materialDigest = $materialDigest,
                        refresh.rootMaterialDigest = $materialDigest,
-                       refresh.credentialStatusDigest = $credentialStatusDigest,
+                        refresh.credentialStatusDigest = $credentialStatusDigest,
+                        refresh.credentialStatusBinding = $credentialStatusBinding,
                        refresh.credentialSubjectDigest = $credentialSubjectDigest,
                        refresh.boostId = $boostId,
                        refresh.initialNotificationSuppressed = $initialNotificationSuppressed,
