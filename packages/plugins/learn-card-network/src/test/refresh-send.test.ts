@@ -326,7 +326,7 @@ describe('unified send with refresh: true (managed branch)', () => {
         expect(client.boost.prepareRefreshableSend.mutate).toHaveBeenCalledExactlyOnceWith({
             recipient: 'userb',
             templateUri: undefined,
-            display: undefined,
+            display: { name: 'Inline Refreshable Badge' },
             contractUri: 'contract:1',
             credentialId: 'urn:uuid:inline-credential-id',
         });
