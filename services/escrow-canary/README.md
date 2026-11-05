@@ -476,6 +476,130 @@ implemented. Tier 3 and the inbox are implemented but not deployed or
 live-verified. Offline tests do not replace the real staging drills, Linux
 owned-stack `lc verify`, or Lambda/CloudWatch delivery proof.
 
+## Load testing (staging only)
+
+`scripts/load.ts` (built to `dist/load.mjs`, **not** part of `canary.zip`) drives
+real client flows against **staging** at a controlled rate to find the first
+bottleneck in escrow. It uses the same SDK strategy and attestation trust
+configuration as the canary (`createSdk`, Nitro PCR pins, no software fallback).
+It is an operator tool: nothing in CI runs it, and its tests are offline.
+
+**Flows.** Each synthetic user is created with the Firebase Admin SDK
+(`createUser` with `emailVerified: true`, then `createCustomToken`), and signs in
+through the same Firebase REST custom-token exchange the provisioning tool uses
+(`src/provision/login.ts`). No login codes are sent. Per arrival:
+
+- `enrol`: new key (`atomicUpdateShares`, as the app's `setupNewKey`) then
+  `enableEscrowRecovery` (opt-in, as automatic enrolment). With
+  `--enrol-with-pin`, also `setEscrowPin` and activation, as the app's PIN setup.
+- `pin` (fraction `--pin-ratio`): a new-device PIN sign-in, as canary tier 2:
+  fresh sign-in, empty memory storage, `executeRecovery({ method: 'escrow-pin' })`,
+  an independent DID check, then the same-PIN re-set. Uses users from a PIN pool
+  (`--pin-pool`) prepared before the stages; one operation per pool user at a
+  time. A pool user whose recovery fails is retired, not reused.
+
+All Firebase users are created in an unmeasured **setup** phase (`--setup-rate`,
+default 2/s) before the stages, so account creation (which real users already
+have) is not mistaken for the first bottleneck. The Firebase Admin API has its
+own quotas; raise `--setup-rate` only within them.
+
+**Load shape.** `--stages <rate/s>:<seconds>,...` (e.g. `0.5:120,1:300`) runs
+stages back to back with **open-loop** arrivals: starts happen on schedule
+regardless of earlier ones, bounded by `--max-in-flight`. A start that would
+exceed the bound is **dropped** (counted, never queued), so rising latency is
+visible rather than self-throttled. A start more than `--late-ms` behind schedule
+is counted **late**: the generator itself (one Node process doing DIDKit and SSS
+work) is then the limit, not the server. If you see late starts, split the load
+across several processes or hosts, each with its own `--run-id`.
+
+**Output.** Plan and progress lines (every `--progress-sec`) go to stderr; the
+final JSON summary is the only stdout. Per stage (`setup`, `s1`, ...) and per
+scenario/step: count, ok, errors by safe reason (the canary's `safeReason` plus
+HTTP status class, timeout, Firebase Admin code and SDK error class),
+p50/p95/p99/max latency, achieved start and success rates, dropped and late
+starts, plus request counts by class (escrow / other keys / Firebase) with
+409/429/4xx/5xx/transport buckets. It never prints keys, PINs, tokens, shares or
+email addresses: counts and the run id only.
+
+### Guards (fail closed; `--dry-run` runs them all and sends nothing)
+
+- `--lca-api-url` must be https and its host must equal `--staging-host`, carry a
+  `staging` DNS label, and not be a known production host.
+- `GOOGLE_APPLICATION_CREDENTIALS` must be a service-account file whose
+  `project_id` equals `--firebase-project`; known production projects and ids
+  that look like production are refused. Each ID token's audience is also
+  checked against `--firebase-project`; a mismatch stops the run (exit 3).
+  If staging shares a Firebase project with production, the tool cannot be used.
+- `--domain` is required and **must be the canary receive-only inbox domain,
+  never a real mailbox domain** (public mail providers are refused). Addresses
+  are `<prefix>+<runId>-<n>@<domain>`. Per `infra/escrow-canary/inbox.tf`, mail
+  to addresses without a receipt rule is dropped; check how the sender treats
+  that before a large PIN run.
+- `--i-understand-roughtime` is required: every enclave time sample queries the
+  three third-party Roughtime servers (Cloudflare, int08h, time.txryan.com; see
+  `services/escrow-enclave-app/LAUNCH-DECISIONS.md` "RT"). The plan prints an
+  estimated per-server request count before anything is sent (an estimate, not
+  measured); the summary reports the measured escrow request count.
+- `--max-users` (hard cap on Firebase users created) and `--max-emails` are
+  required. Enrolment sends no email. Each PIN recovery sends two
+  (`escrow-hold-started` and `escrow-pin-sign-in`) through lca-api's delivery
+  service; `--max-emails` must cover the upper bound of three per PIN recovery.
+  The file:line evidence is in the header of `scripts/load.ts`.
+- Scheduling stops (remaining starts counted as `stopped`) on Ctrl-C (a second
+  Ctrl-C aborts), on a fatal token guard, or when a stage's failure ratio exceeds
+  `--stop-error-rate` (default 0.5) after 20 completions.
+
+### Usage
+
+Build as in step 4 above, then run with Node 22 from the repo (firebase-admin is
+external to the bundle and resolves from the workspace). Non-secret trust
+configuration comes from the same environment variables as the canary:
+
+```sh
+export GOOGLE_APPLICATION_CREDENTIALS=<staging service-account JSON path>
+export FIREBASE_API_KEY=<staging web API key> ESCROW_KEY_ID=<id> AUTHORITY_GENERATION=<gen>
+export ESCROW_MEASUREMENTS_JSON='<reviewed staging PCR tuples>'
+node services/escrow-canary/dist/load.mjs \
+  --lca-api-url https://<staging host>/api --staging-host <staging host> --tenant-id <tenant> \
+  --firebase-project <staging project> --domain <canary inbox domain> \
+  --stages <rate:sec,...> --max-in-flight <n> --pin-ratio <0..1> --pin-pool <n> \
+  --max-users <n> --max-emails <n> --i-understand-roughtime --dry-run
+# then without --dry-run, redirecting stdout to keep the JSON summary
+```
+
+### Cleanup
+
+```sh
+node services/escrow-canary/dist/load.mjs cleanup --run <run id> --domain <domain> \
+  --firebase-project <staging project> [--prefix <prefix>] [--dry-run]
+```
+
+This deletes only the run's Firebase users (matched exactly on
+`<prefix>+<runId>-<n>@<domain>`). The tool does **not** delete anything in
+lca-api or the enclave: user keys (`contactMethod` = the synthetic address,
+`authProvider` = the deleted Firebase uid), escrow blobs and authority records,
+and completed PIN holds for these accounts remain in staging. They can be
+identified by the email prefix and run id; removing them is a separate,
+reviewed staging operation.
+
+### What to watch during a run
+
+- Enclave host: CPU, memory, vsock/proxy errors, enclave restarts.
+- KMS: `ThrottlingException` and attested `Decrypt` errors.
+- Authority DynamoDB: throttled requests, `UserErrors`/`SystemErrors`,
+  transaction conflicts, latency.
+- lca-api Lambda: throttles, duration, concurrent executions, errors, and the
+  `LearnCard/Escrow / EnclaveFailure` EMF reasons.
+- MongoDB: connections, operation latency, queueing.
+- Roughtime: per-source failures on the host probes (2 of 3 needed).
+- Email: lca-api delivery sends/bounces for PIN notices; SES sends, bounces and
+  complaints on the recovery configuration set (hold-policy mail only).
+- The escrow canary itself (tiers 1 and 2) for user-visible impact.
+
+Capacity results and run records (run ids, shapes, first bottleneck) belong in
+Confluence, not in this repository. Do not add capacity numbers or traffic
+forecasts here.
+
 ## Local verification (no AWS)
 
 ```sh
