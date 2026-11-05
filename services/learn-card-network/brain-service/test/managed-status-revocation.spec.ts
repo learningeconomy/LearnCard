@@ -11,7 +11,10 @@ import * as statusLists from '@helpers/status-list.helpers';
 import { bindRefreshStatusEntries } from '@helpers/managed-status.helpers';
 import { mutateCredentialStatus } from '@helpers/credential-status-mutation.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
-import { getCredentialUri } from '@helpers/credential.helpers';
+import { getCredentialUri, sendCredential } from '@helpers/credential.helpers';
+import { releaseUnlinkedCredential } from '@accesslayer/credential/delete';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
+import * as credentialRelationships from '@accesslayer/credential/relationships/create';
 import {
     computeCredentialStatusDigest,
     matchesCredentialStatusDigest,
@@ -85,6 +88,130 @@ const send = async (arrayShape = false) => {
 };
 
 describe('Managed public status', () => {
+    it('unsuspends legacy revocation-only deliveries and supports new suspension and revocation', async () => {
+        const { root, entries } = await send();
+        await neogma.queryRunner.run(
+            'MATCH ()-[sent:CREDENTIAL_SENT]->(:Credential {id: $root}) SET sent.status = $status',
+            { root, status: 'suspended' }
+        );
+        expect(await mutateCredentialStatus(root, 'status-holder', 'suspension', false)).toBe(true);
+        expect(await mutateCredentialStatus(root, 'status-holder', 'suspension', true)).toBe(true);
+        expect(await bit(entries[0]!)).toBe(false);
+        expect(await mutateCredentialStatus(root, 'status-holder', 'revocation', true)).toBe(true);
+        expect(await bit(entries[0]!)).toBe(true);
+    });
+
+    it('uses the stored status owner when the delivery sender differs', async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const stored = await storeCredential(credential, undefined, 'status-issuer');
+        await neogma.queryRunner.run(
+            'MATCH (sender:Profile {profileId: $sender}), (c:Credential {id: $id}) CREATE (sender)-[:CREDENTIAL_SENT {to: $recipient}]->(c)',
+            { sender: 'status-holder', recipient: 'status-holder', id: stored.id }
+        );
+        expect(await mutateCredentialStatus(stored.id, 'status-holder', 'revocation', true)).toBe(
+            true
+        );
+        expect(await bit(entries[0]!)).toBe(true);
+    });
+
+    it('rolls back a failed ordinary send and retries the same signed status index', async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const from = await getProfileByProfileId('status-issuer');
+        const to = await getProfileByProfileId('status-holder');
+        if (!from || !to) throw new Error('Missing test profiles');
+        const failure = vi
+            .spyOn(credentialRelationships, 'createSentCredentialRelationship')
+            .mockRejectedValueOnce(new Error('forced relationship failure'));
+        try {
+            await expect(sendCredential(from, to, credential, domain)).rejects.toThrow(
+                'forced relationship failure'
+            );
+        } finally {
+            failure.mockRestore();
+        }
+        await expect(sendCredential(from, to, credential, domain)).resolves.toEqual(
+            expect.any(String)
+        );
+        const rows = await neogma.queryRunner.run(
+            'MATCH (binding:CredentialStatusBinding) RETURN binding'
+        );
+        expect(rows.records).toHaveLength(1);
+    });
+
+    it('releases unlinked reservations but preserves linked credentials', async () => {
+        const entries = await issuer.clients.fullAuth.boost.allocateCredentialStatus({
+            statusPurposes: ['revocation'],
+        });
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+            credentialStatus: entries,
+        });
+        const first = await storeCredential(credential, undefined, 'status-issuer');
+        await releaseUnlinkedCredential(first.id);
+        const second = await storeCredential(credential, undefined, 'status-issuer');
+        await neogma.queryRunner.run(
+            'MATCH (p:Profile {profileId: $profile}), (c:Credential {id: $id}) CREATE (p)-[:CREDENTIAL_SENT {to: $recipient}]->(c)',
+            { profile: 'status-issuer', recipient: 'status-holder', id: second.id }
+        );
+        await releaseUnlinkedCredential(second.id);
+        await expect(storeCredential(credential, undefined, 'status-issuer')).rejects.toThrow(
+            'already bound'
+        );
+    });
+
+    it('does not create orphan credentials for status-free inbox claims without a boost', async () => {
+        const credential = await issuer.learnCard.invoke.issueCredential({
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            type: ['VerifiableCredential'],
+            issuer: issuer.learnCard.id.did(),
+            credentialSubject: { id: holder.learnCard.id.did() },
+        });
+        const inbox = await issuer.clients.fullAuth.inbox.issue({
+            credential,
+            recipient: { type: 'email', value: 'holder@example.com' },
+        });
+        const localExchangeId = new URL(inbox.claimUrl!).pathname.split('/').pop()!;
+        const start = await holder.clients.fullAuth.workflows.participateInExchange({
+            localWorkflowId: 'inbox-claim',
+            localExchangeId,
+        });
+        const presentation = VPValidator.parse(
+            await holder.learnCard.invoke.getDidAuthVp({
+                challenge: start.verifiablePresentationRequest?.challenge,
+                domain: start.verifiablePresentationRequest?.domain,
+            })
+        );
+        const response = await holder.clients.fullAuth.workflows.participateInExchange({
+            localWorkflowId: 'inbox-claim',
+            localExchangeId,
+            verifiablePresentation: presentation,
+        });
+        expect(response.inboxDeliveries).toHaveLength(1);
+        const nodes = await neogma.queryRunner.run('MATCH (c:Credential) RETURN c');
+        expect(nodes.records).toHaveLength(0);
+    });
+
     it('keeps inbox escrow pending when a workflow claim reuses a managed index', async () => {
         const { entries } = await send();
         const credential = await issuer.learnCard.invoke.issueCredential({

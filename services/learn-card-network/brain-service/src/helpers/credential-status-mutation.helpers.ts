@@ -3,7 +3,11 @@ import type { BitstringStatusPurpose } from '@learncard/types';
 import type { Transaction } from 'neo4j-driver';
 
 import { neogma } from '@instance';
-import { getStatusEntriesForCredential, setStatusListEntryBit } from './status-list.helpers';
+import {
+    CREDENTIAL_STATUS_ROOT_QUERY,
+    getStatusEntriesForCredential,
+    setStatusListEntryBit,
+} from './status-list.helpers';
 
 /** Commit relationship state and signed public bits together, including all managed versions. */
 export const mutateCredentialStatus = async (
@@ -14,10 +18,7 @@ export const mutateCredentialStatus = async (
 ): Promise<boolean> =>
     neogma.getTransaction(null, async tx => {
         const result = await tx.run(
-            `MATCH (version:Credential {id: $credentialId})
-         OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(managedRoot:Credential)
-         WHERE version = managedRoot OR version.refreshId = refresh.refreshId
-         WITH coalesce(managedRoot, version) AS root, refresh
+            `${CREDENTIAL_STATUS_ROOT_QUERY}
          MATCH (sender)-[sent:CREDENTIAL_SENT {to: $profileId}]->(root)
          WHERE sender:Profile OR sender:AppStoreListing
          SET root._statusMutationLock = $now
@@ -27,7 +28,7 @@ export const mutateCredentialStatus = async (
          WITH root, refresh, sent
          OPTIONAL MATCH (issuer:Profile)-[:CREDENTIAL_SENT]->(root)
          RETURN root.id AS rootId, sent.status AS status,
-                coalesce(refresh.issuerProfileId, issuer.profileId) AS owner`,
+                 coalesce(refresh.issuerProfileId, root.statusOwnerProfileId, issuer.profileId) AS owner`,
             { credentialId, profileId, now: new Date().toISOString() }
         );
         if (result.records.length === 0) return false;
@@ -38,10 +39,10 @@ export const mutateCredentialStatus = async (
         const allEntries = await getStatusEntriesForCredential(rootId, tx);
         const entries = allEntries.filter(entry => entry.statusPurpose === purpose);
         if (allEntries.length > 0 && entries.length === 0) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: `Credential has no supported public ${purpose} status entry`,
-            });
+            console.warn(
+                '[mutateCredentialStatus] no public status entry for purpose; relationship-only update',
+                { rootId, purpose }
+            );
         }
         for (const entry of [...entries].sort((a, b) =>
             a.statusListCredential.localeCompare(b.statusListCredential)
@@ -90,7 +91,7 @@ export const reconcileCredentialStatus = async (
          WITH root
          OPTIONAL MATCH (issuer:Profile)-[sent:CREDENTIAL_SENT]->(root)
          OPTIONAL MATCH (refresh:CredentialRefresh)-[:ROOT]->(root)
-         RETURN coalesce(refresh.issuerProfileId, issuer.profileId) AS owner,
+         RETURN coalesce(refresh.issuerProfileId, root.statusOwnerProfileId, issuer.profileId) AS owner,
                 sent.status AS status, refresh.state AS state`,
         { rootId }
     );

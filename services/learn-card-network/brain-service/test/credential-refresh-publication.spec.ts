@@ -16,6 +16,7 @@ import { getClient, getUser } from './helpers/getClient';
 import { addNotificationToQueueSpy } from './helpers/spies';
 import * as Notifications from '@helpers/notifications.helpers';
 import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
+import { computeCredentialMaterialDigest } from '@helpers/credential-refresh-materiality.helpers';
 import {
     getCredentialRefresh,
     getCredentialRefreshHead,
@@ -632,6 +633,45 @@ describe('Credential Refresh Publication', () => {
                 code: 'CONFLICT',
             });
             expect(await countCredentialNodes()).toEqual(1);
+        });
+
+        it('retries initial binding and suppresses unchanged publication after digest key rotation', async () => {
+            try {
+                vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'old-publication-test-key');
+                vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v1');
+                vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS', '{}');
+                const { allocation, credential } = await sendOriginal();
+                await setCredentialRefreshState(allocation.refreshId, 'active');
+
+                vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_SECRET', 'new-publication-test-key');
+                vi.stubEnv('CREDENTIAL_REFRESH_DIGEST_KEY_VERSION', 'v2');
+                vi.stubEnv(
+                    'CREDENTIAL_REFRESH_DIGEST_PREVIOUS_KEYS',
+                    JSON.stringify({
+                        v1: 'old-publication-test-key',
+                    })
+                );
+                await issuer.clients.fullAuth.credentialRefresh.sendRefreshableCredential({
+                    refreshId: allocation.refreshId,
+                    credential,
+                });
+                expect(await countCredentialNodes()).toEqual(1);
+
+                const timestampOnly = await signAs(
+                    issuer,
+                    buildUnsignedCredential(allocation, { validFrom: '2026-02-01T00:00:00Z' })
+                );
+                addNotificationToQueueSpy.mockClear();
+                const result = await publishIssuerSigned(allocation.refreshId, timestampOnly);
+                expect(result.version).toEqual(2);
+                expect(result.notification).toEqual('suppressed');
+                expect(addNotificationToQueueSpy).not.toHaveBeenCalled();
+                expect((await getCredentialRefresh(allocation.refreshId))?.materialDigest).toBe(
+                    computeCredentialMaterialDigest(timestampOnly as Record<string, unknown>)
+                );
+            } finally {
+                vi.unstubAllEnvs();
+            }
         });
 
         it('suppresses the first update when only non-material timestamps changed', async () => {
