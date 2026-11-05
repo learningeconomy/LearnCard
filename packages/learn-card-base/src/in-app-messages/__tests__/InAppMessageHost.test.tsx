@@ -18,6 +18,7 @@ import {
     getInAppMessageRequest,
 } from '../deepLinkRequestStore';
 import type { MessagePresentationProps, InAppMessagePresentationEvent } from '../presentationTypes';
+import type { CampaignMessageSource } from '../useMyCampaigns';
 import { I18nProvider } from '../../i18n';
 import { ModalsProvider, useModalsContext } from '../../components/modals/ModalsContext';
 import { useModal } from '../../components/modals/useModal';
@@ -564,4 +565,131 @@ describe('message host impressions', () => {
             expect(getInAppMessageFatigueState('alice').blockingShownThisSession).toBe(0);
         }
     );
+});
+
+describe('campaign presentation in the shared host', () => {
+    const source = (): CampaignMessageSource => ({
+        accountDid: 'alice',
+        ready: true,
+        enroll: vi.fn().mockResolvedValue(true),
+        record: vi.fn(),
+        campaigns: [
+            {
+                campaign: {
+                    id: 'server-campaign',
+                    selfEnroll: true,
+                    message: inAppMessageValidator.parse({
+                        id: 'server-campaign',
+                        title: 'Server campaign',
+                        frequency: 'once',
+                    }),
+                },
+                state: { shownCount: 0 },
+            },
+        ],
+    });
+    beforeEach(() => {
+        localStorage.clear();
+        resetInAppMessageDismissals();
+        clearInAppMessageRequest();
+        setInAppMessageOverride(null);
+        state.accountDid = 'alice';
+        state.gate = false;
+        state.native = false;
+        state.messages = [];
+        state.flagDeliveryReady = true;
+    });
+    afterEach(cleanup);
+    it('reports one server impression across diagnostics and campaign source refreshes', async () => {
+        let campaigns = source();
+        const record = vi.fn();
+        campaigns.record = record;
+        state.gate = true;
+        const view = render(<InAppMessageHost campaignSource={campaigns} />);
+        await waitFor(() => expect(screen.getByText('Server campaign')).toBeTruthy());
+
+        for (let refresh = 0; refresh < 3; refresh++) {
+            campaigns = {
+                ...campaigns,
+                campaigns: structuredClone(campaigns.campaigns),
+                record: (...args) => record(...args),
+            };
+            view.rerender(<InAppMessageHost campaignSource={campaigns} />);
+        }
+
+        expect(record.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(1);
+        fireEvent.click(screen.getByText('Server campaign'));
+        expect(record.mock.calls.map(([event]) => event.type)).toEqual(['shown', 'dismissed']);
+    });
+
+    it('keeps deep-link targeting/frequency bypass behind the gate and reports campaign identity once', async () => {
+        const campaigns = source();
+        campaigns.campaigns[0].campaign.message.targeting = { platform: ['ios'] };
+        campaigns.campaigns[0].state.firstShownAt = new Date().toISOString();
+        const onEvent = vi.fn();
+        requestInAppMessage('server-campaign');
+        const view = render(<InAppMessageHost campaignSource={campaigns} onEvent={onEvent} />);
+        expect(screen.queryByText('Server campaign')).toBeNull();
+        expect(campaigns.record).not.toHaveBeenCalled();
+        state.gate = true;
+        view.rerender(<InAppMessageHost campaignSource={campaigns} onEvent={onEvent} />);
+        await waitFor(() => expect(screen.getByText('Server campaign')).toBeTruthy());
+        expect(onEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'shown',
+                source: 'deepLink',
+                campaignId: 'server-campaign',
+            })
+        );
+        expect(campaigns.record).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'shown', campaignId: 'server-campaign' }),
+            false
+        );
+        fireEvent.click(screen.getByText('Server campaign'));
+        expect(onEvent).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'dismissed', campaignId: 'server-campaign' })
+        );
+        expect(onEvent.mock.calls.filter(([event]) => event.type === 'shown')).toHaveLength(1);
+        expect(campaigns.enroll).not.toHaveBeenCalled();
+    });
+    it('uses campaign source for ordinary presentation, retains it after shown, and removes paused campaigns', async () => {
+        const campaigns = source();
+        state.gate = true;
+        const onEvent = vi.fn();
+        const view = render(<InAppMessageHost campaignSource={campaigns} onEvent={onEvent} />);
+        await waitFor(() => expect(screen.getByText('Server campaign')).toBeTruthy());
+        expect(onEvent).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'shown',
+                source: 'campaign',
+                campaignId: 'server-campaign',
+            })
+        );
+        expect(campaigns.enroll).toHaveBeenCalledWith('server-campaign');
+        campaigns.campaigns = [
+            {
+                ...campaigns.campaigns[0],
+                state: { shownCount: 1, firstShownAt: new Date().toISOString() },
+            },
+        ];
+        view.rerender(<InAppMessageHost campaignSource={campaigns} onEvent={onEvent} />);
+        expect(screen.getByText('Server campaign')).toBeTruthy();
+        campaigns.campaigns = [];
+        view.rerender(<InAppMessageHost campaignSource={campaigns} onEvent={onEvent} />);
+        await waitFor(() => expect(screen.queryByText('Server campaign')).toBeNull());
+    });
+    it('waits for campaign fetch before expiring an unknown deep link', async () => {
+        const campaigns = source();
+        campaigns.ready = false;
+        campaigns.campaigns = [];
+        state.gate = true;
+        requestInAppMessage('server-campaign');
+        const view = render(<InAppMessageHost campaignSource={campaigns} />);
+        await act(async () => {});
+        expect(getInAppMessageRequest()?.messageId).toBe('server-campaign');
+        campaigns.campaigns = source().campaigns;
+        campaigns.ready = true;
+        view.rerender(<InAppMessageHost campaignSource={campaigns} />);
+        await waitFor(() => expect(screen.getByText('Server campaign')).toBeTruthy());
+    });
 });

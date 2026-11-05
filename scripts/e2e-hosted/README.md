@@ -15,6 +15,8 @@ eligibility skips execution; job-level conditions run before matrix expansion.
 The intended required-check set on `main` is:
 
 - `Test` (unchanged)
+- `Workflow validation` (unchanged)
+- `Typecheck ratchet` (unchanged)
 - `Determine E2E eligibility`
 - `Playwright E2E`
 - `tests/e2e (1)`
@@ -23,22 +25,26 @@ The intended required-check set on `main` is:
 
 Eligibility is required too: a failed dependency can skip its children, and
 GitHub accepts skipped job checks. The eligibility job validates its decision
-before reporting success. Only draft PRs and documentation-only changes skip
-the suites; manual dispatch always runs them. Other PRs and merge groups still
-run the browser suite and all three service shards. Failed or cancelled required
-jobs, and absent required check names, block merging.
+before reporting success. All PR updates, including drafts, defer full E2E to
+the merge queue. Their eligibility summary explains the deferral; the four suite
+checks report skipped. Merge groups run the full suites except for the existing
+documentation-only exemption. Manual dispatch always runs them. Failed or cancelled
+required jobs, and absent required check names, block merging. Unit tests, mock
+tests and Verification Catalog retain their existing triggers.
 
 ### Coordinated settings rollout
 
-This workflow change does **not** update repository protection. At draft
-publication, `main` still requires `Test` and the old aggregate `E2E`; the draft
-will intentionally wait for that removed status until a reviewed cutover.
+This workflow change does **not** update repository protection. Until the coordinated
+cutover, `main` requires `Test`, `Workflow validation`, `Typecheck ratchet` and the
+old aggregate `E2E`. This PR will wait for that removed aggregate status until
+the matching protection change.
 
 Before merging, validate the exact new names on a PR and their skipped states,
 plus a full manual suite run. Then drain the existing merge queue so old
 candidates are not left waiting for new check names. Replace the old `E2E`
 requirement with **all five** E2E checks listed above in one coordinated settings
-update, preserving `Test`, the merge queue and every other protection. Enqueue
+update, preserving `Test`, `Workflow validation`, `Typecheck ratchet`, the merge
+queue and every other protection. Enqueue
 the approved workflow change normally and verify the new required checks on its
 actual `merge_group` revision. Do not remove the old requirement on its own.
 
@@ -46,9 +52,26 @@ Restoring only the old `E2E` requirement after its job is gone would block futur
 merges. A rollback must restore the aggregate workflow job and its matching
 required-check settings together.
 
-Trigger-policy changes, such as deferring automatic full suites to the merge
-queue, are independent of this change and must retain eligibility validation and
-all concrete check names when integrated.
+### Run full E2E on a PR before queuing
+
+In **Actions → E2E → Run workflow**, select the PR branch and set **LearnCard branch
+or commit SHA to test** to that branch or its current head SHA. The input defaults
+to `main`, so set it explicitly when testing a PR. Leave browser spec files at their
+default to run the usual full set; all service shards run as well. Manual runs also
+work for draft and documentation-only PRs.
+
+With GitHub CLI, replace `1234` with the PR number (same-repository branches):
+
+```sh
+pr_branch=$(gh pr view 1234 --json headRefName --jq .headRefName)
+pr_sha=$(gh pr view 1234 --json headRefOid --jq .headRefOid)
+gh workflow run e2e.yml --ref "$pr_branch" -f ref="$pr_sha"
+```
+
+`--ref` selects the workflow revision; `-f ref=` selects the source revision tested
+by both suites. A commit SHA pins the tested source even if the PR is updated while
+the run waits. Inspect the manual run in Actions for its result and artifacts.
+Manual runs do not replace validation of the combined revision in the merge queue.
 
 ## Browser workers
 

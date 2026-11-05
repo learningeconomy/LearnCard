@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LCNNotificationValidator } from './lcn';
 
 import {
     CampaignValidator,
@@ -76,6 +77,21 @@ describe('campaign schemas', () => {
             })
         ).toEqual({ campaignId: 'pilot-clr', updates: { name: 'Renamed' } });
     });
+    it('normalizes optimistic save revisions and rejects invalid timestamps', () => {
+        const input = { campaignId: 'pilot-clr', updates: { name: 'Renamed' } };
+        expect(
+            UpdateCampaignInputValidator.parse({
+                ...input,
+                expectedUpdatedAt: '2026-10-22T10:00:00-07:00',
+            }).expectedUpdatedAt
+        ).toBe('2026-10-22T17:00:00.000Z');
+        expect(
+            UpdateCampaignInputValidator.safeParse({
+                ...input,
+                expectedUpdatedAt: 'not-a-revision',
+            }).success
+        ).toBe(false);
+    });
     it('requires exactly one credential sender and rejects unsafe metadata keys', () => {
         const source = { type: 'credentialsSentBy', senderProfileId: 'issuer' };
         for (const input of [
@@ -127,5 +143,67 @@ describe('campaign schemas', () => {
                 ]);
             }
         }
+    });
+});
+
+describe('campaign notification wire shape', () => {
+    it('accepts ANNOUNCEMENT and retains its campaign identity', () => {
+        const notification = {
+            type: 'ANNOUNCEMENT',
+            from: 'did:web:brain.example',
+            to: { did: 'did:key:learner' },
+            data: {
+                metadata: { campaignId: 'pilot-clr', campaignCreatedAt: '2026-01-01T00:00:00Z' },
+            },
+        };
+        expect(LCNNotificationValidator.parse(notification)).toMatchObject(notification);
+        expect(
+            LCNNotificationValidator.safeParse({
+                ...notification,
+                data: { metadata: { campaignId: '../invalid' } },
+            }).success
+        ).toBe(false);
+    });
+});
+
+describe('campaign email schema', () => {
+    const email = { subject: 'News', title: 'News', body: 'Programs', ctaLabel: 'View' };
+    it('requires content for email, allows all three channels, rejects unsafe content', () => {
+        expect(
+            CreateCampaignInputValidator.safeParse({ ...draft, channels: ['email'] }).success
+        ).toBe(false);
+        expect(
+            CreateCampaignInputValidator.safeParse({
+                ...draft,
+                channels: ['inApp', 'notify', 'email'],
+                notification: { title: 'News', body: 'Programs' },
+                email,
+            }).success
+        ).toBe(true);
+        for (const patch of [
+            { subject: 'News\r\nBcc: evil@example.com' },
+            { body: '' },
+            { heroImageUrl: 'javascript:alert(1)' },
+            { heroImageUrl: '/relative.png' },
+        ]) {
+            expect(
+                CreateCampaignInputValidator.safeParse({
+                    ...draft,
+                    channels: ['email'],
+                    email: { ...email, ...patch },
+                }).success
+            ).toBe(false);
+        }
+    });
+    it('keeps tenant identity server-owned', () => {
+        expect(
+            CreateCampaignInputValidator.safeParse({ ...draft, tenantId: 'other' }).success
+        ).toBe(false);
+        expect(
+            UpdateCampaignInputValidator.safeParse({
+                campaignId: draft.id,
+                updates: { tenantId: 'other' },
+            }).success
+        ).toBe(false);
     });
 });

@@ -52,6 +52,13 @@ outputs = eligibility.fetch('outputs')
 abort 'run_e2e output missing' unless outputs.key?('run_e2e')
 abort 'eligibility reason output missing' unless outputs.key?('reason')
 
+eligibility_steps = eligibility.fetch('steps')
+policy_checkout = eligibility_steps.find { |step| step['uses']&.start_with?('actions/checkout@') }
+abort 'PR deferral must not require a checkout' unless policy_checkout.fetch('if') == "${{ github.event_name == 'merge_group' }}"
+policy = eligibility_steps.find { |step| step['id'] == 'policy' }
+abort 'policy must receive the event name' unless policy.dig('env', 'EVENT_NAME') == '${{ github.event_name }}'
+abort 'queue change detection must use the merge-group base' unless policy.dig('env', 'BASE_SHA') == '${{ github.event.merge_group.base_sha }}'
+
 browser = jobs.fetch('playwright_e2e')
 services = (1..3).map { |shard| jobs.fetch("tests_e2e_#{shard}") }
 service = services.first
@@ -157,10 +164,10 @@ Dir.mktmpdir('e2e-direct-policy') do |dir|
   File.write(File.join(detector, 'changes-are-docs-only.sh'), 'exit "${DOCS_ONLY_EXIT:-1}"')
   defaults = { 'EVENT_NAME' => 'pull_request', 'PR_DRAFT' => 'false', 'BASE_SHA' => 'base-fixture' }
   cases = [
-    ['pull_request', 'true', '1', 'false', 'draft-pr'],
-    ['pull_request', 'false', '1', 'true', 'pull_request'],
-    ['pull_request', 'false', '0', 'false', 'docs-only'],
-    ['pull_request', 'false', '2', 'true', 'pull_request'],
+    ['pull_request', 'true', '1', 'false', 'merge-queue-only'],
+    ['pull_request', 'false', '1', 'false', 'merge-queue-only'],
+    ['pull_request', 'false', '0', 'false', 'merge-queue-only'],
+    ['pull_request', 'false', '2', 'false', 'merge-queue-only'],
     ['merge_group', 'false', '1', 'true', 'merge_group'],
     ['merge_group', 'false', '0', 'false', 'docs-only'],
     ['workflow_dispatch', 'false', '0', 'true', 'manual-dispatch'],
@@ -177,10 +184,10 @@ Dir.mktmpdir('e2e-direct-policy') do |dir|
     stdout, status = Open3.capture2e(env, 'bash', '-euo', 'pipefail', '-c', validation.fetch('run'), chdir: dir)
     abort "valid decision rejected: #{stdout}" unless status.success?
   end
+  _, unsupported = Open3.capture2e(defaults.merge('EVENT_NAME' => 'push', 'GITHUB_OUTPUT' => File.join(dir, 'unsupported')), 'bash', '-euo', 'pipefail', '-c', policy.fetch('run'), chdir: dir)
+  abort 'unsupported policy event must fail' if unsupported.success?
   accepted = [
-    ['pull_request', 'true', 'false', 'draft-pr'],
-    ['pull_request', 'false', 'true', 'pull_request'],
-    ['pull_request', 'false', 'false', 'docs-only'],
+    ['pull_request', 'false', 'false', 'merge-queue-only'],
     ['merge_group', 'false', 'true', 'merge_group'],
     ['merge_group', 'false', 'false', 'docs-only'],
     ['workflow_dispatch', 'false', 'true', 'manual-dispatch']
@@ -188,7 +195,7 @@ Dir.mktmpdir('e2e-direct-policy') do |dir|
   # Missing/malformed outputs and cross-event skip reasons must fail eligibility,
   # which itself is required; skipped dependants cannot hide that failure.
   checked = 0
-  %w[pull_request merge_group workflow_dispatch push].product(['true', 'false', ''], ['', 'draft-pr', 'docs-only', 'pull_request', 'merge_group', 'manual-dispatch']).each do |event, run, reason|
+  %w[pull_request merge_group workflow_dispatch push].product(['true', 'false', ''], ['', 'draft-pr', 'docs-only', 'pull_request', 'merge_group', 'manual-dispatch', 'merge-queue-only', 'unknown']).each do |event, run, reason|
     env = defaults.merge('EVENT_NAME' => event, 'RUN_E2E' => run, 'REASON' => reason, 'GITHUB_STEP_SUMMARY' => File.join(dir, 'summary'))
     _, status = Open3.capture2e(env, 'bash', '-euo', 'pipefail', '-c', validation.fetch('run'), chdir: dir)
     expected = accepted.include?([event, 'false', run, reason])
