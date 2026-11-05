@@ -815,7 +815,7 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
             title: 'Your next chapter starts here',
             body: 'A new learning opportunity is waiting for you.\nExplore what’s possible and take your next step.',
         },
-        data: { metadata: { campaignId: 'synthetic-campaign' } },
+        data: { metadata: { campaignId: 'synthetic-campaign', campaignHasInApp: false } },
         sent: '2026-10-30T18:00:00Z',
         read: false,
         archived: false,
@@ -849,6 +849,7 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
     await expect(card).toBeVisible({ timeout: 120_000 });
     await expect(card.getByText('New', { exact: true })).toBeVisible();
     await expect(card.getByText(/A new learning opportunity/)).toBeVisible();
+    await expect(card.getByRole('button', { name: 'View', exact: true })).toHaveCount(0);
     await page.screenshot({ path: 'test-results/campaign-announcement-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });
     await card.scrollIntoViewIfNeeded();
@@ -876,6 +877,12 @@ test('campaign announcement inbox @mocked', async ({ page }) => {
         { read: true, archived: true },
         { read: true, archived: false },
     ]);
+    // A new mixed-channel announcement advertises its usable message destination.
+    notification._id = 'synthetic-mixed-announcement';
+    notification.data.metadata.campaignHasInApp = true;
+    await page.reload();
+    await expect(card).toBeVisible({ timeout: 60_000 });
+    await expect(card.getByRole('button', { name: 'View', exact: true })).toBeVisible();
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole('button', { name: 'Alerts', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Close alerts' })).toBeVisible();
