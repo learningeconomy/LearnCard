@@ -1,12 +1,11 @@
 [<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
 
-# @learncard/core
+# @learncard/didkit-plugin
 
-[![npm version](https://img.shields.io/npm/v/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
-[![npm downloads](https://img.shields.io/npm/dw/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
-[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
+[![npm version](https://img.shields.io/npm/v/@learncard/didkit-plugin)](https://www.npmjs.com/package/@learncard/didkit-plugin)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/didkit-plugin)](https://www.npmjs.com/package/@learncard/didkit-plugin)
 
-The LearnCard Core is a pluggable, open-source, universal digital wallet to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials** built for the future of education and work.
+Wraps the [DIDKit](https://github.com/spruceid/didkit) WASM build to sign and verify credentials and presentations and resolve DIDs.
 
 ## Documentation
 
@@ -16,164 +15,30 @@ https://docs.learncard.com
 ## Install
 
 ```bash
-bun add @learncard/core
+bun add @learncard/init @learncard/didkit-plugin
 ```
 
 ## Usage
 
-### Instantiation
+This package exports `getDidKitPlugin`.
 
-Instantiate a wallet using `initLearnCard`. This method accepts a unique identifier string that is
-up to 64 characters long. If it is less than 64 characters, `initLearnCard` will pad the start of
-the string with 0's until it is 64 characters long.
+```ts
+import { initLearnCard } from '@learncard/init';
+import { getDidKitPlugin } from '@learncard/didkit-plugin';
 
-```js
-import { initLearnCard } from '@learncard/core';
+const learnCard = await initLearnCard({ custom: true });
 
-const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
+// Optional args: a custom WASM URL/module, and allowRemoteContexts (default false)
+const didkitLearnCard = await learnCard.addPlugin(await getDidKitPlugin());
 ```
 
-### Issuing/Verifying Credentials and Presentations
-
-#### Issue a credential
-
-```js
-// Grab a test VC, or create your own!
-const unsignedVc = await wallet.invoke.getTestVc();
-
-const vc = await wallet.invoke.issueCredential(unsignedVc);
-```
-
-#### Verify a credential
-
-```js
-const result = await wallet.invoke.verifyCredential(vc, {}, true);
-
-if (result.warnings.length > 0) console.error('Verification warnings:', result.warnings);
-
-if (result.errors.length > 0) console.error('This credential is not valid!', result.errors);
-else console.log('This credential is valid!');
-```
-
-#### Issue a presentation
-
-```js
-const vp = await wallet.invoke.issuePresentation(vc);
-```
-
-#### Verify a presentation
-
-```js
-const result = await wallet.invoke.verifyPresentation(vp);
-
-if (result.warnings.length > 0) console.error('Verification warnings:', result.warnings);
-
-if (result.errors.length > 0) console.error('This presentation is not valid!', result.errors);
-else console.log('This presentation is valid!');
-```
-
-#### Final P-256 Data Integrity proofs
-
-The native and WASM engines support explicit `ecdsa-rdfc-2019` proofs with P-256/ES256
-keys. Verification accepts equivalent P-256 JWKs and validated compressed P-256
-Multikeys. This suite is distinct from the legacy `ecdsa-2019` suite; omitted-suite
-selection and existing EdDSA behavior are unchanged. P-384 is not supported by the
-new suite.
-
-For DIDAuth verification, supply the expected `proofPurpose: 'authentication'`,
-`challenge`, and `domain`. The holder's DID document must authorize the verification
-method for authentication. Final-suite proofs may omit `created`; a verification
-date cutoff applies to timestamps that are present.
-
-Low-level signing requires an explicit P-256 key and an appropriate document context.
-An Ed25519 wallet does not gain P-256 key selection, and outgoing OpenID negotiation
-does not advertise this suite.
-
-Inbox claims additionally require a supported X25519 key-agreement method for encrypted
-delivery and recovery. Use separate authentication and encryption keys in a `did:web`
-document. Signing-only P-256 `did:key` holders can use generic claim links, but not inbox
-claims; an unsupported delivery key leaves the pending credential and challenge available
-for retry.
-
-### Storing/Retrieving/Sending Credentials
-
-#### Ceramic/IDX
-
-To maintain co-ownership of credentials, it is best to store credentials in a public place, and then
-store references to that public place. While this is not the only way to store credentials (and is
-also definitely not a silver bullet! E.g. credentials containing private data), it is the opinion of
-this library that it should be used by default. As a result, instantiating a wallet, will
-automatically connect you to WeLibrary's ceramic node, and allow you to publish and retrieve
-credentials there using IDX.
-
-#### Publish Credential
-
-After signing a VC, you may choose to publish that credential to Ceramic. Doing so will return a
-stream ID, which you may share to the recipient. That stream ID can then be used to resolve the
-issued credential. This means both the issuer and recipient may store the _stream ID_ instead of the
-credential itself.
-
-```js
-const uri = await wallet.store.Ceramic.upload(vc);
-```
-
-#### Reading From Ceramic
-
-To resolve a VC from a stream ID, simply call the `readFromCeramic` method:
-
-```js
-const vcFromCeramic = await wallet.read.get(uri);
-```
-
-#### Adding a Credential to a Wallet
-
-After receiving a streamID, you can _persist_ that streamID by calling `addCredential`, and giving
-the credential a bespoke title
-
-```js
-await wallet.index.IDX.add({ uri, id: 'Test VC' });
-```
-
-This will add the streamId, which can be used to resolve the verifiable credential to IDX using the
-wallet's secret key. You can think of this as acting like the wallet's personal storage.
-
-#### Getting a credential from the Wallet
-
-After calling `addCredential`, you can use the bespoke title to retrieve that credential at any time
-
-```js
-const record = (await wallet.index.all.get()).find(record => record.id === 'Test VC');
-const vcFromIdx = await wallet.read.get(record.uri);
-```
-
-Alternatively, you can get an array of _all_ credentials you have added using `getCredentials`
-
-```js
-const uris = (await wallet.index.all.get()).map(record => record.uri);
-const vcs = await Promise.all(uris.map(async uri => wallet.read.get(uri)));
-```
+On Node, prefer [`@learncard/didkit-plugin-node`](../didkit-plugin-node) (or `initLearnCard({ seed, didkit: 'node' })`). Seed-based `initLearnCard` wallets already include a DIDKit plugin.
 
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
-
-### Vendored Rust dependency locks
-
-WASM builds use DIDKit's committed workspace lock at `lib/didkit/Cargo.lock` with
-`--locked`. DIDKit source updates must include a valid lock; LearnCard does not
-overlay or regenerate it. The native addon has its own lock at
-`../didkit-plugin-node/native/Cargo.lock`.
-
-Using DIDKit's lock adopts its dependency versions rather than LearnCard's former
-separate WASM graph. The committed WASM/glue pair and hosted URL are retained until
-the normal source-update workflow builds, tests, and publishes a matching artifact
-pair and updates the URL and bridge integrity pin.
-
-## Who is Learning Economy Foundation?
-
-**[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
 
 ## License
 
