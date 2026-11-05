@@ -24,7 +24,11 @@ const currentProfileSchema = z.object({
 export const getCurrentProfile = async (
     ctx: Pick<Context, 'authorizationHeader' | 'tenant' | 'user'>
 ) => {
-    if (!ctx.authorizationHeader || !ctx.user?.did || !profileUrl) return null;
+    if (!ctx.authorizationHeader || !ctx.user?.did) return null;
+    if (!profileUrl) {
+        console.warn('Current profile authority unavailable: endpoint not configured');
+        return null;
+    }
 
     try {
         const { data } = await axios.get(profileUrl, {
@@ -35,9 +39,21 @@ export const getCurrentProfile = async (
                 'X-Tenant-Id': ctx.tenant.id,
             },
         });
-        return currentProfileSchema.parse(data);
-    } catch {
-        // Missing/malformed profiles and outages are unknown, never adult authority.
+        // The self-profile endpoint returns an empty body when no profile exists.
+        if (data == null || data === '') return null;
+        const parsed = currentProfileSchema.safeParse(data);
+        if (!parsed.success) {
+            console.warn('Current profile authority unavailable: malformed response');
+            return null;
+        }
+        return parsed.data;
+    } catch (error) {
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+        console.warn(
+            status
+                ? `Current profile authority unavailable: HTTP ${status}`
+                : 'Current profile authority unavailable: request failed'
+        );
         return null;
     }
 };

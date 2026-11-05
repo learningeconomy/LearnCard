@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
         type?: string;
     },
     profileUnavailable: false,
+    repairFailure: null as 'throw' | 'return-false' | null,
 }));
 vi.mock('@routes', () => {
     const t = initTRPC.create();
@@ -25,6 +26,8 @@ vi.mock('@accesslayer/preferences/read', () => ({
 }));
 vi.mock('@accesslayer/preferences/update', () => ({
     updatePreferences: async (_did: string, input: Record<string, unknown>) => {
+        if (state.repairFailure === 'throw') throw new Error('write failed');
+        if (state.repairFailure === 'return-false') return false;
         Object.assign(state.saved, input);
         return true;
     },
@@ -49,6 +52,7 @@ beforeEach(() => {
     state.saved = { theme: ThemeEnum.Colorful };
     state.profile = { dob: '1990-01-01', country: 'US', type: 'personal' };
     state.profileUnavailable = false;
+    state.repairFailure = null;
 });
 afterEach(() => vi.useRealTimers());
 
@@ -157,15 +161,42 @@ describe('backend analytics age authorization', () => {
         await caller.updatePreferences({ analyticsEnabled: false, isMinor: true });
         expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: false });
     });
+    it('rejects opt-in under unknown authority before applying mixed changes', async () => {
+        state.profileUnavailable = true;
+        await expect(
+            caller.updatePreferences({ theme: ThemeEnum.Formal, analyticsEnabled: true })
+        ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+        expect(state.saved).toEqual({ theme: ThemeEnum.Colorful });
+    });
+
+    it.each(['throw', 'return-false'] as const)(
+        'returns fail-closed preferences on %s repair failure, then retries repair',
+        async failure => {
+            state.profile = { dob: '2012-01-01', country: 'US' };
+            state.saved = { theme: ThemeEnum.Formal, analyticsEnabled: true };
+            state.repairFailure = failure;
+            await expect(caller.getPreferencesForDid()).resolves.toMatchObject({
+                theme: ThemeEnum.Formal,
+                analyticsEnabled: false,
+                isMinor: true,
+            });
+            expect(state.saved.analyticsEnabled).toBe(true);
+            state.repairFailure = null;
+            await caller.getPreferencesForDid();
+            expect(state.saved).toMatchObject({ analyticsEnabled: false, isMinor: true });
+        }
+    );
 
     it('allows onboarding theme writes without a profile and rejects forged analytics authority', async () => {
         state.profileUnavailable = true;
         await expect(caller.createPreferences({ theme: ThemeEnum.Formal })).resolves.toBe(true);
-        await caller.updatePreferences({
-            analyticsEnabled: true,
-            analyticsAutoDisabled: false,
-            isMinor: false,
-        });
+        await expect(
+            caller.updatePreferences({
+                analyticsEnabled: true,
+                analyticsAutoDisabled: false,
+                isMinor: false,
+            })
+        ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
         expect(state.saved).toEqual({ theme: ThemeEnum.Formal });
     });
 

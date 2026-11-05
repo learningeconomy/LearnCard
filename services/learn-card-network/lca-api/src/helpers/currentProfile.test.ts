@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ get: vi.fn() }));
-vi.mock('axios', () => ({ default: { get: mocks.get } }));
+vi.mock('axios', async importOriginal => {
+    const actual = await importOriginal<typeof import('axios')>();
+    return { ...actual, default: { ...actual.default, get: mocks.get } };
+});
 vi.mock('@environment', () => ({
     environment: { NETWORK_BRAIN_SERVICE_URL: 'http://brain.test/api' },
 }));

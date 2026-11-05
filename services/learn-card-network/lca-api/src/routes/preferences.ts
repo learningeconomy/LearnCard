@@ -83,11 +83,16 @@ export const preferencesRouter = t.router({
                 safeInput.analyticsAutoDisabled = restricted;
                 if (restricted) safeInput.analyticsEnabled = false;
             } else {
-                // Unknown authority cannot grant opt-in or persist fabricated age
-                // metadata; an explicit opt-out remains safe to save.
+                // Unknown authority cannot grant opt-in or persist fabricated age metadata.
                 delete safeInput.isMinor;
                 delete safeInput.analyticsAutoDisabled;
-                if (safeInput.analyticsEnabled === true) delete safeInput.analyticsEnabled;
+                if (safeInput.analyticsEnabled === true) {
+                    throw new TRPCError({
+                        code: 'SERVICE_UNAVAILABLE',
+                        message:
+                            'Analytics settings are temporarily unavailable. Please try again.',
+                    });
+                }
             }
             const success = await updatePreferences(ctx.user.did, safeInput);
 
@@ -125,11 +130,16 @@ export const preferencesRouter = t.router({
                     preferences.isMinor !== restricted ||
                     (restricted && preferences.analyticsAutoDisabled !== true))
             ) {
-                await updatePreferences(ctx.user.did, {
-                    ...(restricted ? { analyticsEnabled: false } : {}),
-                    isMinor: restricted,
-                    ...(restricted ? { analyticsAutoDisabled: true } : {}),
-                });
+                try {
+                    const repaired = await updatePreferences(ctx.user.did, {
+                        ...(restricted ? { analyticsEnabled: false } : {}),
+                        isMinor: restricted,
+                        ...(restricted ? { analyticsAutoDisabled: true } : {}),
+                    });
+                    if (!repaired) console.error('Failed to persist age-based preference repair');
+                } catch {
+                    console.error('Failed to persist age-based preference repair');
+                }
             }
 
             return {
