@@ -20,6 +20,7 @@ import * as Sentry from '@sentry/react';
 
 import GenericErrorBoundary from './components/generic/GenericErrorBoundary';
 
+const CampaignsPage = lazyWithRetry(() => import('./pages/campaigns/CampaignsPage'));
 const WalletPage = lazyWithRetry(() => import('./pages/wallet/WalletPage'));
 const DashboardPage = lazyWithRetry(() => import('./pages/dashboard/DashboardPage'));
 const LaunchPad = lazyWithRetry(() => import('./pages/launchPad/LaunchPad'));
@@ -295,6 +296,8 @@ export const Routes: React.FC = () => {
                             path="/app-store/admin"
                             component={AppStoreAdminWithProvider}
                         />
+
+                        <SentryRoute path="/admin/campaigns" component={CampaignsPage} />
 
                         <PrivateRoute exact path="/notifications" component={NotificationsPage} />
                         {/* Linked from the "New device signed in with your PIN" email. */}

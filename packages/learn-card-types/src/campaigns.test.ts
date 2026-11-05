@@ -38,6 +38,38 @@ describe('campaign schemas', () => {
             }).success
         ).toBe(true);
     });
+    it('requires only selected channel content and permits clearing inactive content', () => {
+        const notification = { title: 'Hello', body: 'Open the app' };
+        const notifyOnly = { ...draft, channels: ['notify'], message: undefined, notification };
+        expect(CreateCampaignInputValidator.safeParse(notifyOnly).success).toBe(true);
+        expect(
+            CampaignValidator.safeParse({
+                ...notifyOnly,
+                createdAt: '2026-10-29T00:00:00Z',
+                updatedAt: '2026-10-29T00:00:00Z',
+            }).success
+        ).toBe(true);
+        expect(
+            CreateCampaignInputValidator.safeParse({ ...draft, message: undefined }).success
+        ).toBe(false);
+        expect(
+            CreateCampaignInputValidator.safeParse({ ...notifyOnly, channels: ['inApp', 'notify'] })
+                .success
+        ).toBe(false);
+        expect(
+            CreateCampaignInputValidator.safeParse({
+                ...draft,
+                channels: ['inApp', 'notify'],
+                notification,
+            }).success
+        ).toBe(true);
+        expect(
+            UpdateCampaignInputValidator.parse({
+                campaignId: draft.id,
+                updates: { channels: ['notify'], message: null, notification },
+            }).updates.message
+        ).toBeNull();
+    });
     it('validates time windows after normalizing timezone offsets', () => {
         const parsed = CreateCampaignInputValidator.parse({
             ...draft,

@@ -18,7 +18,10 @@ const checkToolchain = source => {
     for (const run of runs) {
         const install = run.indexOf('bun install');
         const setup = run.slice(0, install);
-        const packages = setup.match(/apt-get install\s+([^&]+)/)?.[1].trim().split(/\s+/);
+        const packages = setup
+            .match(/apt-get install\s+([^&]+)/)?.[1]
+            .trim()
+            .split(/\s+/);
         assert.ok(packages, 'Install the native toolchain before bun install');
         for (const name of ['python3', 'make', 'g++']) {
             assert.ok(packages.includes(name), `node-gyp needs ${name}`);
@@ -32,12 +35,27 @@ test('monorepo installs have the native toolchain and drop it in the same layer'
     checkToolchain(dockerfile);
 });
 
-test('rejects a missing native build dependency', () => {
+const normalizedDockerfile = dockerfile.replace(/\\\r?\n/g, ' ');
+for (const [index, run] of installRuns(dockerfile).entries()) {
     for (const name of ['python3', 'make', 'g++']) {
-        assert.throws(() => checkToolchain(dockerfile.replace(`--no-install-recommends python3 make g++`, `--no-install-recommends ${['python3', 'make', 'g++'].filter(n => n !== name).join(' ')}`)));
+        test(`rejects missing ${name} in dependency install ${index + 1}`, () => {
+            const brokenRun = run.replace(/apt-get install\s+([^&]+)/, (_match, packages) => {
+                const remaining = packages
+                    .trim()
+                    .split(/\s+/)
+                    .filter(pkg => pkg !== name);
+                return `apt-get install ${remaining.join(' ')} `;
+            });
+            assert.throws(() => checkToolchain(normalizedDockerfile.replace(run, brokenRun)), {
+                message: `node-gyp needs ${name}`,
+            });
+        });
     }
-});
 
-test('rejects an install without the toolchain', () => {
-    assert.throws(() => checkToolchain(dockerfile.replace(/apt-get install[^&]*&& bun install \\\n/, 'bun install \\\n')));
-});
+    test(`rejects dependency install ${index + 1} without the toolchain`, () => {
+        const brokenRun = run.replace(/apt-get install\s+[^&]+&&\s*/, '');
+        assert.throws(() => checkToolchain(normalizedDockerfile.replace(run, brokenRun)), {
+            message: 'Install the native toolchain before bun install',
+        });
+    });
+}

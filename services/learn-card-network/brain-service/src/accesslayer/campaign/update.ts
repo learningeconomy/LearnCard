@@ -24,12 +24,13 @@ export const updateCampaign = async (input: UpdateCampaignInput): Promise<Campai
             });
         }
         assertCampaignEditable(existing);
-        const message = updates.message ?? existing.message;
+        const message =
+            updates.message === null ? undefined : (updates.message ?? existing.message);
         const result = CampaignValidator.safeParse({
             ...existing,
             ...updates,
             id: campaignId,
-            message: { ...message, id: campaignId },
+            message: message ? { ...message, id: campaignId } : undefined,
             notification:
                 updates.notification === null
                     ? undefined
