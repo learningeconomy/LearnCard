@@ -493,7 +493,26 @@ export const setCredentialBitstringStatus = async (
     statusPurpose: BitstringStatusPurpose,
     value: boolean
 ): Promise<boolean> => {
-    const statusEntries = await getStatusEntriesForCredential(credentialId);
+    let statusEntries: BitstringStatusListEntry[];
+    try {
+        statusEntries = await getStatusEntriesForCredential(credentialId);
+        if (
+            statusEntries.some(
+                entry =>
+                    !Number.isSafeInteger(Number(entry.statusListIndex)) ||
+                    Number(entry.statusListIndex) < 0
+            )
+        ) {
+            throw new Error('Invalid status list index');
+        }
+    } catch {
+        console.error('[setCredentialBitstringStatus] Invalid stored status entries', {
+            credentialId,
+        });
+        return false;
+    }
+    if (statusEntries.length === 0) return false;
+
     const owner = (
         await neogma.queryRunner.run(
             `MATCH (credential:Credential {id: $credentialId})
