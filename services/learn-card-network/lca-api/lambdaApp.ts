@@ -15,17 +15,18 @@ import {
 } from './src/helpers/sentry.helpers';
 import { environment } from './src/config/environment';
 import { toServerlessApplication } from './src/helpers/serverlessApplication';
-import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './src/models';
+import { ensureUserKeysIndexes } from './src/models';
 import { runEscrowHoldReminders } from './src/jobs/escrowHoldReminders';
 import { runEscrowBlobRewrap } from './src/jobs/escrowBlobRewrap';
 import { checkEscrowRemoteConfig } from './src/services/escrow-enclave';
 
 checkEscrowRemoteConfig();
 
+// Escrow index migration is lazy and fail-closed at escrow write boundaries.
+// It must not poison unrelated handlers for the lifetime of a warm Lambda.
 const startupPromise = Promise.all([
     getEmptyLearnCard(), // Load WASM in for better cold starts
     ensureUserKeysIndexes(),
-    createEscrowHoldsIndexes(),
 ]);
 
 const isWarmupEvent = (event: APIGatewayProxyEventV2): boolean =>

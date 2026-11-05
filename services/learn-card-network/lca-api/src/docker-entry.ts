@@ -11,7 +11,7 @@ import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trp
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
-import { ensureUserKeysIndexes, createEscrowHoldsIndexes } from './models';
+import { ensureUserKeysIndexes } from './models';
 import { oidcFastifyPlugin } from './oidc';
 import { ensureAuthSubjectIndexes } from './models/AuthSubject';
 
@@ -116,7 +116,6 @@ server.register(oidcFastifyPlugin);
         });
         console.log('Server starting on port ', environment.PORT || 3000);
         await ensureUserKeysIndexes();
-        await createEscrowHoldsIndexes();
         await server.listen({ host: '0.0.0.0', port: Number(environment.PORT || 3000) });
     } catch (err) {
         console.error(err);

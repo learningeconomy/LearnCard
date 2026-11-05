@@ -54,7 +54,7 @@ import {
     clearEscrowByAuthProvider,
     setEscrowOptInByAuthProvider,
     createEscrowHold,
-    createEscrowHoldsIndexes,
+    ensureEscrowHoldsIndexes,
     findPendingEscrowHoldByAuthProvider,
     findEscrowHoldById,
     cancelEscrowHold,
@@ -186,18 +186,16 @@ const lockPin = async (
         }
     }
 };
-let holdIndexes: Promise<void> | undefined;
-
-// Lambda and in-process callers do not run docker-entry's index initialization.
 const ensureHoldIndexes = async (): Promise<void> => {
-    holdIndexes ??= createEscrowHoldsIndexes().catch(() => {
-        holdIndexes = undefined;
+    try {
+        await ensureEscrowHoldsIndexes();
+    } catch (cause) {
         throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Recovery could not be started.',
+            cause,
         });
-    });
-    await holdIndexes;
+    }
 };
 const successValidator = z.object({ success: z.literal(true) });
 const cancelByLinkInput = z
@@ -1389,6 +1387,7 @@ export const escrowRouter = t.router({
                     message: killSwitchMessage,
                 });
             }
+            await ensureHoldIndexes();
             if (input.pinProof !== undefined) await limitPinCompletion(ctx.clientIp);
             const hold = await findEscrowHoldById(input.holdId);
             if (!hold || !resumeTokenMatches(hold, input.resumeToken)) {
