@@ -33,8 +33,9 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     onRetry,
     onLogout,
 }) => {
+    const updateRequired = error === ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE;
     // Retrying cannot help until the app itself is updated.
-    const showRetry = canRetry && error !== ACCOUNT_USES_NEWER_SIGN_IN_MESSAGE;
+    const showRetry = canRetry && !updateRequired;
 
     return (
         <Overlay>
@@ -45,7 +46,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
 
                 <div className="space-y-v3-2">
                     <h2 className="text-xl font-semibold text-grayscale-900">
-                        {m['error.generic']()}
+                        {updateRequired ? m['error.updateRequiredTitle']() : m['error.generic']()}
                     </h2>
 
                     <p className="text-sm text-grayscale-600 leading-relaxed">

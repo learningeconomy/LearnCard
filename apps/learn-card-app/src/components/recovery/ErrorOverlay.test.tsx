@@ -9,6 +9,7 @@ vi.mock('../../paraglide/messages.js', () => ({
         'error.network': () => 'Connection issue. Please check your internet and try again.',
         'error.retry': () => 'Try Again',
         'error.updateRequired': () => 'Please update to the latest version of the app.',
+        'error.updateRequiredTitle': () => 'Update required',
         'recovery.logOut': () => 'Log Out',
     },
 }));
@@ -45,6 +46,8 @@ describe('LearnCard ErrorOverlay safe localized copy', () => {
                 onLogout={vi.fn()}
             />
         );
+        expect(screen.getByRole('heading', { name: 'Update required' })).toBeTruthy();
+        expect(screen.queryByText('Something went wrong. Please try again.')).toBeNull();
         expect(screen.getByText('Please update to the latest version of the app.')).toBeTruthy();
         expect(screen.queryByRole('button', { name: 'Try Again' })).toBeNull();
         expect(screen.getByRole('button', { name: 'Log Out' })).toBeTruthy();

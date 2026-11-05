@@ -2332,7 +2332,6 @@
         "error.invalidPassword": "Contraseña incorrecta o no se pudo leer el archivo. Por favor, inténtalo de nuevo.",
         "error.invalidCode": "Ese código es incorrecto o ha expirado. Solicita uno nuevo e inténtalo de nuevo.",
         "error.network": "Problema de conexión. Por favor, comprueba tu internet e inténtalo de nuevo.",
-        "error.updateRequired": "Tu cuenta usa una forma más nueva de iniciar sesión. Actualiza la aplicación a la última versión (a menudo basta con cerrarla y volver a abrirla) y vuelve a iniciar sesión.",
         "error.default": "Algo salió mal. Por favor, inténtalo de nuevo.",
         "prompt": {
             "openAria": "Configurar una forma de volver a iniciar sesión",
@@ -2841,6 +2840,8 @@
     "error": {
         "generic": "Algo salió mal. Inténtalo de nuevo.",
         "network": "Problema de conexión. Verifica tu internet e inténtalo de nuevo.",
+        "updateRequired": "Tu cuenta usa una forma más nueva de iniciar sesión. Actualiza la aplicación a la última versión (a menudo basta con cerrarla y volver a abrirla) y vuelve a iniciar sesión.",
+        "updateRequiredTitle": "Actualización necesaria",
         "notFound": "Página no encontrada.",
         "unauthorized": "No tienes permiso para hacer esto.",
         "sessionExpired": "Tu sesión ha expirado. Inicia sesión de nuevo.",
