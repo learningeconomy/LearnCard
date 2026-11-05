@@ -441,7 +441,8 @@ describe('Web3Auth account setup coordination', () => {
 describe('Web3Auth sign-in account lookup', () => {
     const lookupConfig = {
         ...config,
-        accountLookup: { serverUrl: 'https://lca.test/api', tenantId: 'vetpass' },
+        // Trailing slash: the request path must still be single-slashed.
+        accountLookup: { serverUrl: 'https://lca.test/api/', tenantId: 'vetpass' },
     };
     const respond = (status: number, body?: unknown): Response =>
         new Response(body === undefined ? null : JSON.stringify(body), { status });
@@ -464,7 +465,7 @@ describe('Web3Auth sign-in account lookup', () => {
     });
 
     it('asks lca-api for the account with the sign-in token and tenant', async () => {
-        fetchMock.mockResolvedValueOnce(respond(404));
+        fetchMock.mockResolvedValueOnce(respond(200, null));
         await createWeb3AuthStrategy(lookupConfig).fetchServerKeyStatus(token(), 'firebase');
 
         const [url, init] = fetchMock.mock.calls[0]!;
@@ -478,8 +479,7 @@ describe('Web3Auth sign-in account lookup', () => {
     });
 
     it.each([
-        ['no record (404)', () => respond(404)],
-        ['no record (null)', () => respond(200, null)],
+        ['no record', () => respond(200, null)],
         ['a legacy or mid-migration record', () => respond(200, { keyProvider: 'web3auth' })],
     ])('derives the Web3Auth key for %s', async (_label, response) => {
         fetchMock.mockResolvedValueOnce(response());
@@ -508,7 +508,7 @@ describe('Web3Auth sign-in account lookup', () => {
 
     it('does not keep an earlier account usable after a stopped sign-in', async () => {
         fetchMock
-            .mockResolvedValueOnce(respond(404))
+            .mockResolvedValueOnce(respond(200, null))
             .mockResolvedValueOnce(respond(200, { keyProvider: 'sss' }));
         const strategy = createWeb3AuthStrategy(lookupConfig);
         await strategy.fetchServerKeyStatus(token('earlier-user'), 'firebase');
@@ -531,6 +531,7 @@ describe('Web3Auth sign-in account lookup', () => {
 
     it.each([
         ['a server error', () => respond(500)],
+        ['a 404 (wrong URL; lca-api answers no record with null)', () => respond(404)],
         ['an unreadable body', () => new Response('not json', { status: 200 })],
     ])('fails closed on %s', async (_label, response) => {
         fetchMock.mockResolvedValueOnce(response());

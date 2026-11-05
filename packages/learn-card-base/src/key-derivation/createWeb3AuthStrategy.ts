@@ -79,8 +79,9 @@ const ACCOUNT_LOOKUP_TIMEOUT_MS = 30_000;
 
 /**
  * Whether lca-api already has an SSS key record for the signed-in account.
- * A missing record (404 or null) and a `web3auth` record (legacy or mid-migration)
- * both keep Web3Auth, which derives the account's existing key. Anything that
+ * A missing record (a `null` body) and a `web3auth` record (legacy or mid-migration)
+ * both keep Web3Auth, which derives the account's existing key. lca-api answers a
+ * missing record with `null`, never 404, so a 404 means a wrong URL and fails closed. Anything that
  * cannot be read fails closed: a network error retries quietly, others surface.
  */
 const accountUsesSss = async (
@@ -90,7 +91,7 @@ const accountUsesSss = async (
 ): Promise<boolean> => {
     let response: Response;
     try {
-        response = await fetch(`${lookup.serverUrl}/keys/auth-share`, {
+        response = await fetch(`${lookup.serverUrl.replace(/\/+$/, '')}/keys/auth-share`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -108,7 +109,6 @@ const accountUsesSss = async (
         throw new Error('We couldn’t finish signing you in. Please try again.', { cause: error });
     }
 
-    if (response.status === 404) return false;
     if (!response.ok) {
         log.warn('Web3Auth account lookup refused', { httpStatus: response.status });
         throw new Error('We couldn’t finish signing you in. Please try again.');
