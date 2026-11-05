@@ -40,10 +40,10 @@
         "croner": "^10.0.1",
         "dotenv": "^16.0.3",
         "express": "^4.18.2",
-        "express-rate-limit": "^8.0.1",
+        "express-rate-limit": "^8.7.2",
         "mongodb": "^6.2.0",
         "openai": "^4.55.7",
-        "zod": "4.6.6"
+        "zod": "4.6.7"
     },
     "devDependencies": {
         "@trigger.dev/build": "4.5.9",
