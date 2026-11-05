@@ -49,4 +49,4 @@ Please make sure to update tests as appropriate.
 
 ## License
 
-MIT © [Learning Economy Foundation](https://github.com/Learning-Economy-Foundation)
+MIT © [WeLibrary, LLC](https://github.com/WeLibraryOS)
