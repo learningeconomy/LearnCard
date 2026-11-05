@@ -10,9 +10,20 @@ test.describe('ClassLink callback handling @mocked', () => {
         await installNetwork(page);
     });
 
-    test('an unknown callback state redirects to /login with an expired message', async ({
+    test('an unknown callback state restarts sign-in once (dashboard launch)', async ({ page }) => {
+        const restarted = page.waitForURL(/\/auth\/classlink\/start/);
+        await page.goto('/auth/classlink/callback?code=test-code&state=unknown-state');
+
+        await restarted;
+    });
+
+    test('a repeated unknown callback state redirects to /login with an expired message', async ({
         page,
     }) => {
+        // A restart already happened moments ago, so this callback must not loop.
+        await page.addInitScript(() => {
+            sessionStorage.setItem('classlink-relaunch-at', String(Date.now()));
+        });
         await page.goto('/auth/classlink/callback?code=test-code&state=unknown-state');
 
         await page.waitForURL(/\/login/);
