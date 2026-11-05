@@ -242,11 +242,12 @@ const MongoUserKeyBaseValidator = z.object({
     migratedFromWeb3Auth: z.boolean().default(false),
     migratedAt: z.date().optional(),
     /**
-     * The login whose Web3Auth key this account was migrated from (recorded by
-     * `/keys/migrate`, which that login calls). Web3Auth derives a key from the
-     * login alone, so only this login still derives the account's key: a
-     * Web3Auth-mode client may sign in an SSS account only through it (see
-     * `isWeb3AuthLogin`). Absent means no login is known to be safe.
+     * The login whose Web3Auth key this account was migrated from, recorded by
+     * `/keys/migrate` only when that login is the account's sole login at security
+     * epoch 0. Web3Auth derives a key from the login alone, so only this login
+     * still derives the account's key: a Web3Auth-mode client may sign in an SSS
+     * account only through it (see `isWeb3AuthLogin`). Absent means no login is
+     * known to be safe; migrations from before this field was added have none.
      */
     web3AuthLogin: AuthProviderMappingValidator.optional(),
 
@@ -1600,14 +1601,30 @@ export const markUserKeyMigrationProvisionalByAuthProvider = async (
                 keyProvider: 'web3auth',
                 sssActivationState: 'provisional',
                 provisionalCreatedAt,
-                // The caller's login derived the legacy key being migrated.
-                web3AuthLogin: authProvider,
                 updatedAt: new Date(),
             },
         }
     );
+    const marked = result.modifiedCount > 0 || result.matchedCount > 0;
 
-    return result.modifiedCount > 0 || result.matchedCount > 0;
+    if (marked) {
+        // Record the login that derived the legacy key, but only when it provably
+        // did: it is the account's sole login and no rebind/revoke has happened. A
+        // second login (PIN sign-in) holding the account key could otherwise claim
+        // it. Never replace a recorded login; when unsure, record nothing (Web3Auth
+        // clients then stop the account: a false negative, never a split).
+        await getUserKeysCollection().updateOne(
+            {
+                ...getAuthProviderFilter(authProvider),
+                authProviders: { $size: 1, $elemMatch: authProvider },
+                web3AuthLogin: { $exists: false },
+                ...getSecurityEpochFilter(0),
+            },
+            { $set: { web3AuthLogin: authProvider } }
+        );
+    }
+
+    return marked;
 };
 
 /**

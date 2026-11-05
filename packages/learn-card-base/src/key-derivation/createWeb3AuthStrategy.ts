@@ -92,6 +92,15 @@ export const ACCOUNT_LOOKUP_STATUS_TIMEOUT_MS =
 
 const LOOKUP_FAILED_MESSAGE = 'We couldn’t finish signing you in. Please try again.';
 
+/** lca-api's `verifyAndGetContactMethod` refusal (`routes/keys.ts`). */
+const MISSING_CONTACT_METHOD_MESSAGE = 'User must have an email or phone number';
+
+const isMissingContactMethod = async (response: Response): Promise<boolean> => {
+    const body = (await response.json().catch(() => undefined)) as
+        { code?: unknown; message?: unknown } | undefined;
+    return body?.code === 'BAD_REQUEST' && body.message === MISSING_CONTACT_METHOD_MESSAGE;
+};
+
 /** Linear, unlike a `/\/+$/` replace on configured input. */
 const trimTrailingSlashes = (url: string): string => {
     let end = url.length;
@@ -151,6 +160,13 @@ const web3AuthWouldSplitAccount = async (
         }
 
         if (!response.ok) {
+            // lca-api refuses a login with no email or phone before any lookup. Every
+            // route that creates or links an SSS login requires one, so such a login
+            // cannot reach an SSS account: keep Web3Auth (it signed in before lookups).
+            if (response.status === 400 && (await isMissingContactMethod(response))) {
+                log.info('Web3Auth account lookup skipped: login has no email or phone');
+                return false;
+            }
             log.warn('Web3Auth account lookup refused', { httpStatus: response.status });
             throw new Error(LOOKUP_FAILED_MESSAGE);
         }
@@ -580,10 +596,19 @@ export const createWeb3AuthStrategy = (
             token: string,
             providerType: string
         ): Promise<ServerKeyStatus> => {
-            // Forget any earlier account before the lookup can stop sign-in.
-            cachedToken = null;
-            cachedUid = null;
-            const uid = decodeJwtSub(token);
+            // Credentials are replaced only once this sign-in may proceed, and cleared
+            // when it stops, so an in-flight derivation keeps its own until then.
+            const forgetCredentials = (): void => {
+                cachedToken = null;
+                cachedUid = null;
+            };
+            let uid: string;
+            try {
+                uid = decodeJwtSub(token);
+            } catch (error) {
+                forgetCredentials();
+                throw error;
+            }
 
             if (config.accountLookup) {
                 const timeoutMs =
@@ -600,10 +625,12 @@ export const createWeb3AuthStrategy = (
                     );
                 } catch (error) {
                     lookupFailures++;
+                    forgetCredentials();
                     throw error;
                 }
                 lookupFailures = 0;
                 if (wouldSplit) {
+                    forgetCredentials();
                     log.warn('Web3Auth sign-in stopped: SSS account outside its migration login');
                     throw new AccountUsesNewerSignInError();
                 }

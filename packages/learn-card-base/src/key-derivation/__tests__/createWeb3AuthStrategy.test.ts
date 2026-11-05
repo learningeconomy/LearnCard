@@ -621,6 +621,50 @@ describe('Web3Auth sign-in account lookup', () => {
         await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
     });
 
+    it('keeps Web3Auth for a login lca-api refuses for having no email or phone', async () => {
+        fetchMock.mockResolvedValueOnce(
+            respond(400, {
+                code: 'BAD_REQUEST',
+                message: 'User must have an email or phone number',
+            })
+        );
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+        await strategy.fetchServerKeyStatus(token(), 'firebase');
+
+        await expect(derive(strategy)).resolves.toBe('synthetic-private-key');
+    });
+
+    it.each([
+        ['another 400', () => respond(400, { code: 'BAD_REQUEST', message: 'Something else' })],
+        ['a 400 without a body', () => respond(400)],
+        ['a 401', () => respond(401, { code: 'UNAUTHORIZED', message: 'Invalid token' })],
+    ])('fails closed on %s', async (_label, response) => {
+        fetchMock.mockResolvedValueOnce(response());
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+
+        await expect(strategy.fetchServerKeyStatus(token(), 'firebase')).rejects.toThrow(
+            'We couldn’t finish signing you in. Please try again.'
+        );
+        await expect(derive(strategy)).rejects.toThrow('fetchServerKeyStatus must be called first');
+    });
+
+    it('keeps the current credentials while a second lookup is in flight', async () => {
+        let answer: (response: Response) => void = () => undefined;
+        fetchMock.mockResolvedValueOnce(respond(200, null)).mockImplementationOnce(
+            () =>
+                new Promise<Response>(resolve => {
+                    answer = resolve;
+                })
+        );
+        const strategy = createWeb3AuthStrategy(lookupConfig);
+        await strategy.fetchServerKeyStatus(token(), 'firebase');
+
+        const second = strategy.fetchServerKeyStatus(token(), 'firebase');
+        await expect(derive(strategy)).resolves.toBe('synthetic-private-key');
+        answer(respond(200, null));
+        await second;
+    });
+
     it('does not look the account up without accountLookup (legacy key extraction)', async () => {
         await expect(deriveWeb3AuthKey(config, token())).resolves.toBe('synthetic-private-key');
         expect(fetchMock).not.toHaveBeenCalled();

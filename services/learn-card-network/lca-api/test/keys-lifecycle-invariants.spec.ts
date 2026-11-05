@@ -929,6 +929,43 @@ describe('Web3Auth migration login', () => {
         }
     });
 
+    it.each([
+        ['a second linked login', { extraLogin: true }],
+        ['a rotated security epoch', { securityEpoch: 1 }],
+        ['an already recorded login', { recorded: true }],
+    ])('does not record the calling login with %s', async (_label, setup) => {
+        const suffix = `${Date.now()}-${randomUUID()}`;
+        const email = `migrate-gate-${suffix}@example.com`;
+        const uid = `uid-${suffix}`;
+        const otherUid = `other-${suffix}`;
+        const { learnCard } = await getUser('2'.repeat(64));
+        const collection = getUserKeysCollection();
+        const key = makeUserKey(email, uid, learnCard.id.did());
+
+        key.keyProvider = 'web3auth';
+        if ('extraLogin' in setup) key.authProviders.push({ type: 'firebase', id: otherUid });
+        if ('securityEpoch' in setup) key.securityEpoch = setup.securityEpoch;
+        if ('recorded' in setup) key.web3AuthLogin = { type: 'firebase', id: otherUid };
+        await collection.insertOne(key);
+
+        try {
+            await expect(
+                getClient({ did: learnCard.id.did(), isChallengeValid: true }).keys.markMigrated({
+                    authToken: makeMockToken(email, uid),
+                    providerType: 'firebase',
+                })
+            ).resolves.toEqual({ success: true });
+
+            const stored = await collection.findOne({ 'contactMethod.value': email });
+            expect(stored?.keyProvider).toBe('web3auth');
+            expect(stored?.web3AuthLogin).toEqual(
+                'recorded' in setup ? { type: 'firebase', id: otherUid } : undefined
+            );
+        } finally {
+            await collection.deleteMany({ 'contactMethod.value': email });
+        }
+    });
+
     it('never confirms an account created with SSS', async () => {
         const suffix = `${Date.now()}-${randomUUID()}`;
         const email = `sss-native-${suffix}@example.com`;
